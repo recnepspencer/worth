@@ -5,12 +5,14 @@ const READINESS_CAPACITY: usize = EVENT_LOOP_READINESS_OWNER_COUNT
     + crate::UiNativeApplicationReadinessOwnerCount::MAXIMUM as usize;
 
 mod application_ingress;
+mod wake_sender;
 
 pub(crate) use application_ingress::UiNativeApplicationWake;
 pub use application_ingress::{
     UiNativeApplicationReadinessPort, UiNativeApplicationReadinessSignalDenial,
     UiNativeApplicationReadinessSignalDisposition,
 };
+pub(crate) use wake_sender::{UiNativeOffscreenWakes, UiNativeWakeSender};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiNativeReadyOwner {

@@ -115,6 +115,65 @@ fn version_one_application_schema_member_tags_are_frozen() {
 }
 
 #[test]
+fn inbound_occurrence_round_trips_under_new_tag_without_changing_old_effect_tag() {
+    use std::num::NonZeroU64;
+    use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+    use worth_query_declaration::facade::application_schema::{
+        ApplicationInboundOccurrenceLimits, ApplicationInboundOccurrenceProtocol,
+    };
+
+    let one = NonZeroU64::new(1).unwrap();
+    let member = ApplicationSchemaMember::OperationInboundOccurrence {
+        operation: "notify".to_owned(),
+        effect: "death-notice".to_owned(),
+        protocol: ApplicationInboundOccurrenceProtocol::new(
+            BoundaryProtocolIdentity::new("bank.rail-completion"),
+            BoundaryProtocolVersion::new(1),
+        ),
+        source_identity: "bank-rail".to_owned(),
+        limits: ApplicationInboundOccurrenceLimits {
+            maximum_envelope_bytes: one,
+            maximum_verifier_work: one,
+            maximum_payload_bytes: one,
+            maximum_outstanding_dispatch_provenance: one,
+            maximum_accepted_occurrences: one,
+            maximum_accepted_bytes: one,
+            maximum_concurrent_publications: one,
+            maximum_discovery_work: one,
+            replay_window_milliseconds: one,
+            maximum_cleanup_work: one,
+        },
+    };
+    assert_eq!(super::member::member_tag(&member), 30);
+    assert_eq!(decode_member(&encode_member(&member)), member);
+    assert_eq!(
+        super::member::member_tag(&fixture::complete_untrusted_schema_record().members()[16]),
+        17,
+    );
+}
+
+#[test]
+fn legacy_inbound_tag_retains_its_bytes_and_derives_a_finite_verifier_ceiling() {
+    let mut output = BinaryOutput::with_capacity(128);
+    output.u16(29);
+    output.text("notify");
+    output.text("death-notice");
+    output.text("bank.rail-completion");
+    output.u32(1);
+    output.text("bank-rail");
+    for value in [512_u64, 256, 8, 8, 2048, 2, 16, 60_000, 16] {
+        output.u64(value);
+    }
+    let bytes = output.into_bytes();
+    let ApplicationSchemaMember::OperationInboundOccurrence { limits, .. } = decode_member(&bytes)
+    else {
+        panic!("legacy tag remains an inbound member")
+    };
+    assert_eq!(limits.maximum_envelope_bytes.get(), 512);
+    assert_eq!(limits.maximum_verifier_work.get(), 512);
+}
+
+#[test]
 fn tag_four_relation_bytes_retain_self_edge_meaning_and_reencode_exactly() {
     let member = ApplicationSchemaMember::Relation {
         relation: "Peer".to_owned(),
@@ -246,6 +305,12 @@ fn encode_member(member: &ApplicationSchemaMember) -> Vec<u8> {
 }
 
 fn decode_member(bytes: &[u8]) -> ApplicationSchemaMember {
+    try_decode_member(bytes).unwrap()
+}
+
+fn try_decode_member(
+    bytes: &[u8],
+) -> Result<ApplicationSchemaMember, crate::denial::WorthQueryPackageArchiveDenial> {
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let mut input = crate::binary_input::BinaryInput::new(bytes);
     let mut attempt = RecordDecodeAttempt::begin(
@@ -254,9 +319,9 @@ fn decode_member(bytes: &[u8]) -> ApplicationSchemaMember {
         limits,
     )
     .unwrap();
-    let member = super::member::decode(&mut input, &mut attempt).unwrap();
+    let member = super::member::decode(&mut input, &mut attempt)?;
     assert!(input.is_finished());
-    member
+    Ok(member)
 }
 
 fn frame_payload(payload: &[u8]) -> Vec<u8> {

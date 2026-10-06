@@ -7,6 +7,7 @@ description = "Derived Query publication and decision-evidence authority."
 publish = false
 
 [dependencies]
+serde = "1"
 sha2 = "0.10"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof.workspace = true

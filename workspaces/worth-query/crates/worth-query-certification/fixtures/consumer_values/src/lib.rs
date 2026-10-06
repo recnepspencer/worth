@@ -11,7 +11,7 @@ pub use planar_operation::{
     PlanarMutationDenial, PlanarOperation, PlanarVertex,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PositiveLength(u64);
 
 impl PositiveLength {

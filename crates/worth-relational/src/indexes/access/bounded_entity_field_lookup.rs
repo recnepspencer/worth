@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use crate::indexes::data::{
     BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,
     BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
@@ -39,10 +37,16 @@ impl IndexAccess<'_> {
                 .expect("resolved snapshot projection must carry an exact basis");
         let prepared = prepare_entity_field_lookup(runtime, &snapshot, &request)?;
         let indexed_ids = prepared.indexed_ids();
-        let overflowed = indexed_ids.len() > request.candidate_limit();
-        let examined_entry_count = indexed_ids.len().min(request.candidate_limit());
-        let candidate_entity_ids = verify_bounded_index_entries(&source, &request, &indexed_ids)?;
+        let indexed_count = indexed_ids.map_or(0, |rows| rows.len());
+        let overflowed = indexed_count > request.candidate_limit();
+        let examined_entry_count = indexed_count.min(request.candidate_limit());
+        let candidate_entity_ids = if let Some(rows) = indexed_ids {
+            verify_bounded_index_entries(&source, &request, rows)?
+        } else {
+            Vec::new()
+        };
         let outcome = BoundedEntityFieldLookupOutcome::new(
+            std::sync::Arc::clone(&prepared.definition),
             prepared.generation_id,
             candidate_entity_ids,
             examined_entry_count,
@@ -63,6 +67,7 @@ impl IndexAccess<'_> {
 /// The generation this lookup is pinned to, carried by shared ownership so the
 /// entries stay readable without retaining the index subsystem lock.
 struct PreparedEntityFieldLookup {
+    definition: std::sync::Arc<crate::indexes::data::DerivedIndexDefinition>,
     generation_id: crate::indexes::data::DerivedIndexGenerationId,
     generation: std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>,
     key: AuthoritativeFieldComparisonKey,
@@ -71,11 +76,11 @@ struct PreparedEntityFieldLookup {
 impl PreparedEntityFieldLookup {
     fn indexed_ids(
         &self,
-    ) -> crate::indexes::data::DerivedIndexRows<crate::identity::data::EntityId> {
+    ) -> Option<&crate::indexes::data::DerivedIndexRows<crate::identity::data::EntityId>> {
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
-            return Default::default();
+            return None;
         };
-        entries.get(&self.key).cloned().unwrap_or_default()
+        entries.get(&self.key)
     }
 }
 
@@ -117,6 +122,7 @@ fn prepare_entity_field_lookup(
         ));
     }
     Ok(PreparedEntityFieldLookup {
+        definition,
         generation_id: generation.generation_id,
         key: AuthoritativeFieldComparisonKey::from_aspect_value(request.value()),
         generation,
@@ -128,21 +134,24 @@ fn verify_bounded_index_entries(
     request: &BoundedEntityFieldLookupRequest,
     indexed_ids: &crate::indexes::data::DerivedIndexRows<crate::identity::data::EntityId>,
 ) -> Result<Vec<crate::identity::data::EntityId>, BoundedEntityFieldLookupDenial> {
-    let expected = AuthoritativeFieldComparisonKey::from_aspect_value(request.value());
-    let mut seen = BTreeSet::new();
+    let mut seen = Vec::with_capacity(indexed_ids.len().min(request.candidate_limit()));
     let mut candidates = Vec::with_capacity(indexed_ids.len().min(request.candidate_limit()));
-    for entity_id in indexed_ids.iter().take(request.candidate_limit()) {
-        let record = source
-            .with_entity(*entity_id, Clone::clone)
-            .ok_or_else(|| corrupt_index_denial(request))?;
-        if !seen.insert(record.entity_id)
-            || entity_query_locus_comparison_key(&record, request.field_locator())
-                != Some(expected.clone())
-        {
-            return Err(corrupt_index_denial(request));
+    for (ordinal, entity_id) in indexed_ids
+        .iter()
+        .take(request.candidate_limit())
+        .enumerate()
+    {
+        let Some((kind, matches)) =
+            source.exact_entity_field_matches(*entity_id, request.field_locator(), request.value())
+        else {
+            return Err(corrupt_index_denial(request, ordinal + 1));
+        };
+        if seen.contains(entity_id) || !matches {
+            return Err(corrupt_index_denial(request, ordinal + 1));
         }
-        if record.kind.kind_id == request.entity_kind() {
-            candidates.push(record.entity_id);
+        seen.push(*entity_id);
+        if kind == request.entity_kind() {
+            candidates.push(*entity_id);
         }
     }
     Ok(candidates)
@@ -156,8 +165,8 @@ fn certify_storage_parity(
     let expected = AuthoritativeFieldComparisonKey::from_aspect_value(request.value());
     let mut storage_ids = Vec::new();
     source.for_each_entity(request.entity_kind(), |record| {
-        if entity_query_locus_comparison_key(record, request.field_locator())
-            == Some(expected.clone())
+        if entity_query_locus_comparison_key(record, request.field_locator()).as_ref()
+            == Some(&expected)
         {
             storage_ids.push(record.entity_id);
         }
@@ -171,17 +180,20 @@ fn certify_storage_parity(
         Err(lookup_denial(
             BoundedEntityFieldLookupDenialKind::StorageParityMismatch,
             request,
-        ))
+        )
+        .with_examined_entry_count(indexed.examined_entry_count()))
     }
 }
 
 fn corrupt_index_denial(
     request: &BoundedEntityFieldLookupRequest,
+    examined: usize,
 ) -> BoundedEntityFieldLookupDenial {
     lookup_denial(
         BoundedEntityFieldLookupDenialKind::CorruptIndexEntries,
         request,
     )
+    .with_examined_entry_count(examined)
 }
 
 fn lookup_denial(

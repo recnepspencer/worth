@@ -1,16 +1,16 @@
 error[E0603]: tuple struct constructor `SealedAuthority` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:24:39
+  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:23:39
    |
-16 |     worth_proof::authority_marker!(pub SealedAuthority);
+15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     --------------------------------------------------- a constructor is private if any of the fields is private
 ...
-24 |         let authority = super::owner::SealedAuthority(::core::marker::PhantomData);
+23 |         let authority = super::owner::SealedAuthority(::core::marker::PhantomData);
    |                                       ^^^^^^^^^^^^^^^ private tuple struct constructor
    |
 note: the tuple struct constructor `SealedAuthority` is defined here
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:16:5
+  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:15:5
    |
-16 |     worth_proof::authority_marker!(pub SealedAuthority);
+15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `worth_proof::authority_marker` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider making the field publicly accessible
@@ -20,18 +20,18 @@ help: consider making the field publicly accessible
    |                           +++
 
 error[E0603]: tuple struct constructor `SealedCapability` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:30:40
+  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:29:40
    |
-17 |     worth_proof::capability_marker!(pub SealedCapability);
+16 |     worth_proof::capability_marker!(pub SealedCapability);
    |     ----------------------------------------------------- a constructor is private if any of the fields is private
 ...
-30 |         let capability = super::owner::SealedCapability(::core::marker::PhantomData);
+29 |         let capability = super::owner::SealedCapability(::core::marker::PhantomData);
    |                                        ^^^^^^^^^^^^^^^^ private tuple struct constructor
    |
 note: the tuple struct constructor `SealedCapability` is defined here
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:17:5
+  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:16:5
    |
-17 |     worth_proof::capability_marker!(pub SealedCapability);
+16 |     worth_proof::capability_marker!(pub SealedCapability);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `worth_proof::capability_marker` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider making the field publicly accessible
@@ -41,19 +41,19 @@ help: consider making the field publicly accessible
    |                           +++
 
 error[E0624]: associated function `seal` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:35:80
+  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:34:80
    |
-16 |     worth_proof::authority_marker!(pub SealedAuthority);
+15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     --------------------------------------------------- private associated function defined here
 ...
-35 |         AuthorityWitness::from_authority_marker(super::owner::SealedAuthority::seal())
+34 |         AuthorityWitness::from_authority_marker(super::owner::SealedAuthority::seal())
    |                                                                                ^^^^ private associated function
 
 error[E0624]: associated function `witness` is private
-  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:39:40
+  --> tests/ui/sealed_minting/sealed_markers_are_not_mintable_by_consumers.rs:38:40
    |
-16 |     worth_proof::authority_marker!(pub SealedAuthority);
+15 |     worth_proof::authority_marker!(pub SealedAuthority);
    |     --------------------------------------------------- private associated function defined here
 ...
-39 |         super::owner::SealedAuthority::witness()
+38 |         super::owner::SealedAuthority::witness()
    |                                        ^^^^^^^ private associated function

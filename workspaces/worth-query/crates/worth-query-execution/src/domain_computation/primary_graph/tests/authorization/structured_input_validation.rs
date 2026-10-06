@@ -1,7 +1,7 @@
 use super::super::application_attempt::authenticated_principal;
 use super::super::fixture::{
-    installed_capability_authorization_world, live_scope, CapabilityGovernedInputIdentity,
-    CapabilityTouchOperation, TouchAccountCapability,
+    installed_capability_authorization_world, live_scope, CapabilityTouchOperation,
+    TouchAccountCapability,
 };
 use super::capability_progression::{capability_input, time};
 use crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind;
@@ -20,7 +20,7 @@ fn structured_input_validation_is_enforced_by_capability_admission() {
             CapabilityTouchOperation::reference(),
         )
         .unwrap();
-    let input = capability_input(u64::MAX, CapabilityGovernedInputIdentity::None);
+    let input = capability_input(u64::MAX);
 
     let Err(denial) =
         world

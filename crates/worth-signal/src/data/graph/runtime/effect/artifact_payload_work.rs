@@ -9,14 +9,14 @@ use crate::logic::evaluation::{EvaluationEffect, EvaluationWork};
 
 pub(super) fn string(
     value: Option<&str>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     work.reserve(value.map_or(Some(1), |s| s.len().checked_add(1)))
 }
 
 fn comparator(
     value: &VersionComparatorPolicy,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     match value {
         VersionComparatorPolicy::Custom { key } => string(Some(key), work),
@@ -29,7 +29,7 @@ fn comparator(
 
 fn scopes(
     values: &[PartitionSubscription],
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     work.reserve(
         values
@@ -38,15 +38,22 @@ fn scopes(
             .filter(|bytes| *bytes <= isize::MAX as usize),
     )?;
     for value in values {
-        string(Some(&value.partition.0), work)?;
-        string(value.detail.as_deref(), work)?;
+        work.reserve(
+            value
+                .path()
+                .depth()
+                .checked_mul(std::mem::size_of::<String>()),
+        )?;
+        for segment in value.path().segments() {
+            string(Some(segment), work)?;
+        }
     }
     Ok(())
 }
 
 pub(super) fn warm(
     effect: &EvaluationEffect,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     work.reserve(Some(std::mem::size_of::<
         crate::data::trace::RuntimeArtifactState,
@@ -68,7 +75,7 @@ pub(super) fn warm(
 pub(super) fn cold(
     effect: &EvaluationEffect,
     retain_detail: bool,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     work.reserve(Some(std::mem::size_of::<
         crate::data::trace::ColdArtifactIntent,
@@ -103,7 +110,7 @@ pub(super) fn cold(
 
 fn context(
     detail: &ReuseBoundaryContext,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     let ReuseBoundaryContext {
         topology_regime: _,

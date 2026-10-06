@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
@@ -10,34 +11,26 @@ use crate::domain_computation::primary_graph::application_attempt::effect_progra
     WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind;
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality as Cardinality;
 
+mod cardinality;
+mod declaration;
 mod family;
 
-struct Schema;
-struct Binding;
-struct ForeignBinding;
-struct Entity;
-struct WrongEntity;
-
-const PRESERVED: WorthQueryApplicationOutputRole<Binding, Entity, Preserve> =
-    WorthQueryApplicationOutputRole::from_static("preserved");
-const CREATED: WorthQueryApplicationOutputRole<Binding, Entity, Create> =
-    WorthQueryApplicationOutputRole::from_static("created");
-const RETIRED: WorthQueryApplicationOutputRole<Binding, Entity, Retire> =
-    WorthQueryApplicationOutputRole::from_static("retired");
+use declaration::*;
 
 #[test]
 fn runtime_role_names_reject_ambiguous_or_unbounded_representations() {
     assert!(matches!(
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new(" role"),
+        WorthQueryApplicationOutputRoleNameDenial::validate(" role"),
         Err(WorthQueryApplicationOutputRoleNameDenial::SurroundingWhitespace)
     ));
     assert!(matches!(
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new("role\nmember"),
+        WorthQueryApplicationOutputRoleNameDenial::validate("role\nmember"),
         Err(WorthQueryApplicationOutputRoleNameDenial::ControlCharacter)
     ));
     assert!(matches!(
-        WorthQueryApplicationOutputRole::<Binding, Entity, Create>::try_new("x".repeat(257)),
+        WorthQueryApplicationOutputRoleNameDenial::validate(&"x".repeat(257)),
         Err(
             WorthQueryApplicationOutputRoleNameDenial::RepresentationTooLarge {
                 maximum_bytes: 256,
@@ -46,6 +39,9 @@ fn runtime_role_names_reject_ambiguous_or_unbounded_representations() {
         )
     ));
 }
+
+/// A stand-in operation binding type for readmitted correspondences.
+struct Binding;
 
 #[test]
 fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
@@ -60,6 +56,8 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
     assert!(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<Binding>(),
+            TypeId::of::<Outputs>(),
+            BTreeSet::new(),
             vec![checkpoint_role(" invalid", "entity")],
             |_| Some(TypeId::of::<Entity>()),
         )
@@ -69,6 +67,8 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
     assert!(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<Binding>(),
+            TypeId::of::<Outputs>(),
+            BTreeSet::new(),
             vec![checkpoint_role("valid", "unknown")],
             |_| None,
         )
@@ -78,6 +78,8 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
     assert!(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<Binding>(),
+            TypeId::of::<Outputs>(),
+            BTreeSet::new(),
             vec![
                 checkpoint_role("same", "entity"),
                 checkpoint_role("same", "entity"),
@@ -95,21 +97,19 @@ fn duplicate_and_foreign_binding_roles_are_denied_before_commit() {
     let existing = existing_handle(EntityId::new(PartitionId::main(), 1, 0), &program);
     let mut candidate = prepared_candidate();
     candidate
-        .bind(PRESERVED, &existing, &program)
+        .bind(OutputRoleUse::fixed::<Preserved>(), &existing, &program)
         .expect("first exact role binding is accepted");
 
     assert_eq!(
         candidate
-            .bind(PRESERVED, &existing, &program)
+            .bind(OutputRoleUse::fixed::<Preserved>(), &existing, &program)
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole
     );
-    let foreign =
-        WorthQueryApplicationOutputRole::<ForeignBinding, Entity, Preserve>::from_static("foreign");
     assert_eq!(
         candidate
-            .bind(foreign, &existing, &program)
+            .bind(OutputRoleUse::fixed::<Foreign>(), &existing, &program)
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::ForeignOutputRole
@@ -124,7 +124,7 @@ fn foreign_handles_and_wrong_action_references_are_denied() {
     let mut candidate = prepared_candidate();
     assert_eq!(
         candidate
-            .bind(PRESERVED, &existing, &program)
+            .bind(OutputRoleUse::fixed::<Preserved>(), &existing, &program)
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget
@@ -133,7 +133,7 @@ fn foreign_handles_and_wrong_action_references_are_denied() {
     let local_existing = existing_handle(EntityId::new(PartitionId::main(), 3, 0), &program);
     assert_eq!(
         candidate
-            .bind(CREATED, &local_existing, &program)
+            .bind(OutputRoleUse::fixed::<Created>(), &local_existing, &program)
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch
@@ -145,10 +145,13 @@ fn declaration_inventory_denies_undeclared_missing_and_wrong_entity_roles() {
     let program = Arc::new(());
     let existing = existing_handle(EntityId::new(PartitionId::main(), 12, 0), &program);
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(PRESERVED, "entity");
+    candidate.prepare_test_contract::<Schema, PreserveOutputs>();
 
-    let undeclared =
-        WorthQueryApplicationOutputRole::<Binding, Entity, Preserve>::from_static("other");
+    let undeclared = stray::<PreserveOutputs, Entity>(
+        "other",
+        WorthQueryApplicationOutputPosture::Preserve,
+        Cardinality::ExactlyOne,
+    );
     assert_eq!(
         candidate
             .bind(undeclared, &existing, &program)
@@ -170,7 +173,11 @@ fn declaration_inventory_denies_undeclared_missing_and_wrong_entity_roles() {
     };
     assert_eq!(
         candidate
-            .bind(PRESERVED, &wrong_entity, &program)
+            .bind(
+                OutputRoleUse::fixed::<OnlyPreserved>(),
+                &wrong_entity,
+                &program
+            )
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::OutputRoleEntityMismatch
@@ -184,7 +191,7 @@ fn retire_role_requires_the_matching_delete_effect() {
     let existing = existing_handle(entity_id, &program);
     let mut candidate = prepared_retire_candidate();
     candidate
-        .bind(RETIRED, &existing, &program)
+        .bind(OutputRoleUse::fixed::<OnlyRetired>(), &existing, &program)
         .expect("existing handle is eligible for retirement");
     assert_eq!(
         candidate.validate_effects(&[]).unwrap_err().kind(),
@@ -193,6 +200,12 @@ fn retire_role_requires_the_matching_delete_effect() {
     candidate
         .validate_effects(&[WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id }])
         .expect("the role and actual retirement agree");
+    let sealed = candidate.seal_with(|_| None);
+    assert_eq!(
+        sealed.retired_entity_ids().collect::<Vec<_>>(),
+        vec![entity_id],
+        "only the typed retirement validated against its delete enters the retirement selector"
+    );
 }
 
 #[test]
@@ -212,7 +225,7 @@ fn created_role_must_name_an_actual_create_effect_before_commit() {
     };
     let mut candidate = prepared_create_candidate();
     candidate
-        .bind(CREATED, &created, &program)
+        .bind(OutputRoleUse::fixed::<OnlyCreated>(), &created, &program)
         .expect("created handle belongs to the program");
     assert_eq!(
         candidate.validate_effects(&[]).unwrap_err().kind(),
@@ -242,7 +255,9 @@ fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
         partition: WorthQueryApplicationCreationPartition::Context(context_partition),
     };
     let mut candidate = prepared_create_candidate();
-    candidate.bind(CREATED, &created, &program).unwrap();
+    candidate
+        .bind(OutputRoleUse::fixed::<OnlyCreated>(), &created, &program)
+        .unwrap();
 
     candidate
         .validate_effects(&[effect])
@@ -265,18 +280,29 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
     };
     let assigned = EntityId::new(PartitionId::main(), 11, 1);
     let mut candidate = prepared_create_candidate();
-    candidate.bind(CREATED, &created, &program).unwrap();
+    candidate
+        .bind(OutputRoleUse::fixed::<OnlyCreated>(), &created, &program)
+        .unwrap();
     let committed = candidate.seal_with(|_| Some(assigned));
 
-    assert_eq!(committed.entity(CREATED).unwrap().entity_id(), assigned);
     assert_eq!(
         committed
-            .entity(WorthQueryApplicationOutputRole::<
-                Binding,
-                WrongEntity,
-                Create,
-            >::from_static("created"))
-            .err(),
+            .outputs_of::<CreateOutputs>()
+            .unwrap()
+            .entity::<OnlyCreated>()
+            .unwrap()
+            .entity_id(),
+        assigned
+    );
+    // Reading the created role as another entity cannot be written with a
+    // marker; the erased use is still refused.
+    let wrong_entity = stray::<CreateOutputs, WrongEntity>(
+        "created",
+        WorthQueryApplicationOutputPosture::Create,
+        Cardinality::ExactlyOne,
+    );
+    assert_eq!(
+        committed.bound_entity(&wrong_entity).err(),
         Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
     );
 }
@@ -321,22 +347,26 @@ fn create_effect(key: &'static str, kind: u32) -> WorthQueryApplicationRealizedE
     }
 }
 
-fn prepared_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
+fn prepared<Contract>() -> WorthQueryApplicationOutputCorrespondenceCandidate
+where
+    Contract:
+        worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract<
+            Schema,
+        >,
+{
     let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(PRESERVED, "entity");
-    candidate.prepare_test_role(CREATED, "entity");
-    candidate.prepare_test_role(RETIRED, "entity");
+    candidate.prepare_test_contract::<Schema, Contract>();
     candidate
+}
+
+fn prepared_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
+    prepared::<Outputs>()
 }
 
 fn prepared_retire_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
-    let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(RETIRED, "entity");
-    candidate
+    prepared::<RetireOutputs>()
 }
 
 fn prepared_create_candidate() -> WorthQueryApplicationOutputCorrespondenceCandidate {
-    let mut candidate = WorthQueryApplicationOutputCorrespondenceCandidate::default();
-    candidate.prepare_test_role(CREATED, "entity");
-    candidate
+    prepared::<CreateOutputs>()
 }

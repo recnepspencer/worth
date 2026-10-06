@@ -124,10 +124,16 @@ impl CourtroomWorld {
             .unwrap();
         let change = product::WorthQueryAdmittedChange::new(
             effects.finish().unwrap(),
-            primary_graph::WorthQueryApplicationIdempotencyBinding::new(
-                [ordinal; 32],
-                [ordinal.wrapping_add(0x40); 32],
-            ),
+            primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+                TemporalHostSchema,
+                AmendTemporalAndPublishDefinition,
+                _,
+                _,
+            >(
+                &("combined-amendment", ordinal),
+                &("combined-amendment", ordinal),
+            )
+            .unwrap(),
         );
         self.application
             .on_branch(branch)

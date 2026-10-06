@@ -51,7 +51,16 @@ fn warm_work_has_an_exact_per_link_slope() {
     for work in [root, one_link, two_links] {
         assert_eq!(work.relational.relation_join_index_lookups, 1);
         assert_eq!(work.relational.relation_join_candidates_inspected, 1);
-        assert_eq!(work.canonical, WorthQueryCanonicalWorkEvidence::zero());
+        // The only canonical work is the governed input the admission encoded
+        // once, however many links the delegation has.
+        assert_eq!(work.canonical.basis_preparations(), 0);
+        assert_eq!(work.canonical.digest_derivations(), 1);
+        assert_eq!(work.canonical.canonical_entries(), 1);
+        assert_eq!(work.canonical.canonical_encoded_bytes(), 289);
+        assert_eq!(work.canonical.canonical_material_allocation_bytes(), 0);
+        assert_eq!(work.canonical.sha256_input_bytes(), 377);
+        assert_eq!(work.canonical.sha256_compression_blocks(), 7);
+        assert_eq!(work.canonical.digest_text_materializations(), 0);
     }
 }
 

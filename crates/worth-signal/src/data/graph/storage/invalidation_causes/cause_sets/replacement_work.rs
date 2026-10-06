@@ -8,7 +8,7 @@ impl CanonicalCauseSetStore {
         &self,
         producer: PendingCauseSetId,
         replacements: &[(PendingCauseSetId, &NormalizedCauseSet)],
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         if replacements.is_empty() || matches!(work, EvaluationWork::Ordinary) {
             return Ok(());

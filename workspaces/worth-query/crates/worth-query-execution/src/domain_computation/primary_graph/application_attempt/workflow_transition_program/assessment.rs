@@ -1,5 +1,3 @@
-use sha2::{Digest, Sha256};
-
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -22,7 +20,7 @@ mod identity;
 #[path = "assessment/replay.rs"]
 mod replay;
 
-use identity::{decode_hex_identity, hex, output_content_identity};
+use identity::{decode_hex_identity, evidence_meaning};
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operation, Input, Scope>
 where
@@ -45,7 +43,8 @@ where
             .filter(|fact| {
                 matches!(
                 fact,
-                crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity { .. }
+                crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::Entity { .. }
+                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
@@ -80,7 +79,13 @@ where
             source,
             posture,
             durable_currentness_facts,
-        );
+        )
+        .ok_or_else(|| {
+            WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
+                self.required.node_path(),
+            )
+        })?;
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let node_path = self.admitted.node_path().to_owned();
@@ -177,20 +182,10 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
             subject,
         ));
     }
-    let currentness_matches = read_set.lease.handle().with_runtime(|runtime| {
-        currentness_facts
-            .iter()
-            .all(|fact| fact.remains_equal_in(runtime, read_set.lease.snapshot()))
-    });
-    if !currentness_matches {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
-            subject,
-        ));
-    }
+    ensure_current(read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
     for fact in std::mem::take(&mut read_set.facts) {
-        let locator = fact.locator_identity();
+        let locator = fact.dependency_key();
         match merged.entry(locator) {
             std::collections::btree_map::Entry::Vacant(entry) => {
                 entry.insert(fact);
@@ -205,7 +200,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
         }
     }
     for fact in currentness_facts {
-        let locator = fact.locator_identity();
+        let locator = fact.dependency_key();
         if merged
             .insert(locator, fact.clone())
             .is_some_and(|existing| existing != *fact)
@@ -220,6 +215,34 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     Ok(())
 }
 
+/// Denies unless every currentness fact still holds in the read set's
+/// snapshot: evidence observed before a later write is stale.
+pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
+    read_set: &super::super::WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        super::super::WorthQueryProjectedApplicationMutation,
+    >,
+    currentness_facts: &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
+    subject: &str,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let current = read_set.lease.handle().with_runtime(|runtime| {
+        currentness_facts
+            .iter()
+            .all(|fact| fact.remains_equal_in(runtime, read_set.lease.snapshot()))
+    });
+    if current {
+        Ok(())
+    } else {
+        Err(WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
+            subject,
+        ))
+    }
+}
+
 fn validate<Schema, Operation, Input, Scope, Query>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     prepared: &PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
@@ -232,25 +255,34 @@ fn validate<Schema, Operation, Input, Scope, Query>(
 where
     Schema: ApplicationSchema,
 {
-    let receipt = settlement.application_commit_receipt().ok_or_else(|| {
-        WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
-            prepared.required.node_path(),
-        )
-    })?;
     let fresh_branch = prepared
         .admitted
         .read_set()
         .lease
         .product()
         .product_branch();
+    let authority_matches = if let Some(receipt) = settlement.application_commit_receipt() {
+        source.selected_product_occurrence() == Some(receipt.product_branch().occurrence())
+            && receipt.idempotency_binding().source_identity()
+                == Some(source.idempotency_identity().bytes())
+            && receipt.product_branch() == fresh_branch
+    } else if let Some(stable) = settlement.stable.as_ref() {
+        source.selected_product_occurrence() == Some(stable.observation().lifecycle_incarnation())
+            && stable.source_identity()
+                == Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Runtime(
+                    source.idempotency_identity(),
+                ))
+            && stable.source_partition_identity() == Some(source.partition_identity())
+            && crate::basis::WorthQueryProductBranch::from_occurrence(
+                stable.observation().lifecycle_incarnation(),
+            ) == fresh_branch
+    } else {
+        false
+    };
     let valid = settlement.belongs_to(runtime)
         && source.source_root() == prepared.admitted.subject()
-        && source.query_identifier == prepared.required.query()
-        && source.selected_product_occurrence() == Some(receipt.product_branch().occurrence())
-        && receipt.idempotency_binding().source_identity()
-            == Some(source.idempotency_identity().bytes())
-        && receipt.product_branch() == fresh_branch;
+        && source.query_identifier.as_str() == prepared.required.query()
+        && authority_matches;
     if !valid {
         return Err(WorthQueryApplicationAttemptDenial::new(
             WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
@@ -265,81 +297,6 @@ where
                 prepared.required.node_path(),
             )
         })
-}
-
-fn evidence_meaning<Query>(
-    required: &RequiredWorkflowAssessment,
-    subject: worth_relational::facade::identity::EntityId,
-    settlement: &WorthQueryOutputDemandSettlement,
-    source: &WorthQueryObservedSource<Query>,
-    posture: WorthQueryWorkflowAssessmentPosture,
-    currentness_facts: std::sync::Arc<
-        [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
-    >,
-) -> WorkflowAssessmentEvidenceMeaning {
-    let receipt = settlement
-        .application_commit_receipt()
-        .expect("workflow assessment validation required a committed output receipt");
-    let publication = receipt.committed_product_publication();
-    let source_identity = hex(source.idempotency_identity().bytes());
-    let output_content_identity =
-        output_content_identity(receipt, source.idempotency_identity().bytes());
-    let publication_identity = format!(
-        "{}:{}:{}:{}:{}:{}:{}:{}:{}",
-        publication.product_branch().owner_identity().get(),
-        publication.product_branch().name().as_str(),
-        publication.product_incarnation().ordinal(),
-        publication.product_generation().get(),
-        publication.composite_commit().ordinal(),
-        publication.publication_attempt().ordinal(),
-        publication.relational_commit().branch_id.0,
-        publication.relational_commit().commit_id.0,
-        publication.relational_commit().version_id.0,
-    );
-    let passing = posture == WorthQueryWorkflowAssessmentPosture::Passing;
-    let mut digest = Sha256::new();
-    digest.update(b"worth-query:workflow-assessment-evidence:v1");
-    for value in [
-        required.transition_identity(),
-        settlement.producer_identity(),
-        settlement.output_family_identity(),
-        required.query(),
-        required.parameter_type(),
-        required.result_type(),
-        required.binding(),
-        required.proposal_identity(),
-        required.coverage_identity(),
-        required.program_revision(),
-        &source_identity,
-        &publication_identity,
-        &output_content_identity,
-    ] {
-        digest.update((value.len() as u64).to_le_bytes());
-        digest.update(value.as_bytes());
-    }
-    digest.update(subject.partition_value_u64().to_le_bytes());
-    digest.update(subject.local_slot_value().to_le_bytes());
-    digest.update(u64::from(subject.generation_value()).to_le_bytes());
-    digest.update([u8::from(passing)]);
-    WorkflowAssessmentEvidenceMeaning {
-        identity: hex(digest.finalize().into()),
-        producer: settlement.producer_identity().to_owned(),
-        family: settlement.output_family_identity().to_owned(),
-        query: required.query().to_owned(),
-        parameter_type: required.parameter_type().to_owned(),
-        result_type: required.result_type().to_owned(),
-        binding: required.binding().to_owned(),
-        subject,
-        proposal_identity: required.proposal_identity().to_owned(),
-        coverage_identity: required.coverage_identity().to_owned(),
-        source_identity,
-        passing,
-        publication_identity,
-        output_content_identity,
-        program_revision: required.program_revision().to_owned(),
-        retained_bytes: 0,
-        currentness_facts,
-    }
 }
 
 fn projection(

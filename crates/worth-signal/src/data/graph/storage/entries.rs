@@ -11,7 +11,9 @@ mod invalidation_authority;
 mod iteration;
 mod node_copy_work;
 mod node_mutation_work;
-pub(in crate::data::graph) use evaluation_mutation::NodeEvaluationMutation;
+pub(in crate::data::graph) use evaluation_mutation::{
+    ConsumerNodeMutation, NodeEvaluationMutation,
+};
 mod prepared_invalidation_cache;
 pub(crate) use prepared_invalidation_cache::PreparedInvalidationCache;
 mod snapshots;

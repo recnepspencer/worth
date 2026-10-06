@@ -8,6 +8,10 @@ pub(crate) trait PartitionAccess: Sync {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState>;
     fn partition_ids(&self) -> Vec<PartitionId>;
 
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        Box::new(self.partition_ids().into_iter())
+    }
+
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
         None
     }
@@ -50,6 +54,10 @@ impl PartitionAccess for BTreeMap<PartitionId, PartitionState> {
 
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.keys().copied().collect()
+    }
+
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        Box::new(self.keys().copied())
     }
 }
 
@@ -124,6 +132,26 @@ impl<S: PartitionAccess> PartitionAccess for OverlayStateView<'_, S> {
         merged
     }
 
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        let mut base = self.base_partitions.partition_ids_iter().peekable();
+        let mut staged = self.staged.partition_ids_iter().peekable();
+        Box::new(std::iter::from_fn(move || {
+            match (base.peek().copied(), staged.peek().copied()) {
+                (Some(left), Some(right)) => match left.cmp(&right) {
+                    std::cmp::Ordering::Less => base.next(),
+                    std::cmp::Ordering::Greater => staged.next(),
+                    std::cmp::Ordering::Equal => {
+                        staged.next();
+                        base.next()
+                    }
+                },
+                (Some(_), None) => base.next(),
+                (None, Some(_)) => staged.next(),
+                (None, None) => None,
+            }
+        }))
+    }
+
     fn touched_entity_slots(&self, partition_id: PartitionId) -> Option<Vec<usize>> {
         self.staged.touched_entity_slots(partition_id)
     }
@@ -169,4 +197,39 @@ fn partition_ids_are_canonical(partition_ids: impl IntoIterator<Item = Partition
         previous = current;
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Ids(Vec<PartitionId>);
+
+    impl PartitionAccess for Ids {
+        fn get_partition(&self, _: PartitionId) -> Option<&PartitionState> {
+            None
+        }
+        fn partition_ids(&self) -> Vec<PartitionId> {
+            self.0.clone()
+        }
+        fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+            Box::new(self.0.iter().copied())
+        }
+    }
+
+    #[test]
+    fn overlay_lazy_partition_merge_is_canonical_and_deduplicated() {
+        let base = Ids(vec![PartitionId(1), PartitionId(3), PartitionId(7)]);
+        let staged = Ids(vec![PartitionId(2), PartitionId(3), PartitionId(8)]);
+        let overlay = OverlayStateView::new(&base, &staged);
+        let expected = vec![
+            PartitionId(1),
+            PartitionId(2),
+            PartitionId(3),
+            PartitionId(7),
+            PartitionId(8),
+        ];
+        assert_eq!(overlay.partition_ids_iter().collect::<Vec<_>>(), expected);
+        assert_eq!(overlay.partition_ids(), expected);
+    }
 }

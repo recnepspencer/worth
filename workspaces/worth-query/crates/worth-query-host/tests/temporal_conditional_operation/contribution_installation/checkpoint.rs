@@ -245,7 +245,7 @@ fn checkpoint_bytes_are_denied(corrupted_bytes: Vec<u8>) {
     );
 }
 
-fn checkpoint_limits() -> WorthQueryInMemoryApplicationLimits {
+pub(super) fn checkpoint_limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         product_world_resources(1_024),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)

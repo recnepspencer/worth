@@ -7,15 +7,13 @@ use super::super::reporting::classify_task_execution_record;
 use super::super::types::{ExecutionRecordId, ExecutionReport, SemanticTaskRange};
 use super::artifacts::record_semantic_artifacts;
 use super::reporting::record_semantic_update;
-#[cfg(feature = "parallel")]
+
 use super::segments::StageSemanticBatch;
 
-#[cfg(feature = "parallel")]
 use super::super::types::EligibleTask;
-#[cfg(feature = "parallel")]
+
 use super::segments::{SemanticSegment, SemanticTaskUpdate};
 
-#[cfg(feature = "parallel")]
 pub(in crate::logic::planner) fn finalize_stage_batch(
     graph: &mut SignalGraph,
     stage_tasks: &[EligibleTask],
@@ -59,7 +57,6 @@ pub(in crate::logic::planner) fn finalize_stage_batch(
     Ok(())
 }
 
-#[cfg(feature = "parallel")]
 fn finalize_segment(
     graph: &mut SignalGraph,
     stage_tasks: &[EligibleTask],
@@ -73,7 +70,6 @@ fn finalize_segment(
     Ok(())
 }
 
-#[cfg(feature = "parallel")]
 fn finalize_update(
     graph: &mut SignalGraph,
     stage_tasks: &[EligibleTask],
@@ -96,19 +92,27 @@ fn finalize_update(
         verdict,
         memoized_origin,
         reuse_basis,
+        prepared_artifacts,
     ) = update.into_parts();
-    let after_finalize_image = graph.node_runtime_artifact_finalize_image(node)?;
-    if let Some(after_finalize_image) = after_finalize_image.as_ref() {
-        stamp_trace_summary_and_record_lineage_transition_from_image(
-            graph,
-            node,
-            before_artifact_state.as_ref(),
-            after_finalize_image,
-            identity.record_id,
-            identity.segment_id,
-            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
-        )?;
-    }
+    let already_prepared = prepared_artifacts.is_some();
+    let after_finalize_image = match prepared_artifacts {
+        Some(prepared) => prepared.after,
+        None => {
+            let image = graph.node_runtime_artifact_finalize_image(node)?;
+            if let Some(image) = image.as_ref() {
+                stamp_trace_summary_and_record_lineage_transition_from_image(
+                    graph,
+                    node,
+                    before_artifact_state.as_ref(),
+                    image,
+                    identity.record_id,
+                    identity.segment_id,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+                )?;
+            }
+            image
+        }
+    };
     let task = &stage_tasks[task_index];
     let task_record = classify_task_execution_record(
         identity.record_id,
@@ -131,7 +135,9 @@ fn finalize_update(
         recomputed,
         partition_aware,
     );
-    record_semantic_artifacts(graph, node, rewiring.as_ref())?;
+    if !already_prepared {
+        record_semantic_artifacts(graph, node, rewiring.as_ref())?;
+    }
     task_records.push(task_record);
     Ok(())
 }
@@ -221,7 +227,6 @@ pub(in crate::logic::planner) fn finalize_serial_stage_batch(
     ))
 }
 
-#[cfg(feature = "parallel")]
 fn segments_are_sorted(segments: &[SemanticSegment]) -> bool {
     segments.windows(2).all(|pair| {
         pair[0].task_range().start.0 < pair[1].task_range().start.0
@@ -230,7 +235,6 @@ fn segments_are_sorted(segments: &[SemanticSegment]) -> bool {
     })
 }
 
-#[cfg(feature = "parallel")]
 fn task_records_are_sorted(records: &[super::super::types::TaskExecutionRecord]) -> bool {
     records.windows(2).all(|pair| pair[0].id.0 <= pair[1].id.0)
 }

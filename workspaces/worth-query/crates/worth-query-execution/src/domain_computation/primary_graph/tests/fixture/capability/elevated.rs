@@ -75,7 +75,7 @@ worth_query_capability!(pub ElevatedTouchAccountCapability in IdentityExecutionS
 worth_query_capability!(pub RequestElevationCapability in IdentityExecutionSchema);
 worth_query_capability!(pub ApproveElevationCapability in IdentityExecutionSchema);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct ElevatedCapabilityTouchInput {
     pub account: String,
     pub elevation: Option<String>,
@@ -92,7 +92,7 @@ worth_query_declaration::worth_query_portable_type!(
     ElevatedCapabilityTouchInput => "worth.query.test.elevated-capability-touch-input.v1"
 );
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct RequestElevationInput {
     pub account: String,
     pub target_account: String,
@@ -112,7 +112,7 @@ worth_query_declaration::worth_query_portable_type!(
     RequestElevationInput => "worth.query.test.request-elevation-input.v1"
 );
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct ApproveElevationInput {
     pub account: String,
     pub elevation: String,

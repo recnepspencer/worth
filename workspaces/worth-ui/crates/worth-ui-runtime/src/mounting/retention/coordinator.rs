@@ -189,6 +189,15 @@ impl UiMountedFrameRetentionCoordinator {
         }
     }
 
+    /// The frame whose evidence answers [`Self::current_projection_input`].
+    pub(crate) fn current_projection_frame(&self) -> Option<UiMountedFrameIdentity> {
+        match self.authority.borrow().current_frame() {
+            UiMountedRetainedFrameLookup::Found { evidence, .. } => Some(evidence.frame()),
+            UiMountedRetainedFrameLookup::Expired { .. }
+            | UiMountedRetainedFrameLookup::Unknown { .. } => None,
+        }
+    }
+
     pub(crate) fn current_projection_input(
         &self,
         slot: worth_ui_query_binding::UiProjectionInputSlot,

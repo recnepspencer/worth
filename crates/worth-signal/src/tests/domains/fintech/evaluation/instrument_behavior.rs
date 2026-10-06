@@ -1,14 +1,14 @@
+use super::FintechEvaluationView;
 use crate::data::error::SignalError;
 use crate::facade::{AspectVersion, NodeEvaluationResult};
-use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationOutput;
 
 use super::super::aspects::{ALERT, CURVE, LIQUIDITY, PRICE, RISK, VOL};
 
 impl super::FintechEvaluationShape {
-    pub(super) fn evaluate_instrument_node(
+    pub(super) fn evaluate_instrument_node<V: FintechEvaluationView>(
         &self,
-        view: &mut EvaluationContext<'_, ()>,
+        view: &mut V,
     ) -> Result<Option<EvaluationOutput>, SignalError> {
         let node = view.node();
         if node == self.fx.eur_jpy {

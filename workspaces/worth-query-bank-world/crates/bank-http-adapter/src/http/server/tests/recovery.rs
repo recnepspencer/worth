@@ -11,6 +11,7 @@ use super::super::super::protocol::{
 };
 use super::fixture::application;
 use super::{bind_application, credential_json, BankHttpServerConfiguration};
+mod settling_completion;
 mod terminal_retry;
 mod transport;
 
@@ -183,7 +184,7 @@ fn notification_request_with_key(
     idempotency_key: &str,
 ) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v3",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": { "deadline_milliseconds": 5_000 },
@@ -248,7 +249,7 @@ fn recovery_request(
     recovery: &str,
 ) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v3",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": { "deadline_milliseconds": 5_000 },

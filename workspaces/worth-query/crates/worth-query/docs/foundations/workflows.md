@@ -192,7 +192,7 @@ let installed = WorthQueryApplicationWorkflowSpecInstallation::<
 ```
 
 - `begin(schema, program, resources)` names the installed schema, the installed program, and a `WorthQueryApplicationWorkflowResourceCeiling`.
-- `.operation::<Binding>()`, `.assessment::<Binding>()`, and `.condition::<Binding>()` add members. Each member must already be installed in the program.
+- `.operation::<Binding>()`, `.assessment::<Binding>()`, and `.condition_operand::<Binding>()` add members. Each member must already be installed in the program.
 - `.approval::<Capability, Operation, Input>()` adds an approval capability.
 - `.authoring_capability`, `.instance_start_capability`, and `.advance_capability` are required. Without them, `finish()` refuses.
 - `finish()` returns `WorthQueryInstalledApplicationWorkflowSpec`. It exposes `schema_binding()`, `program_revision()`, `resources()`, and `bind_definition(..)`.
@@ -243,7 +243,7 @@ A branch whose program has no installed vocabulary is refused before any effect.
 |---|---|---|---|
 | `Operation { operation, requires_workflow_authority }` | `operation::<Operation>(id, requires_workflow_authority)` or `operation_binding::<Binding>(id)` | Runs one installed operation. With `requires_workflow_authority`, the step issues authority that a guarded effect consumes. `operation_binding` takes the flag from `Binding::REQUIRES_WORKFLOW_AUTHORITY`. | `Completed` |
 | `Assessment(..)` | `assessment::<Query>(id)`, `assessment_for::<Query>(id, selector)`, `assessment_when_related_relation_present::<..>(..)` | Evaluates one installed query and records its result as evidence. | `Completed` |
-| `Condition(..)` | `condition::<Query>(id)` | Evaluates a pure predicate. The query's result binding must produce `bool`. It is not an effect. | `ConditionSatisfied`, `ConditionUnsatisfied` |
+| `Condition(..)` | `condition(id, source, operands)` | Evaluates a pure Bool expression over named query results. It is not an effect. | `ConditionSatisfied`, `ConditionUnsatisfied` |
 | `Approval(..)` | `approval::<Capability>(id)` | Waits for a signed decision by an authorized principal. | `Approved`, `Rejected` |
 | `EvidenceJoin(policy)` | `evidence_join(id, policy)` | Joins assessment evidence. `AllRequiredPassing` or `AllRequiredCompleted`. | `EvidenceSatisfied`, `EvidenceFailed` |
 | `Terminal` | `terminal(id)` | Ends the instance. | none |
@@ -512,15 +512,76 @@ let outcome = runtime
 
 ## Conditions
 
-A condition node evaluates a query whose result binding produces `bool`. When
-the instance returns `AwaitingCondition(required)`, run that query with an
-ordinary query request on the instance's branch, then pass its published result
-to a fresh advance request:
-`prepare_workflow_advance(..)?.accept_condition::<Binding>(&required, result)`.
-The binding, query, parameter type, and result type must match `required`. Refusals are
-`WorthQueryWorkflowConditionAcceptanceDenial` (`NotAwaitingCondition`,
-`RequirementMismatch`, `Replay(..)`, `Attempt(..)`). The instance then follows
-`ConditionSatisfied` or `ConditionUnsatisfied`.
+A condition node evaluates a Bool expression in the shared expression language.
+Its operands are named, typed results of installed queries:
+
+```rust,ignore
+let condition = builder.condition(
+    "review-capacity",
+    "uint64(30) / days >= uint64(5) && retained",
+    ApplicationWorkflowConditionOperands::new()
+        .query::<RetentionDaysQuery>("days")
+        .query::<RetainedQuery>("retained"),
+)?;
+```
+
+`condition` admits the source against the operand types, so a type error is
+an authoring denial and never reaches an instance. Integer literals are
+`Int64` and the language has no implicit widening, so a `u64` operand such as
+`days` compares with typed literals like `uint64(5)`.
+
+An operand's result type must implement `ApplicationExpressionOperandValue`,
+which gives its expression type and converts a value exactly. `bool`, the
+fixed-width integers, `f32`, `f64`, `String`, `Option<T>`, and `Vec<T>` are
+provided. A domain type states its own reading; a money amount, for example,
+reads as its exact count of minor units so comparisons never round:
+
+```rust,ignore
+impl ApplicationExpressionOperandValue for Money<USD> {
+    fn expression_type() -> ExpressionType {
+        ExpressionType::INT64
+    }
+
+    fn expression_value(&self) -> Result<ExpressionValue, ExpressionDenial> {
+        Ok(ExpressionValue::integer(i128::from(self.minor_units())))
+    }
+}
+```
+
+When the instance returns
+`AwaitingCondition(required)`, run each operand's query with an ordinary query
+request on the instance's branch, then supply every published result by name to
+a fresh advance request:
+
+```rust,ignore
+let outcome = request
+    .prepare_workflow_advance(&workflow, instance)?
+    .condition(&required)
+    .operand::<RetentionDaysBinding, _>("days", days)
+    .operand::<RetainedBinding, _>("retained", retained)
+    .accept()?;
+```
+
+`required.operands()` lists each operand's name, query, parameter type, result
+type, and binding. The supplied operands must be exactly those; an omitted,
+extra, or renamed operand is `RequirementMismatch`. Every source is checked for
+currentness before any value is read, so a bad source is refused as such, never
+as an expression result:
+
+| Case | Outcome |
+|---|---|
+| A source changed since it was read | `Attempt(..)` with `WorkflowAssessmentEvidenceMismatch`; read again and resubmit |
+| A source from another world, branch, or instance, or not exactly one row | `Attempt(..)` with `WorkflowTransitionAffinityMismatch` |
+| A source changed after acceptance was admitted, before publication | `Ok(WorkflowProgressOutcome::Application(Denied(..)))` with commit kind `ProductBasisStale`; nothing is published and the same request key can be retried |
+| Advancing actor's authority revoked after preparation | `Ok(WorkflowProgressOutcome::IdempotencyDenied(..))` whose `kind()` is `Authorization` and whose authorization denial is `StaleAuthorization` |
+
+An evaluation error, such as division
+by zero, is the attempt denial `WorkflowConditionExpressionDenied`, whose
+`expression()` carries the language denial; it selects neither successor.
+Refusals are `WorthQueryWorkflowConditionAcceptanceDenial`
+(`NotAwaitingCondition`, `RequirementMismatch`, `Replay(..)`, `Attempt(..)`).
+A true result follows `ConditionSatisfied` and a false one
+`ConditionUnsatisfied`.
 
 ## Approvals
 
@@ -613,7 +674,8 @@ still needs its own lane and its own key.
 ## Caller-pumped progression
 
 - There is no background scheduler. No timer advances an instance.
-- There is no callback, resume message, or inbound completion API.
+- An installed inbound source may complete an existing external-effect owner.
+  The callback does not run a workflow node or carry a resume message.
 - Every step happens because a caller sent a request. A caller that stops pumping leaves the instance where it is.
 - Each outcome is typed, so a caller (or an AI agent) can read the `Awaiting*` variant and choose the next request.
 - Each request carries its own idempotency key. Retrying a key replays the recorded outcome.
@@ -644,6 +706,39 @@ until the owner's receipt is accepted. While it is unsettled:
 - program adoption reports the instance as `OperationInOwnerCustody` and gives it no legal disposition.
 
 Accept the owner's receipt (see [Operations](#operations)), then retry.
+
+### Waiting for an inbound completion
+
+`await_inbound` names the exact effect of a preceding operation node and the
+same declared inbound binding that operation installed. Bank's approved-payment
+definition uses the public authoring shape:
+
+```rust,ignore
+let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
+let await_completion = builder.await_inbound::<ApprovedPaymentSettlementEffect>(
+    "await-inbound",
+    &apply,
+    approved_payment_inbound_binding(),
+    ApplicationWorkflowInboundWait::UntilInstanceDeadline,
+)?;
+```
+
+Validation rejects a wait if every reachable path does not have one dominating
+origin with the matching effect, protocol, source and limits. The installed
+source completes the original operation through Query custody and World. A
+fresh owner acceptance first settles the operation's receipt; before that,
+advance still returns `AwaitingOperation`. A subsequent fresh
+`advance_workflow` observes the terminal owner result at `await_inbound` and
+may enter its successor. A notification only cues those caller requests.
+Neither callback bytes nor a correlation token can resume the instance.
+
+Cancellation, migration and fork continuation remain refused while the
+operation is in owner custody. Once the exact owner settlement is accepted,
+ordinary fresh transition admission applies. Program adoption inventories the
+pending operation and requires its lawful disposition before retiring the
+definition; an accepted completion is not lost when the sender or observer
+stops. The [aftermath guide](../execution/application-aftermath-and-recovery.md#authenticated-inbound-completion)
+describes accepted-pending recovery and duplicate outcomes.
 
 ## Budgets and deadlines
 
@@ -702,10 +797,15 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `1`).
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `3`). Version 3 carries `await_inbound`; readers retain the supported v1/v2 drafts but reject a wait tag presented under either older version.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
-- `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
+- `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
+
+The [Bank payment archive court](../../../../../worth-query-bank-world/crates/bank-courtroom/tests/payment_workflow_archive.rs)
+uses its actual installed workflow spec to reauthor and bind a version 3 wait.
+It also refuses a changed source, a missing operation, and a different Rust
+effect marker with the same portable name.
 
 ## Denials
 
@@ -735,6 +835,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | Instance lifecycle | `WorkflowInstanceCancelled`, `WorkflowInstanceCompleted`, `WorkflowInstanceMigrated`, `WorkflowInstanceMigrationUnmapped`, `WorkflowInstanceHistoryUnavailable`, `WorkflowOperationInOwnerCustody` |
 | Budgets and time | `WorkflowInstanceCapacityUnavailable`, `WorkflowInstanceEvidenceCapacityUnavailable`, `WorkflowLineageCapacityUnavailable`, `WorkflowInstanceDeadlineElapsed`, `WorkflowTrustedTimeUnavailable`, `WorkflowHistoryReconstructionBudgetExceeded` |
 | Evidence | `WorkflowAssessmentEvidenceIncomplete`, `WorkflowAssessmentEvidenceMismatch` |
+| Condition | `WorkflowConditionExpressionDenied` |
 | Approval | `WorkflowApprovalPrincipalStale`, `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`, `WorkflowApprovalDelegationChanged`, `WorkflowApprovalAuthorityDenied` |
 | Transition | `WorkflowTransitionAlreadySettled`, `WorkflowTransitionNodeUnsupported`, `WorkflowTransitionOperationUnsettled`, `WorkflowTransitionIdentityUnavailable` |
 | Affinity and authority | `WorkflowInstanceAffinityMismatch`, `WorkflowInstanceAuthorityMismatch`, `WorkflowInstanceIntentIdentityUnavailable`, `WorkflowTransitionAffinityMismatch`, `WorkflowTransitionAuthorityMismatch` |

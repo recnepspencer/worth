@@ -1,5 +1,5 @@
 use super::{
-    DetailScopeKey, IndexedSubscriptionMembership, IndexedSubscriptionScope, ProducerAspectKey,
+    IndexedSubscriptionMembership, IndexedSubscriptionScope, ProducerAspectKey,
     ReverseSubscriptionIndex, SubscriberScopeBuckets,
 };
 use crate::data::retained_storage::{
@@ -28,21 +28,11 @@ impl RetainedStorageMeasurement for ProducerAspectKey {
         Ok(Charge::ZERO)
     }
 }
-impl RetainedStorageMeasurement for DetailScopeKey {
-    fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
-        work.visit()?;
-        let Self {
-            partition: _,
-            detail: _,
-        } = self;
-        Ok(Charge::ZERO)
-    }
-}
 impl RetainedStorageMeasurement for IndexedSubscriptionScope {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         match self {
-            Self::Unscoped | Self::WholePartition(_) | Self::Detail(_, _) => Ok(Charge::ZERO),
+            Self::Unscoped | Self::Path(_, _) => Ok(Charge::ZERO),
         }
     }
 }
@@ -59,16 +49,16 @@ impl RetainedStorageMeasurement for SubscriberScopeBuckets {
         let Self {
             all,
             unscoped,
-            whole_partitions,
-            exact_details,
-            partition_scoped,
+            same_path,
+            subtree_covering,
+            subtree_members,
         } = self;
         Charge::ZERO
             .checked_add(all.retained_heap_charge(work)?)?
             .checked_add(unscoped.retained_heap_charge(work)?)?
-            .checked_add(whole_partitions.retained_heap_charge(work)?)?
-            .checked_add(exact_details.retained_heap_charge(work)?)?
-            .checked_add(partition_scoped.retained_heap_charge(work)?)
+            .checked_add(same_path.retained_heap_charge(work)?)?
+            .checked_add(subtree_covering.retained_heap_charge(work)?)?
+            .checked_add(subtree_members.retained_heap_charge(work)?)
     }
 }
 impl RetainedStorageMeasurement for ReverseSubscriptionIndex {

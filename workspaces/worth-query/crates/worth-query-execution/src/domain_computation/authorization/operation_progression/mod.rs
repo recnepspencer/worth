@@ -1,11 +1,16 @@
 //! Owner-sealed progression from authorization into operation admission.
 
 mod authority_validation;
+pub(in crate::domain_computation) use authority_validation::{
+    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+};
 
-pub(in crate::domain_computation) use authority_validation::admit_capability_access;
 pub use authority_validation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use authority_validation::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use authority_validation::WorthQueryOperationAdmissionIdentity;
+pub(in crate::domain_computation) use authority_validation::{
+    admit_capability_access, admit_encoded_capability_access,
+};
 pub(in crate::domain_computation::authorization) use authority_validation::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,

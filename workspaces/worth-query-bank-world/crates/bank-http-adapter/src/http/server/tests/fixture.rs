@@ -44,11 +44,13 @@ pub(super) struct CausalHttpApplication {
     authentication: BankAuthenticationBoundary<CausalAuthenticationAdapter>,
 }
 
-impl BankHttpApplicationAuthenticator for CausalHttpApplication {
+impl super::super::inbound_completion::BankRailCompletionRuntime for CausalHttpApplication {
     fn runtime(&self) -> &BankIdentityRuntime {
         &self.runtime
     }
+}
 
+impl BankHttpApplicationAuthenticator for CausalHttpApplication {
     fn authenticate<'a>(
         &'a self,
         credential: BankHttpCredential,

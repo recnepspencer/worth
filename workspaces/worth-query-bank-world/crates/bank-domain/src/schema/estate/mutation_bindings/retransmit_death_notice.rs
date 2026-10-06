@@ -14,7 +14,7 @@ use worth_query_decl::facade::{
 use crate::{
     estate::{DeathNoticeId, EstateAction, EstateCaseId},
     model::BankPrincipalId,
-    proposals::{BankIdempotencyKey, CanonicalProposalPayload},
+    proposals::BankIdempotencyKey,
     schema::{
         BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, EstateCase,
         EstateCaseIdentityField, ExternalPrincipalMapping, Principal,
@@ -88,30 +88,6 @@ impl ApplicationMutationBinding<BankSchema> for RetransmitEstateDeathNoticeMutat
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 1),
             ApplicationCandidateResourceCeiling::bounded(32768, 0),
         );
-
-    fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-        crate::schema::operations::client_key_identity(key)
-    }
-
-    fn input_identity(input: &EstateAction) -> [u8; 32] {
-        let EstateAction::RetransmitDeathNotice {
-            estate,
-            notice,
-            subject,
-        } = input
-        else {
-            return super::invalid_variant_identity(
-                "application-retransmit-estate-death-notice",
-                input,
-            );
-        };
-        *CanonicalProposalPayload::new("application-retransmit-estate-death-notice")
-            .u64("estate", estate.get())
-            .u64("notice", notice.get())
-            .u64("subject", subject.get())
-            .derive_identity()
-            .bytes()
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,

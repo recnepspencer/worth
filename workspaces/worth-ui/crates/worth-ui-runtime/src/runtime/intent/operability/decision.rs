@@ -1,8 +1,9 @@
 use super::{
     UiIntentAffinityPosture, UiIntentConfirmationPosture, UiIntentMutabilityPosture,
     UiIntentOccupancyPosture, UiIntentPolicyPosture, UiIntentReadinessPosture,
-    UiIntentSupportPosture,
+    UiIntentSupportPosture, UiIntentWithheldCondition,
 };
+use crate::declaration::UiIntentOperabilityDependencyAxis;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UiIntentInoperableCause {
@@ -10,11 +11,20 @@ pub enum UiIntentInoperableCause {
     WrongWorld,
     RebindRequired,
     StaleTarget,
+    /// A condition source of `axis` holds no truth value. It ranks below
+    /// target and world causes and above every posture it could be mistaken
+    /// for, so a withheld policy never reads as a denied one.
+    ConditionWithheld {
+        axis: UiIntentOperabilityDependencyAxis,
+        condition: UiIntentWithheldCondition,
+    },
     PolicyDenied,
     Occupied,
     Readonly,
     Pending,
-    ConfirmationRequired { policy_identity: Box<str> },
+    ConfirmationRequired {
+        policy_identity: Box<str>,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -121,6 +131,14 @@ impl UiIntentOperabilityDecision {
     }
 
     #[cfg(test)]
+    pub(crate) fn with_affinity_for_test(&self, affinity: UiIntentAffinityPosture) -> Self {
+        Self {
+            affinity,
+            ..self.clone()
+        }
+    }
+
+    #[cfg(test)]
     pub(crate) fn ready_for_test() -> Self {
         Self::new(UiIntentOperabilityDecisionInput {
             contract_identity: "appearance-state-test-intent".into(),
@@ -146,7 +164,7 @@ impl Iterator for UiIntentInoperableCauseIter<'_> {
     type Item = UiIntentInoperableCause;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.next_priority < 9 {
+        while self.next_priority < CAUSE_PRIORITIES {
             let priority = self.next_priority;
             self.next_priority += 1;
             if let Some(cause) = cause_at(self.decision, priority) {
@@ -157,10 +175,15 @@ impl Iterator for UiIntentInoperableCauseIter<'_> {
     }
 }
 
+const CAUSE_PRIORITIES: u8 = 12;
+
 fn cause_at(
     decision: &UiIntentOperabilityDecision,
     priority: u8,
 ) -> Option<UiIntentInoperableCause> {
+    let withheld = |axis, posture: Option<UiIntentWithheldCondition>| {
+        posture.map(|condition| UiIntentInoperableCause::ConditionWithheld { axis, condition })
+    };
     match priority {
         0 if decision.support == UiIntentSupportPosture::Unsupported => {
             Some(UiIntentInoperableCause::Unsupported)
@@ -174,19 +197,40 @@ fn cause_at(
         3 if decision.affinity == UiIntentAffinityPosture::Stale => {
             Some(UiIntentInoperableCause::StaleTarget)
         }
-        4 if decision.policy == UiIntentPolicyPosture::Denied => {
+        4 => withheld(
+            UiIntentOperabilityDependencyAxis::Policy,
+            match decision.policy {
+                UiIntentPolicyPosture::Withheld(condition) => Some(condition),
+                UiIntentPolicyPosture::Admitted | UiIntentPolicyPosture::Denied => None,
+            },
+        ),
+        5 => withheld(
+            UiIntentOperabilityDependencyAxis::Mutability,
+            match decision.mutability {
+                UiIntentMutabilityPosture::Withheld(condition) => Some(condition),
+                UiIntentMutabilityPosture::Writable | UiIntentMutabilityPosture::Readonly => None,
+            },
+        ),
+        6 => withheld(
+            UiIntentOperabilityDependencyAxis::Readiness,
+            match decision.readiness {
+                UiIntentReadinessPosture::Withheld(condition) => Some(condition),
+                UiIntentReadinessPosture::Ready | UiIntentReadinessPosture::Pending => None,
+            },
+        ),
+        7 if decision.policy == UiIntentPolicyPosture::Denied => {
             Some(UiIntentInoperableCause::PolicyDenied)
         }
-        5 if decision.occupancy == UiIntentOccupancyPosture::InFlight => {
+        8 if decision.occupancy == UiIntentOccupancyPosture::InFlight => {
             Some(UiIntentInoperableCause::Occupied)
         }
-        6 if decision.mutability == UiIntentMutabilityPosture::Readonly => {
+        9 if decision.mutability == UiIntentMutabilityPosture::Readonly => {
             Some(UiIntentInoperableCause::Readonly)
         }
-        7 if decision.readiness == UiIntentReadinessPosture::Pending => {
+        10 if decision.readiness == UiIntentReadinessPosture::Pending => {
             Some(UiIntentInoperableCause::Pending)
         }
-        8 => decision
+        11 => decision
             .confirmation
             .required_policy_identity()
             .map(|identity| UiIntentInoperableCause::ConfirmationRequired {

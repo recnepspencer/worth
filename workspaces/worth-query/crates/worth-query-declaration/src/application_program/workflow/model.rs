@@ -2,10 +2,11 @@ use std::marker::PhantomData;
 
 use super::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowComponentExpansion, ApplicationWorkflowConditionRef,
-    ApplicationWorkflowDefinitionContentIdentity, ApplicationWorkflowDefinitionIdentity,
-    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowNodeIdentity,
-    ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ApplicationWorkflowValidationDenial,
+    ApplicationWorkflowAwaitInbound, ApplicationWorkflowComponentExpansion,
+    ApplicationWorkflowCondition, ApplicationWorkflowDefinitionContentIdentity,
+    ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionLimits,
+    ApplicationWorkflowNodeIdentity, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+    ApplicationWorkflowValidationDenial,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -15,7 +16,8 @@ pub enum ApplicationWorkflowNodeKind {
         requires_workflow_authority: bool,
     },
     Assessment(ApplicationWorkflowAssessmentRef),
-    Condition(ApplicationWorkflowConditionRef),
+    AwaitInbound(ApplicationWorkflowAwaitInbound),
+    Condition(ApplicationWorkflowCondition),
     Approval(ApplicationWorkflowApprovalRef),
     EvidenceJoin(ApplicationWorkflowEvidenceJoinPolicy),
     Terminal,

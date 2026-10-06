@@ -3,9 +3,9 @@ use std::ops::Bound::{Excluded, Unbounded};
 use std::sync::Arc;
 
 use crate::data::retained_storage::{
-    btree_structure_charge, ordered_index_charge, RetainedStorageCharge as Charge,
-    RetainedStorageMeasurement, RetainedStoragePreparation as Preparation,
-    RetainedStoragePreparationDenial as Denial,
+    arc_allocation_charge, btree_structure_charge, ordered_edit_growth_charge,
+    ordered_index_charge, RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
 };
 
 use super::{entry_handle, PersistentOrdMap, PersistentOrdMapStorage, SharedKey};
@@ -35,6 +35,43 @@ pub(crate) enum RetainedMapMutationOutcome<R> {
 impl<K: Clone + Ord + RetainedStorageMeasurement, V: Clone + RetainedStorageMeasurement>
     PersistentOrdMap<K, V>
 {
+    /// One selected persistent key edit after a fork, excluding the incoming
+    /// value. The immutable base is borrowed; only two overlay paths and the
+    /// old selected value can be copied.
+    pub(crate) fn selected_edit_growth_bound_with_growth(
+        &self,
+        key: &K,
+        prospective_edits: usize,
+        work: &mut Preparation,
+    ) -> Result<Charge, Denial> {
+        work.visit()?;
+        let (changes, retired) = match &self.storage {
+            PersistentOrdMapStorage::Exclusive(_) => (0, 0),
+            PersistentOrdMapStorage::ForkShared {
+                changes,
+                retired_base_intervals,
+                ..
+            } => (changes.len(), retired_base_intervals.len()),
+        };
+        let old_value = self
+            .get(key)
+            .map_or(Ok(Charge::ZERO), |value| value.retained_heap_charge(work))?;
+        let future_changes = changes
+            .checked_add(prospective_edits)
+            .ok_or(Denial::ChargeOverflow)?;
+        let future_retired = retired
+            .checked_add(prospective_edits)
+            .ok_or(Denial::ChargeOverflow)?;
+        ordered_edit_growth_charge::<SharedKey<K>, Arc<V>>(future_changes)?
+            .checked_add(ordered_edit_growth_charge::<SharedKey<K>, SharedKey<K>>(
+                future_retired,
+            )?)?
+            .checked_add(arc_allocation_charge::<K>()?)?
+            .checked_add(arc_allocation_charge::<V>()?)?
+            .checked_add(key.retained_heap_charge(work)?)?
+            .checked_add(old_value)
+    }
+
     #[cfg(test)]
     pub(crate) fn edit_with_retained_charge<R>(
         &mut self,
@@ -128,6 +165,46 @@ impl<K: Clone + Ord + RetainedStorageMeasurement, V: Clone + RetainedStorageMeas
                 )?)
             }
         }
+    }
+}
+
+impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
+    /// Heap that a bounded run of edits can allocate in the fork overlay.
+    /// The immutable base and selected value payloads remain shared; callers
+    /// account incoming values and copies of selected old values separately.
+    pub(crate) fn batch_edit_structure_growth_bound(
+        &self,
+        prospective_edits: usize,
+    ) -> Result<Charge, Denial> {
+        if prospective_edits == 0 {
+            return Ok(Charge::ZERO);
+        }
+        let (changes, retired) = match &self.storage {
+            PersistentOrdMapStorage::Exclusive(_) => (0, 0),
+            PersistentOrdMapStorage::ForkShared {
+                changes,
+                retired_base_intervals,
+                ..
+            } => (changes.len(), retired_base_intervals.len()),
+        };
+        let future_changes = changes
+            .checked_add(prospective_edits)
+            .ok_or(Denial::ChargeOverflow)?;
+        let future_retired = retired
+            .checked_add(prospective_edits)
+            .and_then(|count| count.checked_add(1))
+            .ok_or(Denial::ChargeOverflow)?;
+        // A readmission or retirement edits one changed-key path and at most
+        // three interval paths. One overlay value and up to three key cells
+        // may be new during that edit.
+        ordered_edit_growth_charge::<SharedKey<K>, Arc<V>>(future_changes)?
+            .checked_add(
+                ordered_edit_growth_charge::<SharedKey<K>, SharedKey<K>>(future_retired)?
+                    .checked_mul(3)?,
+            )?
+            .checked_add(arc_allocation_charge::<K>()?.checked_mul(3)?)?
+            .checked_add(arc_allocation_charge::<V>()?)?
+            .checked_mul(prospective_edits)
     }
 }
 

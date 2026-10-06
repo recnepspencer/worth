@@ -18,6 +18,18 @@ pub struct AspectMask<Mode> {
 }
 
 impl<Mode> AspectMask<Mode> {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.paths
+            .capacity()
+            .saturating_mul(std::mem::size_of::<CanonicalFieldPath>())
+            .saturating_add(
+                self.paths
+                    .iter()
+                    .map(CanonicalFieldPath::owned_allocation_capacity_bytes)
+                    .sum::<usize>(),
+            )
+    }
+
     pub fn new(paths: impl IntoIterator<Item = CanonicalFieldPath>) -> Self {
         let mut paths: Vec<_> = paths.into_iter().collect();
         paths.sort();

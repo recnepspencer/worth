@@ -4,7 +4,6 @@ use crate::validation::data::{
 use crate::{
     authority::commit::preparation::diagnostics::failures::PreparationFailureClass,
     authority::commit::preparation::planning::strategy::PreparationStrategy,
-    config::data::RelationalExecutionModel,
 };
 use serde::{Deserialize, Serialize};
 
@@ -101,7 +100,6 @@ pub struct InvariantExecutionMetadata {
     disposition: InvariantExecutionDisposition,
     plan_contract: Option<InvariantPlanContract>,
     has_merged_plan: bool,
-    execution_model: RelationalExecutionModel,
     preparation_strategy: Option<PreparationStrategy>,
     preparation_failures: Vec<PreparationFailureClass>,
     proof_boundary: Option<InvariantProofBoundarySummary>,
@@ -122,7 +120,6 @@ impl InvariantExecutionMetadata {
         disposition: InvariantExecutionDisposition,
         plan_contract: Option<InvariantPlanContract>,
         has_merged_plan: bool,
-        execution_model: RelationalExecutionModel,
         preparation_strategy: Option<PreparationStrategy>,
         preparation_failures: Vec<PreparationFailureClass>,
         proof_boundary: Option<InvariantProofBoundarySummary>,
@@ -139,7 +136,6 @@ impl InvariantExecutionMetadata {
             disposition,
             plan_contract,
             has_merged_plan,
-            execution_model,
             preparation_strategy,
             preparation_failures,
             proof_boundary,
@@ -174,14 +170,6 @@ impl InvariantExecutionMetadata {
             InvariantExecutionDisposition::Executed,
             plan_contract,
             has_merged_plan,
-            match preparation_strategy.selected_mode {
-                crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection::Serial => {
-                    RelationalExecutionModel::SingleLaneExecution
-                }
-                crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection::StagedParallel => {
-                    RelationalExecutionModel::ParallelPreparation
-                }
-            },
             Some(preparation_strategy),
             preparation_failures,
             proof_boundary,
@@ -227,10 +215,6 @@ impl InvariantExecutionMetadata {
 
     pub fn has_merged_plan(&self) -> bool {
         self.has_merged_plan
-    }
-
-    pub fn execution_model(&self) -> RelationalExecutionModel {
-        self.execution_model
     }
 
     pub fn preparation_strategy(&self) -> Option<PreparationStrategy> {

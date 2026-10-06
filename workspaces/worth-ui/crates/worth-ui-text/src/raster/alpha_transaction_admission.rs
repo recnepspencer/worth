@@ -2,7 +2,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRasterAttribution, UiGlyphRasterDemandIdentity, UiGlyphRasterKey, UiGlyphRasterLane,
     UiQualifiedTextLayoutIdentity,
@@ -118,6 +120,7 @@ pub fn admit_alpha_outline_transaction(
             if !is_alpha_source(record.key()) {
                 continue;
             }
+            worth_ui_host_contract::record_presentation_map_inserts(1);
             batch_attributions
                 .entry(record.key())
                 .or_insert(record.attribution());
@@ -153,7 +156,7 @@ pub fn admit_alpha_outline_transaction(
 pub(super) fn transaction_identity(
     batches: &[(&UiQualifiedTextLayout, &UiGlyphRasterDemandBatch)],
 ) -> [u8; 32] {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-alpha-raster-transaction-v1\0");
     digest.update(
         u64::try_from(batches.len())
@@ -196,6 +199,7 @@ impl TransactionCapacity {
         if next_bytes > MAX_STAGED_BYTES {
             return Err(UiGlyphRasterizationDenial::StagedByteCapacityExceeded);
         }
+        worth_ui_host_contract::record_presentation_map_inserts(1);
         self.keys.insert(key);
         self.predicted_bytes = next_bytes;
         Ok(())

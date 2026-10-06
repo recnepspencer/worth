@@ -1,16 +1,39 @@
-#[cfg(feature = "parallel")]
 use std::collections::BTreeMap;
 
-#[cfg(feature = "parallel")]
 use super::audit_surface::PrimaryAuditSurface;
-#[cfg(feature = "parallel")]
+use super::branch_checkpoint::BranchCheckpoint;
+use super::fixture::FintechWorld;
 use super::market_seed::MarketSeed;
-#[cfg(feature = "parallel")]
 use super::scenarios::setup_seeded_world;
-#[cfg(feature = "parallel")]
 use crate::facade::*;
 
-#[cfg(feature = "parallel")]
+fn capture(fixture: &mut FintechWorld, workers: Option<usize>) -> BranchCheckpoint {
+    match workers {
+        Some(workers) => fixture
+            .capture_active_checkpoint_with_workers(workers)
+            .unwrap(),
+        None => fixture.capture_active_checkpoint().unwrap(),
+    }
+}
+
+fn refresh(fixture: &mut FintechWorld, workers: Option<usize>) -> PrimaryAuditSurface {
+    match workers {
+        Some(workers) => fixture
+            .refresh_primary_audit_surface_with_workers(workers)
+            .unwrap(),
+        None => fixture.refresh_primary_audit_surface().unwrap(),
+    }
+}
+
+fn read(fixture: &mut FintechWorld, workers: Option<usize>) -> PrimaryAuditSurface {
+    match workers {
+        Some(workers) => fixture
+            .read_primary_audit_surface_with_workers(workers)
+            .unwrap(),
+        None => fixture.read_primary_audit_surface().unwrap(),
+    }
+}
+
 struct BranchDivergenceOutcome {
     main_audit: PrimaryAuditSurface,
     analysis_audit: PrimaryAuditSurface,
@@ -21,17 +44,16 @@ struct BranchDivergenceOutcome {
     branch_heads: BTreeMap<&'static str, Option<SignalSnapshotId>>,
 }
 
-#[cfg(feature = "parallel")]
-fn run_parallel_drift_workflow(executor: StageExecutor) -> BranchDivergenceOutcome {
+fn run_drift_workflow(workers: Option<usize>) -> BranchDivergenceOutcome {
     let mut fixture = setup_seeded_world();
-    let main_checkpoint = fixture.capture_active_checkpoint(executor).unwrap();
+    let main_checkpoint = capture(&mut fixture, workers);
 
     let analysis = fixture.open_branch("analysis-drift").unwrap();
     fixture.seed_market(MarketSeed::high_vol(17)).unwrap();
-    let analysis_audit = fixture.refresh_primary_audit_surface(executor).unwrap();
-    fixture.inject_primary_market_rollback(executor).unwrap();
+    let analysis_audit = refresh(&mut fixture, workers);
+    fixture.inject_primary_market_rollback().unwrap();
     let analysis_replay = fixture.replay_for_branch(analysis.clone());
-    fixture.capture_active_checkpoint(executor).unwrap();
+    capture(&mut fixture, workers);
 
     fixture
         .switch_branch(main_checkpoint.branch.clone())
@@ -39,17 +61,17 @@ fn run_parallel_drift_workflow(executor: StageExecutor) -> BranchDivergenceOutco
     fixture.restore_checkpoint(&main_checkpoint).unwrap();
     let correction = fixture.open_branch("correction-drift").unwrap();
     fixture.seed_market(MarketSeed::fx_dislocation(29)).unwrap();
-    let correction_audit = fixture.refresh_primary_audit_surface(executor).unwrap();
-    fixture.inject_primary_market_rollback(executor).unwrap();
+    let correction_audit = refresh(&mut fixture, workers);
+    fixture.inject_primary_market_rollback().unwrap();
     let correction_replay = fixture.replay_for_branch(correction.clone());
-    fixture.capture_active_checkpoint(executor).unwrap();
+    capture(&mut fixture, workers);
     let correction_lineage = fixture.main_risk_lineage();
 
     fixture
         .switch_branch(main_checkpoint.branch.clone())
         .unwrap();
     fixture.restore_checkpoint(&main_checkpoint).unwrap();
-    let main_audit = fixture.read_primary_audit_surface(executor).unwrap();
+    let main_audit = read(&mut fixture, workers);
 
     BranchDivergenceOutcome {
         main_audit,
@@ -69,23 +91,81 @@ fn run_parallel_drift_workflow(executor: StageExecutor) -> BranchDivergenceOutco
     }
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn fintech_serial_parallel_branch_divergence_keeps_overlap_honest_after_hostility() {
-    let serial = run_parallel_drift_workflow(StageExecutor::Serial);
-    let parallel = run_parallel_drift_workflow(StageExecutor::aggressive_parallel());
+    let serial = run_drift_workflow(None);
+    let checked_serial = run_drift_workflow(Some(1));
+    assert_eq!(serial.main_audit, checked_serial.main_audit);
+    assert_eq!(serial.analysis_audit, checked_serial.analysis_audit);
+    assert_eq!(serial.correction_audit, checked_serial.correction_audit);
+    assert_eq!(serial.branch_heads, checked_serial.branch_heads);
 
-    assert_eq!(serial.main_audit, parallel.main_audit);
-    assert_eq!(serial.analysis_audit, parallel.analysis_audit);
-    assert_eq!(serial.correction_audit, parallel.correction_audit);
-    assert_eq!(serial.branch_heads, parallel.branch_heads);
+    // Ordinary reads settle dependencies one target at a time; checked reads
+    // issue leased evaluations. Compare their audited values, then compare
+    // exact replay identities among checked requests with the same boundaries.
+    for workers in [2, 4] {
+        let parallel = run_drift_workflow(Some(workers));
 
-    let analysis_diff = compare_replay_slices(&serial.analysis_replay, &parallel.analysis_replay);
-    assert!(analysis_diff.mismatches.is_empty());
-    let correction_diff =
-        compare_replay_slices(&serial.correction_replay, &parallel.correction_replay);
-    assert!(correction_diff.mismatches.is_empty());
-    let lineage_diff =
-        compare_lineage_records(&serial.correction_lineage, &parallel.correction_lineage);
-    assert!(lineage_diff.mismatches.is_empty());
+        assert_eq!(serial.main_audit, parallel.main_audit);
+        assert_eq!(serial.analysis_audit, parallel.analysis_audit);
+        assert_eq!(serial.correction_audit, parallel.correction_audit);
+        assert_eq!(serial.branch_heads, parallel.branch_heads);
+
+        let analysis_diff =
+            compare_replay_slices(&checked_serial.analysis_replay, &parallel.analysis_replay);
+        assert!(
+            analysis_diff.mismatches.is_empty(),
+            "workers={workers} analysis replay start={:?}/{:?} end={:?}/{:?} count={}/{}; first differing frames: {:?}",
+            checked_serial.analysis_replay.start,
+            parallel.analysis_replay.start,
+            checked_serial.analysis_replay.end,
+            parallel.analysis_replay.end,
+            checked_serial.analysis_replay.frames.len(),
+            parallel.analysis_replay.frames.len(),
+            checked_serial
+                .analysis_replay
+                .frames
+                .iter()
+                .zip(&parallel.analysis_replay.frames)
+                .enumerate()
+                .find(|(_, (left, right))| left != right),
+        );
+        let correction_diff = compare_replay_slices(
+            &checked_serial.correction_replay,
+            &parallel.correction_replay,
+        );
+        assert!(
+            correction_diff.mismatches.is_empty(),
+            "workers={workers} correction replay start={:?}/{:?} end={:?}/{:?} count={}/{}; first differing frames: {:?}",
+            checked_serial.correction_replay.start,
+            parallel.correction_replay.start,
+            checked_serial.correction_replay.end,
+            parallel.correction_replay.end,
+            checked_serial.correction_replay.frames.len(),
+            parallel.correction_replay.frames.len(),
+            checked_serial
+                .correction_replay
+                .frames
+                .iter()
+                .zip(&parallel.correction_replay.frames)
+                .enumerate()
+                .find(|(_, (left, right))| left != right),
+        );
+        let lineage_diff = compare_lineage_records(
+            &checked_serial.correction_lineage,
+            &parallel.correction_lineage,
+        );
+        assert!(
+            lineage_diff.mismatches.is_empty(),
+            "workers={workers} correction lineage count={}/{}; first differing records: {:?}",
+            checked_serial.correction_lineage.len(),
+            parallel.correction_lineage.len(),
+            checked_serial
+                .correction_lineage
+                .iter()
+                .zip(&parallel.correction_lineage)
+                .enumerate()
+                .find(|(_, (left, right))| left != right),
+        );
+    }
 }

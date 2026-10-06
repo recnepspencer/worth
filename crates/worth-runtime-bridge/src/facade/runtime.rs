@@ -5,6 +5,7 @@ mod continuity_planning;
 mod debug;
 mod diagnostics;
 mod historical_and_replay;
+mod leased_delivery;
 mod merge;
 mod policy;
 mod routing_and_bulk;

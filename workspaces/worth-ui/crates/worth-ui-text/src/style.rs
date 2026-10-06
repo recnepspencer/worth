@@ -135,8 +135,9 @@ impl UiTextStyle {
     }
 
     pub fn identity_digest(&self) -> [u8; 32] {
-        use sha2::{Digest, Sha256};
-        let mut digest = Sha256::new();
+        use sha2::Digest;
+        use worth_ui_host_contract::UiCountedSha256;
+        let mut digest = UiCountedSha256::new();
         digest.update(b"worth-ui-text-style-v3\0");
         hash_identity_bytes(&mut digest, b"language", self.language.as_bytes());
         digest.update(self.font_size_millipoints.to_le_bytes());
@@ -212,13 +213,21 @@ fn qualified_tag(tag: [u8; 4]) -> bool {
     tag.iter().all(|byte| (0x20..=0x7e).contains(byte))
 }
 
-fn hash_identity_bytes(digest: &mut sha2::Sha256, domain: &[u8], bytes: &[u8]) {
+fn hash_identity_bytes(
+    digest: &mut worth_ui_host_contract::UiCountedSha256,
+    domain: &[u8],
+    bytes: &[u8],
+) {
     use sha2::Digest;
     hash_identity_len(digest, domain, bytes.len());
     digest.update(bytes);
 }
 
-fn hash_identity_len(digest: &mut sha2::Sha256, domain: &[u8], len: usize) {
+fn hash_identity_len(
+    digest: &mut worth_ui_host_contract::UiCountedSha256,
+    domain: &[u8],
+    len: usize,
+) {
     use sha2::Digest;
     digest.update(domain);
     digest.update(

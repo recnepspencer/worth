@@ -80,7 +80,7 @@ worth_query_application_contribution! {
                 .operation_write(ExecuteTemporal::reference(), IntentLifecycleField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentEffectField::reference())
                 .operation_emit(ExecuteTemporal::reference(), TemporalExecutionEffect::reference())
-                .operation_decision_fact_budget(AmendTemporal::reference(), 6)
+                .operation_decision_fact_budget(AmendTemporal::reference(), 7)
                 .operation_projection_work_budget(AmendTemporal::reference(), 12)
                 .operation_read_field(AmendTemporal::reference(), IntentIdentityField::reference())
                 .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())
@@ -134,7 +134,7 @@ worth_query_principal_binding!(
 pub struct TemporalInput(pub String);
 worth_query_portable_type!(TemporalInput => "worth.query.test.host.temporal.input.v1");
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct AmendTemporalInput {
     pub revision: u64,
     pub due: u64,

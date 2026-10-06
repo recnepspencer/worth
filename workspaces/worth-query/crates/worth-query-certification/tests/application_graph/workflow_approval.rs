@@ -64,8 +64,11 @@ mod lineage_evidence_budget;
 mod lineage_pin_capacity;
 #[path = "workflow_approval/lineage_step_budget.rs"]
 mod lineage_step_budget;
+#[path = "workflow_approval/operation_input_identity.rs"]
+mod operation_input_identity;
 #[path = "workflow_approval/operation_requirement.rs"]
 mod operation_requirement;
+
 use journey::approval_journey;
 #[path = "workflow_approval/program_adoption.rs"]
 mod program_adoption;

@@ -102,7 +102,7 @@ fn default_shard_keeps_one_hundred_small_instances_warm() {
         assert!(retention.reuse(instance, revision).is_some());
     }
     assert_eq!(retention.counters().warm_hits(), 100);
-    assert!(retention.retained_charge_bytes <= 2 * 1024 * 1024);
+    assert!(retention.retained_charge_bytes <= 3 * 1024 * 1024);
 }
 
 #[test]

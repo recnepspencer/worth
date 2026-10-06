@@ -1,11 +1,14 @@
 use std::sync::{Arc, Mutex};
 
 use worth_runtime_world::facade::{
-    ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial,
-    RuntimeWorldRecoveryPort,
+    ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
 };
 
-use super::{WorthQueryUnpublishedIdempotencyKey, WorthQueryUnpublishedIdempotencyStore};
+use super::{
+    WorthQueryUnpublishedIdempotencyEntry, WorthQueryUnpublishedIdempotencyKey,
+    WorthQueryUnpublishedIdempotencyPosture, WorthQueryUnpublishedIdempotencyStore,
+};
+use crate::domain_computation::primary_graph::provider::ManagedUnpublishedAttempt;
 
 /// Linear Query custody paired with World's already-reserved recovery slot.
 /// A returned terminal consumes it explicitly; unwind reconciles this one
@@ -14,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryUnpublishedIde
 {
     store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
     key: WorthQueryUnpublishedIdempotencyKey,
+    entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
     recovery_handle: ProductUnpublishedRecoveryHandle,
     recovery: RuntimeWorldRecoveryPort,
     armed: bool,
@@ -23,12 +27,14 @@ impl WorthQueryUnpublishedIdempotencyReservation {
     pub(super) fn new(
         store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
         key: WorthQueryUnpublishedIdempotencyKey,
+        entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
         recovery_handle: ProductUnpublishedRecoveryHandle,
         recovery: RuntimeWorldRecoveryPort,
     ) -> Self {
         Self {
             store,
             key,
+            entry,
             recovery_handle,
             recovery,
             armed: true,
@@ -36,36 +42,42 @@ impl WorthQueryUnpublishedIdempotencyReservation {
     }
 
     pub(in crate::domain_computation::primary_graph) fn release(mut self) {
-        self.with_store(|store, key, handle| store.release_exact(key, handle));
+        let removed = self.with_store(|store, key, handle| store.release_exact(key, handle));
         self.armed = false;
+        drop(removed);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain(
+    pub(in crate::domain_computation::primary_graph::provider) fn retain_managed(
         mut self,
-        effects: &ProductUnpublishedOwnerEffects,
+        returned_handle: ProductUnpublishedRecoveryHandle,
+        managed: ManagedUnpublishedAttempt,
     ) {
-        let returned_handle = effects.recovery_handle();
-        assert_eq!(
-            self.recovery_handle, returned_handle,
-            "World returned the recovery identity preissued to this publication"
-        );
-        self.with_store(|store, key, handle| store.retain_exact(key, handle));
+        assert_eq!(self.recovery_handle, returned_handle);
+        {
+            let mut entry = self
+                .entry
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            assert_eq!(entry.recovery_handle, returned_handle);
+            assert!(entry.managed.replace(managed).is_none());
+            entry.posture = WorthQueryUnpublishedIdempotencyPosture::Retained;
+        }
         self.armed = false;
     }
 
-    fn with_store(
+    fn with_store<R>(
         &self,
         update: impl FnOnce(
             &mut WorthQueryUnpublishedIdempotencyStore,
             &WorthQueryUnpublishedIdempotencyKey,
             &ProductUnpublishedRecoveryHandle,
-        ),
-    ) {
+        ) -> R,
+    ) -> R {
         let mut store = self
             .store
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        update(&mut store, &self.key, &self.recovery_handle);
+        update(&mut store, &self.key, &self.recovery_handle)
     }
 }
 
@@ -80,14 +92,16 @@ impl Drop for WorthQueryUnpublishedIdempotencyReservation {
             self.recovery.inspect_effects(&self.recovery_handle),
             Err(RuntimeWorldRecoveryDenial::MissingRecord)
         );
-        self.with_store(|store, key, handle| {
+        let removed = self.with_store(|store, key, handle| {
             if retained {
                 store.retain_exact(key, handle);
+                None
             } else {
-                store.release_exact(key, handle);
+                store.release_exact(key, handle)
             }
         });
         self.armed = false;
+        drop(removed);
     }
 }
 

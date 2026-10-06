@@ -5,9 +5,9 @@ pub use crate::data::comparator::VersionComparatorResolver as ComparatorResolver
 pub use crate::data::comparator::{ComparatorPolicyResolver, TierPolicyResolver};
 pub use crate::data::graph::{
     EvaluationStrategy, GcPressure, GraphMaterializer, GraphObserver, ObservationLevel,
-    ParallelismHint,
 };
 pub use crate::data::proof::FrontierValidationDecision;
+pub use crate::logic::checked_context::CheckedEvaluationContext;
 pub use crate::logic::checkpoint::CheckpointRuntime;
 pub use crate::logic::context::EvaluationContext;
 pub use crate::logic::evaluation::EvaluationRequestMode as RunMode;
@@ -18,16 +18,14 @@ pub use crate::logic::evaluation::{
     TemporalConditionResolver,
 };
 pub use crate::logic::events::{EventBus, EventFlushError, SubscriberRegistryError};
-#[cfg(feature = "parallel")]
-pub use crate::logic::planner::ParallelExecutionPolicy;
 pub use crate::logic::planner::{
     build_evaluation_plan, execute_prepared_plan, CandidateTask, EligibleTask, EvaluationPlan,
     ExecutedTask, ExecutionPruneReason, ExecutionRecordId, ExecutionReport, ExecutionStage,
     FrontierRouteEvidenceReason, FrontierRouteEvidenceReceipt, FrontierRouteEvidenceReceiptError,
     FrontierRouteSerialFallbackReason, ParallelAdmissionReason, PlanSummary,
-    ResolvedExecutionStrategy, ResolvedMaintenanceStrategy, SemanticSegmentId, SemanticTaskRange,
-    StageBarrier, StageExecutionOutcome, StageExecutionRecord, StageExecutor, TaskExecutionOutcome,
-    TaskExecutionRecord, TaskReason,
+    ResolvedExecutionStrategy, ResolvedMaintenanceStrategy, ResolvedSignalPlannerPolicy,
+    SemanticSegmentId, SemanticTaskRange, StageBarrier, StageExecutionOutcome,
+    StageExecutionRecord, TaskExecutionOutcome, TaskExecutionRecord, TaskReason,
 };
 pub use crate::logic::prepared::ExecutionReadView as ReadView;
 pub use crate::logic::prepared::PreparedEvaluation as PlannedRun;

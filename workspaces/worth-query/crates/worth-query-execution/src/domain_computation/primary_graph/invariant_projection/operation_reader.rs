@@ -15,13 +15,14 @@ mod decision_plan;
 mod prior_output;
 
 pub use current_output::{
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection,
 };
 pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
 };
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
+pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
 
 use super::{
     WorthQueryApplicationInvariantProjectionAuthority,
@@ -34,8 +35,8 @@ use super::{
 };
 use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity;
 use crate::domain_computation::primary_graph::{
-    application_attempt::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact},
-    WorthQueryAdmittedApplicationOperation, WorthQueryEntityResolutionDenial,
+    application_attempt::WorthQueryApplicationFactKey, WorthQueryAdmittedApplicationOperation,
+    WorthQueryEntityResolutionDenial,
 };
 
 /// An invariant projection reader restricted to one operation's declared reads.
@@ -335,10 +336,17 @@ where
         super::super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         super::WorthQueryRealizedProjectionScope,
         BTreeSet<WorthQueryApplicationFactKey>,
-        Vec<WorthQueryApplicationObservedFact>,
+        Vec<super::super::application_attempt::WorthQueryApplicationObservedFact>,
+        Vec<super::ConsumedOutputEvidence>,
     ) {
-        let (lease, scope, dependent_source_facts) =
+        let (lease, scope, dependent_source_facts, consumed_outputs) =
             self.snapshot.into_lease_and_realized_scope(self.product);
-        (lease, scope, self.decision_facts, dependent_source_facts)
+        (
+            lease,
+            scope,
+            self.decision_facts,
+            dependent_source_facts,
+            consumed_outputs,
+        )
     }
 }

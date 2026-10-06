@@ -4,6 +4,7 @@ use crate::data::proof::invalidation::binding::{
     DependencyRevision, OutputCommitOrdinal, ResolvedDependencyCause,
 };
 use crate::data::retained_storage::RetainedStoragePreparation as Work;
+use crate::data::retained_storage::{RetainedStorageForkGrowth, RetainedStorageForkPreparation};
 
 fn causes(node: u32) -> NormalizedCauseSet {
     NormalizedCauseSet::prepare(
@@ -203,4 +204,131 @@ fn ordinary_slot_preparation_keeps_single_owner_bookkeeping_inline() {
     drop(cursor);
     assert_eq!(store.get(current).unwrap().len(), 1);
     assert_eq!(store.get(other).unwrap().len(), 1);
+}
+
+#[test]
+fn epoch_virtual_transitions_match_sequential_slot_reuse_and_final_causes() {
+    let mut source = CanonicalCauseSetStore::default();
+    let producer = source.insert_normalized(causes(0));
+    let mut fork_work = Work::new(usize::MAX);
+    source.prepare_fork_charge(&mut fork_work).unwrap();
+    source.prepare_fork_growth(&mut fork_work).unwrap();
+    let mut sequential = source.fork_persistent();
+    sequential.release(producer).unwrap();
+    // The first empty admission owns no slot. A later admission takes the
+    // producer's release, settles, then a sibling takes that same slot.
+    let transient = sequential.insert_normalized(causes(1));
+    sequential.release(transient).unwrap();
+    let sibling = sequential.insert_normalized(causes(2));
+    let consumer = sequential.insert_normalized(causes(3));
+
+    let mut cursor = source.prepare_cause_slots().unwrap();
+    let mut work = EvaluationWork::Ordinary;
+    cursor.release(producer, &mut work).unwrap();
+    let first_empty = cursor
+        .replacement(PendingCauseSetId::EMPTY, true, &mut work)
+        .unwrap();
+    let first_live = cursor
+        .epoch_replacement_after(first_empty.handle(), false, &mut work)
+        .unwrap();
+    let settled = cursor
+        .epoch_replacement_after(first_live.handle(), true, &mut work)
+        .unwrap();
+    let sibling_slot = cursor
+        .replacement(PendingCauseSetId::EMPTY, false, &mut work)
+        .unwrap();
+    let final_slot = cursor
+        .epoch_replacement_after(settled.handle(), false, &mut work)
+        .unwrap();
+    assert_eq!(sibling_slot.handle(), sibling);
+    assert_eq!(final_slot.handle(), consumer);
+
+    let mut draft = source.fork_persistent();
+    let mut retained = Work::new(usize::MAX);
+    draft
+        .release_epoch_accounted(producer, &mut retained)
+        .unwrap();
+    for slot in [first_empty, first_live, settled, sibling_slot, final_slot] {
+        draft.apply_epoch_virtual_slot(slot, &mut retained).unwrap();
+    }
+    draft
+        .finish_epoch_virtual_slot(sibling, causes(2), &mut retained)
+        .unwrap();
+    draft
+        .finish_epoch_virtual_slot(consumer, causes(3), &mut retained)
+        .unwrap();
+    assert_eq!(
+        draft.slot_generations.iter().copied().collect::<Vec<_>>(),
+        sequential
+            .slot_generations
+            .iter()
+            .copied()
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        draft.free_indices.iter().copied().collect::<Vec<_>>(),
+        sequential.free_indices.iter().copied().collect::<Vec<_>>()
+    );
+    assert_eq!(draft.occupied_set_count, sequential.occupied_set_count);
+    assert_eq!(draft.output_commit_reference_count_for_test(1), 2);
+    assert_eq!(sequential.output_commit_reference_count_for_test(1), 2);
+    for (handle, owner) in [(sibling, NodeId::new(2, 0)), (consumer, NodeId::new(3, 0))] {
+        assert_eq!(draft.get(handle).unwrap()[0].key.consumer, owner);
+        assert_eq!(sequential.get(handle).unwrap()[0].key.consumer, owner);
+    }
+}
+
+#[test]
+fn epoch_virtual_continuation_checks_work_before_touching_slot_state() {
+    let source = CanonicalCauseSetStore::default();
+    let mut measured_cursor = source.prepare_cause_slots().unwrap();
+    let first = measured_cursor
+        .replacement(
+            PendingCauseSetId::EMPTY,
+            false,
+            &mut EvaluationWork::Ordinary,
+        )
+        .unwrap();
+    let mut measured = Work::new(usize::MAX);
+    let measured_slot = measured_cursor
+        .epoch_replacement_after(
+            first.handle(),
+            true,
+            &mut EvaluationWork::Conditional(&mut measured),
+        )
+        .unwrap();
+    assert!(measured.visits() > 0);
+
+    let mut denied_cursor = source.prepare_cause_slots().unwrap();
+    let first = denied_cursor
+        .replacement(
+            PendingCauseSetId::EMPTY,
+            false,
+            &mut EvaluationWork::Ordinary,
+        )
+        .unwrap();
+    let mut denied = Work::new(measured.visits() - 1);
+    assert!(denied_cursor
+        .epoch_replacement_after(
+            first.handle(),
+            true,
+            &mut EvaluationWork::Conditional(&mut denied),
+        )
+        .is_err());
+    assert!(denied_cursor.released.is_empty());
+    assert!(denied_cursor
+        .allocated
+        .contains(first.handle().index.unwrap().get()));
+    let mut funded = Work::new(measured.visits());
+    let retried_slot = denied_cursor
+        .epoch_replacement_after(
+            first.handle(),
+            true,
+            &mut EvaluationWork::Conditional(&mut funded),
+        )
+        .unwrap();
+    assert_eq!(retried_slot.handle(), measured_slot.handle());
+    assert_eq!(denied_cursor.released, measured_cursor.released);
+    assert_eq!(source.sets.len(), 0);
+    assert_eq!(source.free_indices.len(), 0);
 }

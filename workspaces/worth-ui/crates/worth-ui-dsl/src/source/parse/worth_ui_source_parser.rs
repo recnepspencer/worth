@@ -141,6 +141,12 @@ fn parse_next_declaration(
         Some(WorthUiSourceTokenKind::Identifier(keyword)) if keyword == "layout" => {
             parse_block_declaration(module_id, source_length, stream, BlockKind::Layout)
         }
+        Some(WorthUiSourceTokenKind::Identifier(keyword)) if keyword == "condition" => {
+            parse_block_declaration(module_id, source_length, stream, BlockKind::Condition)
+        }
+        Some(WorthUiSourceTokenKind::Identifier(keyword)) if keyword == "derived" => {
+            parse_block_declaration(module_id, source_length, stream, BlockKind::Derived)
+        }
         Some(_) => Err(unexpected_token_diagnostic(
             stream.next().expect("peeked token should exist"),
             "expected a top-level declaration keyword",
@@ -223,6 +229,8 @@ fn parse_block_declaration(
         BlockKind::QueryScalar => WorthUiParsedSourceDeclaration::QueryScalar(declaration),
         BlockKind::QueryCollection => WorthUiParsedSourceDeclaration::QueryCollection(declaration),
         BlockKind::Layout => WorthUiParsedSourceDeclaration::Layout(declaration),
+        BlockKind::Condition => WorthUiParsedSourceDeclaration::Condition(declaration),
+        BlockKind::Derived => WorthUiParsedSourceDeclaration::Derived(declaration),
     })
 }
 
@@ -347,6 +355,8 @@ enum BlockKind {
     QueryScalar,
     QueryCollection,
     Layout,
+    Condition,
+    Derived,
 }
 
 fn service_block_kind(keyword: &str) -> Option<BlockKind> {

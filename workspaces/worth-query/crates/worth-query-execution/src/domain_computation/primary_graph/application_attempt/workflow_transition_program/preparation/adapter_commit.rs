@@ -21,12 +21,11 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Ok(runtime.compare_and_commit_workflow_advance(prepared, idempotency))
     }
 
-    pub fn compare_and_commit_condition<Schema, Operation, Input, Scope, Binding>(
+    pub fn compare_and_commit_condition<Schema, Operation, Input, Scope>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         prepared: super::super::PreparedWorkflowCondition<Schema, Operation, Input, Scope>,
-        source: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
-            Binding::Query,
-            bool,
+        sources: crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
+            Schema,
         >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
@@ -37,14 +36,8 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Schema: ApplicationSchema,
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
-        Binding: worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>
-            + 'static,
-        Binding::Query:
-            worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
-                    Schema,
-                > + 'static,
     {
-        let prepared = prepared.settle::<Binding>(runtime, source)?;
+        let prepared = prepared.settle(runtime, sources)?;
         Ok(runtime.compare_and_commit_workflow_advance(prepared, idempotency))
     }
 
@@ -88,10 +81,14 @@ impl WorthQueryWorkflowAdvanceAdapter {
             )
             .map_err(|_| owner_custody_denial(required))?;
         use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody as Custody;
-        // A committed effect settles directly; a dispatch-pending one settles
-        // only with the recovery admission that owner custody asked for.
+        // An owner-settled external effect has the same original operation
+        // receipt. Receipt validation rechecks its canonical terminal; a
+        // dispatch-pending effect still requires exact safe-retry admission.
         let prepared = match (custody, recovery) {
             (Custody::Committed(receipt), None) => prepared.settle::<Binding>(runtime, &receipt)?,
+            (Custody::ExternallySettled(receipt), _) => {
+                prepared.settle::<Binding>(runtime, &receipt)?
+            }
             (Custody::DispatchPending(receipt), Some(recovery)) => {
                 prepared.settle_recovered::<Binding>(runtime, &receipt, recovery)?
             }

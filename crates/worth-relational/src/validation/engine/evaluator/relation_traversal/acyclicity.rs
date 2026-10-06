@@ -9,7 +9,7 @@ use super::relation_successors::PreparedSuccessorTraversal;
 use super::traversal_budget::{traversal_budget_exceeded_violation, RelationTraversalBudget};
 
 pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredAcyclicityContract,
 ) -> Option<InvariantViolation> {
@@ -22,7 +22,10 @@ pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
     }
 
     context.metrics().count_relation_contracts_evaluated(1);
-    let planned_successors = planned_successor_map(&scope.planned_edges);
+    let planned_successors = planned_successor_map(&scope.planned_edges, context);
+    if !context.checkpoint(0) {
+        return None;
+    }
     let traversal = PreparedSuccessorTraversal {
         scope,
         class,
@@ -31,12 +34,16 @@ pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
         planned_successors: &planned_successors,
     };
     for edge in &scope.planned_edges {
+        if !context.checkpoint(1) {
+            return None;
+        }
         context.metrics().count_relation_slot_scans(1);
         let reaches_cycle = if edge.source == edge.target {
             Ok(true)
         } else {
             relation_kind_reaches(
                 &traversal,
+                context,
                 context.relation_integrity_scope_budget(),
                 edge.target.clone(),
                 edge.source.clone(),
@@ -68,6 +75,7 @@ pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
 
 fn relation_kind_reaches(
     traversal: &PreparedSuccessorTraversal<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     budget: &crate::config::data::RelationIntegrityScopeBudget,
     start: EntityReference,
     target: EntityReference,
@@ -89,7 +97,13 @@ fn relation_kind_reaches(
     })?;
 
     while let Some(entity_id) = frontier.pop() {
-        for next in traversal.successors(&entity_id, &mut traversal_budget)? {
+        if !context.checkpoint(1) {
+            return Ok(false);
+        }
+        for next in traversal.successors(&entity_id, &mut traversal_budget, context)? {
+            if !context.checkpoint(1) {
+                return Ok(false);
+            }
             if next == target {
                 return Ok(true);
             }

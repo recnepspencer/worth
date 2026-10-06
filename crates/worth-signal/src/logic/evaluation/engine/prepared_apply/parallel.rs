@@ -54,6 +54,7 @@ pub(crate) fn build_prepared_apply_commit_packet(
     _dependency_updates: u32,
     dependency_inputs: EffectDependencyInputs,
     defer_snapshot_commit: bool,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
 ) -> Result<ApplyCommitPacket, ApplyCommitBuildError> {
     if !matches!(prepared.outcome, PreparedEvaluationOutcome::Evaluate) {
         let passive =
@@ -85,7 +86,7 @@ pub(crate) fn build_prepared_apply_commit_packet(
                 effect,
                 graph.node_eval_config(node)?.output_equivalence.clone(),
                 defer_snapshot_commit,
-                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+                work,
             )
             .map_err(ApplyCommitBuildError::Signal);
     }
@@ -122,6 +123,7 @@ pub(crate) fn build_prepared_apply_commit_packet(
                     prepared.keyed.as_ref(),
                     reuse_decision.strategy,
                     previous_reuse_boundary_authority.as_ref(),
+                    work,
                 )?;
             let admission_boundary_evidence =
                 hydrate_reuse_boundary_evidence(ReuseBoundaryEvidence {
@@ -186,7 +188,7 @@ pub(crate) fn build_prepared_apply_commit_packet(
                     effect,
                     graph.node_eval_config(node)?.output_equivalence.clone(),
                     defer_snapshot_commit,
-                    &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+                    work,
                 )
                 .map_err(ApplyCommitBuildError::Signal)?
         }

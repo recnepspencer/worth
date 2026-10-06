@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 
 worth_query_capability!(pub CompleteElevationReviewCapability in IdentityExecutionSchema);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct CompleteElevationReviewInput {
     pub account: String,
     pub elevation: String,

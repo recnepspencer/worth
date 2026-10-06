@@ -46,6 +46,7 @@ pub(super) fn append_member(
         | ApplicationSchemaMember::OperationDecisionFactBudget { .. }
         | ApplicationSchemaMember::OperationProjectionWorkBudget { .. }
         | ApplicationSchemaMember::OperationExternalEffect { .. }
+        | ApplicationSchemaMember::OperationInboundOccurrence { .. }
         | ApplicationSchemaMember::OperationAftermath { .. } => {
             operation::append_operation_member(basis, &prefix, member)
         }

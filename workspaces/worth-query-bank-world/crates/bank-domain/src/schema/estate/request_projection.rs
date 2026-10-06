@@ -1,8 +1,8 @@
 use worth_query_decl::facade::application_capability::{
-    ApplicationCapabilityEntitySelector, ApplicationCapabilityGovernedInputIdentity,
-    ApplicationCapabilityRequest, ApplicationCapabilityRequestContext,
-    ApplicationCapabilityRequestProjection, ApplicationCapabilityRequestProjectionDenial,
-    ApplicationCapabilityRevocationRequest, ApplicationCapabilityRevocationRequestProjection,
+    ApplicationCapabilityEntitySelector, ApplicationCapabilityRequest,
+    ApplicationCapabilityRequestContext, ApplicationCapabilityRequestProjection,
+    ApplicationCapabilityRequestProjectionDenial, ApplicationCapabilityRevocationRequest,
+    ApplicationCapabilityRevocationRequestProjection,
     ApplicationCapabilityRevocationRequestProjectionDenial,
 };
 
@@ -76,24 +76,6 @@ simple_estate_request!(
 impl ApplicationCapabilityRequest<BankSchema, ReleaseEstateCapability> for EstateAction {
     type Scope = EstateCase;
     type Context = EstateActionContext;
-
-    fn governed_input_identity(&self) -> Option<ApplicationCapabilityGovernedInputIdentity> {
-        let EstateAction::ReleaseEstate {
-            estate,
-            executor,
-            authority,
-            review,
-        } = *self
-        else {
-            return None;
-        };
-        Some(ApplicationCapabilityGovernedInputIdentity::four_u64([
-            estate.get(),
-            executor.get(),
-            authority.get(),
-            review.get(),
-        ]))
-    }
 
     fn capability_request(
         &self,
@@ -242,41 +224,4 @@ fn estate_request(
         ),
         ApplicationCapabilityRequestContext::new(EstateActionContext::reference()),
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::BTreeSet;
-
-    use super::*;
-
-    #[test]
-    fn release_input_identity_covers_every_command_dimension() {
-        let identities = [
-            release(1, 2, 3, 4),
-            release(5, 2, 3, 4),
-            release(1, 5, 3, 4),
-            release(1, 2, 5, 4),
-            release(1, 2, 3, 5),
-        ]
-        .map(|action| {
-            <EstateAction as ApplicationCapabilityRequest<
-                BankSchema,
-                ReleaseEstateCapability,
-            >>::governed_input_identity(&action)
-            .unwrap()
-            .identity()
-        });
-
-        assert_eq!(identities.into_iter().collect::<BTreeSet<_>>().len(), 5);
-    }
-
-    fn release(estate: u64, executor: u64, authority: u64, review: u64) -> EstateAction {
-        EstateAction::ReleaseEstate {
-            estate: crate::estate::EstateCaseId::new(estate).unwrap(),
-            executor: crate::model::BankPrincipalId::new(executor).unwrap(),
-            authority: crate::estate::LegalAuthorityId::new(authority).unwrap(),
-            review: crate::estate::MandatoryReviewId::new(review).unwrap(),
-        }
-    }
 }

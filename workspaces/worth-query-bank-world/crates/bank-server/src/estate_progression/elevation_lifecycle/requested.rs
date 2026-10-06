@@ -95,4 +95,8 @@ impl BankRequestedEstateElevation {
     pub fn request_emitted_effect_count(&self) -> usize {
         self.query.publication_source().emitted_effect_count()
     }
+
+    pub const fn request_canonical_work(&self) -> crate::BankCommitCanonicalWorkPhases {
+        crate::BankCommitCanonicalWorkPhases::from_query(self.query.canonical_work())
+    }
 }

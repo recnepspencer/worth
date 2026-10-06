@@ -88,9 +88,7 @@ fn map_approval_denial(
         Query::PrincipalBindingInstallation(denial) => {
             BankEstateProgressionDenial::PrincipalBindingInstallation(denial)
         }
-        Query::PrincipalIdentityEncoding(denial) => {
-            BankEstateProgressionDenial::PrincipalIdentityEncoding(denial)
-        }
+        Query::IdentityEncoding(denial) => BankEstateProgressionDenial::IdentityEncoding(denial),
         Query::CapabilityInstallation(denial) => {
             BankEstateProgressionDenial::from_capability_installation(denial)
         }

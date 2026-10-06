@@ -13,6 +13,8 @@ pub(crate) fn certification_bridge() -> RuntimeBridge {
     let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
         runtime,
         "certification-projection",
+        crate::consumer_kit::test_backend::in_memory_test_product_world_resources()
+            .invalidation_resources(),
     )
     .expect("certification projection source should admit");
     certification_bridge_from_source(source.bridge_source())
@@ -53,6 +55,7 @@ impl InvalidationSink for CertificationBridgeSink {
     fn deliver_invalidation(
         &self,
         delivery: worth_runtime_bridge::facade::BridgeSignalInvalidationDelivery,
+        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

@@ -313,7 +313,9 @@ fn provenance(node: &WorthUiArtifactInputNode) -> &WorthUiArtifactInputProvenanc
         | WorthUiArtifactInputNode::Surface(node)
         | WorthUiArtifactInputNode::Binding(node)
         | WorthUiArtifactInputNode::QueryScalar(node)
-        | WorthUiArtifactInputNode::QueryCollection(node) => node.provenance(),
+        | WorthUiArtifactInputNode::QueryCollection(node)
+        | WorthUiArtifactInputNode::Condition(node)
+        | WorthUiArtifactInputNode::Derived(node) => node.provenance(),
         WorthUiArtifactInputNode::Token(node) => node.provenance(),
         WorthUiArtifactInputNode::SemanticArtifact(node) => node.provenance(),
         WorthUiArtifactInputNode::AppearanceRole(node) => node.provenance(),

@@ -32,6 +32,15 @@ pub(in crate::tests::domains::fintech) enum ExpectedLocalityCounterRow {
 }
 
 impl ExpectedLocalityCounterRow {
+    pub(in crate::tests::domains::fintech) const fn is_physical_batch_shape(self) -> bool {
+        matches!(
+            self,
+            Self::MaximumReadyFrontierWidth
+                | Self::BatchLocalAllocations
+                | Self::PeakBatchMemoryItems
+        )
+    }
+
     pub(in crate::tests::domains::fintech) const ALL: [Self; 24] = [
         Self::SourceOutputDeltasConsumed,
         Self::DirectSubscriberEdgesExamined,

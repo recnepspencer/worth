@@ -2,6 +2,7 @@ use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::data::handle::NodeId;
 
+mod epoch_capacity;
 mod index_publication;
 mod publication_work;
 mod retained_publication;

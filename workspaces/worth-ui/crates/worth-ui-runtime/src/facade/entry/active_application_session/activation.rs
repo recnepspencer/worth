@@ -124,6 +124,14 @@ impl WorthUiActiveApplicationSession {
                 identity,
                 visual_policy,
             );
+        let expressions = crate::runtime::expression::UiExpressionRuntimeState::activate(
+            std::sync::Arc::clone(application.prepared_authority().expression_catalog()),
+            &crate::runtime::expression::UiExpressionInputs {
+                generation: &initial_generation,
+                mounted: &mounted,
+                facts: &intent_application_facts,
+            },
+        );
         let mut session = Self {
             identity,
             application,
@@ -196,6 +204,7 @@ impl WorthUiActiveApplicationSession {
                 identity.as_u64(),
             ),
             intent_application_facts,
+            expressions,
             intent_execution: crate::runtime::intent_execution::UiIntentExecutionState::new(),
             intent_admission: crate::runtime::intent::UiIntentAdmissionState::new(
                 appearance_axis_demand.contains(worth_ui_dsl::UiAppearanceStateAxis::Operability),

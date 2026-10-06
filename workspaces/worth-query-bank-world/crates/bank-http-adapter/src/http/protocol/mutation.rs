@@ -71,6 +71,10 @@ pub enum BankHttpMutationFailureKind {
     Deferred,
     SettlementDeferred,
     Indeterminate,
+    /// The key's original request already applied and its effect stands, but
+    /// its answer left the idempotency window. Do not resubmit it under a new
+    /// key; refresh to read the current state instead.
+    IdempotencyWindowExpired,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -88,6 +92,13 @@ pub enum BankHttpMutationOutcome {
         disposition: BankHttpCommitDisposition,
         commit: BankHttpCommitDescription,
     },
+    /// The request's earlier commit is proven, but its live receipt is absent.
+    /// Refresh current state before continuing with further operations.
+    PreviouslyCommitted {
+        request_id: String,
+        commit_id: u64,
+        next_action: super::BankHttpNextAction,
+    },
     NotApplied {
         request_id: Option<String>,
         failure: BankHttpMutationFailureKind,
@@ -102,6 +113,27 @@ pub enum BankHttpMutationOutcome {
 mod tests {
     use super::*;
     use crate::http::protocol::{BankHttpDenialKind, BankHttpNextAction};
+
+    #[test]
+    fn historical_commit_wire_preserves_landing_without_inventing_receipt_counts() {
+        let wire = serde_json::json!({
+            "outcome": "previously_committed",
+            "request_id": "restored-retry",
+            "commit_id": 17,
+            "next_action": "refresh"
+        });
+        let decoded = serde_json::from_value::<BankHttpMutationOutcome>(wire.clone()).unwrap();
+        assert_eq!(
+            decoded,
+            BankHttpMutationOutcome::PreviouslyCommitted {
+                request_id: "restored-retry".to_owned(),
+                commit_id: 17,
+                next_action: BankHttpNextAction::Refresh,
+            }
+        );
+        assert_eq!(serde_json::to_value(decoded).unwrap(), wire);
+        assert!(wire.get("commit").is_none());
+    }
 
     #[test]
     fn provider_recovery_kind_survives_the_http_wire() {

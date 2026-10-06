@@ -1,16 +1,13 @@
 use super::market_seed::MarketSeed;
 use super::scales::FintechScale;
 use super::scenarios::setup_world;
-use crate::facade::*;
 
 #[test]
 fn fintech_intraday_world_setup_builds_seeded_branchable_graph() {
     let mut fixture = setup_world();
     fixture.assert_shape(FintechScale::smoke());
     let baseline_nodes = fixture.live_node_count();
-    let baseline_audit = fixture
-        .read_primary_audit_surface(StageExecutor::Serial)
-        .unwrap();
+    let baseline_audit = fixture.read_primary_audit_surface().unwrap();
     let analysis = fixture.open_branch("analysis").unwrap();
     fixture.seed_market(MarketSeed::high_vol(11)).unwrap();
     let snapshot = fixture.capture_world_snapshot();

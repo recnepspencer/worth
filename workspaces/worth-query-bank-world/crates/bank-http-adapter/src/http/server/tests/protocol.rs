@@ -26,7 +26,7 @@ async fn authenticated_account_summary_crosses_the_bounded_tcp_boundary() {
             server.local_address()
         ))
         .json(&serde_json::json!({
-            "protocol": "v1", "request_id": "account-summary-1",
+            "protocol": "v3", "request_id": "account-summary-1",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000,
                 "maximum_results": 1, "maximum_work": 20_000 },
@@ -86,27 +86,29 @@ async fn unknown_protocol_version_returns_the_typed_upgrade_denial() {
     )
     .await
     .expect("HTTP server should bind");
-    let outcome = reqwest::Client::new()
-        .post(format!(
-            "http://{}/v1/queries/account-summary",
-            server.local_address()
-        ))
-        .json(&serde_json::json!({
-            "protocol": "v99", "request_id": "unsupported-version",
-            "credential": credential_json(), "controls": controls_json(1),
-            "account": account.canonical_text()
-        }))
-        .send()
-        .await
-        .expect("unknown version should receive a typed response")
-        .json::<BankHttpAccountSummaryOutcome>()
-        .await
-        .expect("unknown version response should decode");
-    assert!(matches!(
-        outcome,
-        BankHttpAccountSummaryOutcome::Denied { denial, .. }
-            if denial.kind == BankHttpDenialKind::UnsupportedProtocol
-    ));
+    for protocol in ["v1", "v2", "v99"] {
+        let outcome = reqwest::Client::new()
+            .post(format!(
+                "http://{}/v1/queries/account-summary",
+                server.local_address()
+            ))
+            .json(&serde_json::json!({
+                "protocol": protocol, "request_id": "unsupported-version",
+                "credential": credential_json(), "controls": controls_json(1),
+                "account": account.canonical_text()
+            }))
+            .send()
+            .await
+            .expect("unknown version should receive a typed response")
+            .json::<BankHttpAccountSummaryOutcome>()
+            .await
+            .expect("unknown version response should decode");
+        assert!(matches!(
+            outcome,
+            BankHttpAccountSummaryOutcome::Denied { denial, .. }
+                if denial.kind == BankHttpDenialKind::UnsupportedProtocol
+        ));
+    }
     server.shutdown().await.expect("server should shut down");
 }
 
@@ -189,7 +191,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/queries/account-summary"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-summary",
+            "protocol": "v3", "request_id": "unknown-summary",
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text(), "branch": "forged"
         }),
@@ -204,7 +206,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/queries/account-activity/page"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-page",
+            "protocol": "v3", "request_id": "unknown-page",
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text(), "provider": "forged"
         }),
@@ -219,7 +221,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/estate/notify-death"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-notification",
+            "protocol": "v3", "request_id": "unknown-notification",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000 },
             "idempotency_key": "unknown-notification-key",
@@ -237,7 +239,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/mutations"),
         serde_json::json!({
-            "protocol": "v1", "request_id": "unknown-mutation",
+            "protocol": "v3", "request_id": "unknown-mutation",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000 },
             "idempotency_key": "unknown-mutation-key", "operation": "deposit",
@@ -263,7 +265,7 @@ async fn post_summary(
     client
         .post(endpoint)
         .json(&serde_json::json!({
-            "protocol": "v1", "request_id": request_id,
+            "protocol": "v3", "request_id": request_id,
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text()
         }))

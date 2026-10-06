@@ -16,6 +16,8 @@ use super::{
     live_scope, resolved_account, WorthQueryApplicationCommitOutcome,
 };
 
+#[path = "mutation_work_scale/completed_evidence.rs"]
+mod completed_evidence;
 #[path = "mutation_work_scale/locality.rs"]
 mod locality;
 
@@ -176,9 +178,22 @@ fn no_demand_mutation_work(
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
+    let program = no_demand_mutation_program(&world, wide);
+    commit_work(&world, program, idempotency_key)
+}
+
+fn no_demand_mutation_program(
+    world: &super::super::fixture::AuthorizationWorld,
+    wide: bool,
+) -> crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<
+    IdentityExecutionSchema,
+    TouchAccountOperation,
+    TouchAccountInput,
+    Account,
+> {
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = authenticated_principal(world, &request);
+    let account = resolved_account(world, "open", &request);
     let operation = world
         .application
         .installed_schema()
@@ -194,7 +209,7 @@ fn no_demand_mutation_work(
             &request,
         )
         .unwrap();
-    let other = wide.then(|| resolved_account(&world, "unrelated", &request));
+    let other = wide.then(|| resolved_account(world, "unrelated", &request));
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(&admission, |reader, projected| {
@@ -230,7 +245,7 @@ fn no_demand_mutation_work(
             .write_field(&other, AccountLabel::reference(), "wide".to_owned())
             .unwrap();
     }
-    commit_work(&world, effects.finish().unwrap(), idempotency_key)
+    effects.finish().unwrap()
 }
 
 fn commit_work(

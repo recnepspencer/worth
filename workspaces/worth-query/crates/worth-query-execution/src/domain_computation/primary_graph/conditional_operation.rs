@@ -4,7 +4,6 @@ mod authoritative_reconsideration;
 mod authorization_sources;
 mod canonical_identity;
 mod clock_observation;
-mod commit_maintenance;
 mod definition;
 mod execution_provenance;
 mod input_validation;
@@ -24,7 +23,9 @@ mod reconstruction_authority;
 mod reinstallation;
 mod signal_decision_reentry;
 pub(crate) use signal_decision_reentry::classify_bridge_signal;
-pub(in crate::domain_computation::primary_graph) use signal_decision_reentry::WorthQueryConditionalTruthBasis;
+pub(in crate::domain_computation::primary_graph) use signal_decision_reentry::{
+    WorthQueryConditionalTruthBasis, WorthQuerySelectedSignalProjections,
+};
 mod temporal_intent_projection;
 mod temporal_reconstruction;
 

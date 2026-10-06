@@ -1,6 +1,7 @@
 use crate::domain_computation::execution_runtime::{
     product_world::WorthQueryProductWorldResources, WorthQueryApplicationCandidateResourceProfile,
-    WorthQueryApplicationQueryResourceProfile,
+    WorthQueryApplicationQueryResourceProfile, WorthQueryCompletedEvidenceResourceProfile,
+    WorthQueryOutputDemandResourceProfile,
 };
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
@@ -11,6 +12,8 @@ use super::WorthQueryInMemoryApplicationProfile;
 pub struct WorthQueryInMemoryApplicationLimits {
     pub(super) world: WorthQueryProductWorldResources,
     pub(super) candidates: WorthQueryApplicationCandidateResourceProfile,
+    pub(super) output_demands: WorthQueryOutputDemandResourceProfile,
+    pub(super) completed_evidence: WorthQueryCompletedEvidenceResourceProfile,
     pub(super) queries: WorthQueryApplicationQueryResourceProfile,
     pub(super) conditionals: SignalConditionalEvaluationBudget,
     pub(super) profile: WorthQueryInMemoryApplicationProfile,
@@ -28,10 +31,31 @@ impl WorthQueryInMemoryApplicationLimits {
             world,
             candidates,
             queries,
+            output_demands: WorthQueryOutputDemandResourceProfile::standard(),
+            completed_evidence: WorthQueryCompletedEvidenceResourceProfile::standard(),
             conditionals,
             profile: WorthQueryInMemoryApplicationProfile::GeneralPurpose,
             maximum_publication_records: None,
         }
+    }
+
+    pub const fn with_output_demand_resources(
+        mut self,
+        profile: WorthQueryOutputDemandResourceProfile,
+    ) -> Self {
+        self.output_demands = profile;
+        self
+    }
+
+    /// Bounds completed-commit evidence, which is the declared idempotency
+    /// window: once full, the oldest evidence leaves it and a replay of that
+    /// commit answers that its window expired.
+    pub const fn with_completed_evidence_resources(
+        mut self,
+        profile: WorthQueryCompletedEvidenceResourceProfile,
+    ) -> Self {
+        self.completed_evidence = profile;
+        self
     }
 
     /// Selects the bounded execution policy for this application's workload.

@@ -166,20 +166,6 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::bounded(1024, 128),
         );
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        digest(&key.to_le_bytes())
-    }
-
-    fn input_identity(input: &AmendTemporalInput) -> [u8; 32] {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&input.revision.to_le_bytes());
-        bytes.extend_from_slice(&input.due.to_le_bytes());
-        bytes.extend_from_slice(input.lifecycle.as_bytes());
-        bytes.extend_from_slice(input.input.as_bytes());
-        bytes.extend_from_slice(input.gate.as_bytes());
-        digest(&bytes)
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         TemporalHostSchema,
         TemporalIntent,
@@ -309,13 +295,4 @@ pub fn declare(
     schema
         .application_query_binding::<TemporalIntentQueryBinding>()
         .application_mutation_binding::<AmendTemporalBinding>()
-}
-
-fn digest(bytes: &[u8]) -> [u8; 32] {
-    let mut digest = [0_u8; 32];
-    for (index, byte) in bytes.iter().enumerate() {
-        let slot = index % digest.len();
-        digest[slot] = digest[slot].rotate_left(1) ^ byte.wrapping_add(index as u8);
-    }
-    digest
 }

@@ -149,6 +149,7 @@ fn record(identity: u64) -> WorthQueryDispatchOutboxRecord {
                 BoundaryProtocolVersion::new(1),
             ),
             maximum_payload_bytes: 24,
+            inbound: None,
         },
         vec![identity as u8; 8],
         identity,

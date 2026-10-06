@@ -1,6 +1,7 @@
 mod capture;
 mod derived_state_reconstruction;
 mod event_loop;
+mod frame_work;
 mod graphics;
 mod host_state;
 #[cfg(test)]
@@ -18,7 +19,10 @@ mod readiness;
 #[cfg(feature = "certification-support")]
 mod readiness_certification;
 mod resize_trace;
-pub use resize_trace::{trace_resize_text_work, UiNativeResizeTraceTextWork};
+pub use resize_trace::{
+    trace_resize_stage, trace_resize_text_work, UiNativeResizeTraceSpan, UiNativeResizeTraceStage,
+    UiNativeResizeTraceTextWork,
+};
 mod solicited_effect;
 mod text_atlas;
 
@@ -49,10 +53,10 @@ pub use event_loop::{
     UiNativeEventLoopRunDenial, UiNativeEventLoopRunReport,
     UiNativeEventLoopShutdownOverlapObservation, UiNativeEventLoopStopReport,
     UiNativeEventLoopThreadPosture, UiNativeInputReachability, UiNativeObservationClock,
-    UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
+    UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress, UiNativeOffscreenSettle,
     UiNativePhysicalPresentationCorrelation, UiNativePhysicalProgressClass,
     UiNativePhysicalProgressGrant, UiNativeReadinessGrant, UiNativeReducedMotionPosture,
-    WorthUiNativeEventLoop,
+    UiNativeSubmittedFrameWork, WorthUiNativeEventLoop, WorthUiNativeOffscreenSession,
 };
 #[cfg(all(test, target_os = "windows"))]
 pub(crate) use graphics::QUALIFIED_DX12_PRESENTATION_SYSTEM;

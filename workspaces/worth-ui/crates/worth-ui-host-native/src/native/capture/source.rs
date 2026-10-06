@@ -66,7 +66,7 @@ pub(super) fn coordinate_transform(
     window: &crate::native::event_loop::UiNativeOwnedWindow,
     graphics: &crate::native::UiNativePresentationAccess,
 ) -> Option<worth_ui_host_contract::UiHostCoordinateTransform> {
-    let origin = window.inner_position().ok()?;
+    let origin = window.inner_position()?;
     let physical = graphics.extent();
     let scale = graphics.scale_factor() as f32;
     if physical.contains(&0) || !scale.is_finite() || scale <= 0.0 {

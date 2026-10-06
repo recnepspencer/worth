@@ -18,7 +18,9 @@ use crate::domain_computation::application_aftermath::{
 
 use super::super::{
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitTerminalEvidence,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryMutationPreconditionComparisonEvidence,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationTypedOutputCorrespondence,
+    WorthQueryMutationPreconditionComparisonEvidence,
 };
 
 pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
@@ -66,6 +68,9 @@ pub struct WorthQueryApplicationCommitReceipt {
     >,
     pub(super) committed_changes: WorthQueryApplicationCommittedChanges,
     pub(super) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub(super) exact_output_settlement: Option<std::sync::Arc<
+        crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+    >>,
 }
 
 impl Eq for WorthQueryApplicationCommitReceipt {}
@@ -96,6 +101,7 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             expected_retry_session: self.expected_retry_session.clone(),
             performed_product_change: None,
             output_correspondence: self.output_correspondence.clone(),
+            exact_output_settlement: self.exact_output_settlement.clone(),
             committed_changes: self.committed_changes.clone(),
         }
     }
@@ -146,7 +152,21 @@ impl WorthQueryApplicationCommitReceipt {
         &self.committed_changes
     }
 
-    pub fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
+    /// The committed output roles, read as the output contract `Contract`.
+    /// Refused as `ForeignContract` when this commit was made under another
+    /// contract; every read on the view is then checked at compile time.
+    pub fn outputs_of<Contract: 'static>(
+        &self,
+    ) -> Result<
+        WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        self.output_correspondence.outputs_of()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn output_correspondence(
+        &self,
+    ) -> &WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.as_ref()
     }
 
@@ -154,6 +174,16 @@ impl WorthQueryApplicationCommitReceipt {
         &self,
     ) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
         std::sync::Arc::clone(&self.output_correspondence)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn exact_output_settlement(
+        &self,
+    ) -> Option<
+        &std::sync::Arc<
+            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+        >,
+    > {
+        self.exact_output_settlement.as_ref()
     }
 
     pub(crate) fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {

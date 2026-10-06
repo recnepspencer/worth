@@ -13,7 +13,6 @@ mod disclosure;
 mod elevation;
 mod elevation_lifecycle;
 mod elevation_transition;
-mod governed_input_identity;
 pub(crate) mod lifecycle_effect;
 mod marker_identity;
 mod operation_binding;
@@ -21,7 +20,6 @@ mod reference;
 mod request_projection;
 mod rule_clause;
 mod scope;
-mod workflow_idempotency;
 
 #[cfg(test)]
 mod request_projection_tests;
@@ -82,7 +80,6 @@ pub use elevation_transition::{
     ApplicationCapabilityElevationRequest, ApplicationCapabilityElevationRequestProjection,
     ApplicationCapabilityElevationRequestProjectionDenial,
 };
-pub use governed_input_identity::ApplicationCapabilityGovernedInputIdentity;
 pub use lifecycle_effect::{
     ApplicationCapabilityLifecycleEffect, ApplicationCapabilityLifecycleEffectBinding,
     WorthQueryPortableApplicationCapabilityLifecycleEffectParts,
@@ -126,4 +123,3 @@ pub use scope::{
     WorthQueryPortableApplicationCapabilityRelationBindingParts,
     WorthQueryPortableApplicationCapabilityValueBindingParts,
 };
-pub use workflow_idempotency::ApplicationCapabilityWorkflowIdempotency;

@@ -1,9 +1,16 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
 mod denial;
+#[cfg(feature = "test-query-execution-observer")]
+mod entry_observation;
+mod interruption;
 mod kernel_outcome;
 mod live_target;
 mod root_selection;
 mod tree_materialization;
+mod work_observation;
+#[cfg(feature = "test-query-execution-observer")]
+pub use entry_observation::query_read_kernel_entries_on_this_thread_for_test;
+pub(in crate::domain_computation::primary_graph::application_query) use work_observation::OneShotReadWorkObservation;
 
 use super::resource_lifecycle::WorthQueryApplicationResultBufferReservation;
 use super::{
@@ -78,9 +85,21 @@ pub(super) fn read_bounded_root_rows<
         Scope,
     >,
     mut result_buffer: WorthQueryApplicationResultBufferReservation,
+    spent: Option<&OneShotReadWorkObservation>,
+    maximum_work: usize,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
+    #[cfg(feature = "test-query-execution-observer")]
+    entry_observation::record_kernel_entry();
     let contract = plan.query.read_family_binding().planning_contract();
-    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer, true)?;
+    let selection = select_bounded_roots(
+        runtime,
+        graph,
+        plan,
+        &mut result_buffer,
+        true,
+        spent,
+        maximum_work,
+    )?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         runtime,
@@ -92,15 +111,14 @@ pub(super) fn read_bounded_root_rows<
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
         selection.root_path_source.as_ref(),
-        plan.controls
-            .maximum_work()
-            .get()
-            .saturating_sub(selection.work_units),
+        maximum_work.saturating_sub(selection.work_units),
         ResultTreeCollectionSelection::Complete,
+        plan.controls.request_scope(),
         &mut result_buffer,
+        spent,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
-    if actual_work > plan.controls.maximum_work().get() {
+    if actual_work > maximum_work {
         return Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
             plan.query.name(),
@@ -183,7 +201,15 @@ pub(super) fn read_continuation_page<
             plan.query.name(),
         )
     })?;
-    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer, false)?;
+    let selection = select_bounded_roots(
+        runtime,
+        graph,
+        plan,
+        &mut result_buffer,
+        false,
+        None,
+        plan.controls.maximum_work().get(),
+    )?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         runtime,
@@ -210,7 +236,9 @@ pub(super) fn read_continuation_page<
             after,
             page_width: plan.controls.maximum_result_count().get(),
         }),
+        plan.controls.request_scope(),
         &mut result_buffer,
+        None,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
     if actual_work > plan.controls.maximum_work().get() {

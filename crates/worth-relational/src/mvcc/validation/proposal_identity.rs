@@ -16,25 +16,15 @@ pub struct RelationalMutationProposalIdentity {
     branch_observation: RelationalBranchReferenceObservation,
     branch_version: RelationalBranchVersion,
     proposed_version_id: VersionId,
+    suspension_source_version: Option<VersionId>,
 }
 
 impl RelationalMutationProposalIdentity {
-    pub(crate) fn issue(
-        runtime_instance_id: u64,
-        ordinal: u64,
-        transaction_id: TransactionId,
-        branch_observation: RelationalBranchReferenceObservation,
-        branch_version: RelationalBranchVersion,
-        proposed_version_id: VersionId,
-    ) -> Self {
-        Self {
-            runtime_instance_id,
-            ordinal,
-            transaction_id,
-            branch_observation,
-            branch_version,
-            proposed_version_id,
-        }
+    /// Only owner-admitted suspension leaves logical truth unchanged while
+    /// removing physical payloads. Ordinary and reconstruction proposals have
+    /// no source-view permission.
+    pub(crate) const fn suspension_source_version(&self) -> Option<VersionId> {
+        self.suspension_source_version
     }
 
     pub const fn runtime_instance_id(&self) -> u64 {
@@ -85,13 +75,19 @@ impl crate::runtime::RelationalPreparationRuntime {
                 ),
             )
         })?;
-        Ok(RelationalMutationProposalIdentity::issue(
-            self.services.runtime_instance_id(),
+        let suspension_source_version = matches!(
+            validation_input.intent().materialization_mode(),
+            Some(crate::mvcc::RelationalMaterializationTransactionMode::Suspend)
+        )
+        .then(|| validation_input.basis().observation().version_id());
+        Ok(RelationalMutationProposalIdentity {
+            runtime_instance_id: self.services.runtime_instance_id(),
             ordinal,
             transaction_id,
-            validation_input.basis().reference().clone(),
-            validation_input.basis().truth_version(),
+            branch_observation: validation_input.basis().reference().clone(),
+            branch_version: validation_input.basis().truth_version(),
             proposed_version_id,
-        ))
+            suspension_source_version,
+        })
     }
 }

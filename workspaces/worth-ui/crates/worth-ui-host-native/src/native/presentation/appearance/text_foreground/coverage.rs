@@ -28,6 +28,10 @@ pub(super) fn visible_coverage(
     binding: UiMountedSurfaceBindingRequirement,
     extent: [u32; 2],
 ) -> Result<Box<[UiNativeAppearanceDamageRect]>, Denial> {
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::CoverageStaging,
+        glyphs.len(),
+    );
     let basis = UiNativeRasterBasis::new(extent, binding.device_scale_milli() as f32 / 1_000.0);
     let mut coverage = UiNativeAppearanceDamage::new(usize::from(
         crate::native_profile::APPEARANCE_PROFILE.damage_regions,

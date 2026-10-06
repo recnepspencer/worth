@@ -29,8 +29,8 @@ realized counters.
 
 This closes the locality portion of `S9.16.3` and the invalidation portion of
 `S9.16.6`. Milestone 13.1 carries the sealed canonical work stream and measured
-resource envelopes through Runtime Bridge and Query before Milestone 14 changes
-execution placement. Neither successor inherits authority to replace semantic
+resource envelopes through Runtime Bridge and Query before
+[Query Milestone 9.17.6.3](../WORTH-query/milestone-9.17.6.3.md) changes execution placement. Neither successor inherits authority to replace semantic
 work identity with an implementation-specific queue or shard.
 
 ## Phase Closure Ledger
@@ -94,8 +94,8 @@ cross-run comparison normalizes runtime-local graph identity while preserving
 semantic target, revision, readiness, stage, and causal-origin content.
 
 Milestone 13.1 may carry the sealed current ready-work stream across installed
-Runtime Bridge and Query boundaries. Milestone 14 may then schedule or
-parallelize it. Both must preserve canonical work identity, deterministic
+Runtime Bridge and Query boundaries. Query Milestone 9.17.6.3 may then
+schedule or parallelize it. Both must preserve canonical work identity, deterministic
 publication, direct-hop admission, and the performed counter contract.
 
 ## Final Verification

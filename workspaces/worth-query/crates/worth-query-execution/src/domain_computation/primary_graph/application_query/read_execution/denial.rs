@@ -16,6 +16,8 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
     ProjectionUnavailable,
     ResultBufferLimitExceeded,
     WorkLimitExceeded,
+    Cancelled,
+    DeadlineExceeded,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -44,5 +46,11 @@ impl WorthQueryApplicationReadExecutionDenial {
 
     pub(in crate::domain_computation::primary_graph::application_query) fn subject(&self) -> &str {
         &self.subject
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn into_subject(
+        self,
+    ) -> String {
+        self.subject
     }
 }

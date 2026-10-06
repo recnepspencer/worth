@@ -56,6 +56,7 @@ impl DiagnosticsState {
                     .expect("diagnostic history exhausted its private position space");
             }
         }
+        self.reconstitute_selected_epoch_charge();
     }
 
     pub(super) fn remove_replay_event_from_index(&mut self, event: &ReplayEvent) {

@@ -142,7 +142,12 @@ where
         conditional_evaluation_budget,
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
-    let authoritative_commit_cursor = graph.primary_provider.conditional_commit_sequence();
+    let authoritative_commit_cursor = graph
+        .primary_provider
+        .graph
+        .source_owner
+        .invalidation_owner
+        .latest_position();
     let mut conditional_operations = super::super::conditional_operation::install_pending_bindings(
         bindings,
         graph.bridge.conditional_builder(),
@@ -261,7 +266,8 @@ where
     let product_world_resources = bootstrap.product_world_resources.clone();
     let recovered_relational_authority = bootstrap.take_recovered_relational_authority();
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
-    let publication = bootstrap.publish(&mut runtime, &authority)?;
+    let (publication, resource_support) =
+        bootstrap.publish_with_resource_support(&mut runtime, &authority)?;
     let graph = runtime
         .retain_primary_graph_integration_handle()
         .expect("publishing the primary graph installs its integration authority");
@@ -302,7 +308,9 @@ where
         graph,
         fault_port,
         maximum_concurrent_graph_work,
-        runtime.application_candidate_resource_profile(),
+        resource_support,
+        runtime.completed_evidence_resource_profile(),
+        runtime.branch_coordination_resource_profile(),
     );
     let primary_graph_authority =
         super::graph_participation::install(&authority, truth_partition_role, provider_anchor)?;

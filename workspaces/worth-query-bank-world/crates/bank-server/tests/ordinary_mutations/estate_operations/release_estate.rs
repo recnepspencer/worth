@@ -29,8 +29,8 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
     };
     assert_eq!(receipt.changed_record_count(), 2);
     assert_eq!(receipt.emitted_effect_count(), 0);
-    assert_eq!(receipt.decision_fact_count(), Some(17));
-    assert_zero_canonical_work(receipt.canonical_work());
+    assert_eq!(receipt.decision_fact_count(), Some(18));
+    assert_admission_derives_the_request_identities_once(receipt.canonical_work());
     assert_release_posture(&fixture, EstateCaseStatus::Released);
     assert_equivalent_retry(&fixture, &specialist, binding, &receipt);
 
@@ -60,7 +60,7 @@ fn four_lawful_executors_and_many_unrelated_reviews_preserve_bounded_readiness()
     let BankMutationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the additional-truth release must commit: {outcome:?}");
     };
-    assert_eq!(receipt.decision_fact_count(), Some(17));
+    assert_eq!(receipt.decision_fact_count(), Some(18));
     assert_release_posture(&fixture, EstateCaseStatus::Released);
 }
 
@@ -207,8 +207,10 @@ fn beneficiary_and_executor_callers_deny_at_capability_composition() {
         assert!(matches!(
             denial,
             BankEstateProgressionDenial::ApplicationEntry(ref denial)
-                if denial.kind()
-                    == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
+                if matches!(
+                denial.kind(),
+                worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(_)
+            )
         ));
         assert_release_posture(&fixture, EstateCaseStatus::Open);
     }
@@ -239,6 +241,7 @@ fn assert_equivalent_retry(
         panic!("the retry must recover its exact commit: {retry:?}");
     };
     assert_eq!(committed.aftermath(), recovered.aftermath());
+    assert_admission_derives_the_request_identities_once(recovered.canonical_work());
 
     assert_release_witness_drift(fixture, specialist, &binding);
 }
@@ -309,10 +312,25 @@ fn idempotency(identity: u8) -> BankIdempotencyKey {
     BankIdempotencyKey::new(format!("release-estate-{identity}")).unwrap()
 }
 
-fn assert_zero_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {
+fn assert_admission_derives_the_request_identities_once(
+    phases: bank_server::BankCommitCanonicalWorkPhases,
+) {
+    // Admission derives the request's two identities once each, streamed into
+    // their hashes with no basis sequence: the governed input (142 encoded
+    // bytes + 67 framing, 4 blocks) and the key `release-estate-11` (39
+    // encoded bytes + 85 framing, ceil((124 + 9) / 64) = 3 blocks). A
+    // replayed retry is admitted the same way and reports the same work. Every
+    // other phase performs no canonical work.
+    let admission = phases.admission();
+    assert_eq!(admission.basis_preparations(), 0);
+    assert_eq!(admission.digest_derivations(), 2);
+    assert_eq!(admission.canonical_entries(), 2);
+    assert_eq!(admission.canonical_encoded_bytes(), 181);
+    assert_eq!(admission.sha256_input_bytes(), 333);
+    assert_eq!(admission.sha256_compression_blocks(), 7);
+    assert_eq!(admission.digest_text_materializations(), 0);
     for work in [
         phases.installation(),
-        phases.admission(),
         phases.execution(),
         phases.provider_commit(),
         phases.projection(),

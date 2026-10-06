@@ -1,7 +1,9 @@
+mod condition_consumers;
 mod lookup_cost;
 mod preparation;
 mod semantic_comparison;
 
+pub(crate) use condition_consumers::UiIntentConditionConsumers;
 pub use lookup_cost::UiIntentRouteResolutionCost;
 
 use std::collections::HashMap;
@@ -61,6 +63,7 @@ pub(crate) struct UiIntentCatalog {
     command_index: HashMap<crate::capability::UiIntentId, Box<[u32]>>,
     confirmation_index: HashMap<RouteKey, usize>,
     definition_count: usize,
+    condition_consumers: UiIntentConditionConsumers,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -70,6 +73,11 @@ pub(crate) enum UiIntentCatalogSemanticComparison {
 }
 
 impl UiIntentCatalog {
+    /// The declarations whose operability reads each condition slot.
+    pub(crate) const fn condition_consumers(&self) -> &UiIntentConditionConsumers {
+        &self.condition_consumers
+    }
+
     /// Installation/replacement demand; ordinary turns use the installed owner.
     pub(crate) fn has_activation_routes(&self) -> bool {
         self.product_routes
@@ -106,10 +114,9 @@ impl UiIntentCatalog {
         material: &crate::declaration::WorthUiAuthoredIntentMaterial,
         definitions: &crate::capability::FrozenIntentDefinitionCapabilities,
         graph: &crate::graph::UiGraphSnapshot,
-        query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-        application_facts: &super::UiIntentApplicationFactPlan,
+        sources: &super::UiIntentSourcePlans<'_>,
     ) -> Result<Self, UiIntentCatalogPreparationDenial> {
-        preparation::prepare(material, definitions, graph, query, application_facts)
+        preparation::prepare(material, definitions, graph, sources)
     }
 
     pub(crate) fn lookup(

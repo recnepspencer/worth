@@ -97,7 +97,63 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalFreshnessEvidence {
     target: WorthQueryPrincipalTargetObservation,
 }
 
+/// Fixed native revision evidence for a producer decision that used its
+/// authenticated principal. A value rewrite changes its field revision and
+/// therefore refuses reuse even when the new value compares equal.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation) struct WorthQueryPrincipalReuseWitness {
+    mapping: EntityId,
+    mapping_kind: KindId,
+    mapping_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
+    mapping_status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
+    relation: RelationId,
+    relation_kind: KindId,
+    principal: EntityId,
+    principal_kind: KindId,
+    principal_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
+    adjacency_revision: Option<worth_relational::facade::identity::VersionId>,
+}
+
 impl WorthQueryPrincipalFreshnessEvidence {
+    /// Request-scoped backing and initialized payload copied by a fresh
+    /// authorization dependency. Scalar wrappers contribute one visit each;
+    /// variable bytes are counted only when their owned payload is cloned.
+    pub(in crate::domain_computation) fn clone_requirements(&self) -> Option<(u64, u64)> {
+        let values = [&self.mapping.identity, &self.target.principal_identity];
+        let work = values.iter().copied().try_fold(0usize, |sum, value| {
+            sum.checked_add(1)?.checked_add(match value {
+                AspectValue::Decimal(value) => value.as_str().len(),
+                AspectValue::BigInt(value) => value.as_str().len(),
+                AspectValue::Rational(value) => value
+                    .numerator
+                    .as_str()
+                    .len()
+                    .checked_add(value.denominator.as_str().len())?,
+                AspectValue::String(InternedString::Raw(value)) => value.len(),
+                _ => 0,
+            })
+        })?;
+        let bytes = values.iter().copied().try_fold(0usize, |sum, value| {
+            sum.checked_add(value.owned_allocation_capacity_bytes())
+        })?;
+        Some((u64::try_from(work).ok()?, u64::try_from(bytes).ok()?))
+    }
+
+    pub(in crate::domain_computation) fn reuse_witness(&self) -> WorthQueryPrincipalReuseWitness {
+        WorthQueryPrincipalReuseWitness {
+            mapping: self.mapping.entity_id,
+            mapping_kind: self.mapping.kind_id,
+            mapping_identity_revision: self.mapping.identity_revision,
+            mapping_status_revision: self.mapping.status_revision,
+            relation: self.target.relation_id,
+            relation_kind: self.target.relation_kind,
+            principal: self.target.target,
+            principal_kind: self.target.principal_kind,
+            principal_identity_revision: self.target.principal_identity_revision,
+            adjacency_revision: self.target.adjacency_revision,
+        }
+    }
+
     pub(in crate::domain_computation) fn durable(
         &self,
         binding: &str,

@@ -43,18 +43,43 @@ pub(super) fn derive(
         capability("advance", &advance.binding),
     ];
     entries.extend(operations.iter().map(|operation| {
+        let mut values = vec![
+            operation.identifier.to_owned(),
+            operation.input_type.as_str().to_owned(),
+            operation.binding_identity.to_owned(),
+            if operation.requires_workflow_authority {
+                "guarded"
+            } else {
+                "direct"
+            }
+            .to_owned(),
+        ];
+        if let Some(inbound) = &operation.inbound_ref {
+            let protocol = inbound.protocol();
+            let limits = inbound.limits();
+            values.extend([
+                inbound.effect().to_owned(),
+                protocol.identity().as_str().to_owned(),
+                protocol.version().get().to_string(),
+                inbound.source_identity().to_owned(),
+                limits.maximum_envelope_bytes.get().to_string(),
+                limits.maximum_verifier_work.get().to_string(),
+                limits.maximum_payload_bytes.get().to_string(),
+                limits
+                    .maximum_outstanding_dispatch_provenance
+                    .get()
+                    .to_string(),
+                limits.maximum_accepted_occurrences.get().to_string(),
+                limits.maximum_accepted_bytes.get().to_string(),
+                limits.maximum_concurrent_publications.get().to_string(),
+                limits.maximum_discovery_work.get().to_string(),
+                limits.replay_window_milliseconds.get().to_string(),
+                limits.maximum_cleanup_work.get().to_string(),
+            ]);
+        }
         fields(
             "operation",
-            &[
-                operation.identifier,
-                operation.input_type.as_str(),
-                operation.binding_identity,
-                if operation.requires_workflow_authority {
-                    "guarded"
-                } else {
-                    "direct"
-                },
-            ],
+            &values.iter().map(String::as_str).collect::<Vec<_>>(),
         )
     }));
     entries.extend(assessments.iter().map(|assessment| {

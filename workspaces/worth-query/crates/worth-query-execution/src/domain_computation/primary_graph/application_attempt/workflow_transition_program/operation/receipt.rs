@@ -54,6 +54,20 @@ where
     {
         return Err(mismatch(required.node_path()));
     }
+    if receipt
+        .dispatch_outbox()
+        .and_then(|record| record.inbound())
+        .is_some()
+    {
+        return if runtime
+            .resolve_guarded_workflow_external_settlement(receipt)
+            .unwrap_or(false)
+        {
+            receipt_identity(receipt).ok_or_else(|| mismatch(required.node_path()))
+        } else {
+            Err(mismatch(required.node_path()))
+        };
+    }
     validate_operation_receipt_custody(required.node_path(), receipt, recovery)
 }
 

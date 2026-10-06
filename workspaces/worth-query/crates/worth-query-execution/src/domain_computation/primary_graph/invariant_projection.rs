@@ -1,5 +1,6 @@
 mod admission_denial;
 mod aggregate;
+mod consumed_output;
 mod inventory;
 mod locked_reader;
 mod operation_projection_denial;
@@ -8,6 +9,8 @@ mod realized_scope;
 mod relation_identity;
 mod traversal;
 mod work;
+#[cfg(feature = "certification-invalidation-equivalence")]
+pub(in crate::domain_computation::primary_graph) use consumed_output::EvidenceView;
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -27,7 +30,6 @@ use super::{
     WorthQueryPrimaryGraphIntegrationHandle,
 };
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
-use crate::domain_computation::primary_graph::application_attempt;
 
 pub use admission_denial::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
@@ -36,6 +38,10 @@ pub use aggregate::{
     WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
     WorthQueryInvariantAggregateDenialKind,
 };
+pub(in crate::domain_computation::primary_graph) use consumed_output::{
+    ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
+    SelectedPendingConsumedOutput,
+};
 pub use locked_reader::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryCompletedInvariantProjection,
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
@@ -43,14 +49,14 @@ pub use locked_reader::{
 pub use operation_projection_denial::{
     WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
 };
+pub(in crate::domain_computation::primary_graph) use operation_reader::WorthQueryPriorOutputRead;
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,
-    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
-    WorthQueryCurrentOutputSelection, WorthQueryInspectedOperationInvariantProjection,
-    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
-    WorthQueryPriorOutputFamilyMember,
+    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
+    WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantDecisionPlanDenial,
+    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
 pub use work::WorthQueryInvariantProjectionWork;
@@ -87,8 +93,12 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     authority_identity: u64,
     realized_scope: WorthQueryRealizedProjectionScope,
-    dependent_source_facts:
-        BTreeMap<String, application_attempt::WorthQueryApplicationObservedFact>,
+    consumed_outputs:
+        BTreeMap<Arc<super::output_lineage::RecordedSettlementIdentity>, ConsumedOutputEvidence>,
+    dependent_source_facts: BTreeMap<
+        super::application_attempt::WorthQueryApplicationFactStorageKey,
+        super::application_attempt::WorthQueryApplicationObservedFact,
+    >,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -194,6 +204,7 @@ where
             binding_identity: self.binding_identity.clone(),
             authority_identity: self.authority_identity,
             realized_scope: WorthQueryRealizedProjectionScope::default(),
+            consumed_outputs: BTreeMap::new(),
             dependent_source_facts: BTreeMap::new(),
             _schema: PhantomData,
         })
@@ -276,16 +287,21 @@ where
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,
-        Vec<application_attempt::WorthQueryApplicationObservedFact>,
+        Vec<super::application_attempt::WorthQueryApplicationObservedFact>,
+        Vec<ConsumedOutputEvidence>,
     ) {
         let realized_scope = std::mem::take(&mut self.realized_scope);
         let dependent_source_facts = std::mem::take(&mut self.dependent_source_facts)
+            .into_values()
+            .collect();
+        let consumed_outputs = std::mem::take(&mut self.consumed_outputs)
             .into_values()
             .collect();
         (
             self.into_lease(product),
             realized_scope,
             dependent_source_facts,
+            consumed_outputs,
         )
     }
 

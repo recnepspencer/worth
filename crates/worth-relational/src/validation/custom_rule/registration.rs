@@ -4,6 +4,9 @@ use std::sync::Arc;
 
 use crate::validation::engine::InvariantRuntimeView;
 
+mod panic_value;
+use panic_value::panic_value_message;
+
 use super::execution_context::CustomInvariantExecutionContext;
 use super::scope_planner::CustomInvariantScopePlanner;
 use crate::validation::data::{
@@ -26,11 +29,41 @@ pub trait CustomInvariantRule: Send + Sync + RefUnwindSafe + 'static {
         planner: &mut CustomInvariantScopePlanner<'_>,
     ) -> Result<Self::Scope, CustomInvariantPreparationError>;
 
+    fn supports_checked_preparation(&self) -> bool {
+        false
+    }
+
+    fn prepare_scope_checked(
+        &self,
+        _planner: &mut CustomInvariantScopePlanner<'_>,
+        _budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, CustomInvariantPreparationError>> {
+        None
+    }
+
     fn evaluate(
         &self,
         context: &CustomInvariantExecutionContext<'_>,
         scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError>;
+
+    /// Opt in to leased execution by checkpointing every candidate and
+    /// claiming retained output before growth. Legacy rules deny the lease.
+    fn evaluate_checked(
+        &self,
+        _context: &CustomInvariantExecutionContext<'_>,
+        _scope: &Self::Scope,
+        _budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<CustomInvariantVerdict, CustomInvariantExecutionError>> {
+        None
+    }
+}
+
+pub trait CustomInvariantLeaseBudget {
+    fn checkpoint(&self, units: u64) -> bool;
+    fn claim_result(&self, bytes: u64) -> bool;
+    fn claim_scratch(&self, bytes: u64) -> bool;
+    fn check_scratch_peak(&self, bytes: u64) -> bool;
 }
 
 pub(crate) trait PreparedCustomInvariantExecution: Send + Sync {
@@ -39,15 +72,30 @@ pub(crate) trait PreparedCustomInvariantExecution: Send + Sync {
         context: &CustomInvariantExecutionContext<'_>,
     ) -> PreparedCustomInvariantExecutionOutcome;
 
+    fn evaluate_checked(
+        &self,
+        context: &CustomInvariantExecutionContext<'_>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<PreparedCustomInvariantExecutionOutcome>;
+
     fn work_meter(&self) -> super::CustomInvariantWorkMeter;
 }
 
 pub(crate) trait ErasedCustomInvariantRule: Send + Sync {
+    fn supports_checked_preparation(&self) -> bool;
+
     fn prepare_for_execution(
         &self,
         runtime: &InvariantRuntimeView,
         planner: &mut CustomInvariantScopePlanner<'_>,
     ) -> Arc<dyn PreparedCustomInvariantExecution>;
+
+    fn prepare_for_execution_checked(
+        &self,
+        runtime: &InvariantRuntimeView,
+        planner: &mut CustomInvariantScopePlanner<'_>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Arc<dyn PreparedCustomInvariantExecution>>;
 }
 
 struct CustomInvariantAdapter<R: CustomInvariantRule> {
@@ -100,6 +148,31 @@ impl<R: CustomInvariantRule> PreparedCustomInvariantExecution
         }
     }
 
+    fn evaluate_checked(
+        &self,
+        context: &CustomInvariantExecutionContext<'_>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<PreparedCustomInvariantExecutionOutcome> {
+        if self.work.exceeded() {
+            return Some(self.evaluate(context));
+        }
+        let result = run_custom_rule_safely(
+            self.identity.clone(),
+            CustomInvariantRuntimePhase::Execution,
+            || self.rule.evaluate_checked(context, &self.scope, budget),
+        );
+        match result {
+            Ok(Some(Ok(verdict))) => {
+                Some(PreparedCustomInvariantExecutionOutcome::Verdict(verdict))
+            }
+            Ok(Some(Err(error))) => Some(PreparedCustomInvariantExecutionOutcome::Failure(
+                CustomInvariantFailure::execution_error(&self.identity, error),
+            )),
+            Ok(None) => None,
+            Err(failure) => Some(PreparedCustomInvariantExecutionOutcome::Failure(failure)),
+        }
+    }
+
     fn work_meter(&self) -> super::CustomInvariantWorkMeter {
         self.work.clone()
     }
@@ -113,12 +186,26 @@ impl PreparedCustomInvariantExecution for FailedPreparedCustomInvariantExecution
         PreparedCustomInvariantExecutionOutcome::Failure(self.failure.clone())
     }
 
+    fn evaluate_checked(
+        &self,
+        _context: &CustomInvariantExecutionContext<'_>,
+        _budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<PreparedCustomInvariantExecutionOutcome> {
+        Some(PreparedCustomInvariantExecutionOutcome::Failure(
+            self.failure.clone(),
+        ))
+    }
+
     fn work_meter(&self) -> super::CustomInvariantWorkMeter {
         self.work.clone()
     }
 }
 
 impl<R: CustomInvariantRule> ErasedCustomInvariantRule for CustomInvariantAdapter<R> {
+    fn supports_checked_preparation(&self) -> bool {
+        self.rule.supports_checked_preparation()
+    }
+
     fn prepare_for_execution(
         &self,
         runtime: &InvariantRuntimeView,
@@ -163,6 +250,51 @@ impl<R: CustomInvariantRule> ErasedCustomInvariantRule for CustomInvariantAdapte
             }
         }
     }
+
+    fn prepare_for_execution_checked(
+        &self,
+        runtime: &InvariantRuntimeView,
+        planner: &mut CustomInvariantScopePlanner<'_>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Arc<dyn PreparedCustomInvariantExecution>> {
+        let identity = self.identity.clone();
+        let work = planner.work_meter();
+        if work.exceeded() {
+            return Some(Arc::new(FailedPreparedCustomInvariantExecution {
+                failure: CustomInvariantFailure::preparation_error(
+                    &identity,
+                    CustomInvariantPreparationError::new(
+                        "custom invariant scope exhausted its installed work budget",
+                    ),
+                ),
+                work,
+            }));
+        }
+        runtime
+            .performance_access()
+            .count_custom_invariant_preparation();
+        match run_custom_rule_safely(
+            identity.clone(),
+            CustomInvariantRuntimePhase::Preparation,
+            || self.rule.prepare_scope_checked(planner, budget),
+        ) {
+            Ok(Some(Ok(scope))) => Some(Arc::new(PreparedCustomInvariantAdapter {
+                rule: Arc::clone(&self.rule),
+                identity,
+                scope,
+                work,
+            })),
+            Ok(Some(Err(error))) => Some(Arc::new(FailedPreparedCustomInvariantExecution {
+                failure: CustomInvariantFailure::preparation_error(&identity, error),
+                work,
+            })),
+            Ok(None) => None,
+            Err(failure) => Some(Arc::new(FailedPreparedCustomInvariantExecution {
+                failure,
+                work,
+            })),
+        }
+    }
 }
 
 fn run_custom_rule_safely<T>(
@@ -173,16 +305,6 @@ fn run_custom_rule_safely<T>(
     catch_unwind(AssertUnwindSafe(run)).map_err(|panic_value| {
         CustomInvariantFailure::panic(&identity, phase, panic_value_message(panic_value))
     })
-}
-
-fn panic_value_message(panic_value: Box<dyn std::any::Any + Send>) -> Arc<str> {
-    if let Some(message) = panic_value.downcast_ref::<&'static str>() {
-        return Arc::from(*message);
-    }
-    if let Some(message) = panic_value.downcast_ref::<String>() {
-        return Arc::from(message.as_str());
-    }
-    Arc::from("custom invariant panicked with a non-string value")
 }
 
 #[derive(Clone)]
@@ -200,6 +322,9 @@ impl fmt::Debug for CustomInvariantRegistration {
 }
 
 impl CustomInvariantRegistration {
+    pub(crate) fn supports_checked_preparation(&self) -> bool {
+        self.executable.supports_checked_preparation()
+    }
     pub fn new<R>(rule: R) -> Result<Self, CustomInvariantRegistrationError>
     where
         R: CustomInvariantRule + UnwindSafe,

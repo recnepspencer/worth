@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::presentation_target::UiWgpuPresentationTarget;
 use crate::native::graphics::{UiNativeDeviceGeneration, UiNativeDeviceState};
 use crate::native::presentation::UiNativePresentationSurface;
 
@@ -31,12 +32,19 @@ impl UiWgpuDeviceGenerationMechanics {
 }
 
 pub(crate) struct UiWgpuSurfaceMechanics {
-    pub(super) surface: wgpu::Surface<'static>,
+    pub(super) surface: UiWgpuPresentationTarget,
     pub(super) retained_target: Option<wgpu::Texture>,
     pub(super) configuration: wgpu::SurfaceConfiguration,
+    /// Set when the configuration changed after the swapchain was last
+    /// configured. A basis change only records its extent; the swapchain
+    /// resizes when a frame next acquires a texture, so extents a drag
+    /// supersedes before any frame draws never pay for `ResizeBuffers`.
+    pub(super) configuration_pending: std::sync::atomic::AtomicBool,
+    /// The device's largest texture dimension, which bounds the swapchain.
+    pub(super) texture_limit: u32,
 }
 
-pub(crate) struct UiWgpuSurfaceHandle(pub(super) wgpu::Surface<'static>);
+pub(crate) struct UiWgpuSurfaceHandle(pub(super) UiWgpuPresentationTarget);
 pub(crate) struct UiWgpuRetainedTarget(pub(super) wgpu::Texture);
 
 pub(crate) enum UiNativePreparedGraphicsRecovery {
@@ -115,7 +123,7 @@ impl UiNativePresentationSurface {
         self.generation
     }
 
-    pub(crate) fn surface(&self) -> &wgpu::Surface<'static> {
+    pub(crate) fn presentation_target(&self) -> &UiWgpuPresentationTarget {
         &self.mechanics.surface
     }
 
@@ -125,25 +133,48 @@ impl UiNativePresentationSurface {
 
     pub(crate) fn configure(&self, device: &wgpu::Device) {
         if !self.suspended {
+            let configuration = &self.mechanics.configuration;
+            crate::native::resize_trace::swapchain([configuration.width, configuration.height]);
             self.mechanics
                 .surface
                 .configure(device, &self.mechanics.configuration);
+            self.mechanics
+                .configuration_pending
+                .store(false, std::sync::atomic::Ordering::Relaxed);
         }
     }
 
-    pub(crate) fn commit_basis(
-        &mut self,
-        scale_factor: f64,
-        extent: [u32; 2],
-        device: &wgpu::Device,
-    ) {
+    /// Configures the swapchain if the committed basis changed since it was
+    /// last configured, so the acquired texture matches the basis extent.
+    pub(crate) fn configure_pending(&self, device: &wgpu::Device) {
+        if self
+            .mechanics
+            .configuration_pending
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            self.configure(device);
+        }
+    }
+
+    /// Commits a new basis without resizing the swapchain; the next
+    /// [`Self::configure_pending`] call at texture acquisition resizes it
+    /// when the basis extent no longer fits the swapchain's size policy.
+    pub(crate) fn commit_basis(&mut self, scale_factor: f64, extent: [u32; 2]) {
         debug_assert!(!extent.contains(&0));
-        self.mechanics.configuration.width = extent[0];
-        self.mechanics.configuration.height = extent[1];
+        let configuration = &mut self.mechanics.configuration;
+        if let Some(swapchain) = super::swapchain_extent::reconfiguration(
+            extent,
+            [configuration.width, configuration.height],
+            self.mechanics.texture_limit,
+            self.suspended,
+        ) {
+            configuration.width = swapchain[0];
+            configuration.height = swapchain[1];
+            *self.mechanics.configuration_pending.get_mut() = true;
+        }
         self.scale_factor = scale_factor;
         self.extent = extent;
         self.suspended = false;
-        self.configure(device);
     }
 
     pub(crate) fn replace_surface(

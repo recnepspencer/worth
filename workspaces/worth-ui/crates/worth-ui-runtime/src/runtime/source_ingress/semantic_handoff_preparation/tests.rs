@@ -93,7 +93,7 @@ fn typed_command_dsl_must_match_the_registered_command_authority() {
 
     let material = prepare_semantic_handoff(package, app.capabilities())
         .expect("matching typed command declaration admits");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
 
     assert_eq!(evidence.service_declarations().len(), 1);
     assert_eq!(
@@ -134,7 +134,7 @@ fn command_dsl_preserves_the_rust_authored_routing_policy() {
     let package = command_package("Primary+Shift+P");
     let material = prepare_semantic_handoff(package, app.capabilities())
         .expect("matching typed command declaration admits");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
     let custom = crate::declaration::UiCommandRoutingPolicy::desktop()
         .with_repeat_suppression(false)
         .with_text_input_suppression(false);
@@ -206,7 +206,7 @@ fn service_dsl_demands_only_its_declared_owner_closure() {
 
     let material =
         prepare_semantic_handoff(package, app.capabilities()).expect("service declarations admit");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
     let support = evidence.runtime_service_support();
     use crate::capability::{UiRuntimeServiceFamily as Family, UiRuntimeServiceSupportPosture};
 

@@ -3,17 +3,16 @@ use bank_domain::proposals::BankProposalDenial;
 use bank_domain::schema::{
     Account, AccountDisplayName, AccountIdentity, AccountKind, AccountStatus, AccountingRevision,
     BankSchema, CreatePersonalAccount, CreatePersonalAccountDecision,
-    CreatePersonalAccountMutationBinding, CreatePersonalAccountResult, InstitutionAccount,
-    InstitutionIdentityField, Kind, PersonalOwner, PrincipalIdentityField, Status,
-    CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT,
+    CreatePersonalAccountMutationBinding, CreatePersonalAccountResult,
+    CreatedPersonalAccountOutput, InstitutionAccount, InstitutionIdentityField, Kind,
+    PersonalOwner, PrincipalIdentityField, Status,
 };
 use worth_query_host::facade::declaration::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    OperationHandler, WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput,
+    OperationHandler, WorthQueryApplicationEntityKey,
 };
 
 use crate::bank_projection::project_personal_account_creation;
@@ -33,7 +32,6 @@ impl OperationHandler<BankSchema, CreatePersonalAccountMutationBinding>
             return interrupted(interruption);
         }
         let scope = reader.scope().clone();
-        let key = reader.idempotency_key().clone();
         let snapshot = match project_personal_account_creation(reader.reader(), &scope, input) {
             Ok(snapshot) => snapshot,
             Err(error) => return execution_denied(error),
@@ -47,8 +45,10 @@ impl OperationHandler<BankSchema, CreatePersonalAccountMutationBinding>
         if snapshot.primary_account(input.owner).is_some() {
             return HandlerResult::DomainDenied(BankProposalDenial::DuplicatePersonalAccount);
         }
-        HandlerResult::Completed(CreatePersonalAccountDecision::from_admitted_input(
-            &key, input,
+        HandlerResult::Completed(CreatePersonalAccountDecision::from_admitted_identities(
+            reader.key_identity(),
+            reader.input_identity(),
+            input,
         ))
     }
 
@@ -134,14 +134,7 @@ fn author_candidate(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .create_output(
-            WorthQueryApplicationOutputRole::<
-                CreatePersonalAccountMutationBinding,
-                Account,
-                WorthQueryCreateOutput,
-            >::from_static(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT),
-            &created,
-        )
+        .create_output::<CreatedPersonalAccountOutput>(&created)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(CreatePersonalAccountResult {
         account: account_id,

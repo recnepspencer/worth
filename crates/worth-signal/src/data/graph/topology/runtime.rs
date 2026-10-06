@@ -19,7 +19,7 @@ impl SignalGraph {
     pub(crate) fn refresh_runtime_dependencies_with_work(
         &mut self,
         node: NodeId,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(Some(1))?;
         EdgeTopology::prune_dead_dependency_edges(self, node, work)

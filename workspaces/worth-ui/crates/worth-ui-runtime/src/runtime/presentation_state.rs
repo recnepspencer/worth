@@ -214,6 +214,13 @@ impl UiApplicationPresentationState {
         Ok(())
     }
 
+    /// The appearance invalidation batches this owner has queued: each one
+    /// took the next batch revision, which starts at 1.
+    #[cfg(test)]
+    pub(crate) const fn queued_appearance_invalidation_batches(&self) -> u64 {
+        self.next_appearance_batch_revision - 1
+    }
+
     pub(crate) fn prepare_appearance_invalidation(
         &self,
         batch: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,

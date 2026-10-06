@@ -7,6 +7,7 @@ use crate::data::proof::invalidation::binding::{
 };
 use crate::data::proof::invalidation::output_commit::ProducedAspectChange;
 use crate::data::proof::PartitionScopeSet;
+use crate::data::request_preparation::SignalPreparationBudget;
 use crate::logic::evaluation::EvaluationWork;
 
 #[derive(Clone, Copy)]
@@ -21,7 +22,7 @@ pub(crate) struct CauseAdmissionContext {
 pub(crate) fn changed_scopes_for_edge<'a>(
     change: &ProducedAspectChange,
     edge_scope: Option<&'a PartitionSubscription>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<Option<&'a [PartitionSubscription]>, SignalError> {
     let Some(edge_scope) = edge_scope else {
         return Ok(Some(&[]));
@@ -48,7 +49,8 @@ pub(crate) fn reconcile_edge_cause(
     committed_version: u64,
     changed_scopes: &[PartitionSubscription],
     meaningful: bool,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
+    mut preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<(), SignalError> {
     work.reserve(
         preparation_work::scope_comparison(edge_scope)
@@ -61,8 +63,13 @@ pub(crate) fn reconcile_edge_cause(
             && cause.key.edge_scope.as_ref() == edge_scope
     });
     let prior_scopes = existing.map(|index| causes.remove(index).changed_scopes);
-    let Some(reconciled_scopes) =
-        reconcile_changed_scopes(prior_scopes.as_ref(), changed_scopes, meaningful, work)?
+    let Some(reconciled_scopes) = reconcile_changed_scopes(
+        prior_scopes.as_ref(),
+        changed_scopes,
+        meaningful,
+        work,
+        preparation.as_deref_mut(),
+    )?
     else {
         return Ok(());
     };
@@ -70,6 +77,13 @@ pub(crate) fn reconcile_edge_cause(
     // Constructor owns a scope in both key and binding.
     preparation_work::admit_scope_copy(edge_scope, work)?;
     preparation_work::admit_scope_copy(edge_scope, work)?;
+    preparation_work::claim_scope_copy(edge_scope, preparation.as_deref_mut())?;
+    preparation_work::claim_scope_copy(edge_scope, preparation.as_deref_mut())?;
+    if causes.len() == causes.capacity() {
+        if let Some(budget) = preparation {
+            budget.claim_vec::<ResolvedDependencyCause>(causes.len().saturating_mul(2).max(4))?;
+        }
+    }
     causes.push(ResolvedDependencyCause::new(
         context.graph_instance,
         context.consumer,
@@ -89,7 +103,8 @@ fn reconcile_changed_scopes(
     prior: Option<&PartitionScopeSet>,
     touched: &[PartitionSubscription],
     meaningful: bool,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
+    mut preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<Option<PartitionScopeSet>, SignalError> {
     if touched.is_empty() {
         return Ok(meaningful.then(PartitionScopeSet::default));
@@ -117,6 +132,17 @@ fn reconcile_changed_scopes(
             .and_then(|count| count.checked_mul(std::mem::size_of::<PartitionSubscription>()))
             .filter(|bytes| *bytes <= isize::MAX as usize),
     )?;
+    if let Some(budget) = preparation.as_deref_mut() {
+        budget.claim_vec::<PartitionSubscription>(count.expect("admitted scope count"))?;
+    }
+    for scope in previous {
+        preparation_work::claim_scope_copy(Some(scope), preparation.as_deref_mut())?;
+    }
+    if meaningful {
+        for scope in touched {
+            preparation_work::claim_scope_copy(Some(scope), preparation.as_deref_mut())?;
+        }
+    }
     let mut scopes = Vec::with_capacity(count.expect("admitted scope count"));
     scopes.extend(
         previous

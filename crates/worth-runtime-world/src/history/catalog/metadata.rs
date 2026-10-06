@@ -13,6 +13,7 @@ pub(super) struct HistoryMetadataCharge {
     arc_history: usize,
     lookup_index_key: usize,
     lookup_index_value: usize,
+    inspection_order_key: usize,
     reachability_key: usize,
     reachability_row: usize,
     slot_allocations: usize,
@@ -29,6 +30,7 @@ impl HistoryMetadataCharge {
         let arc_history = size_of::<Arc<CompositeRuntimeWorldCommit>>();
         let lookup_index_key = size_of::<CompositeCommitIdentity>();
         let lookup_index_value = size_of::<Arc<OnceLock<CompositeHistoryCatalogEntry>>>();
+        let inspection_order_key = size_of::<CompositeCommitIdentity>() + 4 * size_of::<usize>();
         let reachability_key = size_of::<CompositeCommitIdentity>();
         let reachability_row = size_of::<Arc<Mutex<Option<HistoryReachabilityRecord>>>>();
         let slot_allocations = checked_sum([
@@ -41,6 +43,7 @@ impl HistoryMetadataCharge {
             arc_history,
             lookup_index_key,
             lookup_index_value,
+            inspection_order_key,
             reachability_key,
             reachability_row,
             slot_allocations,
@@ -50,6 +53,7 @@ impl HistoryMetadataCharge {
             arc_history,
             lookup_index_key,
             lookup_index_value,
+            inspection_order_key,
             reachability_key,
             reachability_row,
             slot_allocations,

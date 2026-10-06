@@ -8,7 +8,6 @@ use worth_query_host::facade::application_entry::{
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
     WorthQueryApplicationRequestMutationDenial, WorthQueryWorkflowInstancePreparationDenial,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage;
 
 use super::super::document_retention_model::{
     programs::RetentionProgramP1,
@@ -114,17 +113,8 @@ fn a_cancel_prepared_before_the_effect_goes_stale_when_the_effect_lands_first() 
     perform_approved_effect(&application, &instance, 88_212);
     match early() {
         WorkflowInstanceCancellationOutcome::Application(
-            WorthQueryApplicationUncommitted::Denied(denial),
-        ) => {
-            assert_eq!(
-                denial.kind(),
-                WorthQueryApplicationCommitDenialKind::ProductBasisStale
-            );
-            assert_eq!(
-                denial.stage(),
-                WorthQueryApplicationCommitDenialStage::InvariantExecution
-            );
-        }
+            WorthQueryApplicationUncommitted::Stale(stale),
+        ) => assert!(stale.stale_fact_count() > 0),
         other => panic!("a cancellation read before the effect is stale: {other:?}"),
     }
     // The stale attempt claimed no key: the same key now cancels afresh and

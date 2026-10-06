@@ -250,3 +250,79 @@ pub(super) fn summarize_conflicts(
     .collect();
     summary
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::graph::signal_graph::{
+        DependencySnapshotStructuralDelta, RuntimeArtifactStructuralDelta,
+    };
+    use crate::data::graph::BranchStructuralDelta;
+    use crate::diagnostics::lineage::LineageArtifactId;
+
+    fn artifact_change(previous: u64, next: u64) -> BranchStructuralDelta {
+        BranchStructuralDelta::RuntimeArtifactChanged(RuntimeArtifactStructuralDelta {
+            previous_artifact_id: Some(LineageArtifactId(previous)),
+            next_artifact_id: Some(LineageArtifactId(next)),
+            previous_output_hash: Some(previous.into()),
+            next_output_hash: Some(next.into()),
+            previous_reuse_basis: None,
+            next_reuse_basis: None,
+        })
+    }
+
+    fn record(node: NodeId, delta: BranchStructuralDelta) -> StructuralMergeCandidateRecord {
+        StructuralMergeCandidateRecord {
+            node,
+            introduced: false,
+            state_changed: true,
+            dependencies_changed: false,
+            dependency_snapshot_changed: false,
+            runtime_artifact_changed: true,
+            retained_artifact_changed: false,
+            causality_changed: false,
+            structural_deltas: vec![delta],
+        }
+    }
+
+    #[test]
+    fn branches_reaching_the_same_net_artifact_do_not_conflict() {
+        let node = SignalGraph::new().create_node();
+        let source = record(node, artifact_change(0, 9));
+        let target = record(node, artifact_change(0, 9));
+
+        assert!(classify_conflict_kinds(None, None, Some(&source), Some(&target)).is_empty());
+    }
+
+    fn snapshot_change(changed_entry_count: u32) -> BranchStructuralDelta {
+        BranchStructuralDelta::DependencySnapshotChanged(DependencySnapshotStructuralDelta {
+            previous_entry_count: 3,
+            next_entry_count: 4,
+            changed_entry_count,
+        })
+    }
+
+    #[test]
+    fn branches_reaching_one_snapshot_along_different_paths_conflict() {
+        let node = SignalGraph::new().create_node();
+        let source = record(node, snapshot_change(1));
+        let target = record(node, snapshot_change(5));
+
+        assert_eq!(
+            classify_conflict_kinds(None, None, Some(&source), Some(&target)),
+            vec![BranchMergeConflictKind::DependencySnapshotMismatch]
+        );
+    }
+
+    #[test]
+    fn branches_reaching_different_artifacts_conflict() {
+        let node = SignalGraph::new().create_node();
+        let source = record(node, artifact_change(0, 9));
+        let target = record(node, artifact_change(0, 8));
+
+        assert_eq!(
+            classify_conflict_kinds(None, None, Some(&source), Some(&target)),
+            vec![BranchMergeConflictKind::RuntimeArtifactMismatch]
+        );
+    }
+}

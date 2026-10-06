@@ -2,19 +2,24 @@ use super::super::super::super::protocol::{
     BankHttpRecoveryRetryDisposition, BankHttpRecoverySafeRetryOutcome, BankHttpRecoveryStatus,
 };
 use super::*;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_query_host::facade::primary_graph::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
     WorthQueryExternalTransportOutcome,
 };
 
-struct CompletingTransport;
+struct CompletingOnRetryTransport(AtomicUsize);
 
-impl WorthQueryExternalEffectTransport for CompletingTransport {
+impl WorthQueryExternalEffectTransport for CompletingOnRetryTransport {
     fn dispatch(
         &self,
         _request: WorthQueryExternalDispatchRequest<'_>,
     ) -> WorthQueryExternalTransportOutcome {
-        WorthQueryExternalTransportOutcome::Completed
+        if self.0.fetch_add(1, Ordering::SeqCst) == 0 {
+            WorthQueryExternalTransportOutcome::TimedOut
+        } else {
+            WorthQueryExternalTransportOutcome::Completed
+        }
     }
 }
 
@@ -23,7 +28,9 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
     let application = application(AccountId::new(100).unwrap());
     application
         .runtime
-        .install_external_effect_transport(Arc::new(CompletingTransport))
+        .install_external_effect_transport(Arc::new(CompletingOnRetryTransport(AtomicUsize::new(
+            0,
+        ))))
         .expect("rail port should install once");
     let server = bind_application(
         Arc::new(application),
@@ -51,14 +58,17 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         &recovery_request(&first_action, "first-retry", &token),
     )
     .await;
-    assert!(matches!(
-        retry,
-        BankHttpRecoverySafeRetryOutcome::Applied {
-            disposition: BankHttpRecoveryRetryDisposition::Retried,
-            external_completion: true,
-            ..
-        }
-    ));
+    assert!(
+        matches!(
+            retry,
+            BankHttpRecoverySafeRetryOutcome::Applied {
+                disposition: BankHttpRecoveryRetryDisposition::Retried,
+                external_completion: true,
+                ..
+            }
+        ),
+        "actual first retry: {retry:?}"
+    );
     let retry_replay = post_typed::<BankHttpRecoverySafeRetryOutcome>(
         &client,
         server.local_address(),

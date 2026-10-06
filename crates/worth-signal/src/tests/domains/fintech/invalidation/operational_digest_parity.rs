@@ -12,10 +12,7 @@ fn operational_authority_digest_is_independent_of_diagnostic_tier() {
         let mut compiled = compile_financial_locality_world_at_tier(definition.clone(), tier)
             .expect("M10 tier world should compile");
         let (observation, _) = compiled
-            .observe_locality_action_trace_with_executor(
-                0,
-                crate::logic::planner::StageExecutor::Serial,
-            )
+            .observe_locality_action_trace_with_workers(0, 1)
             .expect("M10 tier action should settle");
         digests.push(
             compiled

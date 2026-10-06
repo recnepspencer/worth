@@ -1,5 +1,4 @@
 use crate::commit_strategies::data::CommitStrategyRegistration;
-use crate::config::data::{PlanningContract, RelationalExecutionModel};
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::durability::data::{DurabilityMode, DurableStoreLayout};
 use crate::history::data::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
@@ -17,8 +16,6 @@ use super::sections::RelationIntegrityScopeBudget;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ExecutionConfigOverride {
     pub runtime_name: Option<String>,
-    pub execution_model: Option<RelationalExecutionModel>,
-    pub planning: Option<PlanningContract>,
     pub compiled_lane_policy: Option<CompiledLanePolicy>,
     pub relation_integrity_scope_budget: Option<RelationIntegrityScopeBudget>,
 }

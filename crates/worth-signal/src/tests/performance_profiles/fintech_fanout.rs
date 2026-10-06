@@ -3,7 +3,6 @@ use std::time::Instant;
 
 use serde_json::{json, Value};
 
-use crate::facade::StageExecutor;
 use crate::tests::domains::fintech::{setup_seeded_world_with, FintechScale, MarketRegime};
 use crate::tests::performance_support::{
     capture_and_certify_perf_samples, PerfMeasurement, PerfTimingPolicy,
@@ -22,11 +21,11 @@ fn perf_fintech_mixed_fanout_profile_matrix() {
                     let mut world =
                         setup_seeded_world_with(FintechScale::fanout(), MarketRegime::Calm, 7);
                     world.set_runtime_policy(policy_for("operational"));
-                    let _ = world.read_top_desk_with_executor(StageExecutor::Serial);
-                    let _ = world.read_top_scenario_with_executor(StageExecutor::Serial);
-                    let _ = world.bump_primary_market(7, 4, 2, 1, StageExecutor::Serial);
-                    let _ = world.read_top_desk_with_executor(StageExecutor::Serial);
-                    let _ = world.read_top_scenario_with_executor(StageExecutor::Serial);
+                    let _ = world.read_top_desk();
+                    let _ = world.read_top_scenario();
+                    let _ = world.bump_primary_market(7, 4, 2, 1);
+                    let _ = world.read_top_desk();
+                    let _ = world.read_top_scenario();
                 });
             }
             "development" => {
@@ -35,11 +34,11 @@ fn perf_fintech_mixed_fanout_profile_matrix() {
                     let mut world =
                         setup_seeded_world_with(FintechScale::fanout(), MarketRegime::Calm, 7);
                     world.set_runtime_policy(policy_for("development"));
-                    let _ = world.read_top_desk_with_executor(StageExecutor::Serial);
-                    let _ = world.read_top_scenario_with_executor(StageExecutor::Serial);
-                    let _ = world.bump_primary_market(7, 4, 2, 1, StageExecutor::Serial);
-                    let _ = world.read_top_desk_with_executor(StageExecutor::Serial);
-                    let _ = world.read_top_scenario_with_executor(StageExecutor::Serial);
+                    let _ = world.read_top_desk();
+                    let _ = world.read_top_scenario();
+                    let _ = world.bump_primary_market(7, 4, 2, 1);
+                    let _ = world.read_top_desk();
+                    let _ = world.read_top_scenario();
                 });
             }
             "forensic" => {
@@ -48,11 +47,11 @@ fn perf_fintech_mixed_fanout_profile_matrix() {
                     let mut world =
                         setup_seeded_world_with(FintechScale::fanout(), MarketRegime::Calm, 7);
                     world.set_runtime_policy(policy_for("forensic"));
-                    let _ = world.read_top_desk_with_executor(StageExecutor::Serial);
-                    let _ = world.read_top_scenario_with_executor(StageExecutor::Serial);
-                    let _ = world.bump_primary_market(7, 4, 2, 1, StageExecutor::Serial);
-                    let _ = world.read_top_desk_with_executor(StageExecutor::Serial);
-                    let _ = world.read_top_scenario_with_executor(StageExecutor::Serial);
+                    let _ = world.read_top_desk();
+                    let _ = world.read_top_scenario();
+                    let _ = world.bump_primary_market(7, 4, 2, 1);
+                    let _ = world.read_top_desk();
+                    let _ = world.read_top_scenario();
                 });
             }
             other => panic!("unexpected profile for perf test: {other}"),
@@ -75,37 +74,23 @@ fn perf_fintech_mixed_fanout_profile_matrix() {
                 world.set_runtime_policy(policy_for(profile_name));
 
                 let warmup_start = Instant::now();
-                let _ = world
-                    .read_top_desk_with_executor(StageExecutor::Serial)
-                    .unwrap();
-                let _ = world
-                    .read_top_scenario_with_executor(StageExecutor::Serial)
-                    .unwrap();
+                let _ = world.read_top_desk().unwrap();
+                let _ = world.read_top_scenario().unwrap();
                 let warmup_nanos = warmup_start.elapsed().as_nanos();
 
                 let before = world.runtime_metrics();
                 let read_before_start = Instant::now();
-                let _ = world
-                    .read_top_desk_with_executor(StageExecutor::Serial)
-                    .unwrap();
-                let _ = world
-                    .read_top_scenario_with_executor(StageExecutor::Serial)
-                    .unwrap();
+                let _ = world.read_top_desk().unwrap();
+                let _ = world.read_top_scenario().unwrap();
                 let read_before_nanos = read_before_start.elapsed().as_nanos();
 
                 let mutation_start = Instant::now();
-                let _ = world
-                    .bump_primary_market(7, 4, 2, 1, StageExecutor::Serial)
-                    .unwrap();
+                let _ = world.bump_primary_market(7, 4, 2, 1).unwrap();
                 let mutation_nanos = mutation_start.elapsed().as_nanos();
 
                 let read_after_start = Instant::now();
-                let _ = world
-                    .read_top_desk_with_executor(StageExecutor::Serial)
-                    .unwrap();
-                let _ = world
-                    .read_top_scenario_with_executor(StageExecutor::Serial)
-                    .unwrap();
+                let _ = world.read_top_desk().unwrap();
+                let _ = world.read_top_scenario().unwrap();
                 let read_after_nanos = read_after_start.elapsed().as_nanos();
                 let after = world.runtime_metrics();
 

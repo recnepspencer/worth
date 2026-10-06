@@ -31,7 +31,6 @@ impl<'runtime> InvariantAccess<'runtime> {
             disposition,
             plan_contract,
             merged_plan.is_some(),
-            self.runtime.config.execution.execution_model,
             None,
             Vec::new(),
             None,

@@ -4,7 +4,7 @@ use worth_query_declaration::facade::domain_computation::{
 };
 
 use super::compiled_contract::WorthQueryCompiledApplicationOperationContracts;
-use super::invariant_compilation::mutation_contracts;
+use super::invariant_compilation::{candidate_validator_work, mutation_contracts};
 use crate::application_operation::WorthQueryApplicationCandidateDemand;
 use crate::application_operation::WorthQuerySealedOperationContractCompilation;
 use crate::domain_computation::{
@@ -59,6 +59,8 @@ impl WorthQueryCompiledApplicationOperationContracts {
             candidate_demand,
             &invariant_invocations,
         )?;
+        let candidate_validator_work = candidate_validator_work(&invariant_execution)?;
+        let candidate_demand = candidate_demand.resolve_validator_work(candidate_validator_work)?;
         let overlap_index = WorthQueryOperationReadTouchOverlapIndex::new(
             graph_reads
                 .roles()
@@ -84,6 +86,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             invariants,
             decision_facts,
             invariant_execution,
+            candidate_validator_work,
             resources,
             decision_fact_budget,
             projection_work_budget,

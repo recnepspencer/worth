@@ -38,19 +38,21 @@ pub use confirmation::{
     UiIntentConfirmationStopReason, UiIntentConfirmationTimeBasisKind, UiPendingIntentConfirmation,
     UI_INTENT_CONFIRMATION_TTL_MILLIS, UI_PENDING_INTENT_CONFIRMATION_LIMIT,
 };
+#[cfg(test)]
+pub(crate) use operability::reobserve_standing_fact;
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use operability::UiIntentOperabilityDecisionInput;
 pub(crate) use operability::{
     evaluate_intent_operability, observe_activation_operability, UiIntentOccupancyPlacement,
-    UiIntentOccupancyState, UiIntentStandingOperabilityObservation,
-    UiIntentStandingOperabilityUnavailable,
+    UiIntentOccupancyState, UiIntentOperabilityAuthority, UiIntentOperabilityReadOwners,
+    UiIntentStandingOperabilityObservation, UiIntentStandingOperabilityUnavailable,
 };
 pub use operability::{
     UiInoperableIntentCandidate, UiIntentAffinityPosture, UiIntentConfirmationPosture,
     UiIntentInoperableCause, UiIntentInoperableCauseIter, UiIntentMutabilityPosture,
     UiIntentOccupancyPosture, UiIntentOperabilityCost, UiIntentOperabilityDecision,
     UiIntentOperabilityOutcome, UiIntentOperabilityProof, UiIntentPolicyPosture,
-    UiIntentReadinessPosture, UiIntentSupportPosture,
+    UiIntentReadinessPosture, UiIntentSupportPosture, UiIntentWithheldCondition,
 };
 #[cfg(any(test, feature = "certification-support"))]
 pub use operability::{
@@ -65,7 +67,7 @@ pub(crate) use operability::{UiIntentOccupancyReservation, UiIntentOccupancyRese
 )]
 pub(crate) use operability::{UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact};
 pub(crate) use payload::{
-    prepare_intent_payload, UiIntentApplicationFactState,
+    prepare_intent_payload, UiIntentApplicationFactState, UiIntentInputOwners,
     UiPreparedValidationAppearanceReceiptSuccession, UiValidationAppearanceClass,
     UiValidationAppearanceFactSnapshot,
 };
@@ -77,9 +79,10 @@ pub(crate) use payload::{
 pub(crate) use payload::{UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial};
 pub use payload::{
     UiIntentApplicationFactRevision, UiIntentApplicationFactUpdateDenial,
-    UiIntentApplicationFactUpdateReceipt, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,
-    UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost, UiIntentPayloadStop,
-    UiIntentQueryInputRevision, UiPreparedIntentPayload,
+    UiIntentApplicationFactUpdateReceipt, UiIntentApplicationInputReference,
+    UiIntentApplicationInputRevision, UiIntentDraftInputRevision, UiIntentExpressionInputRevision,
+    UiIntentInputBasisReceipt, UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost,
+    UiIntentPayloadStop, UiIntentQueryInputRevision, UiPreparedIntentPayload,
 };
 pub(crate) use routing::resolve_intent_route;
 pub use routing::{

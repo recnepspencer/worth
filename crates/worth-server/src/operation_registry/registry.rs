@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{
     diagnostics::WorthServerCounters, WorthServerOperationAuthorityMetadata,
@@ -10,7 +10,8 @@ use crate::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthServerOperationRegistry {
-    registrations_by_family: BTreeMap<WorthServerOperationFamily, WorthServerOperationRegistration>,
+    registrations_by_family:
+        Arc<BTreeMap<WorthServerOperationFamily, WorthServerOperationRegistration>>,
 }
 
 impl WorthServerOperationRegistry {
@@ -40,7 +41,7 @@ impl WorthServerOperationRegistry {
         counters.record_registered_operation_families(registrations_by_family.len());
 
         Ok(Self {
-            registrations_by_family,
+            registrations_by_family: Arc::new(registrations_by_family),
         })
     }
 

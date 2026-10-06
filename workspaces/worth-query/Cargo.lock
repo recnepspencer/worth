@@ -630,6 +630,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
+name = "worth-execution"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
@@ -683,6 +692,7 @@ dependencies = [
 name = "worth-query-certification"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "worth-foundational",
  "worth-proof",
  "worth-query",
@@ -709,6 +719,7 @@ dependencies = [
 name = "worth-query-declaration"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
 ]
@@ -752,6 +763,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom 0.4.3",
  "hmac",
+ "serde",
  "sha2",
  "subtle",
  "worth-foundational",
@@ -774,6 +786,7 @@ dependencies = [
 name = "worth-query-publication"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
  "worth-proof",
@@ -799,11 +812,11 @@ dependencies = [
  "crossbeam-queue",
  "dashmap",
  "im",
- "rayon",
  "rmp-serde",
  "serde",
  "sha2",
  "smallvec",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
 ]
@@ -814,6 +827,7 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "sha2",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-relational",
@@ -824,6 +838,7 @@ dependencies = [
 name = "worth-runtime-world"
 version = "0.1.0"
 dependencies = [
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-relational",
@@ -842,13 +857,13 @@ dependencies = [
  "arc-swap",
  "im",
  "js-sys",
- "rayon",
  "serde",
  "serde_json",
  "sha2",
  "smallvec",
  "tracing",
  "wasm-bindgen",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
 ]

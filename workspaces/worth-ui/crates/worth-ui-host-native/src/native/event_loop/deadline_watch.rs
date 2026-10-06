@@ -11,20 +11,31 @@
 //! wake has progressed timed work. Posted wakes are dispatched by any loop,
 //! modal or not.
 //! The ordinary loop reaches its deadlines through `WaitUntil` first, so the
-//! watch stays silent there. The thread owns no host state and never calls
-//! into it; it only posts the wake.
+//! watch stays silent there unless a turn runs past a deadline, when its wake
+//! only progresses timed work the loop was about to progress anyway. The
+//! thread owns no host state and never calls into it; it only posts the wake.
 
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
-use winit::event_loop::EventLoopProxy;
-
 use super::{UiNativeEventLoopApplication, UiNativeEventLoopClient};
-use crate::native::readiness::UiNativeApplicationWake;
+use crate::native::readiness::UiNativeWakeSender;
 
 /// How long past a deadline the event loop may take before the watch wakes it.
-const WATCH_SLACK: Duration = Duration::from_millis(4);
+const WATCH_SLACK: Duration = Duration::from_millis(1);
+
+/// How close to its deadline the watch stops waiting on its condition
+/// variable and sleeps instead. A condition-variable timeout rounds up to the
+/// system timer tick, 15.6 ms by default on Windows, while a sleep is precise
+/// to about a millisecond. Frame completion is polled through this watch for
+/// the whole of a border drag, so a tick of rounding would be a tick of
+/// latency on every frame.
+const PRECISE_WITHIN: Duration = Duration::from_millis(20);
+
+/// The longest single sleep, so a deadline armed earlier, or a stop, is seen
+/// within one step.
+const PRECISE_STEP: Duration = Duration::from_millis(1);
 
 pub(super) struct UiNativeDeadlineWatch {
     shared: Arc<(Mutex<UiNativeDeadlineWatchState>, Condvar)>,
@@ -42,7 +53,7 @@ struct UiNativeDeadlineWatchState {
 }
 
 impl UiNativeDeadlineWatch {
-    pub(super) fn start(proxy: EventLoopProxy<UiNativeApplicationWake>) -> Option<Self> {
+    pub(super) fn start(wake: UiNativeWakeSender) -> Option<Self> {
         let shared = Arc::new((
             Mutex::new(UiNativeDeadlineWatchState::default()),
             Condvar::new(),
@@ -50,11 +61,7 @@ impl UiNativeDeadlineWatch {
         let watched = Arc::clone(&shared);
         let thread = std::thread::Builder::new()
             .name("worth-ui-deadline-watch".to_owned())
-            .spawn(move || {
-                watch(&watched, |()| {
-                    proxy.send_event(UiNativeApplicationWake).is_ok()
-                })
-            })
+            .spawn(move || watch(&watched, |()| wake.send().is_ok()))
             .ok()?;
         Some(Self {
             shared,
@@ -137,10 +144,20 @@ fn watch(shared: &(Mutex<UiNativeDeadlineWatchState>, Condvar), mut post: impl F
         let due = armed + WATCH_SLACK;
         let now = Instant::now();
         if now < due {
-            state = match wake.wait_timeout(state, due - now) {
-                Ok((state, _)) => state,
-                Err(_) => return,
-            };
+            let remaining = due - now;
+            if remaining > PRECISE_WITHIN {
+                state = match wake.wait_timeout(state, remaining - PRECISE_WITHIN) {
+                    Ok((state, _)) => state,
+                    Err(_) => return,
+                };
+            } else {
+                drop(state);
+                std::thread::sleep(remaining.min(PRECISE_STEP));
+                state = match lock.lock() {
+                    Ok(state) => state,
+                    Err(_) => return,
+                };
+            }
             continue;
         }
         state.armed = None;
@@ -206,6 +223,27 @@ mod tests {
         let next = Instant::now() + Duration::from_millis(10);
         watch.reached(Some(next), true);
         assert!(posted.recv_timeout(Duration::from_secs(5)).unwrap() >= next);
+        drop(watch);
+        thread.join().unwrap();
+    }
+
+    #[test]
+    fn a_near_deadline_posts_within_milliseconds_not_a_timer_tick() {
+        let (shared, posted, thread) = started();
+        let watch = watch_of(&shared);
+        // A condition-variable timeout on Windows lands a whole timer tick,
+        // about 15 ms, late. The best of a few wakes is immune to a busy
+        // machine delaying one of them, and 10 ms still lies well inside the
+        // tick a timeout would cost.
+        let lateness = (0..5)
+            .map(|_| {
+                let armed = Instant::now() + Duration::from_millis(2);
+                watch.reached(Some(armed), true);
+                posted.recv_timeout(Duration::from_secs(5)).unwrap() - armed
+            })
+            .min()
+            .unwrap();
+        assert!(lateness < Duration::from_millis(10), "{lateness:?}");
         drop(watch);
         thread.join().unwrap();
     }

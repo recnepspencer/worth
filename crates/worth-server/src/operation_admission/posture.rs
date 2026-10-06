@@ -16,6 +16,17 @@ pub struct WorthServerOperationAdmissionPosture {
 }
 
 impl WorthServerOperationAdmissionPosture {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        self.operation_request
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.authority_metadata.owned_allocation_capacity_bytes())
+            .saturating_add(self.authority_footprint.owned_allocation_capacity_bytes())
+            .saturating_add(self.footprint_receipt.owned_allocation_capacity_bytes())
+            .saturating_add(self.authorization_proof.owned_allocation_capacity_bytes())
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub(crate) fn new(
         operation_request: WorthServerOperationRequest,
         authority_metadata: WorthServerOperationAuthorityMetadata,

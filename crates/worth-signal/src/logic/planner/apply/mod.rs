@@ -1,4 +1,3 @@
-#[cfg(feature = "parallel")]
 pub(crate) mod groups;
 mod lowering_support;
 pub(crate) mod serial_batch;

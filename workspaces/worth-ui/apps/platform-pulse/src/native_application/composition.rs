@@ -8,14 +8,34 @@ use worth_ui_platform_pulse::product_world::PlatformPulseMosaicSurface;
 pub(crate) struct PlatformPulseApplication {
     launch: crate::launch_configuration::AdmittedPlatformPulseLaunchConfiguration,
     publisher: crate::lifecycle_observation_publication::PlatformPulseObservationPublisher,
+    visual_identity_journey: bool,
 }
 
 impl PlatformPulseApplication {
+    /// The product application, taking the visual identity journey when the
+    /// process environment asks for it.
     pub(crate) fn new(
         launch: crate::launch_configuration::AdmittedPlatformPulseLaunchConfiguration,
         publisher: crate::lifecycle_observation_publication::PlatformPulseObservationPublisher,
     ) -> Self {
-        Self { launch, publisher }
+        Self {
+            launch,
+            publisher,
+            visual_identity_journey: PlatformPulseVisualIdentityExecution::requested_by_process(),
+        }
+    }
+
+    /// The product application for an offscreen run, which never takes the
+    /// visual identity journey.
+    pub(crate) fn offscreen(
+        launch: crate::launch_configuration::AdmittedPlatformPulseLaunchConfiguration,
+        publisher: crate::lifecycle_observation_publication::PlatformPulseObservationPublisher,
+    ) -> Self {
+        Self {
+            launch,
+            publisher,
+            visual_identity_journey: false,
+        }
     }
 }
 
@@ -34,8 +54,11 @@ impl worth_ui_native_platform::UiNativeApplicationDefinition for PlatformPulseAp
                 );
             }
         };
-        let (builder, runtime) =
-            super::PlatformPulseApplicationRuntime::from_composition(composition, self.publisher);
+        let (builder, runtime) = super::PlatformPulseApplicationRuntime::from_composition(
+            composition,
+            self.publisher,
+            PlatformPulseVisualIdentityExecution::new(self.visual_identity_journey),
+        );
         let Some(presentation_async) = crate::query_source::install_native_presentation_async()
         else {
             let _ = runtime.publisher.query_preparation_failure();
@@ -66,6 +89,7 @@ impl super::PlatformPulseApplicationRuntime {
     pub(crate) fn from_composition(
         composition: PreparedPlatformPulseComposition,
         publisher: crate::lifecycle_observation_publication::PlatformPulseObservationPublisher,
+        visual_identity: PlatformPulseVisualIdentityExecution,
     ) -> (
         worth_ui::facade::app::WorthUiApplicationBuilder<
             worth_ui::facade::app::UiChangeProfileInstalled,
@@ -108,7 +132,7 @@ impl super::PlatformPulseApplicationRuntime {
             native_input: super::input::PlatformPulseNativeInputIngress::AwaitingFirstFrame,
             publisher,
             terminal: super::terminal_error::PlatformPulseTerminalPosture::Running,
-            visual_identity: PlatformPulseVisualIdentityExecution::new(),
+            visual_identity,
             intent_clock: super::intent::PlatformPulseIntentClock::new(),
             presentation_tick: 0,
             frame_time_origin: std::time::Instant::now(),

@@ -27,6 +27,13 @@ pub(crate) trait UiNativeGraphicsPort {
     ) -> Result<Self::Recovery, UiNativeGraphicsPortDenial>;
 }
 
+/// The window graphics prepare for: a platform window, whose swapchain they
+/// create, or an offscreen client area of the given extent and scale.
+pub(crate) enum UiNativeGraphicsWindow {
+    Platform(std::sync::Arc<winit::window::Window>),
+    Offscreen { extent: [u32; 2], scale_factor: f64 },
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiNativeGraphicsRecovery {
     SurfaceOutdated,

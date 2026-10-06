@@ -59,7 +59,9 @@ fn program_entry_denies_unauthorized_account_mutations() {
         .expect_err("customer role cannot substitute teller authority");
     assert!(matches!(
         creation_denial.kind(),
-        WorthQueryApplicationRequestMutationDenialKind::Authorization
+        WorthQueryApplicationRequestMutationDenialKind::Authorization(
+            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+        )
     ));
     let send_denial = world
         .runtime
@@ -77,6 +79,8 @@ fn program_entry_denies_unauthorized_account_mutations() {
         .expect_err("non-owner must be denied");
     assert!(matches!(
         send_denial.kind(),
-        WorthQueryApplicationRequestMutationDenialKind::Authorization
+        WorthQueryApplicationRequestMutationDenialKind::Authorization(
+            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+        )
     ));
 }

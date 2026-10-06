@@ -22,7 +22,7 @@ pub(super) fn perf_now_ms() -> f64 {
 
         static START: OnceLock<Instant> = OnceLock::new();
         let start = START.get_or_init(Instant::now);
-        return start.elapsed().as_secs_f64() * 1000.0;
+        start.elapsed().as_secs_f64() * 1000.0
     }
 }
 

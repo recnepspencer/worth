@@ -18,10 +18,14 @@ mod delegation_progression;
 mod denial;
 mod elevation_progression;
 mod graph_work_session;
+pub(in crate::domain_computation) use graph_work_session::{
+    start_selected_operation_graph_work_admitted, SelectedOperationGraphWorkStop,
+};
 mod installed_policy;
 mod lowering;
 mod operation_progression;
 mod operation_scope_binding;
+pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisionScopeWitness;
 mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::{
     WorkflowApprovalRequestEncodingDenial, WorthQueryRetainedCapabilityRequest,
@@ -41,6 +45,7 @@ pub(in crate::domain_computation) use workflow_approval_dependencies::{
 pub(in crate::domain_computation) use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeClock, WorthQueryRuntimeTimeSample,
 };
+pub(in crate::domain_computation) use admission::AdmittedQueryAuthorizationStop;
 pub(in crate::domain_computation) use application_commit_authorization::WorthQueryApplicationCommitAuthorization;
 pub(super) use bridge_binding::bridge_authorization_binding_identity;
 pub(in crate::domain_computation) use capability_decision_fact::{
@@ -61,6 +66,7 @@ pub(in crate::domain_computation) use decision_facts::{
 pub(in crate::domain_computation) use delegation_progression::{
     WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
 };
+pub(in crate::domain_computation) use denial::WorthQueryAdmissionLapse;
 pub use denial::{
     WorthQueryApplicationAuthorizationExplanationCause, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
@@ -75,11 +81,16 @@ pub use elevation_progression::{
     WorthQueryMandatoryReviewAuthorizationDenial,
 };
 pub(in crate::domain_computation) use installed_policy::WorthQueryInstalledAuthorizationRegistry;
-pub(in crate::domain_computation) use operation_progression::admit_capability_access;
 pub(in crate::domain_computation) use operation_progression::progress_conventional_operation;
 pub use operation_progression::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use operation_progression::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use operation_progression::WorthQueryOperationAdmissionIdentity;
+pub(in crate::domain_computation) use operation_progression::{
+    admit_capability_access, admit_encoded_capability_access,
+};
+pub(in crate::domain_computation) use operation_progression::{
+    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+};
 pub use operation_scope_binding::{
     WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
 };

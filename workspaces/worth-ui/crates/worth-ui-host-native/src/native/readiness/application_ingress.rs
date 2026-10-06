@@ -1,6 +1,4 @@
-use winit::event_loop::EventLoopProxy;
-
-use super::{UiNativeReadinessRegistry, UiNativeReadyOwner};
+use super::{UiNativeReadinessRegistry, UiNativeReadyOwner, UiNativeWakeSender};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiNativeApplicationWake;
@@ -14,7 +12,7 @@ pub(crate) struct UiNativeApplicationWake;
 pub struct UiNativeApplicationReadinessPort {
     registry: UiNativeReadinessRegistry,
     owner: UiNativeReadyOwner,
-    proxy: EventLoopProxy<UiNativeApplicationWake>,
+    wake: UiNativeWakeSender,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -33,12 +31,12 @@ impl UiNativeApplicationReadinessPort {
     pub(crate) fn new(
         registry: UiNativeReadinessRegistry,
         owner: UiNativeReadyOwner,
-        proxy: EventLoopProxy<UiNativeApplicationWake>,
+        wake: UiNativeWakeSender,
     ) -> Self {
         Self {
             registry,
             owner,
-            proxy,
+            wake,
         }
     }
 
@@ -55,7 +53,7 @@ impl UiNativeApplicationReadinessPort {
         if !queued {
             return Ok(UiNativeApplicationReadinessSignalDisposition::Coalesced);
         }
-        if self.proxy.send_event(UiNativeApplicationWake).is_err() {
+        if self.wake.send().is_err() {
             let _ = self.registry.cancel_level_signal(self.owner);
             return Err(UiNativeApplicationReadinessSignalDenial::EventLoopClosed);
         }

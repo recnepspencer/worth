@@ -4,9 +4,13 @@ use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionA
 use worth_relational::facade::storage::RecordLifecycleState;
 use worth_relational::facade::transactions::AspectFieldLocator;
 
-use super::{WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution};
+use super::{
+    WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
+    WorthQueryProviderIdempotencyResolutionDenial,
+};
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryRecordedIntentMatch,
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
@@ -18,7 +22,8 @@ pub(super) fn resolve_at_snapshot(
     layout: &WorthQueryProviderIdempotencyLayout,
     expected_product: &WorthQueryProductIdempotencyAffinity,
     binding: WorthQueryApplicationIdempotencyBinding,
-) -> Result<WorthQueryProviderIdempotencyResolution, &'static str> {
+) -> Result<WorthQueryProviderIdempotencyResolution, WorthQueryProviderIdempotencyResolutionDenial>
+{
     let key = AspectValue::String(InternedString::from(binding.key_text()));
     let context = WorthQueryIdempotencySnapshotContext {
         provider,
@@ -174,10 +179,19 @@ fn resolve_projected_idempotency(
     expected_product: &WorthQueryProductIdempotencyAffinity,
     binding: WorthQueryApplicationIdempotencyBinding,
     record: WorthQueryProjectedIdempotencyRecord,
-) -> Result<WorthQueryProviderIdempotencyResolution, &'static str> {
-    let expected_intent = AspectValue::String(InternedString::from(binding.intent_text()));
-    if record.intent.as_ref() != Some(&expected_intent) {
-        return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+) -> Result<WorthQueryProviderIdempotencyResolution, WorthQueryProviderIdempotencyResolutionDenial>
+{
+    let Some(AspectValue::String(InternedString::Raw(recorded_intent))) = &record.intent else {
+        return Err("provider idempotency intent is unavailable".into());
+    };
+    match binding.match_recorded_intent(recorded_intent)? {
+        WorthQueryRecordedIntentMatch::Same => {}
+        WorthQueryRecordedIntentMatch::Drift => {
+            return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+        }
+        WorthQueryRecordedIntentMatch::Unverifiable => {
+            return Err(WorthQueryProviderIdempotencyResolutionDenial::RecordedIntentUnverifiable);
+        }
     }
     let committed = context
         .runtime
@@ -185,22 +199,37 @@ fn resolve_projected_idempotency(
         .historical_committed_version(record.created_at_version)
         .ok_or("provider idempotency creation commit is unavailable")?;
     let Some(AspectValue::UInt64(outcome_identity)) = record.outcome_identity else {
-        return Err("provider idempotency outcome identity is unavailable");
+        return Err("provider idempotency outcome identity is unavailable".into());
     };
     let outcome_identity = WorthQueryApplicationCommitOutcomeIdentity::restore(outcome_identity)
         .ok_or("provider idempotency outcome identity is invalid")?;
     let Some(AspectValue::UInt64(emitted)) = record.emitted_effect_count else {
-        return Err("provider idempotency emitted-effect count is unavailable");
+        return Err("provider idempotency emitted-effect count is unavailable".into());
     };
     let emitted = usize::try_from(emitted)
         .map_err(|_| "provider idempotency emitted-effect count exceeds host representation")?;
     let commit = committed.commit().clone();
-    let committed = context
-        .provider
-        .observe_completed_application(&commit)
-        .ok_or("provider idempotency commit evidence is unavailable")?;
-    let performed_product = WorthQueryProductIdempotencyAffinity::from_reference(
-        committed.product_publication().new_product_head(),
+    // The receipt's evidence is process memory, retained from the publication
+    // that performed the commit. The declared idempotency window evicts the
+    // oldest evidence; a restore or reopen, or the retirement of the performing
+    // product occurrence, releases it. The durable record still names the
+    // commit, so the replay is told which, never drift and never re-execution.
+    let Some(committed) = context.provider.observe_completed_application(&commit) else {
+        return Err(
+            if context
+                .provider
+                .completed_evidence_expired(commit.commit_id)
+            {
+                WorthQueryProviderIdempotencyResolutionDenial::WindowExpired
+            } else {
+                WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained {
+                    commit: commit.commit_id,
+                }
+            },
+        );
+    };
+    let performed_product = WorthQueryProductIdempotencyAffinity::from_publication(
+        committed.committed_product_publication(),
     );
     if &performed_product != expected_product {
         return Ok(WorthQueryProviderIdempotencyResolution::Drift);
@@ -209,7 +238,7 @@ fn resolve_projected_idempotency(
         || committed.runtime_instance_id() != context.snapshot.runtime_instance_id()
         || committed.emitted_effect_count() != emitted
     {
-        return Err("provider idempotency commit evidence has foreign affinity");
+        return Err("provider idempotency commit evidence has foreign affinity".into());
     }
     Ok(WorthQueryProviderIdempotencyResolution::Equivalent(
         committed,

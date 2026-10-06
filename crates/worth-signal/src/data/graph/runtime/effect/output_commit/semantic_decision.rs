@@ -8,7 +8,7 @@ impl SignalGraph {
     pub(super) fn build_semantic_artifact_write(
         &self,
         apply: &mut ApplyCommitPacket,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<Option<crate::data::trace::HotArtifactWrite>, SignalError> {
         let (previous_output, previous_continuity) =
             self.node_runtime_artifact_output_tokens(apply.effect.operational.node)?;
@@ -45,7 +45,7 @@ impl SignalGraph {
         &self,
         apply: &mut ApplyCommitPacket,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(Some(4 * crate::data::aspect::MAX_ASPECTS))?;
         let node = apply.effect.operational.node;

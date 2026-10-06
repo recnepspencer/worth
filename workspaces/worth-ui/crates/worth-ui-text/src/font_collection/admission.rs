@@ -1,4 +1,5 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiFontCollectionGeneration, UiFontSlant, UiQualifiedFontFaceIdentity,
 };
@@ -38,7 +39,7 @@ impl UiGlobalFontCollection {
                 return Err(UiFontCollectionAdmissionDenial::WrongByteLength);
             }
             cost.bytes_hashed += u64::try_from(input.bytes.len()).expect("font bytes fit u64");
-            let observed: [u8; 32] = Sha256::digest(&input.bytes).into();
+            let observed: [u8; 32] = UiCountedSha256::digest(&input.bytes).into();
             if observed != expected.digest {
                 return Err(UiFontCollectionAdmissionDenial::FontDigestMismatch);
             }

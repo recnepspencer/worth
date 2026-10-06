@@ -181,7 +181,8 @@ fn authored_components(
             | WorthUiSemanticDeclaration::SemanticArtifact(_)
             | WorthUiSemanticDeclaration::AppearanceRole(_)
             | WorthUiSemanticDeclaration::Backdrop(_)
-            | WorthUiSemanticDeclaration::Layout(_) => None,
+            | WorthUiSemanticDeclaration::Layout(_)
+            | WorthUiSemanticDeclaration::Expression(_) => None,
         })
 }
 

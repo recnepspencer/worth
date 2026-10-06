@@ -29,6 +29,7 @@ use super::{
 
 mod binding_denial;
 mod checkpoint;
+pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
 mod preparation;
 mod program_activation_recovery;
 mod program_activation_seeding;
@@ -59,6 +60,7 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     installed_packages: Arc<WorthQueryInstalledPackageIndex>,
     pub(super) graph: WorthQueryPrimaryGraph,
+    pub(super) resource_support: super::provider::WorthQueryPrimaryGraphResourceSupport,
     pub(super) product_world_resources:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
@@ -94,6 +96,11 @@ impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::domain_computation::primary_graph) fn resource_support_ref(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot{
+        self.resource_support.snapshot_ref()
+    }
     pub(super) fn take_recovered_relational_authority(
         &mut self,
     ) -> Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
@@ -214,6 +221,21 @@ where
         runtime: &mut WorthQueryExecutionRuntime,
         authority: &WorthQueryExecutionInstallationAuthority,
     ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
+        self.publish_with_resource_support(runtime, authority)
+            .map(|(publication, _resource_support)| publication)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn publish_with_resource_support(
+        self,
+        runtime: &mut WorthQueryExecutionRuntime,
+        authority: &WorthQueryExecutionInstallationAuthority,
+    ) -> Result<
+        (
+            WorthQueryPrimaryGraphPublication,
+            super::provider::WorthQueryPrimaryGraphResourceSupport,
+        ),
+        WorthQueryPrimaryGraphInstallationDenial,
+    > {
         self.validate_publication_target(runtime, authority)?;
         if self.seed_batch_failed {
             return Err(primary_graph_denial(
@@ -223,7 +245,7 @@ where
         }
         if let Some(publication) = self.recovered_publication {
             runtime.install_primary_graph(self.graph);
-            return Ok(publication);
+            return Ok((publication, self.resource_support));
         }
         if self.rows.is_empty() && self.committed_principal_count == 0 {
             return Err(primary_graph_denial(
@@ -268,15 +290,18 @@ where
         build_identity_indexes(&self.graph, commit_id, &index_ids)?;
         let binding_identity = self.graph.binding_identity().clone();
         runtime.install_primary_graph(self.graph);
-        Ok(WorthQueryPrimaryGraphPublication {
-            binding_identity,
-            principal_binding_count: row_count,
-            identity_index_count: principal_identity_index_count,
-            application_equality_index_count,
-            policy_entity_count: entity_count,
-            policy_relation_count: relation_count,
-            bootstrap_commit_id: commit_id,
-        })
+        Ok((
+            WorthQueryPrimaryGraphPublication {
+                binding_identity,
+                principal_binding_count: row_count,
+                identity_index_count: principal_identity_index_count,
+                application_equality_index_count,
+                policy_entity_count: entity_count,
+                policy_relation_count: relation_count,
+                bootstrap_commit_id: commit_id,
+            },
+            self.resource_support,
+        ))
     }
 }
 

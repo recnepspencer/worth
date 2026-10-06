@@ -56,12 +56,13 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     let source_receipt = started.receipt().clone();
 
-    for _ in 0..2 {
-        assert!(matches!(
-            started.required_output_mut().advance(&request).unwrap(),
-            WorthQueryApplicationProgramOutputProgress::Pending
-        ));
-    }
+    world
+        .application
+        .delay_next_output_readiness_delivery_for_test();
+    assert!(matches!(
+        started.required_output_mut().advance(&request).unwrap(),
+        WorthQueryApplicationProgramOutputProgress::Pending
+    ));
     assert_eq!(
         request
             .query(PlanarOutputRead {

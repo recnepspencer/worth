@@ -72,30 +72,144 @@ reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
 admission or a selected World between executions.
 
+Ordinary graph demands use `WorthQueryOutputDemandControls::default()` and inherit
+the installed host policy. Configure that policy once with
+`WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` and
+`WorthQueryOutputDemandResourceProfile`; currentness work, producer work, producer
+retained bytes, and settlement attempts are separate dimensions. Explicit caller
+controls and child artifact limits only narrow the relevant dimensions. A handle's
+`settle(&request)` owns bounded progression and reports `Pending` when necessary;
+applications do not implement retry counts in query-work units.
+
+Before delivering stored output values, select one fresh retained observation.
+Its `require_current_output_demand` checks a direct root/dependent settlement;
+`require_current_program_output` checks the whole program settlement. Both require
+native source lineage at that same observation, including receipt-free checkpoint
+reuse. Read the descriptive fields through that retained request after admission.
+
+For ordinary candidate declarations, use
+`ApplicationCandidateResourceCeiling::representation_bytes(bytes)` (or omit
+`validator_work` in the mutation-binding macro). Installation derives validator
+allowance from the selected invariant contracts. Explicit validator caps can
+restrict that allowance; effect cardinality, bytes, actual closure checks, and
+host capacity remain enforced.
+
 `application.discovery()` exposes declaration-derived `mutations()`, `queries()`,
 `query_requests()`, and `fields()`. These describe portable input/result and typed
 denial identities, scope/effects, units/frames, and installed request-binding
 availability. Availability describes installation; every execution still performs
 fresh authorization and currentness checks.
 
-Committed mutation receipts expose `output_correspondence()` and
-`committed_changes()`. Output roles carry the binding, entity marker and
-preserve/create/retire action. `output_correspondence().entity(role)` checks
-those exact types and the role name against the committed association. It
-returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` for a
-different entity marker even when the binding, name and action match; foreign
-bindings, missing roles and action mismatches have their own typed denials.
-Role names describe correspondence; the platform resolves persistent identity.
+Committed mutation receipts expose `outputs_of::<Contract>()` and
+`committed_changes()`.
 
-Bindings with a finite result shape declare exact roles in `ROLES`. Bindings
-whose result cardinality follows the authored topology declare typed namespaces
-in `ROLE_FAMILIES`, including the entity marker, allowed action postures and
-minimum member count. A handler constructs each source-derived member with
-`WorthQueryApplicationOutputRole::try_new(format!(...))` and passes that token
-directly to `create_output`, `preserve_output` or `retire_output`. Query rejects
-empty, ambiguous and oversized runtime names, validates each member against the
-installed family, and seals the resolved identity in the same correspondence.
-`from_static` remains the constructor for exact compile-time role names.
+An output role is a marker type, and its `WorthQueryApplicationOutputRole` impl
+is the declaration. The impl names the schema, the output contract, the entity
+marker, the action (`WorthQueryPreserveOutput`, `WorthQueryCreateOutput` or
+`WorthQueryRetireOutput`), the cardinality (`WorthQueryExactlyOneOutput` or
+`WorthQueryAtMostOneOutput`) and the role name. The sealed
+`WorthQueryApplicationDeclaredOutputRole` derives the role's `DESCRIPTOR`, which
+the contract lists in `ROLES`. A role belongs to its contract, so one marker
+serves every binding whose `Output` is that contract:
+
+```rust,ignore
+pub struct CreatedAccountOutput;
+
+impl WorthQueryApplicationOutputRole for CreatedAccountOutput {
+    type Schema = BankSchema;
+    type Contract = CreateAccountOutputs;
+    type Entity = Account;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "account";
+}
+
+impl ApplicationMutationOutputContract<BankSchema> for CreateAccountOutputs {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[<CreatedAccountOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+}
+
+candidate.create_output::<CreatedAccountOutput>(&created)?;
+let account = receipt
+    .outputs_of::<CreateAccountOutputs>()?
+    .entity::<CreatedAccountOutput>()?;
+```
+
+A generic schema declares a generic marker,
+`struct AnchorOutput<Schema>(PhantomData<fn() -> Schema>)`, with one impl that
+covers every schema.
+
+Every use names the marker, and a use that disagrees with the contract fails to
+compile. `create_output`, `preserve_output` and `retire_output` bound the role's
+contract to the handler's binding and its action to the writer.
+`DecisionReader::prior_output::<PriorBinding, Role>` bounds the contract to
+`PriorBinding`. A producer's `type OutputRole` must be an exactly-one role of its
+operation's contract, for the entity its output family names. Each use also
+evaluates the derived `DECLARED` constant, which fails unless the contract's
+`ROLES` lists the role with the same name, entity, posture and cardinality.
+`DECLARED` is evaluated when the use is compiled to code, so that error appears
+in `cargo build` and `cargo test` but not in `cargo check`, and not in a generic
+function nothing instantiates.
+
+A commit receipt and an output-demand settlement store their outputs erased, so
+they can be cloned, archived, recovered and readmitted without a type
+parameter. `outputs_of::<Contract>()` is the one typed read: it checks once, at
+run time, that the commit was made under `Contract`, and refuses any other
+contract with `ForeignContract`. It returns
+`WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>`, whose `entity`,
+`member` and `family_entries` bound each marker's contract to `Contract`, so a
+read of another contract's role or family fails `cargo check`.
+
+The cardinality decides the shape of every read. An exactly-one role must be
+bound: a completed candidate that leaves it unbound is refused with
+`MissingOutputRole`, and its reads return the output itself. The reads are
+`outputs_of::<Contract>()?.entity::<Role>()`, `DecisionReader::prior_output` and
+generated-output reconstruction's `entity::<Role>()`. An at-most-one role may be
+left unbound, and the same reads return an `Option`, `None` when the commit left
+the role unbound. Absence is a value, never a denial. Binding any fixed role a
+second time is refused with `DuplicateOutputRole`. The cardinality is part of
+the schema's canonical identity and of its portable and archived descriptions,
+so changing it changes the installed schema. An optional single output is always
+an at-most-one role, never a family with a minimum of zero. A producer names an
+exactly-one role because a commit may omit an at-most-one role.
+
+Generated-output reconstruction can contain newly generated children and preserved
+roots. `output::<Role>()` and `output_member::<Family>(suffix)` return
+`WorthQueryReconstructedOutputEntity::Generated` or `Retained` from the installed
+correspondence. Generated handles claim the exact suspension manifest and admit
+field reconstruction. Retained handles carry only the exact live identity and
+kind outside that custody and admit relation endpoints. Reconstruction entry
+validates preserved identities against the owner-admitted suspension basis;
+restoration still requires the complete generated manifest and fresh publication
+admission. Retired roles are refused. The narrower `entity` and `member` methods
+remain available when a consumer requires created payload. An all-retained current
+output has nothing to suspend: `NoGeneratedPayload` is a typed no-effect
+qualification, and its current read surface remains available.
+
+Bindings whose result cardinality follows the authored topology declare
+families. A family is a marker type whose
+`WorthQueryApplicationOutputRoleFamily` impl names the schema, the contract, the
+entity marker, the member-name `PREFIX`, the allowed `POSTURES` and the
+`MINIMUM` member count. The contract lists its derived `DESCRIPTOR` in
+`ROLE_FAMILIES`. A handler binds each source-derived member by its suffix, as in
+`candidate.create_member::<CreatedVertices>(&key, &created)?`; `preserve_member`
+and `retire_member` work the same way. Readers name the family and the action,
+as in `outputs.member::<CreatedVertices, WorthQueryCreateOutput>(&key)` on the
+view `outputs_of` returns, or read the whole family with
+`outputs.family_entries::<CreatedVertices>()`. Members are
+exactly-one. A family the contract does not declare exactly as used, or an
+action outside the family's postures, fails to compile. The suffix is run-time
+data, so an empty, ambiguous or oversized member name is refused when it is
+named.
+
+Query keeps run-time checks only where the types cannot carry the contract.
+A stored receipt carries no contract type, so `outputs_of::<Contract>()` refuses
+a commit made under another contract with `ForeignContract`; reads on the view
+it returns are checked at compile time. A family member's committed action
+is data, so reading it with another allowed action is `ActionMismatch`. Portable
+and readmitted forms are validated when admitted. Typed uses are checked again at
+run time as defense in depth. Role names describe correspondence; the platform
+resolves persistent identity.
 
 `committed_changes()` provides the exact `commit_reference()`, an
 `entity_changes()` iterator of `(EntityId, RecordStructuralChange)`, and native
@@ -117,8 +231,9 @@ with contribution inventory, ownership, and handler-completeness denials in
 The synchronous application foundation, branch-local program evolution, and
 authored workflow definitions (see the authored workflow example above and the
 [workflows guide](../worth-query/docs/foundations/workflows.md)) are
-available through this facade. The workflow surface exposes no callback,
-resume-message, or inbound-completion API.
+available through this facade. An installed inbound source can complete the
+exact external-effect owner; `await_inbound` reads that result on fresh
+workflow advance. No callback or resume message advances an instance itself.
 
 ## Branch-Local Program Evolution
 
@@ -186,6 +301,11 @@ source evidence call `.expect_source(observed_source)` before idempotent executi
 The source-local comparison rejects missing, foreign, retired, ABA-changed, or
 changed sources while allowing sibling edits outside the recorded footprint.
 Sibling membership and selector-field changes can still invalidate that footprint.
+When a handler reads a current output, Query merges its retained source facts
+with the admitted query facts. Adjacency reads at the same native structural
+revision combine their endpoint coverage and comparison limits; different
+revisions still deny the attempt. A producer's own relation writes are rebased
+at the committed snapshot before becoming reusable output evidence.
 Bindings with input-selected subjects implement `expected_source_parameters` so
 the same Query boundary rejects mismatched selectors for rows, result sets and
 framework producers. A source query's type alone does not bind its parameters to
@@ -245,7 +365,14 @@ installed query, and returns a `WorthQueryPublishedApplicationResult`.
 Reusing the request therefore observes later lawful publications rather than
 retaining an earlier selection.
 
-Callers can request narrower finite ceilings before execution:
+Ordinary query bindings declare result cardinality, not engine cost arithmetic.
+The installed `WorthQueryApplicationQueryResourceProfile` supplies a finite work
+guard; `.with_maximum_work(...)` configures that host safeguard. A binding's
+explicit work cap can only restrict it. Work is still metered and traversal
+checks cancellation/deadline internally. The guard is not a performance promise
+or aggregate-memory measurement.
+
+Callers can request narrower resolved ceilings before execution:
 
 ```rust
 let published = request
@@ -254,7 +381,7 @@ let published = request
     .execute()?;
 ```
 
-Widening either installed ceiling returns a typed `Limit` denial before World
+Widening either resolved ceiling returns a typed `Limit` denial before World
 selection or provider work. Other denial kinds preserve the failed boundary:
 binding installation, product selection, principal resolution, scope
 resolution, admission, or execution.
@@ -285,6 +412,9 @@ Host code may:
   canonical work through the carried clock, runtime-inspection, and provenance
   surfaces;
 - dispatch declared external effects only from co-committed outbox facts;
+- install an inbound verifier for the exact declared operation, receive through
+  `facade::application_entry::WorthQueryApplicationInboundOccurrencesExt`, and
+  continue accepted custody within its installed work limits;
 - inspect, resolve, safely retry, dispose, or expire an exact receipt-bound
   runtime recovery handle;
 - admit reconciliation or compensation against exact owner authority without

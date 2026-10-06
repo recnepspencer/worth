@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use worth_ui_host_contract::{
     UiHostRealizedGeometry, UiHostRealizedOrdering, UiHostRealizedRegion,
     UiHostRealizedRegionParticipation, UiHostSurfacePresentationDenial,
-    UiMountedAllocationProjection, UiMountedCoordinateSpace, UiMountedGeometryPosture,
-    UiMountedHitTestProjection, UiMountedPaintCommand, UiMountedPaintCommandChange,
-    UiMountedPaintCommandIdentity, UiMountedParticipationStatus, UiMountedPresentationDelta,
-    UiMountedPresentationNodeChange, UiMountedPresentationNodeHitTest,
+    UiMountedAllocationProjection, UiMountedCanonicalBox, UiMountedCoordinateSpace,
+    UiMountedGeometryPosture, UiMountedHitTestProjection, UiMountedPaintCommand,
+    UiMountedPaintCommandChange, UiMountedPaintCommandIdentity, UiMountedParticipationStatus,
+    UiMountedPresentationDelta, UiMountedPresentationNodeChange, UiMountedPresentationNodeHitTest,
     UiMountedPresentationNodeState, UiMountedProjectionView,
 };
 
@@ -211,14 +211,10 @@ fn hit_test_region(
         UiMountedHitTestProjection::Region(reference)
             if projection.hit_tests().resolve(reference) == Some(&row)
     );
-    let matching_allocation = matches!(
-        node.allocation(),
-        UiMountedAllocationProjection::Known { bounds, .. } if bounds == row.bounds()
-    );
     if node.node_receipt() != row.node_receipt()
         || node.participation().hit_test().status() != UiMountedParticipationStatus::Admitted
         || !matching_reference
-        || !matching_allocation
+        || !paints_hit_row(node.allocation(), row)
     {
         return Err(UiHostSurfacePresentationDenial::MalformedProjection);
     }
@@ -230,10 +226,6 @@ fn delta_hit_test_region(
     state: UiMountedPresentationNodeState,
     row: worth_ui_host_contract::UiMountedHitTestMechanic,
 ) -> Result<UiHostRealizedRegion, UiHostSurfacePresentationDenial> {
-    let matching_allocation = matches!(
-        state.allocation(),
-        UiMountedAllocationProjection::Known { bounds, .. } if bounds == row.bounds()
-    );
     if row.frame() != delta.affinity().successor()
         || row.surface() != delta.affinity().surface()
         || row.binding() != delta.affinity().binding()
@@ -243,11 +235,27 @@ fn delta_hit_test_region(
         || row.clip_bounds().posture() != UiMountedGeometryPosture::Area
         || row.bounds().coordinate_space() != UiMountedCoordinateSpace::Viewport
         || state.participation().hit_test().status() != UiMountedParticipationStatus::Admitted
-        || !matching_allocation
+        || !paints_hit_row(state.allocation(), row)
     {
         return Err(UiHostSurfacePresentationDenial::MalformedProjection);
     }
     Ok(realized_hit_test_region(row))
+}
+
+/// Whether `allocation` is the box a node whose hit row is `row` is painted in.
+///
+/// Hit testing reads the box on record, where the accepted scroll offset put
+/// it. Inside a scrolled region at an offset off the device grid, paint reads
+/// that box moved onto the grid, and the row carries the moved box it paints.
+fn paints_hit_row(
+    allocation: UiMountedAllocationProjection,
+    row: worth_ui_host_contract::UiMountedHitTestMechanic,
+) -> bool {
+    paints(allocation, row.painted_bounds().unwrap_or(row.bounds()))
+}
+
+fn paints(allocation: UiMountedAllocationProjection, painted: UiMountedCanonicalBox) -> bool {
+    matches!(allocation, UiMountedAllocationProjection::Known { bounds, .. } if bounds == painted)
 }
 
 fn realized_hit_test_region(
@@ -261,4 +269,100 @@ fn realized_hit_test_region(
             UiHostRealizedRegionParticipation::HitTest,
         ),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_ui_host_contract::{
+        UiMountedAllocationBasis, UiMountedAllocationProjection, UiMountedCanonicalBox,
+        UiMountedCanonicalBoxInput, UiMountedCoordinateSpace, UiMountedFrameIdentity,
+        UiMountedHitTestCompletionInput, UiMountedHitTestMechanic, UiMountedHitTestOrder,
+        UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer, UiMountedOmissionReason,
+        UiMountedTransformProjection, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+    };
+
+    use super::{paints, paints_hit_row};
+
+    fn area(x: f32, y: f32, width: f32, height: f32) -> UiMountedCanonicalBox {
+        UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+            x,
+            y,
+            width,
+            height,
+            coordinate_space: UiMountedCoordinateSpace::Viewport,
+        })
+        .unwrap()
+    }
+
+    fn painted_at(bounds: UiMountedCanonicalBox) -> UiMountedAllocationProjection {
+        UiMountedAllocationProjection::Known {
+            bounds,
+            basis: UiMountedAllocationBasis::new(
+                483,
+                1,
+                481,
+                UiMountedTransformProjection::Identity,
+            ),
+        }
+    }
+
+    fn hit_row(
+        bounds: UiMountedCanonicalBox,
+        painted_bounds: Option<UiMountedCanonicalBox>,
+    ) -> UiMountedHitTestMechanic {
+        let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+        let instance = UiMountedInstanceIdentity::mint_unbound().unwrap();
+        UiMountedHitTestMechanic::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
+            frame,
+            surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
+            binding: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
+            mounted_instance: instance,
+            node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
+                .unwrap()
+                .receipt_for(instance),
+            bounds,
+            clip_bounds: bounds,
+            painted_bounds,
+            order: UiMountedHitTestOrder::from_runtime_plan(0),
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn a_hit_row_scrolled_off_the_device_grid_is_painted_in_the_box_it_carries() {
+        // A scroll offset at 1.5x put this row at 269 logical points, half a
+        // device pixel off the grid; it is painted at 268.67, on the grid.
+        let recorded = area(1398.0, 269.0, 85.0, 25.0);
+        let painted = area(1398.0, 268.666_66, 85.0, 25.0);
+        let row = hit_row(recorded, Some(painted));
+        assert!(paints_hit_row(painted_at(painted), row));
+        assert!(
+            !paints_hit_row(painted_at(recorded), row),
+            "the box hit testing reads is not where the row is painted"
+        );
+    }
+
+    #[test]
+    fn a_hit_row_on_the_device_grid_is_painted_where_it_is_hit() {
+        let bounds = area(1398.0, 268.666_66, 85.0, 25.0);
+        assert!(paints_hit_row(painted_at(bounds), hit_row(bounds, None)));
+    }
+
+    #[test]
+    fn an_allocation_anywhere_but_the_painted_box_is_denied() {
+        let painted = area(1398.0, 268.666_66, 85.0, 25.0);
+        for elsewhere in [
+            area(1398.0, 269.0, 85.0, 25.0),
+            area(1398.0, 270.666_66, 85.0, 25.0),
+            area(1398.0, 268.666_66, 86.0, 25.0),
+        ] {
+            assert!(!paints(painted_at(elsewhere), painted));
+        }
+        assert!(!paints(
+            UiMountedAllocationProjection::Omitted(
+                UiMountedOmissionReason::AllocationBoundsUnknown
+            ),
+            painted
+        ));
+    }
 }

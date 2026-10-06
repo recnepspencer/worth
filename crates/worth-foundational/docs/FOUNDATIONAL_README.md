@@ -171,6 +171,8 @@ Important discovery points include:
 - `worth_foundational::profiles_api`
 - `worth_foundational::boundary_evidence_api`
 - `worth_foundational::performance_api`
+- `worth_foundational::expression_api`: the shared typed expression language,
+  starting from `expressions().parse(source)?.admit(...)`
 - `worth_foundational::foundational_transition_milestone5_readiness_report()`
 - the facade exports re-exported from `worth_foundational::*`
 

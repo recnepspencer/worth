@@ -23,7 +23,11 @@ where
         WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        for _ in 0..self.controls.maximum_settlement_attempts().get() {
+        for _ in 0..self
+            .controls
+            .resolve(self.application.output_demand_resource_profile())
+            .settlement_attempts()
+        {
             let progress = self.advance(fresh_request)?;
             if matches!(
                 progress,
@@ -48,41 +52,33 @@ where
         if !std::ptr::eq(self.application, fresh_request.application) {
             return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
         }
-        let disclosure = fresh_request
-            .query(self.demand.source_intent())
-            .execute()
-            .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
-            .into_output_demand_source();
         let _controls = self.controls;
         let progress = if let Some((identity, revision)) = &self.selected_program {
-            self.application.advance_selected_program_output_demand(
+            self.application.advance_selected_program_output_demand_from_retained(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
                 fresh_request.branch,
-                disclosure,
                 identity.clone(),
                 *revision,
             )
         } else {
-            self.application.advance_output_demand(
+            self.application.advance_output_demand_from_retained(
                 &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
                 fresh_request.branch,
-                disclosure,
             )
         }
-        .map_err(|denial| {
-                if denial.kind()
-                    == worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded
-                {
-                    WorthQueryApplicationOutputDemandDenial::Superseded
-                } else {
-                    WorthQueryApplicationOutputDemandDenial::Demand(denial)
-                }
-            })?;
+        .map_err(|denial| match denial.kind() {
+            worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded
+                =>
+            {
+                WorthQueryApplicationOutputDemandDenial::Superseded
+            }
+            _ => WorthQueryApplicationOutputDemandDenial::Demand(denial),
+        })?;
         match progress {
             WorthQueryOutputDemandAdvance::Pending => {
                 Ok(WorthQueryApplicationOutputDemandProgress::Pending)

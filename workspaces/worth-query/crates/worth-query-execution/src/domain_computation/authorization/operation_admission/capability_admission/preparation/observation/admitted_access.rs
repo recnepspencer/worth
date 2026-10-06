@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
     ApplicationCapabilityValidityTimeline,
 };
+use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkEvidence,
@@ -212,17 +213,13 @@ where
         ..
     } = observed;
     let input = prepared.input;
-    let governed_input_identity = input.governed_input_identity();
     let canonical_work = prepared
         .capability
         .lookup_evidence()
         .canonical_work()
-        .combine(
-            governed_input_identity
-                .and_then(|binding| binding.canonical_work())
-                .map(WorthQueryCanonicalWorkEvidence::one_digest)
-                .unwrap_or_else(WorthQueryCanonicalWorkEvidence::zero),
-        );
+        .combine(WorthQueryCanonicalWorkEvidence::streamed_identities(
+            prepared.governed_input_work,
+        ));
     WorthQueryAdmittedApplicationCapabilityAccess {
         runtime_authority: prepared.runtime.runtime.authority_identity(),
         binding_identity: prepared.capability.binding_identity().clone(),
@@ -231,7 +228,7 @@ where
         operation: prepared.capability.contract().operation().into(),
         principal_entity_id: prepared.principal.principal_entity_id(),
         input,
-        governed_input_identity: governed_input_identity.map(|binding| binding.identity()),
+        governed_input_identity: Some(prepared.governed_input_identity),
         projection: prepared.projection,
         resolved,
         authentication_valid_until: prepared.principal.valid_until(),
@@ -330,6 +327,20 @@ where
 
     pub(in crate::domain_computation::authorization) const fn capability_input(&self) -> &Input {
         &self.input
+    }
+
+    /// Reports the derivations that encoded this request's key, and its input
+    /// when the carrier left that to the request, in the admission phase. Only
+    /// Publication's capability workflow entries report them, once for each
+    /// admission that can reach a receipt.
+    pub fn record_request_identity_work(
+        &mut self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        work: ApplicationCanonicalWork,
+    ) {
+        self.canonical_work = self
+            .canonical_work
+            .combine(WorthQueryCanonicalWorkEvidence::streamed_identities(work));
     }
 
     pub(in crate::domain_computation::authorization) fn with_exact_observation<Output>(

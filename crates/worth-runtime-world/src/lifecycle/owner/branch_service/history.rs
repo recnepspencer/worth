@@ -36,9 +36,9 @@ where
     let traversal = owner
         .state
         .history
-        .trace_ancestry(snapshot.selected_commit().clone(), limit)
+        .trace_ancestry_within(snapshot.selected_commit().clone(), limit, branch_depth)
         .map_err(|_| RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable)?;
-    let remaining = branch_depth.saturating_sub(traversal.visited_count());
+    let remaining = branch_depth.saturating_sub(traversal.covered_generations());
     Ok(ProductBranchHistoryTraversal::owner_issued(
         snapshot.branch_identity().clone(),
         occurrence,
@@ -77,7 +77,7 @@ where
     let traversal = owner
         .state
         .history
-        .trace_ancestry(start, limit)
+        .trace_ancestry_within(start, limit, previous.remaining_branch_commits())
         .map_err(|_| RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable)?;
     previous
         .continued(traversal)

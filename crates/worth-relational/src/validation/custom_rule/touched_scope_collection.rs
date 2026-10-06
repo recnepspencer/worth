@@ -1,17 +1,21 @@
 use std::collections::BTreeSet;
 
-use crate::identity::data::{EntityId, PartitionId};
 use crate::transactions::data::{
     CreateIntent, EntityMutationIntent, MergedCommitPlan, MutationIntent, RelationMutationIntent,
 };
 use crate::validation::data::{
     PlannedEntityCreate, PlannedRelationCreate, PlannedRelationEndpointUpdate, TouchedStructuralSet,
 };
-use crate::validation::engine::state_view::{InvariantStateView, VisibleRelationMetadata};
+use crate::validation::engine::state_view::InvariantStateView;
 
 use super::affected_record_filter::{
     include_affected_entity, include_affected_reference, include_affected_relation,
 };
+
+mod claim_nested;
+mod metadata;
+use claim_nested::claim_intent_nested_allocations;
+use metadata::include_relation_metadata;
 
 pub(crate) fn collect_touched_structural_set(
     state_view: &InvariantStateView<'_>,
@@ -62,6 +66,9 @@ pub(crate) fn collect_touched_structural_set(
             if !work.try_charge(1) {
                 break;
             }
+            if !claim_intent_nested_allocations(intent, access, work) {
+                break;
+            }
             intent.seed_touched_partitions(&mut touched_partitions);
             match intent {
                 MutationIntent::Create(CreateIntent::Entity(spec)) => {
@@ -88,6 +95,9 @@ pub(crate) fn collect_touched_structural_set(
                             break;
                         }
                         for client_key in spec.client_keys.iter() {
+                            if !work.try_charge(0) {
+                                break;
+                            }
                             planned_entity_creates.push(PlannedEntityCreate::new(
                                 spec.partition_id,
                                 spec.kind_id,
@@ -151,6 +161,9 @@ pub(crate) fn collect_touched_structural_set(
                         break;
                     }
                     for (source, target) in &spec.endpoints {
+                        if !work.try_charge(0) {
+                            break;
+                        }
                         include_affected_reference(
                             &mut visible_entities,
                             source,
@@ -173,6 +186,9 @@ pub(crate) fn collect_touched_structural_set(
                         for ((source, target), client_key) in
                             spec.endpoints.iter().zip(spec.client_keys.iter())
                         {
+                            if !work.try_charge(0) {
+                                break;
+                            }
                             planned_relation_creates.push(PlannedRelationCreate::new(
                                 spec.partition_id,
                                 spec.kind_id,
@@ -371,16 +387,4 @@ pub(crate) fn collect_touched_structural_set(
         planned_relation_deletes.into(),
         planned_relation_endpoint_updates.into(),
     )
-}
-
-fn include_relation_metadata(
-    visible_entities: &mut BTreeSet<EntityId>,
-    touched_partitions: &mut BTreeSet<PartitionId>,
-    metadata: VisibleRelationMetadata,
-) {
-    visible_entities.insert(metadata.source);
-    visible_entities.insert(metadata.target);
-    touched_partitions.insert(metadata.relation_id.partition_id);
-    touched_partitions.insert(metadata.source.partition_id);
-    touched_partitions.insert(metadata.target.partition_id);
 }

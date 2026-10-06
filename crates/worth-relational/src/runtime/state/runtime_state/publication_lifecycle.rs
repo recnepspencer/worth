@@ -16,6 +16,7 @@ pub(crate) struct RelationalRuntimePublicationBinding {
 
 #[derive(Debug)]
 pub(super) struct RelationalRuntimePublicationLifecycle {
+    pub(super) companion: Arc<crate::mvcc::publication::CompanionRegistry>,
     next_candidate_id: AtomicU64,
     candidates: Mutex<HashMap<u64, RegisteredCandidate>>,
     pub(super) settlements: Arc<super::RelationalPublicationSettlementRegistry>,
@@ -33,10 +34,21 @@ pub(crate) enum RelationalCandidateRegistrationDenial {
 }
 
 impl RelationalRuntimePublicationOwner {
-    pub(in crate::runtime) fn new() -> Self {
+    pub(in crate::runtime) fn new(maximum_companion_cell_bytes: u64) -> Self {
+        Self::with_companion(crate::mvcc::publication::CompanionRegistry::new(
+            maximum_companion_cell_bytes,
+        ))
+    }
+
+    pub(in crate::runtime) fn fork_from(source: &Self) -> Self {
+        Self::with_companion(source.binding.lifecycle.companion.fork())
+    }
+
+    fn with_companion(companion: crate::mvcc::publication::CompanionRegistry) -> Self {
         Self {
             binding: RelationalRuntimePublicationBinding {
                 lifecycle: Arc::new(RelationalRuntimePublicationLifecycle {
+                    companion: Arc::new(companion),
                     next_candidate_id: AtomicU64::new(1),
                     candidates: Mutex::new(HashMap::new()),
                     settlements: Arc::new(super::RelationalPublicationSettlementRegistry::default()),
@@ -51,6 +63,18 @@ impl RelationalRuntimePublicationOwner {
 }
 
 impl RelationalRuntimePublicationBinding {
+    pub(crate) fn companion_registry(&self) -> &Arc<crate::mvcc::publication::CompanionRegistry> {
+        &self.lifecycle.companion
+    }
+
+    pub(crate) fn companion_epoch(
+        &self,
+    ) -> Result<
+        crate::mvcc::publication::CompanionRegistrationEpoch<'_>,
+        crate::mvcc::PublicationCompanionRegistrationStop,
+    > {
+        self.lifecycle.companion.enter()
+    }
     /// Close settlement admission and resolve remaining retention with typed
     /// owner-loss accounting. Owner authority, so it stays inside the runtime
     /// module tree even though the binding itself is carried by services.

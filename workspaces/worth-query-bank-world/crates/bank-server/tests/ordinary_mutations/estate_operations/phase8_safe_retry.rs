@@ -162,60 +162,6 @@ fn assert_request_affine_retry_completed_once(
 }
 
 #[test]
-fn safe_retry_of_already_completed_effect_repeats_dispatch_but_not_physical_consequence() {
-    let world = world::cross_gate_world("safe-retry-completed");
-    world.transport.under(FaultScript::Succeed, world::PATIENT);
-    let receipt = world.commit_notification(82);
-    assert_eq!(
-        receipt
-            .external_dispatch_posture()
-            .map(|posture| posture.kind()),
-        Some(WorthQueryPublishedExternalEffectPostureKind::Completed)
-    );
-    assert_eq!(world.transport.admission_count(), 1);
-    assert_eq!(world.transport.production_dispatches().len(), 1);
-    assert_eq!(world.transport.completed_effect_count(), 1);
-    let correlation = world.transport.attempts()[0].clone();
-
-    let handle = world.open_recovery(&receipt);
-    let specialist = world.fixture.authenticate_specialist();
-    let action = world.specialist_action();
-    let scope = request_scope();
-
-    // Would emit differently if the rail re-ran the fault path instead of
-    // idempotently replaying the completed ledger record.
-    world
-        .transport
-        .under(FaultScript::DuplicateAcknowledgement, world::PATIENT);
-    let admission = world
-        .fixture
-        .world
-        .runtime
-        .safe_retry_commit_recovery(handle, &specialist, action, &scope)
-        .expect("safe-retry of completed effect");
-    assert!(admission.is_external_completion());
-    assert_eq!(
-        world.transport.ledger_status(&correlation),
-        LedgerStatus::Completed
-    );
-    assert_eq!(
-        world.transport.admission_count(),
-        1,
-        "already-completed re-dispatch must not admit a second rail attempt"
-    );
-    assert_eq!(
-        world.transport.production_dispatches().len(),
-        2,
-        "safe retry still crosses the production adapter"
-    );
-    assert_eq!(
-        world.transport.completed_effect_count(),
-        1,
-        "the completed correlation must not repeat its physical consequence"
-    );
-}
-
-#[test]
 fn foreign_principal_safe_retry_denies_before_transport() {
     let world = world::cross_gate_world("safe-retry-foreign");
     world

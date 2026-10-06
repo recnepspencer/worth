@@ -23,6 +23,13 @@ pub enum WorthQueryWorkflowNodeDependency {
         binding: Option<String>,
         requires_authority: bool,
     },
+    AwaitInbound {
+        origin_operation: String,
+        effect: String,
+        protocol: worth_query_declaration::facade::application_schema::ApplicationInboundOccurrenceProtocol,
+        source_identity: String,
+        limits: worth_query_declaration::facade::application_schema::ApplicationInboundOccurrenceLimits,
+    },
     Assessment {
         identifier: String,
         parameter_type: String,
@@ -52,7 +59,7 @@ impl WorthQueryWorkflowNodeDependency {
                 identifier,
                 binding,
                 ..
-            } => (identifier.as_str(), binding.as_deref()),
+            } => (Some(identifier.as_str()), binding.as_deref()),
             Self::Assessment {
                 identifier,
                 binding,
@@ -62,12 +69,13 @@ impl WorthQueryWorkflowNodeDependency {
                 identifier,
                 binding,
                 ..
-            } => (identifier.as_str(), Some(binding.as_str())),
+            } => (Some(identifier.as_str()), Some(binding.as_str())),
             // The capability identity is compared through coverage lookup;
             // only the authorized operation's name enters program comparison.
-            Self::Approval { operation, .. } => (operation.as_str(), None),
+            Self::Approval { operation, .. } => (Some(operation.as_str()), None),
+            Self::AwaitInbound { .. } => (None, None),
         };
-        std::iter::once(identifier).chain(binding)
+        identifier.into_iter().chain(binding)
     }
 }
 
@@ -147,6 +155,17 @@ where
                 binding: assessment.binding_identity.to_owned(),
             }
         });
+        let inbound = self.operations.iter().filter_map(|operation| {
+            operation.inbound_ref.as_ref().map(|inbound| {
+                WorthQueryWorkflowNodeDependency::AwaitInbound {
+                    origin_operation: operation.identifier.to_owned(),
+                    effect: inbound.effect().to_owned(),
+                    protocol: inbound.protocol().clone(),
+                    source_identity: inbound.source_identity().to_owned(),
+                    limits: inbound.limits(),
+                }
+            })
+        });
         let conditions =
             self.conditions
                 .iter()
@@ -167,6 +186,7 @@ where
                 });
         let mut nodes = operations
             .chain(direct)
+            .chain(inbound)
             .chain(assessments)
             .chain(conditions)
             .chain(approvals)

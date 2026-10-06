@@ -1,13 +1,19 @@
-use crate::declaration::{
-    UiResolvedIntentConfirmationSource, UiResolvedIntentMutabilitySource,
-    UiResolvedIntentReadinessSource,
-};
+use crate::declaration::UiIntentOperabilityDependencyAxis;
+use crate::runtime::expression::UiExpressionResultReference;
 
 use super::{
     UiIntentConfirmationPosture, UiIntentMutabilityPosture, UiIntentOccupancyObservation,
     UiIntentOccupancyState, UiIntentPolicyPosture, UiIntentReadinessPosture,
     UiIntentSupportPosture,
 };
+
+mod axis_observation;
+
+/// The decision axes one operability decision visits: support, mutability,
+/// readiness, occupancy, policy, affinity and confirmation. Every decision
+/// visits each axis exactly once, whatever source kind the axis reads, so the
+/// count is the shape of the decision rather than a tally of sources.
+const DECISION_AXES: usize = 7;
 
 pub(crate) struct UiIntentOperabilityBasis {
     contract_identity: Box<str>,
@@ -19,7 +25,13 @@ pub(crate) struct UiIntentOperabilityBasis {
     confirmation: UiIntentConfirmationPosture,
     query_inputs: Box<[worth_ui_query_binding::UiProjectionInputFactReference]>,
     application_inputs: Box<[super::super::payload::UiIntentApplicationInputReference]>,
-    policy_input: super::super::payload::UiIntentApplicationInputReference,
+    policy_input: Option<super::super::payload::UiIntentApplicationInputReference>,
+    expression_inputs: Box<
+        [(
+            UiIntentOperabilityDependencyAxis,
+            UiExpressionResultReference,
+        )],
+    >,
     confirmation_input: Option<super::super::payload::UiIntentApplicationInputReference>,
 }
 
@@ -28,6 +40,11 @@ pub(crate) enum UiIntentOperabilityDependencyDrift {
     DeclaredDependency,
     Policy,
     Confirmation,
+    /// A condition result the decision read is no longer the retained result
+    /// of the active generation.
+    ExpressionResult {
+        axis: UiIntentOperabilityDependencyAxis,
+    },
 }
 
 pub(crate) fn observe_operability_basis(
@@ -37,25 +54,14 @@ pub(crate) fn observe_operability_basis(
     binding_support: crate::runtime::intent_execution::UiIntentExecutionBindingSupport,
     occupancy: &UiIntentOccupancyState,
 ) -> UiIntentOperabilityBasis {
-    let mut query_inputs = Vec::new();
-    let mut application_inputs = Vec::new();
-    let mutability = observe_mutability(
-        view,
-        declaration.operability().mutability(),
-        &mut query_inputs,
-        &mut application_inputs,
-    );
-    let readiness = observe_readiness(
-        view,
-        declaration.operability().readiness(),
-        &mut query_inputs,
-        &mut application_inputs,
-    );
-    let policy_input =
-        application_boolean_reference(view, declaration.operability().policy().slot());
-    let confirmation = observe_confirmation(view, declaration.confirmation());
+    let mut inputs = axis_observation::UiIntentAxisInputs::default();
+    let contract = declaration.operability();
+    let mutability = axis_observation::observe_mutability(view, contract.mutability(), &mut inputs);
+    let readiness = axis_observation::observe_readiness(view, contract.readiness(), &mut inputs);
+    let policy = axis_observation::observe_policy(view, contract.policy(), &mut inputs);
+    let confirmation = axis_observation::observe_confirmation(view, declaration.confirmation());
     UiIntentOperabilityBasis {
-        contract_identity: declaration.operability().identity().into(),
+        contract_identity: contract.identity().into(),
         support: support(binding_support),
         mutability,
         readiness,
@@ -65,149 +71,14 @@ pub(crate) fn observe_operability_basis(
             definition.id(),
             view.target(),
         ),
-        policy: boolean_policy(
-            policy_input
-                .boolean_value()
-                .expect("resolved policy input has Boolean shape"),
-        ),
+        policy: policy.posture,
         confirmation: confirmation.posture,
-        query_inputs: query_inputs.into_boxed_slice(),
-        application_inputs: application_inputs.into_boxed_slice(),
-        policy_input,
+        query_inputs: inputs.query.into_boxed_slice(),
+        application_inputs: inputs.application.into_boxed_slice(),
+        policy_input: policy.input,
+        expression_inputs: inputs.expressions.into_boxed_slice(),
         confirmation_input: confirmation.input,
     }
-}
-
-fn observe_mutability(
-    view: &super::super::payload::UiIntentInputBasisView<'_>,
-    source: &UiResolvedIntentMutabilitySource,
-    query_inputs: &mut Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
-    application_inputs: &mut Vec<super::super::payload::UiIntentApplicationInputReference>,
-) -> UiIntentMutabilityPosture {
-    match source {
-        UiResolvedIntentMutabilitySource::ApplicationBoolean(slot) => {
-            if application_boolean(view, *slot, application_inputs) {
-                UiIntentMutabilityPosture::Writable
-            } else {
-                UiIntentMutabilityPosture::Readonly
-            }
-        }
-        UiResolvedIntentMutabilitySource::ProjectionReadonly { identity, slot } => {
-            retain_projection(view, identity, *slot, query_inputs);
-            UiIntentMutabilityPosture::Readonly
-        }
-        UiResolvedIntentMutabilitySource::CommittedDraft => UiIntentMutabilityPosture::Writable,
-    }
-}
-
-fn observe_readiness(
-    view: &super::super::payload::UiIntentInputBasisView<'_>,
-    source: &UiResolvedIntentReadinessSource,
-    query_inputs: &mut Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
-    application_inputs: &mut Vec<super::super::payload::UiIntentApplicationInputReference>,
-) -> UiIntentReadinessPosture {
-    match source {
-        UiResolvedIntentReadinessSource::ApplicationBoolean(slot) => {
-            if application_boolean(view, *slot, application_inputs) {
-                UiIntentReadinessPosture::Ready
-            } else {
-                UiIntentReadinessPosture::Pending
-            }
-        }
-        UiResolvedIntentReadinessSource::Projection { identity, slot } => {
-            if retain_projection(view, identity, *slot, query_inputs) {
-                UiIntentReadinessPosture::Ready
-            } else {
-                UiIntentReadinessPosture::Pending
-            }
-        }
-        UiResolvedIntentReadinessSource::CommittedDraft => UiIntentReadinessPosture::Ready,
-    }
-}
-
-struct ObservedConfirmation {
-    posture: UiIntentConfirmationPosture,
-    input: Option<super::super::payload::UiIntentApplicationInputReference>,
-}
-
-fn observe_confirmation(
-    view: &super::super::payload::UiIntentInputBasisView<'_>,
-    contract: &crate::declaration::UiResolvedIntentConfirmationContract,
-) -> ObservedConfirmation {
-    match contract.source() {
-        UiResolvedIntentConfirmationSource::NotRequired => ObservedConfirmation {
-            posture: UiIntentConfirmationPosture::NotRequired,
-            input: None,
-        },
-        UiResolvedIntentConfirmationSource::ApplicationBoolean(slot) => {
-            let input = application_boolean_reference(view, *slot);
-            let posture = if input
-                .boolean_value()
-                .expect("resolved confirmation input has Boolean shape")
-            {
-                UiIntentConfirmationPosture::Required {
-                    policy_identity: contract.policy_identity().into(),
-                }
-            } else {
-                UiIntentConfirmationPosture::NotRequired
-            };
-            ObservedConfirmation {
-                posture,
-                input: Some(input),
-            }
-        }
-    }
-}
-
-fn application_boolean(
-    view: &super::super::payload::UiIntentInputBasisView<'_>,
-    slot: crate::declaration::UiIntentApplicationFactSlot,
-    retained: &mut Vec<super::super::payload::UiIntentApplicationInputReference>,
-) -> bool {
-    let input = view
-        .application(slot)
-        .expect("resolved application fact slot exists in the active fact state");
-    assert_eq!(
-        input.revision().generation(),
-        view.generation(),
-        "operability fact must share the payload generation"
-    );
-    let value = input
-        .boolean_value()
-        .expect("resolved operability fact has Boolean shape");
-    retained.push(input);
-    value
-}
-
-fn application_boolean_reference(
-    view: &super::super::payload::UiIntentInputBasisView<'_>,
-    slot: crate::declaration::UiIntentApplicationFactSlot,
-) -> super::super::payload::UiIntentApplicationInputReference {
-    let input = view
-        .application(slot)
-        .expect("resolved application fact slot exists in the active fact state");
-    assert_eq!(
-        input.revision().generation(),
-        view.generation(),
-        "operability fact must share the payload generation"
-    );
-    input
-}
-
-fn retain_projection(
-    view: &super::super::payload::UiIntentInputBasisView<'_>,
-    expected: &worth_ui_query_binding::WorthUiQueryViewIdentity,
-    slot: worth_ui_query_binding::UiProjectionInputSlot,
-    retained: &mut Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
-) -> bool {
-    let Some(input) = view.projection(slot) else {
-        return false;
-    };
-    let current = input.revision().projection_identity() == expected
-        && input.revision().slot() == slot
-        && input.posture() == worth_ui_query_binding::UiProjectionInputPosture::Current;
-    retained.push(input);
-    current
 }
 
 const fn support(
@@ -217,14 +88,6 @@ const fn support(
         crate::runtime::intent_execution::UiIntentExecutionBindingSupport::Supported => {
             UiIntentSupportPosture::Supported
         }
-    }
-}
-
-const fn boolean_policy(admitted: bool) -> UiIntentPolicyPosture {
-    if admitted {
-        UiIntentPolicyPosture::Admitted
-    } else {
-        UiIntentPolicyPosture::Denied
     }
 }
 
@@ -242,7 +105,7 @@ impl UiIntentOperabilityBasis {
             policy: self.policy(),
             affinity,
             confirmation: self.confirmation(),
-            selected_dependencies_visited: 7,
+            selected_dependencies_visited: DECISION_AXES,
         })
     }
 
@@ -277,40 +140,60 @@ impl UiIntentOperabilityBasis {
     pub(crate) fn retained_dependency_reference_count(&self) -> usize {
         self.query_inputs.len()
             + self.application_inputs.len()
-            + 1
+            + usize::from(self.policy_input.is_some())
+            + self.expression_inputs.len()
             + usize::from(self.confirmation_input.is_some())
     }
 
     pub(crate) fn currentness(
         &self,
-        mounted: &crate::mounting::WorthUiMountedSessionState,
-        application_facts: &super::super::payload::UiIntentApplicationFactState,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        reads: &UiIntentOperabilityDependencyReads<'_>,
     ) -> Result<(), UiIntentOperabilityDependencyDrift> {
-        if !application_facts.is_current_reference(&self.policy_input, generation) {
+        let application_current = |expected| {
+            reads
+                .application_facts
+                .is_current_reference(expected, reads.generation)
+        };
+        if self
+            .policy_input
+            .as_ref()
+            .is_some_and(|expected| !application_current(expected))
+        {
             return Err(UiIntentOperabilityDependencyDrift::Policy);
         }
         if self
             .confirmation_input
             .as_ref()
-            .is_some_and(|expected| !application_facts.is_current_reference(expected, generation))
+            .is_some_and(|expected| !application_current(expected))
         {
             return Err(UiIntentOperabilityDependencyDrift::Confirmation);
         }
+        if let Some((axis, _)) = self.expression_inputs.iter().find(|(_, expected)| {
+            !reads
+                .expressions
+                .is_current_result(expected, reads.generation)
+        }) {
+            return Err(UiIntentOperabilityDependencyDrift::ExpressionResult { axis: *axis });
+        }
         let query_current = self.query_inputs.iter().all(|expected| {
-            mounted
+            reads
+                .mounted
                 .current_projection_input(expected.revision().slot())
                 .as_ref()
                 == Some(expected)
         });
-        let application_current = self
-            .application_inputs
-            .iter()
-            .all(|expected| application_facts.is_current_reference(expected, generation));
-        if query_current && application_current {
+        if query_current && self.application_inputs.iter().all(application_current) {
             Ok(())
         } else {
             Err(UiIntentOperabilityDependencyDrift::DeclaredDependency)
         }
     }
+}
+
+/// The owners an operability basis is proven current against.
+pub(crate) struct UiIntentOperabilityDependencyReads<'owners> {
+    pub(crate) mounted: &'owners crate::mounting::WorthUiMountedSessionState,
+    pub(crate) application_facts: &'owners super::super::payload::UiIntentApplicationFactState,
+    pub(crate) expressions: &'owners crate::runtime::expression::UiExpressionRuntimeState,
+    pub(crate) generation: &'owners crate::runtime::WorthUiActiveApplicationGenerationIdentity,
 }

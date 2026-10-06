@@ -21,6 +21,19 @@ publish a result. Application hosts perform those transitions through
 Pure reusable schema-meaning crates remain Query-agnostic. Query declaration
 integration belongs in the application entry band.
 
+## Ordinary Resource Declarations
+
+Declare query result cardinality with `ApplicationQueryBindingLimits::results(n)`
+or the query-binding macro's `limits results n`. The installed host owns the
+finite work safeguard. `bounded(n, work)` (macro `limits results n, work w`)
+adds a deliberate cap; ordinary code does not count internal traversal work.
+
+For candidate resources, `ApplicationCandidateResourceCeiling::representation_bytes(n)`
+lets Query derive validator allowance from installed invariant contracts. The
+mutation-binding macro likewise allows `resources retained_representation_bytes n`
+without `validator_work`. Explicit validator caps, effect cardinalities and byte
+limits remain enforced. These declarations grant no runtime capacity or authority.
+
 ## Application Program Meaning
 
 **Writing an application?** Start with [Build an Application](../../../../docs/build-an-application.md). Its
@@ -82,6 +95,16 @@ publish, discover, start, and progress those definitions through
 shows the complete journey, and the
 [workflows guide](../worth-query/docs/foundations/workflows.md) documents it
 step by step.
+
+An external-effect operation may declare one fixed inbound source, protocol,
+version and finite `ApplicationInboundOccurrenceLimits` with
+`external_effect_with_inbound`. The same typed binding can be used by a
+definition's `await_inbound` node, which must name the preceding operation
+node. These declarations grant neither verifier authority nor a workflow
+resume capability. Bank's
+[payment declaration](../../../worth-query-bank-world/crates/bank-domain/src/schema/contributions/payments.rs)
+and [definition](../../../worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs)
+are compiled consumers of this shape.
 
 ## Related Docs
 

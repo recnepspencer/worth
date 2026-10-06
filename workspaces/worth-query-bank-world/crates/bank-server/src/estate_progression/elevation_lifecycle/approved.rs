@@ -67,6 +67,10 @@ impl BankApprovedEstateElevation {
         self.query.approval_emitted_effect_count()
     }
 
+    pub const fn approval_canonical_work(&self) -> crate::BankCommitCanonicalWorkPhases {
+        crate::BankCommitCanonicalWorkPhases::from_query(self.query.approval_canonical_work())
+    }
+
     pub fn approval_retained_preimage_present(&self) -> bool {
         self.query.approval_retained_preimage().is_some()
     }

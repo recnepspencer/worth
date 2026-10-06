@@ -13,7 +13,6 @@ use crate::data::temporal::{LoweredTemporalEligibility, TemporalExecutionSummary
 use crate::logic::evaluation::{DeferralReason, EvaluationVerdict, SuppressionReason};
 
 use super::admission::ParallelAdmissionReason;
-#[cfg(feature = "parallel")]
 use super::apply::ApplyPlanSerialFallbackReason;
 use super::plan::PlanSummary;
 use super::task::{EligibleTask, SemanticSegmentId, SemanticTaskRange, TaskReason};
@@ -42,18 +41,15 @@ pub enum TaskExecutionOutcome {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum StageExecutionOutcome {
     CompletedSerial,
-    #[cfg(feature = "parallel")]
     CompletedParallel,
 }
 
-#[cfg(feature = "parallel")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ParallelExecutionKind {
     StagedParallelPrecompute,
     FullParallel,
 }
 
-#[cfg(feature = "parallel")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ParallelApplyMode {
     SerialApply,
@@ -92,19 +88,12 @@ pub struct StageExecutionRecord {
     pub outcome: StageExecutionOutcome,
     pub authority_policy: Option<AuthorityPolicy>,
     pub parallel_admission_reason: Option<ParallelAdmissionReason>,
-    #[cfg(feature = "parallel")]
     pub parallel_kind: Option<ParallelExecutionKind>,
-    #[cfg(feature = "parallel")]
     pub apply_mode: Option<ParallelApplyMode>,
-    #[cfg(feature = "parallel")]
     pub apply_group_count: u32,
-    #[cfg(feature = "parallel")]
     pub serial_apply_rejection_reason: Option<ApplyPlanSerialFallbackReason>,
-    #[cfg(feature = "parallel")]
     pub serial_fallback_group_count: u32,
-    #[cfg(feature = "parallel")]
     pub concurrent_apply_task_count: u32,
-    #[cfg(feature = "parallel")]
     pub serial_apply_task_count: u32,
     pub snapshot_duration_nanos: u128,
     pub precompute_duration_nanos: u128,
@@ -126,6 +115,9 @@ impl StageExecutionRecord {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecutionReport {
+    /// Exact reports returned by the execution authority for this evaluation.
+    /// Each entry is one executed pattern; stopped patterns stay on the stop.
+    pub execution: Vec<worth_foundational::ExecutionReport>,
     pub plan_summary: PlanSummary,
     pub stage_count: u32,
     pub task_count: u32,

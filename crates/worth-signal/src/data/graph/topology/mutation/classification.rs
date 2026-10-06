@@ -140,7 +140,7 @@ impl SignalGraph {
         &mut self,
         node: NodeId,
         edges: &[DependencyEdge],
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         let current = self.raw_dependencies_of(node)?;
         let delta = diff_dependency_topology(current, edges);

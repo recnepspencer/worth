@@ -10,6 +10,80 @@ use crate::indexes::data::{
 };
 use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_schema};
 
+#[test]
+fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
+    use crate::history::data::RelationalDescriptiveTouch;
+    use crate::identity::data::KindId;
+    use crate::tests::support::{create_entity_outcome_with_lease, test_execution_lease};
+
+    for checked in [false, true] {
+        let runtime = persisted_runtime_with_test_schema();
+        let committed = if checked {
+            create_entity_outcome_with_lease(&runtime, "touch-value", &test_execution_lease())
+        } else {
+            create_entity_outcome(&runtime, "touch-value")
+        };
+        let envelope = runtime
+            .replay()
+            .canonical_commit_envelope(committed.commit.commit_id)
+            .expect("performed commit has sealed envelope");
+        let touches = envelope
+            .descriptive_touches()
+            .exact_touches()
+            .expect("fresh scalar commit has exact native delta");
+        assert!(touches.iter().any(|touch| matches!(
+            touch,
+            RelationalDescriptiveTouch::EntityLifecycle {
+                kind: KindId(1),
+                ..
+            }
+        )));
+        assert!(touches.iter().any(|touch| matches!(touch,
+            RelationalDescriptiveTouch::AspectRevision { aspect, .. } if aspect.as_str() == "name"
+        )));
+        assert!(touches.iter().any(|touch| matches!(touch,
+            RelationalDescriptiveTouch::FieldRevision { kind: KindId(1), aspect, path, presence, .. }
+                if aspect.as_str() == "name"
+                    && path.fields()[0].as_str() == "name"
+                    && *presence == crate::storage::data::RelationalFieldPresence::Present
+        )));
+    }
+}
+
+#[test]
+fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
+    use crate::history::data::RelationalDescriptiveTouch;
+    use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
+    use crate::tests::support::{aspect_field_locator, aspect_key, field_key};
+    use worth_foundational::facade::AspectValue;
+
+    let runtime = persisted_runtime_with_test_schema();
+    let index = runtime.index_authority().register(DerivedIndexDefinition {
+        index_id: DerivedIndexId(0),
+        name: "touch-index".into(),
+        kind: DerivedIndexKind::EntityField {
+            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+        },
+        branch_scoped: false,
+    });
+    let committed = create_entity_outcome(&runtime, "indexed-value");
+    let envelope = runtime
+        .replay()
+        .canonical_commit_envelope(committed.commit.commit_id)
+        .expect("performed indexed commit has envelope");
+    let touches = envelope
+        .descriptive_touches()
+        .exact_touches()
+        .expect("exact native graph");
+    let expected = crate::storage::data::AuthoritativeFieldComparisonKey::from_aspect_value(
+        &AspectValue::String("indexed-value".into()),
+    );
+    assert!(touches.iter().any(|touch| matches!(touch,
+        RelationalDescriptiveTouch::IndexMembership { index: id, old_key: None, new_key: Some(key), .. }
+            if *id == index.index_id && key == &expected
+    )));
+}
+
 use super::{
     RelationalCommitArtifact, RelationalCommitArtifactDenial,
     RelationalCommitAuthoritativeAllocationKind,

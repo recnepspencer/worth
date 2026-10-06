@@ -18,7 +18,7 @@ pub(super) fn resolve_effect_dependency_inputs(
     graph: &mut SignalGraph,
     node: NodeId,
     dependency_inputs: Option<EffectDependencyInputs>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     match dependency_inputs {
         Some(inputs) if dependency_inputs_match_graph(graph, node, &inputs)? => {
@@ -48,7 +48,7 @@ fn dependency_inputs_match_graph(
 fn build_effect_dependency_inputs(
     graph: &mut SignalGraph,
     node: NodeId,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     let (dependency_set_id, dependency_snapshot_id) = graph.node_dependency_ids(node)?;
     let context = DependencyInputContext {
@@ -81,12 +81,55 @@ where
         .collect()
 }
 
+/// Construct a proposed dependency snapshot against the settled graph without
+/// changing topology, interning, telemetry, or stored snapshot authority.
+pub(crate) fn proposed_effect_dependency_inputs(
+    graph: &SignalGraph,
+    node: NodeId,
+    dependencies: &[DependencyEdge],
+) -> Result<EffectDependencyInputs, SignalError> {
+    let (dependency_set_id, dependency_snapshot_id) = graph.node_dependency_ids(node)?;
+    let previous = graph.get_dep_snapshot(node)?;
+    let mut entries = Vec::with_capacity(dependencies.len());
+    for dependency in dependencies {
+        if !graph.is_alive(dependency.source()) {
+            return Err(SignalError::invalid_input(
+                "proposed dependency source is missing",
+            ));
+        }
+        entries.push(crate::data::dependency::DependencySnapshotEntry {
+            source: dependency.source(),
+            aspect: dependency.aspect(),
+            cached_version: graph.node_version_for_scope(
+                dependency.source(),
+                dependency.aspect(),
+                dependency.scope_ref(),
+            )?,
+            scope: dependency.scope_ref().cloned(),
+        });
+    }
+    let proposed = DependencySnapshot::from_ordered_unique(entries);
+    let replacement = crate::data::dependency::SharedDependencySnapshot::new(proposed.clone());
+    let delta = SnapshotDeltaRecord::between(node, previous, &replacement);
+    Ok(EffectDependencyInputs {
+        context: DependencyInputContext {
+            dependency_set_id,
+            dependency_snapshot_id,
+        },
+        meaningful_input_changes: delta.changed_entry_count,
+        snapshot_delta: delta,
+        dependency_snapshot_update: CommittedSnapshotUpdate::Replace(
+            ReplacementSnapshotUpdate::from_snapshot(proposed),
+        ),
+    })
+}
+
 pub(crate) fn build_effect_dependency_inputs_for_dependencies(
     graph: &mut SignalGraph,
     node: NodeId,
     context: DependencyInputContext,
     dependencies: &[DependencyEdge],
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     let shape_handle_lookup_start = crate::clock::RuntimeInstant::now();
     let previous_shape_handle = graph
@@ -150,7 +193,7 @@ fn scan_dependency_shape(
     graph: &mut SignalGraph,
     dependencies: &[DependencyEdge],
     previous_entries: &[crate::data::dependency::DependencySnapshotEntry],
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<DependencyShapeScan, SignalError> {
     let mut matched_entry_count = 0usize;
     let mut shape_stable = dependencies.len() == previous_entries.len();
@@ -206,7 +249,7 @@ fn build_stable_shape_dependency_inputs(
     shape_handle_lookup_nanos: u128,
     previous_snapshot_fetch_nanos: u128,
     version_scan_nanos: u128,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     work.reserve(
         previous_snapshot
@@ -263,7 +306,7 @@ fn build_replacement_dependency_inputs(
     shape_handle_lookup_nanos: u128,
     previous_snapshot_fetch_nanos: u128,
     version_scan_nanos: u128,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
     let replacement_build_start = crate::clock::RuntimeInstant::now();
     let (snapshot, changes) =
@@ -297,7 +340,7 @@ fn build_replacement_dependency_snapshot(
     graph: &mut SignalGraph,
     dependencies: &[DependencyEdge],
     previous_snapshot: &DependencySnapshot,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(DependencySnapshot, u32), SignalError> {
     work.reserve(
         dependencies

@@ -1,16 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use winit::event_loop::EventLoop;
-
-use super::{UiNativeEventLoopRunDenial, UiNativeEventLoopThreadPosture};
+use super::UiNativeEventLoopRunDenial;
+use crate::native::readiness::UiNativeWakeSender;
 use crate::native::{
     UiNativeHostState, UiNativeReadinessRegistry, UiNativeReadyOwner, UiNativeResourceClass,
     UiNativeResourceOwner,
 };
 
 pub(super) struct UiNativeEventLoopRunPreflight {
-    pub event_loop: EventLoop<crate::native::readiness::UiNativeApplicationWake>,
     pub readiness: UiNativeReadinessRegistry,
     pub readiness_owner: UiNativeReadyOwner,
     pub physical_readiness_owner: UiNativeReadyOwner,
@@ -22,15 +20,9 @@ pub(super) struct UiNativeEventLoopRunPreflight {
 
 pub(super) fn prepare(
     state: &Rc<RefCell<UiNativeHostState>>,
-    thread_posture: UiNativeEventLoopThreadPosture,
     application_owner_count: crate::UiNativeApplicationReadinessOwnerCount,
+    wake: &UiNativeWakeSender,
 ) -> Result<UiNativeEventLoopRunPreflight, UiNativeEventLoopRunDenial> {
-    let mut builder =
-        EventLoop::<crate::native::readiness::UiNativeApplicationWake>::with_user_event();
-    super::windowing_system::force_qualified(&mut builder, thread_posture)?;
-    let event_loop = builder
-        .build()
-        .map_err(|_| UiNativeEventLoopRunDenial::EventLoopCreation)?;
     let loop_resources = state
         .borrow_mut()
         .resources
@@ -74,17 +66,15 @@ pub(super) fn prepare(
             return Err(UiNativeEventLoopRunDenial::ApplicationDriver);
         }
     };
-    let proxy = event_loop.create_proxy();
     let application_readiness_ports = application_readiness_owners
         .iter()
         .copied()
         .map(|owner| {
-            crate::UiNativeApplicationReadinessPort::new(readiness.clone(), owner, proxy.clone())
+            crate::UiNativeApplicationReadinessPort::new(readiness.clone(), owner, wake.clone())
         })
         .collect::<Vec<_>>()
         .into_boxed_slice();
     Ok(UiNativeEventLoopRunPreflight {
-        event_loop,
         readiness,
         readiness_owner,
         physical_readiness_owner,

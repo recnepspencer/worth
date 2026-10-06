@@ -71,12 +71,9 @@ mod tests {
         let aspect = Aspect::new(0);
         let scope = PartitionSubscription::whole_partition("retained");
         let mut warm = NodeWarmData::default();
-        warm.aspect_version_overrides.apply_evaluation(
+        std::sync::Arc::make_mut(&mut warm.aspect_version_overrides).apply_evaluation(
             AspectVersion::zero().with(aspect, 3),
-            &[ChangedRegion {
-                partition: scope.partition.clone(),
-                detail: None,
-            }],
+            &[ChangedRegion::subtree(scope.path().clone())],
         );
         warm.dirty_partition_scope_payload
             .push((aspect, scope.clone()));
@@ -89,13 +86,15 @@ mod tests {
         let before = selected.prepared_retained_charge().unwrap();
         let outcome = selected
             .edit_with_retained_capacity(0, before, &mut Preparation::new(1_000), |node| {
-                node.aspect_version_overrides
+                std::sync::Arc::make_mut(&mut node.aspect_version_overrides)
                     .set_global(AspectVersion::zero().with(aspect, 9));
-                node.dirty_partition_scope_payload[0]
-                    .1
-                    .partition
-                    .0
-                    .push_str(&"extra".repeat(1_024));
+                node.dirty_partition_scope_payload[0].1 = PartitionSubscription::subtree(
+                    crate::data::output::ScopePath::one(format!(
+                        "retained{}",
+                        "extra".repeat(1_024)
+                    ))
+                    .unwrap(),
+                );
                 node.aspect_version_overrides.version_for_scope(
                     aspect,
                     Some(&scope),
@@ -213,9 +212,11 @@ mod tests {
                 .unwrap()
                 .bytes(),
             capacity * 4
+                + std::mem::size_of::<String>() as u64
+                + std::mem::size_of::<PartitionSubscription>() as u64
         );
         let warm = NodeWarmData {
-            runtime_artifact_state: Some(artifact),
+            runtime_artifact_state: Some(std::sync::Arc::new(artifact)),
             ..Default::default()
         };
         let mut parent: PersistentPagedVector<_> = [warm].into_iter().collect();
@@ -223,7 +224,12 @@ mod tests {
         retained[0] = NodeWarmData::default();
         drop(parent);
         let mut work = Preparation::new(1_000);
-        assert!(retained.retained_heap_charge(&mut work).unwrap().bytes() >= capacity * 4);
+        assert!(
+            retained.retained_heap_charge(&mut work).unwrap().bytes()
+                >= capacity * 4
+                    + std::mem::size_of::<String>() as u64
+                    + std::mem::size_of::<PartitionSubscription>() as u64
+        );
         assert!(matches!(
             retained.retained_heap_charge(&mut Preparation::new(work.visits() - 1)),
             Err(Denial::WorkExhausted { .. })

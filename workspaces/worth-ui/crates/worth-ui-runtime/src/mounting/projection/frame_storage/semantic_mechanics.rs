@@ -245,16 +245,16 @@ impl UiMountedSemanticMechanicSource {
         self.by_layout.get(identity)
     }
 
-    /// Looks up, by request, the layouts the retained rows hold now for
-    /// `fonts`; the lookup keeps its own snapshot while this frame replaces
-    /// rows.
+    /// Looks up, by request at any width their lines fit, the layouts the
+    /// retained rows hold now for `fonts`; the lookup keeps its own snapshot
+    /// while this frame replaces rows.
     pub(super) fn retained_layouts(
         &self,
         fonts: &Arc<worth_ui_text::UiGlobalFontCollection>,
     ) -> super::super::semantic_text::UiMountedRetainedTextLayouts {
         let index = self.by_layout.clone();
         let fonts = Arc::clone(fonts);
-        Box::new(move |request| index.for_request(request, &fonts).cloned())
+        Box::new(move |reflow, width| index.for_request(reflow, width, &fonts).cloned())
     }
 
     fn rebuild_layout_index(&mut self) {

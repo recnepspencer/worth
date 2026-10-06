@@ -13,9 +13,10 @@ use worth_query_host::facade::{
             ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
             ApplicationCandidateResourceCeiling, ApplicationMutationBinding,
             ApplicationMutationFieldScope, ApplicationMutationIntent,
-            ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-            ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
-            ApplicationQueryMutationSource,
+            ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+            ApplicationMutationOutputRoleFamilyDescriptor, ApplicationQueryMutationSource,
+            WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+            WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef,
@@ -25,7 +26,7 @@ use worth_query_host::facade::{
     },
     primary_graph::{
         CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryApplicationOutputRole, WorthQueryInvariantMutationTarget,
+        WorthQueryInvariantMutationTarget,
     },
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
@@ -53,7 +54,7 @@ const APPLICABILITY: &[WorthQueryProducerApplicability] = &[INITIAL, PRESERVE];
 mod lookalike;
 pub use lookalike::LookalikeRetentionAssessmentDemand;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct RetentionAssessmentInput {
     identity: String,
     retention_days: u64,
@@ -83,14 +84,21 @@ worth_query_operation_reads!(PublishRetentionAssessment => [Document, DocumentId
 
 pub struct RetentionAssessmentOutputs;
 
+/// The assessed document every retention assessment preserves.
+pub struct AssessmentOutput;
+
+impl WorthQueryApplicationOutputRole for AssessmentOutput {
+    type Schema = DocumentRetentionSchema;
+    type Contract = RetentionAssessmentOutputs;
+    type Entity = Document;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "assessment";
+}
+
 impl ApplicationMutationOutputContract<DocumentRetentionSchema> for RetentionAssessmentOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            DocumentRetentionSchema,
-            Document,
-        >(
-            "assessment", ApplicationMutationOutputPosture::Preserve
-        )];
+        &[<AssessmentOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
 }
 
@@ -134,16 +142,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessment
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             ApplicationCandidateResourceCeiling::bounded(512, 256),
         );
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        hash(&key.to_le_bytes())
-    }
-
-    fn input_identity(input: &RetentionAssessmentInput) -> [u8; 32] {
-        let mut bytes = input.identity.as_bytes().to_vec();
-        bytes.extend_from_slice(&input.retention_days.to_le_bytes());
-        hash(&bytes)
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -238,10 +236,7 @@ impl OperationHandler<DocumentRetentionSchema, RetentionAssessmentBinding>
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        if let Err(error) = writer.preserve_output(
-            WorthQueryApplicationOutputRole::from_static("assessment"),
-            &document,
-        ) {
+        if let Err(error) = writer.preserve_output::<AssessmentOutput>(&document) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         HandlerResult::Completed(RetentionAssessmentPublished {
@@ -254,6 +249,7 @@ pub struct RetentionAssessmentOutputFamily;
 
 impl WorthQueryProducerOutputFamily<DocumentRetentionSchema> for RetentionAssessmentOutputFamily {
     type Source = DocumentRetentionQueryBinding;
+    type Entity = Document;
     const IDENTITY: &'static str = "worth.query.certification.retention-assessment.output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
 
@@ -305,7 +301,7 @@ impl WorthQueryApplicationProducerBinding<DocumentRetentionSchema> for Retention
     type OutputFamily = RetentionAssessmentOutputFamily;
     type Provider = RetentionAssessmentProvider;
     const IDENTITY: &'static str = "worth.query.certification.retention-assessment.producer.v1";
-    const OUTPUT_ROLE: &'static str = "assessment";
+    type OutputRole = AssessmentOutput;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
@@ -359,14 +355,4 @@ pub fn declare(
             DocumentRetentionField::reference(),
         )
         .application_mutation_binding::<RetentionAssessmentBinding>()
-}
-
-fn hash(bytes: &[u8]) -> [u8; 32] {
-    let mut identity = [0_u8; 32];
-    let mut accumulator = 0xcbf2_9ce4_8422_2325_u64;
-    for (index, byte) in bytes.iter().enumerate() {
-        accumulator = (accumulator ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
-        identity[index % identity.len()] ^= (accumulator >> ((index % 8) * 8)) as u8;
-    }
-    identity
 }

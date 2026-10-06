@@ -1,11 +1,12 @@
-use rayon::prelude::*;
+use worth_execution::ExecutionResourceLease;
+use worth_foundational::PartitionIdentity;
 
 use crate::authority::commit::preparation::packets::import::{
     ImportFragmentIdentity, ImportFragmentKind, ImportStagedRow, ImportStagingHeader,
     ImportStagingPacket,
 };
 use crate::authority::commit::preparation::planning::strategy::{
-    coarse_preparation_packet_count, strategy_for_parallel_packets, PreparationStrategySelection,
+    coarse_preparation_packet_count, strategy_for_parallel_packets,
     TARGET_PREPARATION_ITEMS_PER_PACKET,
 };
 use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;
@@ -22,7 +23,7 @@ use crate::authority::mutation::record_changes::allocate_entity_with_extra;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::{
     BulkEntityCreateIntent, BulkImportRowDomain, BulkImportStage, CommitConflict, CreatedEntityRef,
-    RecordAspectPatchTarget,
+    RecordAspectPatchTarget, TransactionCommitError,
 };
 use crate::validation::data::InvariantGroupSet;
 use worth_foundational::facade::{
@@ -35,7 +36,8 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &BulkEntityCreateIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<MutationOutcome, TransactionCommitError> {
     let version_id = workspace.version_id();
     let mut outcome = MutationOutcome::with_capacity(intent.field_patches.len(), 1);
     outcome.record_event(
@@ -45,7 +47,7 @@ pub(super) fn apply(
             count: 0,
         },
     );
-    let staged_rows = stage_bulk_entity_rows(intent, workspace)?;
+    let staged_rows = stage_bulk_entity_rows(intent, workspace, lease)?;
     let entity_aspect_plans = stage_bulk_entity_aspect_plans(intent, workspace, &staged_rows)?;
     for ((client_key, _fields), aspect_plan) in intent
         .client_keys
@@ -69,7 +71,7 @@ pub(super) fn apply(
             context
                 .state
                 .mark_entity_slot_touched(entity_id.partition_id, entity_id.slot_index());
-            Ok(entity_id)
+            Ok::<_, CommitConflict>(entity_id)
         })?;
         workspace.register_created_entity(
             CreatedEntityRef {
@@ -123,7 +125,11 @@ fn stage_bulk_entity_aspect_plans(
 fn stage_bulk_entity_rows(
     intent: &BulkEntityCreateIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<Vec<crate::transactions::data::AspectFieldPatch>, CommitConflict> {
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<Vec<crate::transactions::data::AspectFieldPatch>, TransactionCommitError> {
+    if let Some(lease) = lease {
+        return stage_leased_entity_rows(intent, workspace, lease);
+    }
     let packet_count = coarse_preparation_packet_count(
         intent.field_patches.len(),
         TARGET_PREPARATION_ITEMS_PER_PACKET,
@@ -165,27 +171,124 @@ fn stage_bulk_entity_rows(
         });
     }
 
-    stage_import_packets(workspace, packets)
+    stage_import_packets(workspace, packets, lease)?
         .into_iter()
         .map(|row| match row {
             ImportStagedRow::Entity { fields } => Ok(fields),
-            ImportStagedRow::Relation { .. } => Err(CommitConflict::new(
-                crate::transactions::data::ConflictClass::BulkImportDomainMismatch {
-                    expected: BulkImportRowDomain::Entity,
-                    actual: BulkImportRowDomain::Relation,
-                    stage: BulkImportStage::EntityCreate,
-                },
-            )),
+            ImportStagedRow::Relation { .. } => {
+                Err(TransactionCommitError::conflict(CommitConflict::new(
+                    crate::transactions::data::ConflictClass::BulkImportDomainMismatch {
+                        expected: BulkImportRowDomain::Entity,
+                        actual: BulkImportRowDomain::Relation,
+                        stage: BulkImportStage::EntityCreate,
+                    },
+                )))
+            }
         })
         .collect()
+}
+
+fn stage_leased_entity_rows(
+    intent: &BulkEntityCreateIntent,
+    workspace: &mut MutationWorkspace<'_>,
+    lease: &ExecutionResourceLease<'_>,
+) -> Result<Vec<crate::transactions::data::AspectFieldPatch>, TransactionCommitError> {
+    use crate::transactions::data::AspectFieldPatch;
+    let packet_count = coarse_preparation_packet_count(
+        intent.field_patches.len(),
+        TARGET_PREPARATION_ITEMS_PER_PACKET,
+    );
+    if packet_count == 0 {
+        return Ok(Vec::new());
+    }
+    workspace.record_preparation_strategy(
+        packet_count,
+        intent.field_patches.len(),
+        TARGET_PREPARATION_ITEMS_PER_PACKET.min(intent.field_patches.len()),
+        1,
+        record_import_strategy(Some(lease), packet_count),
+    );
+    let packet_ceiling =
+        lease.policy().budget().charged_memory_bytes() / (packet_count as u64).saturating_mul(8);
+    let (inputs, _preparation_report) = crate::execution::prepare_borrowed_packets(
+        lease,
+        workspace.commit_work_budget(),
+        |budget| {
+            let mut inputs = Vec::new();
+            for (packet_index, rows) in intent
+                .field_patches
+                .chunks(TARGET_PREPARATION_ITEMS_PER_PACKET)
+                .enumerate()
+            {
+                budget.claim_packet::<(usize, &[AspectFieldPatch])>()?;
+                inputs
+                    .try_reserve_exact(1)
+                    .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
+                inputs.push(crate::execution::ReadOnlyPacket {
+                    identity: PartitionIdentity::new(
+                        (packet_index * TARGET_PREPARATION_ITEMS_PER_PACKET) as u64,
+                    ),
+                    value: (packet_index * TARGET_PREPARATION_ITEMS_PER_PACKET, rows),
+                    input_bytes: 0,
+                    kernel_scratch_bytes: packet_ceiling,
+                    max_result_bytes: packet_ceiling,
+                });
+            }
+            Ok(inputs)
+        },
+    )?;
+    let streams = crate::execution::execute_read_only_packets_with_budget(
+        inputs,
+        Some(lease),
+        workspace.commit_work_budget(),
+        |(packet_index_floor, rows), context| {
+            let mut stream = Vec::new();
+            for (offset, fields) in rows.iter().enumerate() {
+                context.checkpoint(1)?;
+                context.claim_result(
+                    (std::mem::size_of::<(ImportReductionKey, ImportStagedRow)>() as u64)
+                        .saturating_add(fields.owned_allocation_capacity_bytes()),
+                )?;
+                stream
+                    .try_reserve_exact(1)
+                    .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
+                stream.push((
+                    ImportReductionKey::new(intent.partition_id, 0, packet_index_floor + offset),
+                    ImportStagedRow::Entity {
+                        fields: fields.clone(),
+                    },
+                ));
+            }
+            Ok(OrderedReductionStream::new(stream))
+        },
+        |stream| {
+            stream.owned_allocation_capacity_bytes(|_, row| row.owned_allocation_capacity_bytes())
+        },
+    )?;
+    Ok(
+        crate::authority::commit::preparation::reduction::merge::canonical_merge_streams_checked(
+            streams,
+            lease,
+            workspace.commit_work_budget(),
+            |_, row| row.owned_allocation_capacity_bytes(),
+            |_| 0,
+        )?
+        .into_iter()
+        .map(|(_, row)| match row {
+            ImportStagedRow::Entity { fields } => fields,
+            ImportStagedRow::Relation { .. } => unreachable!("entity packet only"),
+        })
+        .collect(),
+    )
 }
 
 fn stage_import_packets(
     workspace: &mut MutationWorkspace<'_>,
     packets: Vec<ImportStagingPacket>,
-) -> Vec<ImportStagedRow> {
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<Vec<ImportStagedRow>, TransactionCommitError> {
     if packets.is_empty() {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
     let packet_item_count = packets.iter().map(|packet| packet.rows.len()).sum();
@@ -194,7 +297,7 @@ fn stage_import_packets(
         .map(|packet| packet.rows.len())
         .max()
         .unwrap_or(0);
-    let strategy = record_import_strategy(workspace, packets.len());
+    let strategy = record_import_strategy(lease, packets.len());
     workspace.record_preparation_strategy(
         packets.len(),
         packet_item_count,
@@ -202,48 +305,76 @@ fn stage_import_packets(
         1,
         strategy,
     );
-    if packets.len() == 1 {
-        return packets.into_iter().next().unwrap().rows;
+    if lease.is_none() {
+        return Ok(packets.into_iter().flat_map(|packet| packet.rows).collect());
     }
-    match strategy.selected_mode {
-        // Packets are constructed in canonical packet-index order and each packet row is already
-        // locally ordered, so serial execution can flatten directly without a redundant k-way
-        // merge.
-        PreparationStrategySelection::Serial => {
-            packets.into_iter().flat_map(|packet| packet.rows).collect()
-        }
-        PreparationStrategySelection::StagedParallel => canonical_merge_streams(
-            packets
-                .par_iter()
-                .map(import_packet_stream)
-                .collect::<Vec<_>>(),
-        )
+    let packet_ceiling = lease.map_or(0, |lease| {
+        lease.policy().budget().charged_memory_bytes() / (packets.len() as u64).saturating_mul(8)
+    });
+    let inputs = packets
+        .into_iter()
+        .map(|packet| crate::execution::ReadOnlyPacket {
+            identity: PartitionIdentity::new(packet.header.packet_index_floor as u64),
+            input_bytes: (packet.rows.capacity() as u64)
+                .saturating_mul(std::mem::size_of::<ImportStagedRow>() as u64)
+                .saturating_add(
+                    packet
+                        .rows
+                        .iter()
+                        .map(ImportStagedRow::owned_allocation_capacity_bytes)
+                        .sum::<u64>(),
+                ),
+            kernel_scratch_bytes: packet_ceiling,
+            max_result_bytes: packet_ceiling,
+            value: packet,
+        })
+        .collect();
+    let streams = crate::execution::execute_read_only_packets(
+        inputs,
+        lease,
+        import_packet_stream,
+        |stream| {
+            stream.owned_allocation_capacity_bytes(|_, row| row.owned_allocation_capacity_bytes())
+        },
+    )?;
+    Ok(canonical_merge_streams(streams)
         .into_iter()
         .map(|(_, row)| row)
-        .collect(),
-    }
+        .collect())
 }
 
 fn record_import_strategy(
-    workspace: &MutationWorkspace<'_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
     packet_count: usize,
 ) -> crate::authority::commit::preparation::planning::strategy::PreparationStrategy {
-    strategy_for_parallel_packets(workspace.execution_model(), packet_count)
+    strategy_for_parallel_packets(lease, packet_count)
 }
 
 fn import_packet_stream(
     packet: &ImportStagingPacket,
-) -> OrderedReductionStream<ImportReductionKey, ImportStagedRow> {
-    let mut stream = Vec::with_capacity(packet.rows.len());
-    for (offset, row) in packet.rows.iter().cloned().enumerate() {
+    context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
+) -> Result<
+    OrderedReductionStream<ImportReductionKey, ImportStagedRow>,
+    worth_execution::MapKernelFailure<crate::execution::PacketBudgetDenial>,
+> {
+    let mut stream = Vec::new();
+    for (offset, row) in packet.rows.iter().enumerate() {
+        context.checkpoint(1)?;
+        context.claim_result(
+            (std::mem::size_of::<(ImportReductionKey, ImportStagedRow)>() as u64)
+                .saturating_add(row.owned_allocation_capacity_bytes()),
+        )?;
+        stream
+            .try_reserve_exact(1)
+            .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
         stream.push((
             ImportReductionKey::new(
                 packet.header.identity.partition_id,
                 0,
                 packet.header.packet_index_floor + offset,
             ),
-            row,
+            row.clone(),
         ));
     }
-    OrderedReductionStream::new(stream)
+    Ok(OrderedReductionStream::new(stream))
 }

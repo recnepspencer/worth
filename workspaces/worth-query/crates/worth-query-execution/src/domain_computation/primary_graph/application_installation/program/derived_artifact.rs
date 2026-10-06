@@ -32,8 +32,6 @@ where
 {
     pub(super) fn validate_root_artifact_demand<Root>(
         &self,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
     ) -> Result<Option<ApplicationDerivedArtifactDeclaration>, WorthQueryOutputDemandDenial>
     where
         Root: ApplicationOutputGraphShape<Schema>,
@@ -43,7 +41,68 @@ where
         self.validate_derived_artifact_demand::<
             RootConnection<Schema, Root>,
             RootDemand<Schema, Root>,
-        >(maximum_work, maximum_retained_bytes)
+        >()
+    }
+
+    pub fn resolve_program_output_limits<Connection, Demand>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+    ) -> Result<
+        crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+        WorthQueryOutputDemandDenial,
+    >
+    where
+        Schema: 'static,
+        Connection: ApplicationConnectionShape<Schema>,
+        Demand: WorthQueryApplicationOutputDemand<Schema>,
+    {
+        if !self.contains_connection_type::<Connection>() {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "output connection is not installed for this program",
+            ));
+        }
+        let artifact = self.validate_derived_artifact_demand::<Connection, Demand>()?;
+        self.resolve_artifact_limits(limits, artifact)
+    }
+
+    pub(super) fn resolve_artifact_limits(
+        &self,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+        artifact: Option<ApplicationDerivedArtifactDeclaration>,
+    ) -> Result<
+        crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+        WorthQueryOutputDemandDenial,
+    >
+    where
+        Schema: 'static,
+    {
+        let limits = self
+            .runtime
+            .output_demand_resource_profile()
+            .constrain(limits);
+        let Some(artifact) = artifact else {
+            return Ok(limits);
+        };
+        let limits = limits.for_artifact(
+            artifact.resource_ceiling().maximum_work(),
+            artifact.resource_ceiling().maximum_retained_bytes(),
+        );
+        let denied = if limits.producer_work() == 0 {
+            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
+        } else if limits.producer_retained_bytes() == 0 {
+            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+        } else {
+            None
+        };
+        if let Some(kind) = denied {
+            return Err(WorthQueryOutputDemandDenial::new(
+                kind,
+                artifact.stopped_outcome(),
+            ));
+        }
+        Ok(limits)
     }
 
     /// Proves that the concrete performed operation is an authored cause of
@@ -58,7 +117,7 @@ where
             WorthQueryApplicationRequiredOutputConnection<Schema>,
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let artifact = self.validate_root_artifact_demand::<Root>(0, 0)?;
+        let artifact = self.validate_root_artifact_demand::<Root>()?;
         self.validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
     }
 
@@ -77,7 +136,7 @@ where
         let artifact = self.validate_derived_artifact_demand::<
             RootConnection<Schema, Root>,
             DiscoveredRootDemand<Schema, Root>,
-        >(0, 0)?;
+        >()?;
         self.validate_artifact_source::<RootConnection<Schema, Root>, Binding>(artifact)
     }
 
@@ -149,8 +208,6 @@ where
 
     pub(super) fn validate_derived_artifact_demand<Connection, Demand>(
         &self,
-        maximum_work: usize,
-        maximum_retained_bytes: usize,
     ) -> Result<Option<ApplicationDerivedArtifactDeclaration>, WorthQueryOutputDemandDenial>
     where
         Connection: ApplicationConnectionShape<Schema>,
@@ -169,23 +226,6 @@ where
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "the target feature has no derived artifact for the selected producer family",
             )),
-            WorthQueryProgramArtifactPosture::Installed(artifact)
-                if maximum_work > artifact.resource_ceiling().maximum_work() =>
-            {
-                Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    artifact.stopped_outcome(),
-                ))
-            }
-            WorthQueryProgramArtifactPosture::Installed(artifact)
-                if maximum_retained_bytes
-                    > artifact.resource_ceiling().maximum_retained_bytes() =>
-            {
-                Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    artifact.stopped_outcome(),
-                ))
-            }
             WorthQueryProgramArtifactPosture::Installed(artifact) => Ok(Some(artifact)),
         }
     }

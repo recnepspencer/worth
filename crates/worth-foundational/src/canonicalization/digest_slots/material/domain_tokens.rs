@@ -1,15 +1,5 @@
-use super::super::algorithm::{CanonicalDigestInputDomain, CanonicalDigestInputShape};
+use super::super::algorithm::CanonicalDigestInputShape;
 use crate::canonicalization::CanonicalBasisDomain;
-
-pub(super) fn input_domain_token(domain: CanonicalDigestInputDomain) -> String {
-    match domain {
-        CanonicalDigestInputDomain::Single(domain) => {
-            format!("single:{}", domain_material_token(domain))
-        }
-        CanonicalDigestInputDomain::DomainBundle => "domain-bundle".to_string(),
-        CanonicalDigestInputDomain::ExportBundle => "export-bundle".to_string(),
-    }
-}
 
 pub(super) fn input_shape_token(shape: CanonicalDigestInputShape) -> &'static str {
     match shape {

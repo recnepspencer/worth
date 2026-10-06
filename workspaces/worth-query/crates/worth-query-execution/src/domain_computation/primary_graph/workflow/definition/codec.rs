@@ -11,6 +11,7 @@ pub(super) enum WorkflowNodeTag {
     Approval,
     EvidenceJoin,
     Terminal,
+    AwaitInbound,
 }
 
 impl WorkflowNodeTag {
@@ -22,6 +23,7 @@ impl WorkflowNodeTag {
             ApplicationWorkflowNodeKind::Approval(_) => Self::Approval,
             ApplicationWorkflowNodeKind::EvidenceJoin(_) => Self::EvidenceJoin,
             ApplicationWorkflowNodeKind::Terminal => Self::Terminal,
+            ApplicationWorkflowNodeKind::AwaitInbound(_) => Self::AwaitInbound,
         }
     }
 
@@ -33,6 +35,7 @@ impl WorkflowNodeTag {
             3 => Some(Self::EvidenceJoin),
             4 => Some(Self::Terminal),
             5 => Some(Self::Condition),
+            6 => Some(Self::AwaitInbound),
             _ => None,
         }
     }
@@ -45,6 +48,7 @@ impl WorkflowNodeTag {
             Self::EvidenceJoin => 3,
             Self::Terminal => 4,
             Self::Condition => 5,
+            Self::AwaitInbound => 6,
         }
     }
 
@@ -56,6 +60,7 @@ impl WorkflowNodeTag {
             Self::EvidenceJoin => "evidence-join",
             Self::Terminal => "terminal",
             Self::Condition => "condition",
+            Self::AwaitInbound => "await-inbound",
         }
     }
 }

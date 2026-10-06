@@ -1,4 +1,6 @@
-use crate::application_program::workflow::ApplicationWorkflowNodeIdentity;
+use crate::application_program::workflow::{
+    ApplicationWorkflowConditionDenial, ApplicationWorkflowNodeIdentity,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationWorkflowComponentResource {
@@ -49,6 +51,7 @@ pub enum ApplicationWorkflowAuthoringDenial {
         maximum: u32,
     },
     UnexportedComponentPort(String),
+    Condition(ApplicationWorkflowConditionDenial),
 }
 
 impl std::fmt::Display for ApplicationWorkflowAuthoringDenial {
@@ -114,6 +117,7 @@ impl std::fmt::Display for ApplicationWorkflowAuthoringDenial {
                     "workflow component port is not exported: {identity}"
                 )
             }
+            Self::Condition(denial) => denial.fmt(formatter),
         }
     }
 }

@@ -61,6 +61,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowEvidenceDependen
     pub(in crate::domain_computation::primary_graph) entity_partition: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity_generation: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) native_entity_kind: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) aspect: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) field: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) field_presence: AspectFieldLocator,
@@ -179,6 +180,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) member: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) input_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) operation_binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) inbound_origin: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) inbound_contract: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) inbound_wait: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) parameter_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) result_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) assessment_binding: AspectFieldLocator,
@@ -190,6 +194,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) assessment_applicability_to:
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) condition_binding: AspectFieldLocator,
+    /// Present exactly on expression conditions; see `definition::condition`.
+    pub(in crate::domain_computation::primary_graph) condition_operands: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) capability_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_operation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_capability_identity:

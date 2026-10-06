@@ -12,7 +12,9 @@ use crate::transactions::data::{
     AspectEvaluationTrace, CommitAspectSummary, CommitChangeSummary, CommitPublicationSummary,
     MergedCommitPlan, PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
 };
+mod summary;
 mod traces;
+use summary::summarize_commit_aspects;
 
 use traces::derive_aspect_emission_traces;
 pub(in crate::authority::commit::pipeline) use traces::PreparedAspectEmissionTrace;
@@ -38,6 +40,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
 
 pub(super) struct PublicationPreparationInput<'a> {
     pub(super) working_state: &'a mut crate::runtime::WorkingState,
+    pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) patch: CanonicalAuthoritativePatch,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a crate::history::data::BranchId,
@@ -59,9 +62,11 @@ pub(super) struct PublicationPreparationInput<'a> {
 pub(super) fn prepare_publication_artifacts(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     input: PublicationPreparationInput<'_>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<PublicationPreparation, TransactionCommitError> {
     let PublicationPreparationInput {
         working_state,
+        selected_branch_state,
         patch,
         commit_reference,
         branch_id,
@@ -82,6 +87,23 @@ pub(super) fn prepare_publication_artifacts(
         diagnostics,
         adjacency,
     } = effect;
+    let descriptive_touches = super::descriptive_touches::prepare(
+        runtime,
+        selected_branch_state,
+        working_state,
+        &publication.canonical_deltas,
+        &adjacency.deltas,
+        if schema_continuity.schema_transition.is_some() {
+            super::descriptive_touches::TouchPreparationMode::Unavailable
+        } else if merge_execution_authority.is_some() {
+            super::descriptive_touches::TouchPreparationMode::NativeMerge
+        } else if !merge_parent_branches.is_empty() || !merge_base_commits.is_empty() {
+            super::descriptive_touches::TouchPreparationMode::Unavailable
+        } else {
+            super::descriptive_touches::TouchPreparationMode::Ordinary
+        },
+        lease,
+    )?;
     let traces = capture_publication_traces(runtime, &patch, &publication.canonical_deltas);
     let diagnostics_summary = diagnostics_summary_artifact(
         &runtime.config,
@@ -105,6 +127,7 @@ pub(super) fn prepare_publication_artifacts(
             schema_continuity,
             changed_records: &publication.changed_records,
             diagnostics_summary: &diagnostics_summary,
+            descriptive_touches,
         },
     )?;
     Ok(finish_publication_preparation(PublicationCompletionInput {
@@ -173,6 +196,7 @@ struct PublicationAuthorityInput<'a> {
     schema_continuity: &'a SchemaContinuityPlan,
     changed_records: &'a [RecordRef],
     diagnostics_summary: &'a crate::diagnostics::data::RelationalDiagnosticArtifact,
+    descriptive_touches: crate::history::data::RelationalDescriptiveTouchGraph,
 }
 
 struct PreparedPublicationAuthority {
@@ -227,6 +251,7 @@ fn prepare_authoritative_publication(
         input.merge_base_commits,
         input.merged_plan,
         input.patch.clone(),
+        input.descriptive_touches,
         input.diagnostics_summary.clone(),
         lineage_artifact,
         crate::indexes::data::DerivedIndexArtifacts::default(),
@@ -352,38 +377,5 @@ impl PublicationFinalizeArtifacts {
             self.deferred_diagnostic_artifacts,
             self.target_schema_registry,
         )
-    }
-}
-
-fn summarize_commit_aspects(
-    deltas: &[crate::authority::mutation::CanonicalRecordAspectDelta],
-) -> CommitAspectSummary {
-    let mut changed_entity_aspect_count = 0;
-    let mut changed_relation_aspect_count = 0;
-    let mut touched_aspects = Vec::new();
-    let mut opaque_aspect_delta_count = 0;
-    let mut zero_aspect_structural_delta_count = 0;
-
-    for delta in deltas {
-        let aspect_count = delta.changed_aspects.len();
-        match delta.target {
-            RecordRef::Entity(_) => changed_entity_aspect_count += aspect_count,
-            RecordRef::Relation(_) => changed_relation_aspect_count += aspect_count,
-        }
-        touched_aspects.extend(delta.changed_aspects.iter().cloned());
-        if delta.contains_opaque_aspect {
-            opaque_aspect_delta_count += 1;
-        }
-        if delta.changed_aspects.is_empty() {
-            zero_aspect_structural_delta_count += 1;
-        }
-    }
-
-    CommitAspectSummary {
-        changed_entity_aspect_count,
-        changed_relation_aspect_count,
-        touched_aspects: crate::publication::patch::data::ordered_aspect_keys(touched_aspects),
-        opaque_aspect_delta_count,
-        zero_aspect_structural_delta_count,
     }
 }

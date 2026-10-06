@@ -145,6 +145,7 @@ fn reject_occupied_registration(
             lease,
             running,
             cleanup,
+            request: admission.publication_request().clone(),
         },
     )
 }
@@ -214,7 +215,8 @@ fn while_peer_is_registered(
     let commit_lane = world
         .application
         .primary_provider
-        .application_branch_commit_lane(product.observation());
+        .application_branch_commit_lane(product.observation())
+        .unwrap();
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application: &world.application,
@@ -228,7 +230,12 @@ fn while_peer_is_registered(
     };
     let peer = finish_application_commit(
         &world.application,
-        registered.progress(&authority).finish(lease, running, None),
+        registered.progress(&authority).finish(
+            lease,
+            running,
+            None,
+            admission.publication_request().clone(),
+        ),
     );
     assert!(matches!(
         peer,

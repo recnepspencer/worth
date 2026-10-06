@@ -33,7 +33,6 @@ mod world_handles;
 mod world_setup;
 mod world_shape;
 
-#[cfg(feature = "parallel")]
 pub(crate) use certification::invalidation::verify_locality_case_with_policy;
 pub(crate) use certification::invalidation::{verify_locality_case, FreshFinancialRecompute};
 pub(crate) use regimes::MarketRegime;

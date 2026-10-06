@@ -1,9 +1,13 @@
 use std::marker::PhantomData;
 
+use serde::Serialize;
 use worth_foundational::facade::AspectValue;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationIdentityScalarValueBinding, ApplicationScalarValueBinding,
-    ApplicationValueEncodeDenial, U64ApplicationValueBinding,
+use worth_query_declaration::facade::{
+    application_operation::{application_value_identity, ApplicationValueIdentityDomain},
+    application_schema::{
+        ApplicationIdentityScalarValueBinding, ApplicationScalarValueBinding,
+        ApplicationValueEncodeDenial, U64ApplicationValueBinding,
+    },
 };
 
 use super::WorthQueryClockCoordinate;
@@ -81,8 +85,30 @@ impl WorthQueryTemporalIntentIdentity {
 pub struct WorthQueryTemporalIntentIdempotencyRelation(String);
 
 impl WorthQueryTemporalIntentIdempotencyRelation {
-    pub fn declare(identity: impl Into<String>) -> Result<Self, &'static str> {
-        validated_intent_identity(identity).map(Self)
+    /// Derives the relation from everything that makes one wake's intent the
+    /// same intent: pass every part, such as the intent identity, its revision,
+    /// and its input, as one serializable value.
+    ///
+    /// The canonical encoding is prefix-free, so text that only moves a
+    /// delimiter between parts is a different relation, and a part left out of
+    /// `parts` is the only way a change goes unnoticed. A value that cannot
+    /// serialize is refused.
+    pub fn declare<Parts: Serialize + ?Sized>(
+        parts: &Parts,
+    ) -> Result<Self, ApplicationValueEncodeDenial> {
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        let digest = application_value_identity(
+            ApplicationValueIdentityDomain::TemporalIntentRelation,
+            "",
+            parts,
+        )?
+        .identity();
+        let mut text = String::with_capacity(digest.len() * 2);
+        for byte in digest {
+            text.push(char::from(HEX[usize::from(byte >> 4)]));
+            text.push(char::from(HEX[usize::from(byte & 0x0f)]));
+        }
+        Ok(Self(text))
     }
 
     pub fn as_str(&self) -> &str {

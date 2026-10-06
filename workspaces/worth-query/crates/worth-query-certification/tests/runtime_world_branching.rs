@@ -274,6 +274,31 @@ fn active_successor_revision_replaces_the_predecessor_wake() {
 }
 
 #[test]
+fn busy_branch_heals_a_lagging_cursor_inside_observation() {
+    courtroom::busy_branch_heals_a_lagging_cursor_inside_observation();
+}
+
+#[test]
+fn native_writer_commit_reconsiders_a_suppressed_wake() {
+    courtroom::native_writer_commit_reconsiders_a_suppressed_wake();
+}
+
+#[test]
+fn a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation() {
+    courtroom::a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation();
+}
+
+#[test]
+fn a_reordered_clock_reading_after_a_foreign_commit_keeps_its_invalidation() {
+    courtroom::a_reordered_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation();
+}
+
+#[test]
+fn a_stale_clock_reading_after_a_foreign_commit_keeps_its_invalidation() {
+    courtroom::a_stale_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation();
+}
+
+#[test]
 fn reinstallation_reconstructs_active_authoritative_work() {
     courtroom_lifecycle::reinstallation_reconstructs_active_authoritative_work();
 }

@@ -11,8 +11,10 @@ use crate::graph::{
     UiGraphSnapshot,
 };
 use std::rc::Rc;
+use std::sync::Arc;
 
 mod derivation;
+mod expression_catalog;
 mod graph_successor;
 use derivation::derive_prepared_application_authorities;
 pub(crate) use graph_successor::{
@@ -30,6 +32,7 @@ pub(crate) struct WorthUiPreparedApplicationAuthorityInput {
     pub(crate) declaration_artifacts: Vec<UiDeclarationArtifact>,
     pub(crate) graph_snapshot: UiGraphSnapshot,
     pub(crate) intent_catalog: crate::declaration::UiIntentCatalog,
+    pub(crate) expression_catalog: Arc<crate::runtime::expression::UiExpressionCatalog>,
     pub(crate) lifecycle: WorthUiFacadeLifecycleBootstrap,
     pub(crate) query_binding_plan: worth_ui_query_binding::WorthUiQueryBindingPlan,
     pub(crate) intent_application_facts: crate::declaration::UiIntentApplicationFactPlan,
@@ -65,6 +68,7 @@ pub struct WorthUiPreparedApplicationAuthority {
     declaration_artifacts: Rc<[UiDeclarationArtifact]>,
     graph_snapshot: UiGraphSnapshot,
     intent_catalog: crate::declaration::UiIntentCatalog,
+    expression_catalog: Arc<crate::runtime::expression::UiExpressionCatalog>,
     lifecycle: WorthUiFacadeLifecycleBootstrap,
     authored_evidence_index: Rc<UiDeclarationAuthoredEvidenceIndex>,
     graph_node_evidence_index: Rc<UiGraphNodeEvidenceIndex>,
@@ -96,6 +100,7 @@ impl WorthUiPreparedApplicationAuthority {
             declaration_artifacts,
             graph_snapshot,
             intent_catalog,
+            expression_catalog,
             lifecycle,
             query_binding_plan,
             intent_application_facts,
@@ -145,6 +150,7 @@ impl WorthUiPreparedApplicationAuthority {
             declaration_artifacts,
             graph_snapshot,
             intent_catalog,
+            expression_catalog,
             lifecycle,
             authored_evidence_index,
             graph_node_evidence_index,

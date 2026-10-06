@@ -148,6 +148,7 @@ fn resolve_node(
         | WorthUiSemanticDeclaration::SemanticArtifact(_)
         | WorthUiSemanticDeclaration::AppearanceRole(_)
         | WorthUiSemanticDeclaration::Backdrop(_)
-        | WorthUiSemanticDeclaration::Layout(_) => Ok(None),
+        | WorthUiSemanticDeclaration::Layout(_)
+        | WorthUiSemanticDeclaration::Expression(_) => Ok(None),
     }
 }

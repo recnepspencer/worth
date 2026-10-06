@@ -4,11 +4,11 @@ mod prepared_apply;
 mod work;
 pub(crate) use work::EvaluationWork;
 
+pub(crate) use apply::proposed_effect_dependency_inputs;
 pub use metadata::EvaluationExecutionMetadata;
 pub(crate) use prepared_apply::apply_prepared_evaluation_after_dependencies_with_policy;
 #[cfg(test)]
 pub(crate) use prepared_apply::apply_prepared_evaluation_with_policy;
-#[cfg(feature = "parallel")]
 pub(crate) use prepared_apply::{
     build_prepared_apply_commit_packet, record_reuse_rejection_telemetry, ApplyCommitBuildError,
 };

@@ -54,7 +54,25 @@ impl TruthSnapshotReader for RuntimePublicationSnapshotReader {
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         self.runtime
             .with_runtime(|runtime| {
-                read_packet(runtime, request, &self.observation, self.partition)
+                read_packet(runtime, request, &self.observation, self.partition, None)
+            })
+            .map(|records| SnapshotReadPacketResult::new(self.snapshot_identity.clone(), records))
+    }
+
+    fn read_packet_with_lease(
+        &self,
+        request: &SnapshotReadPacket,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+        self.runtime
+            .with_runtime(|runtime| {
+                read_packet(
+                    runtime,
+                    request,
+                    &self.observation,
+                    self.partition,
+                    Some(lease),
+                )
             })
             .map(|records| SnapshotReadPacketResult::new(self.snapshot_identity.clone(), records))
     }
@@ -65,9 +83,13 @@ fn read_packet(
     request: &SnapshotReadPacket,
     observation: &RelationalBranchObservation,
     partition: Option<PartitionId>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<Vec<SnapshotReadRecord>, BridgeSnapshotReadError> {
     let mut records = Vec::with_capacity(request.reads().len());
     for read in request.reads() {
+        if let Some(stop) = lease.and_then(BridgeSnapshotReadError::execution_stopped) {
+            return Err(stop);
+        }
         let identity_parts = read.relational_record_identity_parts().ok_or_else(|| {
             BridgeSnapshotReadError::new(
                 "relational bridge snapshot reader requires typed record identity parts",

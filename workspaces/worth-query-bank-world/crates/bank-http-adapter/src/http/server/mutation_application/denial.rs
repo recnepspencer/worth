@@ -14,27 +14,143 @@ pub(in crate::http::server) fn request_mutation_denial(
             BankHttpDenialKind::NotFound,
             BankHttpNextAction::CorrectRequest,
         ),
-        Denial::Authorization => BankHttpDenial::new(
-            BankHttpDenialKind::PermissionDenied,
-            BankHttpNextAction::None,
-        ),
+        Denial::Authorization(kind) => {
+            super::super::authorization_denial::authorization_denial(kind.into())
+        }
         Denial::ApplicationProgramRequired
         | Denial::ApplicationProgramMismatch
         | Denial::RequiresWorkflowTransition => BankHttpDenial::new(
             BankHttpDenialKind::MalformedRequest,
             BankHttpNextAction::CorrectRequest,
         ),
-        Denial::WorkflowAuthoritySpent | Denial::WorkflowTransitionCurrentness => {
+        // State already moved on, by a later workflow step or by the key's
+        // earlier commit; reading current state shows it.
+        Denial::WorkflowAuthoritySpent
+        | Denial::WorkflowTransitionCurrentness
+        | Denial::IdempotencyReceiptNotRetained
+        | Denial::IdempotencyWindowExpired => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
+        // The same request can never pass these, so a retry would loop forever:
+        // the binding needs a workflow transition, the admission governed
+        // another input, the runtime serves no handler for it, the key's
+        // record cannot be checked against the request, or the server's own
+        // admission resolved the key against another runtime.
+        Denial::Identity
+        | Denial::WorkflowControl
+        | Denial::InputNotAdmitted
+        | Denial::HandlerNotInstalled
+        | Denial::IdempotencyIntentUnverifiable
+        | Denial::IdempotencyForeignAdmission => BankHttpDenial::new(
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
+        ),
+        // The server prepared this request object once already. Every HTTP
+        // request builds a fresh one, so sending it again can pass.
+        Denial::PreparationSpent => {
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
+        }
+        // No identity remains for resolving the key until reconfiguration.
+        Denial::IdempotencyIdentityExhausted => BankHttpDenial::new(
+            BankHttpDenialKind::Unavailable,
+            BankHttpNextAction::ContactOperator,
+        ),
         Denial::BindingInstallation
         | Denial::CapabilityInstallation
         | Denial::PrincipalResolution
-        | Denial::Idempotency
+        | Denial::IdempotencyUnavailable
         | Denial::Handler
         | Denial::SourceExpectation
         | Denial::ProgramSelection => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind as Denial;
+
+    use super::{request_mutation_denial, BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
+
+    #[test]
+    fn handler_refusals_no_retry_can_pass_ask_for_the_operator() {
+        let operator = BankHttpDenial::new(
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
+        );
+        for kind in [
+            Denial::WorkflowControl,
+            Denial::InputNotAdmitted,
+            Denial::HandlerNotInstalled,
+            Denial::Identity,
+            Denial::IdempotencyIntentUnverifiable,
+        ] {
+            assert_eq!(request_mutation_denial(kind), operator, "{kind:?}");
+        }
+        assert_eq!(
+            request_mutation_denial(Denial::Handler),
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
+        );
+    }
+
+    #[test]
+    fn each_idempotency_cause_asks_for_the_action_that_can_succeed() {
+        use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization;
+        let cases = [
+            (
+                Denial::Authorization(Authorization::DeadlineExceeded),
+                BankHttpDenialKind::DeadlineExceeded,
+                BankHttpNextAction::Retry,
+            ),
+            (
+                Denial::Authorization(Authorization::ExpiredAuthentication),
+                BankHttpDenialKind::Unauthenticated,
+                BankHttpNextAction::Authenticate,
+            ),
+            (
+                Denial::Authorization(Authorization::PermissionDenied),
+                BankHttpDenialKind::PermissionDenied,
+                BankHttpNextAction::None,
+            ),
+            (
+                Denial::IdempotencyUnavailable,
+                BankHttpDenialKind::Unavailable,
+                BankHttpNextAction::Retry,
+            ),
+            (
+                Denial::IdempotencyIdentityExhausted,
+                BankHttpDenialKind::Unavailable,
+                BankHttpNextAction::ContactOperator,
+            ),
+            (
+                Denial::IdempotencyForeignAdmission,
+                BankHttpDenialKind::InternalDenied,
+                BankHttpNextAction::ContactOperator,
+            ),
+        ];
+        for (kind, denial, next) in cases {
+            assert_eq!(
+                request_mutation_denial(kind),
+                BankHttpDenial::new(denial, next),
+                "{kind:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_key_whose_commit_left_the_window_asks_for_a_refresh_not_a_retry() {
+        assert_eq!(
+            request_mutation_denial(Denial::IdempotencyWindowExpired),
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        );
+    }
+
+    #[test]
+    fn a_key_committed_before_a_restore_asks_for_a_refresh_not_a_retry() {
+        assert_eq!(
+            request_mutation_denial(Denial::IdempotencyReceiptNotRetained),
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        );
     }
 }

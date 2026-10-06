@@ -141,6 +141,61 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
     WorthQueryConditionalSignalDecision,
     worth_runtime_bridge::facade::BridgeConditionalDenial,
 > {
+    schedule_output_producer_core(
+        bridge,
+        lowering,
+        truth.snapshot_projection(),
+        truth.branch_projection(),
+        signal_basis,
+        query_binding_identity,
+        query_identity,
+        execution_identity,
+        attempt,
+    )
+}
+
+pub(in crate::domain_computation::primary_graph) fn schedule_output_producer_on_selected(
+    bridge: &BridgeSealedRuntimeAssembly,
+    lowering: &Arc<BridgeInstalledConditionalLowering>,
+    truth: &super::super::super::conditional_operation::WorthQuerySelectedSignalProjections,
+    signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    query_binding_identity: &str,
+    query_identity: u64,
+    execution_identity: &str,
+    attempt: u64,
+) -> Result<
+    WorthQueryConditionalSignalDecision,
+    worth_runtime_bridge::facade::BridgeConditionalDenial,
+> {
+    schedule_output_producer_core(
+        bridge,
+        lowering,
+        truth.snapshot(),
+        truth.branch(),
+        signal_basis,
+        query_binding_identity,
+        query_identity,
+        execution_identity,
+        attempt,
+    )
+}
+
+// Only the two truth-owner wrappers can reach this bridge call. Its text is
+// the owner-issued reporting projection of their sealed typed identities.
+fn schedule_output_producer_core(
+    bridge: &BridgeSealedRuntimeAssembly,
+    lowering: &Arc<BridgeInstalledConditionalLowering>,
+    snapshot_projection: &str,
+    truth_branch_projection: &str,
+    signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    query_binding_identity: &str,
+    query_identity: u64,
+    execution_identity: &str,
+    attempt: u64,
+) -> Result<
+    WorthQueryConditionalSignalDecision,
+    worth_runtime_bridge::facade::BridgeConditionalDenial,
+> {
     let signal_basis = bridge.admit_exact_conditional_signal_basis(lowering, signal_basis)?;
     let mut compute = ProducerSignalComputeContext { attempt };
     let evidence = bridge.execute(
@@ -149,8 +204,8 @@ pub(in crate::domain_computation::primary_graph) fn schedule_output_producer(
             lowering,
             query_binding_identity,
             query_capability_identity: query_identity,
-            snapshot_identity: truth.snapshot_projection(),
-            truth_branch_identity: Some(truth.branch_projection()),
+            snapshot_identity: snapshot_projection,
+            truth_branch_identity: Some(truth_branch_projection),
             bridge_snapshot_identity: None,
             execution_identity,
             attempt,

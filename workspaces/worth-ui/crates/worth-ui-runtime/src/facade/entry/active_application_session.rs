@@ -47,6 +47,19 @@ pub(in crate::facade::entry) use portal_exit_publication::UiPortalExitTerminalPr
 pub(in crate::facade::entry) use portal_exit_retention::{
     UiPortalExitTerminalPending, UiPortalExitTerminalPendingKind,
 };
+#[path = "active_application_session/evidence_only_successor_commit.rs"]
+mod evidence_only_successor_commit;
+#[path = "active_application_session/expression_access.rs"]
+mod expression_access;
+#[cfg(test)]
+#[path = "active_application_session/expression_currentness_tests.rs"]
+mod expression_currentness_tests;
+#[cfg(test)]
+#[path = "active_application_session/expression_generation_following_tests.rs"]
+mod expression_generation_following_tests;
+#[cfg(test)]
+#[path = "active_application_session/expression_session_fixture.rs"]
+pub(super) mod expression_session_fixture;
 #[cfg(any(test, feature = "certification-support"))]
 #[path = "active_application_session/plan_observation.rs"]
 mod plan_observation;
@@ -77,6 +90,9 @@ mod scroll_chrome_ingress_tests;
 mod scroll_chrome_interaction;
 #[path = "active_application_session/scroll_chrome_pending_completion.rs"]
 mod scroll_chrome_pending_completion;
+#[cfg(test)]
+#[path = "active_application_session/succession_characterization.rs"]
+pub(super) mod succession_characterization;
 pub(crate) use scroll_chrome_ingress::UiScrollChromeIngressOutcome;
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use scroll_chrome_interaction::UiScrollChromePressOutcome;
@@ -177,6 +193,7 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) portal_exit_retention: portal_exit_retention::UiPortalExitRetentionCoordinator,
     pub(super) intent_evidence: crate::inspection::intent::UiIntentEvidenceRegistry,
     pub(super) intent_application_facts: crate::runtime::intent::UiIntentApplicationFactState,
+    pub(super) expressions: crate::runtime::expression::UiExpressionRuntimeState,
     pub(super) intent_execution: crate::runtime::intent_execution::UiIntentExecutionState,
     pub(super) intent_admission: crate::runtime::intent::UiIntentAdmissionState,
     pub(super) intent_confirmation: crate::runtime::intent::UiIntentConfirmationState,
@@ -305,6 +322,7 @@ impl WorthUiActiveApplicationSession {
             completion,
             capabilities,
             intent_catalog,
+            intent_execution_bindings,
             consumed_facts,
         ) = turn.into_parts();
         if self
@@ -332,7 +350,12 @@ impl WorthUiActiveApplicationSession {
             host_session_identity,
             completion,
             capabilities,
-            intent_catalog,
+            intent_operability: crate::runtime::intent::UiIntentOperabilityAuthority {
+                catalog: intent_catalog,
+                definitions: capabilities.intent_definitions(),
+                execution_bindings: intent_execution_bindings,
+                occupancy: self.intent_execution.occupancy(),
+            },
             consumed_facts,
             mounted: &mut self.mounted,
             host_session: &self.host_session,
@@ -346,6 +369,7 @@ impl WorthUiActiveApplicationSession {
             appearance_owner_snapshot: &mut self.appearance_owner_snapshot,
             intent_admission: &mut self.intent_admission,
             intent_application_facts: &mut self.intent_application_facts,
+            expressions: &mut self.expressions,
             mounted_owner_receipt_successions: &mut self.mounted_owner_receipt_successions,
             pointer_affordance_snapshot: &self.pointer_affordance_snapshot,
             appearance_inspection: &mut self.appearance_inspection,

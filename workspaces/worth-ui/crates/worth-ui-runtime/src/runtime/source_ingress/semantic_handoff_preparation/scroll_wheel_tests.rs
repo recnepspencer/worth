@@ -41,7 +41,7 @@ fn authored_smooth_wheel_lowers_to_the_settle_horizon_it_declared() {
     );
     let material = prepare_semantic_handoff(package(&source), app().capabilities())
         .expect("an admissible smooth wheel admits");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
     let plan = UiNormalizedServicePolicyPlan::normalize(
         UiServicePolicyDefaults::default(),
         evidence.authored_service_policy_defaults(),
@@ -63,7 +63,7 @@ fn unstated_and_declared_immediate_wheels_lower_to_the_same_contract() {
         let source = format!("scroll activity_list {{ anchor clamp {wheel} }}");
         let material = prepare_semantic_handoff(package(&source), app().capabilities())
             .expect("an immediate wheel admits");
-        let (_, _, evidence) = material.into_parts();
+        let (_, _, evidence, _) = material.into_parts();
         let plan = UiNormalizedServicePolicyPlan::normalize(
             UiServicePolicyDefaults::default(),
             evidence.authored_service_policy_defaults(),
@@ -102,7 +102,7 @@ fn smooth_wheel_without_a_motion_owner_is_refused_at_normalization() {
         app().capabilities(),
     )
     .expect("admission judges the horizon, not the owner closure");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
     let denial = UiNormalizedServicePolicyPlan::normalize(
         UiServicePolicyDefaults::default(),
         evidence.authored_service_policy_defaults(),

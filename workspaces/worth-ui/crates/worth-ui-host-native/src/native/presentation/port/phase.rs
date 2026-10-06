@@ -1,5 +1,6 @@
 use worth_ui_host_contract::UiHostPresentationCostReport;
 
+use crate::native::graphics::{UiNativeBackendAcquiredTexture, UiNativeBackendPresentationTarget};
 use crate::native::UiNativePresentationAccess;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -19,13 +20,13 @@ pub(super) struct UiNativePreparedPresentation {
 
 #[must_use]
 pub(super) struct UiNativeSurfaceAcquiredPresentation {
-    output: wgpu::SurfaceTexture,
+    output: UiNativeBackendAcquiredTexture,
     cost: UiHostPresentationCostReport,
 }
 
 #[must_use]
 pub(super) struct UiNativeEncodedPresentation {
-    output: wgpu::SurfaceTexture,
+    output: UiNativeBackendAcquiredTexture,
     commands: wgpu::CommandBuffer,
     readback: wgpu::Buffer,
     cost: UiHostPresentationCostReport,
@@ -33,7 +34,7 @@ pub(super) struct UiNativeEncodedPresentation {
 
 #[must_use]
 pub(super) struct UiNativeSubmittedPresentation {
-    output: wgpu::SurfaceTexture,
+    output: UiNativeBackendAcquiredTexture,
     readback: wgpu::Buffer,
     cost: UiHostPresentationCostReport,
 }
@@ -59,8 +60,24 @@ impl UiNativePreparedPresentation {
         if graphics.surface_suspended() {
             return Err(UiNativeSurfaceAcquireFailure::Occluded);
         }
-        let output = match graphics.surface().get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(output) => output,
+        graphics.configure_pending_surface();
+        let surface = match graphics.presentation_target() {
+            UiNativeBackendPresentationTarget::Window(surface) => surface,
+            UiNativeBackendPresentationTarget::Offscreen(target) => {
+                return Ok(UiNativeSurfaceAcquiredPresentation {
+                    output: UiNativeBackendAcquiredTexture::offscreen(
+                        target,
+                        graphics.device(),
+                        graphics.surface_configuration(),
+                    ),
+                    cost: self.cost,
+                });
+            }
+        };
+        let output = match surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(output) => {
+                UiNativeBackendAcquiredTexture::Surface(output)
+            }
             wgpu::CurrentSurfaceTexture::Suboptimal(_) => {
                 return Err(UiNativeSurfaceAcquireFailure::Outdated);
             }
@@ -92,7 +109,7 @@ impl UiNativeSurfaceAcquiredPresentation {
         self,
         encode: impl FnOnce(&wgpu::Texture) -> (wgpu::CommandBuffer, wgpu::Buffer),
     ) -> UiNativeEncodedPresentation {
-        let (commands, readback) = encode(&self.output.texture);
+        let (commands, readback) = encode(self.output.texture());
         UiNativeEncodedPresentation {
             output: self.output,
             commands,

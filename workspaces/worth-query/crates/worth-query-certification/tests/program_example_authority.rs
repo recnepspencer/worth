@@ -11,6 +11,7 @@ use product_workflow_support::schema::{
     RevokeTemporalPrincipal, TemporalHostSchema, TemporalPrincipalBinding,
 };
 use product_workflow_support::{principal, read_input, AmendTemporalIntent, ExampleApplication};
+use worth_query_decl::facade::application_operation::ApplicationMutationIdentities;
 use worth_query_host::facade::{
     application_discovery::WorthQueryApplicationCallablePosture,
     application_entry::{
@@ -176,11 +177,16 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
             &scope,
         )
         .expect("the low-level public chain may prepare the installed operation");
+    let identities =
+        ApplicationMutationIdentities::<TemporalHostSchema, AmendTemporalBinding>::encode(
+            &idempotency_key,
+            &intent.amendment,
+        )
+        .expect("key and input must encode");
     let HandlerResult::Completed(completed) = application
         .runtime
         .execute_mutation_handler::<AmendTemporalBinding>(
-            &intent.amendment,
-            &idempotency_key,
+            &identities,
             resolved_principal.principal_identity(),
             admission,
         )
@@ -191,10 +197,7 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
     let (program, _) = completed.into_parts();
     let change = WorthQueryAdmittedChange::new(
         program,
-        WorthQueryApplicationIdempotencyBinding::new(
-            AmendTemporalBinding::idempotency_key_identity(&idempotency_key),
-            AmendTemporalBinding::input_identity(&intent.amendment),
-        ),
+        WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities),
     );
     let outcome = application
         .runtime

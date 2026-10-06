@@ -9,10 +9,12 @@ mod confirmation_route_binding;
 mod consequence_contract;
 mod declaration;
 mod denial;
+mod expression_source;
 mod identity;
 mod operability_contract;
 mod payload_source;
 mod route_binding;
+mod source_plans;
 
 pub use application_fact::{
     UiIntentApplicationFact, UiIntentApplicationFactIdentityError,
@@ -53,11 +55,13 @@ pub(crate) use consequence_contract::{
 };
 pub(crate) use declaration::UiCanonicalIntentDeclaration;
 pub use denial::{UiIntentCatalogPreparationDenial, UiIntentInteractionPayloadSourceKind};
+pub(crate) use expression_source::UiResolvedIntentExpressionSource;
 pub(crate) use identity::valid_intent_identity;
 pub use identity::UiIntentDeclarationIdentity;
 pub(crate) use operability_contract::{
     resolve_operability_contract, UiResolvedIntentMutabilitySource,
-    UiResolvedIntentOperabilityContract, UiResolvedIntentReadinessSource,
+    UiResolvedIntentOperabilityContract, UiResolvedIntentPolicySource,
+    UiResolvedIntentReadinessSource,
 };
 pub use operability_contract::{
     UiIntentMutabilitySource, UiIntentOperabilityContract,
@@ -69,3 +73,4 @@ pub(crate) use payload_source::{
     UiResolvedIntentPayloadSource, UiResolvedIntentProjectionSource,
 };
 pub use route_binding::UiIntentRouteBinding;
+pub(crate) use source_plans::UiIntentSourcePlans;

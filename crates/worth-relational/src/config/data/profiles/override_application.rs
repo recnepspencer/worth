@@ -36,12 +36,6 @@ fn apply_execution_overrides(
     );
     insert_override_provenance(
         provenance,
-        "execution.execution_model",
-        section.execution_model.is_some(),
-    );
-    insert_override_provenance(provenance, "execution.planning", section.planning.is_some());
-    insert_override_provenance(
-        provenance,
         "execution.compiled_lane_policy",
         section.compiled_lane_policy.is_some(),
     );
@@ -53,12 +47,6 @@ fn apply_execution_overrides(
 
     if let Some(runtime_name) = &section.runtime_name {
         config.execution.runtime_name = runtime_name.clone();
-    }
-    if let Some(execution_model) = section.execution_model {
-        config.execution.execution_model = execution_model;
-    }
-    if let Some(planning) = &section.planning {
-        config.execution.planning = planning.clone();
     }
     if let Some(compiled_lane_policy) = section.compiled_lane_policy {
         config.execution.compiled_lane_policy = compiled_lane_policy;

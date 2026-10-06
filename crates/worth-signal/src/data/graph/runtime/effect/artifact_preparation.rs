@@ -30,7 +30,7 @@ impl SignalGraph {
     pub(super) fn prepare_effect_artifact_write(
         &mut self,
         artifact_write: Option<HotArtifactWrite>,
-        allowance: &mut EvaluationWork<'_>,
+        allowance: &mut EvaluationWork<'_, '_>,
     ) -> Result<PreparedEffectArtifactWrite, SignalError> {
         let Some(write) = artifact_write else {
             return Ok(PreparedEffectArtifactWrite::default());

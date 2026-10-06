@@ -14,8 +14,12 @@ mod preimage_retention;
 mod relational_commit;
 pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQueryPreImageRetentionWork;
 pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
+pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
+pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation::primary_graph) use relational_commit::RetainedTouchedRecords;
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
-    WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommittedApplication,
+    RebaseVerificationReason, WorthQueryMutationWorkCommitSeal,
+    WorthQueryPrimaryGraphCommittedApplication,
 };
 
 pub(super) struct WorthQueryPreparedApplicationCommit {
@@ -24,6 +28,7 @@ pub(super) struct WorthQueryPreparedApplicationCommit {
     work: WorthQueryPrimaryMutationWorkCounters,
     retained_preimage: Option<WorthQueryRetainedPreImage>,
     preimage_retention_work: WorthQueryPreImageRetentionWork,
+    source_fact_rebase: relational_commit::PreparedSourceFactRebase,
     _completion: super::commit_completion::WorthQueryApplicationAttemptCompletion,
 }
 
@@ -84,6 +89,11 @@ fn take_prepared_session(
         commit_failure("primary graph session has no exact commit-prepared application attempt")
     })?;
     let (attempt, candidate, work, completion) = prepared.into_parts();
+    let source_fact_rebase =
+        relational_commit::PreparedSourceFactRebase::admit(attempt.observed_source_facts())
+            .map_err(|_| {
+                commit_failure("candidate source-fact rebase capacity exhausted before effects")
+            })?;
     let (retained_preimage, preimage_retention_work) =
         preimage_retention::retain_attempt_preimage(&attempt, &candidate)?.into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
@@ -92,6 +102,7 @@ fn take_prepared_session(
         work,
         retained_preimage,
         preimage_retention_work,
+        source_fact_rebase,
         _completion: completion,
     })
 }

@@ -89,6 +89,28 @@ The owner catalog, branch cells, roots, and retention accounting are currently
 memory-resident. Restart durability for this branch-owner model is deferred to
 Worth Store integration.
 
+## Validated transitions before recovered installation
+
+`restore_native_checkpoint_with_authority` issues linear recovery authority
+for the verified runtime's exact branch images. Applications that must change
+that image before installing their recovered world can prepare a normal native
+commit and pass it, with that authority, to
+`durability_recovery().commit_checkpoint_transition(...)`.
+
+The recovery owner checks the candidate's exact recovered predecessor and uses
+native publication and settlement. An acknowledged result yields the commit
+receipt and recovery authority for the performed successor. Ordinary commits
+do not refresh recovery authority. Relational attests native lineage; the
+application still owns predecessor selection and target migration validation.
+
+Refusal returns the original authority. A durable append failure returns a
+linear deferred transition, which grants no successor authority. Pass it to
+`repair_checkpoint_transition(...)` to repair the existing native settlement
+route without publishing another commit. Failed repair returns the same custody
+for retry; successful repair carries the performed successor, even if current
+branch state has moved since that performance. These types are available through
+`worth_relational::facade::durability`.
+
 ## Aspect-Precise Publication
 
 Committed patches are interpreted against the installed schema before they

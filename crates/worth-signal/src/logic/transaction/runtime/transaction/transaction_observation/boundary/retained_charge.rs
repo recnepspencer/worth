@@ -12,7 +12,7 @@ impl RetainedStorageMeasurement for CommittedObservationEventSummary {
             policy: _,
             observed_nodes,
             matched_nodes,
-            touched: _,
+            visited: _,
             recomputed: _,
             meaningful_change: _,
             trigger_matched: _,
@@ -61,16 +61,16 @@ mod tests {
         let mut graph = SignalGraph::new();
         let nodes = [graph.node().build(), graph.node().build()];
         let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
-        let handle = runtime.observe_nodes(ObservationPolicy::touched(), nodes, Box::new(Listener));
+        let handle = runtime.observe_nodes(ObservationPolicy::visited(), nodes, Box::new(Listener));
         // Retained-summary fixture uses owner-issued handle identities.
         let mut boundary_events = Vec::with_capacity(16);
         boundary_events.push(CommittedObservationEventSummary {
             observer_id: handle.observer_id(),
             handle_id: handle.handle_id(),
-            policy: ObservationPolicy::touched(),
+            policy: ObservationPolicy::visited(),
             observed_nodes: ObservedNodeSet::from_nodes(nodes),
             matched_nodes: ObservedNodeSet::from_nodes([nodes[0]]),
-            touched: true,
+            visited: true,
             recomputed: false,
             meaningful_change: false,
             trigger_matched: true,

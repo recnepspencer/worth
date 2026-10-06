@@ -280,6 +280,10 @@ pub(crate) struct PreparedCommitPublicationCompletion {
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn changed_record_count(&self) -> usize {
+        self.publication.changed_record_count()
+    }
+
     pub(crate) fn attach_prepared_indexes(
         &mut self,
         prepared: crate::indexes::PreparedCandidateIndexPublication,

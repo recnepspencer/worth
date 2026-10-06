@@ -2,7 +2,10 @@ use super::{
     UiNativeApplicationDefinition, UiNativeApplicationPreparation,
     UiNativeApplicationPreparationOutcome, UiNativePlatformOutcome, UiNativePlatformProfile,
 };
+mod offscreen;
 mod preparation;
+
+pub use offscreen::{UiNativeOffscreenPlatformSession, UiNativeOffscreenStart};
 
 pub struct WorthUiNativePlatform {
     _sealed: (),
@@ -23,6 +26,27 @@ impl UiPreparedNativePlatform {
     where
         Application: UiNativeApplicationDefinition,
     {
+        match self.prepare_driver(application) {
+            Ok((driver, event_loop)) => {
+                UiNativePlatformOutcome::from_native(driver.run(event_loop))
+            }
+            Err(denial) => UiNativePlatformOutcome::ApplicationPreparationDenied(denial),
+        }
+    }
+
+    pub(super) fn prepare_driver<Application>(
+        self,
+        application: Application,
+    ) -> Result<
+        (
+            super::application_driver::UiNativeApplicationDriver,
+            worth_ui_host_native::WorthUiNativeEventLoop,
+        ),
+        super::UiNativeApplicationPreparationDenial,
+    >
+    where
+        Application: UiNativeApplicationDefinition,
+    {
         let preparation_identity = self.preparation_identity;
         let binding = super::native_platform_binding::UiNativePlatformBindingGrant::issue(
             preparation_identity,
@@ -32,9 +56,7 @@ impl UiPreparedNativePlatform {
             binding,
         )) {
             UiNativeApplicationPreparationOutcome::Prepared(prepared) => prepared,
-            UiNativeApplicationPreparationOutcome::Denied(denial) => {
-                return UiNativePlatformOutcome::ApplicationPreparationDenied(denial);
-            }
+            UiNativeApplicationPreparationOutcome::Denied(denial) => return Err(denial),
         };
         let host = self.profile.prepare_native_host();
         let window = worth_ui_host_native::UiNativeWindowConfiguration::qualified(
@@ -52,13 +74,24 @@ impl UiPreparedNativePlatform {
             application_runtime,
             native_surface_declaration,
         );
-        match driver.run(event_loop) {
-            Ok(report) => UiNativePlatformOutcome::Closed(
-                super::UiNativePlatformCloseReceipt::from_native_report(report),
-            ),
-            Err(report) => UiNativePlatformOutcome::Stopped(
-                super::UiNativePlatformStopReport::from_native_report(report),
-            ),
+        Ok((driver, event_loop))
+    }
+}
+
+impl UiNativePlatformOutcome {
+    pub(super) fn from_native(
+        run: Result<
+            worth_ui_host_native::UiNativeEventLoopRunReport,
+            worth_ui_host_native::UiNativeEventLoopStopReport,
+        >,
+    ) -> Self {
+        match run {
+            Ok(report) => Self::Closed(super::UiNativePlatformCloseReceipt::from_native_report(
+                report,
+            )),
+            Err(report) => Self::Stopped(super::UiNativePlatformStopReport::from_native_report(
+                report,
+            )),
         }
     }
 }

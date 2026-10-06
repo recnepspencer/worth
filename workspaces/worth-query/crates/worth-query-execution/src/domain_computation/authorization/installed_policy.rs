@@ -22,6 +22,9 @@ use super::lowering::lower_authorization_path;
 use super::{authorization_denial, WorthQueryOperationAuthorizationDenial};
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
+mod admitted_lookup;
+pub(super) use admitted_lookup::InstalledPolicyAdmissionStop;
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct PolicyKey {
     ability: String,

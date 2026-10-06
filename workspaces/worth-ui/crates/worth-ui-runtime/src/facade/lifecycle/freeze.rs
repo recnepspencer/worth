@@ -9,7 +9,9 @@ use crate::facade::prepared_application_authority::{
 };
 use crate::facade::registry::snapshot::CapabilitySnapshot;
 use crate::graph::{admit_graph_handoffs, UiGraphWorldProfile};
+use crate::runtime::expression::UiExpressionCatalog;
 use std::rc::Rc;
+use std::sync::Arc;
 
 pub(crate) struct WorthUiApplicationPreparationInput {
     pub(crate) capability_snapshot: CapabilitySnapshot,
@@ -51,6 +53,7 @@ pub(crate) fn prepare_application_authority(
         authored_source_basis,
         declaration_source_identity,
         semantic_handoff,
+        expression_material,
         declaration_artifacts,
     ) = preparation_source.into_prepared_parts();
     let capability_snapshot = semantic_handoff
@@ -65,12 +68,26 @@ pub(crate) fn prepare_application_authority(
         .commit_initial_generation(graph_world_profile)
         .map_err(|denial| WorthUiApplicationPreparationDenial::GraphCommit(Box::new(denial)))?
         .into_committed_snapshot();
+    let expression_catalog = Arc::new(
+        UiExpressionCatalog::prepare(
+            &expression_material,
+            semantic_handoff.projection_requirements(),
+            &query_binding_plan,
+            &intent_application_facts,
+        )
+        .map_err(|denial| {
+            WorthUiApplicationPreparationDenial::ExpressionCatalog(Box::new(denial))
+        })?,
+    );
     let intent_catalog = crate::declaration::UiIntentCatalog::prepare(
         semantic_handoff.intent_material(),
         capability_snapshot.intent_definitions(),
         &graph_snapshot,
-        &query_binding_plan,
-        &intent_application_facts,
+        &crate::declaration::UiIntentSourcePlans {
+            query: &query_binding_plan,
+            application_facts: &intent_application_facts,
+            expressions: &expression_catalog,
+        },
     )
     .map_err(|denial| WorthUiApplicationPreparationDenial::IntentCatalog(Box::new(denial)))?;
     let retained_measurement_inspection_evidence = measurement_inspection_evidence.clone();
@@ -90,6 +107,7 @@ pub(crate) fn prepare_application_authority(
             declaration_artifacts,
             graph_snapshot,
             intent_catalog,
+            expression_catalog,
             lifecycle,
             query_binding_plan,
             intent_application_facts,
@@ -124,7 +142,13 @@ pub(crate) fn prepare_successor_application_authority(
             },
         );
     }
-    let (canonical_artifact, candidate, declaration_material, semantic_handoff) = submission
+    let (
+        canonical_artifact,
+        candidate,
+        declaration_material,
+        semantic_handoff,
+        expression_material,
+    ) = submission
         .into_replacement_handoff()
         .into_replacement_parts();
     let capability_snapshot = semantic_handoff
@@ -158,12 +182,26 @@ pub(crate) fn prepare_successor_application_authority(
         ))
         .map_err(|denial| WorthUiApplicationPreparationDenial::GraphCommit(Box::new(denial)))?
         .into_committed_snapshot();
+    let expression_catalog = Arc::new(
+        UiExpressionCatalog::prepare(
+            &expression_material,
+            semantic_handoff.projection_requirements(),
+            current.query_binding_plan(),
+            current.intent_application_fact_plan(),
+        )
+        .map_err(|denial| {
+            WorthUiApplicationPreparationDenial::ExpressionCatalog(Box::new(denial))
+        })?,
+    );
     let intent_catalog = crate::declaration::UiIntentCatalog::prepare(
         semantic_handoff.intent_material(),
         current.capabilities().intent_definitions(),
         &graph_snapshot,
-        current.query_binding_plan(),
-        current.intent_application_fact_plan(),
+        &crate::declaration::UiIntentSourcePlans {
+            query: current.query_binding_plan(),
+            application_facts: current.intent_application_fact_plan(),
+            expressions: &expression_catalog,
+        },
     )
     .map_err(|denial| WorthUiApplicationPreparationDenial::IntentCatalog(Box::new(denial)))?;
     let measurement_inspection_evidence = current
@@ -188,6 +226,7 @@ pub(crate) fn prepare_successor_application_authority(
             declaration_artifacts,
             graph_snapshot,
             intent_catalog,
+            expression_catalog,
             lifecycle,
             query_binding_plan: current.query_binding_plan().clone(),
             intent_application_facts: current.intent_application_fact_plan().clone(),

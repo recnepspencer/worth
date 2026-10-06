@@ -7,7 +7,6 @@ use std::sync::Arc;
 use crate::facade::{
     LineageRecord, NodeId, NodeState, ReplaySlice, RuntimeMetrics, SignalBranchHandle, SignalError,
     SignalGraph, SignalRuntime, SignalRuntimePolicy, SignalSnapshotId, SignalSnapshotV1,
-    StageExecutor,
 };
 
 use super::branch_checkpoint::BranchCheckpoint;
@@ -121,12 +120,19 @@ impl FintechWorld {
         self.runtime.graph().get_state(node)
     }
 
-    pub(super) fn capture_active_checkpoint(
+    pub(super) fn capture_active_checkpoint(&mut self) -> Result<BranchCheckpoint, SignalError> {
+        let branch = self.current_branch();
+        let audit = self.read_primary_audit_surface()?;
+        let snapshot = self.capture_branch_snapshot(branch.clone())?;
+        Ok(BranchCheckpoint::new(branch, snapshot, audit))
+    }
+
+    pub(super) fn capture_active_checkpoint_with_workers(
         &mut self,
-        executor: StageExecutor,
+        workers: usize,
     ) -> Result<BranchCheckpoint, SignalError> {
         let branch = self.current_branch();
-        let audit = self.read_primary_audit_surface(executor)?;
+        let audit = self.read_primary_audit_surface_with_workers(workers)?;
         let snapshot = self.capture_branch_snapshot(branch.clone())?;
         Ok(BranchCheckpoint::new(branch, snapshot, audit))
     }

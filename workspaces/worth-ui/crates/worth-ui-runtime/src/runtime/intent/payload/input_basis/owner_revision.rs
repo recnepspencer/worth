@@ -3,6 +3,7 @@ pub enum UiIntentInputOwnerRevision {
     Query(UiIntentQueryInputRevision),
     Application(UiIntentApplicationFactRevision),
     Draft(UiIntentDraftInputRevision),
+    Expression(UiIntentExpressionInputRevision),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -11,11 +12,27 @@ pub struct UiIntentQueryInputRevision {
     revision: worth_ui_query_binding::UiProjectionInputRevision,
 }
 
+/// The revision of one application fact as an Intent payload field read it:
+/// the payload field it fed, the fact identity and the fact revision. It
+/// proves which fact revision a payload was projected from. Expression
+/// operands use `UiIntentApplicationInputRevision` instead, which also names
+/// the active generation the fact was read in.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiIntentApplicationFactRevision {
     field: crate::capability::UiIntentPayloadFieldDescriptor,
     identity: Box<str>,
     revision: u64,
+}
+
+/// The expression result one Intent payload field read: the payload field it
+/// fed, the expression identity and the outcome revision. A payload stays
+/// current only while the expression owner retains that exact outcome
+/// revision for the active generation.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UiIntentExpressionInputRevision {
+    field: crate::capability::UiIntentPayloadFieldDescriptor,
+    identity: Box<str>,
+    outcome_revision: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,6 +76,17 @@ impl UiIntentInputOwnerRevision {
             draft_revision,
         })
     }
+
+    pub(crate) fn expression(
+        field: crate::capability::UiIntentPayloadFieldDescriptor,
+        result: &crate::runtime::expression::UiExpressionResultReference,
+    ) -> Self {
+        Self::Expression(UiIntentExpressionInputRevision {
+            field,
+            identity: result.identity().into(),
+            outcome_revision: result.outcome_revision(),
+        })
+    }
 }
 
 impl UiIntentQueryInputRevision {
@@ -82,6 +110,20 @@ impl UiIntentApplicationFactRevision {
 
     pub const fn revision(&self) -> u64 {
         self.revision
+    }
+}
+
+impl UiIntentExpressionInputRevision {
+    pub const fn field(&self) -> crate::capability::UiIntentPayloadFieldDescriptor {
+        self.field
+    }
+
+    pub fn identity(&self) -> &str {
+        &self.identity
+    }
+
+    pub const fn outcome_revision(&self) -> u64 {
+        self.outcome_revision
     }
 }
 

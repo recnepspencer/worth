@@ -33,6 +33,11 @@ pub(crate) enum ProductBranchRegistryDenial {
     AlreadyRetired,
 }
 
+pub(crate) enum ProductBranchCurrentnessLookupStop {
+    AdmissionRefused,
+    AccountingOverflow,
+}
+
 #[derive(Debug)]
 struct ProductBranchRegistryState {
     owner: RuntimeWorldOwnerIdentity,
@@ -159,9 +164,64 @@ impl ProductBranchRegistry {
         &self,
         lifecycle: ProductBranchIncarnation,
     ) -> Option<ProductBranchReferenceCell> {
+        self.branch_cell_by_lifecycle_core(lifecycle, None)
+            .ok()
+            .flatten()
+    }
+
+    /// Resolve the same issued occurrence as `branch_cell_by_lifecycle`, with
+    /// physical lookup work admitted before either map probes or clones a cell.
+    /// A refusal leaves both indexes and the product reference untouched.
+    pub(crate) fn branch_cell_by_lifecycle_admitted(
+        &self,
+        lifecycle: ProductBranchIncarnation,
+        prepare: &mut dyn FnMut(u64) -> bool,
+    ) -> Result<Option<ProductBranchReferenceCell>, ProductBranchCurrentnessLookupStop> {
+        self.branch_cell_by_lifecycle_core(lifecycle, Some(prepare))
+    }
+
+    fn branch_cell_by_lifecycle_core(
+        &self,
+        lifecycle: ProductBranchIncarnation,
+        mut prepare: Option<&mut dyn FnMut(u64) -> bool>,
+    ) -> Result<Option<ProductBranchReferenceCell>, ProductBranchCurrentnessLookupStop> {
+        if let Some(prepare) = prepare.as_mut() {
+            if !prepare(1) {
+                return Err(ProductBranchCurrentnessLookupStop::AdmissionRefused);
+            }
+        }
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let branch = state.lifecycles.get(&lifecycle)?;
-        state.entries.get(branch).map(|entry| entry.cell.clone())
+        // HashMap::capacity is a live-entry capacity, not a bucket count. Two
+        // bucket visits per capacity plus one group cover the metadata probe;
+        // the fixed occurrence key has no variable payload comparison.
+        if let Some(prepare) = prepare.as_mut() {
+            let lifecycle_probe = hash_probe_work(state.lifecycles.capacity())
+                .and_then(|work| work.checked_add(2))
+                .ok_or(ProductBranchCurrentnessLookupStop::AccountingOverflow)?;
+            if !prepare(lifecycle_probe) {
+                return Err(ProductBranchCurrentnessLookupStop::AdmissionRefused);
+            }
+        }
+        let Some(branch) = state.lifecycles.get(&lifecycle) else {
+            return Ok(None);
+        };
+        if let Some(prepare) = prepare.as_mut() {
+            let name_bytes = u64::try_from(branch.name().as_str().len())
+                .map_err(|_| ProductBranchCurrentnessLookupStop::AccountingOverflow)?;
+            let entry_count = u64::try_from(state.entries.len())
+                .map_err(|_| ProductBranchCurrentnessLookupStop::AccountingOverflow)?;
+            let entry_probe = hash_probe_work(state.entries.capacity())
+                .and_then(|work| work.checked_add(name_bytes))
+                .and_then(|work| {
+                    work.checked_add(entry_count.checked_mul(name_bytes.checked_add(2)?)?)
+                })
+                .and_then(|work| work.checked_add(1))
+                .ok_or(ProductBranchCurrentnessLookupStop::AccountingOverflow)?;
+            if !prepare(entry_probe) {
+                return Err(ProductBranchCurrentnessLookupStop::AdmissionRefused);
+            }
+        }
+        Ok(state.entries.get(branch).map(|entry| entry.cell.clone()))
     }
 
     #[cfg(test)]
@@ -254,6 +314,13 @@ impl ProductBranchRegistry {
         drop(released);
         branches.len()
     }
+}
+
+fn hash_probe_work(capacity: usize) -> Option<u64> {
+    u64::try_from(capacity)
+        .ok()?
+        .checked_mul(2)?
+        .checked_add(16)
 }
 
 /// Take one installed occurrence out of every index that names it. Retirement

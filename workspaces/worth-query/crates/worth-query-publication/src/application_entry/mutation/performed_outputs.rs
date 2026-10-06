@@ -195,7 +195,7 @@ where
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     > {
-        for _ in 0..self.controls.maximum_settlement_attempts().get() {
+        for _ in 0..self.controls.resolve(self.application.runtime().output_demand_resource_profile()).settlement_attempts() {
             let progress = self.advance(request)?;
             if matches!(progress, WorthQueryApplicationProgramOutputProgress::Settled(_)) {
                 return Ok(progress);
@@ -236,11 +236,12 @@ where
                     self.root_settlement = Some(settlement);
                     self.pending_root_authority = Some(authority);
                     self.root = None;
-                    return Ok(WorthQueryApplicationProgramOutputProgress::Pending);
                 }
             }
         }
-        if let Some(authority) = self.pending_root_authority.take() {
+        // A settled root starts its dependents in the same call. A start
+        // that is refused keeps the authority for the next call.
+        if let Some(authority) = self.pending_root_authority.as_ref() {
             let settlement = self
                 .root_settlement
                 .as_ref()
@@ -249,11 +250,12 @@ where
                 self.application,
                 &self.root_demand,
                 settlement,
-                &authority,
+                authority,
                 &self.source_observation,
                 request,
                 self.controls,
             )?);
+            self.pending_root_authority = None;
         }
         let continuation = self
             .continuation

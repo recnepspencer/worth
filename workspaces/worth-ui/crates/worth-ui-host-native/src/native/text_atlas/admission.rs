@@ -15,6 +15,11 @@ use super::UiNativeTextAtlasDemand;
 pub(crate) fn normalize_demands(
     demands: &[UiNativeTextAtlasDemand],
 ) -> Result<Vec<UiNativeTextAtlasDemand>, UiNativeTextAtlasDenial> {
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::AtlasNormalize,
+        demands.len(),
+    );
+    worth_ui_host_contract::record_presentation_map_inserts(demands.len());
     let mut by_key = HashMap::with_capacity(demands.len());
     for demand in demands.iter().copied() {
         UiNativeValidatedRasterKey::from_native_host(demand.key())?;

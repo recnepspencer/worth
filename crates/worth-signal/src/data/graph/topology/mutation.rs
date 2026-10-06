@@ -1,7 +1,12 @@
 mod admission;
 mod classification;
 mod cleanup;
+pub(in crate::data::graph) mod epoch_preparation;
+mod epoch_storage_readiness;
+mod epoch_subscribers;
 mod node_preparation;
+pub(crate) use epoch_preparation::PreparedDependencyTopologyEpoch;
+pub(crate) use epoch_preparation::PreparedDependencyTopologyStorage;
 mod preflight;
 #[cfg(test)]
 mod test_edits;

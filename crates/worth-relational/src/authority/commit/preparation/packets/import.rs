@@ -31,6 +31,33 @@ pub(crate) enum ImportStagedRow {
     },
 }
 
+impl ImportStagedRow {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        match self {
+            Self::Entity { fields } => fields.owned_allocation_capacity_bytes(),
+            Self::Relation {
+                client_key,
+                source,
+                target,
+                fields,
+            } => {
+                let reference_bytes = |reference: &EntityReference| match reference {
+                    EntityReference::Existing(_) => 0,
+                    EntityReference::Created(created) => {
+                        created.client_key.owned_allocation_capacity_bytes()
+                    }
+                };
+                client_key
+                    .as_ref()
+                    .map_or(0, ClientKey::owned_allocation_capacity_bytes)
+                    .saturating_add(reference_bytes(source))
+                    .saturating_add(reference_bytes(target))
+                    .saturating_add(fields.owned_allocation_capacity_bytes())
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ImportStagingHeader {
     pub(crate) packet_index_floor: usize,

@@ -15,7 +15,7 @@ impl SignalGraph {
         &self,
         node: NodeId,
         next_basis: Option<&ReuseBasis>,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         let previous = self.node_runtime_artifact_reuse_basis(node)?;
         // Initial structural-state/delta copies, two destination record copies,
@@ -55,7 +55,7 @@ impl SignalGraph {
 
 fn record_copies(
     record: &BranchMutationRecord,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     for delta in &record.structural_deltas {
         match delta {
@@ -69,13 +69,9 @@ fn record_copies(
                             .filter(|n| *n <= isize::MAX as usize),
                     )?;
                     for edge in edges {
-                        let bytes = edge.scope_ref().map_or(Some(0), |scope| {
-                            scope
-                                .partition
-                                .0
-                                .len()
-                                .checked_add(scope.detail.as_ref().map_or(0, String::len))
-                        });
+                        let bytes = edge
+                            .scope_ref()
+                            .map_or(Some(0), |scope| scope.path().checked_segment_bytes());
                         work.reserve(bytes.and_then(|n| n.checked_mul(PRODUCER_WRITES)))?;
                     }
                 }
@@ -101,7 +97,7 @@ fn record_copies(
 fn basis_copy(
     basis: &ReuseBasis,
     copies: usize,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     let ReuseBasis {
         strategy: _,

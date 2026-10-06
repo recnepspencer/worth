@@ -1,6 +1,7 @@
 pub(crate) mod application_aftermath;
 pub(crate) mod application_contract_admission;
 mod application_outcome_identity;
+mod arc_str_layout;
 mod artifact_identity;
 pub(crate) mod artifact_owner;
 pub(crate) mod authorization;

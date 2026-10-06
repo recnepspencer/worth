@@ -13,6 +13,7 @@ pub(super) fn install(
         .operation_read_field(operation, AccountIdentity::reference())
         .operation_read_field(operation, InstitutionIdentityField::reference())
         .operation_read_field(operation, BranchIdentityField::reference())
+        .operation_read_field(operation, CapabilityGrantIdentityField::reference())
         .operation_read_relation(operation, EstateBranch::reference())
         .operation_read_relation(operation, BranchInstitution::reference())
         .operation_read_relation(operation, EstateAccount::reference())

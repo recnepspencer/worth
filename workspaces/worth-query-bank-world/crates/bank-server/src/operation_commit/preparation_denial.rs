@@ -31,6 +31,7 @@ pub enum BankApplicationAttemptDenialKind {
     DuplicateOutputRole,
     OutputRoleEntityMismatch,
     OutputRoleActionMismatch,
+    OutputRoleCardinalityMismatch,
     DuplicateEffectKey,
     CandidateCapacityExceeded,
     CandidateReservationExceeded,
@@ -75,6 +76,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowTransitionNodeUnsupported,
     WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
+    WorkflowConditionExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -160,6 +162,9 @@ const fn application_attempt_kind(
         }
         Query::OutputRoleActionMismatch => {
             BankApplicationAttemptDenialKind::OutputRoleActionMismatch
+        }
+        Query::OutputRoleCardinalityMismatch => {
+            BankApplicationAttemptDenialKind::OutputRoleCardinalityMismatch
         }
         Query::DuplicateEffectKey => BankApplicationAttemptDenialKind::DuplicateEffectKey,
         Query::CandidateCapacityExceeded => {
@@ -288,6 +293,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowTransitionIdentityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable
+        }
+        Query::WorkflowConditionExpressionDenied => {
+            BankApplicationAttemptDenialKind::WorkflowConditionExpressionDenied
         }
         Query::WorkflowAssessmentEvidenceIncomplete => {
             BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete

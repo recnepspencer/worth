@@ -1,5 +1,7 @@
 //! Direct cause publication with transitive waiter work already prepared.
 mod counter_publication;
+mod epoch_publication;
+pub(crate) use epoch_publication::PreparedEpochCausePublication;
 mod node_publication;
 mod slot_preparation;
 mod store_publication;
@@ -45,7 +47,7 @@ impl PreparedDirectCausePublication {
         &self,
         graph: &SignalGraph,
         producer: NodeId,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         graph.admit_pending_resolution_publication_work(&self.nodes.waiters, producer, work)
     }
@@ -54,7 +56,7 @@ impl PreparedDirectCausePublication {
         &self,
         producer: NodeId,
         delta: Option<&ProducedAspectDelta>,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         if let Some(delta) = delta {
             super::preparation_work::admit_delta_comparison(delta, work)?;

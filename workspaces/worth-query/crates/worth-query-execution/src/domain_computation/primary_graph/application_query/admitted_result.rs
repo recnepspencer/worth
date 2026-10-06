@@ -18,6 +18,44 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationQue
 }
 
 impl WorthQueryApplicationQueryRequestAffinity {
+    /// The selected required route pays this metadata walk before measuring
+    /// the actual strings compared by `admits`. This is only a cost bound;
+    /// `admits` remains the sole acceptance check.
+    pub(in crate::domain_computation::primary_graph) fn comparison_metadata_visits<Schema>(
+        &self,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    ) -> Option<u64> {
+        let attributes = self
+            .attributes
+            .len()
+            .checked_add(principal.attributes().len())?;
+        u64::try_from(attributes.checked_mul(4)?.checked_add(8)?).ok()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn comparison_work<Schema>(
+        &self,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    ) -> Option<u64> {
+        let identity = self
+            .principal
+            .issuer()
+            .len()
+            .checked_add(self.principal.subject().len())?
+            .checked_add(principal.identity().issuer().len())?
+            .checked_add(principal.identity().subject().len())?;
+        let attributes = self
+            .attributes
+            .iter()
+            .chain(principal.attributes())
+            .try_fold(0_usize, |sum, attribute| {
+                sum.checked_add(attribute.key().len())?
+                    .checked_add(attribute.value().len())
+            })?;
+        // Adapter and schema digests, time, deadline, cancellation identity,
+        // slice cardinality and each fixed comparison axis are bounded here.
+        u64::try_from(identity.checked_add(attributes)?.checked_add(160)?).ok()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn new<
         Schema,
         Principal,

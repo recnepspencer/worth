@@ -28,6 +28,11 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
                 controls(),
             )
             .expect("the independent output demand starts");
+        // The producer publishes and its readiness delivery is interrupted:
+        // the output is published and not yet ready.
+        world
+            .application
+            .delay_next_output_readiness_delivery_for_test();
         let mut published = false;
         for _ in 0..8 {
             match demand.advance(&request).expect("publication progresses") {

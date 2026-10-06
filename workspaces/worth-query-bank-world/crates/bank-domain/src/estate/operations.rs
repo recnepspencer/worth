@@ -6,13 +6,13 @@ use super::{
     EstateCaseId, LegalAuthorityId, MandatoryReviewId, RestrictedBankField,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct EstatePosting {
     pub account: AccountId,
     pub amount: SignedMoney<USD>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct EstateDisbursement {
     pub estate: EstateCaseId,
     pub source_account: AccountId,
@@ -67,7 +67,7 @@ impl std::fmt::Display for EstateDisbursementInputError {
 
 impl std::error::Error for EstateDisbursementInputError {}
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum EstateAction {
     NotifyDeath {
         estate: EstateCaseId,

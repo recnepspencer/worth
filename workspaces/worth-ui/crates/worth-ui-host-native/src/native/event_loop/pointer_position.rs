@@ -4,7 +4,8 @@ pub(super) type UiNativePointerInputPort = crate::native::UiNativePointerInputPo
 pub(super) fn install_pointer_input(
     window: &super::UiNativeOwnedWindow,
 ) -> Option<Box<UiNativePointerInputPort>> {
-    crate::native::platform::install_pointer_input(std::sync::Arc::clone(window))
+    let window = std::sync::Arc::clone(window.platform()?);
+    crate::native::platform::install_pointer_input(window)
 }
 
 pub(super) fn event_pointer_witness(

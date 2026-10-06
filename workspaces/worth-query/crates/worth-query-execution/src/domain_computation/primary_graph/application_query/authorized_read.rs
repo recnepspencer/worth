@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::{
     application_query::{
+        graph_read_plan_binding::WorthQueryQueryIndexPosture,
         read_execution::WorthQueryApplicationReadExecutionDenial,
         WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationAuthorizationWorkEvidence,
     },
@@ -7,6 +8,15 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+
+mod selected_currentness;
+mod selected_read;
+pub(in crate::domain_computation::primary_graph::application_query) use selected_currentness::{
+    validate_selected_authorization_currentness, SelectedAuthorizationCurrentnessStop,
+};
+pub(in crate::domain_computation::primary_graph::application_query) use selected_read::{
+    execute_selected_authorized_read, SelectedAuthorizedReadStop,
+};
 
 pub(super) enum WorthQueryAuthorizedApplicationReadDenial {
     StalePrincipal,
@@ -63,27 +73,34 @@ pub(super) fn execute_authorized_read<
 where
     Schema: ApplicationSchema,
 {
-    let security = application.admit_query_product_security_basis(&plan.security_product, &plan.basis)
-        .map_err(|denial| WorthQueryAuthorizedApplicationReadDenial::Authorization(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
-                plan.query.name(),
-            ),
-        ))?;
-    let basis = plan.basis.identity();
-    let entity_resolution = application
-        .runtime
-        .primary_graph()
-        .ok_or(WorthQueryAuthorizedApplicationReadDenial::Session)?
-        .retain_entity_resolution_context();
-    let (read_outcome, proof) = plan
-        .graph_work
-        .execute_query_read(basis, |runtime, layout| {
+    let ((output, authorization_work), proof) = execute_read_with_security(
+        application,
+        &plan.security_product,
+        &plan.basis,
+        &plan.index_posture,
+        &plan.graph_work,
+        |denial| {
+            WorthQueryAuthorizedApplicationReadDenial::Authorization(
+                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
+                    plan.query.name(),
+                ),
+            )
+        },
+        || WorthQueryAuthorizedApplicationReadDenial::Session,
+        || {
+            application
+                .runtime
+                .primary_graph()
+                .ok_or(WorthQueryAuthorizedApplicationReadDenial::Session)
+                .map(|graph| graph.retain_entity_resolution_context())
+        },
+        |runtime, layout, security, entity_resolution| {
             let authorization_work = validate_current_authorization(
                 application,
                 &entity_resolution,
                 runtime,
-                security.snapshot_handle(),
+                security,
                 plan,
             )?;
             let authorization_work =
@@ -99,10 +116,84 @@ where
             let output = read(runtime, layout, plan)
                 .map_err(WorthQueryAuthorizedApplicationReadDenial::Read)?;
             Ok((output, authorization_work))
-        })
-        .map_err(|_| WorthQueryAuthorizedApplicationReadDenial::Session)?;
-    let (output, authorization_work) = read_outcome?;
+        },
+    )?;
     Ok((output, authorization_work, proof))
+}
+
+/// Keep the exact Product security and graph-session acceptance common to
+/// ordinary and selected reads. Each caller supplies only its currentness
+/// validation and read body; the selected caller retains its typed meter stop.
+fn execute_read_with_security<Schema, Context, Output, Stop>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    security_product: &crate::basis::WorthQueryProductObservationLease,
+    basis: &super::basis::WorthQueryApplicationQueryBasisCustody,
+    index_posture: &WorthQueryQueryIndexPosture,
+    graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    security_denial: impl FnOnce(crate::basis::WorthQueryProductBranchAdmissionDenial) -> Stop,
+    session_denial: impl Fn() -> Stop,
+    prepare: impl FnOnce() -> Result<Context, Stop>,
+    perform: impl FnOnce(
+        &mut worth_relational::facade::runtime::RelationalRuntime,
+        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &worth_relational::facade::snapshots::SnapshotHandle,
+        Context,
+    ) -> Result<Output, Stop>,
+) -> Result<
+    (
+        Output,
+        crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
+    ),
+    Stop,
+>
+where
+    Schema: ApplicationSchema,
+{
+    let security = match index_posture {
+        WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
+            application.admit_query_product_security_basis(security_product, basis)
+        }
+        WorthQueryQueryIndexPosture::SelectedInstalled(prepared) => {
+            application.admit_query_prepared_read_security_basis(security_product, basis, prepared)
+        }
+    }
+    .map_err(security_denial)?;
+    let context = prepare()?;
+    execute_graph_read_with_snapshot(
+        graph_work,
+        basis,
+        security.snapshot_handle(),
+        session_denial,
+        context,
+        perform,
+    )
+}
+
+pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(
+    graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    basis: &super::basis::WorthQueryApplicationQueryBasisCustody,
+    security_snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    session_denial: impl Fn() -> Stop,
+    context: Context,
+    perform: impl FnOnce(
+        &mut worth_relational::facade::runtime::RelationalRuntime,
+        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &worth_relational::facade::snapshots::SnapshotHandle,
+        Context,
+    ) -> Result<Output, Stop>,
+) -> Result<
+    (
+        Output,
+        crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
+    ),
+    Stop,
+> {
+    let (read_outcome, proof) = graph_work
+        .execute_query_read(basis.identity(), |runtime, layout| {
+            perform(runtime, layout, security_snapshot, context)
+        })
+        .map_err(|_| session_denial())?;
+    Ok((read_outcome?, proof))
 }
 
 fn validate_current_authorization<

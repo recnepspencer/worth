@@ -1,6 +1,6 @@
 use crate::application_operation::{
     ApplicationMutationDescription, ApplicationMutationOutputPosture,
-    ApplicationMutationScopeResolutionMode,
+    ApplicationMutationOutputRoleCardinality, ApplicationMutationScopeResolutionMode,
 };
 use crate::application_schema::canonical_basis::ApplicationSchemaCanonicalBasis;
 
@@ -43,6 +43,13 @@ pub(super) fn append(
                 ApplicationMutationOutputPosture::Preserve => "preserve",
                 ApplicationMutationOutputPosture::Create => "create",
                 ApplicationMutationOutputPosture::Retire => "retire",
+            },
+        );
+        basis.text(
+            format!("{prefix}.cardinality"),
+            match role.cardinality {
+                ApplicationMutationOutputRoleCardinality::ExactlyOne => "exactly-one",
+                ApplicationMutationOutputRoleCardinality::AtMostOne => "at-most-one",
             },
         );
     }

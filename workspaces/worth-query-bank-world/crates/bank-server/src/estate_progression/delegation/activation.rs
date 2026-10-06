@@ -13,9 +13,7 @@ use worth_query_host::facade::{
     primary_graph::{
         WorthQueryAdmittedApplicationOperation,
         WorthQueryApplicationOperationInvariantProjectionReader,
-        WorthQueryDelegationActivationProgram, WorthQueryEntityResolutionDenial,
-        WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
-        WorthQueryInvariantProjectionTraversalDenial,
+        WorthQueryDelegationActivationProgram, WorthQueryInvariantEntityIdentity,
     },
 };
 
@@ -49,27 +47,11 @@ type DelegationProgram = WorthQueryDelegationActivationProgram<
     EstateCase,
 >;
 
+mod projection_denial;
 #[cfg(test)]
 mod tests;
-
-#[derive(Debug)]
-pub enum BankCapabilityDelegationProjectionDenial {
-    EntityResolution(crate::BankEntityResolutionDenial),
-    DecisionPlan(crate::BankInvariantDecisionPlanDenial),
-    Traversal(crate::BankInvariantProjectionTraversalDenial),
-}
-
-impl std::fmt::Display for BankCapabilityDelegationProjectionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::EntityResolution(denial) => denial.fmt(formatter),
-            Self::DecisionPlan(denial) => denial.fmt(formatter),
-            Self::Traversal(denial) => denial.fmt(formatter),
-        }
-    }
-}
-
-impl std::error::Error for BankCapabilityDelegationProjectionDenial {}
+use projection_denial::child_selection_denial;
+pub use projection_denial::BankCapabilityDelegationProjectionDenial;
 
 impl BankIdentityRuntime {
     pub fn delegate_estate_capability_with_key(
@@ -296,6 +278,14 @@ fn project_delegation(
         let account = reader.resolve_entity(AccountIdentity::reference(), account)?;
         reader.require_decision_relation(EstateAccount::reference(), estate, &account)?;
     }
+    // The child id names no grant. Its absence is a fact of the decision, so
+    // a delegation prepared beside one that committed the same id goes stale.
+    let named = reader
+        .decision_select_entities(CapabilityGrantIdentityField::reference(), child.id, 1)
+        .map_err(child_selection_denial)?;
+    if !named.is_empty() {
+        return Err(BankCapabilityDelegationProjectionDenial::ChildGrantExists);
+    }
     Ok(())
 }
 
@@ -312,30 +302,6 @@ fn delegation_command(
         _ => Err(BankEstateProgressionDenial::CommandInput(
             "DelegateEstateCapabilityOperation",
         )),
-    }
-}
-
-impl From<WorthQueryEntityResolutionDenial> for BankCapabilityDelegationProjectionDenial {
-    fn from(value: WorthQueryEntityResolutionDenial) -> Self {
-        Self::EntityResolution(crate::BankEntityResolutionDenial::from_query(value.kind()))
-    }
-}
-
-impl From<WorthQueryInvariantDecisionPlanDenial> for BankCapabilityDelegationProjectionDenial {
-    fn from(value: WorthQueryInvariantDecisionPlanDenial) -> Self {
-        Self::DecisionPlan(crate::BankInvariantDecisionPlanDenial::from_query(
-            value.kind(),
-        ))
-    }
-}
-
-impl From<WorthQueryInvariantProjectionTraversalDenial>
-    for BankCapabilityDelegationProjectionDenial
-{
-    fn from(value: WorthQueryInvariantProjectionTraversalDenial) -> Self {
-        Self::Traversal(crate::BankInvariantProjectionTraversalDenial::from_query(
-            value.kind(),
-        ))
     }
 }
 
@@ -361,9 +327,7 @@ fn map_delegation_denial(
         Query::PrincipalResolution(denial) => {
             BankEstateProgressionDenial::PrincipalResolution(denial)
         }
-        Query::PrincipalIdentityEncoding(denial) => {
-            BankEstateProgressionDenial::PrincipalIdentityEncoding(denial)
-        }
+        Query::IdentityEncoding(denial) => BankEstateProgressionDenial::IdentityEncoding(denial),
         Query::Authorization(denial) => BankEstateProgressionDenial::from_authorization(denial),
         Query::Idempotency(denial) => BankEstateProgressionDenial::from_idempotency(denial),
         Query::IdempotencyIntentDrift => BankEstateProgressionDenial::IdempotencyIntentDrift,

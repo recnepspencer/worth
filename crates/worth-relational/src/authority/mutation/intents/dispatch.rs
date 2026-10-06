@@ -1,5 +1,6 @@
 use crate::transactions::data::{
     CommitConflict, CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
+    TransactionCommitError,
 };
 
 use super::{
@@ -14,48 +15,59 @@ use crate::authority::mutation::MutationWorkspace;
 pub(crate) fn dispatch_intent(
     intent: &MutationIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, CommitConflict> {
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+) -> Result<MutationOutcome, TransactionCommitError> {
     match intent {
-        MutationIntent::Create(CreateIntent::Entity(spec)) => create_entity::apply(spec, workspace),
+        MutationIntent::Create(CreateIntent::Entity(spec)) => {
+            from_conflict(create_entity::apply(spec, workspace))
+        }
         MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
-            create_entity_aspects::apply(spec, workspace)
+            from_conflict(create_entity_aspects::apply(spec, workspace))
         }
         MutationIntent::Create(CreateIntent::BulkEntities(spec)) => {
-            bulk_create_entities::apply(spec, workspace)
+            bulk_create_entities::apply(spec, workspace, lease)
         }
         MutationIntent::Entity(EntityMutationIntent::UpdateFields(spec)) => {
-            update_entity_fields::apply(spec, workspace)
+            from_conflict(update_entity_fields::apply(spec, workspace))
         }
         MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(spec)) => {
-            apply_entity_aspect_patch::apply(spec, workspace)
+            from_conflict(apply_entity_aspect_patch::apply(spec, workspace))
         }
         MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => {
-            replace_entity::apply(spec, workspace)
+            from_conflict(replace_entity::apply(spec, workspace))
         }
         MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
-            delete_entity::apply(spec, workspace)
+            from_conflict(delete_entity::apply(spec, workspace))
         }
         MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
-            revalidate_entity::apply(spec, workspace)
+            from_conflict(revalidate_entity::apply(spec, workspace))
         }
         MutationIntent::Create(CreateIntent::Relation(spec)) => {
-            create_relation::apply(spec, workspace)
+            from_conflict(create_relation::apply(spec, workspace))
         }
         MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
-            create_relation_aspects::apply(spec, workspace)
+            from_conflict(create_relation_aspects::apply(spec, workspace))
         }
         MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
-            bulk_create_relations::apply(spec, workspace)
+            bulk_create_relations::apply(spec, workspace, lease)
         }
         MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
-            update_relation_endpoints::apply(spec, workspace)
+            from_conflict(update_relation_endpoints::apply(spec, workspace))
         }
         MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
-            apply_relation_aspect_patch::apply(spec, workspace)
+            from_conflict(apply_relation_aspect_patch::apply(spec, workspace))
         }
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
-            delete_relation::apply(spec, workspace)
+            from_conflict(delete_relation::apply(spec, workspace))
         }
-        MutationIntent::Materialization(intent) => materialization::apply(intent, workspace),
+        MutationIntent::Materialization(intent) => {
+            from_conflict(materialization::apply(intent, workspace))
+        }
     }
+}
+
+fn from_conflict(
+    result: Result<MutationOutcome, CommitConflict>,
+) -> Result<MutationOutcome, TransactionCommitError> {
+    result.map_err(TransactionCommitError::conflict)
 }

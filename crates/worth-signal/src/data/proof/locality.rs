@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use smallvec::SmallVec;
 
 use crate::data::handle::NodeId;
 use crate::data::output::{CanonicalChangedRegions, PartitionSubscription};
 
 use super::{CanonicalForm, SummaryForm};
 
+mod copy_work;
 mod retained_charge;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -117,7 +117,7 @@ impl SortedSourceBatch {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct PartitionScopeSet(SmallVec<[PartitionSubscription; 8]>);
+pub struct PartitionScopeSet(Vec<PartitionSubscription>);
 
 impl PartitionScopeSet {
     /// Accept a canonical sequence without re-sorting it. Validate at the
@@ -126,11 +126,11 @@ impl PartitionScopeSet {
         scopes
             .windows(2)
             .all(|pair| pair[0] < pair[1])
-            .then(|| Self(SmallVec::from_vec(scopes)))
+            .then_some(Self(scopes))
     }
 
     pub fn new(scopes: impl IntoIterator<Item = PartitionSubscription>) -> Self {
-        let mut scopes = SmallVec::<[PartitionSubscription; 8]>::from_iter(scopes);
+        let mut scopes = Vec::<PartitionSubscription>::from_iter(scopes);
         if scopes.len() > 1 {
             scopes.sort_unstable();
             scopes.dedup();
@@ -139,18 +139,18 @@ impl PartitionScopeSet {
     }
 
     pub fn from_changed_regions(changed_regions: &CanonicalChangedRegions) -> Self {
-        Self::new(
-            changed_regions
-                .as_slice()
-                .iter()
-                .map(|region| match &region.detail {
-                    Some(detail) => PartitionSubscription::partition_and_detail(
-                        region.partition.clone(),
-                        detail.clone(),
-                    ),
-                    None => PartitionSubscription::whole_partition(region.partition.clone()),
-                }),
-        )
+        Self::from_regions(changed_regions.as_slice())
+    }
+
+    pub(crate) fn from_regions(regions: &[crate::data::output::ChangedRegion]) -> Self {
+        Self::new(regions.iter().map(|region| match region.coverage() {
+            crate::data::output::ScopeCoverage::Exact => {
+                PartitionSubscription::exact(region.path().clone())
+            }
+            crate::data::output::ScopeCoverage::Subtree => {
+                PartitionSubscription::subtree(region.path().clone())
+            }
+        }))
     }
 
     pub fn as_slice(&self) -> &[PartitionSubscription] {

@@ -83,6 +83,12 @@ mod native_observation_settlement;
 pub(crate) mod portal_dismissal;
 pub(crate) use native_observation_settlement::UiNativeObservationIngressSettlement;
 #[cfg(test)]
+mod expression_query_fixture;
+#[cfg(test)]
+mod expression_query_operand_tests;
+#[cfg(test)]
+mod expression_query_succession_tests;
+#[cfg(test)]
 mod native_observation_tests;
 mod native_projection_rebind;
 #[cfg(test)]

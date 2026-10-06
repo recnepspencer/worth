@@ -1,11 +1,16 @@
 //! TCP listener lifecycle for the Bank external rail.
 
 use std::convert::Infallible;
+use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use tokio::net::TcpListener;
 
+use super::completion_delivery::{
+    CompletionDelivery, RailCompletionDeliveryConfiguration,
+    RailCompletionDeliveryConfigurationDenial, RailCompletionDeliveryPosture,
+};
 use super::dispatch::{handle_connection, RailDispatchState};
 use crate::protocol::support_profile::RailProtocolSupportProfile;
 use crate::test_control::{handle_test_control_connection, FaultSelection};
@@ -51,25 +56,73 @@ impl RailServer {
         self.test_control_listener.local_addr()
     }
 
+    pub fn install_completion_delivery(
+        &mut self,
+        configuration: RailCompletionDeliveryConfiguration,
+    ) -> Result<(), RailCompletionDeliveryConfigurationDenial> {
+        let delivery = CompletionDelivery::new(configuration)?;
+        self.dispatch_state
+            .install_completion_delivery(delivery)
+            .map_err(|_| RailCompletionDeliveryConfigurationDenial::AlreadyInstalled)
+    }
+
+    pub fn completion_delivery_posture(&self) -> Option<RailCompletionDeliveryPosture> {
+        self.dispatch_state
+            .completion_delivery()
+            .map(|delivery| delivery.posture())
+    }
+
     /// Accepts connections forever, handling each one on its own task.
     ///
     /// Returns only if the listener itself fails; individual connection
     /// failures are contained to that connection.
     pub async fn serve(self) -> std::io::Result<Infallible> {
+        match self.serve_until(std::future::pending()).await {
+            Ok(_) => unreachable!("an endless rail has no orderly close"),
+            Err(error) => Err(error),
+        }
+    }
+
+    /// Stops new connections, cancels in-flight dispatch handlers, and reports
+    /// unresolved process-local completion delivery before the process exits.
+    pub async fn serve_until(
+        self,
+        shutdown: impl Future<Output = ()>,
+    ) -> std::io::Result<RailCompletionDeliveryPosture> {
+        tokio::pin!(shutdown);
+        let mut sender = tokio::task::JoinSet::new();
+        if let Some(delivery) = self.dispatch_state.completion_delivery() {
+            sender.spawn(Arc::clone(delivery).run());
+        }
+        let mut connections = tokio::task::JoinSet::new();
         loop {
             tokio::select! {
+                biased;
+                _ = &mut shutdown => break,
                 accepted = self.listener.accept() => {
                     let (stream, _peer) = accepted?;
-                    tokio::spawn(handle_connection(stream, Arc::clone(&self.dispatch_state)));
+                    connections.spawn(handle_connection(stream, Arc::clone(&self.dispatch_state)));
                 }
                 accepted = self.test_control_listener.accept() => {
                     let (stream, _peer) = accepted?;
-                    tokio::spawn(handle_test_control_connection(
+                    connections.spawn(handle_test_control_connection(
                         stream,
                         Arc::clone(&self.fault_selection),
                     ));
                 }
+                result = sender.join_next(), if !sender.is_empty() => {
+                    let _ = result;
+                    return Err(std::io::Error::other("completion sender stopped unexpectedly"));
+                }
+                result = connections.join_next(), if !connections.is_empty() => {
+                    let _ = result;
+                }
             }
         }
+        connections.abort_all();
+        while connections.join_next().await.is_some() {}
+        sender.abort_all();
+        while sender.join_next().await.is_some() {}
+        Ok(self.completion_delivery_posture().unwrap_or_default())
     }
 }

@@ -318,6 +318,24 @@ impl RelationalBranchRoot {
         self.regions.materialize().keys().copied().collect()
     }
 
+    pub(crate) fn partition_ids_iter(&self) -> impl Iterator<Item = PartitionId> + '_ {
+        self.regions.partition_ids_iter()
+    }
+
+    pub(crate) fn try_visit_partitions<E>(
+        &self,
+        visit: impl FnMut(super::RelationalPartitionVisit) -> Result<(), E>,
+    ) -> Result<(), E> {
+        self.regions.try_visit_partitions(visit)
+    }
+
+    pub(crate) fn try_for_each_partition_id<E>(
+        &self,
+        visit: impl FnMut(PartitionId) -> Result<(), E>,
+    ) -> Result<(), E> {
+        self.regions.try_for_each_partition_id(visit)
+    }
+
     /// Logical authoritative partition payload bytes reachable from this root.
     pub(crate) fn logical_partition_payload_bytes(&self) -> u64 {
         self.regions

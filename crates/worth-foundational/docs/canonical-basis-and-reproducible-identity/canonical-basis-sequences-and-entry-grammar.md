@@ -42,6 +42,7 @@ Common path:
 Lower lane:
 
 - `prepare_canonical_basis_sequence(...)`
+- `prepare_owned_canonical_basis_sequence_admitted(...)`
 - `prepare_canonical_basis_bundle(...)`
 - `CanonicalBasisSequence`
 - `CanonicalBasisBundle`
@@ -55,6 +56,33 @@ Good to know:
 
 - `canonicalization_api::common_path` is the recommended grouped public lane.
 - `canonicalization_api::lower_lane::basis` is the inspectable lower lane.
+
+### Preparation With Runtime Resource Admission
+
+Owners with a live resource budget can move an already-owned entry vector into
+the same construction authority:
+
+```rust
+let ready = prepare_owned_canonical_basis_sequence_admitted(
+    version, domain, entries,
+    |work, bytes| request_budget.admit(work, bytes),
+)?;
+```
+
+The caller owns entry construction and its allocation before this boundary.
+Foundation admits measurement visits, compared payload widths, sorting moves,
+scratch storage, duplicate-locus denial copies, and the rule-version copy before
+performing them. The actual ordinary `sort_by` still supplies canonical ordering
+and its recorded comparison count. Resource admission uses a checked upper bound
+and preserves the caller's original refusal in `CanonicalBasisPreparationStop`;
+a refusal cannot produce a Ready artifact.
+
+The sorting bound is reviewed against Rust 1.94.0, commit
+`4a4ef493e3a1488c6e321570238084b38948f6db`, including both its ordinary and
+size-optimized standard-library sort implementations. A different configured
+compiler returns `UnsupportedSortImplementation` on the admitted preparation
+port until its bound is reviewed. Ordinary canonical preparation continues to
+use its existing compiler and semantics.
 
 ## Core Mental Model
 

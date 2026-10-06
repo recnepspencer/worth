@@ -1,5 +1,7 @@
 //! Typed intent meaning exposed to product composition roots.
 
+/// Why the condition a withheld operability axis reads holds no truth value.
+pub use worth_ui_runtime::facade::expression::UiExpressionWithholding;
 pub use worth_ui_runtime::facade::intent::{
     FrozenIntentDefinitionCapabilities, IntentDefinitionDescriptor, UiAdmittedIntent,
     UiApplicationEffectDestination, UiConfirmedIntentCandidate, UiInoperableIntentCandidate,
@@ -42,10 +44,10 @@ pub use worth_ui_runtime::facade::intent::{
     UiIntentExecutionIdempotencyIdentity, UiIntentExecutionPollContext, UiIntentExecutionProvider,
     UiIntentExecutionRecovery, UiIntentExecutionRequest, UiIntentExecutionReservationDenial,
     UiIntentExecutionShutdownReport, UiIntentExecutionTransition,
-    UiIntentExecutionTransitionPosture, UiIntentId, UiIntentInoperableCause,
-    UiIntentInoperableCauseIter, UiIntentInputBasisReceipt, UiIntentInputOwnerRevision,
-    UiIntentInteractionPayloadSourceKind, UiIntentMutabilityPosture, UiIntentMutabilitySource,
-    UiIntentOccupancyPosture, UiIntentOperabilityContract,
+    UiIntentExecutionTransitionPosture, UiIntentExpressionInputRevision, UiIntentId,
+    UiIntentInoperableCause, UiIntentInoperableCauseIter, UiIntentInputBasisReceipt,
+    UiIntentInputOwnerRevision, UiIntentInteractionPayloadSourceKind, UiIntentMutabilityPosture,
+    UiIntentMutabilitySource, UiIntentOccupancyPosture, UiIntentOperabilityContract,
     UiIntentOperabilityContractIdentityError, UiIntentOperabilityCost, UiIntentOperabilityDecision,
     UiIntentOperabilityDependencyAxis, UiIntentOperabilityOutcome, UiIntentOperabilityProof,
     UiIntentPartialEffect, UiIntentPayload, UiIntentPayloadField, UiIntentPayloadFieldDescriptor,
@@ -62,13 +64,14 @@ pub use worth_ui_runtime::facade::intent::{
     UiIntentRouteBinding, UiIntentRouteResolution, UiIntentRouteResolutionStop,
     UiIntentRouteSource, UiIntentRuntimeServiceDestination, UiIntentSchema, UiIntentSelection,
     UiIntentSelectionValue, UiIntentSupportPosture, UiIntentText, UiIntentTransitionDestination,
-    UiIntentTransitionOutcome, UiIntentUnsigned64, UiPendingIntentConfirmation,
-    UiPreparedIntentPayload, UiResolvedConfirmationIntentRoute, UiResolvedProductIntentRoute,
-    UiRuntimeServiceDefinitionDestination, UiSemanticInteractionFamily,
-    UiTransitionDefinitionDestination, WorthUiCollectionChangeConsequence,
-    UI_INTENT_ADMISSION_CAPACITY, UI_INTENT_CONFIRMATION_TTL_MILLIS,
-    UI_INTENT_MAXIMUM_APPLICATION_ATTEMPTS, UI_INTENT_MAXIMUM_DESTINATION_ATTEMPTS,
-    UI_INTENT_MAXIMUM_INTENT_ATTEMPTS, UI_INTENT_MAXIMUM_PROVIDER_ATTEMPTS,
-    UI_INTENT_MAXIMUM_RETAINED_PAYLOAD_BYTES, UI_INTENT_PAYLOAD_FIELD_LIMIT,
-    UI_INTENT_PAYLOAD_TEXT_BYTE_LIMIT, UI_PENDING_INTENT_CONFIRMATION_LIMIT,
+    UiIntentTransitionOutcome, UiIntentUnsigned64, UiIntentWithheldCondition,
+    UiPendingIntentConfirmation, UiPreparedIntentPayload, UiResolvedConfirmationIntentRoute,
+    UiResolvedProductIntentRoute, UiRuntimeServiceDefinitionDestination,
+    UiSemanticInteractionFamily, UiTransitionDefinitionDestination,
+    WorthUiCollectionChangeConsequence, UI_INTENT_ADMISSION_CAPACITY,
+    UI_INTENT_CONFIRMATION_TTL_MILLIS, UI_INTENT_MAXIMUM_APPLICATION_ATTEMPTS,
+    UI_INTENT_MAXIMUM_DESTINATION_ATTEMPTS, UI_INTENT_MAXIMUM_INTENT_ATTEMPTS,
+    UI_INTENT_MAXIMUM_PROVIDER_ATTEMPTS, UI_INTENT_MAXIMUM_RETAINED_PAYLOAD_BYTES,
+    UI_INTENT_PAYLOAD_FIELD_LIMIT, UI_INTENT_PAYLOAD_TEXT_BYTE_LIMIT,
+    UI_PENDING_INTENT_CONFIRMATION_LIMIT,
 };

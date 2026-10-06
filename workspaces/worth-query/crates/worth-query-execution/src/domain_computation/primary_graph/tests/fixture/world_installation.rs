@@ -67,12 +67,8 @@ pub(in crate::domain_computation::primary_graph::tests) fn installed_world_with_
             ))
             .unwrap();
     }
-    let program_required = schema
-        .installed_mutation_binding::<ProgramRequiredMutationBinding>()
-        .unwrap();
-    bootstrap
-        .install_handler(&program_required, ProgramRequiredHandler)
-        .unwrap();
+    super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
+
     let application = bootstrap
         .publish_application_runtime(
             runtime,
@@ -85,6 +81,55 @@ pub(in crate::domain_computation::primary_graph::tests) fn installed_world_with_
         application,
         binding,
     }
+}
+
+/// Reopens an identity world from one Query application checkpoint through the
+/// same native readmission application installation uses.
+pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
+    checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
+) -> Result<
+    IdentityWorld,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+> {
+    let declaration = IdentityExecutionSchema::declaration().unwrap();
+    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+        .admit(portable_package(declaration.clone()))
+        .unwrap();
+    let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
+        .install(WorthQueryInstallationGeneration::initial(), [admitted])
+        .unwrap()
+        .into_parts();
+    let schema = runtime
+        .installed_packages()
+        .bind_application_schema(declaration)
+        .unwrap();
+    let binding = schema
+        .principal_binding(IdentityBinding::reference())
+        .unwrap();
+    let decoded = checkpoint
+        .decode()
+        .expect("the Query-issued checkpoint decodes");
+    let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
+        &runtime,
+        &schema,
+        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build(),
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+        crate::domain_computation::primary_graph::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
+        &decoded,
+    )?;
+    super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
+    let application = bootstrap
+        .publish_application_runtime(
+            runtime,
+            authority,
+            schema,
+            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        )
+        .unwrap();
+    Ok(IdentityWorld {
+        application,
+        binding,
+    })
 }
 
 pub(in crate::domain_computation::primary_graph) fn installed_authorization_world(
@@ -106,6 +151,18 @@ pub(in crate::domain_computation::primary_graph) fn installed_authorization_worl
     })
 }
 
+pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_product_resources(
+    resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+) -> AuthorizationWorld {
+    super::authorization_world_installation::install_authorization_world_with_product_resources(
+        AuthorizationWorldSpec {
+            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+            ..standard_spec()
+        },
+        resources,
+    )
+}
+
 pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_resource_profile(
     resources: WorthQueryApplicationQueryResourceProfile,
 ) -> AuthorizationWorld {
@@ -114,6 +171,18 @@ pub(in crate::domain_computation::primary_graph) fn installed_authorization_worl
         resources,
         ..standard_spec()
     })
+}
+
+pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_completed_evidence_capacity(
+    maximum: std::num::NonZeroUsize,
+) -> AuthorizationWorld {
+    super::authorization_world_installation::install_authorization_world_with_completed_evidence_resources(
+        AuthorizationWorldSpec {
+            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+            ..standard_spec()
+        },
+        crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile::bounded(maximum),
+    )
 }
 
 pub(in crate::domain_computation::primary_graph) fn installed_two_principal_authorization_world(

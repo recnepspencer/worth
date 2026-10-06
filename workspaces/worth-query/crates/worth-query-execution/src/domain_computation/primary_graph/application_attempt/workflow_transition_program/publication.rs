@@ -201,18 +201,17 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
     }
 }
 
-/// A condition the instance waits on: the installed query, its parameter and result types,
-/// and the binding whose published boolean result decides the transition.
-#[derive(Clone, Debug)]
+/// A condition the instance waits on: the published expression and the
+/// operands it reads, each an installed query result supplied by its binding.
+/// True selects the satisfied successor and false the unsatisfied one.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequiredWorkflowCondition {
     pub(super) instance: worth_relational::facade::identity::EntityId,
     pub(super) node_path: String,
     pub(super) transition_identity: String,
     pub(super) occurrence: u64,
-    pub(super) query: String,
-    pub(super) parameter_type: String,
-    pub(super) result_type: String,
-    pub(super) binding: String,
+    pub(super) condition:
+        crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowCondition,
 }
 
 impl RequiredWorkflowCondition {
@@ -228,10 +227,7 @@ impl RequiredWorkflowCondition {
             node_path,
             transition_identity,
             occurrence,
-            query: selected.query,
-            parameter_type: selected.parameter_type,
-            result_type: selected.result_type,
-            binding: selected.binding,
+            condition: selected.condition,
         }
     }
 
@@ -247,17 +243,12 @@ impl RequiredWorkflowCondition {
     pub const fn occurrence(&self) -> u64 {
         self.occurrence
     }
-    pub fn query(&self) -> &str {
-        &self.query
-    }
-    pub fn parameter_type(&self) -> &str {
-        &self.parameter_type
-    }
-    pub fn result_type(&self) -> &str {
-        &self.result_type
-    }
-    pub fn binding(&self) -> &str {
-        &self.binding
+    /// Operands in name order.
+    pub fn operands(
+        &self,
+    ) -> &[crate::domain_computation::primary_graph::workflow::definition::WorkflowConditionOperand]
+    {
+        &self.condition.operands
     }
 }
 

@@ -12,6 +12,9 @@ pub enum BankEntityResolutionDenialKind {
     AmbiguousEntity,
     CorruptIdentityIndex,
     ProjectionWorkBudgetExceeded,
+    ProjectionPreparationMemoryExhausted,
+    InvalidCandidateLimit,
+    CandidateLimitExceeded { maximum: usize },
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,
     RetentionCapacityExhausted,
@@ -42,6 +45,9 @@ impl BankEntityResolutionDenial {
             Bank::AmbiguousEntity => "ambiguous-entity",
             Bank::CorruptIdentityIndex => "corrupt-identity-index",
             Bank::ProjectionWorkBudgetExceeded => "projection-work-budget-exceeded",
+            Bank::ProjectionPreparationMemoryExhausted => "projection-preparation-memory-exhausted",
+            Bank::InvalidCandidateLimit => "invalid-candidate-limit",
+            Bank::CandidateLimitExceeded { .. } => "candidate-limit-exceeded",
             Bank::ActiveSnapshotCapacityExhausted { .. } => "active-snapshot-capacity-exhausted",
             Bank::SnapshotIdentityExhausted => "snapshot-identity-exhausted",
             Bank::RetentionCapacityExhausted => "retention-capacity-exhausted",
@@ -63,6 +69,13 @@ impl BankEntityResolutionDenial {
             QueryKind::AmbiguousEntity => Bank::AmbiguousEntity,
             QueryKind::CorruptIdentityIndex => Bank::CorruptIdentityIndex,
             QueryKind::ProjectionWorkBudgetExceeded => Bank::ProjectionWorkBudgetExceeded,
+            QueryKind::ProjectionPreparationMemoryExhausted => {
+                Bank::ProjectionPreparationMemoryExhausted
+            }
+            QueryKind::InvalidCandidateLimit => Bank::InvalidCandidateLimit,
+            QueryKind::CandidateLimitExceeded { maximum } => {
+                Bank::CandidateLimitExceeded { maximum }
+            }
             QueryKind::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             } => Bank::ActiveSnapshotCapacityExhausted {

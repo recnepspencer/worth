@@ -15,7 +15,8 @@ mod work_meter;
 
 pub use execution_context::{CustomInvariantExecutionContext, CustomInvariantProvenance};
 pub use registration::{
-    CustomInvariantRegistration, CustomInvariantRegistrationError, CustomInvariantRule,
+    CustomInvariantLeaseBudget, CustomInvariantRegistration, CustomInvariantRegistrationError,
+    CustomInvariantRule,
 };
 pub use scope_planner::CustomInvariantScopePlanner;
 pub(crate) use scope_planner::PreparedCustomInvariantScope;
@@ -26,4 +27,6 @@ pub use structural_views::{
 pub use traversal::CustomInvariantTraversalSummary;
 
 pub(crate) use registration::PreparedCustomInvariantExecution;
-pub(crate) use work_meter::CustomInvariantWorkMeter;
+pub(crate) use work_meter::{
+    CustomInvariantWorkMeter, CustomPreparationBudget, CustomPreparationStop,
+};

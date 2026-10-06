@@ -46,7 +46,7 @@ type QueryableField<Entity, Field> = ApplicationFieldRef<
     NoApplicationUnit,
 >;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, serde::Serialize)]
 enum Input {
     Admitted {
         scope: u64,

@@ -4,6 +4,7 @@ use crate::physical_runtime::instance::PhysicalWorkSignalOwner;
 use crate::physical_runtime::{
     PhysicalSignalAspectRole, PhysicalWorkSignalFamily, PhysicalWorkSignalFamilySet,
 };
+use worth_signal::facade::PartitionSubscription;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
 pub(super) fn bindings_match(
@@ -52,7 +53,7 @@ pub(super) fn bindings_match(
                     && observation.role() == *role
                     && observation.families() == *families
                     && observation.partition().is_some_and(|actual| {
-                        actual.partition.0 == *partition && actual.detail.is_none()
+                        *actual == PartitionSubscription::whole_partition(partition.as_str())
                     })
             })
         })

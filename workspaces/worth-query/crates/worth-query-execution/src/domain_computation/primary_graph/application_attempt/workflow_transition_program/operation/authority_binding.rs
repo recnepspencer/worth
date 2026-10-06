@@ -8,7 +8,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub(in crate::domain_computation::primary_graph) fn bind_mutation_handler_input<Binding>(
         mut self,
-        input: &Binding::Input,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     ) -> Self
     where
         Schema: ApplicationSchema,
@@ -16,7 +16,7 @@ impl<Schema, Operation, Input, Scope>
     {
         self.read_set.mutation_handler_binding = Some(MutationHandlerBindingProof {
             binding: Binding::IDENTITY,
-            input_identity: Binding::input_identity(input),
+            input_identity: *identities.input_identity(),
         });
         self
     }
@@ -45,13 +45,13 @@ impl<Schema, Operation, Input, Scope>
         }
         let mut locators = std::collections::BTreeMap::new();
         for (index, fact) in self.read_set.facts.iter().enumerate() {
-            let locator = fact.locator_identity();
+            let locator = fact.dependency_key();
             if locators.insert(locator, index).is_some() {
                 return Err(mismatch("workflow operation authority"));
             }
         }
         for fact in authority.facts() {
-            let locator = fact.locator_identity();
+            let locator = fact.dependency_key();
             match locators.entry(locator) {
                 std::collections::btree_map::Entry::Vacant(entry) => {
                     entry.insert(self.read_set.facts.len());

@@ -1,6 +1,5 @@
 use std::sync::{Arc, RwLock};
 
-use crate::config::data::RelationalExecutionModel;
 use crate::durability::data::DurabilityMode;
 use crate::runtime::{RelationalRuntimeConfig, SchemaContractRuntimeSubsystem};
 
@@ -61,14 +60,6 @@ impl RelationalRuntimeConfiguration {
     /// for as long as the caller holds it, and no lock is held after it returns.
     pub(crate) fn snapshot(&self) -> RelationalRuntimeConfigurationSnapshot {
         self.read().clone()
-    }
-
-    pub(in crate::runtime) fn set_execution_model(
-        &self,
-        execution_model: RelationalExecutionModel,
-    ) {
-        let mut state = self.write();
-        Arc::make_mut(&mut state.config).execution.execution_model = execution_model;
     }
 
     pub(in crate::runtime) fn set_durability_mode(&self, mode: DurabilityMode) {

@@ -24,11 +24,9 @@ pub(super) fn prepare(
     material: &crate::declaration::WorthUiAuthoredIntentMaterial,
     definitions: &FrozenIntentDefinitionCapabilities,
     graph: &crate::graph::UiGraphSnapshot,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    application_facts: &super::super::UiIntentApplicationFactPlan,
+    sources: &super::super::UiIntentSourcePlans<'_>,
 ) -> Result<UiIntentCatalog, UiIntentCatalogPreparationDenial> {
-    let (declarations, declaration_index) =
-        resolve_declarations(material, definitions, query, application_facts)?;
+    let (declarations, declaration_index) = resolve_declarations(material, definitions, sources)?;
     let routes =
         route_preparation::bind_routes(material, &declarations, &declaration_index, graph)?;
     let product_index = routes
@@ -61,7 +59,9 @@ pub(super) fn prepare(
             )
         })
         .collect();
+    let condition_consumers = super::UiIntentConditionConsumers::index(&declarations);
     Ok(UiIntentCatalog {
+        condition_consumers,
         declarations: declarations.into_boxed_slice(),
         product_routes: routes.product.into_boxed_slice(),
         confirmation_routes: routes.confirmation.into_boxed_slice(),
@@ -75,8 +75,7 @@ pub(super) fn prepare(
 fn resolve_declarations(
     material: &crate::declaration::WorthUiAuthoredIntentMaterial,
     definitions: &FrozenIntentDefinitionCapabilities,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    application_facts: &super::super::UiIntentApplicationFactPlan,
+    sources: &super::super::UiIntentSourcePlans<'_>,
 ) -> Result<
     (
         Vec<Arc<UiCanonicalIntentDeclaration>>,
@@ -124,27 +123,25 @@ fn resolve_declarations(
             super::super::resolve_payload_sources(
                 authored,
                 resolved.descriptor().payload_fields(),
-                query,
-                application_facts,
+                sources,
             )?,
             super::super::resolve_operability_contract(
                 authored.identity(),
                 authored.operability(),
                 interaction,
-                query,
-                application_facts,
+                sources,
             )?,
             super::super::resolve_confirmation_contract(
                 authored.identity(),
                 authored.confirmation(),
-                application_facts,
+                sources.application_facts,
             )?,
             super::super::UiIntentConcurrencyScope::from_dsl(authored.concurrency()),
             super::super::resolve_consequence_contract(
                 authored.identity(),
                 authored.consequences(),
                 resolved.descriptor(),
-                query,
+                sources.query,
             )?,
         )));
     }

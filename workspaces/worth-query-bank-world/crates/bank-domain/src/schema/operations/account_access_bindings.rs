@@ -1,18 +1,16 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryCreateOutput, WorthQueryExactlyOneOutput, WorthQueryRetireOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
-use crate::model::{AccountAuthorizationId, AccountId, BankPrincipalId, CustomerRole};
-use crate::proposals::{
-    BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial, CanonicalProposalPayload,
-};
+use crate::model::{AccountAuthorizationId, AccountId, BankPrincipalId};
+use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
 
-use super::create_personal_account_binding::client_key_identity;
 use super::{
     GrantAccountAuthorization, GrantAccountAuthorizationInputBinding, RevokeAccountAuthorization,
     RevokeAccountAuthorizationInputBinding,
@@ -43,28 +41,40 @@ worth_query_structured_value_binding!(
 pub struct GrantAccountAccessOutputs;
 pub struct RevokeAccountAccessOutputs;
 
-pub const ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION: &str = "authorization";
+/// The authorization a grant creates.
+pub struct GrantedAccountAuthorizationOutput;
+
+impl WorthQueryApplicationOutputRole for GrantedAccountAuthorizationOutput {
+    type Schema = BankSchema;
+    type Contract = GrantAccountAccessOutputs;
+    type Entity = AccountAuthorization;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "authorization";
+}
+
+/// The authorization a revocation retires.
+pub struct RevokedAccountAuthorizationOutput;
+
+impl WorthQueryApplicationOutputRole for RevokedAccountAuthorizationOutput {
+    type Schema = BankSchema;
+    type Contract = RevokeAccountAccessOutputs;
+    type Entity = AccountAuthorization;
+    type Action = WorthQueryRetireOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "authorization";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for GrantAccountAccessOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            AccountAuthorization,
-        >(
-            ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION,
-            ApplicationMutationOutputPosture::Create,
-        )];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
+        <GrantedAccountAuthorizationOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+    ];
 }
 
 impl ApplicationMutationOutputContract<BankSchema> for RevokeAccountAccessOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            AccountAuthorization,
-        >(
-            ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION,
-            ApplicationMutationOutputPosture::Retire,
-        )];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
+        <RevokedAccountAuthorizationOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+    ];
 }
 
 fn grant_scope(input: &GrantAccountAuthorization) -> AccountId {
@@ -75,33 +85,6 @@ fn revoke_scope(input: &RevokeAccountAuthorization) -> AccountId {
     input.account
 }
 
-fn role_identity(role: CustomerRole) -> u64 {
-    match role {
-        CustomerRole::PersonalOwner => 0,
-        CustomerRole::BusinessOwner => 1,
-        CustomerRole::Initiator => 2,
-        CustomerRole::Approver => 3,
-        CustomerRole::Viewer => 4,
-    }
-}
-
-fn grant_input_identity(input: &GrantAccountAuthorization) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-grant-account-authorization")
-        .text("account", &input.account.canonical_text())
-        .u64("principal", input.principal.get())
-        .u64("role", role_identity(input.role))
-        .derive_identity()
-        .bytes()
-}
-
-fn revoke_input_identity(input: &RevokeAccountAuthorization) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-revoke-account-authorization")
-        .text("account", &input.account.canonical_text())
-        .text("authorization", &input.authorization.canonical_text())
-        .derive_identity()
-        .bytes()
-}
-
 worth_query_mutation_binding!(
     pub GrantAccountAccessMutationBinding for GrantAccountAuthorization, schema BankSchema,
     identity "bank.operation.grant-account-authorization.mutation-binding.v1",
@@ -110,8 +93,6 @@ worth_query_mutation_binding!(
     result AccountAccessResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity grant_input_identity,
     decision BankInvariantApprovedProposal,
     denial AccountAccessDenialBinding,
     handler identity "bank.operation.grant-account-authorization.handler.v1",
@@ -142,8 +123,6 @@ worth_query_mutation_binding!(
     result AccountAccessResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity revoke_input_identity,
     decision BankInvariantApprovedProposal,
     denial AccountAccessDenialBinding,
     handler identity "bank.operation.revoke-account-authorization.handler.v1",

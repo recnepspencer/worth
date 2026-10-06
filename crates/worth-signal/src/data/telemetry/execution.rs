@@ -88,6 +88,9 @@ pub struct PlannerTelemetry {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecutionTelemetry {
+    /// Most recent report returned by an actual execution pattern.
+    #[serde(default)]
+    pub last_execution_report: Option<worth_foundational::ExecutionReport>,
     pub stage_execution_count: u64,
     pub stage_execution_nanos: u128,
     pub parallel_stage_dispatch_count: u64,

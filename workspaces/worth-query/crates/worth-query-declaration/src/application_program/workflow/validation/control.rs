@@ -132,6 +132,7 @@ fn expected_outcomes(
             ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
         ]),
         ApplicationWorkflowNodeKind::Operation { .. }
+        | ApplicationWorkflowNodeKind::AwaitInbound(_)
         | ApplicationWorkflowNodeKind::Assessment(_) => {
             Some(&[ApplicationWorkflowControlOutcome::Completed])
         }

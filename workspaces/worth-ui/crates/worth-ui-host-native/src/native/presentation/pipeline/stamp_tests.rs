@@ -1,4 +1,5 @@
-//! The resize trace's frame stamp lands pixel for pixel at the surface origin.
+//! The retained frame lands pixel for pixel at the surface origin, with the
+//! resize trace's frame stamp over its corner and nothing beyond its extent.
 use super::{draw_retained_to_surface, presentation_pipelines, stamp_transfer};
 use crate::native::resize_trace::{stamp_texels, STAMP_EXTENT};
 
@@ -6,10 +7,24 @@ use crate::native::resize_trace::{stamp_texels, STAMP_EXTENT};
 const EXTENT: [u32; 2] = [192, 40];
 /// Smaller than the stamp on both axes.
 const NARROW: [u32; 2] = [100, 10];
+/// A swapchain kept larger than [`EXTENT`] on both axes.
+const SWAPCHAIN: [u32; 2] = [256, 64];
 /// Row pitch of the readback, padded to the copy alignment.
 const ROW_BYTES: u32 = 1024;
-/// Magenta reads the same through RGBA or BGRA order and sRGB encoding.
-const SOURCE: [u8; 4] = [255, 0, 255, 255];
+/// Magenta and black read the same through RGBA or BGRA order and sRGB
+/// encoding, so the retained frame alternates them in a pattern no scaling
+/// preserves.
+const MAGENTA: [u8; 4] = [255, 0, 255, 255];
+const BLACK: [u8; 4] = [0, 0, 0, 255];
+const TRANSPARENT: [u8; 4] = [0; 4];
+
+fn retained_texel(x: u32, y: u32) -> [u8; 4] {
+    if x % 7 == y % 5 {
+        MAGENTA
+    } else {
+        BLACK
+    }
+}
 
 fn texture(
     device: &wgpu::Device,
@@ -33,7 +48,7 @@ fn texture(
     })
 }
 
-fn presented_pixels(frame: u64, extent: [u32; 2]) -> Vec<u8> {
+fn presented_pixels(frame: u64, extent: [u32; 2], target_extent: [u32; 2]) -> Vec<u8> {
     let (device, queue, _) = crate::native::text_atlas::qualified_test_device();
     let pipelines = presentation_pipelines(&device);
     let source = texture(
@@ -44,7 +59,9 @@ fn presented_pixels(frame: u64, extent: [u32; 2]) -> Vec<u8> {
     );
     queue.write_texture(
         source.as_image_copy(),
-        &SOURCE.repeat((extent[0] * extent[1]) as usize),
+        &(0..extent[1])
+            .flat_map(|y| (0..extent[0]).flat_map(move |x| retained_texel(x, y)))
+            .collect::<Vec<_>>(),
         wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(extent[0] * 4),
@@ -65,13 +82,13 @@ fn presented_pixels(frame: u64, extent: [u32; 2]) -> Vec<u8> {
         &device,
         crate::native::graphics::qualified_surface_format(),
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-        extent,
+        target_extent,
     );
     let target_view = target.create_view(&wgpu::TextureViewDescriptor::default());
     let stamp = stamp_transfer(&device, &queue, &pipelines.transfer, frame);
     let readback = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("worth-ui-stamp-test-readback"),
-        size: u64::from(ROW_BYTES * extent[1]),
+        size: u64::from(ROW_BYTES * target_extent[1]),
         usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
         mapped_at_creation: false,
     });
@@ -81,7 +98,8 @@ fn presented_pixels(frame: u64, extent: [u32; 2]) -> Vec<u8> {
         &target_view,
         &pipelines.transfer,
         &source_group,
-        Some((&stamp, extent)),
+        extent,
+        Some(&stamp),
     );
     encoder.copy_texture_to_buffer(
         target.as_image_copy(),
@@ -90,7 +108,7 @@ fn presented_pixels(frame: u64, extent: [u32; 2]) -> Vec<u8> {
             layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(ROW_BYTES),
-                rows_per_image: Some(extent[1]),
+                rows_per_image: Some(target_extent[1]),
             },
         },
         target.size(),
@@ -119,12 +137,14 @@ fn pixel(bytes: &[u8], x: u32, y: u32) -> [u8; 4] {
     ]
 }
 
-fn assert_stamped(frame: u64, extent: [u32; 2]) {
-    let bytes = presented_pixels(frame, extent);
+fn assert_stamped(frame: u64, extent: [u32; 2], target_extent: [u32; 2]) {
+    let bytes = presented_pixels(frame, extent, target_extent);
     let texels = stamp_texels(frame);
-    for y in 0..extent[1] {
-        for x in 0..extent[0] {
-            let expected = if x < STAMP_EXTENT[0] && y < STAMP_EXTENT[1] {
+    for y in 0..target_extent[1] {
+        for x in 0..target_extent[0] {
+            let expected = if x >= extent[0] || y >= extent[1] {
+                TRANSPARENT
+            } else if x < STAMP_EXTENT[0] && y < STAMP_EXTENT[1] {
                 let offset = ((y * STAMP_EXTENT[0] + x) * 4) as usize;
                 [
                     texels[offset],
@@ -133,7 +153,7 @@ fn assert_stamped(frame: u64, extent: [u32; 2]) {
                     texels[offset + 3],
                 ]
             } else {
-                SOURCE
+                retained_texel(x, y)
             };
             assert_eq!(pixel(&bytes, x, y), expected, "pixel {x},{y}");
         }
@@ -142,10 +162,15 @@ fn assert_stamped(frame: u64, extent: [u32; 2]) {
 
 #[test]
 fn the_stamp_replaces_only_its_own_pixels_at_the_origin() {
-    assert_stamped(0x2_5a3c, EXTENT);
+    assert_stamped(0x2_5a3c, EXTENT, EXTENT);
 }
 
 #[test]
 fn a_target_smaller_than_the_stamp_shows_the_stamp_clipped() {
-    assert_stamped(0x2_5a3c, NARROW);
+    assert_stamped(0x2_5a3c, NARROW, NARROW);
+}
+
+#[test]
+fn a_larger_swapchain_shows_the_frame_unscaled_and_nothing_beyond_it() {
+    assert_stamped(0x2_5a3c, EXTENT, SWAPCHAIN);
 }

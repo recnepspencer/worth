@@ -35,9 +35,9 @@ impl NodeEntry {
             },
             warm: super::layout::NodeWarmData {
                 direct_invalidation_generation: 1,
-                direct_invalidation_basis: Some(
+                direct_invalidation_basis: Some(std::sync::Arc::new(
                     crate::data::proof::invalidation::source_seed::DirectInvalidationBasis::initial_compute(1),
-                ),
+                )),
                 ..super::layout::NodeWarmData::default()
             },
             cold: None,
@@ -89,15 +89,19 @@ impl NodeEntry {
             .expect("direct invalidation generation overflow");
         let generation = self.warm.direct_invalidation_generation;
         match self.warm.direct_invalidation_basis.as_mut() {
-            Some(basis) => basis.merge_seed(generation, aspect, scopes.iter().cloned()),
+            Some(basis) => std::sync::Arc::make_mut(basis).merge_seed(
+                generation,
+                aspect,
+                scopes.iter().cloned(),
+            ),
             None => {
-                self.warm.direct_invalidation_basis = Some(
+                self.warm.direct_invalidation_basis = Some(std::sync::Arc::new(
                     crate::data::proof::invalidation::source_seed::DirectInvalidationBasis::from_seed(
                         generation,
                         aspect,
                         scopes.iter().cloned(),
                     ),
-                );
+                ));
             }
         }
         self.add_dirty_aspect(aspect);

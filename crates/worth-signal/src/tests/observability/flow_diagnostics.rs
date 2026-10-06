@@ -109,9 +109,11 @@ fn fillet_style_explanation_stays_local_to_the_changed_partition_scope() {
     let summary = explanation.diagnostics_summary(DiagnosticsTier::Development);
     assert!(explanation.causal_links.iter().any(|link| {
         link.source == Some(feature_edit)
-            && link.scope.validation_scope.as_ref().is_some_and(|scope| {
-                scope.partition.0 == "surface" && scope.detail.as_deref() == Some("fillet-band")
-            })
+            && link
+                .scope
+                .validation_scope
+                .as_ref()
+                .is_some_and(|scope| scope.path().segments() == ["surface", "fillet-band"])
     }));
     assert!(!explanation
         .causal_links

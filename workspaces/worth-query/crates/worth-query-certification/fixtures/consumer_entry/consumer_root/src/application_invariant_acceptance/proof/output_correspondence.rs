@@ -8,13 +8,13 @@ use worth_query_host::facade::{
     primary_graph::{
         LineageEventKind, MutationHandlerExecutionDenial, RecordStructuralChange,
         WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitReceipt,
-        WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-        WorthQueryCreateOutput, WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput,
-        WorthQueryRetireOutput, WorthQuerySourceExpectationDenialKind,
+        WorthQueryEntityResolutionDenialKind, WorthQuerySourceExpectationDenialKind,
     },
 };
 use worth_query_topology_entry::{
-    Body, PlanarEditBinding, PlanarQuery, PlanarRead, VertexReplacement, VertexReplacementBinding,
+    PlanarAnchorOutput, PlanarOutputs, PlanarQuery, PlanarRead, VertexReplacement,
+    VertexReplacementAnchorOutput, VertexReplacementCreatedOutput, VertexReplacementOutputs,
+    VertexReplacementRetiredOutput,
 };
 
 use super::{
@@ -55,39 +55,19 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         panic!("a valid vertex replacement must publish its complete ring: {outcome:?}")
     };
     assert_eq!(result.replacement_key, "replacement-b");
-    let correspondence = receipt.output_correspondence();
+    let correspondence = receipt
+        .outputs_of::<VertexReplacementOutputs>()
+        .expect("the replacement commits under the vertex replacement contract");
     let preserved = correspondence
-        .entity(WorthQueryApplicationOutputRole::<
-            VertexReplacementBinding<ConsumerSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        .entity::<VertexReplacementAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
     let created = correspondence
-        .entity(WorthQueryApplicationOutputRole::<
-            VertexReplacementBinding<ConsumerSchema>,
-            Body,
-            WorthQueryCreateOutput,
-        >::from_static("replacement"))
+        .entity::<VertexReplacementCreatedOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
-    assert_eq!(
-        correspondence
-            .entity(WorthQueryApplicationOutputRole::<
-                VertexReplacementBinding<ConsumerSchema>,
-                (),
-                WorthQueryCreateOutput,
-            >::from_static("replacement"))
-            .err(),
-        Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
-    );
     let deleted = correspondence
-        .entity(WorthQueryApplicationOutputRole::<
-            VertexReplacementBinding<ConsumerSchema>,
-            Body,
-            WorthQueryRetireOutput,
-        >::from_static("retired"))
+        .entity::<VertexReplacementRetiredOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id();
     assert_eq!(preserved, anchor);
@@ -256,12 +236,9 @@ fn preserved_identity(
         panic!("the identity observation must come from a real selected command: {outcome:?}")
     };
     receipt
-        .output_correspondence()
-        .entity(WorthQueryApplicationOutputRole::<
-            PlanarEditBinding<ConsumerSchema>,
-            Body,
-            WorthQueryPreserveOutput,
-        >::from_static("anchor"))
+        .outputs_of::<PlanarOutputs>()
+        .expect("the adjustment commits under the planar contract")
+        .entity::<PlanarAnchorOutput<ConsumerSchema>>()
         .unwrap()
         .entity_id()
 }

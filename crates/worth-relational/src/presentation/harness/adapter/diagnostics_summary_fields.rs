@@ -1,4 +1,3 @@
-use crate::config::data::RelationalExecutionModel;
 use crate::performance::data::RuntimeComplexityCounters;
 use crate::publication::data::PublicationDiagnosticsSnapshot;
 
@@ -12,13 +11,11 @@ use super::terminal_harness_summary_projection::{
 
 pub(super) fn diagnostics_summary(
     execution_mode: worth_harness::facade::ExecutionMode,
-    runtime_execution_model: RelationalExecutionModel,
     performance_counters: RuntimeComplexityCounters,
     publication_diagnostics: PublicationDiagnosticsSnapshot,
 ) -> TerminalHarnessSummaryProjection {
     DiagnosticsSummary::new(
         execution_mode,
-        runtime_execution_model,
         performance_counters,
         publication_diagnostics,
     )
@@ -27,7 +24,6 @@ pub(super) fn diagnostics_summary(
 
 struct DiagnosticsSummary {
     execution_mode: worth_harness::facade::ExecutionMode,
-    runtime_execution_model: RelationalExecutionModel,
     performance_counters: PerformanceCounterSummary,
     publication_diagnostics: PublicationDiagnosticSummary,
 }
@@ -35,13 +31,11 @@ struct DiagnosticsSummary {
 impl DiagnosticsSummary {
     fn new(
         execution_mode: worth_harness::facade::ExecutionMode,
-        runtime_execution_model: RelationalExecutionModel,
         performance_counters: RuntimeComplexityCounters,
         publication_diagnostics: PublicationDiagnosticsSnapshot,
     ) -> Self {
         Self {
             execution_mode,
-            runtime_execution_model,
             performance_counters: PerformanceCounterSummary::from_counters(performance_counters),
             publication_diagnostics: PublicationDiagnosticSummary::from_snapshot(
                 publication_diagnostics,
@@ -54,13 +48,6 @@ impl DiagnosticsSummary {
             (
                 "execution_mode",
                 terminal_harness_summary_projection_string(format!("{:?}", self.execution_mode)),
-            ),
-            (
-                "runtime_execution_model",
-                terminal_harness_summary_projection_string(format!(
-                    "{:?}",
-                    self.runtime_execution_model
-                )),
             ),
             (
                 "performance_counters",

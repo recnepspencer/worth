@@ -69,12 +69,16 @@ fn transaction_partition_invalidations_union_dirty_scopes_until_runtime_evaluati
         runtime.graph().get_state(dependent).unwrap(),
         dependent_before
     );
-    assert!(scopes
-        .iter()
-        .any(|(_, scope)| scope.detail.as_deref() == Some("rib-12")));
-    assert!(scopes
-        .iter()
-        .any(|(_, scope)| scope.detail.as_deref() == Some("rib-13")));
+    assert!(scopes.iter().any(|(_, scope)| scope
+        .path()
+        .segments()
+        .get(1)
+        .is_some_and(|part| part == "rib-12")));
+    assert!(scopes.iter().any(|(_, scope)| scope
+        .path()
+        .segments()
+        .get(1)
+        .is_some_and(|part| part == "rib-13")));
 }
 
 #[test]

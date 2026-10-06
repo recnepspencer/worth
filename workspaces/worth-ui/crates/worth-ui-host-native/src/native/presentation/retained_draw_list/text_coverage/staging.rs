@@ -106,6 +106,7 @@ pub(super) fn stage_text_coverage_changes(
         }
         for identity in &changes.replacements {
             let candidate = candidate_for(candidates, identity)?;
+            record_staged(candidate);
             undo.push(
                 appearance
                     .stage_text_replace(candidate.clone(), atlas)
@@ -120,6 +121,7 @@ pub(super) fn stage_text_coverage_changes(
             let identity = text_identity(value);
             if changes.inserts.contains(&identity) {
                 let candidate = candidate_for(candidates, &identity)?;
+                record_staged(candidate);
                 let (key, insertion) = appearance
                     .stage_text_insert(candidate.clone(), atlas, predecessor)
                     .map_err(|_| Denial::CommandMismatch)?;
@@ -155,6 +157,14 @@ fn candidate_for<'a>(
         .iter()
         .find(|candidate| text_identity(candidate.mechanic()) == *identity)
         .ok_or(Denial::CommandMismatch)
+}
+
+/// Counts a staged candidate's glyphs as coverage work.
+fn record_staged(candidate: &UiNativeFinalizedTextForeground) {
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::CoverageStaging,
+        candidate.glyphs().len(),
+    );
 }
 
 fn text_identity(

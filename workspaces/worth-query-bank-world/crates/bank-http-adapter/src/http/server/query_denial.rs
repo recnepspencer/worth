@@ -2,9 +2,11 @@ use bank_server::{
     BankApplicationOneShotDenialKind, BankApplicationOutputSettlementDenialKind,
     BankApplicationProjectionDenialKind, BankApplicationQueryAdmissionDenialKind,
     BankApplicationQueryDenial, BankApplicationQueryParameterDenialKind,
-    BankAuthorizationDenialKind, BankEntityResolutionDenialKind, BankGraphReadPlanReviewDenialKind,
+    BankEntityResolutionDenialKind, BankGraphReadPlanReviewDenialKind,
     BankProductSelectionDenialKind,
 };
+
+use super::authorization_denial::authorization_denial;
 
 use super::super::protocol::{
     BankHttpDenial, BankHttpDenialKind as Kind, BankHttpNextAction as Next,
@@ -24,7 +26,9 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::Limit(_) => exhausted(),
         BankApplicationQueryDenial::ProductSelection(kind) => product_selection(kind),
         BankApplicationQueryDenial::HistoricalCommitUnavailable => stale(),
-        BankApplicationQueryDenial::CapabilityAdmission(denial) => authorization(denial.kind()),
+        BankApplicationQueryDenial::CapabilityAdmission(denial) => {
+            authorization_denial(denial.kind())
+        }
         BankApplicationQueryDenial::ScopeResolution(denial) => entity(denial.kind()),
         BankApplicationQueryDenial::Admission(denial) => admission(denial.kind()),
         BankApplicationQueryDenial::Execution(denial) => execution(denial.kind()),
@@ -55,6 +59,7 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::Retry)
         }
         Selection::ObservationIdentityExhausted
+        | Selection::ObservationAccountingOverflow
         | Selection::RetentionIdentityExhausted
         | Selection::SnapshotIdentityExhausted => {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::ContactOperator)
@@ -65,7 +70,7 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
 fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
     use BankApplicationQueryAdmissionDenialKind as Admission;
     match kind {
-        Admission::Authorization(kind) => authorization(kind),
+        Admission::Authorization(kind) => authorization_denial(kind),
         Admission::Cancelled => cancelled(),
         Admission::DeadlineExceeded => deadline(),
         Admission::StalePrincipal
@@ -112,7 +117,7 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
 fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
     use BankApplicationOneShotDenialKind as Execution;
     match kind {
-        Execution::Authorization(kind) => authorization(kind),
+        Execution::Authorization(kind) => authorization_denial(kind),
         Execution::Cancelled => cancelled(),
         Execution::DeadlineExceeded => deadline(),
         Execution::StaleInstalledQuery | Execution::StalePrincipal | Execution::StaleScope => {
@@ -173,6 +178,7 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
         Entity::UnknownEntity => BankHttpDenial::new(Kind::NotFound, Next::CorrectRequest),
         Entity::ValueEncodingRejected => malformed(),
         Entity::ProjectionWorkBudgetExceeded
+        | Entity::ProjectionPreparationMemoryExhausted
         | Entity::ActiveSnapshotCapacityExhausted { .. }
         | Entity::SnapshotIdentityExhausted
         | Entity::RetentionCapacityExhausted
@@ -181,79 +187,24 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
         Entity::PrimaryGraphNotInstalled
         | Entity::FieldNotInstalled
         | Entity::EqualityIndexUnavailable => unavailable(),
-        Entity::AmbiguousEntity | Entity::CorruptIdentityIndex => internal_denied(),
-    }
-}
-
-fn authorization(kind: BankAuthorizationDenialKind) -> BankHttpDenial {
-    use BankAuthorizationDenialKind as Authorization;
-    match kind {
-        Authorization::Cancelled => cancelled(),
-        Authorization::DeadlineExceeded => deadline(),
-        Authorization::ExpiredAuthentication => {
-            BankHttpDenial::new(Kind::Unauthenticated, Next::Authenticate)
-        }
-        Authorization::StaleInstalledSchema
-        | Authorization::StaleInstalledOperation
-        | Authorization::StalePrincipal
-        | Authorization::StaleScope
-        | Authorization::StaleAuthorization
-        | Authorization::DelegationLineageChanged => stale(),
-        Authorization::CanonicalWorkDenied
-        | Authorization::GrantSelectionLimitExceeded
-        | Authorization::ActiveSnapshotCapacityExhausted { .. }
-        | Authorization::SnapshotIdentityExhausted
-        | Authorization::RetentionCapacityExhausted
-        | Authorization::RetentionIdentityExhausted => exhausted(),
-        Authorization::InvalidOperationInput => malformed(),
-        Authorization::ForeignRuntime
-        | Authorization::MutationPreconditionRejected
-        | Authorization::CapabilityGrantMissing
-        | Authorization::CapabilityAuthorizationMissing
-        | Authorization::PurposeMismatch
-        | Authorization::ExplicitDenyRuleMatched
-        | Authorization::ConflictRuleMatched
-        | Authorization::SeparationOfDutyRuleMatched
-        | Authorization::DistinctActorRuleMatched
-        | Authorization::CapabilityRequired
-        | Authorization::CapabilityNotRequired
-        | Authorization::CapabilityExpired
-        | Authorization::ElevationRequired
-        | Authorization::ElevationNotApplicable
-        | Authorization::ElevationExpired
-        | Authorization::ElevationInactive
-        | Authorization::ElevationSelfApproval
-        | Authorization::ElevationApproverConflict
-        | Authorization::ElevationTransitionRequired
-        | Authorization::ElevationLifecycleRoleMismatch
-        | Authorization::ElevationRequestRejected
-        | Authorization::ElevationApprovalRejected
-        | Authorization::ElevationCloseRejected
-        | Authorization::MandatoryReviewRejected
-        | Authorization::ElevationDurationExceeded
-        | Authorization::DelegationRejected
-        | Authorization::DelegationTransitionRequired
-        | Authorization::DelegationDepthExceeded
-        | Authorization::DelegationCycle
-        | Authorization::ScopeMismatch
-        | Authorization::ProductSecurityBasis(_)
-        | Authorization::PermissionDenied => permission_denied(),
-        Authorization::TrustedTimeUnavailable
-        | Authorization::GraphWorkAdmissionUnavailable
-        | Authorization::PolicyNotInstalled => unavailable(),
-        Authorization::CapabilityProjectionRejected
-        | Authorization::ElevationProjectionRejected
-        | Authorization::AdmissionIdentityExhausted
-        | Authorization::InvalidInstalledPolicy
-        | Authorization::RelationalObservationRejected
-        | Authorization::BridgeEvaluationRejected
-        | Authorization::InconsistentDecision => internal_denied(),
+        // The server's own handler sets a selection's candidate limit, so no
+        // retry and no client correction can pass either refusal.
+        Entity::AmbiguousEntity
+        | Entity::CorruptIdentityIndex
+        | Entity::InvalidCandidateLimit
+        | Entity::CandidateLimitExceeded { .. } => internal_denied(),
     }
 }
 
 fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::SourceQueryInstallation(_) => unavailable(),
+        Settlement::SourcePrincipal(_) => stale(),
+        Settlement::SourceScope(kind) => entity(kind),
+        Settlement::SourceQueryAdmission(kind) => admission(kind),
+        Settlement::SourceQueryExecution(kind) => execution(kind),
+        Settlement::RequestAuthorization(kind) => authorization_denial(kind),
         Settlement::Cancelled => cancelled(),
         Settlement::TimedOut => deadline(),
         Settlement::Superseded

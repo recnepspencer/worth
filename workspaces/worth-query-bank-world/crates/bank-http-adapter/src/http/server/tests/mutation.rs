@@ -2,13 +2,35 @@ use std::sync::Arc;
 
 use bank_domain::model::{AccountId, InstitutionId};
 
+use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind;
+
 use super::super::super::protocol::{
     BankHttpAccountActivityItem, BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome,
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpDenialKind,
-    BankHttpMutationOutcome, BankHttpMutationRequest, BankHttpPostingPurpose,
+    BankHttpMutationFailureKind, BankHttpMutationOutcome, BankHttpMutationRequest,
+    BankHttpNextAction, BankHttpPostingPurpose,
 };
+use super::super::mutation_application::commit_denial;
 use super::fixture::application;
 use super::{bind_application, controls_json, credential_json, BankHttpServerConfiguration};
+
+#[test]
+fn an_expired_idempotency_window_never_reads_as_an_aborted_request() {
+    let (failure, denial) =
+        commit_denial(WorthQueryApplicationCommitDenialKind::IdempotencyWindowExpired);
+    assert_eq!(
+        failure,
+        BankHttpMutationFailureKind::IdempotencyWindowExpired
+    );
+    assert_eq!(
+        (denial.kind, denial.next_action),
+        (BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
+    );
+    assert_eq!(
+        serde_json::to_value(failure).unwrap(),
+        "idempotency_window_expired"
+    );
+}
 
 #[tokio::test]
 async fn malformed_json_returns_a_typed_denial() {
@@ -21,7 +43,7 @@ async fn malformed_json_returns_a_typed_denial() {
     let outcome = post_mutation(
         &reqwest::Client::new(),
         &format!("http://{}/v1/mutations", server.local_address()),
-        &serde_json::json!({ "protocol": "v1", "request_id": 42 }),
+        &serde_json::json!({ "protocol": "v3", "request_id": 42 }),
     )
     .await;
     assert!(matches!(
@@ -105,7 +127,7 @@ async fn response_loss_reuses_domain_idempotency_without_duplicate_effect() {
 
 fn deposit_request(institution: InstitutionId, account: AccountId) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v1",
+        "protocol": "v3",
         "request_id": "deposit-response-loss",
         "credential": credential_json(),
         "controls": { "deadline_milliseconds": 5_000 },
@@ -142,7 +164,7 @@ async fn account_activity(
     let outcome = client
         .post(format!("http://{address}/v1/queries/account-activity/page"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": request_id,
             "credential": credential_json(),
             "controls": controls_json(16),
@@ -173,7 +195,7 @@ async fn assert_summary_balance(
     let summary = client
         .post(format!("http://{address}/v1/queries/account-summary"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": "summary-after-deposit",
             "credential": credential_json(),
             "controls": controls_json(1),

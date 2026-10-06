@@ -72,6 +72,30 @@ The main owners remain separate:
 - Query owns application installation, admission, progression, and publication;
 - the host supplies adapters and resources but does not reinterpret decisions.
 
+## Preparing a program action before publication
+
+A keyed mutation request may call `prepare_in_program(&runtime)` when its
+installed candidate must wait before publication. Match
+`WorthQueryApplicationProgramMutationPreparation`: `Prepared` carries a sealed
+`WorthQueryPreparedProgramMutation`; `Settled` carries an ordinary replay,
+domain denial, cancellation, or deadline outcome without a new result.
+
+Preparation performs the same admission, source binding, idempotency check,
+tracked decision and candidate construction as `execute_in_program`. It retains
+the native read set and exact branch-selected program owner, holds no commit
+lane, applies no effects and registers no idempotency outcome. The request is
+borrowed until the handle is consumed or dropped. Its one-shot source and
+preconditions are consumed once: preparing that same request again returns
+`PreparationSpent`; build a fresh request with the same key for a real retry.
+
+Call `candidate.commit()` to compare and publish. The result is inaccessible
+before an accepted new commit. Drop discards it; stale basis, revoked authority,
+changed program, cancellation, deadline and duplicate replay never release it.
+Any intervening same-branch commit conservatively rejects the prepared basis,
+including an unrelated edit. This surface does not claim precise reuse across
+unrelated changes, detached result authority, durable queued work, or effect
+recovery. Those use their existing source, workflow, and publication owners.
+
 ## How It Executes
 
 The ordinary request path is:
@@ -132,16 +156,36 @@ neighbors under a separate work bound. Invalid candidates cannot publish.
 Handlers use tracked typed field and relation reads through `DecisionReader` and
 build the one reserved effect program through `CandidateWriter`'s create,
 initialize, write, link, unlink, delete, emit, and output-role operations.
+Complete equality selections use `select_entities` with a finite candidate
+limit; empty selections remain dependencies and overflow denies publication.
+Query application checkpoint version 7 preserves these predicate facts with
+bounded scalar values and sorted unique membership. Versions 3–6 remain
+readable. These facts compare against the exact selected branch index after
+restore; a missing or overflowing index result cannot authorize output reuse.
 Invariant factories resolve typed field and relation bindings once and evaluate
 the actual proposed overlay and committed before-image inside a declared prepared
 scope and finite work budget.
 
-Regenerating handlers declare variable semantic roles through
-`ApplicationMutationOutputContract::ROLE_FAMILIES` and read a prior family with
+Fixed output roles are marker types. Each role's
+`WorthQueryApplicationOutputRole` impl declares its contract, entity marker,
+action, cardinality and name, and the contract lists the derived `DESCRIPTOR`
+in `ROLES`, so the handler writes and every reader reads through the
+declaration itself. A role use that disagrees with its contract fails to
+compile. An exactly-one role must be bound; leaving it unbound is
+`MissingOutputRole`. Any second binding is `DuplicateOutputRole`, and an unbound
+at-most-one role commits without that output. Reading an at-most-one role
+through `entity::<Role>()`, `DecisionReader::prior_output` or generated-output
+reconstruction returns `Option`, so absence is a value rather than a denial. An
+exactly-one role keeps those reads total.
+
+Regenerating handlers declare variable semantic roles as a
+`WorthQueryApplicationOutputRoleFamily` marker listed in
+`ApplicationMutationOutputContract::ROLE_FAMILIES`, bind members with
+`create_member`, `preserve_member` and `retire_member`, and read a prior family with
 `DecisionReader::prior_output_family`. Query returns live members in deterministic
 role order from the selected branch occurrence and product generation. The
-resulting typed identities are normal tracked decision reads; undeclared families,
-wrong entity markers, stale correspondence and exhausted work fail through
+resulting typed identities are normal tracked decision reads. An undeclared
+family fails to compile; stale correspondence and exhausted work fail through
 `WorthQueryPriorOutputDenial`.
 Handlers shared by initial publication and regeneration use
 `DecisionReader::prior_output_family_if_present`. It returns `None` only when the
@@ -149,12 +193,15 @@ exact prior binding has no correspondence at the selected occurrence and
 generation. Declaration, identity, visibility, consistency, and work failures
 remain denials.
 
-Committed receipts expose `output_correspondence()` for preserve/create/retire
+Committed receipts expose `outputs_of::<Contract>()` for preserve/create/retire
 roles and `committed_changes()` for immutable structural and lineage
-observations from the same commit. Projecting `entity(role)` requires the exact
-binding, role name, action, and entity marker; substituting the entity marker
-returns `WorthQueryApplicationOutputProjectionDenial::EntityMismatch` even when
-the other three match. These observations carry no new execution authority.
+observations from the same commit. `outputs_of` checks once that the commit was
+made under `Contract`, refusing another contract with
+`WorthQueryApplicationOutputProjectionDenial::ForeignContract`. Projecting
+`entity::<Role>()` on the returned view names the role's marker, so its name,
+action and entity marker come from the declaration, and a role of another
+contract fails to compile. These
+observations carry no new execution authority.
 The [public replacement proof](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/output_correspondence.rs)
 checks projection, readback, rejected-candidate isolation, and idempotent recovery.
 
@@ -254,6 +301,17 @@ any commit, even after the branch adopts another program. If the branch's
 program removed the action, the lane returns the inactive-program denial and
 cannot commit the removed action.
 
+A key records its intent durably, and that intent names no runtime, so the same
+request matches it before and after a restore or reopen, and a changed request
+under the key is still `IdempotencyIntentDrift`. The recorded receipt is not
+durable. An ordinary request retry whose receipt is no longer retained answers
+`PreviouslyCommitted(observation)`, naming the original `commit_id()` and
+committing nothing. It carries no live receipt or handler result; read current
+state under fresh authorization before further work. Lower surfaces that
+require a live receipt retain `CommittedReceiptNotRetained { commit }`.
+A record from an earlier intent encoding that cannot be checked against the
+request answers `RecordedIntentUnverifiable`, never drift.
+
 A host integration that already owns an admitted change can use the advanced
 product-transaction lane instead of a request lane. It is not the ordinary path:
 
@@ -327,7 +385,10 @@ owner already performed.
 
 Every commit either landed or did not. The request lanes already report that
 split: `WorthQueryApplicationMutationOutcome::Committed { receipt, result }` and
-`AlreadyCommitted(receipt)` carry the canonical product receipt, and every
+`AlreadyCommitted(receipt)` carry the canonical product receipt.
+`PreviouslyCommitted(observation)` proves an earlier commit with the same
+durable intent when its live receipt is unavailable; it grants no performed
+mutation, publication, or workflow settlement authority. Every
 commit terminal that did not land arrives as
 `WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted)`.
 
@@ -434,9 +495,13 @@ than translating every transport success or failure into a business result:
 #     application_entry::{
 #         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
 #     },
-#     primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted},
+#     primary_graph::{
+#         WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
+#         WorthQueryHistoricalApplicationCommit,
+#     },
 # };
 # fn publish(_: WorthQueryApplicationCommitReceipt) {}
+# fn refresh_current_state(_: WorthQueryHistoricalApplicationCommit) {}
 # fn inspect_uncommitted(_: WorthQueryApplicationUncommitted) {}
 # fn explain_domain(_: BankProposalDenial) {}
 # fn explain_request(_: WorthQueryApplicationRequestMutationDenial) {}
@@ -460,6 +525,9 @@ let outcome = bank
 match outcome {
     Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. })
     | Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => publish(receipt),
+    Ok(WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation)) => {
+        refresh_current_state(observation)
+    }
     Ok(WorthQueryApplicationMutationOutcome::Commit(uncommitted)) => inspect_uncommitted(uncommitted),
     Ok(WorthQueryApplicationMutationOutcome::DomainDenied(reason)) => explain_domain(reason),
     Err(reason) => explain_request(reason),
@@ -566,8 +634,10 @@ hardware; an absolute seconds threshold is not a portable Query contract.
   through typed proposal, approval, and progress outcomes. The
   [authored workflow example](../../../worth-query-certification/examples/authored_workflow/main.rs)
   runs that journey end to end, and the [workflows guide](workflows.md)
-  documents every step, outcome, and denial. The workflow surface exposes no
-  callback, resume-message, or inbound-completion API.
+  documents every step, outcome, and denial. An installed inbound source may
+  complete the exact owner of a preceding external-effect operation. The
+  `await_inbound` node waits for that owner result; a fresh caller request
+  advances the workflow. Callback bytes do not resume an instance.
 - Historical, preview, continuation, and live lanes are available only for an
   installed query whose declared support and current admission allow that lane.
 - Conditional providers and managed clocks are stable on the primary-graph

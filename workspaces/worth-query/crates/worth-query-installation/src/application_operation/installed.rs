@@ -19,7 +19,8 @@ use worth_query_declaration::facade::application_schema::{
 
 use super::contract_resolution::ability_requirements;
 use super::installed_contract_support::{
-    authority_identity, graph_obligation_denial, operation_capability_requirements,
+    authority_identity, definition_identity, graph_obligation_denial,
+    operation_capability_requirements,
 };
 use super::operation_declaration_resolution::{
     resolve_operation_declaration, ResolvedApplicationOperationDeclaration,
@@ -80,7 +81,7 @@ pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
     schema_name: String,
     operation: String,
     input_type: String,
-    contracts: WorthQueryCompiledApplicationOperationContracts,
+    contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     native_contracts:
         Arc<crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog>,
     portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
@@ -88,6 +89,7 @@ pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
     mutation_bindings: Arc<Vec<worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor>>,
     obligations: WorthQueryInstalledGraphObligationSet,
     authority_identity: AuthoritySeal,
+    definition_identity: [u8; 32],
     _marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -258,19 +260,21 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             input_type,
             obligations.identity(),
         );
+        let definition_identity = definition_identity(&binding_identity, operation, input_type)?;
         Ok(Self {
             binding_identity,
             owner: schema.owner().to_string(),
             schema_name: schema.schema_name().to_string(),
             operation: operation.to_string(),
             input_type: input_type.to_string(),
-            contracts,
+            contracts: Arc::new(contracts),
             native_contracts: schema.retain_native_contracts(),
             portable_native_contracts: Arc::new(schema.portable_native_contracts().to_vec()),
             portable_contract: portable_contract.clone(),
             mutation_bindings: Arc::new(schema.member_provenance.mutation_bindings().to_vec()),
             obligations,
             authority_identity,
+            definition_identity,
             _marker: PhantomData,
         })
     }
@@ -295,11 +299,30 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
         &self.contracts
     }
 
+    /// Retains the one cold-compiled immutable contract object for an admitted
+    /// operation. This does not recompile or revalidate its installed meaning.
+    #[doc(hidden)]
+    pub fn retain_compiled_contracts_for_admission(
+        &self,
+    ) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
+        Arc::clone(&self.contracts)
+    }
+
+    /// Funds the shallow Arc retain before an admitted operation takes custody.
+    #[doc(hidden)]
+    pub fn retain_compiled_contracts_admitted<E>(
+        &self,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Arc<WorthQueryCompiledApplicationOperationContracts>, E> {
+        prepare(2, 0)?;
+        Ok(Arc::clone(&self.contracts))
+    }
+
     pub fn input_type(&self) -> &str {
         &self.input_type
     }
 
-    pub const fn execution_posture(
+    pub fn execution_posture(
         &self,
     ) -> super::WorthQueryInstalledApplicationOperationExecutionPosture {
         self.contracts.execution_posture()
@@ -312,6 +335,15 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     #[doc(hidden)]
     pub fn authority_identity_bytes(&self) -> [u8; 32] {
         *self.authority_identity.bytes()
+    }
+
+    /// The identity of this operation's definition, the same in every runtime
+    /// that installs the same package. Idempotency intents bind it, so a key
+    /// committed before a restore or reopen still matches the same request
+    /// after it.
+    #[doc(hidden)]
+    pub const fn definition_identity_bytes(&self) -> [u8; 32] {
+        self.definition_identity
     }
 
     pub const fn graph_obligations(&self) -> WorthQueryInstalledGraphObligationInspection<'_> {

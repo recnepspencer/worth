@@ -1,28 +1,40 @@
 use super::{
-    line_fitting::{self, LinePlan},
+    line_fitting::{self, FitWidths, LinePlan},
     units::{self, LayoutUnit, UnitKind},
     UiTextLayoutDenial,
 };
 use crate::UiShapedTextParagraph;
 
-pub(super) fn fit(
-    shaped: &mut UiShapedTextParagraph,
-) -> Result<(Vec<LayoutUnit>, Vec<LinePlan>), UiTextLayoutDenial> {
+pub(super) struct FittedLines {
+    pub(super) units: Vec<LayoutUnit>,
+    pub(super) plans: Vec<LinePlan>,
+    /// The widths every fit on the way to `plans` compared, met together:
+    /// any of them reaches the same reshaping and the same lines.
+    pub(super) widths: FitWidths,
+}
+
+pub(super) fn fit(shaped: &mut UiShapedTextParagraph) -> Result<FittedLines, UiTextLayoutDenial> {
     let mut applied = Vec::<u32>::new();
     let mut previous_plans = Vec::<Vec<u32>>::new();
+    let mut widths = FitWidths::default();
     loop {
         let units = units::build(shaped);
-        let plans = line_fitting::fit(shaped, &units);
+        let (plans, fit_widths) = line_fitting::fit(shaped, &units);
+        widths = widths.meet(fit_widths);
         let boundaries = contextual_boundaries(shaped, &units, &plans);
         if boundaries == applied {
-            return Ok((units, plans));
+            return Ok(FittedLines {
+                units,
+                plans,
+                widths,
+            });
         }
         if previous_plans
             .iter()
             .any(|previous| previous == &boundaries)
             || previous_plans.len() >= shaped.constraints().maximum_lines() as usize
         {
-            return freeze_current_plan(shaped, &units, &plans, &boundaries);
+            return freeze_current_plan(shaped, &units, &plans, &boundaries, widths);
         }
         previous_plans.push(boundaries.clone());
         shaped
@@ -37,7 +49,8 @@ fn freeze_current_plan(
     units: &[LayoutUnit],
     plans: &[LinePlan],
     boundaries: &[u32],
-) -> Result<(Vec<LayoutUnit>, Vec<LinePlan>), UiTextLayoutDenial> {
+    mut widths: FitWidths,
+) -> Result<FittedLines, UiTextLayoutDenial> {
     let frozen = plans
         .iter()
         .map(|plan| {
@@ -70,6 +83,7 @@ fn freeze_current_plan(
                 .position(|unit| unit.original_range.end() >= end)
                 .map_or(units.len(), |index| index + usize::from(end > start));
             let width = line_fitting::measure(shaped, &units[unit_start..unit_end]);
+            widths.hold(width);
             LinePlan {
                 unit_start,
                 unit_end,
@@ -79,7 +93,11 @@ fn freeze_current_plan(
             }
         })
         .collect();
-    Ok((units, plans))
+    Ok(FittedLines {
+        units,
+        plans,
+        widths,
+    })
 }
 
 fn contextual_boundaries(

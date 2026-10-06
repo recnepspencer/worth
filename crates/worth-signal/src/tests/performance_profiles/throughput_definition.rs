@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::facade::{SignalRuntimePolicy, StageExecutor};
+use crate::facade::SignalRuntimePolicy;
 use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, FinancialWorldDefinition,
 };
@@ -48,16 +48,8 @@ impl PerformancePacketContext {
             thread_count: std::thread::available_parallelism()
                 .map(|count| count.get())
                 .unwrap_or(1),
-            thread_posture: if cfg!(feature = "parallel") {
-                "rayon-production-dispatch"
-            } else {
-                "serial-production-dispatch"
-            },
-            feature_posture: if cfg!(feature = "parallel") {
-                "parallel"
-            } else {
-                "default"
-            },
+            thread_posture: "host-lease-automatic-four-workers",
+            feature_posture: "default-shared-execution",
         }
     }
 }
@@ -171,7 +163,7 @@ pub(super) fn operational_digest_for(
     let report = world
         .run_locality_performance_sequence(
             batches,
-            performance_executor(),
+            performance_workers(),
             profile.explicit_observation,
         )
         .expect("throughput digest sequence settles");
@@ -230,12 +222,7 @@ pub(crate) fn assert_within_throughput_budget(started: Instant, label: &str) {
     );
 }
 
-#[cfg(feature = "parallel")]
-pub(super) fn performance_executor() -> StageExecutor {
-    StageExecutor::balanced_parallel()
-}
-
-#[cfg(not(feature = "parallel"))]
-pub(super) fn performance_executor() -> StageExecutor {
-    StageExecutor::Serial
+/// Requested placement; physical dispatch is read from the actual authority report.
+pub(super) fn performance_workers() -> usize {
+    4
 }

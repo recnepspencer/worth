@@ -9,11 +9,16 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::WorthQueryApplicationObservedFact;
 
+mod canonical_digest;
+mod indexed_selection;
 mod workflow_fact;
+use canonical_digest::derive_identity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-producer-dependencies");
 const RULE_VERSION: &str = "worth-query-application-producer-dependencies-v1";
+const INDEX_GUARD_RULE_VERSION: &str =
+    "worth-query-application-producer-dependencies-v2-index-definition";
 const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v1";
 const MAXIMUM_LINEAGE_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
 
@@ -45,7 +50,17 @@ pub(super) fn dependency_identity(
         );
         append_fact(&mut entries, &prefix, fact);
     }
-    derive_identity(RULE_VERSION, entries, maximum_canonical_bytes)
+    let rule = if facts.iter().any(|fact| {
+        matches!(
+            fact,
+            WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
+        )
+    }) {
+        INDEX_GUARD_RULE_VERSION
+    } else {
+        RULE_VERSION
+    };
+    derive_identity(rule, entries, maximum_canonical_bytes)
 }
 
 pub(super) fn lineage_identity(
@@ -74,36 +89,30 @@ pub(super) fn lineage_identity(
     )
 }
 
-fn derive_identity(
-    rule_version: &str,
-    entries: Vec<CanonicalBasisEntry>,
-    maximum_canonical_bytes: usize,
-) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
-    let version = CanonicalizationRuleVersion::new(rule_version).ok_or(())?;
-    let maximum_entries = u32::try_from(entries.len()).map_err(|_| ())?;
-    let budget =
-        CanonicalDigestWorkBudget::new(maximum_entries, maximum_canonical_bytes).ok_or(())?;
-    let basis = prepare_canonical_basis_sequence(version, DOMAIN, entries)
-        .into_result()
-        .map_err(|_| ())?;
-    let ready = canonicalization()
-        .digest()
-        .for_sequence_with_budget(basis, CanonicalDigestAlgorithmId::sha256(), budget)
-        .into_result()
-        .map_err(|_| ())?;
-    let derived = canonicalization().digest().derive(ready);
-    Ok((
-        *derived.value().bytes(),
-        WorthQueryCanonicalWorkEvidence::one_digest(derived.metadata().work()),
-    ))
-}
-
 fn append_fact(
     entries: &mut Vec<CanonicalBasisEntry>,
     prefix: &str,
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::RetiredOutputEntity {
+            entity_id,
+            kind: entity_kind,
+            created_at,
+            deleted_at,
+            ..
+        } => {
+            kind(entries, prefix, "retired-output-entity");
+            entity(entries, prefix, "entity", *entity_id);
+            number_u64(
+                entries,
+                prefix,
+                "entity-kind",
+                u64::from(entity_kind.as_u32()),
+            );
+            number_u64(entries, prefix, "created-at", created_at.as_u64());
+            number_u64(entries, prefix, "deleted-at", deleted_at.as_u64());
+        }
         WorthQueryApplicationObservedFact::SourceEntity { .. } => {
             kind(entries, prefix, "source-entity")
         }
@@ -226,28 +235,8 @@ fn append_fact(
                 );
             }
         }
-        WorthQueryApplicationObservedFact::IndexedEntitySelection {
-            entity_kind,
-            value,
-            candidate_limit,
-            candidates,
-            ..
-        } => {
-            kind(entries, prefix, "indexed-entity-selection");
-            number_u64(
-                entries,
-                prefix,
-                "entity-kind",
-                u64::from(entity_kind.as_u32()),
-            );
-            push(
-                entries,
-                format!("{prefix}.value"),
-                CanonicalBasisEntryKind::Value,
-                canonical_basis_value_for_aspect_value(value),
-            );
-            number(entries, prefix, "candidate-limit", *candidate_limit);
-            entities(entries, prefix, "candidate", candidates);
+        WorthQueryApplicationObservedFact::IndexedEntitySelection { .. } => {
+            indexed_selection::append(entries, prefix, fact)
         }
         WorthQueryApplicationObservedFact::WorkflowDefinitionPredecessor { .. }
         | WorthQueryApplicationObservedFact::WorkflowDefinitionCurrent { .. }

@@ -4,6 +4,8 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow};
 use winit::window::WindowId;
 
 use super::callback_thread;
+use super::loop_control::UiNativeLoopControl;
+use super::resume::UiNativeWindowSource;
 use super::{
     UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEventLoopDirective,
     UiNativeEventLoopRunDenial,
@@ -15,6 +17,41 @@ impl<Client: UiNativeEventLoopClient>
     for UiNativeEventLoopApplication<Client>
 {
     fn new_events(&mut self, event_loop: &ActiveEventLoop, _cause: winit::event::StartCause) {
+        self.on_new_events(event_loop);
+    }
+
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        self.on_resumed(event_loop, UiNativeWindowSource::Platform(event_loop));
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if !event_loop.exiting() && self.owns_window(window_id) {
+            self.on_window_event(event_loop, event);
+        }
+    }
+
+    fn user_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _event: crate::native::readiness::UiNativeApplicationWake,
+    ) {
+        self.on_wake(event_loop);
+    }
+
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        self.on_about_to_wait(event_loop);
+    }
+}
+
+/// The callbacks either pump dispatches: the platform event loop through
+/// [`ApplicationHandler`], or the offscreen pump directly, turn by turn.
+impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
+    pub(super) fn on_new_events(&mut self, event_loop: &dyn UiNativeLoopControl) {
         if event_loop.exiting() {
             return;
         }
@@ -23,7 +60,11 @@ impl<Client: UiNativeEventLoopClient>
         self.progress_due_presentation_retry(event_loop);
     }
 
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn on_resumed(
+        &mut self,
+        event_loop: &dyn UiNativeLoopControl,
+        source: UiNativeWindowSource<'_>,
+    ) {
         if event_loop.exiting() {
             return;
         }
@@ -36,16 +77,16 @@ impl<Client: UiNativeEventLoopClient>
         let Ok(admission) = admission else {
             return self.fail(event_loop, UiNativeEventLoopRunDenial::ApplicationDriver);
         };
-        self.resume_admitted(event_loop, admission);
+        self.resume_admitted(event_loop, source, admission);
     }
 
-    fn window_event(
+    /// Dispatches one event of the window this host owns.
+    pub(super) fn on_window_event(
         &mut self,
-        event_loop: &ActiveEventLoop,
-        window_id: WindowId,
+        event_loop: &dyn UiNativeLoopControl,
         event: WindowEvent,
     ) {
-        if event_loop.exiting() || !self.owns_window(window_id) {
+        if event_loop.exiting() {
             return;
         }
         match event {
@@ -65,11 +106,7 @@ impl<Client: UiNativeEventLoopClient>
         self.watch_deadlines(false);
     }
 
-    fn user_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _event: crate::native::readiness::UiNativeApplicationWake,
-    ) {
+    pub(super) fn on_wake(&mut self, event_loop: &dyn UiNativeLoopControl) {
         if event_loop.exiting() {
             return;
         }
@@ -98,7 +135,7 @@ impl<Client: UiNativeEventLoopClient>
         self.watch_deadlines(true);
     }
 
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn on_about_to_wait(&mut self, event_loop: &dyn UiNativeLoopControl) {
         if event_loop.exiting() {
             return;
         }
@@ -138,7 +175,11 @@ impl<Client: UiNativeEventLoopClient>
 }
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
-    pub(super) fn change_visibility(&mut self, event_loop: &ActiveEventLoop, occluded: bool) {
+    pub(super) fn change_visibility(
+        &mut self,
+        event_loop: &dyn UiNativeLoopControl,
+        occluded: bool,
+    ) {
         let changed = self
             .shared
             .borrow_mut()
@@ -161,7 +202,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     pub(super) fn apply_client_directive(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
         directive: UiNativeEventLoopDirective,
     ) -> bool {
         if matches!(directive, UiNativeEventLoopDirective::Close) {
@@ -193,6 +234,6 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             .borrow()
             .window
             .as_ref()
-            .is_some_and(|window| window.id() == window_id)
+            .is_some_and(|window| window.id() == Some(window_id))
     }
 }

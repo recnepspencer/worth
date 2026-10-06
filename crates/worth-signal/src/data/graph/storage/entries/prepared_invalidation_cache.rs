@@ -13,7 +13,7 @@ type Scopes =
 pub(crate) struct PreparedInvalidationCache {
     dirty: AspectMask,
     scoped: AspectMask,
-    scopes: Scopes,
+    scopes: Vec<(Aspect, PartitionSubscription)>,
 }
 impl PreparedInvalidationCache {
     pub(in crate::data::graph) fn install_payload(
@@ -21,14 +21,14 @@ impl PreparedInvalidationCache {
         hot: &mut crate::data::node::NodeHotData,
         warm: &mut crate::data::node::NodeWarmData,
     ) {
-        warm.dirty_partition_scope_payload = self.scopes;
+        warm.dirty_partition_scope_payload = Scopes::from_vec(self.scopes);
         hot.dirty_aspects = self.dirty;
         hot.dirty_partition_scope_aspects = self.scoped;
     }
 
     pub(crate) fn from_causes(
         causes: &[ResolvedDependencyCause],
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Self, SignalError> {
         work.reserve(Some(causes.len()))?;
         let count = causes.iter().try_fold(0usize, |n, c| {
@@ -45,11 +45,7 @@ impl PreparedInvalidationCache {
         let mut largest = 0usize;
         for cause in causes {
             for scope in cause.changed_scopes.as_slice() {
-                let bytes = scope
-                    .partition
-                    .0
-                    .len()
-                    .checked_add(scope.detail.as_ref().map_or(0, String::len));
+                let bytes = scope.path().checked_segment_bytes();
                 work.reserve(bytes.and_then(|n| n.checked_add(1)))?;
                 largest = largest.max(bytes.expect("admitted scope bytes"));
             }
@@ -63,7 +59,9 @@ impl PreparedInvalidationCache {
                 .and_then(|n| n.checked_mul(levels))
                 .and_then(|n| n.checked_mul(8)),
         )?;
-        let mut scopes = Scopes::with_capacity(count);
+        // The prepared row pays only for scopes it actually owns. The warm
+        // payload retains its inline representation at installation.
+        let mut scopes = Vec::with_capacity(count);
         let mut dirty = AspectMask::EMPTY;
         for cause in causes {
             dirty.insert(cause.key.aspect);
@@ -89,6 +87,15 @@ impl PreparedInvalidationCache {
         let mut scoped = AspectMask::EMPTY;
         for (aspect, _) in &scopes {
             scoped.insert(*aspect);
+        }
+        // SmallVec::from_vec moves initialized entries into the warm inline
+        // region when this backing fits there; larger backings transfer.
+        if scopes.capacity() <= crate::data::core_profile::HOT_VEC_INLINE_CAPACITY {
+            work.reserve(
+                scopes
+                    .len()
+                    .checked_mul(std::mem::size_of::<(Aspect, PartitionSubscription)>()),
+            )?;
         }
         Ok(Self {
             dirty,

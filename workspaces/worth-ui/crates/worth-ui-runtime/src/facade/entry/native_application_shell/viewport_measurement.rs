@@ -68,6 +68,9 @@ impl WorthUiNativeApplicationShell {
         (),
         super::super::mounted_application_presentation::UiMountedHostMeasurementSettlementStop,
     > {
+        let _stage = worth_ui_host_native::trace_resize_stage(
+            worth_ui_host_native::UiNativeResizeTraceStage::Settle,
+        );
         let Some(pending) = self.pending_native_viewport_measurements() else {
             return Ok(());
         };

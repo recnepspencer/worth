@@ -7,11 +7,13 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 
 mod checkpoint_commitment;
 mod identity_kind;
+mod membership;
 mod ordering;
 mod runtime_commitment;
 pub(in crate::domain_computation::primary_graph) use identity_kind::{
     WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity,
 };
+pub(in crate::domain_computation::primary_graph) use membership::WorthQueryObservedSourceSelection;
 use runtime_commitment::stable_runtime_identity;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

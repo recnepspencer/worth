@@ -16,7 +16,6 @@ use super::graph::{RuntimeArtifactStructuralDelta, SignalGraph};
 use artifact_preparation::PreparedEffectArtifactWrite;
 use node_state_preparation::PreparedEffectNodeState;
 
-#[cfg_attr(not(feature = "parallel"), allow(dead_code))]
 pub(crate) use batching::{ApplyCommitPacket, PreparedParallelApplyCommitPacket};
 
 /// Effect-owner capability proving that direct invalidation preparation was

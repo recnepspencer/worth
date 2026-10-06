@@ -34,6 +34,9 @@ pub enum ApplicationWorkflowValidationDenialKind {
     InvalidDataFlow,
     IncompatibleOperationInput,
     UnavailableDataFlow,
+    MissingInboundOrigin,
+    UnavailableInboundOrigin,
+    MissingInboundDeadline,
     MissingAssessmentSubject,
     MissingConditionSubject,
     IncompleteEvidenceJoin,
@@ -106,7 +109,13 @@ where
     connections::validate(&graph, &mut validation_work)?;
     connections::validate_requirements(&graph, &mut validation_work)?;
     let control = control::validate(start_index, &graph, &mut validation_work)?;
-    dominance::validate_availability(start_index, &graph, &control, &mut validation_work)?;
+    dominance::validate_availability(
+        start_index,
+        &graph,
+        &control,
+        authored.limits.total_deadline().is_some(),
+        &mut validation_work,
+    )?;
     let validation_work = validation_work.finish();
     drop(graph);
     let (content_identity, nodes, connections) = super::canonical::canonicalize::<Spec>(

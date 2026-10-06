@@ -38,84 +38,148 @@ impl UiIntentStandingOperabilityUnavailable {
     }
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "read-only observation explicitly names the independent target and Intent owners"
-)]
+/// The declaration and execution owners that decide operability: the
+/// generation's catalog, definitions and execution support, and the session's
+/// occupancy.
+#[derive(Clone, Copy)]
+pub(crate) struct UiIntentOperabilityAuthority<'owners> {
+    pub(crate) catalog: &'owners crate::declaration::UiIntentCatalog,
+    pub(crate) definitions: &'owners crate::capability::FrozenIntentDefinitionCapabilities,
+    pub(crate) execution_bindings:
+        &'owners crate::runtime::intent_execution::FrozenIntentExecutionBindings,
+    pub(crate) occupancy: &'owners super::UiIntentOccupancyState,
+}
+
+/// The owners an activation observation reads, all at one generation.
+#[derive(Clone, Copy)]
+pub(crate) struct UiIntentOperabilityReadOwners<'owners> {
+    pub(crate) authority: UiIntentOperabilityAuthority<'owners>,
+    pub(crate) generation: &'owners crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    pub(crate) inputs: super::super::payload::UiIntentInputOwners<'owners>,
+}
+
 pub(crate) fn observe_activation_operability(
     target: UiPresentedInteractionTargetView,
-    catalog: &crate::declaration::UiIntentCatalog,
-    definitions: &crate::capability::FrozenIntentDefinitionCapabilities,
-    execution_bindings: &crate::runtime::intent_execution::FrozenIntentExecutionBindings,
-    generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
-    mounted: &crate::mounting::WorthUiMountedSessionState,
-    application_facts: &super::super::payload::UiIntentApplicationFactState,
-    occupancy: &super::UiIntentOccupancyState,
+    owners: UiIntentOperabilityReadOwners<'_>,
     confirmation: &super::super::UiIntentConfirmationState,
     host_time: Option<worth_ui_host_contract::UiHostObservationTimeBasis>,
 ) -> Result<UiIntentStandingOperabilityObservation, UiIntentStandingOperabilityUnavailable> {
-    mounted
+    owners
+        .inputs
+        .mounted
         .current_semantic_surface_for_presentation(target.presentation())
         .map_err(UiIntentStandingOperabilityUnavailable::Presentation)?;
+    let activation = observe_activation(target, owners, super::UiIntentAffinityPosture::Current)?;
+    let decision = match activation.route {
+        UiIntentActivationRoute::Product(decision) => UiIntentStandingDecision::Product(decision),
+        UiIntentActivationRoute::Confirmation => {
+            let time = host_time
+                .ok_or(UiIntentStandingOperabilityUnavailable::ConfirmationTimeUnavailable)?;
+            UiIntentStandingDecision::Confirmation(super::super::observe_confirmation(
+                confirmation,
+                target,
+                time,
+                super::super::UiIntentConfirmationReadContext {
+                    catalog: owners.authority.catalog,
+                    definitions: owners.authority.definitions,
+                    generation: owners.generation,
+                    mounted: owners.inputs.mounted,
+                    application_facts: owners.inputs.application_facts,
+                    occupancy: owners.authority.occupancy,
+                    expressions: owners.inputs.expressions,
+                },
+            ))
+        }
+    };
+    Ok(UiIntentStandingOperabilityObservation {
+        generation: owners.generation.clone(),
+        graph_node: activation.graph_node,
+        target,
+        route: activation.declaration,
+        decision,
+    })
+}
+
+/// The product decision a standing fact would record now, or `None` when the
+/// fact must be left to its lifecycle: its target no longer admits, or no
+/// longer resolves to the fact's own node and route. The fact's affinity is
+/// kept, because it is relative to the candidate the fact was recorded from.
+pub(crate) fn reobserve_standing_fact(
+    fact: &super::UiIntentOperabilityStandingFact,
+    owners: UiIntentOperabilityReadOwners<'_>,
+) -> Option<super::UiIntentOperabilityDecision> {
+    let activation = observe_activation(fact.target(), owners, fact.decision().affinity()).ok()?;
+    if activation.graph_node != fact.graph_node() || *activation.declaration != *fact.route() {
+        return None;
+    }
+    match activation.route {
+        UiIntentActivationRoute::Product(decision) => Some(decision),
+        // Conditions feed product operability only; a confirmation route has
+        // no condition consumer to refresh.
+        UiIntentActivationRoute::Confirmation => None,
+    }
+}
+
+/// Target admission, activation route and product decision: the one
+/// composition standing observation and condition re-observation share.
+struct UiIntentActivation {
+    graph_node: crate::graph::UiGraphNodeIdentity,
+    declaration: Box<str>,
+    route: UiIntentActivationRoute,
+}
+
+enum UiIntentActivationRoute {
+    Product(super::UiIntentOperabilityDecision),
+    Confirmation,
+}
+
+fn observe_activation(
+    target: UiPresentedInteractionTargetView,
+    owners: UiIntentOperabilityReadOwners<'_>,
+    affinity: super::UiIntentAffinityPosture,
+) -> Result<UiIntentActivation, UiIntentStandingOperabilityUnavailable> {
     super::super::payload::UiIntentInputBasisView::observe_target_with(
         target,
-        generation,
-        mounted,
-        application_facts,
+        owners.generation,
+        owners.inputs,
         |view| {
-            let graph_node = mounted
-                .current_mounted_identity_basis(target.mounted_instance())
-                .expect("current target admission preserves mounted identity")
-                .graph_node_identity();
-            let (route, _) = catalog
+            let (route, _) = owners
+                .authority
+                .catalog
                 .lookup(
-                    graph_node,
+                    view.graph_node(),
                     crate::capability::UiSemanticInteractionFamily::Activate,
                 )
                 .ok_or(UiIntentStandingOperabilityUnavailable::MissingActivationRoute)?;
-            let declaration = match route {
-                UiIntentCatalogResolvedRoute::Product { declaration, .. } => declaration,
-                UiIntentCatalogResolvedRoute::Confirmation { declaration, .. } => {
-                    let time = host_time.ok_or(
-                        UiIntentStandingOperabilityUnavailable::ConfirmationTimeUnavailable,
-                    )?;
-                    let observation = super::super::observe_confirmation(
-                        confirmation,
-                        target,
-                        time,
-                        super::super::UiIntentConfirmationReadContext {
-                            catalog,
-                            definitions,
-                            generation,
-                            mounted,
-                            application_facts,
-                            occupancy,
-                        },
+            let (declaration, route) = match route {
+                UiIntentCatalogResolvedRoute::Product { declaration, .. } => {
+                    let basis = super::observe_operability_basis(
+                        view,
+                        &declaration,
+                        owners
+                            .authority
+                            .definitions
+                            .definition_at(declaration.definition()),
+                        owners
+                            .authority
+                            .execution_bindings
+                            .support_at(declaration.definition()),
+                        owners.authority.occupancy,
                     );
-                    return Ok(UiIntentStandingOperabilityObservation {
-                        generation: generation.clone(),
-                        graph_node,
-                        target,
-                        route: declaration.identity().as_str().into(),
-                        decision: UiIntentStandingDecision::Confirmation(observation),
-                    });
+                    (
+                        declaration.identity().as_str().into(),
+                        UiIntentActivationRoute::Product(basis.decision(affinity)),
+                    )
                 }
-            };
-            let basis = super::observe_operability_basis(
-                view,
-                &declaration,
-                definitions.definition_at(declaration.definition()),
-                execution_bindings.support_at(declaration.definition()),
-                occupancy,
-            );
-            Ok(UiIntentStandingOperabilityObservation {
-                generation: generation.clone(),
-                graph_node,
-                target,
-                route: declaration.identity().as_str().into(),
-                decision: UiIntentStandingDecision::Product(
-                    basis.decision(super::UiIntentAffinityPosture::Current),
+                UiIntentCatalogResolvedRoute::Confirmation { declaration, .. } => (
+                    declaration.identity().as_str().into(),
+                    UiIntentActivationRoute::Confirmation,
                 ),
+            };
+            Ok(UiIntentActivation {
+                graph_node: view.graph_node(),
+                declaration,
+                route,
             })
         },
     )

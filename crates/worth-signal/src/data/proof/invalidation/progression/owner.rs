@@ -16,6 +16,13 @@ use crate::data::proof::invalidation::revalidation::CanonicalInvalidationOrigin;
 pub(crate) struct InvalidationProgressionOwner;
 
 impl InvalidationProgressionOwner {
+    pub(crate) fn admit_graph_batch(
+        expected: super::GraphBatchBindingAxes,
+        current: super::GraphBatchBindingAxes,
+    ) -> Result<super::DisjointGraphBatch, crate::data::error::SignalError> {
+        super::DisjointGraphBatch::admit(expected, current)
+    }
+
     pub(crate) fn resolve_origin(
         batch: InvalidationWorkBatch,
         binding: InvalidationOriginBindingAxes,

@@ -70,12 +70,20 @@ impl<'owners> UiNativePresentationAccess<'owners> {
         self.surface.targetless_surface_suspensions()
     }
 
-    pub(crate) fn surface(&self) -> &wgpu::Surface<'static> {
-        self.surface.state().surface()
+    pub(crate) fn presentation_target(
+        &self,
+    ) -> &crate::native::graphics::UiNativeBackendPresentationTarget {
+        self.surface.state().presentation_target()
     }
 
     pub(crate) fn surface_configuration(&self) -> &wgpu::SurfaceConfiguration {
         self.surface.state().configuration()
+    }
+
+    /// Resizes the swapchain to the committed basis if a basis change is
+    /// still pending, before a frame acquires its texture.
+    pub(crate) fn configure_pending_surface(&self) {
+        self.surface.state().configure_pending(self.device());
     }
 
     pub(crate) fn adapter_info(&self) -> &wgpu::AdapterInfo {

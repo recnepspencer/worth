@@ -18,6 +18,113 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[test]
+fn program_activation_changed_after_preparation_cannot_readmit_the_old_program() {
+    use super::super::fixture::{
+        prepare_relational_mutation_on_application, publish_relational_mutation,
+        unadmitted_program_revision,
+    };
+    use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
+    use std::collections::BTreeMap;
+    use worth_relational::facade::{
+        identity::PartitionId,
+        symbols::ClientKey,
+        transactions::{
+            AspectFieldPatch, CreateIntent, CreatedEntityRef, EntityMutationIntent, EntitySpec,
+            MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
+        },
+    };
+    let mut world = installed_authorization_world(true);
+    world.application.program_support = Some(installed_program_support(
+        &world.application.installed_schema,
+    ));
+    let layout = world
+        .application
+        .primary_provider
+        .graph
+        .layout
+        .program_activation()
+        .clone();
+    let created = CreatedEntityRef {
+        partition_id: PartitionId::main(),
+        kind_id: layout.entity_kind,
+        client_key: ClientKey::raw("readmission-program-activation"),
+    };
+    let batch = WorkerIntentBatch::new("seed-readmission-activation").push(MutationIntent::Create(
+        CreateIntent::Entity(EntitySpec {
+            partition_id: created.partition_id,
+            kind_id: created.kind_id,
+            client_key: created.client_key.clone(),
+            fields: AspectFieldPatch::from(BTreeMap::from([(
+                layout.program_revision_locator.clone(),
+                program_revision_rendering(&rostered_program_revision()),
+            )])),
+        }),
+    ));
+    let request = live_scope();
+    let prepared = prepare_relational_mutation_on_application(&world.application, batch, &request);
+    let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) =
+        prepared.execute()
+    else {
+        panic!("activation seed must publish through World");
+    };
+    let activation = performed
+        .component_results()
+        .relational_commit_result()
+        .unwrap()
+        .created_entity(&created)
+        .unwrap();
+    let basis = performed.commit().basis().relational_basis().clone();
+    drop(performed.consume());
+    world
+        .application
+        .primary_provider
+        .graph
+        .with_runtime_mut(|runtime| {
+            world
+                .application
+                .primary_provider
+                .graph
+                .ensure_primary_indexes_for_basis(runtime, &basis)
+                .unwrap();
+        });
+    let support = world.application.program_support.as_ref().unwrap();
+    support.activation().publish(activation).unwrap();
+    let principal = authenticated_principal(&world, &request);
+    let account = resolved_account(&world, "open", &request);
+    let program =
+        admitted_program_required_program(&world, &principal, &account, &request, "old-program");
+    let presented = support.present(&rostered_program_revision()).unwrap();
+    publish_relational_mutation(
+        &world,
+        WorkerIntentBatch::new("hostile-activation-change").push(MutationIntent::Entity(
+            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                entity_id: activation,
+                fields: AspectFieldPatch::from(BTreeMap::from([(
+                    layout.program_revision_locator,
+                    program_revision_rendering(&unadmitted_program_revision()),
+                )])),
+            }),
+        )),
+    );
+    let before = world.selected_product().product().selected_commit().clone();
+    let outcome = world
+        .application
+        .compare_and_commit_application_for_program_action(
+            &presented,
+            program,
+            idempotency(73, 73),
+        );
+    assert_unresolved_activation(
+        outcome,
+        "branch program activation names no rostered program",
+    );
+    assert_eq!(
+        world.selected_product().product().selected_commit(),
+        &before
+    );
+}
+
+#[test]
 fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() {
     let mut world = installed_authorization_world(true);
     world.application.program_support = Some(installed_program_support(

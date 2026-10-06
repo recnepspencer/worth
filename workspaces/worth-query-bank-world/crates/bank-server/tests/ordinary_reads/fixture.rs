@@ -59,6 +59,11 @@ impl OrdinaryReadFixture {
         ))
         .expect("fixture principal should authenticate")
     }
+
+    #[allow(dead_code, reason = "shared by the process court")]
+    pub(super) fn into_shared_runtime(self) -> std::sync::Arc<bank_server::BankIdentityRuntime> {
+        std::sync::Arc::new(self.world.runtime)
+    }
 }
 
 pub(super) fn ordinary_read_world(
@@ -76,7 +81,26 @@ pub(super) fn ordinary_read_world_with_approval_authentication(
     scenario: &str,
     approval_authentication: BankApprovalAuthenticationConfiguration,
 ) -> OrdinaryReadFixture {
-    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), false)
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), false, 900)
+}
+
+#[allow(
+    dead_code,
+    reason = "the shared fixture also compiles in targets without the approval-limit court"
+)]
+pub(super) fn ordinary_read_world_with_payment_amount(
+    scenario: &str,
+    approval_authentication: BankApprovalAuthenticationConfiguration,
+    payment_minor_units: i64,
+) -> OrdinaryReadFixture {
+    build_ordinary_read_world(
+        scenario,
+        0,
+        1,
+        Some(approval_authentication),
+        false,
+        payment_minor_units,
+    )
 }
 
 #[allow(
@@ -87,7 +111,7 @@ pub(super) fn ordinary_read_world_with_two_approvers(
     scenario: &str,
     approval_authentication: BankApprovalAuthenticationConfiguration,
 ) -> OrdinaryReadFixture {
-    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), true)
+    build_ordinary_read_world(scenario, 0, 1, Some(approval_authentication), true, 900)
 }
 
 pub(super) fn ordinary_read_world_with_pending_payments(
@@ -101,6 +125,7 @@ pub(super) fn ordinary_read_world_with_pending_payments(
         pending_payment_count,
         None,
         false,
+        900,
     )
 }
 
@@ -110,6 +135,7 @@ fn build_ordinary_read_world(
     pending_payment_count: usize,
     approval_authentication: Option<BankApprovalAuthenticationConfiguration>,
     second_approver: bool,
+    payment_minor_units: i64,
 ) -> OrdinaryReadFixture {
     assert!(pending_payment_count > 0);
     let mut identities = (0..(7 + unrelated_accounts))
@@ -193,7 +219,8 @@ fn build_ordinary_read_world(
                 business,
                 from: business_account,
                 recipient: principal_id(RECIPIENT),
-                amount: Money::from_minor(900 + i64::try_from(ordinal).unwrap()).unwrap(),
+                amount: Money::from_minor(payment_minor_units + i64::try_from(ordinal).unwrap())
+                    .unwrap(),
             },
         )
         .expect("pending payment should prepare");

@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy;
 
-use super::{decode_kind, WorkflowNodeTag};
+use super::{decode::InboundFields, decode_kind, WorkflowNodeTag};
 
 #[test]
 fn assessment_subject_is_rejected_for_every_non_assessment_shape_that_uses_empty_fields() {
@@ -24,9 +24,11 @@ fn assessment_subject_is_rejected_for_every_non_assessment_shape_that_uses_empty
             member.to_owned(),
             input_type.map(str::to_owned),
             None,
+            InboundFields::default(),
             None,
             None,
             Some("resource".to_owned()),
+            None,
             None,
             None,
             None,
@@ -44,4 +46,62 @@ fn assessment_subject_is_rejected_for_every_non_assessment_shape_that_uses_empty
             tag.identity()
         );
     }
+}
+
+#[test]
+fn inbound_node_requires_its_own_fields_and_rejects_mixed_operation_shape() {
+    let contract = serde_json::json!([
+        2,
+        "worth.query.workflow.remote",
+        1,
+        "rail",
+        1024,
+        1024,
+        256,
+        8,
+        8,
+        2048,
+        2,
+        16,
+        1000,
+        16,
+    ])
+    .to_string();
+    let inbound = || InboundFields {
+        origin: Some("operation".to_owned()),
+        contract: Some(contract.clone()),
+        wait: Some(0),
+    };
+    let decode = |input_type, fields| {
+        decode_kind(
+            WorkflowNodeTag::AwaitInbound.persisted(),
+            "remote-effect".to_owned(),
+            input_type,
+            None,
+            fields,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            false,
+        )
+    };
+    assert!(decode(None, inbound()).is_ok());
+    assert!(decode(Some("operation-input".to_owned()), inbound()).is_err());
+    assert!(decode(
+        None,
+        InboundFields {
+            origin: None,
+            ..inbound()
+        }
+    )
+    .is_err());
 }

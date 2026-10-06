@@ -11,6 +11,9 @@ use std::{
 
 mod commit_completion;
 mod commit_preparation;
+pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
+pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation::primary_graph) use commit_preparation::RetainedTouchedRecords;
 mod phase;
 mod registration;
 mod retained_basis;
@@ -19,7 +22,7 @@ use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;
 pub(crate) use commit_preparation::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
-    WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
+    RebaseVerificationReason, WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
     WorthQueryPrimaryGraphCommittedApplication,
 };
 #[cfg(test)]

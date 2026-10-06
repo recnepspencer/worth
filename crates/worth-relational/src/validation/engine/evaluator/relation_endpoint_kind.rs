@@ -9,7 +9,7 @@ use super::super::context::InvariantExecutionContext;
 use super::common::{canonicalize_violations, entity_reference_kind, relation_violation};
 
 pub(super) fn evaluate_endpoint_kind_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredEndpointKindContract,
 ) -> Vec<InvariantViolation> {
@@ -24,11 +24,19 @@ pub(super) fn evaluate_endpoint_kind_contract(
     context.metrics().count_relation_contracts_evaluated(1);
     let mut violations = Vec::new();
     for edge in &scope.planned_edges {
+        if !context.checkpoint(1) {
+            return Vec::new();
+        }
         context.metrics().count_relation_endpoint_kind_checks(1);
         let source_kind = match entity_reference_kind(context, class, &edge.source) {
             Ok(Some(kind_id)) => kind_id,
             Ok(None) => continue,
             Err(violation) => {
+                if !context
+                    .claim_contract_violation(&contract.contract_id, &[&edge.source, &edge.target])
+                {
+                    return Vec::new();
+                }
                 violations.push(violation);
                 continue;
             }
@@ -37,11 +45,21 @@ pub(super) fn evaluate_endpoint_kind_contract(
             Ok(Some(kind_id)) => kind_id,
             Ok(None) => continue,
             Err(violation) => {
+                if !context
+                    .claim_contract_violation(&contract.contract_id, &[&edge.source, &edge.target])
+                {
+                    return Vec::new();
+                }
                 violations.push(violation);
                 continue;
             }
         };
         if !contract.allows_source_kind(source_kind) {
+            if !context
+                .claim_contract_violation(&contract.contract_id, &[&edge.source, &edge.target])
+            {
+                return Vec::new();
+            }
             violations.push(relation_violation(
                 class,
                 DiagnosticCode::RelationEndpointKindViolation,
@@ -61,6 +79,11 @@ pub(super) fn evaluate_endpoint_kind_contract(
             ));
         }
         if !contract.allows_target_kind(target_kind) {
+            if !context
+                .claim_contract_violation(&contract.contract_id, &[&edge.source, &edge.target])
+            {
+                return Vec::new();
+            }
             violations.push(relation_violation(
                 class,
                 DiagnosticCode::RelationEndpointKindViolation,
@@ -80,6 +103,11 @@ pub(super) fn evaluate_endpoint_kind_contract(
             ));
         }
         if !contract.self_edges_allowed && edge.source == edge.target {
+            if !context
+                .claim_contract_violation(&contract.contract_id, &[&edge.source, &edge.target])
+            {
+                return Vec::new();
+            }
             violations.push(relation_violation(
                 class,
                 DiagnosticCode::RelationEndpointKindViolation,
@@ -99,6 +127,11 @@ pub(super) fn evaluate_endpoint_kind_contract(
         if edge.source.partition_id() != edge.target.partition_id()
             && contract.cross_context_policy != CrossContextPolicy::AllowExplicit
         {
+            if !context
+                .claim_contract_violation(&contract.contract_id, &[&edge.source, &edge.target])
+            {
+                return Vec::new();
+            }
             violations.push(relation_violation(
                 class,
                 DiagnosticCode::InvalidRelationEndpoint,

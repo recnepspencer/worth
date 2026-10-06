@@ -7,9 +7,7 @@ fn perf_query_packet_matrix() {
 
     let explicit_target_samples =
         capture_perf_samples(suite, "explicit_targets_cross_partition", || {
-            let runtime = runtime_with_test_schema_execution_model(
-                crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-            );
+            let runtime = runtime_with_test_schema();
             let targets = (0..64)
                 .map(|index| {
                     let partition_id = match index % 4 {
@@ -90,9 +88,7 @@ fn perf_query_packet_matrix() {
 
     let kind_scan_samples =
         capture_perf_samples(suite, "entity_kind_scan_partition_matrix", || {
-            let runtime = runtime_with_test_schema_execution_model(
-                crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-            );
+            let runtime = runtime_with_test_schema();
             for index in 0..128 {
                 let partition_id = match index % 4 {
                     0 => PartitionId(1),
@@ -193,9 +189,7 @@ fn perf_query_packet_matrix() {
 
     let traversal_samples =
         capture_perf_samples(suite, "connectivity_traversal_cross_partition", || {
-            let runtime = runtime_with_test_schema_execution_model(
-                crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-            );
+            let runtime = runtime_with_test_schema();
             let seeds = (0..12)
                 .map(|index| {
                     create_entity_in_partition(

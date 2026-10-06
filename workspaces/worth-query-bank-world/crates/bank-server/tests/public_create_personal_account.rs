@@ -7,17 +7,13 @@ use bank_domain::model::{
 use bank_domain::proposals::{BankIdempotencyKey, BankSnapshotBuilder};
 use bank_domain::queries;
 use bank_domain::schema::{
-    Account, CreatePersonalAccount, CreatePersonalAccountMutationBinding,
-    CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT,
+    CreatePersonalAccount, CreatePersonalAccountOutputs, CreatedPersonalAccountOutput,
 };
 use bank_server::{
     mutations, BankEmployeeAssignmentSeed, BankMutationControls, BankPrincipalSeed, BankWorldSeed,
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-};
 
 use support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
 
@@ -66,12 +62,6 @@ fn assert_public_creation(display_name: &str) {
         owner: actor_id,
         display_name: AccountName::new(display_name).expect("the name should be valid"),
     };
-    let output_role = WorthQueryApplicationOutputRole::<
-        CreatePersonalAccountMutationBinding,
-        Account,
-        WorthQueryCreateOutput,
-    >::from_static(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT);
-
     let omitted_program = request
         .mutate(input.clone())
         .idempotency(&key)
@@ -102,8 +92,9 @@ fn assert_public_creation(display_name: &str) {
     assert!(account.canonical_text().starts_with("operation:"));
     assert_eq!(account.canonical_text().len(), 76);
     let created_entity = first_receipt
-        .output_correspondence()
-        .entity(output_role)
+        .outputs_of::<CreatePersonalAccountOutputs>()
+        .expect("the creation commits under the personal account contract")
+        .entity::<CreatedPersonalAccountOutput>()
         .expect("the declared created-account output must resolve")
         .entity_id();
     assert!(first_receipt
@@ -126,14 +117,10 @@ fn assert_public_creation(display_name: &str) {
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut retry_receipt) = retry else {
         panic!("the identical retry must recover the prior commit");
     };
-    let output_role = WorthQueryApplicationOutputRole::<
-        CreatePersonalAccountMutationBinding,
-        Account,
-        WorthQueryCreateOutput,
-    >::from_static(CREATE_PERSONAL_ACCOUNT_OUTPUT_ACCOUNT);
     let recovered_entity = retry_receipt
-        .output_correspondence()
-        .entity(output_role)
+        .outputs_of::<CreatePersonalAccountOutputs>()
+        .expect("the recovered commit keeps the personal account contract")
+        .entity::<CreatedPersonalAccountOutput>()
         .expect("the recovered output correspondence must remain complete")
         .entity_id();
     assert_eq!(recovered_entity, created_entity);

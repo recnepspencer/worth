@@ -29,16 +29,16 @@ pub use worth_signal::facade::{SignalError, SignalTransaction};
 pub use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 
 pub use crate::branch::{
-    ComponentBranchTarget, CustodyComponent, NoEffectRuntimeWorldBootstrap,
+    ComponentBranchTarget, CurrentProductHead, CustodyComponent, NoEffectRuntimeWorldBootstrap,
     OwnerCreatedComponentCustodyRecord, OwnerRetirementWork, PerformedRuntimeWorldBootstrap,
-    ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchHistoryTraversal,
-    ProductBranchName, ProductBranchNameDenial, ProductBranchObservation,
-    ProductBranchObservationMismatch, ProductBranchObservationMismatchAxis,
-    ProductBranchReferenceSnapshot, ProductBranchRetirementReport,
-    RecoveredRuntimeWorldRootAuthority, RelationalBranchCreationPlan, RuntimeWorldBootstrapIntent,
-    RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
-    RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
-    SignalBranchCreationPlan,
+    ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchCurrentnessFailure,
+    ProductBranchHistoryTraversal, ProductBranchName, ProductBranchNameDenial,
+    ProductBranchObservation, ProductBranchObservationMismatch,
+    ProductBranchObservationMismatchAxis, ProductBranchReferenceSnapshot,
+    ProductBranchRetirementReport, RecoveredRuntimeWorldRootAuthority,
+    RelationalBranchCreationPlan, RuntimeWorldBootstrapIntent, RuntimeWorldBootstrapNoEffectCause,
+    RuntimeWorldBootstrapOutcome, RuntimeWorldBranchAdmissionDenial,
+    RuntimeWorldBranchRetirementDenial, SignalBranchCreationPlan,
 };
 
 pub use crate::budget::{
@@ -55,6 +55,8 @@ pub use crate::history::{
     CompositeHistoryReclamationRequest, CompositeHistoryTraversal, CompositeRuntimeWorldCommit,
     CompositeSignalPublicationIdentity, HistoryCatalogCounters, HistoryMetadataLedger,
     HistoryReclamationDenial, HistoryReclamationOutcome, OrdinaryParent,
+    RuntimeWorldPerformedPublicationProtection, RuntimeWorldPublicationCursor,
+    RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage, RuntimeWorldPublicationRow,
 };
 
 pub use crate::identity::{
@@ -81,9 +83,10 @@ pub use crate::publication::{
     CompositePublicationCostCounters, CompositePublicationIntent, CompositePublicationOrder,
     CompositeRelationalOwnerResult, CompositeSignalOwnerResult, ConsumedCompositePublication,
     NoEffectCause, NoEffectCompositePublication, PerformedCompositePublication,
-    PreparedCompositePublicationWithSignal, PreparedCompositePublicationWithoutSignal,
-    RelationalAttemptProgress, RelationalAttemptProgressPosture, RelationalComponentPlan,
-    RelationalComponentPlanPosture, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
+    PlannedProductReferenceSuccessor, PreparedCompositePublicationWithSignal,
+    PreparedCompositePublicationWithoutSignal, RelationalAttemptProgress,
+    RelationalAttemptProgressPosture, RelationalComponentPlan, RelationalComponentPlanPosture,
+    RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
     RuntimeWorldConditionalDefinitionPublicationOutcome, RuntimeWorldPublicationOutcome,
     RuntimeWorldPublicationPhase, RuntimeWorldUnpublishedConditionalDefinition,
     SignalAttemptProgress, SignalAttemptProgressPosture, SignalComponentPlan,
@@ -112,4 +115,7 @@ pub use crate::retention::{
 pub use worth_relational::facade::transactions::CommitResult;
 
 #[cfg(feature = "test-operation-control")]
-pub use crate::lifecycle::{RuntimeWorldOperationControl, RuntimeWorldProductComparePause};
+pub use crate::lifecycle::{
+    RuntimeWorldOperationControl, RuntimeWorldProductComparePause,
+    RuntimeWorldProductCurrentnessPause,
+};

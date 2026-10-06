@@ -28,6 +28,14 @@ impl WorthQueryReviewedElevation {
         self.review_commit.publication_source()
     }
 
+    /// The canonical work of the review commit, by phase. A replay reports the
+    /// admission work of its own request.
+    pub const fn canonical_work(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
+        self.review_commit.canonical_work()
+    }
+
     pub const fn reviewer(&self) -> EntityId {
         self.binding.reviewer()
     }

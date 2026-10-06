@@ -52,15 +52,43 @@ impl WorthQueryExternalPrincipalIdentity {
         &self.subject
     }
 
-    fn into_index_value(self) -> String {
-        format!(
-            "{}:{}{}:{}",
-            self.issuer.len(),
-            self.issuer,
-            self.subject.len(),
-            self.subject
-        )
+    /// Backing and initialized-copy work of the current index conversion:
+    /// two component String clones followed by one length-framed String.
+    /// Both components are constructor-bounded, so these sums fit usize.
+    pub fn index_encoding_copy_requirements(&self) -> (usize, usize) {
+        let components = self.issuer.len() + self.subject.len();
+        let encoded = self.encoded_index_len();
+        let bytes = components + encoded;
+        (bytes, bytes)
     }
+
+    fn encoded_index_len(&self) -> usize {
+        self.issuer.len()
+            + self.subject.len()
+            + decimal_digits(self.issuer.len())
+            + decimal_digits(self.subject.len())
+            + 2
+    }
+
+    fn into_index_value(self) -> String {
+        use std::fmt::Write;
+
+        let mut encoded = String::with_capacity(self.encoded_index_len());
+        write!(&mut encoded, "{}:", self.issuer.len()).expect("writing to a String cannot fail");
+        encoded.push_str(&self.issuer);
+        write!(&mut encoded, "{}:", self.subject.len()).expect("writing to a String cannot fail");
+        encoded.push_str(&self.subject);
+        encoded
+    }
+}
+
+fn decimal_digits(mut value: usize) -> usize {
+    let mut digits = 1;
+    while value >= 10 {
+        value /= 10;
+        digits += 1;
+    }
+    digits
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -207,6 +235,27 @@ mod tests {
             WorthQueryExternalPrincipalIdentityBinding::decode(&encoded).unwrap(),
             identity
         );
+    }
+
+    #[test]
+    fn index_copy_forecast_uses_initialized_component_bytes() {
+        let mut issuer = String::with_capacity(512);
+        issuer.push_str("https://identity.example/realm/production-issuer");
+        let mut subject = String::with_capacity(384);
+        subject.push_str("account:regional-team:operator-123456789");
+        let identity = WorthQueryExternalPrincipalIdentity::new(issuer, subject).unwrap();
+        let (bytes, work) = identity.index_encoding_copy_requirements();
+        let encoded = WorthQueryExternalPrincipalIdentityBinding::encode(&identity).unwrap();
+        let AspectValue::String(InternedString::Raw(encoded)) = encoded else {
+            panic!("the installed identity binding must encode a raw String");
+        };
+        assert_eq!(encoded.capacity(), identity.encoded_index_len());
+        assert_eq!(
+            bytes,
+            identity.issuer().len() + identity.subject().len() + encoded.capacity()
+        );
+        assert_eq!(work, bytes);
+        assert!(bytes < 512);
     }
 
     #[test]

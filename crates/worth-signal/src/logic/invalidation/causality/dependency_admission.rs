@@ -1,17 +1,22 @@
 use super::preparation_work;
 use crate::data::graph::subscription_candidates;
 use crate::logic::evaluation::EvaluationWork;
+mod epoch_admission;
 mod publication;
+pub(crate) use epoch_admission::{EpochCauseHead, PreparedEpochDirectCauseAdmission};
 pub(crate) use publication::{
-    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedRetainedDirectCauseStores,
+    PreparedDirectCauseNodes, PreparedDirectCausePublication, PreparedEpochCausePublication,
+    PreparedRetainedDirectCauseStores,
 };
 
 use crate::data::aspect::AspectMask;
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
+use crate::data::graph::ReverseSubscriptionQuery;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
+use crate::data::request_preparation::SignalPreparationBudget;
 
 use super::{changed_scopes_for_edge, reconcile_edge_cause, CauseAdmissionContext};
 
@@ -28,6 +33,7 @@ struct PreparedConsumerCauseSet {
     consumer: NodeId,
     causes: crate::data::graph::storage::invalidation_causes::NormalizedCauseSet,
     cache: crate::data::graph::storage::PreparedInvalidationCache,
+    epoch_handle: Option<crate::data::graph::storage::invalidation_causes::PendingCauseSetId>,
 }
 
 enum DirectCandidateAdmission {
@@ -62,11 +68,52 @@ impl PreparedDirectCounterDeltas {
 }
 
 impl SignalGraph {
+    #[cfg(test)]
     pub(crate) fn prepare_direct_output_causes(
         &mut self,
         delta: &ProducedAspectDelta,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
+    ) -> Result<PreparedDirectCauseAdmission, SignalError> {
+        self.prepare_direct_output_causes_with_execution(
+            delta,
+            comparator_resolver,
+            work,
+            None,
+            None,
+        )
+    }
+
+    pub(crate) fn prepare_direct_output_causes_with_execution(
+        &mut self,
+        delta: &ProducedAspectDelta,
+        comparator_resolver: &mut impl ComparatorPolicyResolver,
+        work: &mut EvaluationWork<'_, '_>,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        request_work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    ) -> Result<PreparedDirectCauseAdmission, SignalError> {
+        self.prepare_direct_output_causes_with_overlay(
+            delta,
+            comparator_resolver,
+            work,
+            lease,
+            request_work,
+            None,
+            None,
+            None,
+        )
+    }
+
+    fn prepare_direct_output_causes_with_overlay(
+        &mut self,
+        delta: &ProducedAspectDelta,
+        comparator_resolver: &mut impl ComparatorPolicyResolver,
+        work: &mut EvaluationWork<'_, '_>,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        request_work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+        overlay: Option<&epoch_admission::EpochCauseRows>,
+        mut preparation: Option<&mut SignalPreparationBudget>,
+        prepared_queries: Option<Vec<ReverseSubscriptionQuery>>,
     ) -> Result<PreparedDirectCauseAdmission, SignalError> {
         let mut subscribers = Vec::new();
         let mut counter_deltas = PreparedDirectCounterDeltas {
@@ -74,26 +121,65 @@ impl SignalGraph {
             ..Default::default()
         };
         work.reserve(Some(delta.changes.as_slice().len()))?;
-        for change in delta.changes.as_slice() {
-            let query = self.query_reverse_subscriptions(
-                delta.producer,
-                change,
-                delta.scope_precision,
+        let mut leased_queries = if let Some(queries) = prepared_queries {
+            Some(queries)
+        } else if lease.is_some() && matches!(work, EvaluationWork::Ordinary) {
+            Some(self.collect_reverse_subscription_queries(
+                delta,
                 work,
-            )?;
+                lease,
+                request_work,
+                preparation.as_deref_mut(),
+            )?)
+        } else {
+            None
+        }
+        .map(Vec::into_iter);
+        for change in delta.changes.as_slice() {
+            let query = match &mut leased_queries {
+                Some(queries) => queries
+                    .next()
+                    .expect("leased candidate map covers every change"),
+                None => self.query_reverse_subscriptions(
+                    delta.producer,
+                    change,
+                    delta.scope_precision,
+                    work,
+                )?,
+            };
             counter_deltas.bucket_probes += query.bucket_probes;
             counter_deltas.candidates_returned += query.candidates.len() as u64;
             let candidate_count = query.candidates.len() as u64;
             self.with_telemetry(|telemetry| {
                 telemetry.invalidation.direct_subscriber_candidates_examined += candidate_count;
             });
+            if let Some(budget) = preparation.as_deref_mut() {
+                let capacity = subscribers
+                    .len()
+                    .checked_add(query.candidates.len())
+                    .ok_or_else(|| SignalError::invalid_input("candidate count overflow"))?;
+                budget.claim_vec::<NodeId>(capacity)?;
+            }
             subscription_candidates::append(&mut subscribers, query.candidates, work)?;
         }
         subscription_candidates::normalize(&mut subscribers, work)?;
         work.reserve(subscribers.len().checked_mul(2))?;
+        if let Some(budget) = preparation.as_deref_mut() {
+            budget.claim_vec::<PreparedConsumerCauseSet>(subscribers.len())?;
+        }
         let mut replacements = Vec::with_capacity(subscribers.len());
         for &consumer in &subscribers {
-            match self.prepare_consumer_cause_set(consumer, delta, comparator_resolver, work)? {
+            if let Some(replacements) = overlay {
+                work.reserve(Some(replacements.lookup_steps()))?;
+            }
+            match self.prepare_consumer_cause_set_from(
+                consumer,
+                delta,
+                comparator_resolver,
+                work,
+                overlay.and_then(|replacements| replacements.causes(consumer)),
+                preparation.as_deref_mut(),
+            )? {
                 DirectCandidateAdmission::Admitted(replacement, counters) => {
                     counter_deltas.merge(counters);
                     replacements.push(replacement);
@@ -113,6 +199,7 @@ impl SignalGraph {
             }
         }
         preparation_work::admit_delta_copy(delta, work)?;
+        preparation_work::claim_delta_copy(delta, preparation)?;
         Ok(PreparedDirectCauseAdmission {
             producer: delta.producer,
             commit: Some(delta.clone()),
@@ -133,12 +220,14 @@ impl SignalGraph {
         })
     }
 
-    fn prepare_consumer_cause_set(
+    fn prepare_consumer_cause_set_from(
         &self,
         consumer: NodeId,
         delta: &ProducedAspectDelta,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
+        starting: Option<&[crate::data::proof::invalidation::binding::ResolvedDependencyCause]>,
+        mut preparation: Option<&mut SignalPreparationBudget>,
     ) -> Result<DirectCandidateAdmission, SignalError> {
         let edges = self.current_runtime_dependencies_of(consumer)?;
         // Two filtering passes and each admitted edge's change lookup.
@@ -159,8 +248,9 @@ impl SignalGraph {
                     .iter()
                     .any(|change| change.aspect == edge.aspect())
         });
+        let relevant_count = relevant.clone().count();
         let mut counters = PreparedDirectCounterDeltas {
-            edges_examined: relevant.clone().count() as u64,
+            edges_examined: relevant_count as u64,
             ..Default::default()
         };
         if counters.edges_examined == 0 {
@@ -172,9 +262,20 @@ impl SignalGraph {
         let config = self.node_eval_config(consumer)?;
         work.reserve(Some(1))?;
         let policy = comparator_resolver.policy_for_node(consumer, config.comparator.as_ref());
-        let pending = self.pending_causes(consumer)?;
+        let pending = match starting {
+            Some(causes) => causes,
+            None => self.pending_causes(consumer)?,
+        };
+        // Each relevant edge can append at most one cause. Admit the actual
+        // backing before copying pending causes so appends need no growth.
+        let cause_capacity = pending
+            .len()
+            .checked_add(relevant_count)
+            .ok_or_else(|| SignalError::invalid_input("cause capacity overflow"))?;
         preparation_work::admit_causes_copy(pending, work)?;
-        let mut causes = pending.to_vec();
+        preparation_work::claim_causes_copy(pending, cause_capacity, preparation.as_deref_mut())?;
+        let mut causes = Vec::with_capacity(cause_capacity);
+        causes.extend_from_slice(pending);
         let mut affected = false;
         let mut contract_rejected = false;
 
@@ -260,9 +361,11 @@ impl SignalGraph {
                 changed_scopes,
                 meaningful,
                 work,
+                preparation.as_deref_mut(),
             )?;
         }
         Ok(if affected {
+            preparation_work::claim_cause_normalization_and_cache(&causes, preparation)?;
             let causes =
                 crate::data::graph::storage::invalidation_causes::NormalizedCauseSet::prepare(
                     causes, work,
@@ -274,6 +377,7 @@ impl SignalGraph {
                         &causes, work,
                     )?,
                     causes,
+                    epoch_handle: None,
                 },
                 counters,
             )

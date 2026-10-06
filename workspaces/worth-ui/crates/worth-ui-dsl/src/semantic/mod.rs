@@ -1,4 +1,5 @@
 mod appearance;
+mod expression;
 mod intent;
 mod layout;
 mod overlay;
@@ -10,6 +11,12 @@ mod ui_dsl_semantic_atoms;
 mod ui_dsl_source_provenance;
 
 pub use appearance::*;
+pub(crate) use expression::WorthUiExpressionDeclaration;
+pub use expression::{
+    WorthUiExpressionBody, WorthUiExpressionDeclarationError,
+    WorthUiExpressionDeclarationErrorKind, WorthUiExpressionIntroducer, WorthUiExpressionOperand,
+    WorthUiExpressionOperandSource, WorthUiExpressionResultType, WorthUiExpressionRole,
+};
 pub use intent::{
     WorthUiIntentConcurrencyScope, WorthUiIntentConfirmationContractSpec,
     WorthUiIntentConfirmationSourceSpec, WorthUiIntentConsequenceContractSpec,

@@ -163,6 +163,9 @@ fn provider_commit_cause(
 ) -> Option<WorthQueryConditionalExecutionCause> {
     use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind as Kind;
     match kind {
+        Kind::RelationalDeferred(deferred) => Some(
+            WorthQueryConditionalExecutionCause::RelationalDeferred(deferred),
+        ),
         Kind::RetentionCapacityExhausted => {
             Some(WorthQueryConditionalExecutionCause::RetentionCapacityExhausted)
         }
@@ -177,6 +180,12 @@ fn provider_commit_cause(
                 maximum_handles,
             },
         ),
+        Kind::SourceCurrentnessRaced(stop) => Some(
+            WorthQueryConditionalExecutionCause::SourceCurrentnessRaced(stop),
+        ),
+        Kind::RequiredPrerequisitePending(kind) => {
+            Some(WorthQueryConditionalExecutionCause::RequiredPrerequisitePending(kind))
+        }
         Kind::CandidateLifetimeExpired { .. } => None,
     }
 }

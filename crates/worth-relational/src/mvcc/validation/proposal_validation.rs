@@ -17,7 +17,16 @@ impl RelationalPreparationRuntime {
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.validate_branch_transaction_source(transaction, None, None)
+        self.validate_branch_transaction_source(transaction, None, None, None)
+    }
+
+    pub fn validate_branch_transaction_with_lease(
+        &self,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.with_commit_work_budget()
+            .validate_branch_transaction_source(transaction, None, None, Some(lease))
     }
 
     pub(crate) fn validate_lowered_strategy_proposal(
@@ -31,6 +40,7 @@ impl RelationalPreparationRuntime {
             transaction,
             Some((selected_branch_state, merged_plan)),
             Some(strategy),
+            None,
         )
     }
 
@@ -42,6 +52,7 @@ impl RelationalPreparationRuntime {
             crate::transactions::data::MergedCommitPlan,
         )>,
         strategy: Option<StrategyProposalDecoration>,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         require_not_interrupted(
             &transaction.control,
@@ -95,6 +106,7 @@ impl RelationalPreparationRuntime {
             &prepared.merged_plan,
             prepared.schema_authority.as_ref(),
             proposed_version,
+            lease,
         )?;
         let commit_boundary = self
             .invariant_authority()
@@ -104,6 +116,7 @@ impl RelationalPreparationRuntime {
                 proposed_version,
                 &prepared.merged_plan,
                 Some(&proposal_identity),
+                lease,
             )?;
         let (mutation_sensitive, publication) = validate_proposed_state(
             self,
@@ -111,6 +124,7 @@ impl RelationalPreparationRuntime {
             &proposed_working_state,
             proposed_version,
             Some(&proposal_identity),
+            lease,
         )?;
         let summary = CommitValidation::summarize(&[
             commit_boundary.clone(),
@@ -188,6 +202,15 @@ impl RelationalRuntime {
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.preparation_runtime_snapshot()
             .validate_branch_transaction(transaction)
+    }
+
+    pub fn validate_branch_transaction_with_lease(
+        &self,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.preparation_runtime_snapshot()
+            .validate_branch_transaction_with_lease(transaction, lease)
     }
 
     pub(crate) fn validate_lowered_strategy_proposal(

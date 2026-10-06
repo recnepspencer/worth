@@ -44,11 +44,9 @@ fn qualify(
     request: UiQualifiedTextLayoutRequest,
     posture: QualificationPosture,
 ) -> Result<UiQualifiedTextLayout, UiTextQualificationDenial> {
-    let request_identity = request.identity();
     let (input, fonts) = request.into_parts();
-    let (admitted, _) =
-        UiAdmittedTextParagraph::admit_with_identity(input, request_identity, &fonts, posture)
-            .map_err(UiTextQualificationDenial::Admission)?;
+    let (admitted, _) = UiAdmittedTextParagraph::admit_from(input, &fonts, posture)
+        .map_err(UiTextQualificationDenial::Admission)?;
     let analyzed = UiAnalyzedTextParagraph::analyze(admitted);
     let fallback = UiFallbackTextParagraph::select_with_posture(analyzed, fonts, posture)
         .map_err(UiTextQualificationDenial::Fallback)?;

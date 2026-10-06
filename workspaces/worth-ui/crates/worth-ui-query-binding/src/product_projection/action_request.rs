@@ -1,10 +1,10 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorthUiStatusActionIdentity {
     session: u64,
     lineage: u64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorthUiStatusActionRequest {
     source_revision: u64,
     status: String,

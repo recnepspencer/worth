@@ -1,7 +1,6 @@
 use crate::facade::{
     mark_dirty, mark_dirty_with_regions, ChangedRegion, EvaluationCondition, NodeContract,
-    NodeEvaluationConfig, NodeId, NodeState, PartitionSubscription, PartitionToken, SignalGraph,
-    TemporalCondition,
+    NodeEvaluationConfig, NodeId, NodeState, PartitionSubscription, SignalGraph, TemporalCondition,
 };
 use crate::tests::support::{
     evaluate, evaluate_on_demand, mask_a, mask_b, version_ab, GraphDependencyBatchExt, ASPECT_A,
@@ -206,10 +205,7 @@ fn invalidation_skips_direct_subscriber_when_contract_partition_scope_does_not_c
         &mut graph,
         source,
         ASPECT_A,
-        &[ChangedRegion {
-            partition: PartitionToken::new("tail"),
-            detail: Some("rib-2".to_owned()),
-        }],
+        &[ChangedRegion::new("tail").with_detail("rib-2")],
     )
     .unwrap();
 
@@ -243,10 +239,7 @@ fn invalidation_respects_mixed_aspect_and_partition_contracts() {
         &mut graph,
         source,
         ASPECT_A,
-        &[ChangedRegion {
-            partition: PartitionToken::new("wing"),
-            detail: Some("rib-12".to_owned()),
-        }],
+        &[ChangedRegion::new("wing").with_detail("rib-12")],
     )
     .unwrap();
     assert_eq!(graph.get_state(dependent).unwrap(), dependent_before);
@@ -259,10 +252,7 @@ fn invalidation_respects_mixed_aspect_and_partition_contracts() {
         &mut graph,
         source,
         ASPECT_A,
-        &[ChangedRegion {
-            partition: PartitionToken::new("wing"),
-            detail: Some("rib-99".to_owned()),
-        }],
+        &[ChangedRegion::new("wing").with_detail("rib-99")],
     )
     .unwrap();
     assert_eq!(graph.get_state(dependent).unwrap(), NodeState::Clean);

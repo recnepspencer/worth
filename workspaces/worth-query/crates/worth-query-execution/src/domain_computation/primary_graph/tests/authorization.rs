@@ -19,12 +19,15 @@ mod capability_delegation_progression;
 mod capability_delegation_session;
 #[path = "authorization/capability_elevation.rs"]
 mod capability_elevation;
-#[path = "authorization/capability_governed_input_work.rs"]
-mod capability_governed_input_work;
+#[path = "authorization/capability_governed_input.rs"]
+mod capability_governed_input;
 #[path = "authorization/capability_path_revalidation.rs"]
 mod capability_path_revalidation;
 #[path = "authorization/capability_progression.rs"]
 mod capability_progression;
+#[path = "authorization/capability_workflow_identity.rs"]
+mod capability_workflow_identity;
+
 #[path = "authorization/commit_authorization_lifecycle.rs"]
 mod commit_authorization_lifecycle;
 mod decision_ownership;
@@ -32,6 +35,8 @@ mod decision_ownership;
 mod graph_work_capacity;
 #[path = "authorization/ordinary_admission.rs"]
 mod ordinary_admission;
+#[path = "authorization/prepared_operation_graph.rs"]
+mod prepared_operation_graph;
 #[path = "authorization/scope_mismatch.rs"]
 mod scope_mismatch;
 #[path = "authorization/structured_input_validation.rs"]

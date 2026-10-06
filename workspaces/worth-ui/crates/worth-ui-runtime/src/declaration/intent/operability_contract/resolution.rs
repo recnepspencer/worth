@@ -1,5 +1,12 @@
 use crate::capability::UiIntentPayloadFieldKind;
 
+use worth_ui_dsl::{
+    WorthUiExpressionRole, WorthUiIntentMutabilitySourceSpec, WorthUiIntentPolicySourceSpec,
+    WorthUiIntentReadinessSourceSpec,
+};
+
+use crate::declaration::intent::{UiIntentSourcePlans, UiResolvedIntentExpressionSource};
+
 use super::{
     UiIntentOperabilityDependencyAxis, UiResolvedIntentMutabilitySource,
     UiResolvedIntentOperabilityContract, UiResolvedIntentPolicySource,
@@ -10,31 +17,29 @@ pub(crate) fn resolve_operability_contract(
     declaration: &str,
     spec: &worth_ui_dsl::WorthUiIntentOperabilityContractSpec,
     interaction: crate::capability::UiSemanticInteractionFamily,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    application_facts: &crate::declaration::UiIntentApplicationFactPlan,
+    plans: &UiIntentSourcePlans<'_>,
 ) -> Result<UiResolvedIntentOperabilityContract, crate::declaration::UiIntentCatalogPreparationDenial>
 {
-    let mutability = resolve_mutability(
-        declaration,
-        spec.mutability(),
-        interaction,
-        query,
-        application_facts,
-    )?;
-    let readiness = resolve_readiness(
-        declaration,
-        spec.readiness(),
-        interaction,
-        query,
-        application_facts,
-    )?;
-    let policy = UiResolvedIntentPolicySource {
-        slot: resolve_boolean_fact(
-            declaration,
-            UiIntentOperabilityDependencyAxis::Policy,
-            spec.policy().application_fact(),
-            application_facts,
-        )?,
+    let mutability = resolve_mutability(declaration, spec.mutability(), interaction, plans)?;
+    let readiness = resolve_readiness(declaration, spec.readiness(), interaction, plans)?;
+    let axis = UiIntentOperabilityDependencyAxis::Policy;
+    let policy = match spec.policy() {
+        WorthUiIntentPolicySourceSpec::ApplicationBoolean { fact } => {
+            UiResolvedIntentPolicySource::ApplicationBoolean(resolve_boolean_fact(
+                declaration,
+                axis,
+                fact,
+                plans.application_facts,
+            )?)
+        }
+        WorthUiIntentPolicySourceSpec::Condition { condition } => {
+            UiResolvedIntentPolicySource::Condition(resolve_condition(
+                declaration,
+                axis,
+                condition,
+                plans.expressions,
+            )?)
+        }
     };
     Ok(UiResolvedIntentOperabilityContract {
         identity: spec.identity().into(),
@@ -46,71 +51,105 @@ pub(crate) fn resolve_operability_contract(
 
 fn resolve_mutability(
     declaration: &str,
-    source: &worth_ui_dsl::WorthUiIntentMutabilitySourceSpec,
+    source: &WorthUiIntentMutabilitySourceSpec,
     interaction: crate::capability::UiSemanticInteractionFamily,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    application_facts: &crate::declaration::UiIntentApplicationFactPlan,
+    plans: &UiIntentSourcePlans<'_>,
 ) -> Result<UiResolvedIntentMutabilitySource, crate::declaration::UiIntentCatalogPreparationDenial>
 {
-    if let Some(fact) = source.application_fact() {
-        return Ok(UiResolvedIntentMutabilitySource::ApplicationBoolean(
-            resolve_boolean_fact(
+    let axis = UiIntentOperabilityDependencyAxis::Mutability;
+    Ok(match source {
+        WorthUiIntentMutabilitySourceSpec::ApplicationBoolean { fact } => {
+            UiResolvedIntentMutabilitySource::ApplicationBoolean(resolve_boolean_fact(
                 declaration,
-                UiIntentOperabilityDependencyAxis::Mutability,
+                axis,
                 fact,
-                application_facts,
-            )?,
-        ));
-    }
-    if let Some(projection) = source.projection() {
-        let (identity, slot) = resolve_projection(
-            declaration,
-            UiIntentOperabilityDependencyAxis::Mutability,
-            projection,
-            query,
-        )?;
-        return Ok(UiResolvedIntentMutabilitySource::ProjectionReadonly { identity, slot });
-    }
-    require_draft_source(
-        declaration,
-        UiIntentOperabilityDependencyAxis::Mutability,
-        interaction,
-    )?;
-    Ok(UiResolvedIntentMutabilitySource::CommittedDraft)
+                plans.application_facts,
+            )?)
+        }
+        WorthUiIntentMutabilitySourceSpec::ProjectionReadonly { projection } => {
+            let (identity, slot) = resolve_projection(declaration, axis, projection, plans.query)?;
+            UiResolvedIntentMutabilitySource::ProjectionReadonly { identity, slot }
+        }
+        WorthUiIntentMutabilitySourceSpec::Condition { condition } => {
+            UiResolvedIntentMutabilitySource::Condition(resolve_condition(
+                declaration,
+                axis,
+                condition,
+                plans.expressions,
+            )?)
+        }
+        WorthUiIntentMutabilitySourceSpec::CommittedDraft => {
+            require_draft_source(declaration, axis, interaction)?;
+            UiResolvedIntentMutabilitySource::CommittedDraft
+        }
+    })
 }
 
 fn resolve_readiness(
     declaration: &str,
-    source: &worth_ui_dsl::WorthUiIntentReadinessSourceSpec,
+    source: &WorthUiIntentReadinessSourceSpec,
     interaction: crate::capability::UiSemanticInteractionFamily,
-    query: &worth_ui_query_binding::WorthUiQueryBindingPlan,
-    application_facts: &crate::declaration::UiIntentApplicationFactPlan,
+    plans: &UiIntentSourcePlans<'_>,
 ) -> Result<UiResolvedIntentReadinessSource, crate::declaration::UiIntentCatalogPreparationDenial> {
-    if let Some(fact) = source.application_fact() {
-        return Ok(UiResolvedIntentReadinessSource::ApplicationBoolean(
-            resolve_boolean_fact(
+    let axis = UiIntentOperabilityDependencyAxis::Readiness;
+    Ok(match source {
+        WorthUiIntentReadinessSourceSpec::ApplicationBoolean { fact } => {
+            UiResolvedIntentReadinessSource::ApplicationBoolean(resolve_boolean_fact(
                 declaration,
-                UiIntentOperabilityDependencyAxis::Readiness,
+                axis,
                 fact,
-                application_facts,
-            )?,
-        ));
+                plans.application_facts,
+            )?)
+        }
+        WorthUiIntentReadinessSourceSpec::Projection { projection } => {
+            let (identity, slot) = resolve_projection(declaration, axis, projection, plans.query)?;
+            UiResolvedIntentReadinessSource::Projection { identity, slot }
+        }
+        WorthUiIntentReadinessSourceSpec::Condition { condition } => {
+            UiResolvedIntentReadinessSource::Condition(resolve_condition(
+                declaration,
+                axis,
+                condition,
+                plans.expressions,
+            )?)
+        }
+        WorthUiIntentReadinessSourceSpec::CommittedDraft => {
+            require_draft_source(declaration, axis, interaction)?;
+            UiResolvedIntentReadinessSource::CommittedDraft
+        }
+    })
+}
+
+/// Resolves a condition use site against the prepared expression catalog. A
+/// sealed package already refuses both denials; a programmatically fed
+/// catalog meets them here.
+fn resolve_condition(
+    declaration: &str,
+    axis: UiIntentOperabilityDependencyAxis,
+    identity: &str,
+    expressions: &crate::runtime::expression::UiExpressionCatalog,
+) -> Result<UiResolvedIntentExpressionSource, crate::declaration::UiIntentCatalogPreparationDenial>
+{
+    let Some((source, role)) = UiResolvedIntentExpressionSource::resolve(identity, expressions)
+    else {
+        return Err(
+            crate::declaration::UiIntentCatalogPreparationDenial::UnknownOperabilityCondition {
+                declaration: declaration.into(),
+                axis,
+                condition: identity.into(),
+            },
+        );
+    };
+    if role != WorthUiExpressionRole::Condition {
+        return Err(
+            crate::declaration::UiIntentCatalogPreparationDenial::OperabilityConditionRoleMismatch {
+                declaration: declaration.into(),
+                axis,
+                condition: identity.into(),
+            },
+        );
     }
-    if let Some(projection) = source.projection_identity() {
-        let (identity, slot) = resolve_projection(
-            declaration,
-            UiIntentOperabilityDependencyAxis::Readiness,
-            projection,
-            query,
-        )?;
-        return Ok(UiResolvedIntentReadinessSource::Projection { identity, slot });
-    }
-    require_draft_source(
-        declaration,
-        UiIntentOperabilityDependencyAxis::Readiness,
-        interaction,
-    )?;
-    Ok(UiResolvedIntentReadinessSource::CommittedDraft)
+    Ok(source)
 }
 
 fn resolve_boolean_fact(

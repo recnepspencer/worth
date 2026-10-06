@@ -6,24 +6,19 @@ use crate::data::output::PartitionSubscription;
 use crate::logic::evaluation::EvaluationWork;
 
 fn scope_bytes(scope: Option<&PartitionSubscription>) -> Option<usize> {
-    scope.map_or(Some(0), |s| {
-        s.partition
-            .0
-            .len()
-            .checked_add(s.detail.as_ref().map_or(0, String::len))
-    })
+    scope.map_or(Some(0), |s| s.path().checked_segment_bytes())
 }
 
 pub(super) fn scope_copy(
     scope: Option<&PartitionSubscription>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     work.reserve(scope_bytes(scope).and_then(|n| n.checked_add(8)))
 }
 
 pub(super) fn scope_comparison(
     scope: Option<&PartitionSubscription>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     work.reserve(
         scope_bytes(scope)
@@ -34,7 +29,7 @@ pub(super) fn scope_comparison(
 
 pub(super) fn dependencies(
     dependencies: &[DependencyEdge],
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     work.reserve(
         dependencies
@@ -51,14 +46,15 @@ pub(super) fn dependencies(
 pub(super) fn version(
     graph: &SignalGraph,
     dependency: &DependencyEdge,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<u64, SignalError> {
     match work {
-        EvaluationWork::Ordinary => graph.node_version_for_scope(
-            dependency.source(),
-            dependency.aspect(),
-            dependency.scope_ref(),
-        ),
+        EvaluationWork::Ordinary | EvaluationWork::RequestCheckpoint(_) => graph
+            .node_version_for_scope(
+                dependency.source(),
+                dependency.aspect(),
+                dependency.scope_ref(),
+            ),
         EvaluationWork::Conditional(work) => graph.conditional_node_version_for_scope(
             dependency.source(),
             dependency.aspect(),
@@ -71,7 +67,7 @@ pub(super) fn version(
 pub(super) fn snapshot_comparison(
     left: &[DependencySnapshotEntry],
     right: &[DependencySnapshotEntry],
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     let count = left.len().checked_add(right.len());
     work.reserve(count)?;

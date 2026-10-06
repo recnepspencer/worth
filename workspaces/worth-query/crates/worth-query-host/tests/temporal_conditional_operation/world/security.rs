@@ -89,7 +89,13 @@ impl CourtroomWorld {
             .unwrap();
         let outcome = self.application.compare_and_commit_application(
             effects.finish().unwrap(),
-            primary_graph::WorthQueryApplicationIdempotencyBinding::new([0x77; 32], [0x78; 32]),
+            primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+                TemporalHostSchema,
+                RevokeTemporalPrincipal,
+                _,
+                _,
+            >("security", "security")
+            .unwrap(),
         );
         assert!(
             matches!(

@@ -1,11 +1,11 @@
 use bank_domain::schema::ApprovePayment;
 use bank_server::{BankApprovedPaymentWorkflow, BankPaymentAssessmentSettlement};
 use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
-    RequiredWorkflowOperation, WorkflowDefinitionExpectedPredecessor,
-    WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
-    WorkflowProposalOutcome, WorthQueryOrdinaryWorkflowRunStop,
-    WorthQueryWorkflowAssessmentDemandProgress,
+    PerformedWorkflowProposal, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
+    RequiredWorkflowApproval, RequiredWorkflowCondition, RequiredWorkflowOperation,
+    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
+    WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
+    WorthQueryOrdinaryWorkflowRunStop, WorthQueryWorkflowAssessmentDemandProgress,
 };
 
 use super::approval::require_authenticated_approval_and_replay;
@@ -62,6 +62,41 @@ pub(super) fn prepare_approved_payment_approval_on_instance(
     PublishedWorkflowProposalRef,
     RequiredWorkflowApproval,
 ) {
+    let (proposal, limit) = reach_approval_limit(actor, &instance, actor_authority);
+    require_completed(
+        actor
+            .accept_approval_limit(
+                instance.clone(),
+                &limit,
+                actor_authority.clone(),
+                &key("approved-payment:condition:limit"),
+            )
+            .expect("the payment's current amount settles the approval limit"),
+        "approval/limit",
+    );
+    let progressed = actor.run(
+        instance.clone(),
+        actor_authority.clone(),
+        &[key("approved-payment:advance:approval")],
+    );
+    assert_eq!(progressed.attempted_steps(), 1);
+    assert!(progressed.transitions().is_empty());
+    let approval = match progressed.stop() {
+        WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingApproval(
+            required,
+        )) => required,
+        other => panic!("expected typed approval wait after the approval limit, got {other:?}"),
+    };
+    (instance, proposal.proposal().clone(), approval.clone())
+}
+
+/// Proposes the payment and settles both reviews and their evidence join,
+/// stopping at the approval limit.
+pub(super) fn reach_approval_limit(
+    actor: &BankApprovedPaymentWorkflow<'_, '_, '_>,
+    instance: &PublishedWorkflowInstanceRef,
+    actor_authority: &ApprovePayment,
+) -> (PerformedWorkflowProposal, RequiredWorkflowCondition) {
     let proposal = match actor
         .propose(
             instance.clone(),
@@ -153,19 +188,19 @@ pub(super) fn prepare_approved_payment_approval_on_instance(
     );
     let keys = [
         key("approved-payment:advance:evidence"),
-        key("approved-payment:advance:approval"),
+        key("approved-payment:advance:limit"),
     ];
     let progressed = actor.run(instance.clone(), actor_authority.clone(), &keys);
     assert_eq!(progressed.attempted_steps(), 2);
     assert_eq!(progressed.transitions().len(), 1);
     assert_eq!(progressed.transitions()[0].node_path(), "review/evidence");
-    let approval = match progressed.stop() {
-        WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingApproval(
+    let limit = match progressed.stop() {
+        WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingCondition(
             required,
-        )) => required,
-        other => panic!("expected typed approval wait after the evidence join, got {other:?}"),
+        )) => required.clone(),
+        other => panic!("expected the approval limit after the evidence join, got {other:?}"),
     };
-    (instance, proposal.proposal().clone(), approval.clone())
+    (proposal, limit)
 }
 
 pub(super) fn prepare_approved_payment_operation(

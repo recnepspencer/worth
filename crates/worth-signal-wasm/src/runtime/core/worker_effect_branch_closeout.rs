@@ -40,22 +40,16 @@ impl RuntimeCore {
             .iter()
             .map(|retirement| retirement.branch_id)
             .collect::<Vec<_>>();
-        let plan = match expect_success(
+        let plan = expect_success(
             self.runtime
                 .plan_signal_branch_retirement_batch_releasing_snapshots(native_requests),
             "plan worker retirement batch",
-        ) {
-            Ok(plan) => plan,
-            Err(error) => return Err(error),
-        };
+        )?;
         WorkerBranchSnapshotRetirement::release(self, &branch_ids);
-        let receipt = match expect_success(
+        let receipt = expect_success(
             self.runtime.retire_signal_branch_batch(plan),
             "retire worker branch batch",
-        ) {
-            Ok(receipt) => receipt,
-            Err(error) => return Err(error),
-        };
+        )?;
         let retirements = request
             .retirements
             .into_iter()
@@ -117,14 +111,11 @@ impl RuntimeCore {
             );
             retirement_requests.push((branch, basis, snapshots, reason));
         }
-        let retirement_plan = match expect_success(
+        let retirement_plan = expect_success(
             self.runtime
                 .plan_signal_branch_retirement_batch_releasing_snapshots(retirement_requests),
             "plan worker effect closeout retirement batch",
-        ) {
-            Ok(plan) => plan,
-            Err(error) => return Err(error),
-        };
+        )?;
 
         let canonical_transaction =
             match self.apply_transaction_to_worker_branch(request.canonical_transaction) {

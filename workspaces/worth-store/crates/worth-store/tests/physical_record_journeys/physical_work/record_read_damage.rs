@@ -81,7 +81,10 @@ fn partial_backend_read_is_denied_at_the_public_read_boundary_and_revokes_health
         .find(|binding| binding.digest() == failed.signal_binding())
         .and_then(|binding| binding.partition())
         .expect("the failing read binding is partitioned");
-    assert_eq!(partition.partition.0, "store.physical.record.frame");
+    assert_eq!(
+        partition.path().segments()[0],
+        "store.physical.record.frame"
+    );
     assert_eq!(failed.effect_fate(), PhysicalWorkEffectFate::ReadIncomplete);
     assert_eq!(
         failed.recovery(),

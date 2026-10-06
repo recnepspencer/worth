@@ -23,8 +23,10 @@ pub(super) fn distinct_layout_attributions_share_one_color_raster_key() {
     let (fonts, _) = UiGlobalFontCollection::admit_qualified_profile().unwrap();
     let fonts = Arc::new(fonts);
     let source = "👩\u{200d}💻";
-    let left = layout(source, 160_000, Arc::clone(&fonts));
-    let right = layout(source, 200_000, fonts);
+    // A start-aligned line is one layout at every width that fits it, so the
+    // two layouts differ in how many lines they may take instead.
+    let left = layout(source, 2, Arc::clone(&fonts));
+    let right = layout(source, 3, fonts);
     assert_ne!(left.identity(), right.identity());
     let left_demand = demand(&left, source);
     let right_demand = demand(&right, source);
@@ -80,7 +82,7 @@ fn is_color(key: UiGlyphRasterKey) -> bool {
 
 fn layout(
     source: &str,
-    width_millipoints: u32,
+    maximum_lines: u32,
     fonts: Arc<UiGlobalFontCollection>,
 ) -> crate::UiQualifiedTextLayout {
     let constraints = UiTextParagraphConstraints::new(UiTextParagraphConstraintsInput {
@@ -90,12 +92,12 @@ fn layout(
         alignment: UiTextAlignment::Start,
         overflow: UiTextOverflow::Clip,
         font_size_millipoints: 14_000,
-        width_millipoints,
+        width_millipoints: 160_000,
         line_height_millipoints: 18_000,
         letter_spacing_millipoints: 0,
         word_spacing_millipoints: 0,
         tab_interval_millipoints: 56_000,
-        maximum_lines: 2,
+        maximum_lines,
     })
     .unwrap();
     let source: Arc<str> = Arc::from(source);

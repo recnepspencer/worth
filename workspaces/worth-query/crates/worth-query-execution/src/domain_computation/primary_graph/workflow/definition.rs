@@ -1,7 +1,9 @@
 mod codec;
 mod compilation;
+mod condition;
 mod dependencies;
 mod facts;
+mod inbound_codec;
 mod preparation;
 mod publication;
 mod retirement;
@@ -10,6 +12,10 @@ pub(in crate::domain_computation::primary_graph) use compilation::{
     reconstruct_compiled_definition, CompiledWorkflowAssessmentApplicability,
     CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
     WorkflowDefinitionCompilationPosture, WorkflowDefinitionCompilationReuse,
+};
+pub use condition::WorkflowConditionOperand;
+pub(in crate::domain_computation::primary_graph) use condition::{
+    encode_draft, encode_operands, CompiledWorkflowCondition, CompiledWorkflowConditionExpression,
 };
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use dependencies::WorkflowRetainedNode;

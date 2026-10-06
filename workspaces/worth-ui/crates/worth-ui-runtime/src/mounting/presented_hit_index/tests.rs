@@ -186,6 +186,7 @@ fn denied_point_queries_retain_partition_probes_without_scanning_regions() {
                 node_receipt: issuer.receipt_for(instance),
                 bounds,
                 clip_bounds: bounds,
+                painted_bounds: None,
                 order: UiMountedHitTestOrder::from_runtime_plan(1),
             },
         )
@@ -261,6 +262,7 @@ pub(super) fn row(
             node_receipt: receipt,
             bounds,
             clip_bounds: bounds,
+            painted_bounds: None,
             order: UiMountedHitTestOrder::from_runtime_plan(order),
         })
         .unwrap();

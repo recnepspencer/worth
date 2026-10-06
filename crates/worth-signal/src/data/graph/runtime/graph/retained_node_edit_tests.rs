@@ -6,6 +6,7 @@ use super::{NodeArena, SignalGraph};
 mod clone_work;
 mod publication_peak;
 mod reservation_lifetime;
+mod selected_roles;
 use crate::data::node::{NodeColdData, NodeHotData, NodeState, NodeWarmData};
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStorageMeasurement, RetainedStoragePreparation as Work,

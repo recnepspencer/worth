@@ -1,5 +1,6 @@
 use crate::branch::ProductBranchObservation;
 use crate::identity::CompositePublicationAttemptIdentity;
+use crate::identity::{ProductBranchIncarnation, ProductBranchReferenceGeneration};
 use crate::lifecycle::RuntimeWorldInstant;
 
 use super::{
@@ -25,6 +26,34 @@ pub enum CompositeAttemptCancellationPosture {
     CancellationObserved,
 }
 
+/// The successor address reserved by this exact World attempt. It describes
+/// where a performed product movement will land; it cannot perform one.
+#[derive(Debug)]
+pub struct PlannedProductReferenceSuccessor {
+    attempt: CompositePublicationAttemptIdentity,
+    occurrence: ProductBranchIncarnation,
+    generation: ProductBranchReferenceGeneration,
+}
+
+impl PlannedProductReferenceSuccessor {
+    pub fn attempt_identity(&self) -> &CompositePublicationAttemptIdentity {
+        &self.attempt
+    }
+
+    pub fn occurrence(&self) -> ProductBranchIncarnation {
+        self.occurrence
+    }
+
+    pub fn generation(&self) -> ProductBranchReferenceGeneration {
+        self.generation
+    }
+
+    pub fn matches_performed_head(&self, head: &ProductBranchObservation) -> bool {
+        self.occurrence == head.lifecycle_incarnation()
+            && self.generation == head.reference_generation()
+    }
+}
+
 /// Reserved, attempt-affine state between lowering and owner execution. All
 /// capacity fields are live owner-issued reservations; no copied limit can
 /// authorize the later phases.
@@ -32,6 +61,7 @@ pub enum CompositeAttemptCancellationPosture {
 pub struct ReservedCompositePublicationAttempt {
     identity: CompositePublicationAttemptIdentity,
     expected_head: ProductBranchObservation,
+    planned_successor: PlannedProductReferenceSuccessor,
     predecessor_basis: crate::basis::AdmittedCompositeRuntimeWorldBasis,
     plan: LoweredOwnerComponentPlan,
     custody: super::ActiveAttemptCustody,
@@ -72,6 +102,14 @@ impl ReservedCompositePublicationAttempt {
         capacities: ReservedAttemptCapacities,
         deadline: Option<RuntimeWorldInstant>,
     ) -> Self {
+        let planned_successor = PlannedProductReferenceSuccessor {
+            attempt: identity.clone(),
+            occurrence: expected_head.lifecycle_incarnation(),
+            generation: expected_head
+                .reference_generation()
+                .advance()
+                .expect("the World owner validates successor generation before reservation"),
+        };
         let custody = super::ActiveAttemptCustody::register(
             identity.clone(),
             expected_head.clone(),
@@ -82,6 +120,7 @@ impl ReservedCompositePublicationAttempt {
         Self {
             identity,
             expected_head,
+            planned_successor,
             predecessor_basis,
             plan,
             custody,
@@ -99,6 +138,10 @@ impl ReservedCompositePublicationAttempt {
 
     pub fn expected_head(&self) -> &ProductBranchObservation {
         &self.expected_head
+    }
+
+    pub fn planned_successor(&self) -> &PlannedProductReferenceSuccessor {
+        &self.planned_successor
     }
 
     pub fn predecessor_basis(&self) -> &crate::basis::AdmittedCompositeRuntimeWorldBasis {

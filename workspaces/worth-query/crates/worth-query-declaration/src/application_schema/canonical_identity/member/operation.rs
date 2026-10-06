@@ -60,6 +60,65 @@ pub(super) fn append_operation_member(
             operation,
             contract,
         } => append_operation_aftermath(basis, prefix, operation, contract),
+        ApplicationSchemaMember::OperationInboundOccurrence {
+            operation,
+            effect,
+            protocol,
+            source_identity,
+            limits,
+        } => {
+            append_operation_header(basis, prefix, "operation-inbound-occurrence", operation);
+            basis.text(format!("{prefix}.effect"), effect);
+            basis.text(
+                format!("{prefix}.protocol-identity"),
+                protocol.identity().as_str(),
+            );
+            basis.u32(
+                format!("{prefix}.protocol-version"),
+                protocol.version().get(),
+            );
+            basis.text(format!("{prefix}.source-identity"), source_identity);
+            basis.u64(
+                format!("{prefix}.maximum-envelope-bytes"),
+                limits.maximum_envelope_bytes.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-verifier-work"),
+                limits.maximum_verifier_work.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-payload-bytes"),
+                limits.maximum_payload_bytes.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-outstanding-dispatch-provenance"),
+                limits.maximum_outstanding_dispatch_provenance.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-accepted-occurrences"),
+                limits.maximum_accepted_occurrences.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-accepted-bytes"),
+                limits.maximum_accepted_bytes.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-concurrent-publications"),
+                limits.maximum_concurrent_publications.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-discovery-work"),
+                limits.maximum_discovery_work.get(),
+            );
+            basis.u64(
+                format!("{prefix}.replay-window-milliseconds"),
+                limits.replay_window_milliseconds.get(),
+            );
+            basis.u64(
+                format!("{prefix}.maximum-cleanup-work"),
+                limits.maximum_cleanup_work.get(),
+            );
+        }
         _ => unreachable!("operation member router supplied another member family"),
     }
 }

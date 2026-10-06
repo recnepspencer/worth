@@ -7,7 +7,7 @@ use super::counters::lock_counters;
 use super::denial::CompositeHistoryCatalogDenial;
 use super::entry::CompositeHistoryCatalogEntry;
 use super::reachability::lock_index;
-use super::{CompositeCommitParent, CompositeHistoryCatalogState};
+use super::{CompositeCommitParent, CompositeHistoryCatalogState, CompositeRuntimeWorldCommit};
 
 pub(super) fn lock_state(
     state: &Arc<Mutex<CompositeHistoryCatalogState>>,
@@ -69,6 +69,8 @@ pub(super) fn release_reservation(
         .entries
         .remove(identity)
         .is_some_and(|slot| slot.get().is_none()));
+    assert!(state.inspection_order.remove(identity));
+    state.publication_revision.advance();
     lock_index(&state.reachability).release_reservation(identity);
     state.metadata.release_reservation(&reservation);
     lock_counters(&state.counters).record_metadata_release();
@@ -81,9 +83,7 @@ pub(super) fn release_reservation(
     }
 }
 
-pub(super) fn ordinary_parent_identity(
-    parent: &CompositeCommitParent,
-) -> Option<CompositeCommitIdentity> {
+fn ordinary_parent_identity(parent: &CompositeCommitParent) -> Option<CompositeCommitIdentity> {
     match parent {
         CompositeCommitParent::Root => None,
         CompositeCommitParent::Ordinary(parent) => Some(parent.commit().clone()),
@@ -128,25 +128,54 @@ pub(super) fn remove_installed(
     state: &mut CompositeHistoryCatalogState,
     identity: &CompositeCommitIdentity,
 ) -> Arc<std::sync::OnceLock<CompositeHistoryCatalogEntry>> {
+    let (entry, parent) = detach_installed(state, identity);
+    // The base's parent was retired before it; nothing remains to release.
+    if let Some((parent, _)) = parent {
+        if state.entries.contains_key(&parent) {
+            lock_index(&state.reachability).decrement_descendant_dependency(&parent);
+        }
+    }
+    entry
+}
+
+/// Removes one installed commit whose reachability row is already released,
+/// and returns its effective parent. The parent's dependency is left for the
+/// caller: reclamation releases it, and retirement hands it to the child.
+pub(super) fn detach_installed(
+    state: &mut CompositeHistoryCatalogState,
+    identity: &CompositeCommitIdentity,
+) -> (
+    Arc<std::sync::OnceLock<CompositeHistoryCatalogEntry>>,
+    Option<(CompositeCommitIdentity, usize)>,
+) {
     let entry = state
         .entries
         .remove(identity)
         .expect("prevalidated candidate remains installed during reclamation");
+    assert!(state.inspection_order.remove(identity));
+    state.publication_revision.advance();
     let installed = entry.get().expect("prevalidated installed slot");
-    let parent = installed.commit().parent().clone();
-    {
-        let mut reachability = lock_index(&state.reachability);
-        reachability.remove_installed(identity);
-        if let CompositeCommitParent::Ordinary(parent) = &parent {
-            reachability.decrement_descendant_dependency(parent.commit());
-        }
-    }
+    let parent = effective_parent(state, installed.commit());
+    state.spliced.remove(identity);
+    lock_index(&state.reachability).remove_installed(identity);
     state
         .metadata
         .release_installed(installed.metadata_charge());
     lock_counters(&state.counters).record_metadata_release();
-    if matches!(parent, CompositeCommitParent::Root) && state.root.as_ref() == Some(identity) {
+    if state.root.as_ref() == Some(identity) {
         state.root = None;
     }
-    entry
+    (entry, parent)
+}
+
+/// The parent `commit` depends on and the original generations between them.
+/// Retirement may have spliced commits out of that edge.
+pub(super) fn effective_parent(
+    state: &CompositeHistoryCatalogState,
+    commit: &CompositeRuntimeWorldCommit,
+) -> Option<(CompositeCommitIdentity, usize)> {
+    match state.spliced.get(commit.identity()) {
+        Some(spliced) => Some((spliced.parent.clone(), spliced.generations)),
+        None => ordinary_parent_identity(commit.parent()).map(|parent| (parent, 1)),
+    }
 }

@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationProgramRevision, ApplicationWorkflowApprovalRef,
-        ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionRef,
+        ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionQuery,
         ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
     },
     application_schema::{ApplicationSchema, ApplicationSchemaBindingIdentity},
@@ -82,6 +82,8 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) binding_identity: &'static str,
     pub(super) requires_workflow_authority: bool,
     pub(super) reference: ApplicationWorkflowOperationRef,
+    pub(super) inbound_ref:
+        Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,
 }
 
 #[derive(Clone)]
@@ -94,14 +96,14 @@ pub(super) struct InstalledWorkflowAssessment {
     pub(super) reference: ApplicationWorkflowAssessmentRef,
 }
 
+/// An installed query a condition expression may read as an operand.
 #[derive(Clone)]
 pub(super) struct InstalledWorkflowCondition {
-    pub(super) query_marker: TypeId,
     pub(super) query_identifier: &'static str,
     pub(super) parameter_type: WorthQueryPortableTypeIdentity,
     pub(super) result_type: WorthQueryPortableTypeIdentity,
     pub(super) binding_identity: &'static str,
-    pub(super) reference: ApplicationWorkflowConditionRef,
+    pub(super) query: ApplicationWorkflowConditionQuery,
 }
 
 #[derive(Clone)]

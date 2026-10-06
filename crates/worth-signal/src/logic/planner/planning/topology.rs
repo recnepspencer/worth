@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::data::request_preparation::{self as preparation_budget, SignalPreparationBudget};
 
 use crate::data::bitset::DenseBitset;
 use crate::data::comparator::ComparatorPolicyResolver;
@@ -36,16 +36,32 @@ pub(super) fn discover_plan_topology(
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
     resolver: &mut impl ComparatorPolicyResolver,
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<PlanTopology, SignalError> {
     let (arena, _, _, _) = graph.as_parts_mut();
     let arena_capacity = arena.len();
+    preparation_budget::claim_vec::<Option<PlannedNode>>(
+        preparation.as_deref_mut(),
+        arena_capacity,
+    )?;
+    preparation_budget::claim_vec::<u64>(
+        preparation.as_deref_mut(),
+        arena_capacity.saturating_add(63) / 64,
+    )?;
+    preparation_budget::claim_vec::<NodeId>(preparation.as_deref_mut(), targets.len())?;
     let mut planned = vec![None::<PlannedNode>; arena_capacity];
     let mut planned_nodes = Vec::<NodeId>::new();
     let mut visiting = DenseBitset::new();
     let mut stats = PlanningStats::default();
     visiting.ensure_len(arena_capacity);
     let targets = DedupedNodeBatch::canonicalize_unordered(targets.iter().copied()).into_vec();
-    let unsettled_paths = discover_unsettled_dependency_paths(graph, &targets)?;
+    let unsettled_paths = discover_unsettled_dependency_paths(
+        graph,
+        &targets,
+        work.as_deref_mut(),
+        preparation.as_deref_mut(),
+    )?;
 
     for &target in &targets {
         graph.get_state(target)?;
@@ -63,6 +79,8 @@ pub(super) fn discover_plan_topology(
             &mut planned,
             &mut planned_nodes,
             &mut stats,
+            work.as_deref_mut(),
+            preparation.as_deref_mut(),
         )?;
     }
 
@@ -83,6 +101,8 @@ fn visit_node(
     planned: &mut [Option<PlannedNode>],
     planned_nodes: &mut Vec<NodeId>,
     stats: &mut PlanningStats,
+    mut work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
+    mut preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<(), SignalError> {
     #[derive(Debug, Clone, Copy)]
     enum VisitFrame {
@@ -90,8 +110,10 @@ fn visit_node(
         Exit(NodeId),
     }
 
+    preparation_budget::claim_vec::<VisitFrame>(preparation.as_deref_mut(), 1)?;
     let mut stack = vec![VisitFrame::Enter(candidate)];
     while let Some(frame) = stack.pop() {
+        super::super::precompute::work::checkpoint(work.as_deref_mut(), 1)?;
         match frame {
             VisitFrame::Enter(candidate) => {
                 let node = candidate.node;
@@ -123,25 +145,43 @@ fn visit_node(
                     direct_request: candidate.direct_request,
                     maybe_stale_admission: None,
                 });
-                planned_nodes.push(node);
+                preparation_budget::push(planned_nodes, node, preparation.as_deref_mut())?;
                 visiting.mark(node_index);
-                stack.push(VisitFrame::Exit(node));
+                preparation_budget::push(
+                    &mut stack,
+                    VisitFrame::Exit(node),
+                    preparation.as_deref_mut(),
+                )?;
 
                 match state {
                     NodeState::Dirty => {
-                        let dependencies = graph.runtime_dependencies_of(node)?.to_vec();
+                        let dependencies = super::required_inputs::required_input_sources(
+                            graph,
+                            node,
+                            work.as_deref_mut(),
+                            preparation.as_deref_mut(),
+                        )?;
                         for dependency in dependencies.into_iter().rev() {
-                            stack.push(VisitFrame::Enter(CandidateTask {
-                                node: dependency.source(),
-                                request_mode: candidate.request_mode,
-                                direct_request: false,
-                                trigger_reason: TaskReason::DependencyRequired,
-                            }));
+                            preparation_budget::push(
+                                &mut stack,
+                                VisitFrame::Enter(CandidateTask {
+                                    node: dependency,
+                                    request_mode: candidate.request_mode,
+                                    direct_request: false,
+                                    trigger_reason: TaskReason::DependencyRequired,
+                                }),
+                                preparation.as_deref_mut(),
+                            )?;
                         }
                     }
                     NodeState::MaybeStale => {
-                        let preview =
-                            super::validation::preview_maybe_stale(graph, node, resolver)?;
+                        let preview = super::validation::preview_maybe_stale(
+                            graph,
+                            node,
+                            resolver,
+                            work.as_deref_mut(),
+                            preparation.as_deref_mut(),
+                        )?;
                         if let Some(existing) = &mut planned[node_index] {
                             existing.maybe_stale_admission = Some(MaybeStaleAdmission {
                                 unchanged_at_admission: preview.unchanged,
@@ -154,13 +194,39 @@ fn visit_node(
                             } else {
                                 TaskReason::DependencyRequired
                             };
-                        for source in preview.requires_upstream_evaluation.into_iter().rev() {
-                            stack.push(VisitFrame::Enter(CandidateTask {
-                                node: source,
-                                request_mode: candidate.request_mode,
-                                direct_request: false,
-                                trigger_reason: upstream_reason,
-                            }));
+                        let mut required_sources = preview.requires_upstream_evaluation;
+                        let additional = super::required_inputs::required_input_sources(
+                            graph,
+                            node,
+                            work.as_deref_mut(),
+                            preparation.as_deref_mut(),
+                        )?;
+                        for source in additional {
+                            preparation_budget::push(
+                                &mut required_sources,
+                                source,
+                                preparation.as_deref_mut(),
+                            )?;
+                        }
+                        super::super::precompute::work::checkpoint(
+                            work.as_deref_mut(),
+                            required_sources.len().saturating_mul(
+                                required_sources.len().checked_ilog2().unwrap_or(0) as usize + 2,
+                            ),
+                        )?;
+                        required_sources.sort_unstable();
+                        required_sources.dedup();
+                        for source in required_sources.into_iter().rev() {
+                            preparation_budget::push(
+                                &mut stack,
+                                VisitFrame::Enter(CandidateTask {
+                                    node: source,
+                                    request_mode: candidate.request_mode,
+                                    direct_request: false,
+                                    trigger_reason: upstream_reason,
+                                }),
+                                preparation.as_deref_mut(),
+                            )?;
                         }
                     }
                     NodeState::Clean
@@ -170,28 +236,46 @@ fn visit_node(
                                 EvaluationRequestMode::ForceOnDemand
                             ) =>
                     {
-                        let dependencies = graph.runtime_dependencies_of(node)?.to_vec();
+                        let dependencies = super::required_inputs::required_input_sources(
+                            graph,
+                            node,
+                            work.as_deref_mut(),
+                            preparation.as_deref_mut(),
+                        )?;
                         for dependency in dependencies.into_iter().rev() {
-                            if !matches!(graph.get_state(dependency.source())?, NodeState::Clean) {
-                                stack.push(VisitFrame::Enter(CandidateTask {
-                                    node: dependency.source(),
-                                    request_mode: candidate.request_mode,
-                                    direct_request: false,
-                                    trigger_reason: TaskReason::DependencyRequired,
-                                }));
+                            if !matches!(graph.get_state(dependency)?, NodeState::Clean) {
+                                preparation_budget::push(
+                                    &mut stack,
+                                    VisitFrame::Enter(CandidateTask {
+                                        node: dependency,
+                                        request_mode: candidate.request_mode,
+                                        direct_request: false,
+                                        trigger_reason: TaskReason::DependencyRequired,
+                                    }),
+                                    preparation.as_deref_mut(),
+                                )?;
                             }
                         }
                     }
                     NodeState::Clean => {
-                        let dependencies = graph.runtime_dependencies_of(node)?.to_vec();
+                        let dependencies = super::required_inputs::required_input_sources(
+                            graph,
+                            node,
+                            work.as_deref_mut(),
+                            preparation.as_deref_mut(),
+                        )?;
                         for dependency in dependencies.into_iter().rev() {
-                            if unsettled_paths.contains(dependency.source()) {
-                                stack.push(VisitFrame::Enter(CandidateTask {
-                                    node: dependency.source(),
-                                    request_mode: candidate.request_mode,
-                                    direct_request: false,
-                                    trigger_reason: TaskReason::DependencyRequired,
-                                }));
+                            if unsettled_paths.contains(dependency) {
+                                preparation_budget::push(
+                                    &mut stack,
+                                    VisitFrame::Enter(CandidateTask {
+                                        node: dependency,
+                                        request_mode: candidate.request_mode,
+                                        direct_request: false,
+                                        trigger_reason: TaskReason::DependencyRequired,
+                                    }),
+                                    preparation.as_deref_mut(),
+                                )?;
                             }
                         }
                     }
@@ -204,93 +288,4 @@ fn visit_node(
     }
 
     Ok(())
-}
-
-pub(super) struct DepthCache {
-    index_by_node: HashMap<NodeId, usize>,
-    depths: Vec<u32>,
-}
-
-impl DepthCache {
-    pub(super) fn depth_for(&self, node: NodeId) -> Option<u32> {
-        self.index_by_node
-            .get(&node)
-            .and_then(|index| self.depths.get(*index).copied())
-    }
-
-    pub(super) fn max_depth(&self) -> usize {
-        self.depths.iter().copied().max().unwrap_or(0) as usize
-    }
-}
-
-pub(super) fn compute_depths(
-    graph: &mut SignalGraph,
-    planned_nodes: &[NodeId],
-) -> Result<DepthCache, SignalError> {
-    let mut index_by_node = HashMap::with_capacity(planned_nodes.len());
-    for (index, node) in planned_nodes.iter().copied().enumerate() {
-        index_by_node.insert(node, index);
-    }
-
-    let mut indegree = vec![0_u32; planned_nodes.len()];
-    let mut outgoing = vec![Vec::<usize>::new(); planned_nodes.len()];
-    for (node_index, &node) in planned_nodes.iter().enumerate() {
-        for dependency in graph.runtime_dependencies_of(node)? {
-            let source = dependency.source();
-            let Some(&source_index) = index_by_node.get(&source) else {
-                continue;
-            };
-            indegree[node_index] += 1;
-            outgoing[source_index].push(node_index);
-        }
-    }
-
-    let mut frontier = planned_nodes
-        .iter()
-        .enumerate()
-        .filter_map(|(index, node)| (indegree[index] == 0).then_some(*node))
-        .collect::<Vec<_>>();
-    frontier = DedupedNodeBatch::canonicalize_unordered(frontier).into_vec();
-
-    let mut depths = vec![0_u32; planned_nodes.len()];
-    let mut visited = 0usize;
-    while let Some(node) = frontier.pop() {
-        let node_index = *index_by_node
-            .get(&node)
-            .ok_or_else(|| SignalError::internal("planned node missing compact depth index"))?;
-        visited += 1;
-        let depth = graph
-            .runtime_dependencies_of(node)?
-            .iter()
-            .filter_map(|dependency| {
-                index_by_node
-                    .get(&dependency.source())
-                    .and_then(|source_index| depths.get(*source_index).copied())
-            })
-            .max()
-            .map_or(0, |parent| parent + 1);
-        depths[node_index] = depth;
-
-        let mut newly_ready = Vec::new();
-        for &child_index in &outgoing[node_index] {
-            let degree = &mut indegree[child_index];
-            *degree = degree.saturating_sub(1);
-            if *degree == 0 {
-                newly_ready.push(planned_nodes[child_index]);
-            }
-        }
-        let newly_ready = DedupedNodeBatch::canonicalize_unordered(newly_ready).into_vec();
-        frontier.extend(newly_ready.into_iter().rev());
-    }
-
-    if visited != planned_nodes.len() {
-        return Err(SignalError::internal(
-            "planner depth computation encountered a cycle in the planned graph",
-        ));
-    }
-
-    Ok(DepthCache {
-        index_by_node,
-        depths,
-    })
 }

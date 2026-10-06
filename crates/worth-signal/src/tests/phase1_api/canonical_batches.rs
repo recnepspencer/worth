@@ -6,18 +6,9 @@ fn proof_bearing_batches_and_summaries_canonicalize_their_inputs() {
     let node_a = NodeId::new(7, 1);
     let node_b = NodeId::new(3, 2);
     let changed_regions = CanonicalChangedRegions::new(vec![
-        ChangedRegion {
-            partition: "wing".into(),
-            detail: Some("spar".into()),
-        },
-        ChangedRegion {
-            partition: "wing".into(),
-            detail: Some("spar".into()),
-        },
-        ChangedRegion {
-            partition: "fuselage".into(),
-            detail: None,
-        },
+        ChangedRegion::new("wing").with_detail("spar"),
+        ChangedRegion::new("wing").with_detail("spar"),
+        ChangedRegion::new("fuselage"),
     ]);
     let touched_nodes = DedupedNodeBatch::new([node_a, node_b, node_a]);
     let touched_sources = SortedSourceBatch::new([node_a, node_b, node_b]);

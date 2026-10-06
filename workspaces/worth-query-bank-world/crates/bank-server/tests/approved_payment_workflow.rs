@@ -2,6 +2,8 @@
 mod actor_handoff;
 #[path = "approved_payment_workflow/approval.rs"]
 mod approval;
+#[path = "approved_payment_workflow/approval_limit.rs"]
+mod approval_limit;
 #[path = "approved_payment_workflow/assertions.rs"]
 mod assertions;
 #[path = "approved_payment_workflow/assessment_settlement.rs"]
@@ -20,6 +22,8 @@ mod journey;
 mod owner_custody;
 #[path = "approved_payment_workflow/postures.rs"]
 mod postures;
+#[path = "approved_payment_workflow/program_retirement.rs"]
+mod program_retirement;
 #[allow(
     dead_code,
     reason = "the shared rail adapter exposes additional custody probes used by its owning court"
@@ -180,44 +184,30 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         .expect("the exact workflow-bound operation prepares recovery")
         .safe_retry()
         .expect("fresh recovery authority re-dispatches the committed outbox");
-    require_completed(
-        workflow
-            .accept_recovered_applied(
-                instance.clone(),
-                &still_required,
-                authority.clone(),
-                authority.clone(),
-                &key("approved-payment:operation:perform"),
-                &recovery,
-                &key("approved-payment:operation:accept:recovered"),
-            )
-            .expect("the exact completed recovery proof settles the operation"),
-        "apply",
-    );
-    require_completed(
-        workflow
-            .accept_recovered_applied(
-                instance.clone(),
-                &operation,
-                authority.clone(),
-                authority.clone(),
-                &key("approved-payment:operation:perform"),
-                &recovery,
-                &key("approved-payment:operation:accept:recovered"),
-            )
-            .expect("the recovered workflow settlement replays without another dispatch"),
-        "apply",
-    );
+    let denied = workflow
+        .accept_recovered_applied(
+            instance.clone(),
+            &still_required,
+            authority.clone(),
+            authority.clone(),
+            &key("approved-payment:operation:perform"),
+            &recovery,
+            &key("approved-payment:operation:accept:recovered"),
+        )
+        .expect_err("rail-local completion does not publish an authenticated inbound terminal");
+    assert!(matches!(
+        denied,
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(_)
+    ));
     assert_eq!(settlement_rail.attempts().len(), 2);
     assert_eq!(settlement_rail.completed_effect_count(), 1);
-    let keys = [key("approved-payment:advance:completed")];
-    let completed = workflow.run(instance.clone(), authority, &keys);
-    assert_eq!(completed.attempted_steps(), 1);
-    assert_eq!(completed.transitions().len(), 1);
-    assert_eq!(completed.transitions()[0].node_path(), "completed");
+    let keys = [key("approved-payment:advance:without-inbound")];
+    let pending = workflow.run(instance.clone(), authority, &keys);
+    assert_eq!(pending.attempted_steps(), 1);
+    assert!(pending.transitions().is_empty());
     assert!(matches!(
-        completed.stop(),
-        WorthQueryOrdinaryWorkflowRunStop::Terminal
+        pending.stop(),
+        WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingOperation(_))
     ));
 
     let observed = fixture

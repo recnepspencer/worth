@@ -5,6 +5,8 @@ use worth_query_admission::facade::graph_read_access::WorthQueryGraphReadBudget;
 const DEFAULT_INLINE_INDEX_BYTES: usize = 5_120;
 const DEFAULT_RESULT_BYTES_PER_ROOT: usize = 4_096;
 const DEFAULT_CONCURRENT_GRAPH_WORK: usize = 64;
+// Runaway safeguard, not a latency promise or a guarantee that every shape fits.
+const DEFAULT_MAXIMUM_WORK: usize = 1_048_576;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryResourceProfileDenial {
@@ -16,6 +18,7 @@ pub enum WorthQueryApplicationQueryResourceProfileDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationQueryResourceProfile {
+    maximum_work: NonZeroUsize,
     maximum_inline_index_bytes: NonZeroUsize,
     maximum_result_bytes_per_root: NonZeroUsize,
     maximum_intermediate_set_size: NonZeroUsize,
@@ -30,6 +33,7 @@ impl WorthQueryApplicationQueryResourceProfile {
         maximum_concurrent_graph_work: usize,
     ) -> Result<Self, WorthQueryApplicationQueryResourceProfileDenial> {
         Ok(Self {
+            maximum_work: NonZeroUsize::new(DEFAULT_MAXIMUM_WORK).expect("nonzero default work"),
             maximum_inline_index_bytes: NonZeroUsize::new(maximum_inline_index_bytes)
                 .ok_or(WorthQueryApplicationQueryResourceProfileDenial::ZeroInlineIndexBytes)?,
             maximum_result_bytes_per_root: NonZeroUsize::new(maximum_result_bytes_per_root)
@@ -39,6 +43,15 @@ impl WorthQueryApplicationQueryResourceProfile {
             maximum_concurrent_graph_work: NonZeroUsize::new(maximum_concurrent_graph_work)
                 .ok_or(WorthQueryApplicationQueryResourceProfileDenial::ZeroConcurrentGraphWork)?,
         })
+    }
+
+    pub const fn with_maximum_work(mut self, maximum_work: NonZeroUsize) -> Self {
+        self.maximum_work = maximum_work;
+        self
+    }
+
+    pub const fn maximum_work(self) -> NonZeroUsize {
+        self.maximum_work
     }
 
     pub const fn maximum_inline_index_bytes(self) -> NonZeroUsize {
@@ -62,7 +75,34 @@ impl WorthQueryApplicationQueryResourceProfile {
         maximum_result_count: NonZeroUsize,
         request_maximum_work: NonZeroUsize,
     ) -> WorthQueryGraphReadBudget {
-        WorthQueryGraphReadBudget::bounded(
+        let (index, result, intermediate) =
+            self.admission_limits(maximum_result_count, request_maximum_work);
+        WorthQueryGraphReadBudget::bounded(index, result, intermediate)
+    }
+
+    pub(crate) fn admission_budget_admitted<Stop>(
+        self,
+        maximum_result_count: NonZeroUsize,
+        request_maximum_work: NonZeroUsize,
+        admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        WorthQueryGraphReadBudget,
+        worth_query_admission::integration::WorthQueryCanonicalIdentityStop<Stop>,
+    > {
+        admit(4, 0).map_err(
+            worth_query_admission::integration::WorthQueryCanonicalIdentityStop::Admission,
+        )?;
+        let (index, result, intermediate) =
+            self.admission_limits(maximum_result_count, request_maximum_work);
+        WorthQueryGraphReadBudget::bounded_admitted(index, result, intermediate, admit)
+    }
+
+    fn admission_limits(
+        self,
+        maximum_result_count: NonZeroUsize,
+        request_maximum_work: NonZeroUsize,
+    ) -> (usize, usize, usize) {
+        (
             self.maximum_inline_index_bytes.get(),
             self.maximum_result_bytes_per_root
                 .get()
@@ -77,6 +117,7 @@ impl WorthQueryApplicationQueryResourceProfile {
 impl Default for WorthQueryApplicationQueryResourceProfile {
     fn default() -> Self {
         Self {
+            maximum_work: NonZeroUsize::new(DEFAULT_MAXIMUM_WORK).expect("nonzero default work"),
             maximum_inline_index_bytes: NonZeroUsize::new(DEFAULT_INLINE_INDEX_BYTES)
                 .expect("default inline index bytes are non-zero"),
             maximum_result_bytes_per_root: NonZeroUsize::new(DEFAULT_RESULT_BYTES_PER_ROOT)
@@ -113,5 +154,17 @@ mod tests {
         assert_eq!(narrow_request.max_inline_index_bytes(), 10_000);
         assert_eq!(narrow_request.max_inline_result_bytes(), 2_000);
         assert_eq!(narrow_request.max_inline_intermediate_set_size(), 40);
+    }
+
+    #[test]
+    fn operational_work_is_a_finite_host_policy_not_a_result_formula() {
+        let ordinary = WorthQueryApplicationQueryResourceProfile::default();
+        assert_eq!(ordinary.maximum_work().get(), 1_048_576);
+        let configured = ordinary.with_maximum_work(NonZeroUsize::new(700).unwrap());
+        assert_eq!(configured.maximum_work().get(), 700);
+        assert_eq!(
+            configured.maximum_result_bytes_per_root(),
+            ordinary.maximum_result_bytes_per_root()
+        );
     }
 }

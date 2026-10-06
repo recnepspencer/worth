@@ -3,6 +3,7 @@ pub struct UiIntentPayloadProjectionCost {
     declared_fields: usize,
     query_inputs_read: usize,
     application_inputs_read: usize,
+    expression_inputs_read: usize,
     admitted_utf8_bytes: usize,
 }
 
@@ -22,6 +23,7 @@ pub(crate) struct UiIntentInputBasis {
     source: super::super::routing::UiIntentProductInputSource,
     query_inputs: Box<[worth_ui_query_binding::UiProjectionInputFactReference]>,
     application_inputs: Box<[super::UiIntentApplicationInputReference]>,
+    expression_inputs: Box<[crate::runtime::expression::UiExpressionResultReference]>,
     operability: super::super::operability::UiIntentOperabilityBasis,
 }
 
@@ -34,6 +36,7 @@ pub(crate) struct UiIntentInputBasisInput {
     pub(crate) source: super::super::routing::UiIntentProductInputSource,
     pub(crate) query_inputs: Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
     pub(crate) application_inputs: Vec<super::UiIntentApplicationInputReference>,
+    pub(crate) expression_inputs: Vec<crate::runtime::expression::UiExpressionResultReference>,
     pub(crate) owner_revisions: Vec<UiIntentInputOwnerRevision>,
     pub(crate) cost: UiIntentPayloadProjectionCost,
     pub(crate) operability: super::super::operability::UiIntentOperabilityBasis,
@@ -45,6 +48,7 @@ pub(crate) struct UiIntentInputBasisMaterial {
     pub(crate) portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     pub(crate) query_inputs: Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
     pub(crate) application_inputs: Vec<super::UiIntentApplicationInputReference>,
+    pub(crate) expression_inputs: Vec<crate::runtime::expression::UiExpressionResultReference>,
     pub(crate) owner_revisions: Vec<UiIntentInputOwnerRevision>,
     pub(crate) route_resolution: crate::declaration::UiIntentRouteResolutionCost,
     pub(crate) cost: UiIntentPayloadProjectionCost,
@@ -68,6 +72,7 @@ impl UiIntentInputBasis {
             source: input.source,
             query_inputs: input.query_inputs.into_boxed_slice(),
             application_inputs: input.application_inputs.into_boxed_slice(),
+            expression_inputs: input.expression_inputs.into_boxed_slice(),
             operability: input.operability,
         }
     }
@@ -78,7 +83,7 @@ impl UiIntentInputBasis {
 
     pub(crate) fn retained_owner_reference_count(&self) -> usize {
         let _ = &self.source;
-        1 + self.query_inputs.len() + self.application_inputs.len()
+        1 + self.query_inputs.len() + self.application_inputs.len() + self.expression_inputs.len()
     }
 
     pub(crate) const fn operability(&self) -> &super::super::operability::UiIntentOperabilityBasis {
@@ -110,21 +115,28 @@ impl UiIntentInputBasis {
         self.source.command_receipt()
     }
 
+    /// Whether every owner the payload read still holds exactly what it read:
+    /// the same projection fact, application fact revision and expression
+    /// outcome revision, all in `generation`.
     pub(crate) fn payload_inputs_are_current(
         &self,
-        mounted: &crate::mounting::WorthUiMountedSessionState,
-        application_facts: &super::UiIntentApplicationFactState,
+        owners: UiIntentInputOwners<'_>,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     ) -> bool {
         self.query_inputs.iter().all(|expected| {
-            mounted
+            owners
+                .mounted
                 .current_projection_input(expected.revision().slot())
                 .as_ref()
                 == Some(expected)
+        }) && self.application_inputs.iter().all(|expected| {
+            owners
+                .application_facts
+                .is_current_reference(expected, generation)
         }) && self
-            .application_inputs
+            .expression_inputs
             .iter()
-            .all(|expected| application_facts.is_current_reference(expected, generation))
+            .all(|expected| owners.expressions.is_current_result(expected, generation))
     }
 }
 
@@ -177,6 +189,10 @@ impl UiIntentPayloadProjectionCost {
         self.application_inputs_read = next(self.application_inputs_read);
     }
 
+    pub(crate) fn record_expression_input(&mut self) {
+        self.expression_inputs_read = next(self.expression_inputs_read);
+    }
+
     pub(crate) fn record_utf8_bytes(&mut self, bytes: usize) {
         self.admitted_utf8_bytes = self
             .admitted_utf8_bytes
@@ -196,6 +212,10 @@ impl UiIntentPayloadProjectionCost {
         self.application_inputs_read
     }
 
+    pub const fn expression_inputs_read(self) -> usize {
+        self.expression_inputs_read
+    }
+
     pub const fn admitted_utf8_bytes(self) -> usize {
         self.admitted_utf8_bytes
     }
@@ -210,7 +230,7 @@ mod owner_revision;
 mod view;
 
 pub use owner_revision::{
-    UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentInputOwnerRevision,
-    UiIntentQueryInputRevision,
+    UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentExpressionInputRevision,
+    UiIntentInputOwnerRevision, UiIntentQueryInputRevision,
 };
-pub(crate) use view::UiIntentInputBasisView;
+pub(crate) use view::{UiIntentInputBasisView, UiIntentInputOwners};

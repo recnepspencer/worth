@@ -44,7 +44,7 @@ pub(crate) fn support_posture_for_requirement(
             WorthQueryGraphIndexLifecycleOwner::DomainRegistration,
             WorthQueryGraphIndexLifecycleClass::AccessCapabilityRegistrationRequired,
             WorthQueryGraphIndexPosture::RequiresAccessCapabilityRegistration,
-            Some(format!("worth-query-9.10-{}", requirement_kind.as_str())),
+            Some(owning_milestone(requirement_kind)),
         ),
         _ => (
             WorthQueryGraphIndexLifecycleOwner::QueryRuntime,
@@ -53,6 +53,15 @@ pub(crate) fn support_posture_for_requirement(
             None,
         ),
     }
+}
+
+fn owning_milestone(requirement_kind: &WorthQueryGraphReadAccessRequirementKind) -> String {
+    const PREFIX: &str = "worth-query-9.10-";
+    let suffix = requirement_kind.as_str();
+    let mut milestone = String::with_capacity(PREFIX.len() + suffix.len());
+    milestone.push_str(PREFIX);
+    milestone.push_str(suffix);
+    milestone
 }
 
 pub(crate) fn default_bases_for_requirement(

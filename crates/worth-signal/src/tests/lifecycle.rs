@@ -130,21 +130,22 @@ fn graph_strategy_reflects_gc_pressure_and_observation_profile() {
 
     let strategy = graph.observe().evaluation_strategy();
 
-    assert_eq!(strategy.parallelism, ParallelismHint::Serial);
     assert_eq!(strategy.gc_pressure, GcPressure::CompactAfterEvaluation);
     assert_eq!(strategy.observation_level, ObservationLevel::Full);
 }
 
 #[test]
-fn graph_strategy_prefers_parallelism_for_large_graphs() {
+fn graph_strategy_keeps_maintenance_policy_for_large_graphs() {
     let mut graph = SignalGraph::new();
+    graph.set_runtime_policy(SignalRuntimePolicy::operational());
     for _ in 0..1_000 {
         graph.node().build();
     }
 
     let strategy = graph.observe().evaluation_strategy();
 
-    assert_eq!(strategy.parallelism, ParallelismHint::Preferred);
+    assert_eq!(strategy.gc_pressure, GcPressure::Deferred);
+    assert_eq!(strategy.observation_level, ObservationLevel::Minimal);
 }
 
 #[test]

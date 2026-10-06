@@ -1,7 +1,7 @@
 use super::super::runtime_world::build_runtime;
 use super::world::NoopObservationListener;
 use crate::facade::{
-    AuthorityPolicy, EvaluationRequestMode, NodeEvaluationResult, ObservationPolicy, StageExecutor,
+    AuthorityPolicy, EvaluationRequestMode, NodeEvaluationResult, ObservationPolicy,
 };
 use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 
@@ -12,7 +12,7 @@ fn observation_phase2_stages_candidates_without_dispatch() {
     let mut runtime = build_runtime(graph);
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [source],
         Box::new(NoopObservationListener),
     );
@@ -54,7 +54,7 @@ fn observation_phase2_lowers_recomputed_and_meaningful_change_from_report() {
     let summary = tx.observation_scratch_summary();
     assert_eq!(summary.staged_candidate_observer_count, 1);
     assert_eq!(summary.classified_event_count, 1);
-    assert_eq!(summary.touched_event_count, 1);
+    assert_eq!(summary.visited_event_count, 1);
     assert_eq!(summary.recomputed_event_count, 1);
     assert_eq!(summary.meaningful_change_event_count, 1);
 
@@ -63,7 +63,7 @@ fn observation_phase2_lowers_recomputed_and_meaningful_change_from_report() {
     assert_eq!(classified[0].observer_id, handle.observer_id());
     assert_eq!(classified[0].handle_id, handle.handle_id());
     assert_eq!(classified[0].policy, ObservationPolicy::meaningful_change());
-    assert!(classified[0].touched);
+    assert!(classified[0].visited);
     assert!(classified[0].recomputed);
     assert!(classified[0].meaningful_change);
     assert!(classified[0].trigger_matched);
@@ -130,7 +130,7 @@ fn observation_phase2_distinguishes_output_suppressed_from_meaningful_change() {
     assert_eq!(classified[0].observer_id, handle.observer_id());
     assert_eq!(classified[0].handle_id, handle.handle_id());
     assert_eq!(classified[0].policy, ObservationPolicy::meaningful_change());
-    assert!(classified[0].touched);
+    assert!(classified[0].visited);
     assert!(classified[0].recomputed);
     assert!(!classified[0].meaningful_change);
     assert!(!classified[0].trigger_matched);
@@ -152,7 +152,7 @@ fn observation_phase2_coalesces_multiple_matching_nodes_into_one_classified_even
     let mut runtime = build_runtime(graph);
 
     let handle = runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [source, derived],
         Box::new(NoopObservationListener),
     );
@@ -178,7 +178,7 @@ fn observation_phase2_coalesces_multiple_matching_nodes_into_one_classified_even
     assert_eq!(classified.len(), 1);
     assert_eq!(classified[0].observer_id, handle.observer_id());
     assert_eq!(classified[0].handle_id, handle.handle_id());
-    assert_eq!(classified[0].policy, ObservationPolicy::touched());
+    assert_eq!(classified[0].policy, ObservationPolicy::visited());
     assert_eq!(classified[0].matched_nodes.len(), 2);
     assert!(classified[0].trigger_matched);
     assert_eq!(
@@ -208,11 +208,9 @@ fn observation_phase2_prepared_plan_execution_stages_and_classifies_observers() 
 
     let mut ctx = ();
     let mut tx = runtime.begin(&mut ctx);
-    tx.execute_prepared_plan_with_executor(
-        &plan,
-        &|view| Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0)))),
-        StageExecutor::Serial,
-    )
+    tx.execute_prepared_plan(&plan, &|view| {
+        Ok(view.finish(NodeEvaluationResult::from_version(version_ab(1, 0))))
+    })
     .unwrap();
 
     let summary = tx.observation_scratch_summary();

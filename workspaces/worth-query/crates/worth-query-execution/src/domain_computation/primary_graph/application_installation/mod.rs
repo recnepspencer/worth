@@ -1,10 +1,15 @@
 //! Complete construction of one contribution-composed in-memory application.
 
+mod checkpoint_lineage;
 mod denial;
 mod limits;
 mod profile;
 mod program;
-mod program_admission;
+pub(in crate::domain_computation::primary_graph) mod program_admission;
+pub use super::bootstrap::checkpoint_transition::{
+    WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,
+    WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
+};
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use profile::WorthQueryInMemoryApplicationProfile;
@@ -13,6 +18,7 @@ pub use program::{
     in_memory_program, in_memory_program_from_checkpoint,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
     in_memory_rostered_program_from_checkpoint,
+    in_memory_rostered_program_from_checkpoint_with_transition,
     in_memory_rostered_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
     WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
     WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
@@ -65,6 +71,7 @@ where
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -81,6 +88,9 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
     checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
+    checkpoint_transition: Option<
+        super::bootstrap::checkpoint_transition::CheckpointTransition<'_, Schema>,
+    >,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -107,6 +117,8 @@ where
     let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
         .application_candidate_resources(limits.candidates)
         .application_query_resources(limits.queries)
+        .output_demand_resources(limits.output_demands)
+        .completed_evidence_resources(limits.completed_evidence)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .map_err(Denial::Runtime)?
         .into_parts();
@@ -161,6 +173,18 @@ where
                 detail,
             ))
         })?;
+    if checkpoint_transition.is_some()
+        && decoded_checkpoint
+            .as_ref()
+            .is_some_and(|checkpoint| !checkpoint.accepted_outputs.is_empty())
+    {
+        return Err(Denial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::new(
+                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                "checkpoint transition requires accepted-output migration support",
+            ),
+        ));
+    }
     let restoring = decoded_checkpoint.is_some();
     let mut graph = match decoded_checkpoint.as_ref() {
         Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
@@ -183,12 +207,22 @@ where
     graph.mutation_handlers = handlers;
     if restoring {
         if let Some(support) = &admitted_program_support {
-            super::bootstrap::recover_program_activation(
-                &graph.graph,
-                &support.roster,
-                &activation,
-            )
-            .map_err(Denial::Graph)?;
+            if let Some(transition) = checkpoint_transition {
+                super::bootstrap::checkpoint_transition::transition_checkpoint(
+                    &mut graph,
+                    &installed,
+                    support,
+                    &activation,
+                    transition,
+                )?;
+            } else {
+                super::bootstrap::recover_program_activation(
+                    &graph.graph,
+                    &support.roster,
+                    &activation,
+                )
+                .map_err(Denial::Graph)?;
+            }
         }
     }
     if !restoring {
@@ -202,6 +236,11 @@ where
         }
         initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
     }
+    // This is the exact support object moved into the final graph provider.
+    // Cold producer executors become installable only after it exists.
+    let producers = producers
+        .seal_with_support(graph.resource_support_ref(), runtime.installed_packages())
+        .map_err(Denial::Contributions)?;
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {
@@ -289,5 +328,6 @@ where
                 .transpose()?
                 .unwrap_or_default(),
         );
+    checkpoint_lineage::restore(&application).map_err(Denial::Graph)?;
     Ok(application)
 }

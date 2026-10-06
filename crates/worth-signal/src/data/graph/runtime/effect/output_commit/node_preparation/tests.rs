@@ -45,7 +45,7 @@ fn apply(
     graph: &mut SignalGraph,
     producer: NodeId,
     version: u64,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     let mut effect = crate::data::graph::runtime::effect::tests::test_effect_with_labels(vec![
         "retained output".into(),

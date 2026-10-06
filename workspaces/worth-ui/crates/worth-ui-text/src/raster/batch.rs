@@ -4,7 +4,9 @@
 
 use std::sync::Arc;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiAlphaRasterBatchView, UiAlphaRasterRecordView, UiColorRasterBatchView,
     UiColorRasterRecordView, UiGlyphRasterAttribution, UiGlyphRasterBatchIdentity,
@@ -105,7 +107,7 @@ impl<Kind: UiGlyphRasterFormat> UiGlyphRasterRecord<Kind> {
             }
             _ => return Err(UiGlyphRasterAdmissionDenial::ByteLengthOverflow),
         }
-        let digest: [u8; 32] = Sha256::digest(&input.pixels).into();
+        let digest: [u8; 32] = UiCountedSha256::digest(&input.pixels).into();
         if digest != input.digest.bytes() {
             return Err(UiGlyphRasterAdmissionDenial::ContentDigestMismatch);
         }
@@ -296,7 +298,7 @@ impl UiGlyphRasterBatch<UiColorRasterKind> {
 }
 
 fn miss_identity<Kind>(records: &[UiGlyphRasterRecord<Kind>]) -> UiGlyphRasterDemandIdentity {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-glyph-raster-miss-v1\0");
     digest.update(
         u64::try_from(records.len())
@@ -318,7 +320,7 @@ fn batch_identity<Kind>(
     lane: UiGlyphRasterLane,
     records: &[UiGlyphRasterRecord<Kind>],
 ) -> UiGlyphRasterBatchIdentity {
-    let mut digest = Sha256::new();
+    let mut digest = UiCountedSha256::new();
     digest.update(b"worth-ui-glyph-raster-batch-v1\0");
     digest.update(demand.digest());
     digest.update(miss.digest());
@@ -344,7 +346,7 @@ fn batch_identity<Kind>(
     UiGlyphRasterBatchIdentity::from_text_mechanics(digest.finalize().into())
 }
 
-fn update_key(digest: &mut Sha256, key: UiGlyphRasterKey) {
+fn update_key(digest: &mut UiCountedSha256, key: UiGlyphRasterKey) {
     digest.update(key.font_collection_generation().get().to_le_bytes());
     digest.update(key.font_collection_lineage().digest());
     digest.update(key.profile_generation().get().to_le_bytes());
@@ -365,7 +367,7 @@ fn update_key(digest: &mut Sha256, key: UiGlyphRasterKey) {
     digest.update(key.fractional_origin().y_over_64().to_le_bytes());
 }
 
-fn update_attribution(digest: &mut Sha256, attribution: UiGlyphRasterAttribution) {
+fn update_attribution(digest: &mut UiCountedSha256, attribution: UiGlyphRasterAttribution) {
     digest.update(attribution.layout().digest());
     digest.update(attribution.original_range().start().to_le_bytes());
     digest.update(attribution.original_range().end().to_le_bytes());

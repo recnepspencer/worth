@@ -6,8 +6,9 @@
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_program::{
-        ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-        ApplicationWorkflowConditionRef, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+        ApplicationExpressionOperandValue, ApplicationWorkflowApprovalRef,
+        ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionQuery,
+        ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
     },
     application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
@@ -33,6 +34,7 @@ impl InstalledWorkflowOperation {
             binding_identity: Binding::IDENTITY,
             requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
             reference,
+            inbound_ref: None,
         }
     }
 }
@@ -62,17 +64,16 @@ impl InstalledWorkflowCondition {
         Spec: ApplicationWorkflowSpec,
         Binding: ApplicationQueryBinding<Spec::Schema> + 'static,
         Binding::Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
-        <Binding::Query as ApplicationQueryMarkerIdentity<Spec::Schema>>::ResultBinding:
-            ApplicationStructuredValueBinding<Value = bool>,
+        <<Binding::Query as ApplicationQueryMarkerIdentity<Spec::Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+            ApplicationExpressionOperandValue,
     {
-        let reference = ApplicationWorkflowConditionRef::declared::<Spec, Binding::Query>();
+        let query = ApplicationWorkflowConditionQuery::declared::<Spec, Binding::Query>();
         Self {
-            query_marker: reference.query_type(),
-            query_identifier: reference.identifier(),
-            parameter_type: reference.parameter_type().clone(),
-            result_type: reference.result_type().clone(),
+            query_identifier: query.identifier(),
+            parameter_type: query.parameter_type().clone(),
+            result_type: query.result_type().clone(),
             binding_identity: Binding::IDENTITY,
-            reference,
+            query,
         }
     }
 }
@@ -99,6 +100,25 @@ where
         })
     }
 
+    /// The exact typed inbound ref co-installed with one bound operation.
+    /// A portable draft may compare against it, but cannot create its marker.
+    pub fn draft_inbound(
+        &self,
+        identifier: &str,
+        binding: Option<&str>,
+    ) -> Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>
+    {
+        let mut operations = self.operations.iter().filter(|operation| {
+            operation.identifier == identifier
+                && binding.is_none_or(|selected| operation.binding_identity == selected)
+        });
+        let operation = operations.next()?;
+        if operations.next().is_some() {
+            return None;
+        }
+        operation.inbound_ref.clone()
+    }
+
     /// The installed assessment query a draft names, read for the resource
     /// and applying always until the draft retargets it.
     pub fn draft_assessment(&self, identifier: &str) -> Option<ApplicationWorkflowAssessmentRef> {
@@ -108,11 +128,15 @@ where
             .map(|assessment| assessment.reference.clone())
     }
 
-    pub fn draft_condition(&self, identifier: &str) -> Option<ApplicationWorkflowConditionRef> {
+    /// The installed query a draft condition names as an operand.
+    pub fn draft_condition_operand(
+        &self,
+        identifier: &str,
+    ) -> Option<ApplicationWorkflowConditionQuery> {
         self.conditions
             .iter()
             .find(|condition| condition.query_identifier == identifier)
-            .map(|condition| condition.reference.clone())
+            .map(|condition| condition.query.clone())
     }
 
     pub fn draft_approval(&self, identifier: &str) -> Option<ApplicationWorkflowApprovalRef> {

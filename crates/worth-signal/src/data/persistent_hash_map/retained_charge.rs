@@ -61,6 +61,95 @@ impl<K: RetainedStorageMeasurement> RetainedStorageMeasurement for SharedKey<K> 
 }
 
 impl<K: Clone + Eq + Hash, V: Clone> PersistentHashMap<K, V> {
+    pub(crate) fn worst_insertion_structure_growth_bound(
+        &self,
+        prospective_insertions: usize,
+    ) -> Result<Charge, Denial> {
+        let mut bound = hamt_insertion_base_charge::<K, V>()?;
+        let empty = super::CollisionExtents::default();
+        let (extents, installed_entries) = match &self.storage {
+            PersistentHashMapStorage::Exclusive(_) => (&empty, 0),
+            PersistentHashMapStorage::ForkShared {
+                changes,
+                collision_extents,
+                ..
+            } => (
+                collision_extents
+                    .as_ref()
+                    .ok_or(Denial::RetainedExtentHistoryUnavailable)?,
+                changes.len(),
+            ),
+        };
+        bound = bound.checked_add(
+            extents.worst_insertion_growth_bound::<K, V>(
+                installed_entries
+                    .checked_add(prospective_insertions)
+                    .ok_or(Denial::ChargeOverflow)?,
+            )?,
+        )?;
+        Ok(bound)
+    }
+
+    pub(crate) fn reserve_lookup_work(
+        &self,
+        key: &K,
+        work: &mut Preparation,
+    ) -> Result<(), Denial> {
+        match &self.storage {
+            PersistentHashMapStorage::Exclusive(_) => {
+                work.reserve_visits(std::mem::size_of::<K>().saturating_add(1))
+            }
+            PersistentHashMapStorage::ForkShared {
+                changes,
+                collision_extents,
+                ..
+            } => collision_extents
+                .as_ref()
+                .ok_or(Denial::RetainedExtentHistoryUnavailable)?
+                .reserve_lookup_work(changes, key, work),
+        }
+    }
+
+    pub(crate) fn reserve_entry_or_default_work(
+        &self,
+        key: &K,
+        work: &mut Preparation,
+    ) -> Result<(), Denial> {
+        // entry.or_default traverses get, optional insert (get and collision
+        // update), then get_mut. Six traversals cover this owner chain and
+        // each uses the prospective collision-group size.
+        for _ in 0..6 {
+            self.reserve_lookup_work(key, work)?;
+        }
+        Ok(())
+    }
+
+    /// Allocation ceiling for one fork-overlay insertion or replacement.
+    /// The caller separately charges the selected value's cloned payload.
+    pub(crate) fn insertion_structure_growth_bound(
+        &self,
+        key: &K,
+        work: &mut Preparation,
+    ) -> Result<Charge, Denial> {
+        // im 15.1 stores 32 inline HAMT entries and one bitmap per node.
+        // The extra usize in each slot covers the enum tag and alignment of
+        // Value(key/value, hash) versus its Arc child/collision variants.
+        work.reserve_visits(7 + std::mem::size_of::<K>())?;
+        let mut bound = hamt_insertion_base_charge::<K, V>()?;
+        if let PersistentHashMapStorage::ForkShared {
+            changes,
+            collision_extents,
+            ..
+        } = &self.storage
+        {
+            let extents = collision_extents
+                .as_ref()
+                .ok_or(Denial::RetainedExtentHistoryUnavailable)?;
+            bound = bound.checked_add(extents.insertion_growth_bound(changes, key, work)?)?;
+        }
+        Ok(bound)
+    }
+
     pub(crate) fn empty_persistent_overlay_charge() -> Result<Charge, Denial> {
         Self::new()
             .charge_after_persistent_fork()
@@ -91,6 +180,16 @@ impl<K: Clone + Eq + Hash, V: Clone> PersistentHashMap<K, V> {
             PersistentHashMapStorage::ForkShared { .. } => Some(charge),
         }
     }
+}
+
+fn hamt_insertion_base_charge<K, V>() -> Result<Charge, Denial> {
+    let node = Charge::capacity::<(SharedKey<K>, Option<Arc<V>>, u32, usize)>(32)?
+        .checked_add(Charge::capacity::<usize>(1)?)?;
+    node.checked_mul(8)?
+        .checked_add(arc_allocation_charge::<()>()?.checked_mul(8)?)?
+        .checked_add(arc_allocation_charge::<K>()?)?
+        .checked_add(arc_allocation_charge::<V>()?)?
+        .checked_add(arc_allocation_charge::<RandomState>()?)
 }
 
 impl<K: Clone + Eq + Hash + RetainedStorageMeasurement, V: Clone + RetainedStorageMeasurement>

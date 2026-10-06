@@ -26,9 +26,9 @@ use worth_query_host::facade::{
 };
 use worth_query_parameter_entry::{ParameterContribution, ParameterSchemaBinding};
 use worth_query_topology_entry::{
-    InitialPlanarProducer, InitialPlanarProvider, PlanarHandler, PlanarMutation,
-    PlanarMutationBinding, PlanarOutputFamily, PlanarReadResult, PositivePlanarTurn,
-    PositiveTurnRule, TopologyContribution, TopologySchemaBinding,
+    InitialPlanarProducer, InitialPlanarProvider, PlanarAnchorOutput, PlanarHandler,
+    PlanarMutation, PlanarMutationBinding, PlanarOutputFamily, PlanarReadResult,
+    PositivePlanarTurn, PositiveTurnRule, TopologyContribution, TopologySchemaBinding,
 };
 
 use super::{assert_contribution_denial, limits, validated_denial_program};
@@ -193,12 +193,14 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         calls.fetch_add(1, Ordering::SeqCst);
         install_topology_behavior(setup)?;
-        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(Arc::new(
-            AtomicUsize::new(0),
-        )))?;
-        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(Arc::new(
-            AtomicUsize::new(0),
-        )))
+        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(
+            Arc::new(AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        ))?;
+        setup.producer::<InitialPlanarProducer<Schema>>(InitialPlanarProvider::new(
+            Arc::new(AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        ))
     }
 }
 
@@ -232,7 +234,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type Provider = AmbiguousProvider;
 
     const IDENTITY: &'static str = "worth.query.certification.ambiguous-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] =
         &[WorthQueryProducerApplicability::new(
             "planar",

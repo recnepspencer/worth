@@ -6,10 +6,9 @@ use super::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
-    WorthQueryCurrentOutputSelection, WorthQueryOperationProjectionDenialKind,
-    WorthQueryPrincipalResolutionMode, WorthQueryProducerApplicability,
-    WorthQueryProducerOutputFamily,
+    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
+    WorthQueryOperationProjectionDenialKind, WorthQueryPrincipalResolutionMode,
+    WorthQueryProducerApplicability, WorthQueryProducerOutputFamily,
 };
 
 struct TestCurrentOutputFamily;
@@ -18,6 +17,7 @@ impl WorthQueryProducerOutputFamily<super::fixture::IdentityExecutionSchema>
     for TestCurrentOutputFamily
 {
     type Source = super::fixture::TestAccountSourceBinding;
+    type Entity = Account;
 
     const IDENTITY: &'static str = "worth.query.test.current-output-family.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[];
@@ -50,10 +50,7 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
     let completed = world
         .invariant
         .project_admitted_operation(&admission, |reader, _| {
-            reader.current_output::<TestCurrentOutputFamily, Account, Account>(
-                &foreign_account,
-                WorthQueryCurrentOutputRole::new("anchor"),
-            )
+            reader.current_output::<TestCurrentOutputFamily, Account>(&foreign_account)
         })
         .unwrap();
     let Err(denial) = completed.output() else {
@@ -80,10 +77,7 @@ fn current_output_exhaustion_denies_the_admitted_projection() {
             for _ in 0..31 {
                 reader.field(root, AccountStatus::reference()).unwrap();
             }
-            reader.current_output::<TestCurrentOutputFamily, Account, Account>(
-                root,
-                WorthQueryCurrentOutputRole::new("anchor"),
-            )
+            reader.current_output::<TestCurrentOutputFamily, Account>(root)
         });
     let Err(denial) = projected else {
         panic!("selector work beyond the admitted budget must deny the projection");
@@ -146,10 +140,7 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
     let completed = world
         .invariant
         .project_admitted_operation(&admission, |reader, _| {
-            reader.current_output::<TestCurrentOutputFamily, Account, Account>(
-                &obsolete,
-                WorthQueryCurrentOutputRole::new("anchor"),
-            )
+            reader.current_output::<TestCurrentOutputFamily, Account>(&obsolete)
         })
         .unwrap();
     assert!(matches!(

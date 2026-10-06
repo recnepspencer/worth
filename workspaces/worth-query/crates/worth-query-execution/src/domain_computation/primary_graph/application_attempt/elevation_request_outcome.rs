@@ -38,6 +38,14 @@ impl WorthQueryRequestedElevation {
         self.commit.publication_source()
     }
 
+    /// The canonical work of the request commit, by phase. A replay reports
+    /// the admission work of its own request.
+    pub const fn canonical_work(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
+        self.commit.canonical_work()
+    }
+
     pub const fn capability_identity(&self) -> [u8; 32] {
         self.binding.capability_identity()
     }

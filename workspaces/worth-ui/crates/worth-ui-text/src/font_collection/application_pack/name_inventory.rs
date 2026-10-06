@@ -1,5 +1,6 @@
 use harfrust::{FontRef, Tag};
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 
 use super::UiQualifiedFontNameRecordReceipt;
 use crate::font_collection::UiFontCollectionAdmissionDenial;
@@ -93,7 +94,7 @@ fn record(
         encoding_id,
         language_id,
         name_id,
-        content_digest: Sha256::digest(value).into(),
+        content_digest: UiCountedSha256::digest(value).into(),
     }))
 }
 

@@ -276,10 +276,13 @@ after the layout publishes scrolls normally.
 Each prepared frame lays out against one coherent extent. Containers select
 their responsive tracks for that width and allocate against it. Scroll bounds,
 Portal placement, and Backdrop coverage consume the same viewport. Nothing
-eases toward an older size. Text is reshaped only where its allocated width or
-declared flow changed; unchanged-width text keeps its shaping through the
-drag, including across height-only changes. Logical sizes of icons, radii, and
-type do not change with the window.
+eases toward an older size. Text is reshaped only where its declared flow
+changed or its allocated width left the widths its lines were fitted for. A
+label placed from its left edge that still fits, or such a wrapped paragraph
+that has not reached its next break, keeps its layout through the drag;
+centered or right-placed text reads its width and is reshaped. Height-only
+changes keep every layout. Logical sizes of icons, radii, and type do not
+change with the window.
 
 A window spec may name a minimum logical client extent with
 `with_minimum_logical_size`; the drag then stops there. Preparation denies a

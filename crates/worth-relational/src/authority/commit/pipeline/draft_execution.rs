@@ -75,6 +75,7 @@ impl PreparedCommitExecution {
 pub(super) fn prepare_commit_execution(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut admitted: AdmittedCommitExecution,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
     let merge_parent_count = admitted
         .merge_history_plan()
@@ -126,6 +127,7 @@ pub(super) fn prepare_commit_execution(
             admitted.merged_plan(),
             admitted.validation_input().schema_authority(),
             proposed_version_id,
+            lease,
         )?,
     };
     admitted.phase_timing_mut().draft_structural_summary_micros =

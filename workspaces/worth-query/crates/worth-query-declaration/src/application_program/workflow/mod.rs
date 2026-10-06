@@ -6,7 +6,9 @@
 
 mod authoring;
 mod canonical;
+mod expression;
 mod identity;
+mod inbound;
 mod limits;
 mod model;
 mod provenance;
@@ -19,20 +21,29 @@ mod tests;
 pub use authoring::{
     ApplicationWorkflowApprovalNode, ApplicationWorkflowAssessmentNode,
     ApplicationWorkflowAuthoringCommand, ApplicationWorkflowAuthoringDenial,
-    ApplicationWorkflowCommandAdapter, ApplicationWorkflowComponentBuilder,
-    ApplicationWorkflowComponentInputBinding, ApplicationWorkflowComponentInputPort,
-    ApplicationWorkflowComponentNodeRef, ApplicationWorkflowComponentOutputBinding,
-    ApplicationWorkflowComponentOutputPort, ApplicationWorkflowComponentResource,
-    ApplicationWorkflowConditionNode, ApplicationWorkflowDefinitionBuilder,
-    ApplicationWorkflowEvidenceJoinNode, ApplicationWorkflowInputBinding,
-    ApplicationWorkflowNodeRef, ApplicationWorkflowOperationNode, ApplicationWorkflowOutputBinding,
-    ApplicationWorkflowTerminalNode, AuthoredWorkflowComponent, ExpandedWorkflowComponent,
-    ExpandedWorkflowComponentInComponent,
+    ApplicationWorkflowAwaitInboundNode, ApplicationWorkflowCommandAdapter,
+    ApplicationWorkflowComponentBuilder, ApplicationWorkflowComponentInputBinding,
+    ApplicationWorkflowComponentInputPort, ApplicationWorkflowComponentNodeRef,
+    ApplicationWorkflowComponentOutputBinding, ApplicationWorkflowComponentOutputPort,
+    ApplicationWorkflowComponentResource, ApplicationWorkflowConditionNode,
+    ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowEvidenceJoinNode,
+    ApplicationWorkflowInputBinding, ApplicationWorkflowNodeRef, ApplicationWorkflowOperationNode,
+    ApplicationWorkflowOutputBinding, ApplicationWorkflowTerminalNode, AuthoredWorkflowComponent,
+    ExpandedWorkflowComponent, ExpandedWorkflowComponentInComponent,
+};
+pub use expression::{
+    ApplicationExpressionOperandValue, ApplicationWorkflowCondition,
+    ApplicationWorkflowConditionDenial, ApplicationWorkflowConditionOperand,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowConditionQuery,
+    MIGRATED_WORKFLOW_CONDITION_OPERAND,
 };
 pub use identity::{
     ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionContentIdentity,
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowNodeIdentity,
     ApplicationWorkflowSpecIdentity,
+};
+pub use inbound::{
+    ApplicationWorkflowAwaitInbound, ApplicationWorkflowInboundRef, ApplicationWorkflowInboundWait,
 };
 pub use limits::{ApplicationWorkflowComponentLimits, ApplicationWorkflowDefinitionLimits};
 pub use model::{
@@ -53,6 +64,6 @@ pub use validation::{
 };
 pub use vocabulary::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentApplicability,
-    ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionRef,
-    ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
+    ApplicationWorkflowAssessmentRef, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+    ApplicationWorkflowSubjectSelector,
 };

@@ -36,10 +36,10 @@ pub(super) fn definition_compatibility(
     let mut nodes = dependencies
         .nodes
         .iter()
-        .filter_map(|node| {
-            node.dependency
-                .as_ref()
-                .map(|dependency| (node, dependency))
+        .flat_map(|node| {
+            node.dependencies
+                .iter()
+                .map(move |dependency| (node, dependency))
         })
         .collect::<Vec<_>>();
     nodes.sort_unstable_by(|(left, _), (right, _)| left.path.cmp(&right.path));

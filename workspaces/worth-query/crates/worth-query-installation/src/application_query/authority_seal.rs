@@ -39,3 +39,33 @@ fn authority_transcript(
     transcript.bytes("graph-obligations", obligations.bytes());
     transcript
 }
+
+/// Fixed initialized Work for validating one installed Query identity and
+/// its authority seal. The transcript has four 32-byte fields; framing,
+/// domain separation, and HMAC compression are part of the same check.
+pub(crate) fn installed_query_validation_work_bound() -> Option<u64> {
+    let domain = AuthoritySealDomain::InstalledApplicationQuery.label();
+    let framed = [
+        (b"domain".len(), domain.len(), false),
+        (b"package".len(), 32, true),
+        (b"schema".len(), 32, true),
+        (b"query".len(), 32, true),
+        (b"graph-obligations".len(), 32, true),
+    ];
+    let transcript = framed
+        .into_iter()
+        .try_fold(0usize, |sum, (tag, value, typed)| {
+            let kind = if typed { b"bytes".len() + 8 } else { 0 };
+            sum.checked_add(tag + 8)?
+                .checked_add(kind)?
+                .checked_add(value + 8)
+        })?;
+    let inner_blocks = transcript.checked_add(9)?.div_ceil(64);
+    let hash_blocks = inner_blocks.checked_add(3)?;
+    let work = transcript
+        .checked_add(128)?
+        .checked_add(32)?
+        .checked_add(hash_blocks)?
+        .checked_add(4)?;
+    u64::try_from(work).ok()
+}

@@ -19,7 +19,19 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+#[cfg(feature = "test-query-execution-observer")]
+mod clean_reuse;
+mod current_output;
 mod demand_contact;
+mod demand_policy;
+mod generated_restoration;
+mod input_cutoff;
+#[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
+mod late_cancellation;
+mod producer_domain_denial;
+pub(crate) mod required_chain;
+mod reuse_opt_out;
+mod stable_refresh;
 mod support;
 use support::{authenticate, install, length};
 
@@ -90,24 +102,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for CheckpointProgram {
         ApplicationProgramIdentity::new("worth.query.certification.checkpoint-program.v1");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
-                .provides::<PlanarBodyOutput>()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
-                .provides::<PlanarDerivedBodyOutput>()
-                .conditional_operation::<MutatePlanar>()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()
-                .provides::<PlanarFinalBodyOutput>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
-                .finish(),
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarAlternateFinalOutputFeature>()
-                .provides::<PlanarAlternateFinalBodyOutput>()
-                .conditional_operation::<PublishAlternatePlanarOutput>()
-                .finish(),
-        ]
+        demand_policy::feature_specs::<demand_policy::FinalArtifact>()
     }
 }
 
@@ -330,6 +325,19 @@ fn settle_for<'application, 'principal, 'scope>(
     let controls = WorthQueryOutputDemandControls::new(
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
+    )
+    // These recovery tests constrain the producer's persisted estimate. Source
+    // verification includes fresh authorization and native witness preparation
+    // and uses this installation's separate finite currentness allowance.
+    .source_currentness_work(
+        NonZeroUsize::new(
+            application
+                .runtime()
+                .output_demand_resource_profile()
+                .limits()
+                .source_currentness_work(),
+        )
+        .unwrap(),
     );
     let mut output = request
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(

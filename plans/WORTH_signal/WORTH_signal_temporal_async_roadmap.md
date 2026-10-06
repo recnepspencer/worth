@@ -609,27 +609,31 @@ The temporal/async sequence is closed through Milestone D. The next numbered
 
 1. [Milestone 12 - Aspect-Causal Invalidation](./milestone-12-plan.md)
 2. [Milestone 13 - Locality-First Frontier Execution](./milestone-13-plan.md)
-3. [Milestone 14 - Deterministic Parallel Execution Foundation](./milestone-14-plan.md)
-4. [Milestone 15 - Proof-Carrying Graph Parallelism](./milestone-15-plan.md)
-5. [Milestone 16 - Structured Partitioned Parallelism](./milestone-16-plan.md)
-6. [Milestone 17 - Portable Execution Backends And Distributed Coordination](./milestone-17-plan.md)
+3. [Milestone 13.1 - Cross-Runtime Granular Invalidation](./milestone-13.1-plan.md)
+4. [Query Milestone 9.17.6.3 - Parallel Computation Across The Platform](../WORTH-query/milestone-9.17.6.3.md)
 
 Milestones 12-13 expand the fintech financial world and repair and certify the
-invalidation substrate during implementation. Milestones 14-17 then establish
-bounded deterministic execution, proof-carrying graph parallelism, domain-
-agnostic structured partition work, and portable backend execution. None of
-them reopens temporal or async lifecycle meaning.
+invalidation substrate during implementation, and Milestone 13.1 carries that
+substrate through Runtime Bridge and Query. Parallel execution continues in
+Query Milestone 9.17.6.3, which replaces the canceled Signal Milestones 14-17.
+That plan places the one execution authority, its leases, and the structured
+patterns in the `worth-execution` runtime crate, because Relational, Query, and
+Server need the same authority and Relational cannot depend on Signal. Signal
+keeps graph-parallel admission and hierarchical scope-path locality and executes
+that work on leases from the authority. None of this reopens temporal or async
+lifecycle meaning.
 
 The strict continuation order is intentional:
 
 - parallel execution may not amplify an invalidation frontier before causal
   correctness and locality are certified
 - graph parallelism consumes the bounded resource and publication authority
-  established by Milestone 14
+  owned by `worth-execution`
 - partitioned inner computation consumes the graph task's same hierarchical
   resource lease rather than creating a second pool
-- WASM workers, native threads, accelerators, and remote processes remain
-  backend mechanisms behind the portable Milestone 17 boundary
+- native threads run behind the `worth-execution` backend port; WASM helper
+  workers, accelerators, and remote processes are [deferred](../deferred-work.md)
+  backends for that same port
 
 ## Companion Documents
 
@@ -644,10 +648,8 @@ The strict continuation order is intentional:
 - [milestone-d-plan.md](./milestone-d-plan.md)
 - [milestone-12-plan.md](./milestone-12-plan.md)
 - [milestone-13-plan.md](./milestone-13-plan.md)
-- [milestone-14-plan.md](./milestone-14-plan.md)
-- [milestone-15-plan.md](./milestone-15-plan.md)
-- [milestone-16-plan.md](./milestone-16-plan.md)
-- [milestone-17-plan.md](./milestone-17-plan.md)
+- [milestone-13.1-plan.md](./milestone-13.1-plan.md)
+- [Query milestone-9.17.6.3.md](../WORTH-query/milestone-9.17.6.3.md)
 - [test-requirements.md](./test-requirements.md)
 - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
 - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)

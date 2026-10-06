@@ -13,7 +13,7 @@ impl PerformedWorkCaptureState {
         &self,
         binding: &InvalidationWorkBindingAxes,
         ledger: Option<&Arc<Ledger>>,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Option<PreparedPerformedWorkCapture>, SignalError> {
         if !self
             .capture_gate

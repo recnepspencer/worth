@@ -29,7 +29,9 @@ pub(super) fn target(cause: &crate::runtime::intent::payload::UiIntentPayloadSto
         | Owner::ApplicationFactIdentityChanged { .. }
         | Owner::ApplicationFactGenerationChanged { .. }
         | Owner::ApplicationFactKindMismatch { .. }
-        | Owner::PayloadProjection(_) => Target::PayloadInputUnavailable,
+        | Owner::PayloadProjection(_)
+        | Owner::ExpressionWithheld { .. }
+        | Owner::DerivedIntegerOutOfRange { .. } => Target::PayloadInputUnavailable,
     }
 }
 
@@ -103,5 +105,29 @@ pub(super) fn confirmation(
         Owner::PolicyChanged => Confirmation::PolicyChanged,
         Owner::ConfirmationPolicyChanged => Confirmation::ConfirmationPolicyChanged,
         Owner::OccupancyChanged => Confirmation::OccupancyChanged,
+    }
+}
+
+pub(super) const fn condition_axis(
+    axis: crate::declaration::UiIntentOperabilityDependencyAxis,
+) -> worth_ui_inspection::UiPointerAffordanceInspectionConditionAxis {
+    use crate::declaration::UiIntentOperabilityDependencyAxis as Owner;
+    use worth_ui_inspection::UiPointerAffordanceInspectionConditionAxis as Axis;
+    match axis {
+        Owner::Mutability => Axis::Mutability,
+        Owner::Readiness => Axis::Readiness,
+        Owner::Policy => Axis::Policy,
+    }
+}
+
+pub(super) const fn condition_withholding(
+    withholding: crate::runtime::expression::UiExpressionWithholding,
+) -> worth_ui_inspection::UiPointerAffordanceInspectionConditionWithholding {
+    use crate::runtime::expression::UiExpressionWithholding as Owner;
+    use worth_ui_inspection::UiPointerAffordanceInspectionConditionWithholding as Withholding;
+    match withholding {
+        Owner::Denied => Withholding::Denied,
+        Owner::Unavailable => Withholding::Unavailable,
+        Owner::Stale => Withholding::Stale,
     }
 }

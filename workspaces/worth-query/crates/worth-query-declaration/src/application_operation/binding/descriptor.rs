@@ -154,6 +154,7 @@ impl ApplicationMutationBindingDescriptor {
                         name: role.name().to_owned(),
                         entity: role.entity().to_owned(),
                         posture: role.posture(),
+                        cardinality: role.cardinality(),
                     })
                     .collect(),
                 output_role_families: Output::ROLE_FAMILIES

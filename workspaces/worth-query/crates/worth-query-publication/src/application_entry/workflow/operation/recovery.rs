@@ -181,18 +181,22 @@ where
         if self.workflow_transition_identity() != Some(*required.transition_identity_bytes()) {
             return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::NotWorkflowBound);
         }
+        let staged = self.stage().map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
+        let identities = self
+            .identities()
+            .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
         if required.operation()
             != <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Operation as ApplicationOperationMarkerIdentity<Schema>>::IDENTIFIER
             || required.binding() != Some(IntentBinding::<Schema, Intent>::IDENTITY)
             || required.input_type()
                 != <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::InputBinding as ApplicationStructuredValueBinding>::IDENTITY.as_str()
-            || required.input_identity() != &self.input_identity()
+            || identities.input_identity() != required.input_identity()
             || required.branch() != self.product_branch()
         {
             return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::RequirementMismatch);
         }
         let application = self.application_runtime();
-        let prepared = authorization::prepare(&mut self)
+        let prepared = authorization::prepare(&self, &identities, staged)
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
         let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
             application,

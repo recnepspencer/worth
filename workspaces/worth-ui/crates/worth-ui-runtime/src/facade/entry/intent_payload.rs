@@ -19,8 +19,11 @@ impl WorthUiActiveApplicationSession {
                 .prepared_authority()
                 .intent_execution_bindings(),
             &generation,
-            &self.mounted,
-            &self.intent_application_facts,
+            crate::runtime::intent::UiIntentInputOwners {
+                mounted: &self.mounted,
+                application_facts: &self.intent_application_facts,
+                expressions: &self.expressions,
+            },
             self.intent_execution.occupancy(),
         )
     }

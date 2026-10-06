@@ -1,7 +1,8 @@
+mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 use worth_query_host::facade::{
@@ -23,6 +24,7 @@ pub(super) fn install(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
 ) -> ConsumerWorld {
     install_with_candidate_bytes(foreign, 8192)
+        .expect("the contributed configuration and initial state publish one application")
 }
 
 pub(super) fn assert_program_cannot_omit_an_installed_rule() {
@@ -32,6 +34,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
@@ -78,6 +81,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
@@ -125,6 +129,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
     );
@@ -177,7 +182,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     };
     use worth_query_consumer_values::{PlanarOperation, PositiveLength};
     use worth_query_host::facade::declaration::application_program::ApplicationOptionalMemberEdit;
-    use worth_query_topology_entry::{EditPlanar, PlanarEditBinding};
+    use worth_query_topology_entry::PlanarEditBinding;
 
     let correspondence = world
         .application
@@ -232,50 +237,13 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     assert_eq!(second.initial_member(), None);
     assert_eq!(second.required_source(), "source-b");
 
-    let external = world
-        .application
-        .installed_program()
-        .external_input_provider::<
-            EditPlanar,
-            crate::application_program::external_input::NeutralExternalProvider,
-        >()
-        .expect("the neutral external provider slot is installed on the action");
-    let provider = crate::application_program::external_input::NeutralExternalProvider::new(7);
-    let changed = external.resolve(&provider, "material").unwrap();
-    assert_eq!(changed.resolution().provenance(), &"neutral-catalog");
-    provider.change(8);
-    assert_eq!(
-        changed.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Changed)
-    );
-    let removed = external.resolve(&provider, "material").unwrap();
-    provider.remove();
-    assert_eq!(
-        removed.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Removed)
-    );
-    provider.change(9);
-    let invalid = external.resolve(&provider, "material").unwrap();
-    provider.invalidate();
-    assert_eq!(
-        invalid.admit(&provider).err(),
-        Some(crate::application_program::external_input::NeutralExternalDenial::Invalid)
-    );
-    provider.change(10);
-    let admitted = external
-        .resolve(&provider, "material")
-        .unwrap()
-        .admit(&provider)
-        .unwrap()
-        .into_resolution();
-    assert_eq!(admitted.values(), &10);
-    assert_eq!(admitted.revision(), &10);
+    external_input::assert_external_inputs(world);
 }
 
 pub(super) fn install_with_candidate_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
-) -> ConsumerWorld {
+) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     install_with_resource_bytes(foreign, candidate_bytes, 4096)
 }
 
@@ -284,13 +252,14 @@ pub(super) fn install_with_query_bytes(
     query_bytes: usize,
 ) -> ConsumerWorld {
     install_with_resource_bytes(foreign, 8192, query_bytes)
+        .expect("the contributed configuration and initial state publish one application")
 }
 
 fn install_with_resource_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
     query_bytes: usize,
-) -> ConsumerWorld {
+) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -302,6 +271,7 @@ fn install_with_resource_bytes(
             invariant_calls: Arc::clone(&invariant_calls),
             invariant_probe: Arc::clone(&invariant_probe),
             producer_authorization_denials: Arc::clone(&producer_authorization_denials),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::clone(&parameter_calls),
     );
@@ -349,16 +319,15 @@ fn install_with_resource_bytes(
             )?;
             Ok(())
         },
-    )
-    .expect("the contributed configuration and initial state publish one application");
+    )?;
     assert_eq!(topology_calls.load(Ordering::SeqCst), 1);
     assert_eq!(parameter_calls.load(Ordering::SeqCst), 1);
-    ConsumerWorld {
+    Ok(ConsumerWorld {
         application,
         invariant_calls,
         invariant_probe,
         producer_authorization_denials,
-    }
+    })
 }
 fn reject_foreign_invariant_factory(
     installed: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,

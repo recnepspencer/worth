@@ -8,8 +8,8 @@ use worth_relational::facade::identity::EntityId;
 use super::{evidence::RootPathSourceBuilder, BoundedRootSelection, RootSelectionWork};
 use crate::domain_computation::primary_graph::application_query::{
     read_execution::{
-        read_execution_denial, WorthQueryApplicationReadExecutionDenial,
-        WorthQueryApplicationReadExecutionDenialKind,
+        read_execution_denial, OneShotReadWorkObservation,
+        WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
     },
     WorthQueryAdmittedApplicationQueryPlan,
 };
@@ -38,13 +38,15 @@ pub(super) fn select_root_path_union<
     paths: &[WorthQueryInstalledRootPath],
     result_buffer: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation>,
+    maximum_work: usize,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
         .project_snapshot(plan.basis.snapshot_handle())
         .ok_or_else(|| traversal_denial(plan.query.name()))?;
     let mut roots = BTreeMap::new();
-    let mut work = RootSelectionWork::new(plan.controls.maximum_work().get());
+    let mut work = RootSelectionWork::new(maximum_work, plan.controls.request_scope(), spent);
     let mut set_source = capture_result_set.then(RootPathSourceBuilder::default);
     if let Some(source) = &mut set_source {
         source.observe_entity(plan.scope.entity_id());
@@ -165,6 +167,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
                 }
             }
         }
+        work.checkpoint(step.relation())?;
         let read = match step.direction() {
             ApplicationQueryRootPathDirection::Forward => runtime
                 .read_truth()
@@ -192,6 +195,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
         )?;
         let mut next = BTreeMap::new();
         for record in read.into_records() {
+            work.checkpoint(step.relation())?;
             let (anchor, endpoint) = match step.direction() {
                 ApplicationQueryRootPathDirection::Forward => (record.source, record.target),
                 ApplicationQueryRootPathDirection::Reverse => (record.target, record.source),
@@ -290,6 +294,7 @@ fn apply_guards<Schema, Query, Parameters, QueryResult, Principal, PrincipalIden
             }
         }
         let candidates = frontier.keys().copied().collect::<BTreeSet<_>>();
+        work.checkpoint(guard.field().as_str())?;
         let read = read_governed_root_guard(
             runtime,
             computation,

@@ -1,6 +1,6 @@
 use crate::facade::{
-    ChangedRegion, NodeEvaluationResult, NodeState, PartitionSubscription, PartitionToken,
-    SignalError, SignalGraph, SignalRuntime,
+    ChangedRegion, NodeEvaluationResult, NodeState, PartitionSubscription, SignalError,
+    SignalGraph, SignalRuntime,
 };
 use crate::tests::support::{
     version_ab, DependencyBatchBuilder, GraphDependencyBatchExt, ASPECT_A,
@@ -98,10 +98,11 @@ fn transaction_partition_seed_resolves_to_exact_matching_cause_after_commit() {
     let causes = runtime.graph().pending_causes(matching).unwrap();
     assert_eq!(causes.len(), 1);
     assert_eq!(causes[0].key.aspect, ASPECT_A);
-    assert!(causes[0]
-        .changed_scopes
-        .iter()
-        .any(|scope| scope.partition == PartitionToken::new("wing")));
+    assert!(causes[0].changed_scopes.iter().any(|scope| scope
+        .path()
+        .segments()
+        .first()
+        .is_some_and(|part| part == "wing")));
 }
 
 #[test]
@@ -352,8 +353,8 @@ fn committed_partition_local_evaluation_preserves_changed_region_explanation_and
         NodeState::Clean
     );
     let explanation = runtime.observe().explain(source).unwrap();
-    assert!(explanation.changed_regions.iter().any(|region| {
-        region.partition == PartitionToken::new("wing")
-            && region.detail.as_deref() == Some("rib-12")
-    }));
+    assert!(explanation
+        .changed_regions
+        .iter()
+        .any(|region| { region.path().segments() == ["wing", "rib-12"] }));
 }

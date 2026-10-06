@@ -170,6 +170,15 @@ pub enum ApplicationSchemaMember {
         maximum_payload_bytes: u64,
         correlation_family: WorthQueryExternalEffectCorrelationFamily,
     },
+    /// Optional inbound completion contract for the exact outbound effect of
+    /// the same operation. The old external-effect record stays unchanged.
+    OperationInboundOccurrence {
+        operation: String,
+        effect: String,
+        protocol: super::ApplicationInboundOccurrenceProtocol,
+        source_identity: String,
+        limits: super::ApplicationInboundOccurrenceLimits,
+    },
     /// Declared aftermath contract for one mutation operation.
     ///
     /// Absence means the operation carries no aftermath. Installation compiles

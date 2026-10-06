@@ -49,6 +49,8 @@ pub struct WorthQueryPortablePackageValidationDenial {
     slot: String,
     maximum_canonical_bytes: Option<usize>,
     attempted_canonical_bytes: Option<usize>,
+    maximum_canonical_entries: Option<u32>,
+    attempted_canonical_entries: Option<u32>,
 }
 
 impl WorthQueryPortablePackageValidationDenial {
@@ -230,12 +232,15 @@ impl WorthQueryPortablePackageValidationDenial {
         )
     }
 
-    pub(super) fn canonical_entry_budget_exceeded() -> Self {
-        Self::new(
+    pub(super) fn canonical_entry_budget_exceeded(maximum: u32, actual: u32) -> Self {
+        let mut denial = Self::new(
             WorthQueryPortablePackageValidationDenialKind::CanonicalEntryBudgetExceeded,
             None,
             "package-canonical-entry-budget",
-        )
+        );
+        denial.maximum_canonical_entries = Some(maximum);
+        denial.attempted_canonical_entries = Some(actual);
+        denial
     }
 
     pub(super) fn canonical_encoded_byte_budget_exceeded(maximum: usize, attempted: usize) -> Self {
@@ -268,6 +273,8 @@ impl WorthQueryPortablePackageValidationDenial {
             slot: slot.into(),
             maximum_canonical_bytes: None,
             attempted_canonical_bytes: None,
+            maximum_canonical_entries: None,
+            attempted_canonical_entries: None,
         }
     }
 
@@ -290,6 +297,14 @@ impl WorthQueryPortablePackageValidationDenial {
     pub const fn attempted_canonical_bytes(&self) -> Option<usize> {
         self.attempted_canonical_bytes
     }
+
+    pub const fn maximum_canonical_entries(&self) -> Option<u32> {
+        self.maximum_canonical_entries
+    }
+
+    pub const fn attempted_canonical_entries(&self) -> Option<u32> {
+        self.attempted_canonical_entries
+    }
 }
 
 impl std::fmt::Display for WorthQueryPortablePackageValidationDenial {
@@ -303,7 +318,15 @@ impl std::fmt::Display for WorthQueryPortablePackageValidationDenial {
                 (Some(maximum), Some(attempted)) => {
                     format!("; canonical bytes {attempted} exceed {maximum}")
                 }
-                _ => String::new(),
+                _ => match (
+                    self.maximum_canonical_entries,
+                    self.attempted_canonical_entries
+                ) {
+                    (Some(maximum), Some(actual)) => {
+                        format!("; canonical entries {actual} exceed {maximum}")
+                    }
+                    _ => String::new(),
+                },
             }
         )
     }

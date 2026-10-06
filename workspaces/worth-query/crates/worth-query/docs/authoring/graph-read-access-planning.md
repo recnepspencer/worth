@@ -58,6 +58,20 @@ The review explains admission. The admitted plan is move-only authority. The
 review cannot execute, and a plan from another runtime, installation
 generation, query, branch, basis, or session cannot substitute.
 
+### Preparation Under A Carried Meter
+
+The internal admitted requirement constructor accepts the concrete installed
+graph contract. Its borrowed planning inventory keeps canonical identity and
+graph meaning together; each inventory pass requires admission before visits.
+It creates owned requirement rows through the same field and identity grammar
+as ordinary planning, with claims before copies, sorting and hashing.
+
+An admitted canonical basis has a distinct builder type. Its preparation and
+derivation transitions require the carried meter and preserve the original
+resource refusal. It cannot use the ordinary builder's unmetered transitions.
+These descriptive requirements still need runtime support review, provider
+capacity and a managed session before they grant executable authority.
+
 ## How It Executes
 
 1. Installation binds one canonical read graph to the installed query.
@@ -81,6 +95,23 @@ of turning either condition into an empty result, and exhausted traversal never
 returns a successful prefix. `mutation_target` can carry an entity observed by
 that completed decision read set into the candidate phase without adding a
 duplicate scalar identity field.
+
+`select_entities(field, value, candidate_limit)` reads the complete installed
+equality-index result, including an empty result. The limit must be finite and
+nonzero; the operation's projection budget must admit one lookup plus that
+many candidate examinations before the read. Overflow denies rather than
+returning a prefix. Distinct values on the same index retain distinct predicate
+facts, so changing one selection does not invalidate an unrelated selection.
+There is no fixed 64-member ceiling for this entity selection lane.
+
+`resolve_entity` and `resolve_optional_entity` use a two-candidate selection
+to detect ambiguity. A present identity retains both the predicate and its
+field, requiring two decision facts; absence retains one predicate fact.
+Declare those facts alongside any other handler reads. Reusable producer
+outputs reobserve predicate membership after their own candidate publishes
+under the installed projection-work ceiling, separately from mutation validation.
+Missing index evidence or
+exhausted rebase work leaves the output nonreusable.
 
 ## Small Example
 

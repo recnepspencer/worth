@@ -76,7 +76,10 @@ pub mod durability {
         RelationIntegrityContractFamily, RelationalNativeCheckpoint, SegmentRetentionClass,
     };
     pub use crate::durability::{
-        RecoveredRelationalBranchBasis, RecoveredRelationalRuntimeAuthority,
+        DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
+        RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
+        RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
+        RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
     };
 }
 
@@ -95,10 +98,11 @@ pub mod history {
         CommittedVersionSummary, HistoryAspectQueryTarget, HistoryDriftClass,
         HistoryRetentionClass, HistoryShapeClassification, LineageAspectHistory,
         LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeConflictRecord,
-        MergeInspection, OrderedParentList, RelationalCommitReceipt,
-        RelationalMergeBranchBasisDenial, VersionGraphPolicy,
+        MergeInspection, OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
+        RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
+        RelationalMergeBranchBasisDenial, RelationalTouchAdjacencyDirection, VersionGraphPolicy,
     };
-    pub use crate::history::{HistoryAccess, HistoryAuthority};
+    pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
         RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
@@ -191,9 +195,7 @@ pub mod merge {
 
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
-    pub use crate::config::data::{
-        PlanningContract, RelationIntegrityScopeBudget, RelationalExecutionModel,
-    };
+    pub use crate::config::data::RelationIntegrityScopeBudget;
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
@@ -207,17 +209,21 @@ pub mod runtime {
         custom_invariant_inventory_digest, AdjacencyStructuralRevision,
         AdjacencyStructuralRevisionDenial, CompiledArtifactAuthorityStatus, CompiledArtifactError,
         CompiledExecutionArtifact, ComplexityContract, ComplexityStatus, EntityProjectionRecord,
-        EntityRecordProjection, InvariantAccess, RelationProjectionRecord,
-        RelationRecordProjection, RelationalAdjacencyDirection, RelationalCandidateInputCounters,
+        EntityRecordProjection, InvariantAccess, PositionedRelationalSnapshot,
+        QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
+        RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
+        RelationalAdjacencyVisit, RelationalBorrowedRecordReadDenial,
+        RelationalCandidateInputCounters, RelationalEntityMetadata, RelationalEntityRetirement,
         RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
-        RelationalReplayRecord, RelationalRuntime, RelationalRuntimeConfig,
-        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
-        RelationalSchemaTransitionAdmissionDenialKind, ReplaySchemaVersion,
-        RuntimeComplexityCounters, SimulationAccess, SimulationAuthority, SnapshotGuard,
-        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
-        VisibilityRetentionAuthority,
+        RelationalRelationMetadata, RelationalReplayRecord, RelationalRuntime,
+        RelationalRuntimeConfig, RelationalRuntimeForkDenial,
+        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
+        RelationalSnapshotPositionAdmissionStop, RelationalSnapshotProjectionAdmissionStop,
+        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
+        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
+        VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
@@ -352,7 +358,8 @@ pub mod visibility {
 pub mod storage {
     pub use crate::storage::data::{
         authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
-        RecordLifecycleState,
+        AuthoritativeFieldComparisonKeyDecodeDenial,
+        AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
     };
 }
 

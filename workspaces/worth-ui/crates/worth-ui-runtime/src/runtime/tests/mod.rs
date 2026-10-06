@@ -80,6 +80,8 @@ mod durable_state_reconciliation_boundary_tests;
 pub(crate) mod durable_state_reconciliation_test_support;
 #[path = "planning/execution_plan_input_boundary_tests.rs"]
 mod execution_plan_input_boundary_tests;
+#[path = "expression/mod.rs"]
+pub(crate) mod expression;
 #[path = "replacement/file_rust_replacement_parity_boundary_tests.rs"]
 mod file_rust_replacement_parity_boundary_tests;
 #[path = "replacement/file_rust_replacement_parity_test_support.rs"]

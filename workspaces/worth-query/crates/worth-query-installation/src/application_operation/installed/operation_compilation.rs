@@ -1,8 +1,10 @@
 //! One-operation compilation authority shared by install and reinstallation.
 
 mod capability_demand;
+mod external_effect_contract;
 mod invariant_selection;
 use capability_demand::{operation_capability_count, progression_support_fact_count};
+use external_effect_contract::install_portable_external_effect;
 
 use worth_query_declaration::facade::application_aftermath::PortableApplicationAftermathContract;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor;
@@ -22,7 +24,6 @@ use crate::domain_operation::{
 };
 use crate::package::{
     WorthQueryPortableApplicationOperationContractRecord,
-    WorthQueryPortableExternalEffectContractRecord,
     WorthQueryPortableInstalledReconciliationProcedureRecord,
 };
 
@@ -138,7 +139,17 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 operation,
             ));
         }
-        let external_effect = install_portable_external_effect(portable_contract.external_effect());
+        let external_effect = install_portable_external_effect(
+            members,
+            operation,
+            portable_contract.external_effect(),
+        )
+        .map_err(|_| {
+            operation_denial(
+            WorthQueryApplicationOperationInstallationDenialKind::InvalidGraphObligationContract,
+            operation,
+        )
+        })?;
         let portable_aftermath = operation_aftermath(members, operation)
             .map_err(|denial| operation_denial(denial.installation_kind(), operation))?;
         Ok(Self {
@@ -300,21 +311,6 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 &self.operation,
             )
         })
-    }
-}
-
-fn install_portable_external_effect(
-    portable: Option<&WorthQueryPortableExternalEffectContractRecord>,
-) -> InstalledExternalEffectContract {
-    match portable {
-        None => InstalledExternalEffectContract::None,
-        Some(portable) => InstalledExternalEffectContract::Declared {
-            correlation_family: portable.correlation_family().clone(),
-            effect: portable.effect().to_owned(),
-            rust_payload_type: portable.payload_type().clone(),
-            protocol: portable.protocol().clone(),
-            maximum_payload_bytes: portable.maximum_payload_bytes(),
-        },
     }
 }
 

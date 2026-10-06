@@ -33,6 +33,7 @@ impl AllocationOracle {
             size_of::<Arc<CompositeRuntimeWorldCommit>>(),
             size_of::<CompositeCommitIdentity>(),
             size_of::<Arc<OnceLock<CompositeHistoryCatalogEntry>>>(),
+            size_of::<CompositeCommitIdentity>() + 4 * size_of::<usize>(),
             size_of::<CompositeCommitIdentity>(),
             size_of::<Arc<Mutex<Option<HistoryReachabilityRecord>>>>(),
             size_of::<OnceLock<CompositeHistoryCatalogEntry>>(),

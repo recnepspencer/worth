@@ -3,8 +3,10 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use crate::identity::data::{EntityId, KindId};
 use crate::snapshots::data::SnapshotHandle;
 
-use super::{DerivedIndexGenerationId, DerivedIndexId};
+use super::{DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId};
 
+/// Fixed width of the bounded relation-join lane. Complete entity-field
+/// selections instead use their caller's explicit finite candidate budget.
 pub const MAX_BOUNDED_INDEX_CANDIDATES: usize = 64;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -32,7 +34,7 @@ impl BoundedEntityFieldLookupRequest {
         value: AspectValue,
         candidate_limit: usize,
     ) -> Result<Self, BoundedEntityFieldLookupDenial> {
-        if candidate_limit == 0 || candidate_limit > MAX_BOUNDED_INDEX_CANDIDATES {
+        if candidate_limit == 0 || candidate_limit == usize::MAX {
             return Err(BoundedEntityFieldLookupDenial::new(
                 BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit,
                 index_id,
@@ -75,6 +77,7 @@ impl BoundedEntityFieldLookupRequest {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BoundedEntityFieldLookupOutcome {
+    definition: std::sync::Arc<DerivedIndexDefinition>,
     generation_id: DerivedIndexGenerationId,
     candidate_entity_ids: Vec<EntityId>,
     examined_entry_count: usize,
@@ -84,6 +87,7 @@ pub struct BoundedEntityFieldLookupOutcome {
 
 impl BoundedEntityFieldLookupOutcome {
     pub(crate) fn new(
+        definition: std::sync::Arc<DerivedIndexDefinition>,
         generation_id: DerivedIndexGenerationId,
         candidate_entity_ids: Vec<EntityId>,
         examined_entry_count: usize,
@@ -91,6 +95,7 @@ impl BoundedEntityFieldLookupOutcome {
         parity_mode: BoundedIndexParityMode,
     ) -> Self {
         Self {
+            definition,
             generation_id,
             candidate_entity_ids,
             examined_entry_count,
@@ -103,8 +108,18 @@ impl BoundedEntityFieldLookupOutcome {
         self.generation_id
     }
 
+    /// The installed semantic definition selected with this bounded lookup.
+    /// A later generation may refresh without changing this definition.
+    pub fn retain_definition(&self) -> std::sync::Arc<DerivedIndexDefinition> {
+        std::sync::Arc::clone(&self.definition)
+    }
+
     pub fn candidate_entity_ids(&self) -> &[EntityId] {
         &self.candidate_entity_ids
+    }
+
+    pub fn into_candidate_entity_ids(self) -> Vec<EntityId> {
+        self.candidate_entity_ids
     }
 
     pub const fn examined_entry_count(&self) -> usize {
@@ -135,6 +150,17 @@ pub enum BoundedEntityFieldLookupDenialKind {
 pub struct BoundedEntityFieldLookupDenial {
     kind: BoundedEntityFieldLookupDenialKind,
     index_id: DerivedIndexId,
+    examined_entry_count: usize,
+}
+
+/// Refusal from the exact-root admitted lookup. Native acceptance denials stay
+/// distinct from the caller's cumulative Work or preparation-memory stop.
+#[derive(Debug)]
+pub enum BoundedEntityFieldLookupAdmissionStop<Stop> {
+    Lookup(BoundedEntityFieldLookupDenial),
+    Admission(Stop),
+    AccountingOverflow,
+    ExactBasisRequired,
 }
 
 impl BoundedEntityFieldLookupDenial {
@@ -142,7 +168,16 @@ impl BoundedEntityFieldLookupDenial {
         kind: BoundedEntityFieldLookupDenialKind,
         index_id: DerivedIndexId,
     ) -> Self {
-        Self { kind, index_id }
+        Self {
+            kind,
+            index_id,
+            examined_entry_count: 0,
+        }
+    }
+
+    pub(crate) const fn with_examined_entry_count(mut self, examined: usize) -> Self {
+        self.examined_entry_count = examined;
+        self
     }
 
     pub const fn kind(&self) -> BoundedEntityFieldLookupDenialKind {
@@ -151,6 +186,10 @@ impl BoundedEntityFieldLookupDenial {
 
     pub const fn index_id(&self) -> DerivedIndexId {
         self.index_id
+    }
+
+    pub const fn examined_entry_count(&self) -> usize {
+        self.examined_entry_count
     }
 }
 

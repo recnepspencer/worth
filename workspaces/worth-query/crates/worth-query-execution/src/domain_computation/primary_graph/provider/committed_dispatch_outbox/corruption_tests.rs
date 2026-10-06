@@ -293,6 +293,7 @@ fn valid_field_substitutions() -> Vec<(usize, AspectValue)> {
         (5, AspectValue::UInt64(999)),
         (6, text("ffee")),
         (7, AspectValue::UInt64(999)),
+        (8, text("other-operation")),
     ]
 }
 
@@ -309,6 +310,7 @@ fn field_locator(
         &layout.maximum_payload_bytes_locator,
         &layout.payload_locator,
         &layout.outcome_identity_locator,
+        &layout.operation_slot_locator,
     ][field]
         .clone()
 }
@@ -344,6 +346,7 @@ fn record() -> WorthQueryDispatchOutboxRecord {
                 BoundaryProtocolVersion::new(1),
             ),
             maximum_payload_bytes: 24,
+            inbound: None,
         },
         vec![41; 8],
         41,

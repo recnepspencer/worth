@@ -1,7 +1,7 @@
 use super::*;
 use crate::facade::indexes::{
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
-    DerivedIndexEntries, MAX_BOUNDED_INDEX_CANDIDATES,
+    DerivedIndexEntries,
 };
 
 #[test]
@@ -56,10 +56,9 @@ fn entity_field_certification_rejects_a_missing_candidate() {
 #[test]
 fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
     let runtime = runtime_with_index_field_aspects();
-    let entities = ["alpha", "beta", "gamma"]
-        .into_iter()
-        .map(|name| {
-            let outcome = create_entity_outcome(&runtime, name);
+    let entities = (0..32)
+        .map(|index| {
+            let outcome = create_entity_outcome(&runtime, &format!("candidate-{index}"));
             changed_entities(&outcome)[0]
         })
         .collect::<Vec<_>>();
@@ -116,7 +115,58 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
 }
 
 #[test]
-fn bounded_lookup_rejects_unbounded_requests_and_nonexact_generations() {
+fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
+    let runtime = runtime_with_index_field_aspects();
+    let requested = create_entity_outcome(&runtime, "small");
+    let unrelated = create_entity_outcome(&runtime, "large");
+    let unrelated_id = changed_entities(&unrelated)[0];
+    update_entity(&runtime, unrelated_id, &"x".repeat(32 * 1024));
+    let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
+    let index = runtime.index_authority().register(DerivedIndexDefinition {
+        index_id: DerivedIndexId(76),
+        name: "entity.name.corrupt-large-value".to_owned(),
+        kind: DerivedIndexKind::EntityField {
+            field_locator: locator.clone(),
+        },
+        branch_scoped: false,
+    });
+    build_entity_field_generation(&runtime, index.index_id);
+    let requested_key = crate::facade::storage::AuthoritativeFieldComparisonKey::from_aspect_value(
+        &string_aspect_value("small"),
+    );
+    runtime
+        .indexes
+        .corrupt_latest_generation(index.index_id, |generation| {
+            let DerivedIndexEntries::EntityField(entries) = &mut generation.entries else {
+                panic!("entity-field generation expected");
+            };
+            let rows = entries.get_mut(&requested_key).expect("small entry exists");
+            rows.remove(0);
+            rows.insert(0, unrelated_id);
+        });
+    let request = BoundedEntityFieldLookupRequest::new(
+        runtime.visibility_authority().snapshot(),
+        index.index_id,
+        KindId(1),
+        locator,
+        string_aspect_value("small"),
+        2,
+    )
+    .unwrap();
+    assert_ne!(changed_entities(&requested)[0], unrelated_id);
+    let denial = runtime
+        .index_access()
+        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+        .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+    );
+    assert_eq!(denial.examined_entry_count(), 1);
+}
+
+#[test]
+fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(&runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -134,17 +184,17 @@ fn bounded_lookup_rejects_unbounded_requests_and_nonexact_generations() {
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
         });
-    let oversized = BoundedEntityFieldLookupRequest::new(
+    let empty = BoundedEntityFieldLookupRequest::new(
         created.snapshot.clone(),
         index.index_id,
         KindId(1),
         aspect_field_locator(aspect_key("name"), field_key("name")),
         string_aspect_value("alpha"),
-        MAX_BOUNDED_INDEX_CANDIDATES + 1,
+        0,
     )
     .unwrap_err();
     assert_eq!(
-        oversized.kind(),
+        empty.kind(),
         BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
     );
 

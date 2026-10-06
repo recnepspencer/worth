@@ -93,6 +93,18 @@ pub(crate) fn lower_parsed_source_declaration(
                 declaration_index,
             ))
         }
+        WorthUiParsedSourceDeclaration::Condition(block_declaration) => {
+            WorthUiArtifactInputNode::Condition(lower_parsed_block_declaration(
+                block_declaration,
+                declaration_index,
+            ))
+        }
+        WorthUiParsedSourceDeclaration::Derived(block_declaration) => {
+            WorthUiArtifactInputNode::Derived(lower_parsed_block_declaration(
+                block_declaration,
+                declaration_index,
+            ))
+        }
         WorthUiParsedSourceDeclaration::Token(token_declaration) => {
             WorthUiArtifactInputNode::Token(lower_token_declaration(
                 token_declaration,
@@ -276,6 +288,9 @@ pub(super) fn lower_token_kind_to_body_atom(
         WorthUiSourceTokenKind::KeywordBackdrop => WorthUiArtifactInputBodyAtom::KeywordBackdrop,
         WorthUiSourceTokenKind::NumberLiteral(value) => {
             WorthUiArtifactInputBodyAtom::NumberLiteral(value.clone())
+        }
+        WorthUiSourceTokenKind::ExpressionBody(body) => {
+            WorthUiArtifactInputBodyAtom::ExpressionBody(body.clone())
         }
         WorthUiSourceTokenKind::LeftBrace => WorthUiArtifactInputBodyAtom::LeftBrace,
         WorthUiSourceTokenKind::RightBrace => WorthUiArtifactInputBodyAtom::RightBrace,

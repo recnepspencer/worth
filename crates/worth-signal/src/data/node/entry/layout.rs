@@ -1,6 +1,7 @@
 mod clone_work;
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 mod retained_charge;
 
@@ -55,11 +56,11 @@ pub(crate) struct NodeWarmData {
         Option<crate::data::proof::invalidation::binding::PendingDependencyRevalidation>,
     #[serde(default)]
     pub(crate) direct_invalidation_basis:
-        Option<crate::data::proof::invalidation::source_seed::DirectInvalidationBasis>,
+        Option<Arc<crate::data::proof::invalidation::source_seed::DirectInvalidationBasis>>,
     #[serde(default)]
     pub(crate) direct_invalidation_generation: u64,
     #[serde(default)]
-    pub(crate) aspect_version_overrides: PartitionVersionOverrides,
+    pub(crate) aspect_version_overrides: Arc<PartitionVersionOverrides>,
     #[serde(default)]
     pub(crate) dirty_partition_scope_payload: SmallVec<
         [(
@@ -68,7 +69,22 @@ pub(crate) struct NodeWarmData {
         ); HOT_VEC_INLINE_CAPACITY],
     >,
     #[serde(default)]
-    pub(crate) runtime_artifact_state: Option<RuntimeArtifactState>,
+    pub(crate) runtime_artifact_state: Option<Arc<RuntimeArtifactState>>,
+}
+
+impl NodeWarmData {
+    /// Clone only the operational fields a consumer may change. Producer
+    /// companions remain shared with the installed root.
+    pub(crate) fn operational_consumer_draft(&self) -> Self {
+        Self {
+            pending_dependency_revalidation: self.pending_dependency_revalidation.clone(),
+            direct_invalidation_basis: self.direct_invalidation_basis.clone(),
+            direct_invalidation_generation: self.direct_invalidation_generation,
+            aspect_version_overrides: Arc::clone(&self.aspect_version_overrides),
+            dirty_partition_scope_payload: self.dirty_partition_scope_payload.clone(),
+            runtime_artifact_state: self.runtime_artifact_state.clone(),
+        }
+    }
 }
 
 pub(crate) fn node_hot_inline_size_bytes() -> u64 {

@@ -8,6 +8,7 @@ use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
 mod index_installation;
+mod selected_runtime;
 #[cfg(test)]
 mod test_inspection;
 use index_installation::{register_primary_graph_indexes, IndexInstallationPosture};
@@ -40,12 +41,14 @@ impl WorthQueryPrimaryGraph {
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
+        invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
     ) -> Self {
         Self::install(
             runtime_authority,
             binding_identity,
             layout,
             runtime,
+            invalidation_resources,
             IndexInstallationPosture::Register,
         )
         .expect("ordinary primary-graph index registration is infallible")
@@ -56,12 +59,14 @@ impl WorthQueryPrimaryGraph {
         binding_identity: ApplicationSchemaBindingIdentity,
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
+        invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
     ) -> Result<Self, String> {
         Self::install(
             runtime_authority,
             binding_identity,
             layout,
             runtime,
+            invalidation_resources,
             IndexInstallationPosture::RequireRecovered,
         )
     }
@@ -71,12 +76,14 @@ impl WorthQueryPrimaryGraph {
         binding_identity: ApplicationSchemaBindingIdentity,
         mut layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
+        invalidation_resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
         index_posture: IndexInstallationPosture,
     ) -> Result<Self, String> {
         let relational_runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
         register_primary_graph_indexes(&mut layout, &runtime, index_posture)?;
-        let source_owner = WorthQueryRelationalSourceOwner::new(runtime, "primary")
-            .expect("the installed primary graph role is canonical");
+        let source_owner =
+            WorthQueryRelationalSourceOwner::new(runtime, "primary", invalidation_resources)
+                .expect("the installed primary graph role is canonical");
         Ok(Self {
             runtime_authority,
             relational_runtime_instance_id,
@@ -185,7 +192,8 @@ impl WorthQueryPrimaryGraph {
     ) -> crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort {
         crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort::new(
             self.binding_identity.clone(),
-            self.integration_handle(),
+            self.source_owner.clone(),
+            Arc::clone(&self.layout),
         )
     }
 }
@@ -316,6 +324,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         self.source_owner.with_runtime_mut_unwind_isolated(mutate)
     }
 
+    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation) fn with_query_runtime_mut<T>(
         &self,
         read: impl FnOnce(&mut RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,

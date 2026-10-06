@@ -10,6 +10,7 @@ mod operational_digest;
 mod optional_inventory;
 mod performance;
 mod performed_work;
+mod physical_ready;
 #[cfg(test)]
 mod receipt_identity_tests;
 #[cfg(test)]
@@ -26,11 +27,11 @@ pub(crate) use compilation::{
 };
 pub(crate) use optional_inventory::LocalityOptionalObservationInventory;
 pub(crate) use performance::FinancialPerformanceBatchReport;
-#[cfg(feature = "parallel")]
 pub(in crate::tests::domains::fintech) use performed_work::strategy_work_projection;
 pub(in crate::tests::domains::fintech) use performed_work::{
     FinancialPerformedCanonicalWork, FinancialPerformedWorkOrigin,
 };
+use physical_ready::PhysicalReadyWitness;
 pub(in crate::tests::domains::fintech) use red_observation::FinancialLocalityRedObservation;
 use red_observation::{lineage_delta, RedObservationInput};
 
@@ -96,7 +97,8 @@ impl CompiledFinancialLocalityWorld {
             .last()
             .map(|record| record.sequence);
         self.apply_declared_mutation()?;
-        let evaluated_outputs = self.settle_declared_mutation()?;
+        let settlement = self.settle_declared_mutation()?;
+        let evaluated_outputs = settlement.evaluated_outputs;
         let after = self.runtime.graph().telemetry().invalidation;
         let evaluation_after = self.runtime.graph().telemetry().evaluation;
         let lineage_after = self
@@ -126,7 +128,10 @@ impl CompiledFinancialLocalityWorld {
             evaluated_outputs,
             baseline_retained_outputs,
             performed: self.runtime.graph().invalidation_performed_counters(),
-            execution_stage_outcomes: Vec::new(),
+            execution_stage_outcomes: settlement.stage_outcomes,
+            physical_ready: settlement.physical_ready.ok_or_else(|| {
+                SignalError::internal("certification omitted its physical ready witness")
+            })?,
             lineage_records: lineage_delta(lineage_before, lineage_after),
             explanation_fact_count,
             provenance_fact_count,
@@ -141,8 +146,8 @@ impl CompiledFinancialLocalityWorld {
 
     fn settle_declared_mutation(
         &mut self,
-    ) -> Result<std::collections::BTreeSet<LocalitySemanticOutputId>, SignalError> {
-        self.settle_mutations(&[self.locality_definition().mutation()])
+    ) -> Result<actions::LocalityExecutionSettlement, SignalError> {
+        self.settle_mutations_with_retries(&[self.locality_definition().mutation()], &[], 1)
     }
 
     fn apply_declared_mutation(&mut self) -> Result<(), SignalError> {

@@ -178,7 +178,7 @@ where
         graph_work,
         operation.operation(),
     )?;
-    let contracts = operation.contracts().clone();
+    let contracts = operation.retain_compiled_contracts_for_admission();
     let canonical_work = WorthQueryCanonicalWorkPhases::new(
         contracts.canonical_work(),
         preconditions.canonical_work().combine(canonical_work),
@@ -192,6 +192,7 @@ where
         operation: operation.operation().to_string(),
         operation_authority_identity: operation.authority_identity().into(),
         operation_authority_identity_bytes: operation.authority_identity_bytes(),
+        operation_definition_identity: operation.definition_identity_bytes(),
         admission_identity: operation_admission_identity,
         resource_binding_identity,
         operation_scope_binding,
@@ -209,6 +210,7 @@ where
         graph_work: revalidated.graph_work,
         source_partition_identity: None,
         source_facts: Vec::new(),
+        required_output_demand: None,
         _marker: std::marker::PhantomData,
     })
 }

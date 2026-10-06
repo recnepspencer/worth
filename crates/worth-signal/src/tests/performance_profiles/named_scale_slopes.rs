@@ -1,13 +1,13 @@
 use std::time::Instant;
 
-use crate::facade::{SignalRuntimePolicy, StageExecutor};
+use crate::facade::SignalRuntimePolicy;
 use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, DensityRatio, FinancialWorldDefinition,
 };
 
 use super::throughput_definition::{
     assert_within_throughput_budget, ordinary_definition, partitioned_world_for_output_floor,
-    performance_executor, PERFORMANCE_SEED,
+    performance_workers, PERFORMANCE_SEED,
 };
 
 #[derive(Debug)]
@@ -62,7 +62,7 @@ fn disjoint_region_batch_program_records_scope_mix() {
     )
     .expect("disjoint-region world compiles");
     let report = world
-        .run_locality_performance_sequence(DISJOINT_BATCHES, performance_executor(), false)
+        .run_locality_performance_sequence(DISJOINT_BATCHES, performance_workers(), false)
         .expect("disjoint-region sequence settles");
     assert!(report.node_count >= 1_024);
     assert_eq!(report.batch_count, DISJOINT_BATCHES);
@@ -119,7 +119,6 @@ fn run_scale_slopes() -> (Vec<ScaleSlopeEvidence>, u128) {
             upper_micros: fanout_upper.1,
         },
     ];
-    #[cfg(feature = "parallel")]
     let parallel_dispatch_sample = {
         let lower = parallel_dispatch_sample(256);
         let upper = parallel_dispatch_sample(1_024);
@@ -127,8 +126,6 @@ fn run_scale_slopes() -> (Vec<ScaleSlopeEvidence>, u128) {
         assert!(upper.0 > lower.0);
         upper.1
     };
-    #[cfg(not(feature = "parallel"))]
-    let parallel_dispatch_sample = 0;
     (evidence, parallel_dispatch_sample)
 }
 
@@ -147,12 +144,11 @@ fn slope_world_median(definition: FinancialWorldDefinition) -> (usize, u128) {
     )
     .expect("slope world compiles under installed operational policy");
     let report = world
-        .run_locality_performance_sequence(8, StageExecutor::Serial, false)
+        .run_locality_performance_sequence(8, 1, false)
         .expect("slope sequence settles");
     (report.node_count, report.warm_median_micros)
 }
 
-#[cfg(feature = "parallel")]
 fn parallel_dispatch_sample(output_floor: u32) -> (usize, u128) {
     let mut world = compile_financial_locality_world_with_policy(
         FinancialWorldDefinition::dense_market_close(
@@ -164,7 +160,7 @@ fn parallel_dispatch_sample(output_floor: u32) -> (usize, u128) {
     )
     .expect("parallel-dispatch slope world compiles");
     let report = world
-        .run_locality_performance_sequence(8, StageExecutor::balanced_parallel(), false)
+        .run_locality_performance_sequence(8, 4, false)
         .expect("parallel-dispatch slope settles");
     assert!(report.parallel_stage_dispatches > 0);
     (report.node_count, report.warm_median_micros)

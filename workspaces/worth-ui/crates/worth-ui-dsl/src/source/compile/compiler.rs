@@ -105,6 +105,9 @@ fn parse_report(report: crate::source::WorthUiParseReport) -> WorthUiDslCompileR
                     WorthUiParseDiagnosticCode::UnterminatedBlock => {
                         WorthUiDslCompileDiagnosticCode::UnterminatedBlock
                     }
+                    WorthUiParseDiagnosticCode::UnterminatedExpressionBody => {
+                        WorthUiDslCompileDiagnosticCode::UnterminatedExpressionBody
+                    }
                 };
                 let span = diagnostic.span();
                 WorthUiDslCompileDiagnostic::new(

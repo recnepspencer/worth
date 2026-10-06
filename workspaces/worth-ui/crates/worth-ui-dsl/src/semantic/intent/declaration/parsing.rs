@@ -108,12 +108,17 @@ fn parse_operability_contract(
     let mutability = parse_mutability_source(cursor)?;
     let readiness = parse_readiness_source(cursor)?;
     let policy_kind = cursor.take_identifier()?;
-    if policy_kind != "policy-application-boolean" {
-        return Err(error(format!(
-            "unknown intent policy source kind `{policy_kind}`"
-        )));
-    }
-    let policy = WorthUiIntentPolicySourceSpec::application_boolean(cursor.take_identifier()?);
+    let policy = match policy_kind.as_str() {
+        "policy-application-boolean" => {
+            WorthUiIntentPolicySourceSpec::application_boolean(cursor.take_identifier()?)
+        }
+        "policy-condition" => WorthUiIntentPolicySourceSpec::condition(cursor.take_identifier()?),
+        _ => {
+            return Err(error(format!(
+                "unknown intent policy source kind `{policy_kind}`"
+            )))
+        }
+    };
     Ok(WorthUiIntentOperabilityContractSpec::new(
         identity, mutability, readiness, policy,
     ))
@@ -131,6 +136,9 @@ fn parse_mutability_source(
             WorthUiIntentMutabilitySourceSpec::projection_readonly(cursor.take_identifier()?)
         }
         "mutability-committed-draft" => WorthUiIntentMutabilitySourceSpec::committed_draft(),
+        "mutability-condition" => {
+            WorthUiIntentMutabilitySourceSpec::condition(cursor.take_identifier()?)
+        }
         _ => {
             return Err(error(format!(
                 "unknown intent mutability source kind `{kind}`"
@@ -151,6 +159,9 @@ fn parse_readiness_source(
             WorthUiIntentReadinessSourceSpec::projection(cursor.take_identifier()?)
         }
         "readiness-committed-draft" => WorthUiIntentReadinessSourceSpec::committed_draft(),
+        "readiness-condition" => {
+            WorthUiIntentReadinessSourceSpec::condition(cursor.take_identifier()?)
+        }
         _ => {
             return Err(error(format!(
                 "unknown intent readiness source kind `{kind}`"
@@ -229,6 +240,8 @@ fn parse_payload_source(
         "application-unsigned64" => {
             WorthUiIntentPayloadSourceSpec::application_unsigned64(field, cursor.take_identifier()?)
         }
+        "derived" => WorthUiIntentPayloadSourceSpec::derived(field, cursor.take_identifier()?),
+        "condition" => WorthUiIntentPayloadSourceSpec::condition(field, cursor.take_identifier()?),
         _ => return Err(error(format!("unknown payload source kind `{kind}`"))),
     })
 }

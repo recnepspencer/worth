@@ -17,7 +17,7 @@ pub enum AccountStatus {
     Closed,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum PaymentStatus {
     Pending,
     ApprovalRequired,

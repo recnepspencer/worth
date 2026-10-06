@@ -12,6 +12,7 @@ worth-query-host.workspace = true
 worth-query-replay.workspace = true
 
 [dev-dependencies]
+serde.workspace = true
 worth-foundational.workspace = true
 worth-query.workspace = true
 worth-query-decl.workspace = true

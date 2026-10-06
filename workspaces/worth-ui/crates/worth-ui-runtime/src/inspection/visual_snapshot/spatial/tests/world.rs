@@ -52,6 +52,7 @@ pub(super) fn hit_test(
             node_receipt: world.receipt,
             bounds,
             clip_bounds: bounds,
+            painted_bounds: None,
             order: worth_ui_host_contract::UiMountedHitTestOrder::from_runtime_plan(order),
         },
     )

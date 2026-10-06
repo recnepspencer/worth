@@ -30,7 +30,10 @@ use super::settlement::{
 
 use types::{ConnectionBinding, Family, RootConnection, SourceBinding, SourceQuery, SourceValue};
 
-/// An admitted output demand. `settle` drives it toward a settlement within its controls.
+/// An admitted output demand. The source selector, parameters, and scope are
+/// fixed by the source read at `start`; later `advance` requests refresh the
+/// caller and branch but cannot change that admitted source intent.
+/// `settle` drives the demand toward a settlement within its controls.
 pub struct WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>
 where
     Schema: ApplicationSchema,
@@ -38,7 +41,6 @@ where
 {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
-    demand: Demand,
     controls: WorthQueryOutputDemandControls,
     selected_program: Option<(ApplicationProgramIdentity, ApplicationProgramRevision)>,
     closed: bool,
@@ -97,18 +99,12 @@ where
             .cloned()
             .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
         let source_result = self.query_source()?;
-        let maximum_work = self
-            .controls
-            .map_or(1, |controls| controls.maximum_work().get());
-        let maximum_retained_bytes = self
-            .controls
-            .map_or(1, |controls| controls.maximum_retained_bytes().get());
+        let limits = self.resolved_limits();
         let admitted = application
             .admit_program_root_output::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result.into_output_demand_source(),
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok((
@@ -183,19 +179,13 @@ where
                 &source_result,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
-        let maximum_work = self
-            .controls
-            .map_or(1, |controls| controls.maximum_work().get());
-        let maximum_retained_bytes = self
-            .controls
-            .map_or(1, |controls| controls.maximum_retained_bytes().get());
+        let limits = self.resolved_limits();
         let admitted = application
             .recover_program_root_output::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
                 current,
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
                 source_receipt,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
@@ -240,12 +230,7 @@ where
             .cloned()
             .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
         let source_result = self.query_source()?;
-        let maximum_work = self
-            .controls
-            .map_or(1, |controls| controls.maximum_work().get());
-        let maximum_retained_bytes = self
-            .controls
-            .map_or(1, |controls| controls.maximum_retained_bytes().get());
+        let limits = self.resolved_limits();
         let admitted = application
             .admit_program_dependent_output::<ParentDemand, Connection>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
@@ -253,8 +238,7 @@ where
                 &basis.retained,
                 &minimum_observation.retained,
                 source_result.into_output_demand_source(),
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(super::WorthQueryApplicationProgramDemandHandle::new(
@@ -314,18 +298,12 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
-        let maximum_work = self
-            .controls
-            .map_or(1, |controls| controls.maximum_work().get());
-        let maximum_retained_bytes = self
-            .controls
-            .map_or(1, |controls| controls.maximum_retained_bytes().get());
+        let limits = self.resolved_limits();
         let admitted = application
             .admit_performed_program_root_output::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
-                maximum_work,
-                maximum_retained_bytes,
+                limits,
                 prepared,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
@@ -335,6 +313,14 @@ where
             self.demand,
             None,
         ))
+    }
+
+    fn resolved_limits(
+        &self,
+    ) -> worth_query_execution::facade::runtime::WorthQueryOutputDemandLimits {
+        let profile = self.application.output_demand_resource_profile();
+        self.controls
+            .map_or_else(|| profile.limits(), |controls| controls.resolve(profile))
     }
 
     fn start_ordinary(
@@ -347,20 +333,22 @@ where
         WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        let maximum_work = self
-            .controls
-            .map_or(1, |controls| controls.maximum_work().get());
-        let maximum_retained_bytes = self
-            .controls
-            .map_or(1, |controls| controls.maximum_retained_bytes().get());
-        let admitted = self
-            .application
-            .admit_output_demand::<Family<Schema, Demand>>(
-                source_result,
-                maximum_work,
-                maximum_retained_bytes,
-            )
-            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
+        let limits = self.resolved_limits();
+        // A demand at a retained observation settles on the output current
+        // there; commits after it do not apply.
+        let admitted = match self.observation.as_deref() {
+            Some(observation) => self
+                .application
+                .admit_output_demand_at::<Family<Schema, Demand>>(
+                    source_result,
+                    limits,
+                    observation,
+                ),
+            None => self
+                .application
+                .admit_output_demand::<Family<Schema, Demand>>(source_result, limits),
+        }
+        .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(self.handle(admitted))
     }
 
@@ -368,16 +356,11 @@ where
         self,
         admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
     ) -> WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand> {
+        let controls = WorthQueryOutputDemandControls::from_limits(self.resolved_limits());
         WorthQueryApplicationOutputDemandHandle {
             application: self.application,
             admitted,
-            demand: self.demand,
-            controls: self.controls.unwrap_or_else(|| {
-                WorthQueryOutputDemandControls::new(
-                    std::num::NonZeroUsize::new(1).unwrap(),
-                    std::num::NonZeroUsize::new(1).unwrap(),
-                )
-            }),
+            controls,
             selected_program: None,
             closed: false,
         }

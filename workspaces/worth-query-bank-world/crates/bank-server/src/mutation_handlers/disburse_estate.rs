@@ -42,8 +42,8 @@ impl OperationHandler<BankSchema, DisburseEstateMutationBinding> for DisburseEst
         };
         let (snapshot, _, _) = decision.into_parts();
         let idempotency = BankIdempotencyClaim::from_application_binding(
-            DisburseEstateMutationBinding::idempotency_key_identity(reader.idempotency_key()),
-            DisburseEstateMutationBinding::input_identity(input),
+            *reader.key_identity(),
+            *reader.input_identity(),
         );
         match BankProposalEngine::prepare_estate_disbursement_from_decision(
             snapshot,

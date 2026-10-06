@@ -77,7 +77,7 @@ pub struct ResourceObservationEvent {
     handle_id: ObservationHandleId,
     policy: ObservationPolicy,
     outcome: ObservationBoundaryOutcome,
-    touched: bool,
+    visited: bool,
     recomputed: bool,
     meaningful_change: bool,
     trigger_matched: bool,
@@ -90,7 +90,7 @@ impl ResourceObservationEvent {
         handle_id: ObservationHandleId,
         policy: ObservationPolicy,
         outcome: ObservationBoundaryOutcome,
-        touched: bool,
+        visited: bool,
         recomputed: bool,
         meaningful_change: bool,
         trigger_matched: bool,
@@ -101,7 +101,7 @@ impl ResourceObservationEvent {
             handle_id,
             policy,
             outcome,
-            touched,
+            visited,
             recomputed,
             meaningful_change,
             trigger_matched,
@@ -125,8 +125,8 @@ impl ResourceObservationEvent {
         self.outcome
     }
 
-    pub fn touched(&self) -> bool {
-        self.touched
+    pub fn visited(&self) -> bool {
+        self.visited
     }
 
     pub fn recomputed(&self) -> bool {

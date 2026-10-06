@@ -16,6 +16,21 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
     >,
 ) {
     let world = installation::install(foreign);
+    let selected = world
+        .application
+        .on_branch(world.application.current_world())
+        .select()
+        .expect("the installed program occurrence selects");
+    let actual_program = selected
+        .inspect_selected_program()
+        .expect("the native activation resolves its rostered program");
+    let expected_program = crate::application_program::validated_program().unwrap();
+    assert_eq!(
+        actual_program.identity(),
+        &<ConsumerProgram as worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<ConsumerSchema>>::IDENTITY,
+    );
+    assert_eq!(actual_program.revision(), expected_program.revision());
+    drop(selected);
     let scope = authentication::request_scope();
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(

@@ -10,7 +10,6 @@ use super::super::{
 };
 use super::conditional::PendingConditionalRegistry;
 use super::contracts::WorthQueryApplicationContractCatalog;
-use super::producer::WorthQueryInstalledApplicationProducerRegistry;
 use super::WorthQueryApplicationContributionContracts;
 use super::WorthQueryApplicationContributionSetup;
 
@@ -98,7 +97,7 @@ where
         (
             WorthQueryApplicationInvariantFactories<Schema>,
             PendingMutationHandlerRegistry<Schema>,
-            WorthQueryInstalledApplicationProducerRegistry<Schema>,
+            super::producer::PendingProducerRegistry<Schema>,
             PendingConditionalRegistry<Schema>,
         ),
         WorthQueryPrimaryGraphInstallationDenial,
@@ -106,7 +105,7 @@ where
         Ok((
             self.factories,
             self.handlers,
-            self.producers.seal()?,
+            self.producers,
             self.conditionals,
         ))
     }

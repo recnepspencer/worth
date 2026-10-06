@@ -6,15 +6,19 @@ use crate::data::dependency::{CanonicalDependencies, DependencyEdge};
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
-use crate::data::node::EvaluationCondition;
+use crate::data::node::{
+    BoundedSignalInputs, DeclaredSignalInput, EvaluationCondition, NodeContract,
+};
 use crate::data::output::PartitionSubscription;
 use crate::data::output_equivalence::OutputEquivalencePolicy;
 
 use super::super::{
-    FinancialLocalityAdmissionPolicy, FinancialLocalityComparisonPolicy,
+    FinancialLocalityAction, FinancialLocalityAdmissionPolicy, FinancialLocalityComparisonPolicy,
     FinancialLocalityDefinition, FinancialLocalityOutputPolicy, LocalitySemanticOutputId,
 };
 use super::topology::signal_aspect;
+
+mod checked_result_capacity;
 
 pub(super) fn build_locality_topology(
     graph: &mut SignalGraph,
@@ -22,6 +26,48 @@ pub(super) fn build_locality_topology(
 ) -> Result<BTreeMap<LocalitySemanticOutputId, NodeId>, SignalError> {
     let mut handles = BTreeMap::new();
     for output in definition.outputs() {
+        let mut maximum = output.subscriptions.clone();
+        for trace in definition.action_traces() {
+            for action in trace.actions() {
+                match action {
+                    FinancialLocalityAction::AcceptedOwnerMove { change, .. }
+                        if change.target == output.id =>
+                    {
+                        maximum.push(change.after_subscription)
+                    }
+                    FinancialLocalityAction::AcceptedDependencyRecreation {
+                        structural,
+                        subscription,
+                        ..
+                    } if structural.target == output.id => maximum.push(*subscription),
+                    _ => {}
+                }
+            }
+        }
+        let maximum = BoundedSignalInputs::new(
+            maximum
+                .into_iter()
+                .map(|subscription| {
+                    let source = handles
+                        .get(&subscription.upstream)
+                        .copied()
+                        .ok_or_else(|| {
+                            SignalError::invalid_input(
+                                "locality maximum input must precede its consumer",
+                            )
+                        })?;
+                    let aspect = signal_aspect(subscription.input_aspect);
+                    Ok(match subscription.edge_scope {
+                        None => DeclaredSignalInput::new(source, aspect),
+                        Some(scope) => DeclaredSignalInput::scoped(
+                            source,
+                            aspect,
+                            partition_subscription(scope),
+                        ),
+                    })
+                })
+                .collect::<Result<Vec<_>, SignalError>>()?,
+        );
         let reads = output
             .subscriptions
             .iter()
@@ -37,6 +83,13 @@ pub(super) fn build_locality_topology(
         let policy = output.execution_policy();
         let mut builder = graph
             .node()
+            .with_contract(
+                NodeContract::wildcard()
+                    .with_bounded_inputs(maximum)
+                    .with_max_checked_result_heap_bytes(
+                        checked_result_capacity::maximum_result_heap(definition, output)?,
+                    ),
+            )
             .reads_aspects(reads)
             .produces_aspects(produces)
             .dependency_comparator(match policy.dependency_comparison {

@@ -42,10 +42,6 @@ fn phase3_settlement_receivers_take_a_shared_borrow() {
 /// compile the moment either side takes the other's receiver.
 #[test]
 fn phase3b_owner_authority_and_owner_services_keep_their_receivers() {
-    let _execution_model: fn(
-        &mut RelationalRuntime,
-        crate::config::data::RelationalExecutionModel,
-    ) = RelationalRuntime::set_execution_model;
     let _initial_schema: fn(
         &mut RelationalRuntime,
     ) -> Result<

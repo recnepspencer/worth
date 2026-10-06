@@ -3,7 +3,7 @@
 
 mod delivery;
 
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::branch::{ProductBranchReferenceMovement, ProductBranchReferenceSnapshot};
@@ -14,6 +14,22 @@ use crate::publication::{
 };
 
 pub(crate) use delivery::PublicationDeliveryClaim;
+
+#[derive(Debug, Default)]
+pub(crate) struct PublicationRevision(AtomicU64);
+
+impl PublicationRevision {
+    pub(crate) fn current(&self) -> u64 {
+        self.0.load(Ordering::Acquire)
+    }
+    pub(crate) fn advance(&self) {
+        let _ = self
+            .0
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
+                value.checked_add(1)
+            });
+    }
+}
 
 /// Preallocated before owner effects and charged with its exact history slot.
 /// Facts become visible only at the successful branch-cell replacement.
@@ -26,6 +42,7 @@ pub(crate) struct CanonicalPublicationEnvelope {
     committed: AtomicBool,
     delivery: AtomicU8,
     successor_observation: Mutex<Option<crate::branch::ProductBranchObservation>>,
+    revision: Arc<PublicationRevision>,
 }
 
 #[derive(Debug)]
@@ -52,6 +69,7 @@ impl CanonicalPublicationEnvelope {
         commit_identity: CompositeCommitIdentity,
         attempt_identity: CompositePublicationAttemptIdentity,
         expected: ProductBranchReferenceSnapshot,
+        revision: Arc<PublicationRevision>,
     ) -> Arc<Self> {
         Arc::new(Self {
             commit_identity,
@@ -61,6 +79,7 @@ impl CanonicalPublicationEnvelope {
             committed: AtomicBool::new(false),
             delivery: AtomicU8::new(delivery::AVAILABLE),
             successor_observation: Mutex::new(None),
+            revision,
         })
     }
 
@@ -202,5 +221,6 @@ impl StagedPublicationRecord {
             .set(self.facts)
             .expect("one reserved entry records one movement");
         self.envelope.committed.store(true, Ordering::Release);
+        self.envelope.revision.advance();
     }
 }

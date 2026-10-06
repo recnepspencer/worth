@@ -9,7 +9,9 @@ use worth_query_installation::facade::{
 
 use super::{
     WorthQueryApplicationCandidateResourceProfile, WorthQueryApplicationQueryResourceProfile,
-    WorthQueryExecutionRuntimeInstallation, WorthQueryRuntimeAuthorityIdentity,
+    WorthQueryBranchCoordinationResourceProfile, WorthQueryCompletedEvidenceResourceProfile,
+    WorthQueryExecutionRuntimeInstallation, WorthQueryOutputDemandResourceProfile,
+    WorthQueryRuntimeAuthorityIdentity,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraph, WorthQueryPrimaryGraphIntegrationHandle,
@@ -27,6 +29,9 @@ pub struct WorthQueryExecutionRuntime {
     primary_graph: Option<WorthQueryPrimaryGraph>,
     application_query_resources: WorthQueryApplicationQueryResourceProfile,
     application_candidate_resources: WorthQueryApplicationCandidateResourceProfile,
+    output_demand_resources: WorthQueryOutputDemandResourceProfile,
+    completed_evidence_resources: WorthQueryCompletedEvidenceResourceProfile,
+    branch_coordination_resources: WorthQueryBranchCoordinationResourceProfile,
 }
 
 /// Move-only construction authority for one execution runtime.
@@ -38,6 +43,9 @@ pub struct WorthQueryExecutionRuntimeInstaller {
     installation_runtime: WorthQueryInstallationRuntimeIdentity,
     application_query_resources: WorthQueryApplicationQueryResourceProfile,
     application_candidate_resources: WorthQueryApplicationCandidateResourceProfile,
+    output_demand_resources: WorthQueryOutputDemandResourceProfile,
+    completed_evidence_resources: WorthQueryCompletedEvidenceResourceProfile,
+    branch_coordination_resources: WorthQueryBranchCoordinationResourceProfile,
 }
 
 impl WorthQueryExecutionRuntimeInstaller {
@@ -46,6 +54,9 @@ impl WorthQueryExecutionRuntimeInstaller {
             authority_identity: WorthQueryRuntimeAuthorityIdentity::mint(),
             installation_runtime: WorthQueryInstallationRuntimeIdentity::fresh(),
             application_query_resources: WorthQueryApplicationQueryResourceProfile::default(),
+            output_demand_resources: WorthQueryOutputDemandResourceProfile::default(),
+            completed_evidence_resources: WorthQueryCompletedEvidenceResourceProfile::default(),
+            branch_coordination_resources: WorthQueryBranchCoordinationResourceProfile::default(),
             application_candidate_resources: WorthQueryApplicationCandidateResourceProfile::default(
             ),
         }
@@ -64,6 +75,30 @@ impl WorthQueryExecutionRuntimeInstaller {
         profile: WorthQueryApplicationCandidateResourceProfile,
     ) -> Self {
         self.application_candidate_resources = profile;
+        self
+    }
+
+    pub fn output_demand_resources(
+        mut self,
+        profile: WorthQueryOutputDemandResourceProfile,
+    ) -> Self {
+        self.output_demand_resources = profile;
+        self
+    }
+
+    pub fn completed_evidence_resources(
+        mut self,
+        profile: WorthQueryCompletedEvidenceResourceProfile,
+    ) -> Self {
+        self.completed_evidence_resources = profile;
+        self
+    }
+
+    pub fn branch_coordination_resources(
+        mut self,
+        profile: WorthQueryBranchCoordinationResourceProfile,
+    ) -> Self {
+        self.branch_coordination_resources = profile;
         self
     }
 
@@ -96,6 +131,9 @@ impl WorthQueryExecutionRuntimeInstaller {
                 primary_graph: None,
                 application_query_resources: self.application_query_resources,
                 application_candidate_resources: self.application_candidate_resources,
+                output_demand_resources: self.output_demand_resources,
+                completed_evidence_resources: self.completed_evidence_resources,
+                branch_coordination_resources: self.branch_coordination_resources,
             },
             retained_installation_runtime,
         ))
@@ -109,6 +147,21 @@ impl Default for WorthQueryExecutionRuntimeInstaller {
 }
 
 impl WorthQueryExecutionRuntime {
+    pub const fn branch_coordination_resource_profile(
+        &self,
+    ) -> WorthQueryBranchCoordinationResourceProfile {
+        self.branch_coordination_resources
+    }
+
+    pub const fn completed_evidence_resource_profile(
+        &self,
+    ) -> WorthQueryCompletedEvidenceResourceProfile {
+        self.completed_evidence_resources
+    }
+    pub const fn output_demand_resource_profile(&self) -> WorthQueryOutputDemandResourceProfile {
+        self.output_demand_resources
+    }
+
     pub fn authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity {
         self.authority_identity
     }

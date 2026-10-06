@@ -16,7 +16,7 @@ const CONSUMED: u8 = 2;
 #[must_use = "a publication delivery claim is linear"]
 pub(crate) struct PublicationDeliveryClaim {
     envelope: Arc<CanonicalPublicationEnvelope>,
-    _history: ExplicitCommitHistoryProtectionObligation,
+    history: Option<ExplicitCommitHistoryProtectionObligation>,
     successor_observation: Option<crate::branch::ProductBranchObservation>,
     consumed: bool,
 }
@@ -50,9 +50,17 @@ impl CanonicalPublicationEnvelope {
         Ok(PublicationDeliveryClaim {
             successor_observation: self.take_successor_observation(),
             envelope: Arc::clone(self),
-            _history: history,
+            history: Some(history),
             consumed: false,
         })
+    }
+}
+
+impl CanonicalPublicationEnvelope {
+    /// Performed facts that no product owner has consumed are still owed to
+    /// recovery, so their history entry cannot retire.
+    pub(crate) fn awaits_delivery(&self) -> bool {
+        self.facts().is_some() && self.delivery.load(Ordering::Acquire) != CONSUMED
     }
 }
 
@@ -78,6 +86,16 @@ impl PublicationDeliveryClaim {
             "only consumed delivery exposes product custody"
         );
         self.successor_observation.take()
+    }
+
+    /// A consumed delivery may hand its commit protection to the product
+    /// owner, which then decides how long the commit stays protected.
+    pub(crate) fn take_history(&mut self) -> Option<ExplicitCommitHistoryProtectionObligation> {
+        assert!(
+            self.consumed,
+            "only consumed delivery exposes product custody"
+        );
+        self.history.take()
     }
 }
 

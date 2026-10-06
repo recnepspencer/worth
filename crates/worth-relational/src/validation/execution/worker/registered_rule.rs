@@ -5,6 +5,7 @@ use crate::validation::data::{
     CustomInvariantProvenance, CustomInvariantRuntimePhase, InvariantReportedRule,
     InvariantVerdict,
 };
+use crate::validation::engine::budget::InvariantBudget;
 use crate::validation::engine::context::InvariantExecutionContext;
 use crate::validation::engine::evaluator::evaluate_rule;
 use crate::validation::engine::InvariantRuntimeView;
@@ -22,11 +23,12 @@ pub(super) struct RegisteredInvariantEvaluation {
 pub(super) fn evaluate_registered_rule<'state>(
     runtime: &InvariantRuntimeView<'state>,
     packet: &InvariantWorkPacket<'state>,
+    budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
     match &packet.registration {
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(
             registration,
-        ) => evaluate_native_registration(runtime, packet, registration),
+        ) => evaluate_native_registration(runtime, packet, registration, budget),
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Custom {
             registration,
             prepared_execution,
@@ -39,6 +41,7 @@ pub(super) fn evaluate_registered_rule<'state>(
             prepared_execution,
             prepared_scope,
             retained_touched,
+            budget,
         ),
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::CustomNotApplicable {
             registration,
@@ -70,8 +73,9 @@ fn evaluate_native_registration<'state>(
     runtime: &InvariantRuntimeView<'state>,
     packet: &InvariantWorkPacket<'state>,
     registration: &crate::validation::data::InvariantRegistration,
+    budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
-    let context = InvariantExecutionContext::new(
+    let mut context = InvariantExecutionContext::new(
         runtime,
         packet.observation.clone(),
         packet.version_id,
@@ -80,6 +84,9 @@ fn evaluate_native_registration<'state>(
         packet.relation_integrity_scopes.clone(),
         std::sync::Arc::clone(&packet.current_version_minimum_index),
     );
+    if let Some(budget) = budget {
+        context = context.with_budget(budget);
+    }
     let violations = evaluate_rule(
         &context,
         registration.execution_point.class(),
@@ -111,8 +118,14 @@ fn evaluate_custom_registration<'state>(
     >,
     prepared_scope: &crate::validation::data::PreparedCustomInvariantScope,
     retained_touched: &std::sync::Arc<crate::validation::data::TouchedStructuralSet>,
+    budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
+    let structural_budget = budget.map(InvariantBudget::custom_structural_budget);
     let work = prepared_execution.work_meter();
+    let work = structural_budget
+        .as_ref()
+        .map_or(work.clone(), |structural| work.for_evaluation(structural));
+    let ready = budget.is_none_or(|budget| budget.checkpoint(1));
     let context = CustomInvariantExecutionContext::new(
         runtime,
         packet.observation,
@@ -123,7 +136,28 @@ fn evaluate_custom_registration<'state>(
         work.clone(),
         std::sync::Arc::new(registration.access_contract().clone()),
     );
-    let mut verdicts = match prepared_execution.evaluate(&context) {
+    let outcome = if !ready
+        || structural_budget
+            .as_ref()
+            .is_some_and(|budget| budget.stop().is_some())
+    {
+        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
+            crate::validation::data::CustomInvariantVerdict::Pass,
+        )
+    } else if let Some(budget) = budget {
+        match prepared_execution.evaluate_checked(&context, budget.custom_meter()) {
+            Some(outcome) => outcome,
+            None => {
+                budget.deny_unchecked_custom();
+                crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
+                    crate::validation::data::CustomInvariantVerdict::Pass,
+                )
+            }
+        }
+    } else {
+        prepared_execution.evaluate(&context)
+    };
+    let mut verdicts = match outcome {
         crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
             crate::validation::data::CustomInvariantVerdict::Pass,
         ) => vec![InvariantVerdict::Pass],
@@ -158,6 +192,9 @@ fn evaluate_custom_registration<'state>(
         }
     };
     let custom_provenance = context.provenance();
+    if let (Some(budget), Some(structural)) = (budget, structural_budget.as_ref()) {
+        let _ = budget.settle_custom_structural(structural);
+    }
     if work.exceeded() {
         verdicts = vec![InvariantVerdict::Violation(
             crate::validation::data::InvariantViolation {

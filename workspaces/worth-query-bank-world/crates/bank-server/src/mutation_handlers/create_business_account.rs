@@ -4,16 +4,15 @@ use bank_domain::proposals::{BankProposalDenial, BankProposalEngine, BankPropose
 use bank_domain::schema::{
     Account, AccountDisplayName, AccountIdentity, AccountKind, AccountStatus, AccountingRevision,
     BankSchema, BusinessAccount, BusinessIdentityField, CreateBusinessAccount,
-    CreateBusinessAccountMutationBinding, CreateBusinessAccountResult, InstitutionAccount,
-    InstitutionIdentityField, Kind, Status, CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT,
+    CreateBusinessAccountMutationBinding, CreateBusinessAccountResult,
+    CreatedBusinessAccountOutput, InstitutionAccount, InstitutionIdentityField, Kind, Status,
 };
 use worth_query_host::facade::declaration::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    OperationHandler, WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole,
-    WorthQueryCreateOutput,
+    OperationHandler, WorthQueryApplicationEntityKey,
 };
 
 use crate::bank_projection::project_business_account_creation;
@@ -148,14 +147,7 @@ fn author_account(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .create_output(
-            WorthQueryApplicationOutputRole::<
-                CreateBusinessAccountMutationBinding,
-                Account,
-                WorthQueryCreateOutput,
-            >::from_static(CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT),
-            &created,
-        )
+        .create_output::<CreatedBusinessAccountOutput>(&created)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(CreateBusinessAccountResult {
         account: account.id(),

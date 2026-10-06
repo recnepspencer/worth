@@ -112,7 +112,8 @@ where
     {
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
-            WorthQueryGuardedWorkflowOperationCustody::Committed(receipt) => self
+            WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
+            | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
                 .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
@@ -158,7 +159,8 @@ where
     {
         let (prepared, custody) = resolve_owner(&self, required, &mut operation)?;
         match custody {
-            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt) => self
+            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
+            | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => self
                 .accept_custody::<Intent::Binding, _, _, _>(
                     required,
                     &receipt,
@@ -207,15 +209,25 @@ where
             <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
+    let staged = operation
+        .stage()
+        .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
+    let identities = operation
+        .identities()
+        .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     operation
-        .validate_workflow_operation_binding(advance.workflow, required)
+        .validate_workflow_operation_binding(
+            advance.workflow,
+            required,
+            identities.input_identity(),
+        )
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Binding)?;
     if operation.workflow_transition_identity() != Some(*required.transition_identity_bytes()) {
         return Err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Binding(
             WorthQueryWorkflowOperationBindingDenial::RequirementMismatch,
         ));
     }
-    let prepared = authorization::prepare(operation)
+    let prepared = authorization::prepare(operation, &identities, staged)
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
         advance.application,
@@ -238,7 +250,7 @@ pub(super) fn other_custody(
         Custody::PublicationPending => Posture::PublicationPending,
         Custody::ProductUnpublished(handle) => Posture::ProductUnpublished(handle),
         Custody::Indeterminate(denial) => Posture::Indeterminate(denial),
-        Custody::Committed(_) | Custody::DispatchPending(_) => {
+        Custody::Committed(_) | Custody::ExternallySettled(_) | Custody::DispatchPending(_) => {
             unreachable!("committed custody is handled by the accepting method")
         }
     }

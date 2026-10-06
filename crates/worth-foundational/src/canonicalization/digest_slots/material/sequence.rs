@@ -150,3 +150,31 @@ fn entry_kind_token(kind: CanonicalBasisEntryKind) -> &'static str {
         CanonicalBasisEntryKind::Future(value) => value,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::canonicalization::{
+        CanonicalBasisDomain, CanonicalBasisValue, CanonicalDigestWorkBudget,
+    };
+
+    #[test]
+    fn entry_framing_preserves_byte_derived_storage_ceiling() {
+        // Empty future tokens exercise the weakest domain/kind framing rather
+        // than borrowing the stronger nonempty production domain vocabulary.
+        let entry = CanonicalBasisEntry::new(
+            CanonicalBasisDomain::Future(""),
+            CanonicalBasisLocus::Root,
+            CanonicalBasisEntryKind::Future(""),
+            CanonicalBasisValue::Null,
+        );
+        let mut material = CanonicalMaterialWriter::bounded(100);
+        append_entry_material(&mut material, &entry).unwrap();
+        let encoded = material.finish();
+        assert!(encoded.encoded_bytes() >= CanonicalDigestWorkBudget::MINIMUM_ENCODED_ENTRY_BYTES);
+        assert_eq!(
+            encoded.into_bytes(),
+            b"entry.domain#0:;locus#4:root;entry.kind#0:;value.kind#4:null;",
+        );
+    }
+}

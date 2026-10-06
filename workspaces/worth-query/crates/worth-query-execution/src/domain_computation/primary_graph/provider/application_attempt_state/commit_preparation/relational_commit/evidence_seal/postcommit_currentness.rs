@@ -1,396 +1,227 @@
-use std::sync::Arc;
+use std::{collections::BTreeSet, sync::Arc};
+
+use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 
 mod adjacency;
-use adjacency::rebase_decision_adjacency;
+mod resolution;
+mod retirement;
 
-pub(super) fn rebase(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) enum RebasedSourceFacts {
+    Exact(Arc<[WorthQueryApplicationObservedFact]>),
+    /// Every fact is exact, and the committed effect moved the source facts at
+    /// these ordinals past the revision their source query read.
+    SupersededByOwnEffect {
+        facts: Arc<[WorthQueryApplicationObservedFact]>,
+        ordinals: Arc<[usize]>,
+    },
+    VerificationRequired {
+        reason: RebaseVerificationReason,
+        facts: Arc<[WorthQueryApplicationObservedFact]>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
+    NativeRevisionUnavailable,
+    UnsupportedDecisionFact,
+    AdmissionDenied(worth_relational::facade::mvcc::CompanionPreflightStop),
+}
+
+/// Capacity for the selected-snapshot fact transition is acquired while the
+/// candidate is still pre-effect custody. The postcommit path only fills the
+/// already allocated action and result buffers.
+pub(in crate::domain_computation::primary_graph::provider) struct PreparedSourceFactRebase {
     facts: Vec<WorthQueryApplicationObservedFact>,
-    producer_output: bool,
-    maximum_pair_rebase_work: usize,
-) -> Arc<[WorthQueryApplicationObservedFact]> {
-    let mut failed_native_rebase = false;
-    let rebased = facts
-        .into_iter()
-        .map(|fact| match fact {
-            WorthQueryApplicationObservedFact::Field {
-                entity_id, locator, ..
-            }
-            | WorthQueryApplicationObservedFact::AbsentField {
-                entity_id, locator, ..
-            } => {
-                let locator = worth_foundational::facade::AspectFieldLocator::new(
-                    worth_foundational::facade::LocatorAuthority::Authoritative,
-                    locator.aspect().aspect_key().clone(),
-                    locator.field_path().clone(),
-                );
-                WorthQueryApplicationObservedFact::SourceFieldRevision {
-                    entity_id,
-                    native_revision: runtime
-                        .read_truth()
-                        .project_snapshot(snapshot)
-                        .and_then(|view| view.entity_field_revision(entity_id, &locator)),
-                    locator,
-                }
-            }
-            WorthQueryApplicationObservedFact::SourceAspectRevision {
-                entity_id,
-                aspect,
-                native_revision,
-            } => {
-                let committed_revision = runtime
-                    .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| view.entity_aspect_version(entity_id, &aspect));
-                if committed_revision.is_none() {
-                    failed_native_rebase = true;
-                }
-                WorthQueryApplicationObservedFact::SourceAspectRevision {
-                    entity_id,
-                    native_revision: committed_revision.unwrap_or(native_revision),
-                    aspect,
-                }
-            }
-            WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
-                relation_kind,
-                anchor,
-                direction,
-                native_revision,
-                comparison_work_limit,
-                endpoints,
-            } => {
-                let committed_comparison = runtime
-                    .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| {
-                        view.bounded_adjacency_structural_revision(
-                            anchor,
-                            relation_kind,
-                            direction,
-                            comparison_work_limit,
-                        )
-                        .ok()
-                    });
-                if committed_comparison.is_none() {
-                    failed_native_rebase = true;
-                }
-                WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
-                    relation_kind,
-                    anchor,
-                    direction,
-                    native_revision: committed_comparison
-                        .map(|comparison| comparison.revision())
-                        .unwrap_or(native_revision),
-                    comparison_work_limit,
-                    endpoints,
-                }
-            }
-            fact @ WorthQueryApplicationObservedFact::Relation { .. }
-            | fact @ WorthQueryApplicationObservedFact::Adjacency { .. } => {
-                rebase_decision_adjacency(runtime, snapshot, fact, maximum_pair_rebase_work)
-            }
-            fact => fact,
+    actions: Vec<resolution::PreparedFactRebase>,
+    rebased: Vec<WorthQueryApplicationObservedFact>,
+    superseded: Vec<usize>,
+}
+
+impl PreparedSourceFactRebase {
+    pub(in crate::domain_computation::primary_graph::provider) fn admit(
+        facts: Vec<WorthQueryApplicationObservedFact>,
+    ) -> Result<Self, std::collections::TryReserveError> {
+        let mut actions = Vec::new();
+        actions.try_reserve_exact(facts.len())?;
+        let mut rebased = Vec::new();
+        rebased.try_reserve_exact(facts.len())?;
+        let mut superseded = Vec::new();
+        superseded.try_reserve_exact(facts.len())?;
+        Ok(Self {
+            facts,
+            actions,
+            rebased,
+            superseded,
         })
-        .collect::<Vec<_>>();
-    if producer_output
-        && (failed_native_rebase || !rebased.iter().all(native_output_currentness_fact))
-    {
-        // Failed structural acquisition or an unsupported tracked read cannot
-        // be silently replaced by only the query-footprint subset.
-        Arc::from([])
-    } else {
-        rebased.into()
     }
 }
 
-fn native_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
-    matches!(
-        fact,
-        WorthQueryApplicationObservedFact::SourceEntity { .. }
-            | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
-            | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
-            | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
-            | WorthQueryApplicationObservedFact::Entity { .. }
+impl RebasedSourceFacts {
+    /// The same sealed facts under a requirement to verify them in full: the
+    /// row a commit leaves when its facts can be compared but were not
+    /// sealed as exact.
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(super) fn held_for_verification(self) -> Self {
+        match self {
+            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => {
+                Self::VerificationRequired {
+                    reason: RebaseVerificationReason::NativeRevisionUnavailable,
+                    facts,
+                }
+            }
+            required @ Self::VerificationRequired { .. } => required,
+        }
+    }
+    pub(super) fn retain_exact(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+        match self {
+            Self::Exact(facts) | Self::SupersededByOwnEffect { facts, .. } => {
+                Some(Arc::clone(facts))
+            }
+            Self::VerificationRequired { .. } => None,
+        }
+    }
+
+    pub(super) fn superseded_by_own_effect(&self) -> &[usize] {
+        match self {
+            Self::SupersededByOwnEffect { ordinals, .. } => ordinals,
+            Self::Exact(_) | Self::VerificationRequired { .. } => &[],
+        }
+    }
+
+    pub(super) fn retain_verification_facts(
+        &self,
+    ) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+        match self {
+            Self::Exact(_) | Self::SupersededByOwnEffect { .. } => None,
+            Self::VerificationRequired { facts, .. } => Some(Arc::clone(facts)),
+        }
+    }
+
+    pub(super) const fn verification_requirement(&self) -> Option<RebaseVerificationReason> {
+        match self {
+            Self::Exact(_) | Self::SupersededByOwnEffect { .. } => None,
+            Self::VerificationRequired { reason, .. } => Some(*reason),
+        }
+    }
+}
+
+/// Rebase the candidate's facts onto the snapshot its own commit selected.
+/// An output entity this commit retired is read as that retirement; it is not
+/// a source the effect moved.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn rebase_output(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    prepared: PreparedSourceFactRebase,
+    correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    changed_records: &[worth_relational::facade::transactions::RecordRef],
+    producer_output: bool,
+    maximum_indexed_rebase_work: usize,
+    admission: Option<&mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+) -> RebasedSourceFacts {
+    let changed_entities = changed_records
+        .iter()
+        .filter_map(|record| match record {
+            worth_relational::facade::transactions::RecordRef::Entity(entity) => Some(*entity),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let retired = correspondence
+        .retired_entity_ids()
+        .filter(|entity| changed_entities.contains(entity))
+        .collect();
+    rebase(
+        runtime,
+        snapshot,
+        prepared,
+        &retired,
+        producer_output,
+        maximum_indexed_rebase_work,
+        admission,
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use worth_foundational::facade::{
-        AspectFieldLocator, CanonicalFieldPath, FieldKey, LocatorAuthority,
-    };
-    use worth_query_declaration::facade::application_schema::{
-        ApplicationScalarValueBinding, StringApplicationValueBinding,
-    };
-    use worth_relational::facade::transactions::{
-        AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-        WorkerIntentBatch,
-    };
-
-    use super::*;
-    use crate::domain_computation::primary_graph::{
-        application_attempt::WorthQuerySourceCurrentnessFailure,
-        output_reuse::{compare_retained_output_dependencies, OutputDependencySelection},
-        tests::fixture::{
-            installed_authorization_world, live_scope, publish_relational_mutation,
-            AccountIdentity, AccountNote, AuthorizationWorld,
-        },
-        WorthQueryPrincipalResolutionMode,
-    };
-
-    #[test]
-    fn producer_decision_field_uses_native_revision_after_value_aba() {
-        let world = installed_authorization_world(true);
-        let (entity, locator) = account_note(&world, "account-1");
-        let field = WorthQueryApplicationObservedFact::Field {
-            entity_id: entity,
-            kind: world
-                .application
-                .runtime
-                .primary_graph()
-                .unwrap()
-                .layout
-                .entity_kind(AccountIdentity::reference().entity())
-                .unwrap(),
-            locator: planned(&locator),
-            value: StringApplicationValueBinding::encode(&"reviewed".to_owned()).unwrap(),
-        };
-        let facts = rebase_at_current(&world, vec![field.clone()]);
-        let durable = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(
-            &crate::domain_computation::primary_graph::application_checkpoint::encode_producer_facts(&facts)
-                .expect("the rebased non-query producer decision field is checkpoint-comparable"),
-        )
-        .expect("the complete producer fact set round-trips");
-        assert_eq!(durable.as_ref(), facts.as_ref());
-        assert!(matches!(
-            facts[0],
-            WorthQueryApplicationObservedFact::SourceFieldRevision {
-                native_revision: Some(_),
-                ..
+fn rebase(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    prepared: PreparedSourceFactRebase,
+    retired: &BTreeSet<EntityId>,
+    producer_output: bool,
+    maximum_indexed_rebase_work: usize,
+    mut admission: Option<&mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+) -> RebasedSourceFacts {
+    let PreparedSourceFactRebase {
+        facts,
+        mut actions,
+        mut rebased,
+        mut superseded,
+    } = prepared;
+    let mut indexed_work = maximum_indexed_rebase_work;
+    for fact in &facts {
+        if let Some(meter) = admission.as_mut() {
+            if let Err(stop) = meter.charge_external_work(1) {
+                return RebasedSourceFacts::VerificationRequired {
+                    reason: RebaseVerificationReason::AdmissionDenied(stop),
+                    facts: facts.into(),
+                };
             }
-        ));
-        assert!(current(&world, &facts[0]));
-        assert!(matches!(
-            output_selection(&world, &durable),
-            OutputDependencySelection::Reuse
-        ));
-        assert_eq!(
-            currentness(&world, &field),
-            Err(WorthQuerySourceCurrentnessFailure::Unavailable),
-            "a value-only fact cannot authorize output reuse"
-        );
-
-        set_note(&world, entity, locator.clone(), "temporary");
-        set_note(&world, entity, locator, "reviewed");
-        assert!(!current(&world, &facts[0]));
-        assert!(matches!(
-            output_selection(&world, &durable),
-            OutputDependencySelection::FreshRequired
-        ));
-    }
-
-    #[test]
-    fn producer_decision_absence_uses_native_presence_revision() {
-        let world = installed_authorization_world(true);
-        let (entity, locator) = account_note(&world, "account-2");
-        let fact = WorthQueryApplicationObservedFact::AbsentField {
-            entity_id: entity,
-            kind: world
-                .application
-                .runtime
-                .primary_graph()
-                .unwrap()
-                .layout
-                .entity_kind(AccountIdentity::reference().entity())
-                .unwrap(),
-            locator: planned(&locator),
-        };
-        let facts = rebase_at_current(&world, vec![fact]);
-        assert!(matches!(
-            facts[0],
-            WorthQueryApplicationObservedFact::SourceFieldRevision {
-                native_revision: Some(revision),
-                ..
-            } if revision.presence() == worth_relational::facade::runtime::RelationalFieldPresence::Absent
-        ));
-        assert!(current(&world, &facts[0]));
-        assert!(matches!(
-            output_selection(&world, &facts),
-            OutputDependencySelection::Reuse
-        ));
-        set_note(&world, entity, locator, "now-present");
-        assert!(!current(&world, &facts[0]));
-        assert!(matches!(
-            output_selection(&world, &facts),
-            OutputDependencySelection::FreshRequired
-        ));
-    }
-
-    #[test]
-    fn unavailable_native_revision_never_authorizes_output_reuse() {
-        let world = installed_authorization_world(true);
-        let (entity, note) = account_note(&world, "account-1");
-        let undeclared = AspectFieldLocator::new(
-            LocatorAuthority::Planned,
-            note.aspect().aspect_key().clone(),
-            CanonicalFieldPath::single(FieldKey::new("undeclared").unwrap()),
-        );
-        let facts = rebase_at_current(
-            &world,
-            vec![WorthQueryApplicationObservedFact::AbsentField {
-                entity_id: entity,
-                kind: world
-                    .application
-                    .runtime
-                    .primary_graph()
-                    .unwrap()
-                    .layout
-                    .entity_kind(AccountIdentity::reference().entity())
-                    .unwrap(),
-                locator: undeclared,
-            }],
-        );
-        assert!(matches!(
-            facts[0],
-            WorthQueryApplicationObservedFact::SourceFieldRevision {
-                native_revision: None,
-                ..
+        }
+        let adjacency_work = admission.as_ref().map_or(0, |meter| meter.remaining_work());
+        if matches!(
+            fact,
+            WorthQueryApplicationObservedFact::Relation { .. }
+                | WorthQueryApplicationObservedFact::Adjacency { .. }
+                | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
+                | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
+        ) {
+            if let Some(meter) = admission.as_mut() {
+                // The selected native adjacency revision and the indexed
+                // selection each perform one indexed probe. A probe's
+                // per-call cap alone does not spend request work.
+                if let Err(stop) = meter.charge_external_work(1) {
+                    return RebasedSourceFacts::VerificationRequired {
+                        reason: RebaseVerificationReason::AdmissionDenied(stop),
+                        facts: facts.into(),
+                    };
+                }
             }
-        ));
-        assert!(matches!(
-            output_selection(&world, &facts),
-            OutputDependencySelection::FreshRequired
-        ));
+        }
+        match resolution::PreparedFactRebase::prepare(
+            runtime,
+            snapshot,
+            fact,
+            retired,
+            producer_output,
+            adjacency_work,
+            &mut indexed_work,
+        ) {
+            Ok(action) => actions.push(action),
+            Err(reason) => {
+                return RebasedSourceFacts::VerificationRequired {
+                    reason,
+                    facts: facts.into(),
+                };
+            }
+        }
     }
-
-    fn account_note(
-        world: &AuthorizationWorld,
-        key: &str,
-    ) -> (
-        worth_relational::facade::identity::EntityId,
-        AspectFieldLocator,
-    ) {
-        let entity = world
-            .selected_product()
-            .resolve_entity(
-                AccountIdentity::reference(),
-                key.to_owned(),
-                &live_scope(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap()
-            .entity_id();
-        let note = AccountNote::reference();
-        let locator = world
-            .application
-            .runtime
-            .primary_graph()
-            .unwrap()
-            .layout
-            .field_locator(note.entity(), note.aspect(), note.field())
-            .unwrap()
-            .clone();
-        (entity, locator)
+    for (ordinal, (fact, action)) in facts.into_iter().zip(actions).enumerate() {
+        if matches!(action, resolution::PreparedFactRebase::KeepSuperseded) {
+            superseded.push(ordinal);
+        }
+        rebased.push(action.apply(fact));
     }
-
-    fn planned(locator: &AspectFieldLocator) -> AspectFieldLocator {
-        AspectFieldLocator::new(
-            LocatorAuthority::Planned,
-            locator.aspect().aspect_key().clone(),
-            locator.field_path().clone(),
-        )
-    }
-
-    fn rebase_at_current(
-        world: &AuthorizationWorld,
-        facts: Vec<WorthQueryApplicationObservedFact>,
-    ) -> Arc<[WorthQueryApplicationObservedFact]> {
-        let selected = world.selected_product();
-        world
-            .application
-            .runtime
-            .primary_graph()
-            .unwrap()
-            .integration_handle()
-            .with_runtime(|runtime| {
-                rebase(
-                    runtime,
-                    selected.application_basis().snapshot_handle(),
-                    facts,
-                    true,
-                    64,
-                )
-            })
-    }
-
-    fn current(world: &AuthorizationWorld, fact: &WorthQueryApplicationObservedFact) -> bool {
-        currentness(world, fact).unwrap().0
-    }
-
-    fn output_selection(
-        world: &AuthorizationWorld,
-        facts: &[WorthQueryApplicationObservedFact],
-    ) -> OutputDependencySelection {
-        let selected = world.selected_product();
-        world
-            .application
-            .runtime
-            .primary_graph()
-            .unwrap()
-            .integration_handle()
-            .with_runtime(|runtime| {
-                compare_retained_output_dependencies(
-                    runtime,
-                    selected.application_basis().snapshot_handle(),
-                    true,
-                    Some(facts),
-                    &mut 16,
-                )
-                .unwrap()
-            })
-    }
-
-    fn currentness(
-        world: &AuthorizationWorld,
-        fact: &WorthQueryApplicationObservedFact,
-    ) -> Result<(bool, usize), WorthQuerySourceCurrentnessFailure> {
-        let selected = world.selected_product();
-        world
-            .application
-            .runtime
-            .primary_graph()
-            .unwrap()
-            .integration_handle()
-            .with_runtime(|runtime| {
-                fact.source_currentness_in(
-                    runtime,
-                    selected.application_basis().snapshot_handle(),
-                    1,
-                )
-            })
-    }
-
-    fn set_note(
-        world: &AuthorizationWorld,
-        entity: worth_relational::facade::identity::EntityId,
-        locator: AspectFieldLocator,
-        value: &str,
-    ) {
-        let fields = AspectFieldPatch::from(std::collections::BTreeMap::from([(
-            locator,
-            StringApplicationValueBinding::encode(&value.to_owned()).unwrap(),
-        )]));
-        publish_relational_mutation(
-            world,
-            WorkerIntentBatch::new("decision-field-currentness").push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                    entity_id: entity,
-                    fields,
-                }),
-            )),
-        );
+    if superseded.is_empty() {
+        RebasedSourceFacts::Exact(rebased.into())
+    } else {
+        RebasedSourceFacts::SupersededByOwnEffect {
+            facts: rebased.into(),
+            ordinals: superseded.into(),
+        }
     }
 }
+#[cfg(test)]
+#[path = "postcommit_currentness/tests.rs"]
+mod tests;

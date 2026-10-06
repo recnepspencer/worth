@@ -208,7 +208,7 @@ mod tests {
             let subscription = declaration
                 .partition()
                 .expect("read dependency is partitioned");
-            assert_eq!(subscription.partition.0, *partition_name);
+            assert_eq!(subscription.path().segments(), [*partition_name]);
         }
         for (index, (partition, _, _)) in expected.iter().enumerate() {
             let basis = installed.bases.for_partition(*partition);

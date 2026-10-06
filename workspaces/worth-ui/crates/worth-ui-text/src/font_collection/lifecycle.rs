@@ -1,4 +1,5 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{UiFontCollectionGeneration, UiQualifiedFontPackIdentity};
 
 use super::{
@@ -155,7 +156,7 @@ fn preflight_application_pack(
         bytes_hashed = bytes_hashed
             .checked_add(face.bytes.len())
             .ok_or(Denial::ApplicationFontByteCapacityExceeded)?;
-        let digest: [u8; 32] = Sha256::digest(&face.bytes).into();
+        let digest: [u8; 32] = UiCountedSha256::digest(&face.bytes).into();
         bytes_by_digest.entry(digest).or_insert(face.bytes.len());
         if total_application_bytes(&bytes_by_digest)? > limit {
             return Err(Denial::ApplicationFontByteCapacityExceeded);

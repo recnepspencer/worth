@@ -6,7 +6,21 @@ pub(super) fn bridge_denial(
     producer_identity: &str,
     failure: BridgeConditionalDenial,
 ) -> WorthQueryOutputDemandDenial {
-    let kind = if matches!(
+    let kind = bridge_denial_kind(&failure);
+    WorthQueryOutputDemandDenial::new(
+        kind,
+        format!(
+            "{producer_identity}: conditional {:?}: {}",
+            failure.kind(),
+            failure.detail()
+        ),
+    )
+}
+
+pub(super) fn bridge_denial_kind(
+    failure: &BridgeConditionalDenial,
+) -> WorthQueryOutputDemandDenialKind {
+    if matches!(
         failure.kind(),
         BridgeConditionalDenialKind::ConditionalRetentionCapacity
             | BridgeConditionalDenialKind::ConditionalEvaluationBusy
@@ -16,13 +30,5 @@ pub(super) fn bridge_denial(
         WorthQueryOutputDemandDenialKind::SchedulingDeferred
     } else {
         WorthQueryOutputDemandDenialKind::SchedulingRejected
-    };
-    WorthQueryOutputDemandDenial::new(
-        kind,
-        format!(
-            "{producer_identity}: conditional {:?}: {}",
-            failure.kind(),
-            failure.detail()
-        ),
-    )
+    }
 }

@@ -96,7 +96,13 @@ pub(super) fn change_input(
         .unwrap();
     let admitted = product::WorthQueryAdmittedChange::new(
         effects.finish().unwrap(),
-        primary_graph::WorthQueryApplicationIdempotencyBinding::new([0x7A; 32], [0xA7; 32]),
+        primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+            TemporalHostSchema,
+            AmendTemporal,
+            _,
+            _,
+        >("source-change", "source-change")
+        .unwrap(),
     );
     application
         .on_branch(branch)

@@ -63,7 +63,7 @@ impl UnadmittedBankHttpControls {
         self,
         maximum_deadline: Duration,
     ) -> Result<AdmittedBankHttpControls, RejectedBankHttpRequest> {
-        if self.protocol != BankHttpProtocolVersion::V1 {
+        if self.protocol != BankHttpProtocolVersion::V3 {
             return Err(RejectedBankHttpRequest {
                 request_id: Some(self.request_id),
                 denial: BankHttpDenial::new(

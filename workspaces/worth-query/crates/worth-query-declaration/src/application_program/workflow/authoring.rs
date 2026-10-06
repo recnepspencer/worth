@@ -7,16 +7,21 @@ use crate::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryMarkerIdentity,
-    application_schema::ApplicationOperationMarkerIdentity,
+    application_schema::{
+        ApplicationEffectMarkerIdentity, ApplicationInboundOccurrenceBinding,
+        ApplicationOperationMarkerIdentity,
+    },
 };
 
 use super::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowConditionRef, ApplicationWorkflowConnection,
+    ApplicationWorkflowAwaitInbound, ApplicationWorkflowCondition,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowConnection,
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionLimits,
-    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNode,
-    ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef,
-    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowInboundRef,
+    ApplicationWorkflowInboundWait, ApplicationWorkflowNode, ApplicationWorkflowNodeIdentity,
+    ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+    ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
 };
 
 mod command;
@@ -33,6 +38,7 @@ pub use component::{
 pub use denial::{ApplicationWorkflowAuthoringDenial, ApplicationWorkflowComponentResource};
 
 pub enum ApplicationWorkflowOperationNode {}
+pub enum ApplicationWorkflowAwaitInboundNode {}
 pub enum ApplicationWorkflowAssessmentNode {}
 pub enum ApplicationWorkflowConditionNode {}
 pub enum ApplicationWorkflowApprovalNode {}
@@ -162,6 +168,31 @@ where
         )
     }
 
+    /// Wait for the exact installed inbound completion of a prior operation.
+    /// This declaration does not receive an occurrence or resume an instance.
+    pub fn await_inbound<Effect>(
+        &mut self,
+        identity: impl Into<String>,
+        origin: &ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>,
+        inbound: ApplicationInboundOccurrenceBinding<Effect>,
+        wait: ApplicationWorkflowInboundWait,
+    ) -> Result<
+        ApplicationWorkflowNodeRef<ApplicationWorkflowAwaitInboundNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Effect: ApplicationEffectMarkerIdentity<Spec::Schema> + 'static,
+    {
+        self.push_node(
+            identity,
+            ApplicationWorkflowNodeKind::AwaitInbound(ApplicationWorkflowAwaitInbound::new(
+                origin.identity().clone(),
+                ApplicationWorkflowInboundRef::declared::<Spec, Effect>(inbound),
+                wait,
+            )),
+        )
+    }
+
     pub fn assessment<Query>(
         &mut self,
         identity: impl Into<String>,
@@ -243,25 +274,20 @@ where
         )
     }
 
-    pub fn condition<Query>(
+    /// A condition node deciding by the Bool expression `source` over the
+    /// query results `operands` name.
+    pub fn condition(
         &mut self,
         identity: impl Into<String>,
+        source: &str,
+        operands: ApplicationWorkflowConditionOperands<Spec>,
     ) -> Result<
         ApplicationWorkflowNodeRef<ApplicationWorkflowConditionNode>,
         ApplicationWorkflowAuthoringDenial,
-    >
-    where
-        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
-        Query::ResultBinding:
-            crate::application_schema::ApplicationStructuredValueBinding<Value = bool>,
-    {
-        self.push_node(
-            identity,
-            ApplicationWorkflowNodeKind::Condition(ApplicationWorkflowConditionRef::declared::<
-                Spec,
-                Query,
-            >()),
-        )
+    > {
+        let condition = ApplicationWorkflowCondition::parse(source, operands.into_operands())
+            .map_err(ApplicationWorkflowAuthoringDenial::Condition)?;
+        self.push_node(identity, ApplicationWorkflowNodeKind::Condition(condition))
     }
 
     pub fn approval<Capability>(

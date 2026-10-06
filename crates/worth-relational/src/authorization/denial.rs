@@ -99,4 +99,5 @@ pub enum RelationalAuthorizationObservationDenial {
     PrincipalUnavailableOrWrongKind,
     ScopeUnavailableOrWrongKind,
     ObservationIdentityExhausted,
+    PreparationAccountingOverflow,
 }

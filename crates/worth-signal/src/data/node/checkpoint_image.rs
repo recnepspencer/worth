@@ -132,6 +132,13 @@ impl CheckpointNodeImage {
         self.runtime_artifact_state.as_ref()
     }
 
+    pub(crate) fn max_checked_result_heap_bytes(&self) -> Option<u64> {
+        self.eval_config
+            .contract
+            .execution
+            .max_checked_result_heap_bytes
+    }
+
     pub(crate) fn runtime_artifact_state_mut(&mut self) -> Option<&mut RuntimeArtifactState> {
         self.runtime_artifact_state.as_mut()
     }

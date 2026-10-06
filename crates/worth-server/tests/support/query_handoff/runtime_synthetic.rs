@@ -122,33 +122,33 @@ fn bind_with_backend(
         .request_context()
         .workspace_target()
         .workspace_id();
+    let resources = worth_query::facade::consumer_kit::in_memory_test_product_world_resources();
     let (product_source, product_bridge) =
-        worth_query::facade::consumer_kit::in_memory_test_product_world_installation().map_err(
-            |error| WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string()),
-        )?;
-    let mut workspace = WorthQueryRuntime::builder(
-        worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
-    )
-    .aspect_contracts(query_handoff_aspect_contracts())
-    .map_err(|error| {
-        WorthServerQueryWorkspaceBindingError::new(
-            "aspect_contracts",
-            format!("failed to install query handoff aspect contracts: {error}"),
+        worth_query::facade::consumer_kit::in_memory_test_product_world_installation(&resources)
+            .map_err(|error| {
+                WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+            })?;
+    let mut workspace = WorthQueryRuntime::builder(resources)
+        .aspect_contracts(query_handoff_aspect_contracts())
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new(
+                "aspect_contracts",
+                format!("failed to install query handoff aspect contracts: {error}"),
+            )
+        })?
+        .backend(backend.with_product_source(product_source))
+        .installed_product_bridge(
+            product_bridge,
+            worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(),
         )
-    })?
-    .backend(backend.with_product_source(product_source))
-    .installed_product_bridge(
-        product_bridge,
-        worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(),
-    )
-    .build()
-    .map_err(|error| {
-        WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
-    })?
-    .workspace(workspace_id)
-    .map_err(|error| {
-        WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
-    })?;
+        .build()
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
+        })?
+        .workspace(workspace_id)
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
+        })?;
     install_requested_named_read(&mut workspace, request)?;
     Ok(workspace)
 }

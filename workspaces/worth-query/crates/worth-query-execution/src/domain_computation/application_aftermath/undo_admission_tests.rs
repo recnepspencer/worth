@@ -142,6 +142,10 @@ fn terminal_and_expired_recovery_map_to_already_consumed_and_stale() {
         WorthQueryUndoDenialKind::Stale
     );
     assert_eq!(
+        map_recovery_denial(K::FreshAuthorityDenied).kind(),
+        WorthQueryUndoDenialKind::CurrentPolicyDenied
+    );
+    assert_eq!(
         map_ordinary_commit_conflict().kind(),
         WorthQueryUndoDenialKind::Conflicted
     );

@@ -1,4 +1,5 @@
 use crate::capability::CapabilitySnapshot;
+use crate::runtime::expression::WorthUiAuthoredExpressionMaterial;
 use crate::source::{
     WorthUiArtifactInputResolver, WorthUiBindingSemanticsLowerer,
     WorthUiCanonicalArtifactAssembler, WorthUiIdentitySeedLowerer,
@@ -146,6 +147,7 @@ pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
         artifact,
         declaration_material,
         evidence,
+        WorthUiAuthoredExpressionMaterial::from_package(&package),
     ))
 }
 

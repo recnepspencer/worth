@@ -2,15 +2,9 @@ use super::*;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRef;
 
 pub(in crate::application_entry) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
-    request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
-        '_,
-        '_,
-        '_,
-        '_,
-        Schema,
-        Intent,
-        SourcePreparation,
-    >,
+    request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
+    identities: &Identities<'_, Schema, Intent>,
+    staged: WorthQueryStagedMutation<Schema, Intent>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
@@ -63,25 +57,25 @@ where
             )
             .map_err(WorthQueryApplicationRequestMutationDenial::CapabilityInstallation)?;
     let access = selected
-        .admit_capability_access(
+        .admit_encoded_capability_access(
+            &worth_query_execution::publication_boundary::program_publication_access(),
             &principal,
             &capability,
-            request.request.intent.input().clone(),
+            identities.encoded_input(),
             request.request.scope,
         )
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
+
     let principal_identity = principal.principal_identity().clone();
     let admission = request
         .request
         .application
-        .authorize_capability_operation(
-            access,
-            binding.operation(),
-            std::mem::take(&mut request.request.preconditions),
-        )
+        .authorize_capability_operation(access, binding.operation(), staged.preconditions)
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
     prepare_authorized(
         request,
+        identities,
+        staged.source,
         AuthorizedMutation {
             principal_identity,
             admission,

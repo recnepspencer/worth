@@ -64,11 +64,35 @@ pub enum UiPointerAffordanceInspectionInoperableCause {
     WrongWorld,
     RebindRequired,
     StaleTarget,
+    /// A condition the `axis` reads holds no truth value, named by its
+    /// authored identity in the generation the decision was observed in.
+    ConditionWithheld {
+        axis: UiPointerAffordanceInspectionConditionAxis,
+        condition_identity: Box<str>,
+        withholding: UiPointerAffordanceInspectionConditionWithholding,
+    },
     PolicyDenied,
     Occupied,
     Readonly,
     Pending,
-    ConfirmationRequired { policy_identity: Box<str> },
+    ConfirmationRequired {
+        policy_identity: Box<str>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiPointerAffordanceInspectionConditionAxis {
+    Mutability,
+    Readiness,
+    Policy,
+}
+
+/// Why a condition gives no truth value; none of these reads as `false`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiPointerAffordanceInspectionConditionWithholding {
+    Denied,
+    Unavailable,
+    Stale,
 }
 
 /// The category remains machine-readable; detail preserves the owning

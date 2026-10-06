@@ -16,7 +16,8 @@ pub use crate::relational_source::identity_parts::{
 };
 pub use crate::relational_source::{
     bridge_snapshot_identity_for_commit, bridge_snapshot_identity_for_handle,
-    RelationalBridgeBranchHeadLease, RelationalBridgeBranchHeadReleaseReceipt,
+    PendingRelationalBridgeCanonicalSubscription, RelationalBridgeBranchHeadLease,
+    RelationalBridgeBranchHeadReleaseReceipt, RelationalBridgeCanonicalSubscription,
     RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
     RelationalBridgePatchPublication, RelationalBridgePublicationDeferred,
     RelationalBridgePublicationDenial, RelationalBridgePublicationFailure,

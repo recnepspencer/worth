@@ -26,6 +26,35 @@ where
     }
 }
 
+/// Keep the same selected Product and native snapshot for Query permission.
+/// Graph index currency is admitted later only when disclosure needs a read.
+pub(in crate::domain_computation::primary_graph::application_query) fn admit_application_query_permission_basis<
+    Schema,
+>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    basis: WorthQueryApplicationQueryBasis,
+) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
+where
+    Schema: ApplicationSchema,
+{
+    match basis {
+        WorthQueryApplicationQueryBasis::Selected {
+            product,
+            application_basis,
+        } => super::product_admission::admit_selected_permission_basis(
+            application,
+            product,
+            application_basis,
+        ),
+        WorthQueryApplicationQueryBasis::RetainedContinuation { .. } => {
+            Err(super::admission_denial::admission_denial(
+                super::super::WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
+                "one-shot selected Product permission",
+            ))
+        }
+    }
+}
+
 #[cfg(test)]
 pub(super) fn register_basis<Schema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

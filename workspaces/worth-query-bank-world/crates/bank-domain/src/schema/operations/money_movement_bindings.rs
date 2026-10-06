@@ -5,11 +5,8 @@ use worth_query_decl::facade::{
 };
 
 use crate::model::{AccountId, BankPrincipalId, InstitutionId, JournalEntryId};
-use crate::proposals::{
-    BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial, CanonicalProposalPayload,
-};
+use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
 
-use super::create_personal_account_binding::client_key_identity;
 use super::{
     ApplyOpeningFunding, ApplyOpeningFundingInputBinding, Deposit, DepositInputBinding, SendMoney,
     SendMoneyInputBinding, Withdraw, WithdrawInputBinding,
@@ -54,58 +51,8 @@ fn send_scope(input: &SendMoney) -> AccountId {
     input.from
 }
 
-fn opening_identity(input: &ApplyOpeningFunding) -> [u8; 32] {
-    institution_movement_identity(
-        "application-opening-funding",
-        input.institution,
-        input.account,
-        input.amount.minor_units(),
-    )
-}
-
-fn deposit_identity(input: &Deposit) -> [u8; 32] {
-    institution_movement_identity(
-        "application-deposit",
-        input.institution,
-        input.account,
-        input.amount.minor_units(),
-    )
-}
-
-fn withdrawal_identity(input: &Withdraw) -> [u8; 32] {
-    institution_movement_identity(
-        "application-withdrawal",
-        input.institution,
-        input.account,
-        input.amount.minor_units(),
-    )
-}
-
-fn institution_movement_identity(
-    operation: &'static str,
-    institution: InstitutionId,
-    account: AccountId,
-    amount: i64,
-) -> [u8; 32] {
-    *CanonicalProposalPayload::new(operation)
-        .u64("institution", institution.get())
-        .text("account", &account.canonical_text())
-        .i64("amount-minor-units", amount)
-        .derive_identity()
-        .bytes()
-}
-
-fn send_identity(input: &SendMoney) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-send-money")
-        .text("source", &input.from.canonical_text())
-        .u64("recipient", input.recipient.get())
-        .i64("amount-minor-units", input.amount.minor_units())
-        .derive_identity()
-        .bytes()
-}
-
 macro_rules! institution_movement_binding {
-    ($Binding:ident, $Input:ty, $InputBinding:ty, $Operation:ty, $identity:literal, $handler:literal, $scope:ident, $input_identity:ident) => {
+    ($Binding:ident, $Input:ty, $InputBinding:ty, $Operation:ty, $identity:literal, $handler:literal, $scope:ident) => {
         worth_query_mutation_binding!(
             pub $Binding for $Input, schema BankSchema,
             identity $identity,
@@ -114,8 +61,6 @@ macro_rules! institution_movement_binding {
             result MoneyMovementResultBinding,
             idempotency BankIdempotencyKey,
                 identity "bank.application-mutation-client-key.v1",
-                key_identity client_key_identity,
-                input_identity $input_identity,
             decision BankInvariantApprovedProposal,
             denial MoneyMovementDenialBinding,
             handler identity $handler,
@@ -147,8 +92,7 @@ institution_movement_binding!(
     ApplyOpeningFundingOperation,
     "bank.operation.apply-opening-funding.mutation-binding.v1",
     "bank.operation.apply-opening-funding.handler.v1",
-    opening_scope,
-    opening_identity
+    opening_scope
 );
 institution_movement_binding!(
     DepositMutationBinding,
@@ -157,8 +101,7 @@ institution_movement_binding!(
     DepositOperation,
     "bank.operation.deposit.mutation-binding.v1",
     "bank.operation.deposit.handler.v1",
-    deposit_scope,
-    deposit_identity
+    deposit_scope
 );
 institution_movement_binding!(
     WithdrawMutationBinding,
@@ -167,8 +110,7 @@ institution_movement_binding!(
     WithdrawOperation,
     "bank.operation.withdraw.mutation-binding.v1",
     "bank.operation.withdraw.handler.v1",
-    withdrawal_scope,
-    withdrawal_identity
+    withdrawal_scope
 );
 
 worth_query_mutation_binding!(
@@ -179,8 +121,6 @@ worth_query_mutation_binding!(
     result MoneyMovementResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity send_identity,
     decision BankInvariantApprovedProposal,
     denial MoneyMovementDenialBinding,
     handler identity "bank.operation.send-money.handler.v1",

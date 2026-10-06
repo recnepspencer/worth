@@ -5,7 +5,7 @@ use crate::snapshots::data::SnapshotHandle;
 
 use super::{
     RelationalAuthorizationEffectTarget, RelationalAuthorizationObservationPlan,
-    RelationalAuthorizationPlanDenial, RelationalAuthorizationTraversalDirection,
+    RelationalAuthorizationTraversalDirection,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -216,10 +216,14 @@ impl RelationalAuthorizationObservationEvidence {
         self.counters
     }
 
-    pub(crate) fn comparison_plan(
+    pub(crate) fn comparison_plan_admitted<Stop>(
         &self,
-        snapshot: SnapshotHandle,
-    ) -> Result<RelationalAuthorizationObservationPlan, RelationalAuthorizationPlanDenial> {
-        self.plan.comparison_at(snapshot)
+        snapshot: &SnapshotHandle,
+        admit: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        RelationalAuthorizationObservationPlan,
+        super::RelationalAuthorizationPlanAdmissionStop<Stop>,
+    > {
+        self.plan.comparison_at_admitted(snapshot, admit)
     }
 }

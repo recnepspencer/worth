@@ -6,7 +6,7 @@ use std::fmt::Write;
 use crate::analysis::{Analysis, MOVING_PAUSE_MS};
 use crate::coverage::{BREAKPOINT_WIDTH, LARGE_EXTENT, SMALL_EXTENT};
 use crate::logs::CaptureLog;
-use crate::work::{Work, TEXT_WORK};
+use crate::work::{Work, PRESENTATION_WORK, STAGES, TEXT_WORK};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Verdict {
@@ -21,6 +21,11 @@ pub enum Verdict {
 fn percentile(values: &[f64], fraction: f64) -> Option<f64> {
     let mut sorted = values.to_vec();
     sorted.sort_by(f64::total_cmp);
+    nearest_rank(&sorted, fraction)
+}
+
+/// The nearest-rank percentile of values already sorted.
+fn nearest_rank<T: Copy>(sorted: &[T], fraction: f64) -> Option<T> {
     let rank = (fraction * sorted.len() as f64).ceil() as usize;
     sorted.get(rank.max(1) - 1).copied()
 }
@@ -204,9 +209,53 @@ fn work(text: &mut String, work: &Work) {
     }
     let _ = writeln!(
         text,
+        "presentation work over {} submitted frames during the drag, attempts that never submitted counted with the next (count: median, p95, max, total):",
+        work.presentation.len()
+    );
+    for (index, name) in PRESENTATION_WORK.iter().enumerate() {
+        let counts: Vec<u64> = work
+            .presentation
+            .iter()
+            .map(|counts| counts[index])
+            .collect();
+        count_line(text, name, &counts);
+    }
+    if work.allocations.is_empty() {
+        let _ = writeln!(
+            text,
+            "  allocations: not counted (build Pulse with --features count-allocations)"
+        );
+    } else {
+        count_line(text, "allocations", &work.allocations);
+    }
+    let _ = writeln!(
+        text,
+        "stage spans ending during the drag (spans: median, p95, max, total):"
+    );
+    for (name, spans) in STAGES.iter().zip(&work.stage_ms) {
+        if !spans.is_empty() {
+            let _ = writeln!(
+                text,
+                "  {name}: {}: {}, {}, {}, {:.1} ms",
+                spans.len(),
+                shown(percentile(spans, 0.5)),
+                shown(percentile(spans, 0.95)),
+                shown(percentile(spans, 1.0)),
+                spans.iter().sum::<f64>()
+            );
+        }
+    }
+    let _ = writeln!(
+        text,
         "render targets allocated during the drag: {} {:?}",
         work.targets.len(),
         work.targets
+    );
+    let _ = writeln!(
+        text,
+        "swapchain configurations during the drag: {} {:?}",
+        work.swapchains.len(),
+        work.swapchains
     );
     if work.peaks.is_empty() {
         let _ = writeln!(
@@ -219,6 +268,22 @@ fn work(text: &mut String, work: &Work) {
     for (name, count) in &work.peaks {
         let _ = writeln!(text, "  {name}: {count}");
     }
+}
+
+/// One count's nearest-rank median, p95, and max over the frames, and its
+/// total.
+fn count_line(text: &mut String, name: &str, counts: &[u64]) {
+    let mut sorted = counts.to_vec();
+    sorted.sort_unstable();
+    let rank = |fraction: f64| nearest_rank(&sorted, fraction).unwrap_or(0);
+    let _ = writeln!(
+        text,
+        "  {name}: {}, {}, {}, {}",
+        rank(0.5),
+        rank(0.95),
+        rank(1.0),
+        counts.iter().sum::<u64>()
+    );
 }
 
 fn raw(text: &mut String, analysis: &Analysis) {

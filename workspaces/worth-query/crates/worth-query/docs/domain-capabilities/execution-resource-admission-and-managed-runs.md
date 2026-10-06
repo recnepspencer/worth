@@ -49,7 +49,191 @@ Managed execution:
 
 Convergence enters through `worth_query_host::facade::convergence_epoch`.
 
+Inbound external completion uses a separate installed resource profile on the
+operation's source contract. `maximum_outstanding_dispatch_provenance` reserves
+the committed outbox relationship before an effectful commit, including the
+gap before World publication. `maximum_accepted_occurrences` and
+`maximum_accepted_bytes` govern verified but still retained completions;
+`maximum_concurrent_publications` bounds their World attempts. Envelope and
+payload byte limits, replay window, discovery work, and cleanup work are finite
+at installation. Exhaustion denies new admission before taking custody; it
+does not evict pending or unpublished evidence.
+
+The verifier is installed by the host for one declared operation; the request
+cannot nominate another mechanism. Query rejects an oversized envelope before
+calling it. The installed verifier's finite work ceiling is part of that
+operation contract, and the trusted mechanism must stop with a typed denial
+when its budget is spent. Bank's fixed v1 signature and decoder walk only the
+bounded envelope. A byte ceiling alone would not prove arbitrary product
+verifier CPU work, so hosts must install a budget-aware mechanism.
+
+An outbound physical attempt holds a move-only claim on its original finite
+outbox reservation. If a callback seals the terminal while that attempt is
+still in flight, the reservation stays charged. A real `Completed` observation
+transfers the claim into bounded transport recovery custody until an exact
+World terminal or matching callback winner is confirmed. No capacity check
+after the remote effect may discard that observation.
+
+After World performs a completion, the owner keeps exact terminal history and
+a compact lookup entry. Host-requested cleanup can reclaim an accepted payload
+slot only after signed expiry, original dispatch handoff, and delivery
+settlement. The exact lookup checks its retained World protection and sealed
+Relational pairing under the declared cleanup work limit. A lost derived
+terminal index is repaired with an explicit bounded history pass; ordinary
+requests fail closed while that proof is incomplete. Runtime close must expose
+unresolved obligations, and a
+forced process exit does not preserve this process-local custody.
+
+`observe_inbound_cost(&installed_source)` is a cumulative, read-only,
+operation-scoped observation of the signed inbound lane. It reports verifier
+input bytes, exact terminal and outbox key
+probes, selected outbox records, completion candidate prepares, World
+publication attempts/performed publications, current accepted count/charged
+bytes, and outstanding dispatch provenance. These fields count their named
+owner events; Bank separately owns HTTP/rail contacts and workflow separately
+owns transitions. Compare snapshots around a fixed-size callback at small and
+large unrelated populations. Duplicate volume may add verification and exact
+lookup work, but must add no prepare, World publication, redispatch, workflow
+transition or retained occurrence after terminal settlement.
+
+Cleanup's `maximum_work` is a selected-candidate page bound, intersected with
+the installed `maximum_cleanup_work`; each selected candidate gets exact
+canonical revalidation before release. Pending and unpublished entries never
+enter the expiry turnover index. Explicit index reconstruction has its own
+bounded World-page, changed-record and ancestry budgets, with no hidden scan
+on ordinary lookup. A blocked repair leaves the index unavailable rather than
+answering from partial proof.
+
+The trusted host enters repair through the runtime-issued verifier handle:
+
+```rust
+let complete = application.repair_completed_inbound_index(
+    &installed_source,
+    world_page,
+    changed_records_per_commit,
+    ancestry_commits_per_completion,
+)?;
+```
+
+The installed discovery ceiling narrows `world_page`; the other two values are
+explicit finite repair budgets. `Ok(false)` retains a cursor for another call.
+The handle selects an installed runtime, while the repair itself rebuilds the
+runtime's disposable terminal index and never runs from ordinary lookup.
+
+The Bank rail installation owns one serial cue-driven maintenance task. Each
+batch uses fresh request controls and the installed verifier handle, examines at
+most the declared discovery work, rotates past blocked entries, and reclaims only
+terminal entries that satisfy the declared cleanup bound. Orderly server
+shutdown waits for the current batch; this task continues already accepted
+custody after the source envelope expires without opening a raw correlation
+selector to callers.
+
 ## Core Mental Model
+
+### Ordinary work-limit ownership
+
+Applications declare semantic result cardinality, effect permissions, and retained
+representation. They must not reproduce Query's traversal, source-observation, or
+invariant-closure cost formulas. Installed host profiles own operational safeguards;
+explicit binding/request ceilings are deliberate restrictions. This policy does not
+infer an arbitrary native algorithm's cost or make it preemptible.
+
+The decisive proof uses a real nested query and composed output demand. Adding a
+projected field or installed invariant requires no application cost algebra. A large
+parent allowance admits a small child when its actual need fits its own ceiling.
+Independent variants exhaust capacity, cancel during traversal, and recover demand
+custody: they deny before publication and release transient reservations. Raising
+fixture constants cannot satisfy this proof.
+
+- Query bindings use `ApplicationQueryBindingLimits::results(n)` ordinarily;
+  `bounded(n, work)` is an explicit cap. Installation retains the distinction,
+  without zero or unlimited sentinels. The existing host query resource profile
+  supplies a configurable finite work guard (default 1,048,576 metered units).
+  All query modes resolve host/binding policy before request narrowing; lower
+  admission also enforces the host guard. This is a runaway safeguard, not a
+  throughput promise or guaranteed sufficiency for unbounded `Many` fan-out.
+- Root traversal, materialization and source observation poll cancellation and
+  deadlines internally. Opaque native calls stay bounded; this does not promise
+  interruption inside those calls. Actual work remains metered.
+- Output demands use installed defaults, not implicit `1/1` work/byte allowances.
+  Child allowance intersects host, caller and artifact ceilings. Admission checks
+  the child's required resources, not the parent's offered maximum against a
+  child maximum. Framework currentness and provider algorithm work stay separate.
+- Candidate validator allowance is derived from installed finite fact bounds and
+  custom invariant contracts; ordinary handlers do not sum that closure. Explicit
+  validator caps restrict it. Exact closure remains checked before publication;
+  item, representation-byte and real concurrent-capacity admission remain intact.
+- Local result-buffer and candidate-representation accounting is not a global
+  heap reservation. Provider demand estimates are not aggregate memory proof.
+  Managed reservations retain their consuming lifecycle.
+
+```rust,ignore
+const LIMITS: ApplicationQueryBindingLimits =
+    ApplicationQueryBindingLimits::results(1);
+
+// Ordinary output requests inherit this installation's policy, even when the
+// host has configured different limits from the standard profile.
+let controls = WorthQueryOutputDemandControls::default();
+
+// Candidate representation is authored; validator closure is installed.
+let resources = ApplicationCandidateResourceCeiling::representation_bytes(4096);
+```
+
+`WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` installs
+`WorthQueryOutputDemandResourceProfile`. Its four independent dimensions are source
+currentness work, producer work, producer retained bytes, and settlement attempts.
+The standard profile allows 4,194,304 units in each work dimension, 4 MiB of producer
+retained representation, and 64 advances per `settle` call. These are finite runaway
+guards, not measured throughput guarantees or aggregate heap reservations. A host
+can select its policy once instead of teaching every graph call those constants.
+
+`WorthQueryOutputDemandControls::default()` (also `host_policy()`) carries no caller
+overrides. An explicit `new(work, bytes)` narrows both work dimensions and producer
+retention; source-currentness and settlement-attempt restrictions can be set
+separately. Every start, child, and recovery intersects controls with the current
+host. Artifact ceilings constrain producer work and retained bytes, not framework
+currentness. A larger parent allowance does not itself consume resources or make a
+small child inadmissible. `settle` returns `Pending` when its advance allowance is
+spent; it does not manufacture completion.
+
+Destination owners, under `workspaces/worth-query/crates` (existing paths revised):
+
+```text
+worth-query-declaration/src/
+  application_query/binding/limits.rs       semantic bound and optional cap
+  application_operation/candidate/         optional validator cap
+worth-query-installation/src/
+  application_query/binding/limits.rs       installed/resolved limit types
+  application_operation/contracts/         derived validator allowance
+worth-query-execution/src/domain_computation/
+  execution_runtime/                       installed host policies
+  primary_graph/application_query/          admission and interruption
+  primary_graph/application_contribution/producer/demand/
+                                           phase-specific demand admission
+  primary_graph/application_installation/program/
+                                           child ceiling composition
+  primary_graph/application_attempt/effect_program/
+                                           consuming candidate reservation
+  primary_graph/provider/invariant_execution/
+                                           exact pre-effect closure (preserved)
+worth-query-publication/src/application_entry/
+  query/                                   all modes share resolution
+  demand/                                  installed ordinary defaults
+```
+
+Implement query ownership/interruption first, demand composition and candidate
+closure next, then migrate the real House consumer and verify recovery/checkpoint
+behaviour. Default and restricted calls use the same admission/execution lane.
+Resource tuning grants no authority, changes no source identity and cannot make
+incompatible continuations/checkpoints valid. Existing explicit caps never silently
+widen. Declaration compatibility changes require normal readmission.
+
+This guide, facade examples and the Query AI readme must describe the same ordinary
+path. Acceptance requires owner and public-request tests, the pinned House consumer,
+narrow-only continuation/readmission tests, denial cleanup and boundary enforcement.
+Compilation alone is not closure evidence.
+
+### Managed resource lifecycle
 
 Resource admission is a lifecycle, not a comparison against a descriptive
 snapshot:

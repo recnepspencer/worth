@@ -31,28 +31,25 @@ pub use super::application_attempt::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputAction,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
-    WorthQueryApplicationReadAttempt, WorthQueryApplicationRetainedCommitOutcome,
-    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
-    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadAttempt,
+    WorthQueryApplicationRetainedCommitOutcome, WorthQueryApplicationSettlementDeferred,
+    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
+    WorthQueryApplicationTypedOutputCorrespondence, WorthQueryApplicationUncommitted,
     WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryApprovedElevation,
     WorthQueryCapabilityRevocationProgram, WorthQueryCommittedProductPublication,
-    WorthQueryCompleteApplicationReadSet, WorthQueryCreateOutput,
-    WorthQueryDelegationActivationProgram, WorthQueryElevationApprovalOutcome,
-    WorthQueryElevationApprovalProgram, WorthQueryElevationCloseOutcome,
-    WorthQueryElevationCloseProgram, WorthQueryElevationClosureKind,
-    WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
+    WorthQueryCompleteApplicationReadSet, WorthQueryDelegationActivationProgram,
+    WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
+    WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
+    WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
+    WorthQueryElevationRequestProgram, WorthQueryExternalDispatchAttemptDenial,
     WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
-    WorthQueryExternalTransportInstallationDenial, WorthQueryMandatoryReview,
-    WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryHistoricalApplicationCommit,
+    WorthQueryMandatoryReview, WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
-    WorthQueryOrdinaryApplicationRead, WorthQueryPreserveOutput,
-    WorthQueryProjectedApplicationMutation, WorthQueryRequestedElevation, WorthQueryRetireOutput,
-    WorthQueryReviewedElevation, WorthQueryWorkflowAdvanceAdapter,
+    WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
+    WorthQueryRequestedElevation, WorthQueryReviewedElevation, WorthQueryWorkflowAdvanceAdapter,
     WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowProposalAdapter,
 };
 pub use super::application_checkpoint::{
@@ -67,7 +64,7 @@ pub use super::application_contribution::{
     WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,
     WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
     WorthQueryApplicationProducerProvider, WorthQueryCompletedManagedComputation,
-    WorthQueryConfiguredApplicationContributions,
+    WorthQueryConfiguredApplicationContributions, WorthQueryDecisionContextDependencies,
     WorthQueryInstalledApplicationConditionalRegistry,
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryInstalledManagedComputation,
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
@@ -78,17 +75,20 @@ pub use super::application_contribution::{
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadinessContractBuilder,
     WorthQueryOutputReadinessContractDenial, WorthQueryPreparedManagedComputation,
     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
 };
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::application_output_demand::required_ready_custody_bytes_for_test;
 pub use super::application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
-    WorthQueryOutputReadinessDeliveryEvidence,
+    WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
 };
 pub use super::application_program::{
     WorthQueryApplicationDependentOutputConnection,
@@ -96,47 +96,58 @@ pub use super::application_program::{
     WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
 };
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::application_query::query_read_kernel_entries_on_this_thread_for_test;
 pub use super::application_query::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
-    WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseReceipt,
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationContinuationDenial,
-    WorthQueryApplicationContinuationDenialKind, WorthQueryApplicationContinuationPageResult,
-    WorthQueryApplicationDisclosed, WorthQueryApplicationDisclosureDecisionFact,
-    WorthQueryApplicationDisclosureOutcome, WorthQueryApplicationDisclosureOutcomeIdentity,
-    WorthQueryApplicationDisclosureReceipt, WorthQueryApplicationDisclosureReceiptPosture,
-    WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveCloseOutcome,
-    WorthQueryApplicationLiveControlDenial, WorthQueryApplicationLiveControls,
-    WorthQueryApplicationLiveLease, WorthQueryApplicationLiveOpenDenial,
-    WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
-    WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
-    WorthQueryApplicationOmission, WorthQueryApplicationOneShotDenial,
-    WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationOneShotResult,
-    WorthQueryApplicationOutputDemandDisclosure, WorthQueryApplicationOutputDemandSource,
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
-    WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
-    WorthQueryApplicationProjectionRows, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryAdmissionDenial,
-    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryBasisPosture,
-    WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryContinuation,
-    WorthQueryApplicationQueryFreshness, WorthQueryApplicationQueryOmissionPosture,
-    WorthQueryApplicationQueryResumeControls, WorthQueryApplicationQueryWorkEvidence,
-    WorthQueryApplicationReadObservation, WorthQueryApplicationResultBufferEvidence,
-    WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
-    WorthQueryBoundSourceExpectation, WorthQueryManagedDerivedMemberToken,
-    WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
-    WorthQueryManagedDerivedViewDenial, WorthQueryManagedDerivedViewKey,
-    WorthQueryManagedDerivedViewReconciliation, WorthQueryManagedDerivedViewSnapshot,
-    WorthQueryObservedResultSet, WorthQueryObservedSource,
+    WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseOutcome,
+    WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
+    WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
+    WorthQueryApplicationContinuationPageResult, WorthQueryApplicationDisclosed,
+    WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,
+    WorthQueryApplicationDisclosureOutcomeIdentity, WorthQueryApplicationDisclosureReceipt,
+    WorthQueryApplicationDisclosureReceiptPosture, WorthQueryApplicationLiveCauseDenialKind,
+    WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveControlDenial,
+    WorthQueryApplicationLiveControls, WorthQueryApplicationLiveLease,
+    WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
+    WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
+    WorthQueryApplicationLiveUpdate, WorthQueryApplicationOmission,
+    WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
+    WorthQueryApplicationOneShotResult, WorthQueryApplicationOutputDemandDisclosure,
+    WorthQueryApplicationOutputDemandSource, WorthQueryApplicationProjection,
+    WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
+    WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
+    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAccessReceipt,
+    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
+    WorthQueryApplicationQueryBasisPosture, WorthQueryApplicationQueryConsistency,
+    WorthQueryApplicationQueryContinuation, WorthQueryApplicationQueryFreshness,
+    WorthQueryApplicationQueryOmissionPosture, WorthQueryApplicationQueryResumeControls,
+    WorthQueryApplicationQueryWorkEvidence, WorthQueryApplicationReadObservation,
+    WorthQueryApplicationResultBufferEvidence, WorthQueryApplicationResultBufferObservation,
+    WorthQueryApplicationResultBufferObserver, WorthQueryBoundSourceExpectation,
+    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
+    WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
+    WorthQueryManagedDerivedViewSnapshot, WorthQueryObservedResultSet, WorthQueryObservedSource,
     WorthQueryPrimaryGraphApplicationReadinessSnapshot, WorthQuerySourceExpectationDenial,
     WorthQuerySourceExpectationDenialKind,
 };
 pub use super::application_runtime::{
-    WorthQueryApplicationLiveDeliveryCloseReceipt, WorthQueryCertificationApplicationWork,
+    WorthQueryAdmittedInboundOccurrence, WorthQueryApplicationLiveDeliveryCloseReceipt,
+    WorthQueryAuthenticatedInboundOccurrence, WorthQueryCertificationApplicationWork,
     WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt,
     WorthQueryCertificationCostScope, WorthQueryCertificationWorldHistory,
-    WorthQueryCertificationWorldRetention, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryCertificationWorldRetention, WorthQueryCorrelatedInboundOccurrence,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
+    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
+    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
+    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 pub use super::authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,
@@ -169,10 +180,12 @@ pub use super::entity_resolution::WorthQueryApplicationEntityIdentity;
 pub use super::entity_resolution_denial::{
     WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
 };
+pub use super::expression::WorthQueryWorkflowConditionSources;
 pub use super::granular_invalidation::{
-    WorthQueryBridgeGranularDeliveryCounters, WorthQueryGranularInvalidationDeliveryBatch,
-    WorthQueryGranularInvalidationInstallation, WorthQueryGranularInvalidationObservation,
-    WorthQueryGranularSourceReadBasis, WorthQueryGranularTransportMergeDenial,
+    WorthQueryBridgeGranularDeliveryCounters, WorthQueryGranularInvalidationCoverage,
+    WorthQueryGranularInvalidationDeliveryBatch, WorthQueryGranularInvalidationInstallation,
+    WorthQueryGranularInvalidationObservation, WorthQueryGranularSourceReadBasis,
+    WorthQueryGranularTransportMergeDenial,
 };
 pub use super::index_refresh::{
     WorthQueryPrimaryGraphIndexRefreshDenial, WorthQueryPrimaryGraphIndexRefreshDenialKind,
@@ -187,7 +200,7 @@ pub use super::invariant_projection::{
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     WorthQueryCompletedInvariantProjection, WorthQueryCompletedOperationInvariantProjection,
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection, WorthQueryInspectedOperationInvariantProjection,
     WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
     WorthQueryInvariantAggregateDenialKind, WorthQueryInvariantDecisionPlanDenial,
@@ -202,6 +215,8 @@ pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,
 };
+#[cfg(feature = "test-query-execution-observer")]
+pub use super::output_lineage::invalidation::inexact_native_deliveries_on_this_thread_for_test;
 pub use super::output_lineage::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub use super::principal_key::{
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationPrincipalKeyDenial,
@@ -247,15 +262,16 @@ pub use super::product_operation::{
     WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
     WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
-    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySelectedProductOperation, WorthQueryStoppedBranchSetAdoption,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryReconstructedOutputEntity, WorthQueryRestoredGeneratedOutput,
+    WorthQueryRetainedGeneratedOutputEntity, WorthQuerySelectedProductOperation,
+    WorthQueryStoppedBranchSetAdoption, WorthQuerySuspendedGeneratedOutput,
+    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use super::provider::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
-    WorthQueryCommittedDispatchOutboxReadWork, WorthQueryPrimaryMutationWorkEvidence,
-    WorthQueryTouchedRecordIdentity,
+    WorthQueryCommittedDispatchOutboxReadWork, WorthQueryManagedApplicationRecoveryDenial,
+    WorthQueryManagedApplicationRecoveryOutcome, WorthQueryManagedApplicationRecoveryPerformed,
+    WorthQueryPrimaryMutationWorkEvidence, WorthQueryTouchedRecordIdentity,
 };
 pub use super::resolution::WorthQueryPrincipalResolutionMode;
 pub use super::resolution_denial::{
@@ -266,7 +282,9 @@ pub use super::settlement_repair::WorthQueryApplicationSettlementRecoveryError;
 pub use super::typed_bootstrap::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
 };
-pub use super::workflow::definition::WorthQueryWorkflowCompilationReuseCounters;
+pub use super::workflow::definition::{
+    WorkflowConditionOperand, WorthQueryWorkflowCompilationReuseCounters,
+};
 pub use super::workflow::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationAdapter, WorthQueryWorkflowDefinitionRetirementAdapter,

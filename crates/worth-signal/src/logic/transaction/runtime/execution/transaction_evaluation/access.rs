@@ -4,11 +4,10 @@ use crate::data::handle::NodeId;
 use crate::data::proof::DedupedNodeBatch;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::{EvaluationRequestMode, IntoEvaluationOutput};
-use crate::logic::planner::{ExecutionReport, StageExecutor};
+use crate::logic::planner::ExecutionReport;
 
 use super::super::super::transaction::SignalTransaction;
 use super::super::request_order::requested_dependency_order;
-use super::super::shared::executor_for_strategy;
 
 use super::request::TransactionExecutionIntent;
 
@@ -24,11 +23,7 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        self.read_with_executor(
-            node,
-            evaluator,
-            executor_for_strategy(self.graph.derive_evaluation_strategy()),
-        )
+        self.read_serial(node, evaluator)
     }
 
     pub fn get<F, O>(&mut self, node: NodeId, evaluator: &F) -> Result<AspectVersion, SignalError>
@@ -39,11 +34,10 @@ where
         self.read(node, evaluator)
     }
 
-    pub fn read_with_executor<F, O>(
+    fn read_serial<F, O>(
         &mut self,
         node: NodeId,
         evaluator: &F,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
@@ -54,12 +48,8 @@ where
             let mut scheduled = 0_u32;
             let mut executed = 0_u32;
             for target in requested_dependency_order(self.graph, node)? {
-                let report = self.evaluate_with_plan_and_executor(
-                    target,
-                    evaluator,
-                    EvaluationRequestMode::Default,
-                    executor,
-                )?;
+                let report =
+                    self.evaluate_with_plan(target, evaluator, EvaluationRequestMode::Default)?;
                 scheduled = scheduled.saturating_add(report.task_count);
                 executed = executed.saturating_add(report.tasks_executed);
             }
@@ -81,18 +71,13 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        self.read_many_with_executor(
-            nodes,
-            evaluator,
-            executor_for_strategy(self.graph.derive_evaluation_strategy()),
-        )
+        self.read_many_serial(nodes, evaluator)
     }
 
-    pub fn read_many_with_executor<F, O>(
+    fn read_many_serial<F, O>(
         &mut self,
         nodes: &[NodeId],
         evaluator: &F,
-        executor: StageExecutor,
     ) -> Result<Vec<AspectVersion>, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
@@ -116,7 +101,7 @@ where
                     stage_task_candidates: false,
                 },
                 evaluator,
-                executor,
+                None,
             )?;
         }
         nodes
@@ -131,22 +116,7 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        self.evaluate_dirty_with_executor(
-            evaluator,
-            executor_for_strategy(self.graph.derive_evaluation_strategy()),
-        )
-    }
-
-    pub fn evaluate_dirty_with_executor<F, O>(
-        &mut self,
-        evaluator: &F,
-        executor: StageExecutor,
-    ) -> Result<ExecutionReport, SignalError>
-    where
-        F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
-        O: IntoEvaluationOutput,
-    {
-        self.execute_evaluation(TransactionExecutionIntent::Dirty, evaluator, executor)
+        self.execute_evaluation(TransactionExecutionIntent::Dirty, evaluator, None)
     }
 
     pub(super) fn collect_dirty_targets(&self) -> Vec<NodeId> {

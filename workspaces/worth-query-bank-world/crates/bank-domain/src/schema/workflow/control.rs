@@ -23,10 +23,10 @@ use crate::{
 };
 
 use super::super::{
-    approval_input_identity, client_key_identity, ApprovePayment, ApprovePaymentInputBinding,
-    ApprovePaymentMutationBinding, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
-    ExternalPrincipalMapping, PaymentDecisionDenialBinding, PaymentDecisionResult,
-    PaymentDecisionResultBinding, PaymentIdentity, PaymentIdentityField, PaymentIntent, Principal,
+    ApprovePayment, ApprovePaymentInputBinding, ApprovePaymentMutationBinding,
+    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
+    PaymentDecisionDenialBinding, PaymentDecisionResult, PaymentDecisionResultBinding,
+    PaymentIdentity, PaymentIdentityField, PaymentIntent, Principal,
 };
 use super::{
     ApprovedBusinessPaymentAdvance, ApprovedBusinessPaymentApproval,
@@ -114,14 +114,6 @@ macro_rules! payment_workflow_control {
                         1_048_576,
                     ),
                 );
-
-            fn idempotency_key_identity(key: &BankIdempotencyKey) -> [u8; 32] {
-                client_key_identity(key)
-            }
-
-            fn input_identity(input: &ApprovePayment) -> [u8; 32] {
-                approval_input_identity(input)
-            }
 
             fn scope_field() -> ApplicationFieldRef<
                 BankSchema,

@@ -67,6 +67,14 @@ fn fold_declaration(digest: &mut u64, declaration: &WorthUiRustAuthoredDeclarati
             name_text,
             body_atoms,
         } => fold_block(digest, "query-collection", name_text, None, body_atoms),
+        WorthUiRustAuthoredDeclaration::Condition {
+            name_text,
+            body_atoms,
+        } => fold_block(digest, "condition", name_text, None, body_atoms),
+        WorthUiRustAuthoredDeclaration::Derived {
+            name_text,
+            body_atoms,
+        } => fold_block(digest, "derived", name_text, None, body_atoms),
         WorthUiRustAuthoredDeclaration::Token {
             name_text,
             authored_identity,
@@ -163,6 +171,11 @@ fn fold_atom(digest: &mut u64, atom: &WorthUiArtifactInputBodyAtom) {
         WorthUiArtifactInputBodyAtom::NumberLiteral(value) => {
             fold_text(digest, "number-literal");
             return fold_text(digest, value);
+        }
+        WorthUiArtifactInputBodyAtom::ExpressionBody(body) => {
+            fold_text(digest, "expression-body");
+            fold_text(digest, body.introducer().keyword());
+            return fold_text(digest, body.source());
         }
         WorthUiArtifactInputBodyAtom::LeftBrace => "left-brace",
         WorthUiArtifactInputBodyAtom::RightBrace => "right-brace",

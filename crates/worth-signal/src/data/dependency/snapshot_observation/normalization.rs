@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 pub(super) fn normalize(
     snapshot: &mut DependencySnapshot,
-    work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
 ) -> Result<(), crate::data::error::SignalError> {
     let comparison = admission::comparison_bound(snapshot.entries(), work)?;
     // Immutable canonical snapshots retain their backing through repeated store

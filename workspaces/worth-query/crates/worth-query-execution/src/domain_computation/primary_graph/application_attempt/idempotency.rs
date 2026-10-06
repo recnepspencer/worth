@@ -1,6 +1,12 @@
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
+mod capability_workflow;
 mod encoding;
+mod host_commit;
+mod mutation_binding;
+mod recorded_intent;
+#[cfg(test)]
+mod recorded_intent_tests;
 #[cfg(test)]
 mod tests;
 mod workflow_definition;
@@ -8,7 +14,9 @@ mod workflow_instance;
 mod workflow_proposal_context;
 mod workflow_transition;
 
+pub use capability_workflow::WorthQueryCapabilityWorkflowIdempotency;
 use encoding::{append_identity_slot, append_scope_slot, encode_identity};
+pub(in crate::domain_computation::primary_graph) use recorded_intent::WorthQueryRecordedIntentMatch;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyEntityIdentity {
@@ -17,11 +25,13 @@ struct WorthQueryIdempotencyEntityIdentity {
     generation: u32,
 }
 
+/// The admitted principal and scope under one installed package and schema.
+/// It names no runtime and no installation generation, since both are counted
+/// per process and neither survives a restore, so the same request matches its
+/// durable intent in every runtime that installs the same package, at any
+/// generation, before and after a restore or reopen.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyScopeIdentity {
-    runtime_authority: u64,
-    binding_runtime: u64,
-    binding_generation: u64,
     package_identity: [u8; 32],
     schema_identity: [u8; 32],
     principal: WorthQueryIdempotencyEntityIdentity,
@@ -30,12 +40,22 @@ struct WorthQueryIdempotencyScopeIdentity {
 
 /// The idempotency key of one commit, bound to the intent it commits.
 ///
-/// Build it with `new(key_identity, intent_identity)`; an accepted source
-/// expectation can add its source with `bind_idempotency`. At commit and at
-/// resolution the runtime also binds the admitted operation, its scope, its
-/// preconditions, and its governed input into the intent. Reusing a key with the
-/// same intent finds the earlier commit; reusing it with a different intent is
-/// intent drift.
+/// No caller writes either identity. They derive from canonical encoding through
+/// the typed constructors: `for_mutation_identities` for a request to a mutation
+/// binding, from the identities `ApplicationMutationIdentities::encode` derived
+/// once, which also names the binding so two bindings that share an operation
+/// and an input type never replay each other; `for_host_commit` for a commit
+/// whose effect program the host built itself, scoped to the operation it
+/// commits under, the only constructor a host names; and, for Publication's
+/// capability workflow entries alone, `WorthQueryCapabilityWorkflowIdempotency`
+/// behind the publication boundary.
+///
+/// An accepted source expectation can add its source with `bind_idempotency`, and
+/// at commit and at resolution the runtime also binds the admitted operation's
+/// definition, its scope, its preconditions, and its governed input into the
+/// intent. The intent is durable, so none of these names the runtime that
+/// admitted the request. Reusing a key with the same intent finds the earlier
+/// commit; reusing it with a different intent is intent drift.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
@@ -56,10 +76,11 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     workflow_support_identity: Option<[u8; 32]>,
     workflow_client_key_identity: Option<[u8; 32]>,
     workflow_approval_identity: Option<[u8; 32]>,
+    mutation_binding_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
-    pub const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
+    pub(crate) const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
         Self {
             key_identity,
             intent_identity,
@@ -79,6 +100,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: None,
             workflow_client_key_identity: None,
             workflow_approval_identity: None,
+            mutation_binding_identity: None,
         }
     }
 
@@ -112,7 +134,9 @@ impl WorthQueryApplicationIdempotencyBinding {
         encode_identity(self.key_identity)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {
+    /// Every intent slot, without the encoding's version; `intent_text` is
+    /// what a key records.
+    fn intent_slots(self) -> String {
         let mut encoded = encode_identity(self.intent_identity);
         append_identity_slot(&mut encoded, "source", self.source_identity);
         append_identity_slot(&mut encoded, "operation", self.operation_identity);
@@ -144,10 +168,14 @@ impl WorthQueryApplicationIdempotencyBinding {
             &mut encoded,
             self.workflow_approval_identity,
         );
+        mutation_binding::append_identity_slot(&mut encoded, self.mutation_binding_identity);
         encoded
     }
 
-    pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn bind_source(
+        mut self,
+        source_identity: Option<&[u8; 32]>,
+    ) -> Self {
         self.source_identity = match source_identity {
             Some(identity) => Some(*identity),
             None => None,
@@ -194,6 +222,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -211,9 +240,6 @@ impl WorthQueryApplicationIdempotencyBinding {
             producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: Some(WorthQueryIdempotencyScopeIdentity {
-                runtime_authority: binding.runtime_authority(),
-                binding_runtime: binding.binding_identity().runtime_ordinal(),
-                binding_generation: binding.binding_identity().generation(),
                 package_identity: *binding.binding_identity().package_identity().bytes(),
                 schema_identity: *binding.binding_identity().schema_identity().bytes(),
                 principal: WorthQueryIdempotencyEntityIdentity {
@@ -238,6 +264,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -267,6 +294,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -296,6 +324,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -325,6 +354,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 
@@ -354,6 +384,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
+            mutation_binding_identity: self.mutation_binding_identity,
         }
     }
 }

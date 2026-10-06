@@ -66,18 +66,6 @@ impl
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::bounded(0, 0),
         );
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        let mut identity = [0; 32];
-        identity[..8].copy_from_slice(&key.to_le_bytes());
-        identity
-    }
-
-    fn input_identity(input: &SetRetentionInput) -> [u8; 32] {
-        let mut identity = [0; 32];
-        identity[..8].copy_from_slice(&input.retention_days.to_le_bytes());
-        identity
-    }
-
     fn scope_field(
     ) -> worth_query_host::facade::declaration::application_schema::ApplicationFieldRef<
         crate::document_retention_model::schema::DocumentRetentionSchema,

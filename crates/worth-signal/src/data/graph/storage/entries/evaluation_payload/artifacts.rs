@@ -7,7 +7,7 @@ pub(in crate::data::graph) fn apply_artifact_write(
     cold: &mut Option<Box<NodeColdData>>,
     delta: ArtifactWriteDelta,
 ) -> bool {
-    warm.runtime_artifact_state = delta.runtime;
+    warm.runtime_artifact_state = delta.runtime.map(std::sync::Arc::new);
     let retained_present = delta.retained.is_some();
     if retained_present {
         cold.get_or_insert_with(|| Box::new(NodeColdData::default()))

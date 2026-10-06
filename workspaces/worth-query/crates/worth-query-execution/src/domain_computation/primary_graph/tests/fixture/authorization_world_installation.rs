@@ -1,5 +1,9 @@
 //! Installed authorization-world fixture compiler and its population phases.
 
+#[path = "authorization_world_installation/publication.rs"]
+mod publication;
+use publication::publish_authorization_world;
+
 use super::account_seed::{bind_account, AccountSeedSpec};
 use super::*;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionInstallationAuthority;
@@ -63,7 +67,36 @@ struct PreparedAuthorizationWorld {
 }
 
 pub(super) fn install_authorization_world(spec: AuthorizationWorldSpec<'_>) -> AuthorizationWorld {
-    let mut prepared = prepare_authorization_world(spec.resources, None);
+    install_authorization_world_with_product_resources(
+        spec,
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+    )
+}
+
+pub(super) fn install_authorization_world_with_product_resources(
+    spec: AuthorizationWorldSpec<'_>,
+    product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+) -> AuthorizationWorld {
+    let mut prepared = prepare_authorization_world(
+        spec.resources,
+        None,
+        product_resources,
+        crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile::default(),
+    );
+    populate_authorization_world(&mut prepared, &spec);
+    publish_authorization_world(prepared)
+}
+
+pub(super) fn install_authorization_world_with_completed_evidence_resources(
+    spec: AuthorizationWorldSpec<'_>,
+    completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
+) -> AuthorizationWorld {
+    let mut prepared = prepare_authorization_world(
+        spec.resources,
+        None,
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+        completed_evidence,
+    );
     populate_authorization_world(&mut prepared, &spec);
     publish_authorization_world(prepared)
 }
@@ -89,6 +122,8 @@ fn populate_authorization_world(
 fn prepare_authorization_world(
     resources: WorthQueryApplicationQueryResourceProfile,
     relational: Option<worth_relational::facade::runtime::RelationalRuntime>,
+    product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+    completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
 ) -> PreparedAuthorizationWorld {
     let declaration = IdentityExecutionSchema::declaration().unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
@@ -96,6 +131,7 @@ fn prepare_authorization_world(
         .unwrap();
     let installation = WorthQueryExecutionRuntimeInstaller::new()
         .application_query_resources(resources)
+        .completed_evidence_resources(completed_evidence)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .unwrap();
     let (runtime, authority) = installation.into_parts();
@@ -112,10 +148,12 @@ fn prepare_authorization_world(
                 &runtime,
                 &schema,
                 relational,
-                crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+                product_resources,
             )
             .unwrap(),
-        None => authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap(),
+        None => authority
+            .prepare_primary_graph(&runtime, &schema, product_resources)
+            .unwrap(),
     };
     PreparedAuthorizationWorld {
         runtime,
@@ -316,44 +354,6 @@ fn bind_capability_population(
         CapabilityGrantPopulation::Elevated(scenario) => {
             super::capability_elevation_seed::bind_elevated_capability(bootstrap, scenario)
         }
-    }
-}
-
-fn publish_authorization_world(prepared: PreparedAuthorizationWorld) -> AuthorizationWorld {
-    let PreparedAuthorizationWorld {
-        runtime,
-        authority,
-        schema,
-        binding,
-        mut bootstrap,
-    } = prepared;
-    let program_required = schema
-        .installed_mutation_binding::<ProgramRequiredMutationBinding>()
-        .unwrap();
-    bootstrap
-        .install_handler(&program_required, ProgramRequiredHandler)
-        .unwrap();
-    let invariant = bootstrap.retain_invariant_projection_authority();
-    let authorization_time = AuthorizationTimeController::default();
-    let faults = std::sync::Arc::new(
-        crate::domain_computation::primary_graph::tests::fault_controller::PrimaryGraphFaultController::default(),
-    );
-    let application = bootstrap
-        .publish_application_runtime_with_ports(
-            runtime,
-            authority,
-            schema,
-            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-            authorization_time.clone(),
-            faults.clone(),
-        )
-        .unwrap();
-    AuthorizationWorld {
-        application,
-        binding,
-        invariant,
-        authorization_time,
-        faults,
     }
 }
 

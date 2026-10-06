@@ -1696,6 +1696,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
+name = "libmimalloc-sys"
+version = "0.1.49"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a45a52f43e1c16f667ccfe4dd8c85b7f7c204fd5e3bf46c5b0db9a5c3c0b8e9"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "libredox"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1835,6 +1844,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "mimalloc"
+version = "0.1.52"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d4139bb28d14ad1facf21d5eb8825051b326e172d216b39f6d31df53cc97862"
+dependencies = [
+ "libmimalloc-sys",
 ]
 
 [[package]]
@@ -3261,6 +3279,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "stats_alloc"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c0e04424e733e69714ca1bbb9204c1a57f09f5493439520f9f68c132ad25eec"
+
+[[package]]
 name = "strict-num"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4514,6 +4538,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
+name = "worth-execution"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
@@ -4581,6 +4614,7 @@ dependencies = [
 name = "worth-query-declaration"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
 ]
@@ -4621,6 +4655,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom 0.4.3",
  "hmac",
+ "serde",
  "sha2",
  "subtle",
  "worth-foundational",
@@ -4633,6 +4668,7 @@ dependencies = [
 name = "worth-query-publication"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "worth-foundational",
  "worth-proof",
@@ -4658,11 +4694,11 @@ dependencies = [
  "crossbeam-queue",
  "dashmap",
  "im",
- "rayon",
  "rmp-serde",
  "serde",
  "sha2",
  "smallvec",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
 ]
@@ -4673,6 +4709,7 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "sha2",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-relational",
@@ -4683,6 +4720,7 @@ dependencies = [
 name = "worth-runtime-world"
 version = "0.1.0"
 dependencies = [
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-relational",
@@ -4701,13 +4739,13 @@ dependencies = [
  "arc-swap",
  "im",
  "js-sys",
- "rayon",
  "serde",
  "serde_json",
  "sha2",
  "smallvec",
  "tracing",
  "wasm-bindgen",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
 ]
@@ -4770,6 +4808,7 @@ dependencies = [
 name = "worth-ui-host-contract"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "worth-foundational",
 ]
 
@@ -4819,10 +4858,12 @@ dependencies = [
 name = "worth-ui-platform-pulse"
 version = "0.1.0"
 dependencies = [
+ "mimalloc",
  "notify",
  "png",
  "serde",
  "serde_json",
+ "stats_alloc",
  "uiautomation",
  "win32job",
  "winsafe",
@@ -4838,6 +4879,7 @@ dependencies = [
 name = "worth-ui-query-binding"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "sha2",
  "worth-foundational",

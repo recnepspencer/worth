@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{collections::BTreeMap, marker::PhantomData};
 
 use worth_query_declaration::facade::{
     application_program::{
@@ -23,10 +23,19 @@ where
     program_revision: ApplicationProgramRevision,
     definition: ValidatedWorkflowDefinition<Spec>,
     assessment_bindings: Box<[(String, &'static str)]>,
-    condition_bindings: Box<[(String, &'static str)]>,
+    condition_bindings: Box<[WorthQueryInstalledWorkflowConditionBinding]>,
     approval_bindings: Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
     authoring_capability: InstalledWorkflowAuthoringCapability,
     marker: PhantomData<fn() -> Schema>,
+}
+
+/// The installed query binding one condition operand reads.
+#[doc(hidden)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryInstalledWorkflowConditionBinding {
+    pub node_path: String,
+    pub operand: Box<str>,
+    pub binding: &'static str,
 }
 
 #[doc(hidden)]
@@ -41,7 +50,7 @@ pub struct WorthQueryInstalledWorkflowApprovalBinding {
 pub struct WorthQueryInstalledWorkflowDefinitionParts<Spec: ApplicationWorkflowSpec> {
     pub definition: ValidatedWorkflowDefinition<Spec>,
     pub assessment_bindings: Box<[(String, &'static str)]>,
-    pub condition_bindings: Box<[(String, &'static str)]>,
+    pub condition_bindings: Box<[WorthQueryInstalledWorkflowConditionBinding]>,
     pub approval_bindings: Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
 }
 
@@ -68,7 +77,7 @@ where
     }
 
     #[doc(hidden)]
-    pub fn condition_bindings(&self) -> &[(String, &'static str)] {
+    pub fn condition_bindings(&self) -> &[WorthQueryInstalledWorkflowConditionBinding] {
         &self.condition_bindings
     }
 
@@ -139,6 +148,11 @@ where
         ));
     }
     let mut assessment_bindings = Vec::new();
+    let nodes_by_path = definition
+        .nodes()
+        .iter()
+        .map(|node| (node.identity().as_str(), node))
+        .collect::<BTreeMap<_, _>>();
     let mut condition_bindings = Vec::new();
     let mut approval_bindings = Vec::new();
     for node in definition.nodes() {
@@ -179,22 +193,44 @@ where
                     ));
                 })
                 .is_some(),
-            ApplicationWorkflowNodeKind::Condition(condition) => installed
-                .conditions
-                .iter()
-                .find(|candidate| {
-                    candidate.query_marker == condition.query_type()
-                        && candidate.query_identifier == condition.identifier()
-                        && &candidate.parameter_type == condition.parameter_type()
-                        && &candidate.result_type == condition.result_type()
+            ApplicationWorkflowNodeKind::AwaitInbound(awaited) => {
+                let origin = nodes_by_path.get(awaited.origin().as_str()).copied();
+                let Some(ApplicationWorkflowNodeKind::Operation { operation, .. }) =
+                    origin.map(|node| node.kind())
+                else {
+                    return Err(denial(WorthQueryApplicationWorkflowInstallationDenialKind::UnsupportedDefinitionMember, node.identity().as_str()));
+                };
+                let inbound = awaited.inbound();
+                installed
+                    .operations
+                    .iter()
+                    .filter(|candidate| {
+                        candidate.marker == operation.operation_type()
+                            && candidate.identifier == operation.identifier()
+                            && candidate
+                                .inbound_ref
+                                .as_ref()
+                                .is_some_and(|typed| typed == inbound)
+                    })
+                    .count()
+                    == 1
+            }
+            ApplicationWorkflowNodeKind::Condition(condition) => {
+                condition.operands().iter().all(|operand| {
+                    installed
+                        .conditions
+                        .iter()
+                        .find(|candidate| &candidate.query == operand.query())
+                        .map(|candidate| {
+                            condition_bindings.push(WorthQueryInstalledWorkflowConditionBinding {
+                                node_path: node.identity().as_str().to_owned(),
+                                operand: operand.name().into(),
+                                binding: candidate.binding_identity,
+                            });
+                        })
+                        .is_some()
                 })
-                .map(|candidate| {
-                    condition_bindings.push((
-                        node.identity().as_str().to_owned(),
-                        candidate.binding_identity,
-                    ));
-                })
-                .is_some(),
+            }
             ApplicationWorkflowNodeKind::Approval(approval) => installed
                 .approvals
                 .iter()
@@ -224,7 +260,9 @@ where
         }
     }
     assessment_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
-    condition_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+    condition_bindings.sort_unstable_by(|left, right| {
+        (&left.node_path, &left.operand).cmp(&(&right.node_path, &right.operand))
+    });
     approval_bindings.sort_unstable_by(|left, right| left.node_path.cmp(&right.node_path));
     Ok(WorthQueryInstalledWorkflowDefinitionContract {
         schema_binding: installed.schema_binding.clone(),

@@ -49,19 +49,19 @@ impl super::super::CompiledFinancialWorld {
         self.locality_mut().run_action_trace(trace_index)
     }
 
-    pub(in crate::tests::domains::fintech) fn run_locality_action_trace_with_executor(
+    pub(in crate::tests::domains::fintech) fn run_locality_action_trace_with_workers(
         &mut self,
         trace_index: usize,
-        executor: crate::logic::planner::StageExecutor,
+        workers: usize,
     ) -> Result<FinancialLocalityRedObservation, SignalError> {
         self.locality_mut()
-            .run_action_trace_with_executor(trace_index, executor)
+            .run_action_trace_with_workers(trace_index, workers)
     }
 
-    pub(in crate::tests::domains::fintech) fn observe_locality_action_trace_with_executor(
+    pub(in crate::tests::domains::fintech) fn observe_locality_action_trace_with_workers(
         &mut self,
         trace_index: usize,
-        executor: crate::logic::planner::StageExecutor,
+        workers: usize,
     ) -> Result<
         (
             FinancialLocalityRedObservation,
@@ -74,7 +74,7 @@ impl super::super::CompiledFinancialWorld {
             .runtime
             .begin_invalidation_execution_observation()
             .map_err(|denial| SignalError::invalid_input(denial.to_string()))?;
-        let observation = self.run_locality_action_trace_with_executor(trace_index, executor)?;
+        let observation = self.run_locality_action_trace_with_workers(trace_index, workers)?;
         let receipt = self
             .locality()
             .runtime

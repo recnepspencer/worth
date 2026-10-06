@@ -45,7 +45,9 @@ fn node_normalization_key(
         | WorthUiArtifactInputNode::Surface(block_node)
         | WorthUiArtifactInputNode::Binding(block_node)
         | WorthUiArtifactInputNode::QueryScalar(block_node)
-        | WorthUiArtifactInputNode::QueryCollection(block_node) => {
+        | WorthUiArtifactInputNode::QueryCollection(block_node)
+        | WorthUiArtifactInputNode::Condition(block_node)
+        | WorthUiArtifactInputNode::Derived(block_node) => {
             format!(
                 "block:{}:{}:{}",
                 block_node.name_text(),
@@ -125,6 +127,9 @@ fn body_atom_key(body_atom: &crate::source::WorthUiArtifactInputBodyAtom) -> Str
         crate::source::WorthUiArtifactInputBodyAtom::KeywordBackdrop => "kw:backdrop".to_owned(),
         crate::source::WorthUiArtifactInputBodyAtom::NumberLiteral(value) => {
             format!("number:{value}")
+        }
+        crate::source::WorthUiArtifactInputBodyAtom::ExpressionBody(body) => {
+            format!("expr:{}:{}", body.introducer().keyword(), body.source())
         }
         crate::source::WorthUiArtifactInputBodyAtom::LeftBrace => "{".to_owned(),
         crate::source::WorthUiArtifactInputBodyAtom::RightBrace => "}".to_owned(),

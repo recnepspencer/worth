@@ -1,17 +1,21 @@
 use crate::data::comparator::TierPolicyResolver;
-use crate::data::error::SignalError;
+use crate::data::error::{SignalError, SignalPublicationProgress};
 use crate::data::graph::{EvaluationStrategy, GcPressure, ScratchLeaseKind, SignalGraph};
 use crate::data::handle::NodeId;
+use crate::data::request_preparation::SignalPreparationBudget;
 use crate::data::telemetry::RuntimeTelemetry;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationRequestMode;
 use crate::logic::evaluation::IntoEvaluationOutput;
+use crate::logic::planner::precompute::callback::{LegacyPrecompute, SignalPrecompute};
 use crate::logic::planner::{
-    build_evaluation_session_with_policy_resolver, execute_evaluation_session_with_policy,
+    build_evaluation_session_with_policy_resolver, execute_evaluation_session_in_scope,
+    execute_evaluation_session_with_policy,
     execute_prepared_plan_with_policy_and_temporal_lowering, EvaluationPlan, ExecutionReport,
-    PlanSummary, StageExecutor, TemporalLoweringContext,
+    PlanSummary, TemporalLoweringContext,
 };
 use crate::logic::prepared::{ExecutionReadView, PreparedEvaluation};
+use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 use super::super::config::SignalRuntimeConfig;
 
@@ -34,17 +38,20 @@ pub(super) fn absorb_execution_report_telemetry(
     report: &ExecutionReport,
 ) {
     let mut stage_execution_nanos = 0_u128;
-    #[cfg(feature = "parallel")]
+    // Stage outcomes are classified from their child pattern postures. The
+    // final request-scope report describes the enclosing scan and must not
+    // count as a dispatched stage.
     let mut parallel_stages = 0_u64;
+    let mut parallel_tasks = 0_u64;
 
     for stage in &report.stages {
         stage_execution_nanos += stage.duration_nanos;
-        #[cfg(feature = "parallel")]
         if matches!(
             stage.outcome,
             crate::logic::planner::StageExecutionOutcome::CompletedParallel
         ) {
             parallel_stages += 1;
+            parallel_tasks += stage.task_records.len() as u64;
         }
     }
 
@@ -64,13 +71,12 @@ pub(super) fn absorb_execution_report_telemetry(
     telemetry.execution.execution_snapshot_nanos += report.execution_snapshot_nanos;
     telemetry.execution.stage_precompute_nanos += report.stage_precompute_nanos;
     telemetry.execution.stage_apply_nanos += report.stage_apply_nanos;
-    #[cfg(not(feature = "parallel"))]
-    let parallel_stages = 0_u64;
+    telemetry.execution.last_execution_report = report.execution.last().copied();
     if parallel_stages > 0 {
         telemetry.execution.parallel_executor_usage_count += 1;
         telemetry.execution.parallel_stage_dispatch_count += parallel_stages;
-        telemetry.execution.parallel_precompute_task_count += report.task_count as u64;
-    } else {
+        telemetry.execution.parallel_precompute_task_count += parallel_tasks;
+    } else if !report.execution.is_empty() {
         telemetry.execution.serial_executor_usage_count += 1;
         telemetry.execution.serial_precompute_task_count += report.task_count as u64;
     }
@@ -78,10 +84,6 @@ pub(super) fn absorb_execution_report_telemetry(
         .execution
         .max_tasks_in_stage
         .max(report.plan_summary.max_stage_width as u64);
-}
-
-pub(super) fn executor_for_strategy(strategy: EvaluationStrategy) -> StageExecutor {
-    strategy.parallelism.stage_executor()
 }
 
 pub(super) fn apply_strategy_maintenance(graph: &mut SignalGraph, strategy: EvaluationStrategy) {
@@ -113,7 +115,7 @@ pub(super) fn execute_targets_with_runtime_config<T, Ctx, F, O>(
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
     evaluator: &F,
-    executor: StageExecutor,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<ExecutionReport, SignalError>
 where
     T: Copy + Ord,
@@ -129,24 +131,30 @@ where
         targets,
         request_mode,
         evaluator,
-        executor,
+        lease,
     )
     .map_err(|failure| failure.error)
 }
 
-pub(super) fn execute_targets_with_prepared_runtime_config_detailed<T, F>(
+pub(super) fn execute_targets_with_prepared_runtime_config_detailed<T, P>(
     graph: &mut SignalGraph,
     config: &SignalRuntimeConfig<T>,
     temporal_lowering: TemporalLoweringContext,
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
-    precompute: &F,
-    executor: StageExecutor,
+    precompute: &P,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<ExecutionReport, SessionExecutionError>
 where
     T: Copy + Ord,
-    F: Fn(NodeId, &ExecutionReadView<'_>) -> Result<PreparedEvaluation, SignalError> + Sync,
+    P: SignalPrecompute,
 {
+    if lease.is_some() {
+        return Err(SignalError::invalid_input(
+            "checked leased requests must enter the owning request scope",
+        )
+        .into());
+    }
     let mut resolver = TierPolicyResolver::new(
         config.node_meta(),
         config.tier_policies(),
@@ -167,7 +175,7 @@ where
             precompute,
             &mut resolver,
             temporal_lowering,
-            executor,
+            lease,
         );
         match result {
             Ok(report) => Ok(report),
@@ -179,6 +187,45 @@ where
     })
 }
 
+#[allow(clippy::too_many_arguments)]
+pub(super) fn execute_targets_with_prepared_runtime_config_in_scope<T, P>(
+    graph: &mut SignalGraph,
+    config: &SignalRuntimeConfig<T>,
+    temporal_lowering: TemporalLoweringContext,
+    targets: &[NodeId],
+    request_mode: EvaluationRequestMode,
+    precompute: &P,
+    lease: &ExecutionResourceLease<'_>,
+    request_work: &mut MapKernelContext<'_, '_>,
+    disposition: &mut SignalPublicationProgress,
+    preparation: &mut SignalPreparationBudget,
+) -> Result<ExecutionReport, SignalError>
+where
+    T: Copy + Ord,
+    P: SignalPrecompute,
+{
+    let mut resolver = TierPolicyResolver::new(
+        config.node_meta(),
+        config.tier_policies(),
+        config.fallback_comparator(),
+    );
+    if !precompute.allows_bounded_inputs() {
+        return Err(SignalError::invalid_input(
+            "leased Signal evaluation requires a checked bounded-input callback",
+        ));
+    }
+    graph.with_scratch(ScratchLeaseKind::Evaluation, |graph, scratch| {
+        let session = crate::logic::planner::planning::build_evaluation_session_with_policy_resolver_and_work(
+            graph, scratch.traversal_mut(), targets, request_mode,
+            &mut resolver, Some(&mut *request_work), Some(&mut *preparation),
+        )?;
+        execute_evaluation_session_in_scope(
+            graph, &session, precompute, &mut resolver,
+            temporal_lowering, lease, request_work, disposition, preparation,
+        )
+    })
+}
+
 pub(super) fn execute_targets_with_runtime_config_detailed<T, Ctx, F, O>(
     graph: &mut SignalGraph,
     config: &SignalRuntimeConfig<T>,
@@ -187,7 +234,7 @@ pub(super) fn execute_targets_with_runtime_config_detailed<T, Ctx, F, O>(
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
     evaluator: &F,
-    executor: StageExecutor,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<ExecutionReport, SessionExecutionError>
 where
     T: Copy + Ord,
@@ -212,12 +259,12 @@ where
         let result = execute_evaluation_session_with_policy(
             graph,
             &session,
-            &|node, view: &ExecutionReadView<'_>| {
+            &LegacyPrecompute::new(|node, view: &ExecutionReadView<'_>| {
                 prepare_with_context(view.graph(), domain_ctx, node, evaluator)
-            },
+            }),
             &mut resolver,
             temporal_lowering,
-            executor,
+            lease,
         );
         match result {
             Ok(report) => Ok(report),
@@ -236,7 +283,7 @@ pub(super) fn execute_plan_with_runtime_config<T, Ctx, F, O>(
     domain_ctx: &Ctx,
     plan: &EvaluationPlan,
     evaluator: &F,
-    executor: StageExecutor,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<ExecutionReport, SignalError>
 where
     T: Copy + Ord,
@@ -256,6 +303,6 @@ where
         evaluator,
         &mut resolver,
         temporal_lowering,
-        executor,
+        lease,
     )
 }

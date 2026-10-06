@@ -3,6 +3,7 @@ mod mutation_work;
 mod persistent_fork;
 mod replacement;
 mod replacement_charge;
+mod request_growth;
 mod staging_charge;
 use crate::data::retained_storage::RetainedStorageBacking;
 use std::sync::Arc;

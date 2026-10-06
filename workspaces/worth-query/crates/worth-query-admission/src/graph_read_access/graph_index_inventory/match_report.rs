@@ -16,6 +16,12 @@ use crate::graph_read_access::{
 };
 use worth_foundational::facade::CanonicalDigestId;
 
+mod admitted;
+use crate::graph_read_access::digest_text::{
+    admitted_digest_text, admitted_text_clone, AdmittedDigestTextStop,
+};
+use std::fmt::{self, Write};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphIndexInventoryMatch {
     requirement_kind: WorthQueryGraphReadAccessRequirementKind,
@@ -100,6 +106,24 @@ impl WorthQueryGraphIndexInventoryMatch {
         requirement: &WorthQueryGraphReadAccessRequirementRow,
         row: &WorthQueryGraphIndexSupportRow,
     ) -> Self {
+        Self::from_support_row_with_text(
+            requirement,
+            row,
+            requirement.digest_part(),
+            requirement.semantic_slot_key(),
+            row.digest().to_string(),
+            row.owning_milestone().map(str::to_string),
+        )
+    }
+
+    fn from_support_row_with_text(
+        requirement: &WorthQueryGraphReadAccessRequirementRow,
+        row: &WorthQueryGraphIndexSupportRow,
+        requirement_row_digest: String,
+        requirement_semantic_slot: String,
+        support_row_digest: String,
+        owning_milestone: Option<String>,
+    ) -> Self {
         let outcome = classify_inventory_match_outcome(requirement, row);
         let (required_capability_owner, resolved_admission_posture) =
             if outcome == WorthQueryGraphIndexInventoryMatchOutcome::ExactMatch {
@@ -112,9 +136,9 @@ impl WorthQueryGraphIndexInventoryMatch {
             };
         Self {
             requirement_kind: requirement.kind().clone(),
-            requirement_row_digest: requirement.digest_part(),
-            requirement_semantic_slot: requirement.semantic_slot_key(),
-            support_row_digest: row.digest().to_string(),
+            requirement_row_digest,
+            requirement_semantic_slot,
+            support_row_digest,
             support_posture: row.posture().clone(),
             support_state: row.support_state().clone(),
             lifecycle_owner: row.lifecycle_owner().clone(),
@@ -122,7 +146,7 @@ impl WorthQueryGraphIndexInventoryMatch {
             rebuild_basis: row.rebuild_basis().clone(),
             invalidation_basis: row.invalidation_basis().clone(),
             complexity_contract: row.complexity_contract().clone(),
-            owning_milestone: row.owning_milestone().map(str::to_string),
+            owning_milestone,
             outcome,
             required_capability_owner,
             resolved_admission_posture,
@@ -130,14 +154,30 @@ impl WorthQueryGraphIndexInventoryMatch {
     }
 
     fn missing_support_row(requirement: &WorthQueryGraphReadAccessRequirementRow) -> Self {
+        let requirement_row_digest = requirement.digest_part();
+        let support_row_digest = hash_parts(&[
+            "worth_query_graph_index_missing_support_row_v1".to_string(),
+            requirement_row_digest.clone(),
+        ]);
+        Self::missing_support_row_with_text(
+            requirement,
+            requirement_row_digest,
+            requirement.semantic_slot_key(),
+            support_row_digest,
+        )
+    }
+
+    fn missing_support_row_with_text(
+        requirement: &WorthQueryGraphReadAccessRequirementRow,
+        requirement_row_digest: String,
+        requirement_semantic_slot: String,
+        support_row_digest: String,
+    ) -> Self {
         Self {
             requirement_kind: requirement.kind().clone(),
-            requirement_row_digest: requirement.digest_part(),
-            requirement_semantic_slot: requirement.semantic_slot_key(),
-            support_row_digest: hash_parts(&[
-                "worth_query_graph_index_missing_support_row_v1".to_string(),
-                requirement.digest_part(),
-            ]),
+            requirement_row_digest,
+            requirement_semantic_slot,
+            support_row_digest,
             support_posture: WorthQueryGraphIndexPosture::Denied,
             support_state: WorthQueryGraphIndexSupportState::Unsupported,
             lifecycle_owner: WorthQueryGraphIndexLifecycleOwner::LowerRuntime,
@@ -153,7 +193,15 @@ impl WorthQueryGraphIndexInventoryMatch {
     }
 
     pub(crate) fn digest_part(&self) -> String {
-        format!(
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "match:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}",
             self.requirement_kind.as_str(),
             self.requirement_row_digest,

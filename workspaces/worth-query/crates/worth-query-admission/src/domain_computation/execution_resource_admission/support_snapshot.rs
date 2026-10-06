@@ -1,3 +1,5 @@
+mod installation;
+
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
@@ -15,7 +17,17 @@ impl<T: Send> WorthQueryExecutionCapacityReservation for T {}
 pub trait WorthQueryExecutionCapacityPort: Send + Sync {
     fn capacity_subject_identity(&self) -> &str;
 
+    /// Owner-declared Work and backing for one successful reservation. The
+    /// caller admits this before `try_reserve` can change capacity state.
+    fn reservation_preflight_cost(&self) -> Option<(u64, u64)>;
+
     fn try_reserve(&self) -> Option<Box<dyn WorthQueryExecutionCapacityReservation>>;
+}
+
+#[derive(Debug)]
+pub enum WorthQueryGraphProviderLookupStop<Stop> {
+    Admission(Stop),
+    AccountingOverflow,
 }
 
 #[derive(Clone)]
@@ -180,6 +192,11 @@ fn covers(
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryExecutionResourceSupportSnapshot {
+    installed: Arc<InstalledResourceSupportSnapshot>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct InstalledResourceSupportSnapshot {
     executor: WorthQueryExecutionResourceSupport,
     conditional_nodes: Vec<(String, WorthQueryExecutionResourceSupport)>,
     graph_providers: Vec<(String, WorthQueryExecutionResourceSupport)>,
@@ -189,114 +206,105 @@ pub struct WorthQueryExecutionResourceSupportSnapshot {
 }
 
 impl WorthQueryExecutionResourceSupportSnapshot {
-    pub fn new(
-        executor: WorthQueryExecutionResourceSupport,
-        mut conditional_nodes: Vec<(String, WorthQueryExecutionResourceSupport)>,
-        mut graph_providers: Vec<(String, WorthQueryExecutionResourceSupport)>,
-        mut commit_providers: Vec<(String, WorthQueryExecutionResourceSupport)>,
-        parallel_admission: Option<WorthQueryExecutionResourceSupport>,
-    ) -> Self {
-        conditional_nodes.sort_by(|left, right| left.0.cmp(&right.0));
-        graph_providers.sort_by(|left, right| left.0.cmp(&right.0));
-        commit_providers.sort_by(|left, right| left.0.cmp(&right.0));
-        let identity = Arc::<str>::from(hash_parts(&[
-            "worth_query_execution_resource_support_snapshot_v1".into(),
-            format!("executor:{}", executor.identity()),
-            format!(
-                "conditionals:{}",
-                conditional_nodes
-                    .iter()
-                    .map(|(location, support)| format!("{location}:{}", support.identity()))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            format!(
-                "graphs:{}",
-                graph_providers
-                    .iter()
-                    .map(|(role, support)| format!("{role}:{}", support.identity()))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            format!(
-                "commits:{}",
-                commit_providers
-                    .iter()
-                    .map(|(group, support)| format!("{group}:{}", support.identity()))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            format!(
-                "parallel:{}",
-                parallel_admission
-                    .as_ref()
-                    .map_or("none", WorthQueryExecutionResourceSupport::identity)
-            ),
-        ]));
-        Self {
-            executor,
-            conditional_nodes,
-            graph_providers,
-            commit_providers,
-            parallel_admission,
-            identity,
-        }
+    pub(crate) fn has_same_installed_authority(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.installed, &other.installed)
     }
 
     pub fn executor(&self) -> &WorthQueryExecutionResourceSupport {
-        &self.executor
+        &self.installed.executor
     }
 
     pub fn conditional_nodes(&self) -> &[(String, WorthQueryExecutionResourceSupport)] {
-        &self.conditional_nodes
+        &self.installed.conditional_nodes
     }
 
     pub fn graph_providers(&self) -> &[(String, WorthQueryExecutionResourceSupport)] {
-        &self.graph_providers
+        &self.installed.graph_providers
     }
 
     pub fn graph_provider(&self, role: &str) -> Option<&WorthQueryExecutionResourceSupport> {
-        self.graph_providers
-            .binary_search_by(|(candidate, _)| candidate.as_str().cmp(role))
-            .ok()
-            .map(|index| &self.graph_providers[index].1)
+        self.graph_provider_admitted(role, &mut |_, _| Ok::<(), std::convert::Infallible>(()))
+            .expect("ordinary installed support lookup has no resource refusal")
+    }
+
+    pub fn graph_provider_admitted<Stop>(
+        &self,
+        role: &str,
+        admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<Option<&WorthQueryExecutionResourceSupport>, WorthQueryGraphProviderLookupStop<Stop>>
+    {
+        let mut lower = 0;
+        let mut upper = self.installed.graph_providers.len();
+        while lower < upper {
+            // Selected header inspection precedes the text width/read.
+            admit(1, 0).map_err(WorthQueryGraphProviderLookupStop::Admission)?;
+            let middle = lower + (upper - lower) / 2;
+            let candidate = &self.installed.graph_providers[middle].0;
+            let work = candidate
+                .len()
+                .checked_add(role.len())
+                .and_then(|width| width.checked_add(1))
+                .and_then(|width| u64::try_from(width).ok())
+                .ok_or(WorthQueryGraphProviderLookupStop::AccountingOverflow)?;
+            admit(work, 0).map_err(WorthQueryGraphProviderLookupStop::Admission)?;
+            match candidate.as_str().cmp(role) {
+                std::cmp::Ordering::Less => lower = middle + 1,
+                std::cmp::Ordering::Greater => upper = middle,
+                std::cmp::Ordering::Equal => {
+                    return Ok(Some(&self.installed.graph_providers[middle].1))
+                }
+            }
+        }
+        Ok(None)
     }
 
     pub fn commit_providers(&self) -> &[(String, WorthQueryExecutionResourceSupport)] {
-        &self.commit_providers
+        &self.installed.commit_providers
     }
 
     pub fn parallel_admission(&self) -> Option<&WorthQueryExecutionResourceSupport> {
-        self.parallel_admission.as_ref()
+        self.installed.parallel_admission.as_ref()
     }
 
     pub(super) fn all_supports(&self) -> impl Iterator<Item = &WorthQueryExecutionResourceSupport> {
-        std::iter::once(&self.executor)
-            .chain(self.conditional_nodes.iter().map(|(_, support)| support))
-            .chain(self.graph_providers.iter().map(|(_, support)| support))
-            .chain(self.commit_providers.iter().map(|(_, support)| support))
-            .chain(self.parallel_admission.iter())
+        let installed = &self.installed;
+        std::iter::once(&installed.executor)
+            .chain(
+                installed
+                    .conditional_nodes
+                    .iter()
+                    .map(|(_, support)| support),
+            )
+            .chain(installed.graph_providers.iter().map(|(_, support)| support))
+            .chain(
+                installed
+                    .commit_providers
+                    .iter()
+                    .map(|(_, support)| support),
+            )
+            .chain(installed.parallel_admission.iter())
     }
 
     pub fn identity(&self) -> &str {
-        &self.identity
+        &self.installed.identity
     }
 
     pub(super) fn supports(&self, strategy: &WorthQueryExecutionStrategyContract) -> bool {
-        self.executor.supports(strategy)
-            && self
+        let installed = &self.installed;
+        installed.executor.supports(strategy)
+            && installed
                 .conditional_nodes
                 .iter()
                 .all(|(_, support)| support.supports(strategy))
-            && self
+            && installed
                 .graph_providers
                 .iter()
                 .all(|(_, support)| support.supports(strategy))
-            && self
+            && installed
                 .commit_providers
                 .iter()
                 .all(|(_, support)| support.supports(strategy))
-            && self
+            && installed
                 .parallel_admission
                 .as_ref()
                 .is_none_or(|support| support.supports(strategy))
@@ -306,31 +314,33 @@ impl WorthQueryExecutionResourceSupportSnapshot {
         &self,
         strategy: &WorthQueryExecutionStrategyContract,
     ) -> Option<(String, &WorthQueryExecutionResourceSupport)> {
-        if !self.executor.supports(strategy) {
-            return Some(("executor".into(), &self.executor));
+        let installed = &self.installed;
+        if !installed.executor.supports(strategy) {
+            return Some(("executor".into(), &installed.executor));
         }
-        if let Some((location, support)) = self
+        if let Some((location, support)) = installed
             .conditional_nodes
             .iter()
             .find(|(_, support)| !support.supports(strategy))
         {
             return Some((format!("conditional node `{location}`"), support));
         }
-        if let Some((role, support)) = self
+        if let Some((role, support)) = installed
             .graph_providers
             .iter()
             .find(|(_, support)| !support.supports(strategy))
         {
             return Some((format!("graph role `{role}`"), support));
         }
-        if let Some((group, support)) = self
+        if let Some((group, support)) = installed
             .commit_providers
             .iter()
             .find(|(_, support)| !support.supports(strategy))
         {
             return Some((format!("commit group `{group}`"), support));
         }
-        self.parallel_admission
+        installed
+            .parallel_admission
             .as_ref()
             .filter(|support| !support.supports(strategy))
             .map(|support| ("parallel admission provider".into(), support))

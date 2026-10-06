@@ -13,6 +13,8 @@ pub struct BankApplication;
 #[doc(hidden)]
 pub struct BankApplicationP1;
 #[doc(hidden)]
+pub struct BankApplicationP2;
+#[doc(hidden)]
 pub struct BankAccountsFeature;
 #[doc(hidden)]
 pub struct BankPaymentsFeature;
@@ -46,11 +48,12 @@ pub(crate) type BankRules = ApplicationRuleList<
 >;
 
 pub(crate) fn bank_feature_specs() -> Vec<ApplicationFeatureSpec> {
-    bank_feature_specs_with_estate_notification(true)
+    bank_feature_specs_with_optional_effects(true, true)
 }
 
-fn bank_feature_specs_with_estate_notification(
+fn bank_feature_specs_with_optional_effects(
     include_estate_notification: bool,
+    include_ordinary_payment_approval: bool,
 ) -> Vec<ApplicationFeatureSpec> {
     use bank_domain::schema::*;
 
@@ -60,6 +63,22 @@ fn bank_feature_specs_with_estate_notification(
     } else {
         estate
     };
+    let payments = ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
+        .mutation::<ApplyOpeningFundingMutationBinding>()
+        .mutation::<DepositMutationBinding>()
+        .mutation::<WithdrawMutationBinding>()
+        .mutation::<SendMoneyMutationBinding>()
+        .mutation::<InitiateBusinessPaymentMutationBinding>()
+        .mutation::<ApprovedBusinessPaymentAuthoringBinding>()
+        .mutation::<ApprovedBusinessPaymentApprovalBinding>()
+        .mutation::<ApprovedBusinessPaymentInstanceStartBinding>()
+        .mutation::<ApprovedBusinessPaymentAdvanceBinding>()
+        .conditional_operation::<PublishApprovedPaymentAssessment>();
+    let payments = if include_ordinary_payment_approval {
+        payments.mutation::<ApprovePaymentMutationBinding>()
+    } else {
+        payments
+    };
     vec![
         ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
             .mutation::<CreatePersonalAccountMutationBinding>()
@@ -67,18 +86,7 @@ fn bank_feature_specs_with_estate_notification(
             .mutation::<GrantAccountAccessMutationBinding>()
             .mutation::<RevokeAccountAccessMutationBinding>()
             .finish(),
-        ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
-            .mutation::<ApplyOpeningFundingMutationBinding>()
-            .mutation::<DepositMutationBinding>()
-            .mutation::<WithdrawMutationBinding>()
-            .mutation::<SendMoneyMutationBinding>()
-            .mutation::<InitiateBusinessPaymentMutationBinding>()
-            .mutation::<ApprovedBusinessPaymentAuthoringBinding>()
-            .mutation::<ApprovedBusinessPaymentApprovalBinding>()
-            .mutation::<ApprovedBusinessPaymentInstanceStartBinding>()
-            .mutation::<ApprovedBusinessPaymentAdvanceBinding>()
-            .conditional_operation::<PublishApprovedPaymentAssessment>()
-            .mutation::<ApprovePaymentMutationBinding>()
+        payments
             .mutation::<RejectPaymentMutationBinding>()
             .mutation::<ReverseJournalMutationBinding>()
             .finish(),
@@ -112,7 +120,24 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplicationP1 {
         ApplicationProgramIdentity::new("worth.bank.application.p1.v1");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        bank_feature_specs_with_estate_notification(false)
+        bank_feature_specs_with_optional_effects(false, true)
+    }
+}
+
+impl ApplicationProgramDefinition<BankSchema> for BankApplicationP2 {
+    type Contributions = (
+        BankAccountsProvider,
+        BankPaymentsProvider,
+        BankEstateProvider,
+    );
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = BankRules;
+
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.bank.application.p2.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        bank_feature_specs_with_optional_effects(false, false)
     }
 }
 
@@ -145,4 +170,11 @@ pub(crate) fn validated_bank_application_p1() -> Result<
     worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial,
 > {
     ApplicationProgramAuthoring::<BankSchema, BankApplicationP1>::begin().validated_program()
+}
+
+pub(crate) fn validated_bank_application_p2() -> Result<
+    ValidatedApplicationProgram<BankSchema, BankApplicationP2>,
+    worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial,
+> {
+    ApplicationProgramAuthoring::<BankSchema, BankApplicationP2>::begin().validated_program()
 }

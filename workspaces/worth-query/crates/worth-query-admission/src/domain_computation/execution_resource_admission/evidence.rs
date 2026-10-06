@@ -12,6 +12,10 @@ use crate::admission_digest::hash_parts;
 use super::admission_plan_digest::admitted_envelope_identity;
 use super::WorthQueryExecutionResourceSupportSnapshot;
 
+mod prepared;
+use prepared::PreparedExecutionResourceBasis;
+pub(crate) use prepared::{PreparedExecutionResourcePlan, PreparedResourcePlanAdmissionStop};
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryExecutionResourceAdmissionCounters {
     pub runtime_authority_checks: usize,
@@ -51,50 +55,11 @@ pub enum WorthQueryExecutionResourceAdmissionPosture {
 pub struct WorthQueryAdmittedExecutionResourcePlan {
     identity: Arc<str>,
     binding_identity: Arc<str>,
-    contract_identity: Arc<str>,
-    request: Arc<WorthQueryExecutionResourceRequest>,
-    request_identity: Arc<str>,
-    envelope_identity: Arc<str>,
-    envelope: Arc<WorthQueryExecutionResourceEnvelope>,
-    support_snapshot: WorthQueryExecutionResourceSupportSnapshot,
-    strategy: WorthQueryExecutionStrategyContract,
-    posture: WorthQueryExecutionResourceAdmissionPosture,
+    basis: Arc<PreparedExecutionResourceBasis>,
     counters: WorthQueryExecutionResourceAdmissionCounters,
 }
 
 impl WorthQueryAdmittedExecutionResourcePlan {
-    pub(super) fn new(
-        identity: String,
-        binding_identity: &str,
-        contract_identity: String,
-        request: &WorthQueryExecutionResourceRequest,
-        support_snapshot: WorthQueryExecutionResourceSupportSnapshot,
-        strategy: WorthQueryExecutionStrategyContract,
-        counters: WorthQueryExecutionResourceAdmissionCounters,
-    ) -> Self {
-        let request_identity = request.canonical_identity();
-        let envelope_identity = Arc::<str>::from(admitted_envelope_identity(strategy.envelope()));
-        let envelope = Arc::new(strategy.envelope().clone());
-        let posture = if strategy.envelope().degradation().is_some() {
-            WorthQueryExecutionResourceAdmissionPosture::Degraded
-        } else {
-            WorthQueryExecutionResourceAdmissionPosture::Exact
-        };
-        Self {
-            identity: identity.into(),
-            binding_identity: binding_identity.into(),
-            contract_identity: contract_identity.into(),
-            request: Arc::new(request.clone()),
-            request_identity: request_identity.into(),
-            envelope_identity,
-            envelope,
-            support_snapshot,
-            strategy,
-            posture,
-            counters,
-        }
-    }
-
     pub fn identity(&self) -> &str {
         &self.identity
     }
@@ -104,35 +69,35 @@ impl WorthQueryAdmittedExecutionResourcePlan {
     }
 
     pub fn contract_identity(&self) -> &str {
-        &self.contract_identity
+        &self.basis.contract_identity
     }
 
     pub fn request_identity(&self) -> &str {
-        &self.request_identity
+        &self.basis.request_identity
     }
 
     pub fn request(&self) -> &WorthQueryExecutionResourceRequest {
-        &self.request
+        &self.basis.request
     }
 
     pub fn envelope_identity(&self) -> &str {
-        &self.envelope_identity
+        &self.basis.envelope_identity
     }
 
     pub fn support_snapshot(&self) -> &WorthQueryExecutionResourceSupportSnapshot {
-        &self.support_snapshot
+        &self.basis.support_snapshot
     }
 
     pub fn strategy(&self) -> &WorthQueryExecutionStrategyName {
-        self.strategy.name()
+        self.basis.strategy.name()
     }
 
     pub fn envelope(&self) -> &WorthQueryExecutionResourceEnvelope {
-        &self.envelope
+        &self.basis.envelope
     }
 
     pub fn posture(&self) -> WorthQueryExecutionResourceAdmissionPosture {
-        self.posture
+        self.basis.posture
     }
 
     pub fn counters(&self) -> WorthQueryExecutionResourceAdmissionCounters {
@@ -152,7 +117,7 @@ impl WorthQueryAdmittedExecutionResourcePlan {
     }
 
     pub fn shared_envelope(&self) -> Arc<WorthQueryExecutionResourceEnvelope> {
-        Arc::clone(&self.envelope)
+        Arc::clone(&self.basis.envelope)
     }
 }
 

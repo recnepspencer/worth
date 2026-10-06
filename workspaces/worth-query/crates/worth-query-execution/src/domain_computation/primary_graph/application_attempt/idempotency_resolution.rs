@@ -1,5 +1,19 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+#[path = "idempotency_resolution/denial.rs"]
+mod denial;
+#[path = "idempotency_resolution/external_settlement.rs"]
+mod external_settlement;
+#[path = "idempotency_resolution/historical_commit.rs"]
+mod historical_commit;
+
+pub use historical_commit::WorthQueryHistoricalApplicationCommit;
+
+pub use denial::{
+    WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
+};
+
 use super::{
     provider_recomparison::recover_equivalent_commit_evidence,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitReceipt,
@@ -18,8 +32,7 @@ impl WorthQueryIdempotencyReadCommitReceiptPermit {
 use crate::domain_computation::application_aftermath::WorthQueryAdmittedIdempotencyRead;
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryOperationAuthorizationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 /// What an idempotency key already means on the current product branch, read
@@ -42,103 +55,14 @@ pub enum WorthQueryApplicationIdempotencyResolution {
 pub enum WorthQueryGuardedWorkflowOperationCustody {
     Unseen,
     Committed(WorthQueryApplicationCommitReceipt),
+    /// The original dispatch has a matching World-performed terminal at its
+    /// external-effect owner. Acceptance still rechecks that owner at commit.
+    ExternallySettled(WorthQueryApplicationCommitReceipt),
     DispatchPending(WorthQueryApplicationCommitReceipt),
     IntentDrift,
     PublicationPending,
     ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
     Indeterminate(WorthQueryApplicationIdempotencyResolutionDenial),
-}
-
-/// Why an idempotency key could not be resolved. The resolution is a read, so
-/// nothing took effect.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
-    /// The admission's current authority no longer holds, or inspecting the key was
-    /// not authorized. The authorization denial has the detail.
-    Authorization,
-    /// The admission belongs to another runtime or schema binding, or has no product
-    /// to resolve against.
-    ForeignAdmission,
-    /// The provider holds its maximum number of active snapshots.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
-    /// The provider has no retention capacity for the read.
-    RetentionCapacityExhausted,
-    /// The provider has run out of retention identities.
-    RetentionIdentityExhausted,
-    /// The provider has run out of snapshot identities.
-    SnapshotIdentityExhausted,
-    /// The provider could not answer, the product was unpublished, or the recorded
-    /// receipt could not be read back.
-    ProviderUnavailable,
-}
-
-/// A refusal to resolve an idempotency key. Nothing took effect.
-///
-/// Match on [`kind`](Self::kind); [`authorization`](Self::authorization) is set
-/// only for an authorization refusal.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationIdempotencyResolutionDenial {
-    kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
-    authorization: Option<WorthQueryOperationAuthorizationDenial>,
-}
-
-impl WorthQueryApplicationIdempotencyResolutionDenial {
-    pub const fn kind(&self) -> WorthQueryApplicationIdempotencyResolutionDenialKind {
-        self.kind
-    }
-
-    pub const fn authorization(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
-        self.authorization.as_ref()
-    }
-
-    fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization,
-            authorization: Some(denial),
-        }
-    }
-
-    pub(super) const fn foreign_admission() -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission,
-            authorization: None,
-        }
-    }
-
-    pub(super) const fn provider_unavailable() -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable,
-            authorization: None,
-        }
-    }
-
-    pub(super) fn from_provider(
-        denial: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
-    ) -> Self {
-        let kind = match denial {
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            } => WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            },
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted
-            }
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionIdentityExhausted
-            }
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
-            }
-            crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable => {
-                WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
-            }
-        };
-        Self {
-            kind,
-            authorization: None,
-        }
-    }
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -174,7 +98,7 @@ where
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
         let bound = binding
-            .bind_operation(admission.operation_authority_identity_bytes())
+            .bind_operation(admission.operation_definition_identity())
             .bind_operation_scope(admission.operation_scope_binding())
             .bind_preconditions(admission.mutation_preconditions().identity())
             .bind_governed_input(admission.governed_input_identity())
@@ -186,7 +110,8 @@ where
             .publication_binding();
         let commit_lane = self
             .primary_provider
-            .application_branch_commit_lane(product.observation());
+            .application_branch_commit_lane(product.observation())
+            .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
         let coordination = commit_lane.enter();
         let proof = self
             .authorize_idempotency_inspection(admission, &coordination)
@@ -227,8 +152,26 @@ where
                     admission.canonical_work(),
                     WorthQueryApplicationCommitAuthorityBinding::from_admission(admission, bound),
                 );
-                if super::workflow_transition_program::operation_receipt_requires_recovery(&receipt)
+                if receipt
+                    .dispatch_outbox()
+                    .and_then(|record| record.inbound())
+                    .is_some()
                 {
+                    match self.resolve_guarded_workflow_external_settlement(&receipt) {
+                        Ok(true) => {
+                            WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt)
+                        }
+                        Ok(false) => {
+                            WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
+                        }
+                        Err(_) => WorthQueryGuardedWorkflowOperationCustody::Indeterminate(
+                            WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable(
+                            ),
+                        ),
+                    }
+                } else if super::workflow_transition_program::operation_receipt_requires_recovery(
+                    &receipt,
+                ) {
                     WorthQueryGuardedWorkflowOperationCustody::DispatchPending(receipt)
                 } else {
                     WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
@@ -281,7 +224,7 @@ where
             .into_iter()
             .map(|read_for| {
                 let binding = read_for
-                    .bind_operation(admission.operation_authority_identity_bytes())
+                    .bind_operation(admission.operation_definition_identity())
                     .bind_operation_scope(admission.operation_scope_binding())
                     .bind_preconditions(admission.mutation_preconditions().identity())
                     .bind_governed_input(admission.governed_input_identity())
@@ -296,7 +239,8 @@ where
             .publication_binding();
         let commit_lane = self
             .primary_provider
-            .application_branch_commit_lane(product.observation());
+            .application_branch_commit_lane(product.observation())
+            .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
         let coordination = commit_lane.enter();
         let proof = self
             .authorize_idempotency_inspection(admission, &coordination)
@@ -359,15 +303,3 @@ where
             .collect()
     }
 }
-
-impl std::fmt::Display for WorthQueryApplicationIdempotencyResolutionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "application idempotency resolution denied: {:?}",
-            self.kind
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryApplicationIdempotencyResolutionDenial {}

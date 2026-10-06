@@ -21,6 +21,7 @@ struct UiIntentAdmissionCounters {
     released: u64,
     lifecycle_cancelled: u64,
     stopped: u64,
+    operability_reobservations: u64,
 }
 
 impl UiIntentAdmissionState {
@@ -82,6 +83,35 @@ impl UiIntentAdmissionState {
             return;
         };
         owner.record(candidate, decision);
+    }
+
+    /// Refreshes the standing facts of the declarations that read a changed
+    /// condition. Each attempted refresh of an existing fact counts one
+    /// re-observation; nothing else is visited.
+    pub(crate) fn reobserve_condition_consumers(
+        &mut self,
+        settlement: crate::runtime::expression::UiExpressionSettlement,
+        owners: super::super::operability::UiIntentOperabilityReadOwners<'_>,
+    ) {
+        if settlement.is_empty() {
+            return;
+        }
+        let Some(owner) = self.standing_owner.as_mut() else {
+            return;
+        };
+        let consumers = owners.authority.catalog.condition_consumers();
+        let routes: std::collections::BTreeSet<&str> = settlement
+            .changed_slots()
+            .flat_map(|slot| consumers.of(slot))
+            .collect();
+        let attempted = owner.reobserve(routes, |fact| {
+            super::super::operability::reobserve_standing_fact(fact, owners)
+        });
+        self.counters.operability_reobservations = self
+            .counters
+            .operability_reobservations
+            .checked_add(attempted)
+            .expect("bounded standing re-observation accounting exhausted");
     }
 
     #[allow(
@@ -233,6 +263,7 @@ impl UiIntentAdmissionState {
             released: self.counters.released,
             lifecycle_cancelled: self.counters.lifecycle_cancelled,
             stopped: self.counters.stopped,
+            operability_reobservations: self.counters.operability_reobservations,
         })
     }
 

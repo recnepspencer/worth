@@ -89,16 +89,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowDefinitionA
             ApplicationCandidateResourceCeiling::bounded(128 * 1024 * 1024, 20_000_000),
         );
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        content_identity(&key.to_le_bytes())
-    }
-
-    fn input_identity(input: &WorkflowDefinitionAuthoringInput) -> [u8; 32] {
-        let mut bytes = input.identity.as_bytes().to_vec();
-        bytes.extend_from_slice(&input.retention_days.to_le_bytes());
-        content_identity(&bytes)
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
         Document,
@@ -205,14 +195,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowInstanceSta
             ApplicationCandidateResourceCeiling::bounded(2 * 1024 * 1024, 1_048_576),
         );
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        content_identity(&key.to_le_bytes())
-    }
-
-    fn input_identity(input: &WorkflowInstanceStartInput) -> [u8; 32] {
-        content_identity(input.document_identity.as_bytes())
-    }
-
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
         Document,
@@ -257,14 +239,4 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for WorkflowInstanceStar
             self.input.document_identity.clone(),
         )
     }
-}
-
-fn content_identity(bytes: &[u8]) -> [u8; 32] {
-    let mut identity = [0_u8; 32];
-    let mut accumulator = 0xcbf2_9ce4_8422_2325_u64;
-    for (index, byte) in bytes.iter().enumerate() {
-        accumulator = (accumulator ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
-        identity[index % identity.len()] ^= (accumulator >> ((index % 8) * 8)) as u8;
-    }
-    identity
 }

@@ -51,8 +51,9 @@ impl CompositeHistoryCatalog {
         let parent = CompositeCommitParent::Ordinary(crate::history::OrdinaryParent::new(
             expected.selected_commit().clone(),
         ));
+        let revision = Arc::clone(&lock_state(&self.state).publication_revision);
         let publication =
-            CanonicalPublicationEnvelope::reserve(identity.clone(), attempt, expected);
+            CanonicalPublicationEnvelope::reserve(identity.clone(), attempt, expected, revision);
         self.reserve_capacity(identity, parent, Some(publication))
     }
 
@@ -117,6 +118,8 @@ impl CompositeHistoryCatalog {
         // Populate the eventual indexes now. Promotion fills these resident
         // slots; it never asks either lookup index to allocate after effects.
         let slots = super::slots::ReservedHistorySlots::reserve(&mut state, &identity);
+        assert!(state.inspection_order.insert(identity.clone()));
+        state.publication_revision.advance();
         state.metadata.reserve_confirmed(preview);
         counters::lock_counters(&state.counters).record_metadata_reservation();
         let reservation = HistoryReservationMetadata {

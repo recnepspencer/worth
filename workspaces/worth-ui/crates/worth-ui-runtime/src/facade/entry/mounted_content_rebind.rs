@@ -44,6 +44,7 @@ enum WorthUiMountedContentPublication {
         appearance_succession: super::UiPreparedAppearanceGenerationSuccession,
         overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
         occurrence_geometry: crate::mounting::UiMountedOccurrenceGeometryState,
+        expressions: crate::runtime::expression::UiPreparedExpressionSuccession,
         pointer_succession:
             crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
         owners: crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
@@ -97,6 +98,7 @@ impl<'session> WorthUiPreparedMountedContentRebind<'session> {
         appearance_succession: super::UiPreparedAppearanceGenerationSuccession,
         overlay_bindings: crate::runtime::portal::UiPortalOverlayBindingLifecycle,
         occurrence_geometry: crate::mounting::UiMountedOccurrenceGeometryState,
+        expressions: crate::runtime::expression::UiPreparedExpressionSuccession,
         pointer_succession: crate::runtime::pointer_affordance::UiPreparedPointerAffordanceGenerationSuccession,
         owners: crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
     ) -> Result<Self, crate::runtime::rebind::UiRebindPreparationDenial> {
@@ -115,6 +117,7 @@ impl<'session> WorthUiPreparedMountedContentRebind<'session> {
                 appearance_succession,
                 overlay_bindings,
                 occurrence_geometry,
+                expressions,
                 pointer_succession,
                 owners,
             },
@@ -156,36 +159,12 @@ impl<'session> WorthUiPreparedMountedContentRebind<'session> {
                 };
             }
         }
-        if let WorthUiMountedContentPublication::AuthoredSuccessor {
-            pointer_succession,
-            owners,
-            appearance_succession,
-            authority,
-            ..
-        } = &self.publication
-        {
-            if pointer_succession
-                .validate_predecessor(
-                    &self.session.active_generation_identity(),
-                    self.session.pointer_affordance_snapshot.as_ref(),
-                    self.session
-                        .observation_clock
-                        .as_ref()
-                        .map(|clock| clock.sample_millis()),
-                    &self.session.mounted,
-                )
-                .is_err()
-                || !owners.matches_projection(self.session.appearance_owner_snapshot.as_ref())
-                || self
-                    .session
-                    .prepare_retained_appearance_owners(authority, appearance_succession)
-                    .is_err()
-            {
-                return WorthUiMountedContentRebindOutcome::AdmissionDenied {
-                    denial: crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
-                    retry: self,
-                };
-            }
+        if !self.publication.prepared_owners_are_current(self.session) {
+            return WorthUiMountedContentRebindOutcome::AdmissionDenied {
+                denial:
+                    crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
+                retry: self,
+            };
         }
         let Self {
             session,
@@ -306,18 +285,18 @@ fn finish<'session>(
                     appearance_succession,
                     overlay_bindings,
                     occurrence_geometry,
+                    expressions,
                     pointer_succession,
                     owners,
-                } => {
-                    let generations = session.application.commit_evidence_only_rebind(authority);
-                    session.commit_retained_appearance_succession(appearance_succession, owners);
-                    session.authored_overlay_bindings = overlay_bindings;
-                    session.pointer_affordance_snapshot = pointer_succession.into_snapshot();
-                    session
-                        .mounted
-                        .commit_retained_geometry_succession(occurrence_geometry);
-                    Some(generations)
-                }
+                } => Some(session.commit_evidence_only_successor(
+                    authority,
+                    appearance_succession,
+                    owners,
+                    overlay_bindings,
+                    expressions,
+                    pointer_succession,
+                    occurrence_geometry,
+                )),
             };
             WorthUiMountedContentRebindOutcome::Published(WorthUiMountedContentPublicationReceipt {
                 mounted: receipt,

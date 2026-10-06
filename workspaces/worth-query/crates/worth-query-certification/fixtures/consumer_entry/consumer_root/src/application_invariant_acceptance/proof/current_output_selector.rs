@@ -25,6 +25,7 @@ pub(super) fn producer_qualified_missing_and_stale(
 ) {
     publish_initial(request, application, "anchor-a");
     publish_initial(request, application, "sibling-a");
+    publish_initial(request, application, "remote-a");
 
     let outcome = execute_verification(
         request,
@@ -95,6 +96,13 @@ pub(super) fn producer_qualified_missing_and_stale(
         .basis()
         .version();
     assert_eq!(before, after, "stale selection must publish nothing");
+
+    let isolated = execute_verification(request, application, &[expectation("remote-a")], 967)
+        .expect("an unrelated producer remains selectable after the A-source edit");
+    assert!(
+        matches!(isolated, WorthQueryApplicationMutationOutcome::Committed { .. }),
+        "the unrelated current output must remain usable by a real handler and provider: {isolated:?}"
+    );
 }
 
 fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scope_key: &str) {

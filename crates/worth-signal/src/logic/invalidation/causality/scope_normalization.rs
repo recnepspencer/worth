@@ -6,7 +6,7 @@ use crate::logic::evaluation::EvaluationWork;
 
 pub(crate) fn normalize(
     mut scopes: Vec<PartitionSubscription>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<PartitionScopeSet, SignalError> {
     work.reserve(Some(scopes.len()))?;
     let mut comparison = 16;
@@ -17,7 +17,7 @@ pub(crate) fn normalize(
     }
     let count = scopes.len();
     let height = usize::BITS as usize - count.leading_zeros() as usize;
-    // Heap comparisons and moves, dedup, canonical validation and SmallVec
+    // Heap comparisons and moves, dedup, canonical validation and owned Vec
     // transfer. Strings move without deep copying during normalization.
     work.reserve((|| {
         count

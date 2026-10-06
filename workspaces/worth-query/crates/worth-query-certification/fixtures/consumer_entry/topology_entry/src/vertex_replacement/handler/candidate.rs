@@ -2,7 +2,6 @@ use super::*;
 use worth_query_consumer_values::PositiveLength;
 use worth_query_host::facade::primary_graph::{
     HandlerExecutionDenial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEntityKey,
-    WorthQueryApplicationOutputRole,
 };
 
 pub(super) fn replace_vertex<Schema: TopologySchemaBinding>(
@@ -89,22 +88,13 @@ fn bind_correspondence<Schema: TopologySchemaBinding>(
     retired: &WorthQueryApplicationEffectEntity<Schema, Body>,
 ) -> Result<(), HandlerExecutionDenial> {
     writer
-        .preserve_output(
-            WorthQueryApplicationOutputRole::from_static("anchor"),
-            anchor,
-        )
+        .preserve_output::<VertexReplacementAnchorOutput<Schema>>(anchor)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .create_output(
-            WorthQueryApplicationOutputRole::from_static("replacement"),
-            replacement,
-        )
+        .create_output::<VertexReplacementCreatedOutput<Schema>>(replacement)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .retire_output(
-            WorthQueryApplicationOutputRole::from_static("retired"),
-            retired,
-        )
+        .retire_output::<VertexReplacementRetiredOutput<Schema>>(retired)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(())
 }

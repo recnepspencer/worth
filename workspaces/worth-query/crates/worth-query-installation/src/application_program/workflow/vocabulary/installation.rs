@@ -5,7 +5,9 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef},
     application_operation::ApplicationMutationBinding,
-    application_program::{ApplicationWorkflowApprovalRef, ApplicationWorkflowSpec},
+    application_program::{
+        ApplicationExpressionOperandValue, ApplicationWorkflowApprovalRef, ApplicationWorkflowSpec,
+    },
     application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
     application_schema::{
         ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
@@ -101,8 +103,11 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        self.operations
-            .push(InstalledWorkflowOperation::declared::<Spec, Binding>());
+        let mut operation = InstalledWorkflowOperation::declared::<Spec, Binding>();
+        operation.inbound_ref = self
+            .schema
+            .installed_workflow_inbound_ref(Binding::Operation::IDENTIFIER);
+        self.operations.push(operation);
         Ok(self)
     }
 
@@ -131,14 +136,16 @@ where
         Ok(self)
     }
 
-    pub fn condition<Binding>(
+    /// Installs a query whose result condition expressions may read as an
+    /// operand.
+    pub fn condition_operand<Binding>(
         mut self,
     ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
     where
         Binding: ApplicationQueryBinding<Schema> + 'static,
         Binding::Query: ApplicationQueryMarkerIdentity<Schema> + 'static,
-        <Binding::Query as ApplicationQueryMarkerIdentity<Schema>>::ResultBinding:
-            ApplicationStructuredValueBinding<Value = bool>,
+        <<Binding::Query as ApplicationQueryMarkerIdentity<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+            ApplicationExpressionOperandValue,
     {
         self.insert_marker(
             6,

@@ -122,17 +122,12 @@ impl PreparedSerialStageBatch {
         lowered: LoweredSerialStage,
         stage_record: &mut StageExecutionRecord,
     ) -> Result<Self, SignalError> {
-        #[cfg(not(feature = "parallel"))]
-        let _ = stage_record;
-        #[cfg(feature = "parallel")]
-        {
-            stage_record.apply_mode = Some(crate::logic::planner::ParallelApplyMode::SerialApply);
-            stage_record.apply_group_count = 1;
-            stage_record.serial_apply_rejection_reason = lowered.serial_rejection_reason();
-            stage_record.serial_fallback_group_count =
-                u32::from(lowered.serial_rejection_reason().is_some());
-            stage_record.serial_apply_task_count = lowered.stage_width() as u32;
-        }
+        stage_record.apply_mode = Some(crate::logic::planner::ParallelApplyMode::SerialApply);
+        stage_record.apply_group_count = 1;
+        stage_record.serial_apply_rejection_reason = lowered.serial_rejection_reason();
+        stage_record.serial_fallback_group_count =
+            u32::from(lowered.serial_rejection_reason().is_some());
+        stage_record.serial_apply_task_count = lowered.stage_width() as u32;
 
         let mut reconcile_batch = Vec::with_capacity(lowered.exact_width.get());
         for task in &lowered.lowered_tasks {

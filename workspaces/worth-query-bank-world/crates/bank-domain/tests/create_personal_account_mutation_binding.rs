@@ -11,7 +11,8 @@ use bank_domain::{
 };
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+        ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationIntent,
+        ApplicationMutationScopeResolution,
     },
     application_schema::ApplicationStructuredValueBinding,
 };
@@ -85,7 +86,7 @@ fn personal_account_creation_binding_declares_its_complete_fixed_shape() {
     );
     assert_eq!(
         descriptor.candidates().resources().maximum_validator_work(),
-        16
+        Some(16)
     );
 }
 
@@ -124,37 +125,34 @@ fn personal_account_creation_intent_carries_institution_scope_and_typed_result()
 
 #[test]
 fn personal_account_creation_binding_canonicalizes_only_client_key_and_input() {
-    type Binding = CreatePersonalAccountMutationBinding;
-
-    let first_key = BankIdempotencyKey::new("open-household").unwrap();
-    let same_key = BankIdempotencyKey::new("open-household").unwrap();
-    let other_key = BankIdempotencyKey::new("open-savings").unwrap();
+    let key = |text: &str| BankIdempotencyKey::new(text).unwrap();
+    let key_identity = |text: &str| {
+        *ApplicationMutationIdentities::<BankSchema, CreatePersonalAccountMutationBinding>::encode(
+            &key(text),
+            &personal_account_input(7, 11, "Household"),
+        )
+        .expect("key encodes")
+        .key_identity()
+    };
     assert_eq!(
-        Binding::idempotency_key_identity(&first_key),
-        Binding::idempotency_key_identity(&same_key)
+        key_identity("open-household"),
+        key_identity("open-household")
     );
-    assert_ne!(
-        Binding::idempotency_key_identity(&first_key),
-        Binding::idempotency_key_identity(&other_key)
-    );
+    assert_ne!(key_identity("open-household"), key_identity("open-savings"));
 
-    let input = personal_account_input(7, 11, "Household");
-    assert_eq!(
-        Binding::input_identity(&input),
-        Binding::input_identity(&personal_account_input(7, 11, "Household"))
-    );
-    assert_ne!(
-        Binding::input_identity(&input),
-        Binding::input_identity(&personal_account_input(8, 11, "Household"))
-    );
-    assert_ne!(
-        Binding::input_identity(&input),
-        Binding::input_identity(&personal_account_input(7, 12, "Household"))
-    );
-    assert_ne!(
-        Binding::input_identity(&input),
-        Binding::input_identity(&personal_account_input(7, 11, "Savings"))
-    );
+    let input_identity = |institution, owner, name: &str| {
+        *ApplicationMutationIdentities::<BankSchema, CreatePersonalAccountMutationBinding>::encode(
+            &key("open-household"),
+            &personal_account_input(institution, owner, name),
+        )
+        .expect("input encodes")
+        .input_identity()
+    };
+    let baseline = input_identity(7, 11, "Household");
+    assert_eq!(baseline, input_identity(7, 11, "Household"));
+    assert_ne!(baseline, input_identity(8, 11, "Household"));
+    assert_ne!(baseline, input_identity(7, 12, "Household"));
+    assert_ne!(baseline, input_identity(7, 11, "Savings"));
 }
 
 fn personal_account_input(

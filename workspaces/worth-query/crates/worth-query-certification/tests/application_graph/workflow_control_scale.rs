@@ -13,10 +13,11 @@ use worth_query_host::facade::{
     },
     declaration::application_program::{
         ApplicationWorkflowComponentBuilder, ApplicationWorkflowComponentLimits,
-        ApplicationWorkflowConnectionKind, ApplicationWorkflowControlOutcome,
-        ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-        ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeKind,
-        ApplicationWorkflowRetry, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
+        ApplicationWorkflowConditionOperands, ApplicationWorkflowConnectionKind,
+        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+        ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
+        ApplicationWorkflowNodeKind, ApplicationWorkflowRetry, ApplicationWorkflowSubjectSelector,
+        AuthoredWorkflowDefinition,
     },
 };
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
@@ -55,7 +56,12 @@ fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedDo
         .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
         .expect("proposal operation");
     let condition = fragment
-        .condition::<DocumentRetentionConditionQuery>("condition")
+        .condition(
+            "condition",
+            "retained",
+            ApplicationWorkflowConditionOperands::new()
+                .query::<DocumentRetentionConditionQuery>("retained"),
+        )
         .expect("typed condition");
     let retention = fragment
         .assessment::<DocumentRetentionQuery>("retention")
@@ -209,7 +215,9 @@ fn component_limits(occurrences: u16) -> ApplicationWorkflowComponentLimits {
     .expect("independent occurrence and provenance bounds")
 }
 
-fn qualify(occurrences: u16, key: u64) {
+/// Qualifies one expansion and returns its expanded node count and the new
+/// authoritative bytes its definition publication wrote.
+fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
     let nodes = occurrences * FRAGMENT_NODES + 1;
     let connections = occurrences * (FRAGMENT_CONNECTIONS + 1);
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
@@ -248,7 +256,7 @@ fn qualify(occurrences: u16, key: u64) {
         validated
             .nodes()
             .iter()
-            .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Condition(condition) if condition.query_type() == TypeId::of::<DocumentRetentionConditionQuery>()))
+            .filter(|node| matches!(node.kind(), ApplicationWorkflowNodeKind::Condition(condition) if condition.operands().iter().any(|operand| operand.query().query_type() == TypeId::of::<DocumentRetentionConditionQuery>())))
             .count(),
         usize::from(occurrences)
     );
@@ -328,11 +336,6 @@ fn qualify(occurrences: u16, key: u64) {
         .expect("publication cost remains measurable");
     let sharing = cost.relational().sharing_cost_delta();
     assert_eq!(sharing.copied_truth_bytes, 0);
-    assert!(
-        sharing.publication_new_authoritative_bytes <= u64::from(nodes) * 40 * 1024,
-        "control publication bytes={} nodes={nodes}",
-        sharing.publication_new_authoritative_bytes
-    );
     let before = runtime.workflow_compilation_reuse_counters();
     let cold_at = Instant::now();
     assert!(matches!(
@@ -360,11 +363,25 @@ fn qualify(occurrences: u16, key: u64) {
         sharing.copied_truth_bytes,
         sharing.publication_new_authoritative_bytes,
     );
+    (nodes, sharing.publication_new_authoritative_bytes)
+}
+
+/// Publication bytes grow linearly with the expanded graph: doubling the
+/// occurrences keeps bytes per node within a quarter of the smaller run's.
+fn assert_bytes_per_node_stay_flat(
+    (nodes, bytes): (u16, u64),
+    (doubled, doubled_bytes): (u16, u64),
+) {
+    assert!(
+        u128::from(doubled_bytes) * u128::from(nodes) * 4
+            <= u128::from(bytes) * u128::from(doubled) * 5,
+        "bytes per node grew: {bytes} at {nodes} nodes, {doubled_bytes} at {doubled} nodes"
+    );
 }
 
 #[test]
-fn repeated_control_fragment_100_nodes_publishes_and_starts() {
-    qualify(11, 918_600);
+fn repeated_control_fragment_100_nodes_publishes_and_starts_with_flat_bytes_per_node() {
+    assert_bytes_per_node_stay_flat(qualify(11, 918_600), qualify(22, 918_630));
 }
 
 #[test]

@@ -13,7 +13,7 @@ pub(crate) fn contract_candidate_kind_matches(
 }
 
 pub(crate) fn entity_kind_in_state(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     entity_id: crate::identity::data::EntityId,
 ) -> Result<Option<crate::identity::data::KindId>, InvariantViolation> {
@@ -75,7 +75,7 @@ pub(crate) fn entity_kind_in_state(
 }
 
 pub(crate) fn entity_reference_kind(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     entity_reference: &EntityReference,
 ) -> Result<Option<crate::identity::data::KindId>, InvariantViolation> {
@@ -86,11 +86,14 @@ pub(crate) fn entity_reference_kind(
 }
 
 fn created_entity_kind_in_plan(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     created: &CreatedEntityRef,
 ) -> Option<crate::identity::data::KindId> {
     let merged_plan = context.merged_plan()?;
     for intent in &merged_plan.merged_intents {
+        if !context.checkpoint(1) {
+            return None;
+        }
         match intent {
             crate::transactions::data::MutationIntent::Create(
                 crate::transactions::data::CreateIntent::Entity(spec),
@@ -102,14 +105,15 @@ fn created_entity_kind_in_plan(
             }
             crate::transactions::data::MutationIntent::Create(
                 crate::transactions::data::CreateIntent::BulkEntities(spec),
-            ) if spec.partition_id == created.partition_id
-                && spec.kind_id == created.kind_id
-                && spec
-                    .client_keys
-                    .iter()
-                    .any(|key| key == &created.client_key) =>
-            {
-                return Some(spec.kind_id);
+            ) if spec.partition_id == created.partition_id && spec.kind_id == created.kind_id => {
+                for key in &spec.client_keys {
+                    if !context.checkpoint(1) {
+                        return None;
+                    }
+                    if key == &created.client_key {
+                        return Some(spec.kind_id);
+                    }
+                }
             }
             _ => {}
         }

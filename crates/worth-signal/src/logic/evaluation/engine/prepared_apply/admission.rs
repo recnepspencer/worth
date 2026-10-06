@@ -1,5 +1,4 @@
 use crate::data::comparator::ComparatorPolicyResolver;
-#[cfg(feature = "parallel")]
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::dependency::DependencySnapshotId;
 use crate::data::error::SignalError;
@@ -7,6 +6,7 @@ use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::data::output::NodeEvaluationResult;
 use crate::data::reuse::{ReuseBoundaryAuthority, ReuseBoundaryContext, ReuseBoundaryEvidence};
+use crate::logic::evaluation::EvaluationWork;
 
 pub(super) fn resolve_effect_reuse_boundary(
     graph: &SignalGraph,
@@ -49,7 +49,6 @@ pub(super) fn resolve_effect_reuse_boundary(
     Ok((authority, None))
 }
 
-#[cfg(feature = "parallel")]
 pub(super) fn resolve_effect_reuse_boundary_with_policy(
     graph: &SignalGraph,
     node: NodeId,
@@ -58,17 +57,19 @@ pub(super) fn resolve_effect_reuse_boundary_with_policy(
     keyed: Option<&crate::logic::prepared::PreparedKeyedContext>,
     strategy: Option<crate::data::reuse::ReuseStrategy>,
     previous: Option<&ReuseBoundaryAuthority>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(ReuseBoundaryAuthority, Option<ReuseBoundaryContext>), SignalError> {
     if retains_reuse_boundary_detail(graph, strategy) {
         let detail = hydrate_reuse_topology_boundary_from_previous(
             graph,
             node,
-            crate::logic::evaluation::resolve_reuse_boundary_context_with_policy(
+            crate::logic::evaluation::resolve_reuse_boundary_context_with_policy_observed(
                 graph,
                 node,
                 comparator_policy,
                 result,
                 keyed,
+                work,
             )?,
             previous,
         )?;
@@ -76,6 +77,20 @@ pub(super) fn resolve_effect_reuse_boundary_with_policy(
         return Ok((authority, Some(detail)));
     }
 
+    if keyed
+        .and_then(|prepared| prepared.persistent_correspondence.as_ref())
+        .is_none()
+        && keyed.is_none_or(|prepared| prepared.composition_regions.is_empty())
+    {
+        if let Some(output) = result {
+            crate::data::proof::PartitionScopeSet::admit_regions_copy_work(
+                output.changed_regions.as_slice(),
+                1,
+                1,
+                work,
+            )?;
+        }
+    }
     let authority = hydrate_reuse_topology_boundary_authority_from_previous(
         graph,
         node,

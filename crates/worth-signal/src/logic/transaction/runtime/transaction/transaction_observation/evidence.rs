@@ -52,7 +52,7 @@ struct ClassifiedObservationEvent {
     policy: ObservationPolicy,
     observed_nodes: ObservedNodeSet,
     matched_nodes: BTreeSet<NodeId>,
-    touched: bool,
+    visited: bool,
     recomputed: bool,
     meaningful_change: bool,
 }
@@ -65,7 +65,7 @@ impl ClassifiedObservationEvent {
             policy: candidate.policy,
             observed_nodes: candidate.observed_nodes.clone(),
             matched_nodes: candidate.matched_nodes.clone(),
-            touched: true,
+            visited: true,
             recomputed: false,
             meaningful_change: false,
         }
@@ -74,7 +74,7 @@ impl ClassifiedObservationEvent {
     fn absorb_candidate(&mut self, candidate: &StagedObservationCandidate) {
         self.matched_nodes
             .extend(candidate.matched_nodes.iter().copied());
-        self.touched = true;
+        self.visited = true;
     }
 
     fn mark_recomputed(&mut self) {
@@ -86,13 +86,13 @@ impl ClassifiedObservationEvent {
     }
 
     fn mark_resource_lifecycle_change(&mut self) {
-        self.touched = true;
+        self.visited = true;
         self.meaningful_change = true;
     }
 
     fn trigger_matched(&self) -> bool {
         match self.policy.trigger() {
-            ObservationTrigger::Touched => self.touched,
+            ObservationTrigger::Visited => self.visited,
             ObservationTrigger::Recomputed => self.recomputed,
             ObservationTrigger::MeaningfulChange => self.meaningful_change,
         }
@@ -105,7 +105,7 @@ impl ClassifiedObservationEvent {
             policy: self.policy,
             observed_nodes: self.observed_nodes.clone(),
             matched_nodes: ObservedNodeSet::from_nodes(self.matched_nodes.iter().copied()),
-            touched: self.touched,
+            visited: self.visited,
             recomputed: self.recomputed,
             meaningful_change: self.meaningful_change,
             trigger_matched: self.trigger_matched(),
@@ -122,7 +122,7 @@ impl ClassifiedObservationEvent {
             policy: self.policy,
             observed_nodes: self.observed_nodes.clone(),
             matched_nodes: ObservedNodeSet::from_nodes(self.matched_nodes.iter().copied()),
-            touched: self.touched,
+            visited: self.visited,
             recomputed: self.recomputed,
             meaningful_change: self.meaningful_change,
             trigger_matched: self.trigger_matched(),
@@ -258,10 +258,10 @@ impl TransactionObservationScratch {
                 .map(|candidate| candidate.matched_nodes.len())
                 .sum(),
             classified_event_count: self.classified_events.len(),
-            touched_event_count: self
+            visited_event_count: self
                 .classified_events
                 .values()
-                .filter(|event| event.touched)
+                .filter(|event| event.visited)
                 .count(),
             recomputed_event_count: self
                 .classified_events

@@ -28,7 +28,7 @@ pub(super) fn workflow_definition_intent_identity<Spec: ApplicationWorkflowSpec>
     branch: WorthQueryProductBranch,
     predecessor: &WorkflowDefinitionExpectedPredecessor,
     assessment_bindings: &[(String, &'static str)],
-    condition_bindings: &[(String, &'static str)],
+    condition_bindings: &[worth_query_installation::facade::WorthQueryInstalledWorkflowConditionBinding],
     approval_bindings: &[worth_query_installation::facade::WorthQueryInstalledWorkflowApprovalBinding],
 ) -> Result<[u8; 32], ()> {
     let (predecessor_kind, predecessor_entity, predecessor_content) = match predecessor {
@@ -95,16 +95,21 @@ pub(super) fn workflow_definition_intent_identity<Spec: ApplicationWorkflowSpec>
             text(*binding),
         ));
     }
-    for (index, (path, binding)) in condition_bindings.iter().enumerate() {
+    for (index, binding) in condition_bindings.iter().enumerate() {
         entries.push(entry(
             format!("condition.{index}.path"),
             CanonicalBasisEntryKind::Locator,
-            text(path),
+            text(&binding.node_path),
+        ));
+        entries.push(entry(
+            format!("condition.{index}.operand"),
+            CanonicalBasisEntryKind::Locator,
+            text(&*binding.operand),
         ));
         entries.push(entry(
             format!("condition.{index}.binding"),
             CanonicalBasisEntryKind::Identity,
-            text(*binding),
+            text(binding.binding),
         ));
     }
     for (index, binding) in approval_bindings.iter().enumerate() {

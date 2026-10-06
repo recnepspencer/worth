@@ -17,6 +17,11 @@ footprint, and decision evidence. This milestone independently owns their reuse
 lifecycle. Reuse closes last because it may substitute only artifacts whose
 complete meaning is already settled; it is not a Milestone 9.17 branch phase.
 
+[Milestone 9.17.6.3](./milestone-9.17.6.3.md) supplies `DeterminismContract`
+and per-partition reuse keyed by computation, edition, partition and read
+basis. This milestone adds occurrence identity, certification purpose and
+cross-attempt sharing on top of that reuse, not a second reuse key.
+
 ## Adversarial Constraint
 
 Equal-content artifacts arise from distinct required observations. One

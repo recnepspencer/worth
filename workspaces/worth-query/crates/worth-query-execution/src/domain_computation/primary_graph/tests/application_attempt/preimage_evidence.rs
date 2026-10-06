@@ -1,8 +1,14 @@
 //! Exact reusable commit evidence and demanded-work breadth proofs.
 
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+    WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
+};
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
 use super::{authenticated_principal, idempotency, live_scope, resolved_account};
+use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
 use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, Account, AccountLabel, AccountStatus, AuthorizationWorld,
     ExactStatusRetentionInput, ExactStatusRetentionOperation, IdentityExecutionSchema, Principal,
@@ -10,15 +16,29 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEntityIdentity, WorthQueryApplicationOutputRole,
-    WorthQueryAuthenticatedPrincipal, WorthQueryPreserveOutput,
+    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
 };
 
-pub(in crate::domain_computation::primary_graph) struct RetentionOutputBinding;
+/// The output contract the retention program is given in place of its
+/// operation's own, so its receipt carries one retained output.
+pub(in crate::domain_computation::primary_graph) struct RetentionOutputs;
 
-pub(in crate::domain_computation::primary_graph) const RETAINED_ACCOUNT_OUTPUT:
-    WorthQueryApplicationOutputRole<RetentionOutputBinding, Account, WorthQueryPreserveOutput> =
-    WorthQueryApplicationOutputRole::from_static("retained-account");
+impl ApplicationMutationOutputContract<IdentityExecutionSchema> for RetentionOutputs {
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[<RetainedAccount as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+}
+
+/// The retained account, preserved by the retention program.
+pub(in crate::domain_computation::primary_graph) struct RetainedAccount;
+
+impl WorthQueryApplicationOutputRole for RetainedAccount {
+    type Schema = IdentityExecutionSchema;
+    type Contract = RetentionOutputs;
+    type Entity = Account;
+    type Action = WorthQueryPreserveOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "retained-account";
+}
 
 #[test]
 fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
@@ -65,6 +85,15 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         RetentionMutationBreadth::Narrow,
     );
 
+    let readmitted_interleave = retained_status_program(
+        &world,
+        &principal,
+        &unrelated,
+        &request,
+        "changed-between",
+        RetentionMutationBreadth::Narrow,
+    );
+
     world.faults.lose_next_commit_response();
     let outcome = world
         .application
@@ -82,34 +111,17 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let outcome = world
         .application
         .compare_and_commit_application(interleaved, idempotency(83, 84));
-    super::assert_product_basis_stale(
-        outcome,
-        "the preadmitted independent interleave bound to the prior product",
-    );
-    assert_eq!(commit_count(), baseline + 1);
-    assert_eq!(
-        world
-            .application
-            .product_runtime()
-            .admit_product_branch(world.application.product_runtime().default_branch())
-            .unwrap()
-            .selected_commit(),
-        after_original.selected_commit()
-    );
+    let WorthQueryApplicationCommitOutcome::Committed(interleave_receipt) = outcome else {
+        panic!("independent retained decision must commit: {outcome:?}");
+    };
+    assert_eq!(commit_count(), baseline + 2);
+    assert_retained_status(&interleave_receipt, "unrelated");
 
-    let readmitted_interleave = retained_status_program(
-        &world,
-        &principal,
-        &unrelated,
-        &request,
-        "changed-between",
-        RetentionMutationBreadth::Narrow,
-    );
     assert!(matches!(
         world
             .application
             .compare_and_commit_application(readmitted_interleave, idempotency(83, 84)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
     let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
@@ -325,10 +337,10 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .complete_projected_dependencies()
         .unwrap()
         .begin_effect_program();
-    effects.prepare_output_role_for_test(RETAINED_ACCOUNT_OUTPUT, "Account");
+    effects.prepare_output_contract_for_test::<RetentionOutputs>();
     let account = effects.existing_entity(account).unwrap();
     effects
-        .bind_output(RETAINED_ACCOUNT_OUTPUT, &account)
+        .bind_output(OutputRoleUse::fixed::<RetainedAccount>(), &account)
         .expect("retained account output belongs to this effect program");
     effects
         .write_field(&account, AccountStatus::reference(), replacement.to_owned())

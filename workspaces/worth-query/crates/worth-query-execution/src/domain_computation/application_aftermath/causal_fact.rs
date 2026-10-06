@@ -104,4 +104,9 @@ impl WorthQueryCommittedAftermathCausality {
     pub const fn parent_commit_id(&self) -> CommitId {
         self.parent.commit_id
     }
+
+    /// Whether this sealed fact is the one `pending` asked to co-commit.
+    pub(crate) fn answers(&self, pending: &WorthQueryPendingAftermathCausality) -> bool {
+        self.role == pending.role && self.parent == pending.parent
+    }
 }

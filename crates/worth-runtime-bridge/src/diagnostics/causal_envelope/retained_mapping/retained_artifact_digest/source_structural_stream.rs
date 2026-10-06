@@ -99,6 +99,8 @@ fn delivery_error_kind_label(value: BridgeDeliveryErrorKind) -> &'static str {
         }
         BridgeDeliveryErrorKind::SnapshotAcquisitionFailure => "snapshot-acquisition-failure",
         BridgeDeliveryErrorKind::SnapshotReadFailure => "snapshot-read-failure",
+        BridgeDeliveryErrorKind::ExecutionCancelled => "execution-cancelled",
+        BridgeDeliveryErrorKind::ExecutionDeadlineElapsed => "execution-deadline-elapsed",
         BridgeDeliveryErrorKind::SnapshotReadContractViolation => {
             "snapshot-read-contract-violation"
         }

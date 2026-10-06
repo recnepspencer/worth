@@ -14,6 +14,17 @@ impl CompiledWorkflowNodeKind {
                 input_type,
                 ..
             } => operation.len().saturating_add(input_type.len()),
+            Self::AwaitInbound {
+                origin,
+                effect,
+                protocol,
+                source_identity,
+                ..
+            } => origin
+                .len()
+                .saturating_add(effect.len())
+                .saturating_add(protocol.identity().as_str().len())
+                .saturating_add(source_identity.len()),
             Self::Assessment {
                 query,
                 parameter_type,
@@ -38,16 +49,7 @@ impl CompiledWorkflowNodeKind {
                         .saturating_add(from.len())
                         .saturating_add(to.len()),
                 }),
-            Self::Condition {
-                query,
-                parameter_type,
-                result_type,
-                binding,
-            } => query
-                .len()
-                .saturating_add(parameter_type.len())
-                .saturating_add(result_type.len())
-                .saturating_add(binding.len()),
+            Self::Condition(condition) => condition.retained_string_bytes(),
             Self::Approval {
                 capability,
                 capability_type,

@@ -1,7 +1,7 @@
 macro_rules! estate_identity {
     ($($name:ident),+ $(,)?) => {
         $(
-            #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+            #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, serde::Serialize)]
             pub struct $name(u64);
 
             impl $name {
@@ -40,7 +40,7 @@ estate_identity!(
     MandatoryReviewId,
 );
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
 pub struct EstateMoment(u64);
 
 impl EstateMoment {
@@ -53,7 +53,7 @@ impl EstateMoment {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
 pub struct DelegationLimit(u8);
 
 impl DelegationLimit {

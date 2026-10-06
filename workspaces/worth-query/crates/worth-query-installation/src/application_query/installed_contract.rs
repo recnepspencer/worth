@@ -34,6 +34,34 @@ pub struct WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryR
     _marker: PhantomData<fn(Parameters) -> (Schema, Query, QueryResult, Scope)>,
 }
 
+/// One retained view of the exact installed Query's immutable obligation set.
+/// The already installed compiled Arc owns the rows; sharing it makes no row
+/// copies and cannot select obligations from a different Query.
+pub struct WorthQueryRetainedApplicationQueryGraphObligations {
+    compiled: Arc<WorthQueryCompiledApplicationQuery>,
+}
+
+impl WorthQueryRetainedApplicationQueryGraphObligations {
+    pub fn inspect(&self) -> WorthQueryInstalledGraphObligationInspection<'_> {
+        self.compiled.graph_obligations()
+    }
+
+    #[doc(hidden)]
+    pub fn installed_set(&self) -> &WorthQueryInstalledGraphObligationSet {
+        self.compiled.graph_obligation_set()
+    }
+}
+
+impl std::fmt::Debug for WorthQueryRetainedApplicationQueryGraphObligations {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let inspection = self.inspect();
+        formatter
+            .debug_struct("WorthQueryRetainedApplicationQueryGraphObligations")
+            .field("identity", inspection.identity())
+            .finish()
+    }
+}
+
 impl<Schema, Query, Parameters, QueryResult, Scope>
     WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>
 {
@@ -109,6 +137,18 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     pub fn retain_graph_obligations_for_admission(&self) -> WorthQueryInstalledGraphObligationSet {
         self.compiled.retain_graph_obligations()
     }
+
+    /// Admit the actual shared-Arc visit before retaining these installed
+    /// obligations for a Graph Work plan. No new row backing is allocated.
+    pub fn retain_graph_obligations_for_admission_admitted<Stop>(
+        &self,
+        mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<WorthQueryRetainedApplicationQueryGraphObligations, Stop> {
+        admit(1, 0)?;
+        Ok(WorthQueryRetainedApplicationQueryGraphObligations {
+            compiled: Arc::clone(&self.compiled),
+        })
+    }
     pub fn basis_support(&self) -> ApplicationQueryBasisSupport {
         self.compiled.basis_support()
     }
@@ -117,6 +157,12 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     }
     pub(crate) fn authority_matches(&self, package: &WorthQueryInstalledPackageAuthority) -> bool {
         self.compiled.authority_matches(package)
+    }
+
+    /// Before-work bound for the installed identity and seal check performed
+    /// by `InstalledApplicationSchema::validate_installed_query`.
+    pub fn validation_work_bound(&self) -> Option<u64> {
+        super::authority_seal::installed_query_validation_work_bound()
     }
     #[cfg(test)]
     pub(crate) fn shares_compiled_contract_with(&self, other: &Self) -> bool {

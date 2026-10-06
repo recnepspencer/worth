@@ -30,6 +30,15 @@ pub(super) fn assemble_application_runtime<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
+    // Output-lineage history keeps the generations the invalidation window keeps.
+    let history_positions = std::num::NonZeroUsize::new(
+        graph
+            .product_world_resources
+            .invalidation_resources()
+            .installation()
+            .maximum_retained_positions,
+    )
+    .expect("installed invalidation resources retain at least one position");
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph.prepare_product_source(&graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
@@ -43,6 +52,9 @@ where
         WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         denial.detail(),
     ))?;
+    graph
+        .primary_provider
+        .install_world_history(product_runtime.owner.lifecycle_port());
     let runtime_authority = graph.runtime.authority_identity();
     let schema_binding = installed_schema.binding_identity();
     let application_readiness_schema_token = format!(
@@ -84,6 +96,31 @@ where
             std::sync::Arc::clone(&authorization_clock),
         ),
     );
+    let obligation_budget = graph
+        .runtime
+        .output_demand_resource_profile()
+        .registry_obligation_retained_bytes();
+    let required_budget = graph
+        .runtime
+        .output_demand_resource_profile()
+        .registry_required_retained_bytes();
+    let record_budget = graph
+        .runtime
+        .output_demand_resource_profile()
+        .registry_record_retained_bytes();
+    graph
+        .primary_provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .install_lineage_retention(
+            graph
+                .runtime
+                .output_demand_resource_profile()
+                .lineage_retained_bytes(),
+            history_positions,
+        );
     Ok(WorthQueryPrimaryGraphApplicationRuntime {
         runtime: graph.runtime,
         installed_schema,
@@ -107,6 +144,10 @@ where
         basis_leases: Default::default(),
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
         external_effect_transport: std::sync::OnceLock::new(),
+        inbound_verifiers: std::sync::Mutex::new(std::collections::BTreeMap::new()),
+        inbound_custody: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
+        transport_completion_custody: std::sync::Mutex::new(Default::default()),
+        inbound_maintenance_turn: std::sync::atomic::AtomicU64::new(0),
         recovery_handles,
         mutation_handlers,
         mutation_projection,
@@ -115,7 +156,7 @@ where
         output_readiness_routes,
         next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
         next_application_mutation_partition: std::sync::atomic::AtomicU32::new(1),
-        output_demands: Default::default(),
+        output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::with_budgets(obligation_budget, record_budget, required_budget),
         recovered_outputs: Default::default(),
         program_required_bindings,
         program_required_operations,

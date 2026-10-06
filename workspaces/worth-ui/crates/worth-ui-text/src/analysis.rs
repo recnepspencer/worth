@@ -133,11 +133,6 @@ impl UiAnalyzedTextParagraph {
     pub const fn text_scale_generation(&self) -> worth_ui_host_contract::UiTextScaleGeneration {
         self.admitted.text_scale_generation()
     }
-    pub const fn request_identity(
-        &self,
-    ) -> worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity {
-        self.admitted.request_identity()
-    }
     pub(crate) const fn capacity(&self) -> crate::admission::UiTextCapacityReservation {
         self.admitted.capacity()
     }

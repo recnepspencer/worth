@@ -82,10 +82,15 @@ impl super::WorthUiActiveApplicationSession {
                 {
                     return Outcome::Expired(Expiry::ObservationNotAdmitted);
                 }
+                let Some(decision) = observation.inspection_decision(
+                    self.application.prepared_authority().expression_catalog(),
+                ) else {
+                    return Outcome::Expired(Expiry::ObservationNotAdmitted);
+                };
                 (
                     Some(observation.graph_node().digest()),
                     Some(observation.route().into()),
-                    observation.inspection_decision(),
+                    decision,
                 )
             }
             Some(Err(denial)) => (None, None, Decision::Unavailable(denial.inspection())),

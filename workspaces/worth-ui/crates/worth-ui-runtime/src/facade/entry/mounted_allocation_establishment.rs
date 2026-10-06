@@ -175,8 +175,16 @@ impl WorthUiActiveApplicationSession {
                     WorthUiMountedAllocationRuntimeStage::CatalogPreparation,
                 )
             })?;
+        let generation_succession = graph_successor.generation_succession();
+        let expressions = self.prepare_expression_succession(
+            &crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+                self.session_identity(),
+                generation_succession.successor(),
+            ),
+            &std::sync::Arc::clone(self.application.prepared_authority().expression_catalog()),
+        );
         let pointer = self
-            .prepare_pointer_graph_succession(&graph_successor.generation_succession())
+            .prepare_pointer_graph_succession(&generation_succession, &expressions)
             .map_err(|_| {
                 WorthUiMountedAllocationEstablishmentDenial::StalePointerBindingGeneration
             })?;
@@ -200,6 +208,7 @@ impl WorthUiActiveApplicationSession {
         self.pointer_affordance_snapshot = pointer.into_snapshot();
         self.authored_overlay_bindings
             .commit_graph_succession(overlay_succession);
+        self.follow_application_generation(expressions);
         Ok(WorthUiMountedAllocationEstablishmentReceipt { committed })
     }
 

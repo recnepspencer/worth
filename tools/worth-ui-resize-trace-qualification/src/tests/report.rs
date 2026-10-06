@@ -59,6 +59,38 @@ fn passing(interval: f64) -> Analysis {
 }
 
 #[test]
+fn the_report_lists_only_the_stages_traced() {
+    let mut analysis = passing(16.0);
+    analysis.work.stage_ms[8] = vec![4.0, 2.0, 6.0];
+    analysis.work.swapchains = vec![[1024, 768]];
+    let report = render(&analysis, &capture(true, 60)).0;
+    assert!(report.contains("  draw: 3: 4.0 ms, 6.0 ms, 6.0 ms, 12.0 ms\n"));
+    assert!(report.contains("swapchain configurations during the drag: 1 [[1024, 768]]\n"));
+    assert!(!report.contains("  frame: "));
+}
+
+#[test]
+fn the_report_summarizes_presentation_work_per_frame() {
+    let mut analysis = passing(16.0);
+    analysis.work.presentation = (1..=20)
+        .map(|frame| {
+            let mut counts = [0; crate::work::PRESENTATION_WORK.len()];
+            counts[0] = frame;
+            counts
+        })
+        .collect();
+    let report = render(&analysis, &capture(true, 60)).0;
+    assert!(report.contains("presentation work over 20 submitted frames"));
+    assert!(report.contains("  demand glyphs: 10, 19, 20, 210\n"));
+    assert!(report.contains("  vertex glyphs: 0, 0, 0, 0\n"));
+    assert!(report.contains("  allocations: not counted (build Pulse with"));
+
+    analysis.work.allocations = vec![5, 1, 3];
+    let report = render(&analysis, &capture(true, 60)).0;
+    assert!(report.contains("  allocations: 3, 5, 5, 9\n"));
+}
+
+#[test]
 fn a_run_meeting_every_threshold_passes() {
     assert_eq!(render(&passing(16.0), &capture(true, 60)).1, Verdict::Pass);
 }

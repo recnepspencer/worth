@@ -11,7 +11,15 @@ use crate::domain_computation::primary_graph::provider::{
     WorthQueryPrimaryGraphProvider,
 };
 
+#[path = "provider_registration/consumed_capacity.rs"]
+mod consumed_capacity;
+#[path = "provider_registration/output_contract.rs"]
+mod output_contract;
+#[path = "provider_registration/published_causality.rs"]
+mod published_causality;
+
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphApplicationAttempt {
+    required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     affinity: WorthQueryApplicationAttemptAffinity,
     outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
     decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
@@ -27,11 +35,15 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     validator_work_admission:
         super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    indexed_rebase_work_budget: usize,
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
     >,
     publication_recovery_reservation: Option<
         crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation,
+    >,
+    outstanding_dispatch_reservation: Option<
+        crate::domain_computation::primary_graph::provider::OutstandingDispatchReservation,
     >,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
@@ -40,26 +52,16 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     output_currentness_facts: Option<
         std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
     >,
-}
-
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
-    outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
-    emitted_effect_count: usize,
-}
-
-impl WorthQueryPublishedApplicationCausality {
-    pub(in crate::domain_computation::primary_graph) const fn outcome_identity(
-        &self,
-    ) -> WorthQueryApplicationCommitOutcomeIdentity {
-        self.outcome_identity
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn emitted_effect_count(&self) -> usize {
-        self.emitted_effect_count
-    }
+    consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn take_required_output_demand(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext> {
+        self.required_output_demand.take()
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn affinity(
         &self,
     ) -> &WorthQueryApplicationAttemptAffinity {
@@ -83,6 +85,21 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             .values()
             .filter_map(|fact| fact.observed_source_fact().cloned())
             .collect()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn consumed_outputs(
+        &self,
+    ) -> &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]
+    {
+        &self.consumed_outputs
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_consumed_outputs(
+        &self,
+    ) -> std::sync::Arc<
+        [crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
+    > {
+        std::sync::Arc::clone(&self.consumed_outputs)
     }
 
     pub(in crate::domain_computation::primary_graph) fn expected_steps(
@@ -136,6 +153,12 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.validator_work_admission
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn indexed_rebase_work_budget(
+        &self,
+    ) -> usize {
+        self.indexed_rebase_work_budget
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn producer_required_invariants(
         &self,
     ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
@@ -177,6 +200,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     ) -> Result<(bool, bool, bool), &'static str> {
         assert!(self.live_delivery_reservation.is_none());
         assert!(self.publication_recovery_reservation.is_none());
+        assert!(self.outstanding_dispatch_reservation.is_none());
+        let outstanding = provider.reserve_outstanding_dispatch(
+            self.dispatch_outbox
+                .as_ref()
+                .map(|pending| pending.record()),
+            self.affinity.product_publication().observation(),
+        )?;
         let publication_recovery = provider.reserve_application_publication_recovery(
             self.affinity.product_publication().observation(),
         )?;
@@ -189,6 +219,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         let client = self.retain_client_observation;
         self.live_delivery_reservation = Some(reservation);
         self.publication_recovery_reservation = Some(publication_recovery);
+        self.outstanding_dispatch_reservation = outstanding;
         Ok((live, demand, client))
     }
 
@@ -201,21 +232,11 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             .expect("World publication reserved bounded recovery custody before owner effects")
     }
 
-    pub(in crate::domain_computation::primary_graph) fn publish_causality(
-        self,
-        provider: &WorthQueryPrimaryGraphProvider,
-        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
-    ) -> WorthQueryPublishedApplicationCausality {
-        let emitted_effect_count = provider.publish_application_commit_causality(
-            self.live_delivery_reservation
-                .expect("World publication reserved live causality before owner effects"),
-            publication,
-            self.effects.into_emissions(),
-        );
-        WorthQueryPublishedApplicationCausality {
-            outcome_identity: self.outcome_identity,
-            emitted_effect_count,
-        }
+    pub(in crate::domain_computation::primary_graph) fn take_outstanding_dispatch_reservation(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::OutstandingDispatchReservation>
+    {
+        self.outstanding_dispatch_reservation.take()
     }
 }
 
@@ -273,6 +294,7 @@ impl WorthQueryPrimaryGraphProvider {
         registration: WorthQueryApplicationAttemptRegistration<'a>,
     ) -> Result<WorthQueryPreparedApplicationAttempt, &'static str> {
         let super::WorthQueryApplicationAttemptRegistration {
+            required_output_demand,
             effect_owner: _effect_owner,
             affinity,
             mut decision_facts,
@@ -285,10 +307,12 @@ impl WorthQueryPrimaryGraphProvider {
             aftermath_causality,
             conditional_definition,
             validator_work_admission,
+            indexed_rebase_work_budget,
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
             output_currentness_facts,
+            mut consumed_outputs,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -315,8 +339,10 @@ impl WorthQueryPrimaryGraphProvider {
         let dispatch_outbox_record = dispatch_outbox
             .as_ref()
             .map(|pending| pending.record().clone());
+        consumed_capacity::admit_backing(self, &mut consumed_outputs)?;
         Ok(WorthQueryPreparedApplicationAttempt {
             attempt: WorthQueryPrimaryGraphApplicationAttempt {
+                required_output_demand,
                 affinity,
                 outcome_identity,
                 decision_facts,
@@ -327,12 +353,15 @@ impl WorthQueryPrimaryGraphProvider {
                 dispatch_outbox,
                 conditional_definition,
                 validator_work_admission,
+                indexed_rebase_work_budget,
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
+                outstanding_dispatch_reservation: None,
                 retain_output_demand_observation,
                 retain_client_observation,
                 producer_required_invariants,
                 output_currentness_facts,
+                consumed_outputs: std::sync::Arc::from(consumed_outputs),
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

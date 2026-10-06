@@ -57,3 +57,20 @@ pub enum CanonicalBasisValue {
     UuidBytes([u8; 16]),
     NestedSequence(u32),
 }
+
+impl CanonicalBasisValue {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        match self {
+            Self::ExactText(value) | Self::DecimalText(value) | Self::BigIntText(value) => {
+                value.owned_allocation_capacity_bytes()
+            }
+            Self::RationalText {
+                numerator,
+                denominator,
+            } => numerator
+                .owned_allocation_capacity_bytes()
+                .saturating_add(denominator.owned_allocation_capacity_bytes()),
+            _ => 0,
+        }
+    }
+}

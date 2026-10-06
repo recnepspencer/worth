@@ -3,7 +3,7 @@ use worth_foundational::facade::{
     CanonicalFieldPath, FieldKey, LocatorAuthority, PortableAspectContractBasis,
 };
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, RelationId};
-use worth_relational::facade::indexes::DerivedIndexId;
+use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
@@ -88,7 +88,7 @@ fn field_presence_values_and_relation_sets_are_distinct_dependencies() {
 }
 
 #[test]
-fn unsupported_index_selection_never_becomes_a_partial_reusable_fact_set() {
+fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
     let entity = EntityId::new(PartitionId::main(), 17, 2);
     let comparable = WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity };
     let selection = WorthQueryApplicationObservedFact::IndexedEntitySelection {
@@ -102,13 +102,22 @@ fn unsupported_index_selection_never_becomes_a_partial_reusable_fact_set() {
         value: AspectValue::UInt64(7),
         candidate_limit: 1,
         candidates: vec![entity],
+        definition: index_definition(
+            DerivedIndexId(5),
+            AspectFieldLocator::new(
+                LocatorAuthority::Authoritative,
+                AspectKey::new("test.aspect").unwrap(),
+                CanonicalFieldPath::single(FieldKey::new("key").unwrap()),
+            ),
+        ),
     };
-    assert!(
+    assert_eq!(
         super::output_postcondition::complete_output_currentness_facts(vec![
             comparable.clone(),
-            selection
+            selection.clone()
         ],)
-        .is_empty()
+        .as_ref(),
+        &[comparable.clone(), selection]
     );
     assert_eq!(
         super::output_postcondition::complete_output_currentness_facts(vec![comparable.clone()])
@@ -266,6 +275,7 @@ fn indexed_selection_dependency_distinguishes_absence_value_and_candidates() {
     let fact = |value: &str, candidates: Vec<EntityId>| {
         WorthQueryApplicationObservedFact::IndexedEntitySelection {
             index_id: DerivedIndexId(9),
+            definition: index_definition(DerivedIndexId(9), locator.clone()),
             entity_kind: KindId::new(12),
             locator: locator.clone(),
             value: AspectValue::String(value.into()),
@@ -280,6 +290,18 @@ fn indexed_selection_dependency_distinguishes_absence_value_and_candidates() {
 
     assert_ne!(absent, present);
     assert_ne!(absent, other_value);
+}
+
+fn index_definition(
+    index_id: DerivedIndexId,
+    field_locator: AspectFieldLocator,
+) -> std::sync::Arc<DerivedIndexDefinition> {
+    std::sync::Arc::new(DerivedIndexDefinition {
+        index_id,
+        name: "checked-selection".to_owned(),
+        kind: DerivedIndexKind::EntityField { field_locator },
+        branch_scoped: true,
+    })
 }
 
 fn identity(fact: WorthQueryApplicationObservedFact) -> [u8; 32] {

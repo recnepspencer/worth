@@ -1,4 +1,4 @@
-use winit::event_loop::ActiveEventLoop;
+use super::loop_control::UiNativeLoopControl;
 
 use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
@@ -7,7 +7,7 @@ use super::{
 };
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
-    pub(super) fn redraw(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn redraw(&mut self, event_loop: &dyn UiNativeLoopControl) {
         self.prepare_pending_resize(event_loop);
         if event_loop.exiting() {
             return;
@@ -54,7 +54,10 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     /// Hands the client the physical work that is ready, if any, and
     /// reports whether the client's directive ended this turn.
-    pub(super) fn progress_ready_physical_client(&mut self, event_loop: &ActiveEventLoop) -> bool {
+    pub(super) fn progress_ready_physical_client(
+        &mut self,
+        event_loop: &dyn UiNativeLoopControl,
+    ) -> bool {
         let physical = physical_progression::progress_ready_physical_work(
             &mut self.readiness,
             self.physical_readiness_owner,
@@ -67,7 +70,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     fn progress_physical_client(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
         grant: super::UiNativePhysicalProgressGrant,
     ) -> bool {
         let directive = self.client_or_denied().and_then(|client| {
@@ -80,7 +83,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     fn finish_client_progress(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
         directive: Result<super::UiNativeEventLoopDirective, UiNativeEventLoopRunDenial>,
     ) -> bool {
         let directive = match directive {

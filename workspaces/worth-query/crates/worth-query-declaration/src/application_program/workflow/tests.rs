@@ -14,6 +14,7 @@ use super::*;
 mod authoring;
 mod condition;
 mod content_identity;
+mod inbound;
 mod resource_limits;
 mod retry;
 mod scale;
@@ -37,6 +38,8 @@ struct ConsistencyAssessment;
 struct ComplianceAssessment;
 struct ConsistencyCondition;
 struct ComplianceCondition;
+struct ReviewCount;
+struct ReviewCountBinding;
 struct ChangeApprover;
 struct CollisionInputC;
 struct CollisionInputCBinding;
@@ -97,6 +100,11 @@ value_binding!(
     BoolResultBinding,
     bool,
     "worth.query.tests.workflow.bool-result.v1"
+);
+value_binding!(
+    ReviewCountBinding,
+    Option<i64>,
+    "worth.query.tests.workflow.review-count.v1"
 );
 
 impl ApplicationOperationMarkerIdentity<TestSchema> for ProposeChange {
@@ -162,6 +170,15 @@ condition_query!(
     ComplianceCondition,
     "worth.query.tests.workflow.compliance-condition.v1"
 );
+
+impl ApplicationQueryMarkerIdentity<TestSchema> for ReviewCount {
+    type ParameterBinding = AssessmentInputBinding;
+    type ResultBinding = ReviewCountBinding;
+    type Scope = ();
+    const IDENTIFIER: &'static str = "worth.query.tests.workflow.review-count.v1";
+    const QUERY_TYPE_NAME: &'static str = "worth.query.tests.workflow.review-count.v1.query-type";
+    const SCOPE_TYPE_NAME: &'static str = "worth.rust.unit";
+}
 
 impl WorthQueryPortableType for ChangeApprover {
     const PORTABLE_TYPE_NAME: &'static str = "worth.query.tests.workflow.change-approver.v1";

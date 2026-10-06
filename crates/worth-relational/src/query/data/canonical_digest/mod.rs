@@ -1,6 +1,12 @@
+mod checked;
 mod primitive_terms;
 mod read_record_terms;
 mod scope_terms;
+
+pub(crate) use checked::{
+    entity_record_bytes, entity_record_digest_checked, query_result_reduction_digest_checked,
+    relation_record_bytes, relation_record_digest_checked,
+};
 
 use sha2::{Digest, Sha256};
 

@@ -23,7 +23,7 @@ pub(crate) fn execute_ready<Outcome>(
 pub(crate) fn execute_ready_with_work<Outcome>(
     graph: &SignalGraph,
     ready: ReadyInvalidationBatch,
-    work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     effect: impl FnOnce() -> Result<Outcome, SignalError>,
 ) -> Result<Outcome, SignalError> {
     if let Err(error) = super::readiness::ensure_ready_is_current(graph, &ready) {

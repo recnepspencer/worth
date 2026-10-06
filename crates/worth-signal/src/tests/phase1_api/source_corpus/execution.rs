@@ -62,10 +62,10 @@ pub(in crate::tests::phase1_api) const HOT_VALIDATION_SOURCE: &str =
     include_str!("../../../logic/planner/planning/validation.rs");
 pub(in crate::tests::phase1_api) const HOT_PRECOMPUTE_SOURCE: &str = concat!(
     include_str!("../../../logic/planner/precompute/mod.rs"),
-    include_str!("../../../logic/planner/precompute/admission.rs"),
-    include_str!("../../../logic/planner/precompute/dispatch.rs"),
+    include_str!("../../../logic/planner/precompute/callback.rs"),
+    include_str!("../../../logic/planner/precompute/graph_batch.rs"),
     include_str!("../../../logic/planner/precompute/eligibility.rs"),
-    include_str!("../../../logic/planner/precompute/executor_pool.rs"),
+    include_str!("../../../logic/planner/precompute/work.rs"),
     include_str!("../../../logic/planner/precompute/read_preparation.rs"),
     include_str!("../../../logic/planner/precompute/reporting.rs"),
     include_str!("../../../logic/planner/precompute/stage.rs"),

@@ -1,7 +1,7 @@
-use crate::facade::{AspectVersion, NodeId, SignalError, StageExecutor};
+use crate::facade::{AspectVersion, NodeId, SignalError};
 use crate::tests::support::DependencyBatchBuilder;
 
-use super::super::node_families::FintechRuntime;
+use super::super::node_families::{bounded, FintechRuntime};
 use super::super::scales::FintechScale;
 use super::portfolio_world::PortfolioWorld;
 
@@ -18,9 +18,16 @@ pub(in crate::tests::domains::fintech) fn build_risk_world(
     let instruments = &portfolio.instruments;
     let mut scenario_aggregates = Vec::with_capacity(scale.scenarios);
     for scenario_index in 0..scale.scenarios {
+        let maximum = instruments.iter().map(|instrument| {
+            (
+                instrument.scenarios[scenario_index],
+                super::super::aspects::RISK,
+            )
+        });
         let aggregate = runtime
             .graph_mut()
             .node()
+            .with_contract(bounded(maximum))
             .reads_aspects(super::super::aspects::full_mask())
             .tolerance(5)
             .build();
@@ -40,9 +47,16 @@ pub(in crate::tests::domains::fintech) fn build_risk_world(
 
     let mut bucket_aggregates = Vec::with_capacity(scale.buckets);
     for bucket_index in 0..scale.buckets {
+        let maximum = instruments.iter().map(|instrument| {
+            (
+                instrument.buckets[bucket_index],
+                super::super::aspects::RISK,
+            )
+        });
         let aggregate = runtime
             .graph_mut()
             .node()
+            .with_contract(bounded(maximum))
             .reads_aspects(super::super::aspects::full_mask())
             .tolerance(5)
             .build();
@@ -74,26 +88,23 @@ impl super::FintechWorld {
         self.handles.primary.threshold
     }
 
-    pub(in crate::tests::domains::fintech) fn read_primary_threshold_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_primary_threshold(
         &mut self,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.primary_threshold_node(), executor)
+        self.read_node(self.primary_threshold_node())
     }
 
-    pub(in crate::tests::domains::fintech) fn read_bucket_aggregate_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_bucket_aggregate(
         &mut self,
         index: usize,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.bucket_aggregates[index], executor)
+        self.read_node(self.bucket_aggregates[index])
     }
 
-    pub(in crate::tests::domains::fintech) fn read_scenario_aggregate_with_executor(
+    pub(in crate::tests::domains::fintech) fn read_scenario_aggregate(
         &mut self,
         index: usize,
-        executor: StageExecutor,
     ) -> Result<AspectVersion, SignalError> {
-        self.read_node_with_executor(self.scenario_aggregates[index], executor)
+        self.read_node(self.scenario_aggregates[index])
     }
 }

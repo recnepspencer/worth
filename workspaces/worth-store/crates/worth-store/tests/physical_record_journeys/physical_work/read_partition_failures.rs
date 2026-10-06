@@ -358,8 +358,8 @@ fn route_for(
         .find(|binding| binding.digest() == record.signal_binding())
         .and_then(|binding| binding.partition())
         .expect("range work must identify one installed partition")
-        .partition
-        .0
+        .path()
+        .segments()[0]
         .as_str();
     match partition {
         "store.physical.record.root" => Route::Root,

@@ -290,36 +290,39 @@ where
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         for node in &mut self.nodes {
-            if let Some((settlement, authority)) = node.settled.take() {
-                node.continuation = Some(Children::start(
-                    self.application,
-                    &node.demand,
-                    &settlement,
-                    &authority,
-                    &self.basis,
-                    request,
-                    self.controls,
-                )?);
-                self.outputs.push(ProgramOutputRecord::new::<Schema, Connection>(
-                    node.demand.clone(),
-                    settlement,
-                ));
-            }
             if let Some(handle) = &mut node.handle {
                 match handle
                     .advance(request)
                     .map_err(WorthQueryRequiredOutputPreparationDenial::Demand)?
                 {
-                    WorthQueryApplicationProgramDemandProgress::Pending => {}
+                    WorthQueryApplicationProgramDemandProgress::Pending => continue,
                     WorthQueryApplicationProgramDemandProgress::Settled {
                         settlement,
                         authority,
                     } => {
                         node.settled = Some((settlement, authority));
                         node.handle = None;
-                        continue;
                     }
                 }
+            }
+            // A settled output starts its children in the same call. A start
+            // that is refused keeps the settlement for the next call.
+            if let Some((settlement, authority)) = node.settled.as_ref() {
+                node.continuation = Some(Children::start(
+                    self.application,
+                    &node.demand,
+                    settlement,
+                    authority,
+                    &self.basis,
+                    request,
+                    self.controls,
+                )?);
+            }
+            if let Some((settlement, _)) = node.settled.take() {
+                self.outputs.push(ProgramOutputRecord::new::<Schema, Connection>(
+                    node.demand.clone(),
+                    settlement,
+                ));
             }
             if let Some(continuation) = &mut node.continuation {
                 match continuation.advance(request)? {

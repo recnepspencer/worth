@@ -1,6 +1,8 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+mod inbound;
+
 use super::compilation::CompiledApplicationSchema;
 use super::contribution::WorthQueryInstalledApplicationContributionCatalog;
 use super::invariant::{

@@ -37,8 +37,8 @@ use crate::query_audience::{validate_query_audience_facades, validate_query_audi
 use crate::seed_contracts::validate_seed_crate_contracts;
 use crate::snapshots::{SnapshotMode, SnapshotSession};
 use crate::source_rules::{
-    enforce_raw_geometry_denials, enforce_truth_type_denials, validate_source_rules,
-    validate_workspace_source_reachability,
+    enforce_raw_geometry_denials, enforce_threading_boundary, enforce_truth_type_denials,
+    validate_source_rules, validate_workspace_source_reachability,
 };
 use crate::subworkspace_rules::validate_root_and_subworkspaces;
 use std::env;
@@ -173,6 +173,7 @@ fn run(
         &root,
         &config.source_identifier_denials,
     ));
+    diagnostics.extend(enforce_threading_boundary(&root, &config.threading_sites));
     diagnostics.extend(validate_source_owner_isolations(
         &root,
         &config.source_owner_isolations,

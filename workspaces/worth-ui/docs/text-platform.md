@@ -184,10 +184,21 @@ only the device-pixel raster and atlas generations derived from that layout. A f
 change is layout-affecting: qualify a successor layout before presentation because advances, line
 breaks, ink bounds, hit geometry, and selection rectangles may all change.
 
-The same rule applies to width. Changing one paragraph's authored width creates a successor layout
-for that paragraph; it does not authorize reshaping unchanged siblings. Do not multiply a DPI scale
-into the authored font size and then treat the result as a new logical layout—that would make a
-window move between monitors change measurement and accessibility identity.
+Width is layout-affecting only where the paragraph reads it. A qualified layout records the
+widths it fits identically: every width at which each wrap and fit decision comes out the same,
+provided no line overflows and every line has content placed against the left edge (start
+alignment left to right, end alignment right to left). The layout is named by the least of those
+widths, so qualifying its request at any of them yields the same layout identity, request
+identity, and width basis. A request also carries a `UiQualifiedTextReflowKey` that names it at
+every width; runtime finds a retained layout by that key and a width the layout admits.
+Centered, right-edge, overflowing, ellipsized, and empty lines read the width, so their layouts
+admit only the width they were requested at.
+
+Changing one paragraph's width past a wrap point, or at all when its placement reads the width,
+creates a successor layout for that paragraph; it does not authorize reshaping unchanged
+siblings. Do not multiply a DPI scale into the authored font size and then treat the result as
+a new logical layout—that would make a window move between monitors change measurement and
+accessibility identity.
 
 ## Raster and atlas lifecycle
 

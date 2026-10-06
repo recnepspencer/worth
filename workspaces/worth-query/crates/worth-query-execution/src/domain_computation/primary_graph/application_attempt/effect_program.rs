@@ -57,14 +57,13 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
 pub(in crate::domain_computation::primary_graph) use candidate_reservation::WorthQueryCandidateValidatorWorkAdmission;
 use candidate_reservation::{CandidateItemKind, WorthQueryCandidateReservation};
 use candidate_retained_representation as retained_representation;
-pub(in crate::domain_computation::primary_graph) use output_correspondence::WorthQueryCheckpointOutputRole;
+pub(in crate::domain_computation::primary_graph) use output_correspondence::{
+    OutputRoleUse, WorthQueryApplicationOutputCorrespondence, WorthQueryCheckpointOutputRole,
+};
 pub use output_correspondence::{
-    Create as WorthQueryCreateOutput, Preserve as WorthQueryPreserveOutput,
-    Retire as WorthQueryRetireOutput, WorthQueryApplicationOutputAction,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
-    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
-    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
+    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(in crate::domain_computation::primary_graph) use platform_reservation::{
     admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,
@@ -143,6 +142,9 @@ impl<Schema, Operation, Input, Scope>
         let reservation = WorthQueryCandidateReservation::admit(
             requested,
             ceiling,
+            self.admission
+                .allowed_graph_contract()
+                .candidate_validator_work(),
             envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
             envelope.resource_ceiling(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
@@ -277,12 +279,7 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .admission
             .validate_current_authority()
-            .map_err(|_| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                    self.read_set.admission.operation(),
-                )
-            })?;
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.output_correspondence.validate_effects(&self.effects)?;
         let validator_work_admission = self.candidate_reservation.as_ref().map_or_else(
             WorthQueryCandidateValidatorWorkAdmission::unreserved_internal,

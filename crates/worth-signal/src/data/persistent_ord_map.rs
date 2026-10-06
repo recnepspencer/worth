@@ -19,6 +19,9 @@ mod traits;
 
 #[path = "persistent_ord_map/charge_updates.rs"]
 mod charge_updates;
+#[cfg(test)]
+#[path = "persistent_ord_map/lookup_work_tests.rs"]
+mod lookup_work_tests;
 #[path = "persistent_ord_map/retained_charge.rs"]
 mod retained_charge;
 #[cfg(test)]
@@ -69,18 +72,18 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
     /// Structural comparisons/navigation in `get`, including both retirement
     /// searches and its final endpoint comparison. Does not bound generic Ord.
     pub(crate) fn lookup_steps(&self) -> usize {
-        use crate::data::retained_storage::ordered_lookup_steps as steps;
+        use crate::data::retained_storage::{im_btree_lookup_steps, std_btree_lookup_steps};
         match &self.storage {
-            PersistentOrdMapStorage::Exclusive(values) => steps(values.len()),
+            PersistentOrdMapStorage::Exclusive(values) => std_btree_lookup_steps(values.len()),
             PersistentOrdMapStorage::ForkShared {
                 base,
                 changes,
                 retired_base_intervals,
                 ..
             } => {
-                steps(base.len())
-                    + steps(changes.len())
-                    + 2 * steps(retired_base_intervals.len())
+                std_btree_lookup_steps(base.len())
+                    + im_btree_lookup_steps(changes.len())
+                    + 2 * im_btree_lookup_steps(retired_base_intervals.len())
                     + 1
             }
         }

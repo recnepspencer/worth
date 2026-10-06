@@ -2,8 +2,10 @@
 
 use std::sync::Arc;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+
 use swash::scale::image::{Content, Image};
+use worth_ui_host_contract::UiCountedSha256;
 use worth_ui_host_contract::{
     UiGlyphRasterContentDigest, UiGlyphRasterDemandRecord, UiGlyphRasterExtent,
 };
@@ -49,7 +51,7 @@ pub(super) fn validate_image(
 }
 
 pub(super) fn content_digest(image: &Image) -> UiGlyphRasterContentDigest {
-    UiGlyphRasterContentDigest::from_text_mechanics(Sha256::digest(&image.data).into())
+    UiGlyphRasterContentDigest::from_text_mechanics(UiCountedSha256::digest(&image.data).into())
 }
 
 pub(super) fn build_raster_record(

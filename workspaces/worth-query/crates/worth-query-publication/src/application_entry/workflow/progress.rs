@@ -101,7 +101,8 @@ pub enum WorthQueryWorkflowAssessmentAcceptanceDenial {
     Attempt(worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial),
 }
 
-/// Why `accept_condition` refused a published condition result.
+/// Why a [`WorthQueryWorkflowConditionAcceptance`](super::WorthQueryWorkflowConditionAcceptance)
+/// refused its operands.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowConditionAcceptanceDenial {
     NotAwaitingCondition,
@@ -229,7 +230,16 @@ where
             .select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
-        let mutation = match authorization::prepare_capability_selected(&mut self, &selected) {
+        let staged = self.stage().map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
+        let identities = self
+            .identities()
+            .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
+        let mutation = match authorization::prepare_capability_selected(
+            &self,
+            &identities,
+            staged,
+            &selected,
+        ) {
             Ok(mutation) => mutation,
             Err(denial) => {
                 if matches!(action, WorkflowRequestedAction::Advance)

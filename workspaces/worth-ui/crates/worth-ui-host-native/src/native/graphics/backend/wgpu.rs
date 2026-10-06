@@ -1,21 +1,22 @@
 use std::sync::Arc;
 
-use winit::window::Window;
-
 mod mechanics;
+mod presentation_target;
 mod surface_selection;
+mod swapchain_extent;
 
 pub(crate) use mechanics::{
     UiNativePreparedGraphicsRecovery, UiWgpuDeviceGenerationMechanics, UiWgpuDeviceMechanics,
     UiWgpuRetainedTarget, UiWgpuSurfaceHandle, UiWgpuSurfaceMechanics,
 };
+pub(crate) use presentation_target::{UiWgpuAcquiredTexture, UiWgpuPresentationTarget};
 #[cfg(test)]
 pub(crate) use surface_selection::{qualified_backend, qualified_backends};
 pub(crate) use surface_selection::{qualified_surface_format, qualified_target_format};
 
 use super::port::{
     UiNativeGraphicsPort, UiNativeGraphicsPortDenial, UiNativeGraphicsRecovery,
-    UiNativePreparedGraphics,
+    UiNativeGraphicsWindow, UiNativePreparedGraphics,
 };
 use crate::native::graphics::{
     adapter_selection, UiNativeDeviceGeneration, UiNativeDeviceState, UiNativeOwnedDevice,
@@ -36,8 +37,8 @@ const SURFACE: crate::native_profile::UiNativeSurfaceProfile =
 pub(crate) const QUALIFIED_DX12_PRESENTATION_SYSTEM: wgpu::Dx12SwapchainKind =
     wgpu::Dx12SwapchainKind::DxgiFromVisual;
 
-pub(crate) fn prepare_platform_graphics(
-    window: Arc<Window>,
+pub(crate) fn prepare_graphics(
+    window: UiNativeGraphicsWindow,
 ) -> Result<UiNativePreparedGraphics, UiNativeGraphicsPortDenial> {
     UiWgpuNativeGraphicsPort::prepare(window)
 }
@@ -53,14 +54,14 @@ pub(crate) fn prepare_replacement_target(
 pub(crate) fn prepare_external_recovery(
     device: &UiNativeOwnedDevice,
     surface: &UiNativeOwnedPresentationSurface,
-    window: Arc<Window>,
+    window: UiNativeGraphicsWindow,
     recovery: UiNativeGraphicsRecovery,
 ) -> Result<UiNativePreparedGraphicsRecovery, UiNativeGraphicsPortDenial> {
     UiWgpuNativeGraphicsPort::prepare_external_recovery(device, surface, window, recovery)
 }
 
 impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
-    type Window = Arc<Window>;
+    type Window = UiNativeGraphicsWindow;
     type Device = UiNativeOwnedDevice;
     type Surface = UiNativeOwnedPresentationSurface;
     type Prepared = UiNativePreparedGraphics;
@@ -68,22 +69,38 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
     type Target = UiWgpuRetainedTarget;
 
     fn prepare(
-        window: Arc<Window>,
+        window: UiNativeGraphicsWindow,
     ) -> Result<UiNativePreparedGraphics, UiNativeGraphicsPortDenial> {
-        let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
-        descriptor.backends = surface_selection::backends(SURFACE.backends);
-        #[cfg(target_os = "windows")]
-        {
-            descriptor.backend_options.dx12.presentation_system =
-                QUALIFIED_DX12_PRESENTATION_SYSTEM;
-        }
-        let instance = wgpu::Instance::new(descriptor);
-        let surface = instance
-            .create_surface(Arc::clone(&window))
-            .map_err(|_| UiNativeGraphicsPortDenial::Surface)?;
-        let adapter = select_adapter(&instance, &surface)?;
+        let instance = qualified_instance();
+        let (target, adapter, size, scale_factor) = match window {
+            UiNativeGraphicsWindow::Platform(window) => {
+                let surface = instance
+                    .create_surface(Arc::clone(&window))
+                    .map_err(|_| UiNativeGraphicsPortDenial::Surface)?;
+                let adapter = select_adapter(&instance, Some(&surface))?;
+                validate_surface_capabilities(&surface.get_capabilities(&adapter))?;
+                let size = window.inner_size();
+                (
+                    UiWgpuPresentationTarget::Window(surface),
+                    adapter,
+                    [size.width, size.height],
+                    window.scale_factor(),
+                )
+            }
+            // An offscreen target is a texture of the profile's surface
+            // format, which every adapter renders; no swapchain capability
+            // applies to it.
+            UiNativeGraphicsWindow::Offscreen {
+                extent,
+                scale_factor,
+            } => (
+                UiWgpuPresentationTarget::offscreen(),
+                select_adapter(&instance, None)?,
+                extent,
+                scale_factor,
+            ),
+        };
         let adapter_info = adapter.get_info();
-        validate_surface_capabilities(&surface.get_capabilities(&adapter))?;
         let descriptor = wgpu::DeviceDescriptor {
             label: Some(crate::native_profile::ACTIVE_PROFILE.device_label),
             required_features: wgpu::Features::empty(),
@@ -97,12 +114,20 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
         device.set_device_lost_callback(move |_, _| {
             device_lost_callback.store(true, std::sync::atomic::Ordering::Release);
         });
-        let size = window.inner_size();
-        let surface_suspended = size.width == 0 || size.height == 0;
-        let extent = [size.width.max(1), size.height.max(1)];
-        let surface_configuration = surface_configuration(extent);
+        let surface_suspended = size.contains(&0);
+        let extent = [size[0].max(1), size[1].max(1)];
+        let texture_limit = device.limits().max_texture_dimension_2d;
+        let surface_configuration = surface_configuration(swapchain_extent::swapchain_extent(
+            extent,
+            [0, 0],
+            texture_limit,
+        ));
         if !surface_suspended {
-            surface.configure(&device, &surface_configuration);
+            crate::native::resize_trace::swapchain([
+                surface_configuration.width,
+                surface_configuration.height,
+            ]);
+            target.configure(&device, &surface_configuration);
         }
         let retained_target = (!surface_suspended).then(|| retained_target(&device, extent));
         Ok(UiNativePreparedGraphics::new(
@@ -123,12 +148,14 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
             },
             UiNativePresentationSurface {
                 mechanics: UiWgpuSurfaceMechanics {
-                    surface,
+                    surface: target,
                     retained_target,
                     configuration: surface_configuration,
+                    configuration_pending: std::sync::atomic::AtomicBool::new(surface_suspended),
+                    texture_limit,
                 },
-                scale_factor: window.scale_factor(),
-                extent: [size.width, size.height],
+                scale_factor,
+                extent: size,
                 generation: 1,
                 suspended: surface_suspended,
             },
@@ -147,7 +174,7 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
     fn prepare_external_recovery(
         device: &UiNativeOwnedDevice,
         surface: &UiNativeOwnedPresentationSurface,
-        window: Arc<Window>,
+        window: UiNativeGraphicsWindow,
         recovery: UiNativeGraphicsRecovery,
     ) -> Result<UiNativePreparedGraphicsRecovery, UiNativeGraphicsPortDenial> {
         match recovery {
@@ -155,17 +182,25 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
                 Ok(UiNativePreparedGraphicsRecovery::SurfaceOutdated)
             }
             UiNativeGraphicsRecovery::SurfaceLost => {
-                let surface = device
-                    .state()
-                    .mechanics
-                    .instance
-                    .create_surface(window)
-                    .map_err(|_| UiNativeGraphicsPortDenial::Surface)?;
-                validate_surface_capabilities(
-                    &surface.get_capabilities(&device.state().mechanics.adapter),
-                )?;
+                let target = match window {
+                    UiNativeGraphicsWindow::Platform(window) => {
+                        let surface = device
+                            .state()
+                            .mechanics
+                            .instance
+                            .create_surface(window)
+                            .map_err(|_| UiNativeGraphicsPortDenial::Surface)?;
+                        validate_surface_capabilities(
+                            &surface.get_capabilities(&device.state().mechanics.adapter),
+                        )?;
+                        UiWgpuPresentationTarget::Window(surface)
+                    }
+                    UiNativeGraphicsWindow::Offscreen { .. } => {
+                        UiWgpuPresentationTarget::offscreen()
+                    }
+                };
                 Ok(UiNativePreparedGraphicsRecovery::SurfaceLost(
-                    UiWgpuSurfaceHandle(surface),
+                    UiWgpuSurfaceHandle(target),
                 ))
             }
             UiNativeGraphicsRecovery::DeviceLost => {
@@ -210,9 +245,21 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
     }
 }
 
+fn qualified_instance() -> wgpu::Instance {
+    let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
+    descriptor.backends = surface_selection::backends(SURFACE.backends);
+    #[cfg(target_os = "windows")]
+    {
+        descriptor.backend_options.dx12.presentation_system = QUALIFIED_DX12_PRESENTATION_SYSTEM;
+    }
+    wgpu::Instance::new(descriptor)
+}
+
+/// Selects the adapter among those that can present to `surface`; without
+/// a surface, as offscreen, every enumerated adapter can present.
 fn select_adapter(
     instance: &wgpu::Instance,
-    surface: &wgpu::Surface<'_>,
+    surface: Option<&wgpu::Surface<'_>>,
 ) -> Result<wgpu::Adapter, UiNativeGraphicsPortDenial> {
     let candidates = pollster::block_on(
         instance.enumerate_adapters(surface_selection::backends(SURFACE.backends)),
@@ -223,7 +270,8 @@ fn select_adapter(
             let info = adapter.get_info();
             (
                 adapter_selection::AdapterCandidate {
-                    surface_supported: adapter.is_surface_supported(surface),
+                    surface_supported: surface
+                        .is_none_or(|surface| adapter.is_surface_supported(surface)),
                     device_type: info.device_type,
                     limits: adapter.limits(),
                     vendor: info.vendor,

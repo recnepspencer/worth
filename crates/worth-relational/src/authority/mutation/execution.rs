@@ -2,7 +2,7 @@ use crate::config::data::MutationConfig;
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 use crate::storage::overlay::WorkingState;
 use crate::symbols::data::StringInterner;
-use crate::transactions::data::{AuthoritativeApplyPlan, CommitConflict};
+use crate::transactions::data::{AuthoritativeApplyPlan, CommitConflict, TransactionCommitError};
 
 use super::effect_assembly::assemble_effect;
 use super::intents::dispatch_intent;
@@ -26,7 +26,9 @@ pub(crate) fn apply_plan_to_working_state(
     symbols: &mut StringInterner,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
     record_allocations: &mut crate::runtime::PendingRecordAllocations,
-) -> Result<MutationApplyOutcome, CommitConflict> {
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    commit_work_budget: Option<crate::execution::RequestWorkBudget>,
+) -> Result<MutationApplyOutcome, TransactionCommitError> {
     let mut workspace = MutationWorkspace::new(
         state,
         symbols,
@@ -36,13 +38,14 @@ pub(crate) fn apply_plan_to_working_state(
         apply_plan.version_id,
         branch_local_delete_allowance,
         Some(record_allocations),
+        commit_work_budget,
     );
     let (expected_change_count, expected_event_count) =
         estimated_mutation_effect_shape(&apply_plan.merged_intents);
     let mut effect = MutationEffect::with_capacity(expected_change_count, expected_event_count);
 
     for intent in &apply_plan.merged_intents {
-        let child = dispatch_intent(intent, &mut workspace)?;
+        let child = dispatch_intent(intent, &mut workspace, lease)?;
         effect.accumulate(assemble_effect(child, &mut workspace)?);
     }
 

@@ -47,6 +47,7 @@ fn primary_revision(revision: &super::UiIntentInputOwnerRevision) -> u64 {
         }
         super::UiIntentInputOwnerRevision::Application(revision) => revision.revision(),
         super::UiIntentInputOwnerRevision::Draft(revision) => revision.draft_revision(),
+        super::UiIntentInputOwnerRevision::Expression(revision) => revision.outcome_revision(),
     }
 }
 
@@ -70,6 +71,12 @@ fn owner_revision_digest(revisions: &[super::UiIntentInputOwnerRevision]) -> u64
                 revision.field().stable_name(),
                 "committed-draft",
                 revision.draft_revision(),
+            ),
+            super::UiIntentInputOwnerRevision::Expression(revision) => (
+                4,
+                revision.field().stable_name(),
+                revision.identity(),
+                revision.outcome_revision(),
             ),
         };
         fold_u64(

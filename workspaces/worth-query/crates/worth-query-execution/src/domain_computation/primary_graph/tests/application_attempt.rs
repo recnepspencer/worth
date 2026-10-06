@@ -26,18 +26,24 @@ mod effect_authority;
 mod emitted_effects;
 #[path = "application_attempt/guarded_operation_custody.rs"]
 mod guarded_operation_custody;
+#[path = "application_attempt/host_commit_identity.rs"]
+mod host_commit_identity;
 #[path = "application_attempt/idempotency_behavior.rs"]
 mod idempotency_behavior;
 #[path = "application_attempt/index_budget.rs"]
 mod index_budget;
 #[path = "application_attempt/live_delivery_capacity.rs"]
 mod live_delivery_capacity;
+#[path = "application_attempt/mutation_binding_identity.rs"]
+mod mutation_binding_identity;
 #[path = "application_attempt/mutation_terminal_lifecycle.rs"]
 mod mutation_terminal_lifecycle;
 #[path = "application_attempt/mutation_work_scale.rs"]
 mod mutation_work_scale;
 #[path = "application_attempt/optional_field_mutation.rs"]
 mod optional_field_mutation;
+#[path = "application_attempt/optional_output_role.rs"]
+mod optional_output_role;
 #[path = "application_attempt/post_commit_recovery.rs"]
 mod post_commit_recovery;
 #[path = "application_attempt/preimage_evidence.rs"]
@@ -48,6 +54,7 @@ mod preimage_retention;
 mod producer_invariant_publication;
 #[path = "application_attempt/program_fixture.rs"]
 mod program_fixture;
+pub(super) use program_fixture::admitted_operation;
 #[path = "application_attempt/program_occurrence_gate.rs"]
 mod program_occurrence_gate;
 #[path = "application_attempt/provider_terminal_evidence.rs"]
@@ -71,22 +78,11 @@ use program_fixture::{
     admitted_program_with_emit, admitted_program_with_expected_status,
 };
 
-pub(in crate::domain_computation::primary_graph) fn assert_product_basis_stale(
-    outcome: WorthQueryApplicationCommitOutcome,
-    cause: &str,
-) {
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("{cause} must deny before effects: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
-}
+#[path = "application_attempt/decision_currentness.rs"]
+mod decision_currentness;
+pub(in crate::domain_computation::primary_graph) use decision_currentness::{
+    assert_changed_decision, assert_product_basis_stale,
+};
 
 #[test]
 fn concurrent_equivalent_attempts_publish_one_transaction() {

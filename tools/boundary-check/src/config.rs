@@ -32,6 +32,23 @@ pub(crate) struct Road1Config {
     pub(crate) raw_geometry_denials: Vec<RawGeometryDenialConfig>,
     #[serde(default)]
     pub(crate) truth_type_denials: Vec<TruthTypeDenialConfig>,
+    #[serde(default)]
+    pub(crate) threading_sites: Vec<ThreadingSiteConfig>,
+}
+
+/// An observed production thread or parallel-computation site. A legacy lane
+/// must name the phase that removes it; a non-compute thread must name its role.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ThreadingSiteConfig {
+    pub(crate) source: String,
+    pub(crate) item: String,
+    pub(crate) kind: String,
+    pub(crate) count: usize,
+    pub(crate) category: String,
+    pub(crate) reason: String,
+    #[serde(default)]
+    pub(crate) retire_phase: Option<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

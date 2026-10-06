@@ -1,5 +1,10 @@
 use super::*;
 
+pub(in crate::domain_computation::primary_graph) enum AcceptedCheckpointFactSource {
+    Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
+    Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
+}
+
 impl WorthQueryOutputDemandRegistry {
     /// Capture terminal accepted outputs and their exact committed receipts in
     /// one registry snapshot. The receipt is used only to join owner lineage
@@ -8,7 +13,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
     ) -> Vec<(
         WorthQueryAcceptedOutputCheckpointIdentity,
-        Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt>,
+        Option<AcceptedCheckpointFactSource>,
     )> {
         let state = self
             .state
@@ -34,6 +39,7 @@ impl WorthQueryOutputDemandRegistry {
                         Some((
                             WorthQueryAcceptedOutputCheckpointIdentity {
                                 producer: key.producer.clone(),
+                                posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
                                 source: key.source.checkpoint_identity().bytes(),
                                 scope: receipt.principal_scope().scope(),
                                 source_partition: idempotency.source_partition_identity()?,
@@ -42,8 +48,34 @@ impl WorthQueryOutputDemandRegistry {
                                 resources: completion.resources,
                                 roles: receipt.output_correspondence().checkpoint_roles(),
                                 producer_facts: None,
+                                producer_fact_wire_version: 0,
                             },
-                            exact_source.then(|| receipt.clone()),
+                            exact_source.then(|| AcceptedCheckpointFactSource::Committed(receipt.clone())),
+                        ))
+                    }
+                    WorthQueryAcceptedOutputAuthority::Stable(stable) => {
+                        let partition = stable.source_partition_identity()?;
+                        let exact_source = stable.source_identity()
+                            == Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Runtime(
+                                crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(
+                                    key.source.runtime_idempotency_identity(),
+                                ),
+                            ));
+                        Some((
+                            WorthQueryAcceptedOutputCheckpointIdentity {
+                                producer: key.producer.clone(),
+                                posture: WorthQueryAcceptedOutputCheckpointPosture::StableReused,
+                                source: key.source.checkpoint_identity().bytes(),
+                                scope: stable.source_scope(),
+                                source_partition: partition,
+                                producer_dependency: stable.producer_dependency_identity(),
+                                idempotency_key: stable.idempotency_key_identity(),
+                                resources: completion.resources,
+                                roles: stable.output_correspondence().checkpoint_roles(),
+                                producer_facts: None,
+                                producer_fact_wire_version: 0,
+                            },
+                            exact_source.then(|| AcceptedCheckpointFactSource::Stable(stable.clone())),
                         ))
                     }
                     WorthQueryAcceptedOutputAuthority::Restored(restored) => {

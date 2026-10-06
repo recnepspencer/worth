@@ -92,6 +92,11 @@ fn commit_submitted(
     core_handle: &Rc<std::cell::RefCell<super::ownership::AtlasCore>>,
     uploads: &[UiNativeTextAtlasUpload],
 ) -> UiNativeTextAtlasCommitOutcome {
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::AtlasSettle,
+        plan.hits.len() + plan.misses.len() + plan.pin_releases.len() + plan.pin_additions.len(),
+    );
+    worth_ui_host_contract::record_presentation_map_inserts(plan.pin_additions.len());
     update_candidate_digests(plan, uploads);
     let mut core = core_handle.borrow_mut();
     let committed_epoch = core.completed_use_epoch.saturating_add(1);

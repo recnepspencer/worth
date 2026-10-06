@@ -33,6 +33,10 @@ pub struct WorthServerProductResultSchema {
 }
 
 impl WorthServerProductResultSchema {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        crate::product_adapter::execution_pipeline::read_batch_accounting::string(&self.identity)
+    }
+
     pub fn new(
         identity: impl Into<String>,
         version: u32,
@@ -66,6 +70,16 @@ pub struct WorthServerProductResultContract {
 }
 
 impl WorthServerProductResultContract {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        self.schema
+            .owned_allocation_capacity_bytes()
+            .saturating_add(
+                crate::product_adapter::execution_pipeline::read_batch_accounting::string(
+                    &self.canonical_digest,
+                ),
+            )
+    }
+
     pub fn canonical_json(
         schema_identity: impl Into<String>,
         schema_version: u32,

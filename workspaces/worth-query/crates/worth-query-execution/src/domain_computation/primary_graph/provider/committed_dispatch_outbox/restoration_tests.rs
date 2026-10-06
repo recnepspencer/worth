@@ -14,6 +14,7 @@ fn durable_field_restore_accepts_the_exact_committed_shape() {
     assert_eq!(restored.maximum_payload_bytes(), 24);
     assert_eq!(restored.payload(), [1, 2]);
     assert_eq!(restored.outcome_identity(), 9);
+    assert_eq!(restored.operation_slot(), Some("notify"));
 }
 
 #[test]
@@ -63,6 +64,7 @@ fn valid_restored_fields() -> Vec<AspectValue> {
         AspectValue::UInt64(24),
         string("0102"),
         AspectValue::UInt64(9),
+        string("notify"),
     ]
 }
 

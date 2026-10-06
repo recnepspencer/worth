@@ -1,7 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
@@ -13,7 +14,6 @@ use crate::proposals::{
     BankIdempotencyClaim, BankIdempotencyKey, BankProposalDenial, CanonicalProposalPayload,
 };
 
-use super::create_personal_account_binding::client_key_identity;
 use super::{InitiateBusinessPayment, InitiateBusinessPaymentInputBinding};
 use crate::schema::{
     BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, Business, BusinessIdentity,
@@ -63,31 +63,25 @@ impl InitiateBusinessPaymentDecision {
 
 pub struct InitiateBusinessPaymentOutputs;
 
-pub const INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT: &str = "payment";
+/// The payment intent the operation creates.
+pub struct InitiatedBusinessPaymentOutput;
+
+impl WorthQueryApplicationOutputRole for InitiatedBusinessPaymentOutput {
+    type Schema = BankSchema;
+    type Contract = InitiateBusinessPaymentOutputs;
+    type Entity = PaymentIntent;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "payment";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for InitiateBusinessPaymentOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            PaymentIntent,
-        >(
-            INITIATE_BUSINESS_PAYMENT_OUTPUT_PAYMENT,
-            ApplicationMutationOutputPosture::Create,
-        )];
+        &[<InitiatedBusinessPaymentOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
 fn business_scope(input: &InitiateBusinessPayment) -> BusinessId {
     input.business
-}
-
-fn input_identity(input: &InitiateBusinessPayment) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-initiate-business-payment")
-        .u64("business", input.business.get())
-        .text("source", &input.from.canonical_text())
-        .u64("recipient", input.recipient.get())
-        .i64("amount-minor-units", input.amount.minor_units())
-        .derive_identity()
-        .bytes()
 }
 
 pub fn initiate_business_payment_application_idempotency(
@@ -111,8 +105,6 @@ worth_query_mutation_binding!(
     result InitiateBusinessPaymentResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity input_identity,
     decision InitiateBusinessPaymentDecision,
     denial InitiateBusinessPaymentDenialBinding,
     handler identity "bank.operation.initiate-business-payment.handler.v1",

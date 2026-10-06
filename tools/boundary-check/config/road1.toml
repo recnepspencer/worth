@@ -27,6 +27,12 @@ sources = [
 forbidden_targets = ["worth-store"]
 guidance = "C.11 mechanism crates depend downward; only Store composes Blob, Layout, and LSM owners"
 
+[[source_dependency_allowlists]]
+workspace_manifest = "Cargo.toml"
+sources = ["worth-execution"]
+allowed_targets = ["rayon", "trybuild", "worth-foundational", "worth-proof"]
+guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, portable vocabulary, proof doors and compile-fail test support"
+
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 sources = ["worth-store-physical-isolation"]
@@ -169,6 +175,7 @@ guidance = "The Bridge owns the Relational adapter and depends on Relational; Re
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-world"]
 allowed_targets = [
+  "worth-execution",
   "worth-foundational",
   "worth-proof",
   "worth-relational",
@@ -176,7 +183,7 @@ allowed_targets = [
   "worth-signal",
   "trybuild",
 ]
-guidance = "Runtime World may depend only on the approved foundational, proof, component-owner, and bridge facades; trybuild is test-only contract evidence"
+guidance = "Runtime World composes the one execution authority above the component runtimes and may depend only on that authority, foundational and proof contracts, component-owner and bridge facades; trybuild is test-only contract evidence"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
@@ -277,12 +284,24 @@ guidance = "Milestone 3.10.1: DSL owns authored language meaning and may not imp
 [[source_dependency_allowlists]]
 workspace_manifest = "workspaces/worth-ui/Cargo.toml"
 sources = ["worth-ui-platform-pulse"]
-allowed_targets = ["notify", "png", "serde", "serde_json", "uiautomation", "win32job", "winsafe", "worth-query-decl", "worth-query-host", "worth-ui", "worth-ui-native-platform", "x11rb", "xcap"]
-guidance = "Milestones 3.13 and 3.14.1: the permanent Pulse remains a downstream application composition root. It may assemble Query declarations through worth-query-decl and worth-query-host, consume application meaning through worth-ui, and enter native effects only through worth-ui-native-platform. Raw Query, binding-owner, runtime, DSL, host-native mechanics, certification, test-support, replay, and convenience dependencies remain forbidden."
+allowed_targets = ["mimalloc", "notify", "png", "serde", "serde_json", "stats_alloc", "uiautomation", "win32job", "winsafe", "worth-query-decl", "worth-query-host", "worth-ui", "worth-ui-native-platform", "x11rb", "xcap"]
+guidance = "Milestones 3.13 and 3.14.1: the permanent Pulse remains a downstream application composition root. It may assemble Query declarations through worth-query-decl and worth-query-host, consume application meaning through worth-ui, and enter native effects only through worth-ui-native-platform. As the executable it also chooses the process allocator (Milestone 3.16.2: mimalloc, or stats_alloc's instrumented system allocator in count-allocations diagnostic builds). Raw Query, binding-owner, runtime, DSL, host-native mechanics, certification, test-support, replay, and convenience dependencies remain forbidden."
+
+[[source_dependency_allowlists.dependency_contracts]]
+target = "mimalloc"
+version_requirement = "=0.1.52"
+uses_default_features = false
+features = []
 
 [[source_dependency_allowlists.dependency_contracts]]
 target = "png"
 version_requirement = "=0.18.1"
+uses_default_features = false
+features = []
+
+[[source_dependency_allowlists.dependency_contracts]]
+target = "stats_alloc"
+version_requirement = "=0.1.10"
 uses_default_features = false
 features = []
 
@@ -357,6 +376,54 @@ forbidden_identifiers = [
 ]
 forbidden_identifier_fragments = ["WorthQuery"]
 guidance = "Milestone 3.13 Phase 4: direct Query declaration, host, workspace, result, operation, and live-handle authority is confined to query_source/** and the application composition seam; native-frame, visual, observation, and host-adapter modules consume only Worth UI or Pulse-owned contracts"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-host-contract/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-host-contract/src/presentation_work.rs",
+]
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-text/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_alpha_raster_controls.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_fallback_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_format_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/raster/color/tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/raster/demand_alpha_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/raster/tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-text/src/shaping/reference_fixture_tests.rs",
+]
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-host-native/src"
+exclude_paths = [
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_dx12_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_signal_failure_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_tests.rs",
+  "workspaces/worth-ui/crates/worth-ui-host-native/src/qualification_tests.rs",
+]
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-ui/crates/worth-ui-query-binding/src"
+forbidden_identifiers = ["Sha256"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
 
 [[source_identifier_denials]]
 root = "workspaces/worth-store/crates/worth-store/src/physical_runtime"
@@ -1260,3 +1327,287 @@ guarded_roots = [
 ]
 forbidden_paths = [["primary_graph", "workflow"]]
 guidance = "9.17.6 Phase 5: provider-read managed runs and conditional operations stay independent of the authored workflow kernel; the kernel composes them, never the reverse"
+
+# Milestone 9.17.6.3: exact production threading inventory. Legacy entries only shrink.
+[[threading_sites]]
+source = "crates/worth-server/src/transport/route_assembly/axum_projection.rs"
+item = "semantic_route_handler"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Tokio runs the synchronous semantic route on its blocking executor."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-courtroom/src/bin/cold-bank-rail.rs"
+item = "main"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-external-rail/src/bin/bank_external_rail.rs"
+item = "main"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/process/rail_transport.rs"
+item = "BankProcessRailTransport::dispatch"
+kind = "async-runtime"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/process/rail_transport.rs"
+item = "BankProcessRailTransport::dispatch"
+kind = "thread-scope"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/process/runtime.rs"
+item = "install_identity_on_dedicated_stack"
+kind = "async-runtime"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/process/runtime.rs"
+item = "install_identity_on_dedicated_stack"
+kind = "thread-builder"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/process/runtime.rs"
+item = "run"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/inbound_completion/closure.rs"
+item = "BankRailCompletionContinuation::continue_once"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/inbound_completion/endpoint.rs"
+item = "receive"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/inbound_completion/maintenance.rs"
+item = "start_maintenance"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/live_executor.rs"
+item = "BankHttpLiveExecutor::start"
+kind = "thread-builder"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/live_executor.rs"
+item = "run_local_executor"
+kind = "async-runtime"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mod.rs"
+item = "BankHttpServer::shutdown"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query-bank-world/crates/bank-user-node/src/process.rs"
+item = "run"
+kind = "async-blocking"
+count = 1
+category = "async-runtime"
+reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/worker_pool.rs"
+item = "read_bounded_pairs"
+kind = "thread-builder"
+count = 1
+category = "legacy-parallel"
+reason = "Query derived-view reconstruction becomes a leased map in Phase 7."
+retire_phase = 7
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/worker_pool.rs"
+item = "read_bounded_pairs"
+kind = "thread-scope"
+count = 1
+category = "legacy-parallel"
+reason = "Query derived-view reconstruction becomes a leased map in Phase 7."
+retire_phase = 7
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/worker_pool.rs"
+item = "read_bounded_pairs"
+kind = "thread-spawn"
+count = 1
+category = "legacy-parallel"
+reason = "Query derived-view reconstruction becomes a leased map in Phase 7."
+retire_phase = 7
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-formal-models/src/runner/execution.rs"
+item = "execute_protocol_check"
+kind = "thread-spawn"
+count = 2
+category = "stream-reader"
+reason = "A process stream is read concurrently to prevent pipe backpressure."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-recovery-runtime/src/bin/physical_store_recover.rs"
+item = "run_on_recovery_worker"
+kind = "thread-builder"
+count = 1
+category = "owner-thread"
+reason = "The recover binary runs recovery on one owner thread with a stack sized for the recovery walk."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-operations/src/certification_scenario/authorization_race.rs"
+item = "certify_scenario_authorization_race"
+kind = "thread-spawn"
+count = 2
+category = "certification-harness"
+reason = "Certification drives independent actors to expose concurrency behavior."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store-test-support/src/compiler_boundary/bounded_process.rs"
+item = "run"
+kind = "thread-spawn"
+count = 2
+category = "stream-reader"
+reason = "A process stream is read concurrently to prevent pipe backpressure."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store/src/physical_runtime/durability/checkpoint/runtime_owner.rs"
+item = "PhysicalCheckpointRuntimeOwner::start"
+kind = "thread-builder"
+count = 1
+category = "io-durability-worker"
+reason = "Store owns this durability or mutation worker independently of parallel computation."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store/src/physical_runtime/durability/lifecycle/managed_work.rs"
+item = "PhysicalMutationRuntimeOwner::start"
+kind = "thread-builder"
+count = 1
+category = "io-durability-worker"
+reason = "Store owns this durability or mutation worker independently of parallel computation."
+
+[[threading_sites]]
+source = "workspaces/worth-store/crates/worth-store/src/physical_runtime/instance/signal_owner/worker.rs"
+item = "spawn_graph_worker"
+kind = "thread-builder"
+count = 1
+category = "owner-thread"
+reason = "Store owns one Signal graph owner thread for serialized graph mutation."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/apps/platform-pulse/src/intent/product_input.rs"
+item = "PlatformPulseIntentInputInstallation::open"
+kind = "thread-builder"
+count = 1
+category = "stream-reader"
+reason = "Pulse reads product input while the UI event loop remains responsive."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/apps/platform-pulse/src/query_source/external_value.rs"
+item = "PlatformPulseExternalValueWatch::spawn"
+kind = "thread-builder"
+count = 1
+category = "event-loop-watcher"
+reason = "UI readiness, source, theme or event-loop observation runs independently of computation."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/apps/platform-pulse/src/source_watch.rs"
+item = "PlatformPulseSourceWatch::spawn"
+kind = "thread-builder"
+count = 1
+category = "event-loop-watcher"
+reason = "UI readiness, source, theme or event-loop observation runs independently of computation."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/apps/platform-pulse/src/theme_preference/watch.rs"
+item = "PlatformPulseThemePreferenceWatch::open"
+kind = "thread-builder"
+count = 1
+category = "event-loop-watcher"
+reason = "UI readiness, source, theme or event-loop observation runs independently of computation."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/apps/platform-pulse/src/visual_identity_execution/readiness.rs"
+item = "PlatformPulseVisualReadiness::install"
+kind = "thread-builder"
+count = 1
+category = "event-loop-watcher"
+reason = "UI readiness, source, theme or event-loop observation runs independently of computation."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/crates/worth-ui-certification/src/scenario/phase5_locality_matrix/process_execution.rs"
+item = "run_until_with_cancellation"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Certification drives independent actors to expose concurrency behavior."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/crates/worth-ui-certification/src/scenario/phase5_locality_matrix/shard_orchestration.rs"
+item = "execute"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Certification drives independent actors to expose concurrency behavior."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/crates/worth-ui-host-native/src/native/event_loop/deadline_watch.rs"
+item = "UiNativeDeadlineWatch::start"
+kind = "thread-builder"
+count = 1
+category = "event-loop-watcher"
+reason = "UI readiness, source, theme or event-loop observation runs independently of computation."
+
+[[threading_sites]]
+source = "workspaces/worth-ui/crates/worth-ui-runtime/src/native_platform/application_driver/motion_readiness.rs"
+item = "UiNativeMotionReadinessLane::start"
+kind = "thread-builder"
+count = 1
+category = "event-loop-watcher"
+reason = "UI readiness, source, theme or event-loop observation runs independently of computation."
+
+[[threading_sites]]
+source = "crates/worth-runtime-world/src/lifecycle/operation_control/currentness_hold.rs"
+item = "ProductCurrentnessLatch::hold_reference"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "Test operation control holds the real Product reference write lock with one bounded, joined actor to verify final-currentness contention and cancellation."

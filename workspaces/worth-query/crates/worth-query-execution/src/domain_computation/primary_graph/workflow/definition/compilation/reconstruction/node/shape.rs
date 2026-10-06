@@ -11,6 +11,7 @@ pub(super) fn empty_node_fields(
     assessment_binding: &Option<String>,
     assessment_subject: &Option<String>,
     condition_binding: &Option<String>,
+    condition_operands: &Option<String>,
     capability_type: &Option<String>,
     approval_operation: &Option<String>,
     approval_capability_identity: &Option<String>,
@@ -24,6 +25,7 @@ pub(super) fn empty_node_fields(
             assessment_binding,
             assessment_subject,
             condition_binding,
+            condition_operands,
             capability_type,
             approval_operation,
             approval_capability_identity,
@@ -39,6 +41,7 @@ pub(super) fn empty_optional_node_fields(
     assessment_binding: &Option<String>,
     assessment_subject: &Option<String>,
     condition_binding: &Option<String>,
+    condition_operands: &Option<String>,
     capability_type: &Option<String>,
     approval_operation: &Option<String>,
     approval_capability_identity: &Option<String>,
@@ -50,6 +53,7 @@ pub(super) fn empty_optional_node_fields(
         && assessment_binding.is_none()
         && assessment_subject.is_none()
         && condition_binding.is_none()
+        && condition_operands.is_none()
         && capability_type.is_none()
         && approval_operation.is_none()
         && approval_capability_identity.is_none()

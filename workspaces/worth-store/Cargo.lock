@@ -1228,6 +1228,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-execution"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
@@ -1249,11 +1258,11 @@ dependencies = [
  "crossbeam-queue",
  "dashmap",
  "im",
- "rayon",
  "rmp-serde",
  "serde",
  "sha2",
  "smallvec",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
 ]
@@ -1265,13 +1274,13 @@ dependencies = [
  "arc-swap",
  "im",
  "js-sys",
- "rayon",
  "serde",
  "serde_json",
  "sha2",
  "smallvec",
  "tracing",
  "wasm-bindgen",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
 ]

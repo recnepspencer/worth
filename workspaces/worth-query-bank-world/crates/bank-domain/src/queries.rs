@@ -6,6 +6,7 @@ mod account_summary;
 mod account_summary_projection;
 mod estate;
 mod institution_audit;
+mod payment_amount;
 mod payment_detail;
 mod payment_summary_projection;
 mod pending_payments;
@@ -60,6 +61,10 @@ pub use estate::{
 pub use institution_audit::{
     institution_audit, institution_audit_definition, InstitutionAuditQuery,
     InstitutionAuditQueryBinding, InstitutionAuditQueryParameters, InstitutionAuditRequest,
+};
+pub use payment_amount::{
+    payment_amount, payment_amount_definition, PaymentAmountQuery, PaymentAmountQueryBinding,
+    PaymentAmountQueryParameters, PaymentAmountRequest,
 };
 pub use payment_detail::{
     payment, payment_detail_definition, PaymentDetailQuery, PaymentDetailQueryBinding,

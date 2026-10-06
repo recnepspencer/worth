@@ -221,11 +221,20 @@ fn idempotency(identity: u8) -> BankIdempotencyKey {
 }
 
 fn assert_freeze_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {
-    let input_identity = phases.admission();
-    assert_eq!(input_identity.basis_preparations(), 1);
-    assert_eq!(input_identity.digest_derivations(), 1);
-    assert_eq!(input_identity.canonical_encoded_bytes(), 821);
-    assert_eq!(input_identity.digest_text_materializations(), 0);
+    // Admission derives the request's two identities once each, streamed into
+    // their hashes with no basis sequence: the governed input (106 encoded
+    // bytes + 67 framing, 3 blocks) and the key `freeze-estate-account-program-entry` (57
+    // encoded bytes + 85 framing, ceil((142 + 9) / 64) = 3 blocks). A
+    // replayed retry is admitted the same way and reports the same work. Every
+    // other phase performs no canonical work.
+    let admission = phases.admission();
+    assert_eq!(admission.basis_preparations(), 0);
+    assert_eq!(admission.digest_derivations(), 2);
+    assert_eq!(admission.canonical_entries(), 2);
+    assert_eq!(admission.canonical_encoded_bytes(), 163);
+    assert_eq!(admission.sha256_input_bytes(), 315);
+    assert_eq!(admission.sha256_compression_blocks(), 6);
+    assert_eq!(admission.digest_text_materializations(), 0);
     for work in [
         phases.installation(),
         phases.execution(),

@@ -4,7 +4,6 @@ use worth_foundational::facade::{
 };
 
 use crate::canonical_basis_ready_sequence::canonical_basis_ready_sequence;
-use crate::config::data::RelationalExecutionModel;
 use crate::diagnostics::data::{DiagnosticCode, RelationalDiagnosticValue};
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
 use crate::validation::data::{
@@ -348,7 +347,6 @@ fn execution_result_with_proof_boundary(
             InvariantExecutionDisposition::Executed,
             None,
             false,
-            RelationalExecutionModel::SingleLaneExecution,
             None,
             Vec::new(),
             Some(InvariantProofBoundarySummary::new(

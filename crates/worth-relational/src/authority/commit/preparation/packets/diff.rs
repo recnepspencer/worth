@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
 use crate::publication::patch::data::RecordStructuralChange;
 
@@ -25,11 +26,13 @@ impl From<RecordStructuralChange> for DiffFragmentKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct DiffPreparationHeader {
     pub(crate) packet_index_floor: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct DiffPreparationPacket {
     pub(crate) header: DiffPreparationHeader,
     pub(crate) authoritative_record_patches: Vec<PublishedAuthoritativeRecordPatch>,

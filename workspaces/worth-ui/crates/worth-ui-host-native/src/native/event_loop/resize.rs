@@ -1,4 +1,4 @@
-use winit::event_loop::ActiveEventLoop;
+use super::loop_control::UiNativeLoopControl;
 
 use super::{UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEventLoopRunDenial};
 use crate::native::{UiNativeHostState, UiNativeSurfaceBasisTransition};
@@ -14,7 +14,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     /// A positive extent waits for the next dispatch turn, which prepares one
     /// target for the newest extent observed by then. A zero extent suspends
     /// presentation now.
-    pub(super) fn observe_resize(&mut self, event_loop: &ActiveEventLoop, size: [u32; 2]) {
+    pub(super) fn observe_resize(&mut self, event_loop: &dyn UiNativeLoopControl, size: [u32; 2]) {
         crate::native::resize_trace::observed(size);
         match self.pending_resize.observe(size) {
             UiNativeResizeAdmission::Pending => {
@@ -39,7 +39,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     /// extent the window has already left. The viewport is published only for
     /// the extent actually prepared, so no presentation reports an extent its
     /// pixels do not have.
-    pub(super) fn prepare_pending_resize(&mut self, event_loop: &ActiveEventLoop) {
+    pub(super) fn prepare_pending_resize(&mut self, event_loop: &dyn UiNativeLoopControl) {
         let Some(size) = self.pending_resize.take() else {
             return;
         };
@@ -48,7 +48,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         }
     }
 
-    pub(super) fn change_scale(&mut self, event_loop: &ActiveEventLoop, scale_factor: f64) {
+    pub(super) fn change_scale(&mut self, event_loop: &dyn UiNativeLoopControl, scale_factor: f64) {
         // The scale transition reads the window's current extent, so it
         // prepares the target any pending extent was waiting for.
         self.pending_resize.supersede();
@@ -71,7 +71,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     /// the scale changes. Reports whether the event loop continues.
     fn replace_surface_basis(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        event_loop: &dyn UiNativeLoopControl,
         size: [u32; 2],
         scale_factor: Option<f64>,
     ) -> bool {

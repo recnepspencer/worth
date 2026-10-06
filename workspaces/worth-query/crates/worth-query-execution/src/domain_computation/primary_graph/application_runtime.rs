@@ -13,6 +13,7 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
     WorthQueryPrimaryGraphPublication,
 };
+pub use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
 #[cfg(any(
@@ -24,10 +25,33 @@ mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod external_dispatch_attempt;
+mod inbound_occurrence;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
+mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
     WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
     WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
+};
+pub(in crate::domain_computation) use inbound_occurrence::WorthQueryInstalledTransportCompletionBinding;
+pub use inbound_occurrence::{
+    WorthQueryAdmittedInboundOccurrence, WorthQueryAuthenticatedInboundOccurrence,
+    WorthQueryCorrelatedInboundOccurrence, WorthQueryInboundAdmissionDenial,
+    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
+    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
+    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
+};
+pub(in crate::domain_computation::primary_graph) use inbound_publication::{
+    InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
+    PerformedInstalledTransportCompletion,
+};
+pub(in crate::domain_computation) use inbound_publication::{
+    WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
+    WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
 };
 mod graph_participation;
 pub(in crate::domain_computation::primary_graph) mod installation;
@@ -37,7 +61,10 @@ mod publication_entry;
 #[cfg(feature = "test-world-operation-control")]
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
 
-pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
+pub(in crate::domain_computation) use external_dispatch_attempt::{
+    WorthQueryExternalDispatchAdmissionDenial, WorthQueryExternalDispatchAttemptOrdinal,
+    WorthQueryTerminalEffectRefusal,
+};
 
 /// Purpose-scoped application runtime published from one typed primary graph.
 /// Publishing consumes the raw execution root and its installation authority.
@@ -114,6 +141,19 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_external_dispatch_attempt: AtomicU64,
     pub(super) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
+    inbound_verifiers: std::sync::Mutex<
+        std::collections::BTreeMap<
+            String,
+            std::sync::Arc<inbound_occurrence::WorthQueryInstalledInboundVerifier>,
+        >,
+    >,
+    inbound_custody: Arc<std::sync::Mutex<
+        crate::domain_computation::application_aftermath::WorthQueryInboundCustody,
+    >>,
+    transport_completion_custody: std::sync::Mutex<
+        inbound_publication::InstalledTransportCompletionCustody,
+    >,
+    inbound_maintenance_turn: AtomicU64,
     /// Instance-local recovery-handle live set (Q8.9 / R8.29).
     pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
     pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
@@ -307,6 +347,13 @@ where
     ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
     {
         self.primary_provider.application_resource_support()
+    }
+
+    pub(in crate::domain_computation) fn graph_work_resource_support_ref(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
+    {
+        self.primary_provider.application_resource_support_ref()
     }
 
     pub(in crate::domain_computation) fn graph_work_provider_identity(&self) -> &str {

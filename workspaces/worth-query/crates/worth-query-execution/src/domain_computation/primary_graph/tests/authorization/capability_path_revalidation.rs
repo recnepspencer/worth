@@ -39,7 +39,8 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
                 .mutation_product()
                 .unwrap()
                 .observation(),
-        );
+        )
+        .unwrap();
     let coordination = commit_lane.enter();
     let Err(denial) = commit_authorization.authorize_application_commit(
         &world.application,

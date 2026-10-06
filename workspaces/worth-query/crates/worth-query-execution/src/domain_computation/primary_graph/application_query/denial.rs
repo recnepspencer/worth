@@ -87,6 +87,8 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     Parameter(WorthQueryApplicationQueryParameterDenialKind),
     /// The read would exceed its work limit.
     WorkLimitExceeded,
+    /// The carried request cannot hold a fresh retained-parameter preparation.
+    ReadmissionPreparationMemoryExhausted,
     /// The bounded canonical work for admission was refused.
     CanonicalWorkDenied,
     /// The graph read plan failed review.
@@ -123,7 +125,9 @@ impl WorthQueryApplicationQueryAdmissionDenial {
     pub(super) fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
         Self {
             kind: WorthQueryApplicationQueryAdmissionDenialKind::Authorization(denial.kind()),
-            subject: denial.subject().to_string(),
+            // The boxed denial owns the sole subject. Duplicating it here
+            // would add an unretained allocation to the admitted path.
+            subject: String::new(),
             authorization_denial: Some(Box::new(denial)),
         }
     }
@@ -133,7 +137,9 @@ impl WorthQueryApplicationQueryAdmissionDenial {
     }
 
     pub fn subject(&self) -> &str {
-        &self.subject
+        self.authorization_denial
+            .as_ref()
+            .map_or(self.subject.as_str(), |denial| denial.subject())
     }
 
     pub fn authorization_denial(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
@@ -152,7 +158,8 @@ impl std::fmt::Display for WorthQueryApplicationQueryAdmissionDenial {
         write!(
             formatter,
             "application query admission denied: {:?} ({})",
-            self.kind, self.subject
+            self.kind,
+            self.subject()
         )
     }
 }

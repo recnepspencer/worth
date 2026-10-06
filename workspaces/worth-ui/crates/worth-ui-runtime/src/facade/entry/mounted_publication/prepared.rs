@@ -135,11 +135,7 @@ impl WorthUiActiveApplicationSession {
                 )
             },
         );
-        let outcome = self.finish_mounted_transition(transition, now);
-        if let Some(prepared) = owner_receipts {
-            self.settle_new_mounted_owner_receipt_succession(prepared, &outcome);
-        }
-        outcome
+        self.finish_mounted_transition(transition, now, owner_receipts)
     }
 
     pub(crate) fn present_prepared_superseding_mounted_frame_internal(
@@ -181,8 +177,6 @@ impl WorthUiActiveApplicationSession {
                     )
                 },
             );
-        let outcome = self.finish_mounted_transition(transition, now);
-        self.settle_new_mounted_owner_receipt_succession(owner_receipts, &outcome);
-        outcome
+        self.finish_mounted_transition(transition, now, Some(owner_receipts))
     }
 }

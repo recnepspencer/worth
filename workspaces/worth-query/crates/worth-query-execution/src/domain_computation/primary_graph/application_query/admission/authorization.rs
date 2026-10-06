@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
             WorthQueryApplicationGovernanceBinding, WorthQueryApplicationQueryGovernance,
             WorthQueryPendingApplicationQueryGovernance,
         },
+        graph_read_plan_binding::WorthQueryQueryIndexPosture,
         WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
         WorthQueryApplicationQueryAdmissionDenial,
     },
@@ -36,6 +37,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         graph_work: &mut WorthQueryManagedGraphWorkSession,
         basis: &crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBasisCustody,
         security_product: &crate::basis::WorthQueryProductObservationLease,
+        index_posture: &WorthQueryQueryIndexPosture,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         access: &WorthQueryApplicationQueryAccessContext<
             '_,
@@ -68,7 +70,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ),
         )
         .map_err(|kind| governance_denial(kind, query.name()))?;
-        let security = self.admit_query_product_security_basis(security_product, basis)
+        let security = match index_posture {
+            WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
+                self.admit_query_product_security_basis(security_product, basis)
+            }
+            WorthQueryQueryIndexPosture::SelectedInstalled(prepared) => self
+                .admit_query_prepared_read_security_basis(security_product, basis, prepared),
+        }
             .map_err(|denial| WorthQueryApplicationQueryAdmissionDenial::from_authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial), query.name(),

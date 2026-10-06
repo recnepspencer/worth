@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationScopeBinding,
+    ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -28,6 +28,11 @@ pub enum MutationHandlerExecutionDenial {
     /// The binding is a workflow control step the workflow kernel records
     /// itself; no handler serves it, so this lane refuses it before any read.
     WorkflowControl,
+    /// The admission governed a different input than the one the request
+    /// carries, so no handler ran on it.
+    InputNotAdmitted,
+    /// This runtime installed no handler for the binding, so no handler ran.
+    HandlerNotInstalled,
 }
 
 impl std::fmt::Display for MutationHandlerExecutionDenial {
@@ -39,6 +44,11 @@ impl std::fmt::Display for MutationHandlerExecutionDenial {
             Self::WorkflowControl => formatter.write_str(
                 "the workflow kernel records this control binding; no mutation handler serves it",
             ),
+            Self::InputNotAdmitted => formatter
+                .write_str("the admission governed a different input than the request carries"),
+            Self::HandlerNotInstalled => {
+                formatter.write_str("this runtime installed no handler for the mutation binding")
+            }
         }
     }
 }
@@ -49,10 +59,19 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Runs the installed handler for one admitted request and builds its candidate.
+    ///
+    /// `identities` hold the request's key and input together with the identities
+    /// encoded from exactly those two values, so the handler decides on the very
+    /// input whose identity the candidate program records; no other input can be
+    /// paired with them. The handler reads the key, input and identities from its
+    /// `DecisionReader`, and the commit checks the recorded input identity against
+    /// the idempotency binding. A capability admission also fixes the identity of
+    /// the input it governed, and a request whose input encodes to another
+    /// identity is refused with `InputNotAdmitted` before any read.
     pub fn execute_mutation_handler<Binding>(
         &self,
-        input: &Binding::Input,
-        idempotency_key: &Binding::IdempotencyKey,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         principal_identity: &Binding::PrincipalIdentity,
         admission: WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -67,11 +86,50 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let (handler, installed_ceiling) = self
-            .mutation_handler_for_attempt::<Binding>()
-            .ok_or(MutationHandlerExecutionDenial::WorkflowControl)?;
+        self.execute_mutation_handler_observing_contact::<Binding>(
+            identities,
+            principal_identity,
+            admission,
+            || {},
+        )
+    }
+
+    /// Observe the actual installed handler invocation, after all entry and
+    /// projection denials. The observer carries accounting only.
+    pub(in crate::domain_computation::primary_graph) fn execute_mutation_handler_observing_contact<
+        Binding,
+    >(
+        &self,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        principal_identity: &Binding::PrincipalIdentity,
+        admission: WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        on_contact: impl FnOnce(),
+    ) -> Result<
+        HandlerResult<WorthQueryCompletedMutationCandidate<Schema, Binding>, Binding::Denial>,
+        MutationHandlerExecutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        if admission
+            .governed_input_identity()
+            .is_some_and(|admitted| admitted != identities.input_identity())
+        {
+            return Err(MutationHandlerExecutionDenial::InputNotAdmitted);
+        }
+        let (handler, installed_ceiling) = self.mutation_handler_for_attempt::<Binding>()?;
+
+        let input = identities.mutation_input();
         let request = admission.publication_request();
         let operation_scope_binding = admission.operation_scope_binding().clone();
+        let context_use = std::cell::Cell::new(
+            crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
+        );
         let projected = self
             .mutation_projection
             .project_admitted_operation(&admission, |reader, scope| {
@@ -80,9 +138,11 @@ where
                     scope,
                     principal_identity,
                     &operation_scope_binding,
-                    idempotency_key,
+                    identities,
                     request,
+                    &context_use,
                 );
+                on_contact();
                 handler.decide(input, &mut decision_reader)
             })
             .map_err(MutationHandlerExecutionDenial::Projection)?;
@@ -98,6 +158,8 @@ where
             HandlerResult::Cancelled => return Ok(HandlerResult::Cancelled),
             HandlerResult::DeadlineExceeded => return Ok(HandlerResult::DeadlineExceeded),
         };
+        let mut admission = admission;
+        admission.record_decision_context_use(context_use.get());
         let reads = self
             .begin_projected_application_read_attempt(admission, projection)
             .map_err(MutationHandlerExecutionDenial::Attempt)?
@@ -119,7 +181,7 @@ where
                 .finish()
                 .map(|program| {
                     HandlerResult::Completed(WorthQueryCompletedMutationCandidate::new(
-                        program.bind_mutation_handler_input::<Binding>(input),
+                        program.bind_mutation_handler_input(identities),
                         result,
                     ))
                 })

@@ -12,6 +12,15 @@ pub struct WorthServerOperationSupportPosture {
 }
 
 impl WorthServerOperationSupportPosture {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        self.query_support_posture
+            .as_ref()
+            .map_or(0, |posture| posture.owned_allocation_capacity_bytes())
+            .saturating_add(string(&self.product_support_label))
+            .saturating_add(self.composition_receipt.owned_allocation_capacity_bytes())
+            .saturating_add(string(&self.canonical_digest))
+    }
     pub(crate) fn new(
         query_support_posture: Option<WorthServerQuerySupportPosture>,
         authority_metadata: &WorthServerOperationAuthorityMetadata,

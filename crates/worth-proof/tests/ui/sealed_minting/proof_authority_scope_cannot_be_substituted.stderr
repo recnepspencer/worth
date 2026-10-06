@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
-  --> tests/ui/sealed_minting/proof_authority_scope_cannot_be_substituted.rs:18:31
+  --> tests/ui/sealed_minting/proof_authority_scope_cannot_be_substituted.rs:17:31
    |
-18 |     requires_target_authority(source_scoped_proof);
+17 |     requires_target_authority(source_scoped_proof);
    |     ------------------------- ^^^^^^^^^^^^^^^^^^^ expected `Proof<CanonicalOrder, TargetAuthority>`, found `Proof<CanonicalOrder, SourceAuthority>`
    |     |
    |     arguments to this function are incorrect
@@ -9,7 +9,7 @@ error[E0308]: mismatched types
    = note: expected struct `Proof<CanonicalOrder, TargetAuthority>`
               found struct `Proof<CanonicalOrder, SourceAuthority>`
 note: function defined here
-  --> tests/ui/sealed_minting/proof_authority_scope_cannot_be_substituted.rs:12:4
+  --> tests/ui/sealed_minting/proof_authority_scope_cannot_be_substituted.rs:11:4
    |
-12 | fn requires_target_authority(_: Proof<CanonicalOrder, TargetAuthority>) {}
+11 | fn requires_target_authority(_: Proof<CanonicalOrder, TargetAuthority>) {}
    |    ^^^^^^^^^^^^^^^^^^^^^^^^^ -----------------------------------------

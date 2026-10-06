@@ -9,7 +9,8 @@ use crate::canonical_work::{
 };
 
 const INSTALLATION_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(32_768, INSTALLATION_MAXIMUM_CANONICAL_BYTES) {
+    match CanonicalDigestWorkBudget::for_encoded_byte_ceiling(INSTALLATION_MAXIMUM_CANONICAL_BYTES)
+    {
         Some(budget) => budget,
         None => panic!("fixed application-schema installation budget is valid"),
     };

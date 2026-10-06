@@ -10,7 +10,6 @@ use worth_query_installation::facade::{
 };
 
 use super::WorthQueryApplicationQueryLane;
-use crate::canonical_identity_derivation::WorthQueryCanonicalIdentityBasis;
 use crate::graph_read_access::{
     derive_canonical_graph_read_access_requirements, WorthQueryAdmittedGraphReadRelationDirection,
     WorthQueryCanonicalGraphReadPlanningInput, WorthQueryGraphReadAccessRequirementSet,
@@ -20,6 +19,12 @@ use crate::graph_read_access::{
     WorthQueryGraphReadPlanningShape, WorthQueryGraphReadPredicateFamily,
     WorthQueryGraphReadResultPressure, WorthQueryGraphReadTraversalOperator,
 };
+
+mod admitted;
+mod identity;
+use identity::{access_shape_digest, selectivity_shape_digest};
+
+pub use admitted::derive_graph_read_access_requirements_for_contract_admitted;
 
 pub fn derive_graph_read_access_requirements_for_contract(
     graph: &impl WorthQueryPreparedReadGraphPlanningContract,
@@ -186,26 +191,54 @@ fn ordering_posture(
     if lane == WorthQueryApplicationQueryLane::Continuation && graph.ordering_count() != 0 {
         return WorthQueryGraphReadOrderingPosture::IndexedRelatedCollectionSeek;
     }
-    let mechanisms = (0..graph.ordering_count())
-        .filter_map(|index| graph.ordering(index).map(|ordering| ordering.mechanism))
-        .collect::<Vec<_>>();
-    match mechanisms.as_slice() {
-        [] => WorthQueryGraphReadOrderingPosture::Unordered,
-        values
-            if values
-                .iter()
-                .all(|value| *value == WorthQueryReadGraphOrderingMechanism::ProviderOrdered) =>
-        {
+    let mut posture = OrderingPostureScan::new();
+    for index in 0..graph.ordering_count() {
+        if let Some(ordering) = graph.ordering(index) {
+            posture.observe(ordering.mechanism);
+        }
+    }
+    posture.finish(lane, graph.ordering_count())
+}
+
+pub(super) struct OrderingPostureScan {
+    any: bool,
+    all_provider_ordered: bool,
+    all_bounded_projected: bool,
+}
+
+impl OrderingPostureScan {
+    pub(super) fn new() -> Self {
+        Self {
+            any: false,
+            all_provider_ordered: true,
+            all_bounded_projected: true,
+        }
+    }
+
+    pub(super) fn observe(&mut self, mechanism: WorthQueryReadGraphOrderingMechanism) {
+        self.any = true;
+        self.all_provider_ordered &=
+            mechanism == WorthQueryReadGraphOrderingMechanism::ProviderOrdered;
+        self.all_bounded_projected &=
+            mechanism == WorthQueryReadGraphOrderingMechanism::BoundedProjectedCollection;
+    }
+
+    pub(super) fn finish(
+        self,
+        lane: WorthQueryApplicationQueryLane,
+        ordering_count: usize,
+    ) -> WorthQueryGraphReadOrderingPosture {
+        if lane == WorthQueryApplicationQueryLane::Continuation && ordering_count != 0 {
+            WorthQueryGraphReadOrderingPosture::IndexedRelatedCollectionSeek
+        } else if !self.any {
+            WorthQueryGraphReadOrderingPosture::Unordered
+        } else if self.all_provider_ordered {
             WorthQueryGraphReadOrderingPosture::ProviderOrdered
-        }
-        values
-            if values.iter().all(|value| {
-                *value == WorthQueryReadGraphOrderingMechanism::BoundedProjectedCollection
-            }) =>
-        {
+        } else if self.all_bounded_projected {
             WorthQueryGraphReadOrderingPosture::BoundedProjectedCollection
+        } else {
+            WorthQueryGraphReadOrderingPosture::Mixed
         }
-        _ => WorthQueryGraphReadOrderingPosture::Mixed,
     }
 }
 
@@ -240,82 +273,4 @@ fn has_many_relation(graph: &impl WorthQueryReadGraphPlanningContract) -> bool {
             .relation(index)
             .is_some_and(|relation| relation.cardinality == ApplicationQueryCardinality::Many)
     })
-}
-
-fn access_shape_digest(
-    graph: &impl WorthQueryReadGraphPlanningContract,
-    planning_graph_identity: CanonicalDigestId,
-    lane: WorthQueryApplicationQueryLane,
-    maximum_result_count: usize,
-    budget: CanonicalDigestWorkBudget,
-) -> Result<
-    (
-        CanonicalDigestId,
-        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
-    ),
-    CanonicalDigestDerivationDenial,
-> {
-    let mut basis = WorthQueryCanonicalIdentityBasis::new(
-        "worth-query.application-query-access-shape",
-        "worth-query-application-query-access-shape-v3",
-        budget,
-    );
-    basis.digest("graph", planning_graph_identity)?;
-    basis.digest("schema-basis", *graph.schema_basis_digest())?;
-    basis.text("root", graph.root_entity())?;
-    basis.text("cardinality", cardinality_name(graph.cardinality()))?;
-    basis.text("lane", lane.as_str())?;
-    basis.unsigned("maximum-result-count", maximum_result_count)?;
-    basis.unsigned("relation-count", graph.relation_count())?;
-    for index in 0..graph.relation_count() {
-        let relation = graph
-            .relation(index)
-            .expect("planning relation count must be exact");
-        let path = format!("relation[{index}]");
-        basis.text(format!("{path}.name"), relation.relation)?;
-        basis.text(
-            format!("{path}.direction"),
-            relation_direction_name(relation.direction),
-        )?;
-        basis.unsigned(format!("{path}.depth"), relation.depth)?;
-    }
-    basis.derive()
-}
-
-fn selectivity_shape_digest(
-    planning_graph_identity: CanonicalDigestId,
-    access_shape_identity: CanonicalDigestId,
-    binding_identity: CanonicalDigestId,
-    budget: CanonicalDigestWorkBudget,
-) -> Result<
-    (
-        CanonicalDigestId,
-        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
-    ),
-    CanonicalDigestDerivationDenial,
-> {
-    let mut basis = WorthQueryCanonicalIdentityBasis::new(
-        "worth-query.application-query-selectivity-shape",
-        "worth-query-application-query-selectivity-shape-v3",
-        budget,
-    );
-    basis.digest("graph", planning_graph_identity)?;
-    basis.digest("access-shape", access_shape_identity)?;
-    basis.digest("bindings", binding_identity)?;
-    basis.derive()
-}
-
-const fn cardinality_name(cardinality: ApplicationQueryCardinality) -> &'static str {
-    match cardinality {
-        ApplicationQueryCardinality::OptionalOne => "optional-one",
-        ApplicationQueryCardinality::ExactlyOne => "exactly-one",
-        ApplicationQueryCardinality::Many => "many",
-    }
-}
-
-const fn relation_direction_name(direction: WorthQueryReadGraphRelationDirection) -> &'static str {
-    match direction {
-        WorthQueryReadGraphRelationDirection::Forward => "forward",
-        WorthQueryReadGraphRelationDirection::Reverse => "reverse",
-    }
 }

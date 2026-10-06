@@ -5,13 +5,14 @@ mod evaluation_work;
 use std::collections::BTreeMap;
 
 mod lookup;
+mod path_versions_wire;
 mod retained_charge;
 
 use serde::{Deserialize, Serialize};
 
 use super::aspect::{Aspect, MAX_ASPECTS};
 use super::mask::AspectMask;
-use crate::data::output::{ChangedRegion, PartitionSubscription, PartitionToken};
+use crate::data::output::{ChangedRegion, PartitionSubscription, ScopeCoverage, ScopePath};
 
 /// Per-aspect version counters carried by each signal node.
 ///
@@ -79,15 +80,26 @@ impl AspectVersion {
     pub const fn slots(&self) -> &[u64; MAX_ASPECTS] {
         &self.slots
     }
+
+    fn max_slots(mut self, other: Self) -> Self {
+        for (slot, candidate) in self.slots.iter_mut().zip(other.slots) {
+            *slot = (*slot).max(candidate);
+        }
+        self
+    }
+}
+
+impl Default for AspectVersion {
+    fn default() -> Self {
+        Self::zero()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PartitionVersionMap {
     global: AspectVersion,
-    #[serde(default)]
-    partitions: BTreeMap<PartitionToken, AspectVersion>,
-    #[serde(default)]
-    details: BTreeMap<PartitionSubscription, AspectVersion>,
+    overrides: PartitionVersionOverrides,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -129,28 +141,46 @@ impl AspectVersionHeader {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct PartitionVersionOverrides {
-    #[serde(default)]
-    partitions: BTreeMap<PartitionToken, AspectVersion>,
-    #[serde(default)]
-    details: BTreeMap<PartitionSubscription, AspectVersion>,
+    baseline: AspectVersion,
+    #[serde(with = "path_versions_wire")]
+    paths: BTreeMap<ScopePath, PathVersions>,
+}
+
+/// Separate write reach from the aggregate observed by a subtree reader.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+struct PathVersions {
+    exact_write: Option<AspectVersion>,
+    subtree_write: Option<AspectVersion>,
+    descendant_aggregate: Option<AspectVersion>,
 }
 
 impl PartitionVersionOverrides {
     pub fn scoped_or_global(
         &self,
         scope: &PartitionSubscription,
-        global: AspectVersion,
+        _global: AspectVersion,
     ) -> AspectVersion {
-        if scope.detail.is_some() {
-            if let Some(version) = self.details.get(scope) {
-                return *version;
+        let mut result = self.baseline;
+        for depth in 1..=scope.path().depth() {
+            let prefix = scope.path().prefix(depth).expect("validated scope prefix");
+            if let Some(record) = self.paths.get(&prefix) {
+                if let Some(write) = record.subtree_write {
+                    result = result.max_slots(write);
+                }
+                if depth == scope.path().depth() {
+                    let direct = match scope.coverage() {
+                        ScopeCoverage::Exact => record.exact_write,
+                        ScopeCoverage::Subtree => record.descendant_aggregate,
+                    };
+                    if let Some(write) = direct {
+                        result = result.max_slots(write);
+                    }
+                }
             }
         }
-        self.partitions
-            .get(&scope.partition)
-            .copied()
-            .unwrap_or(global)
+        result
     }
 
     pub fn version_for_scope(
@@ -166,25 +196,16 @@ impl PartitionVersionOverrides {
     }
 
     pub fn set_global(&mut self, version: AspectVersion) {
-        for partition in self.partitions.values_mut() {
-            *partition = version;
-        }
-        for detail in self.details.values_mut() {
-            *detail = version;
-        }
+        self.baseline = version;
+        self.paths.clear();
     }
 
     pub fn apply_evaluation(&mut self, version: AspectVersion, changed_regions: &[ChangedRegion]) {
-        evaluation::apply(
-            &mut self.partitions,
-            &mut self.details,
-            version,
-            changed_regions,
-        );
+        evaluation::apply(self, version, changed_regions);
     }
 
     pub fn has_overrides(&self) -> bool {
-        !self.partitions.is_empty() || !self.details.is_empty()
+        !self.paths.is_empty()
     }
 }
 
@@ -199,8 +220,10 @@ impl PartitionVersionMap {
     pub const fn zero() -> Self {
         Self {
             global: AspectVersion::zero(),
-            partitions: BTreeMap::new(),
-            details: BTreeMap::new(),
+            overrides: PartitionVersionOverrides {
+                baseline: AspectVersion::zero(),
+                paths: BTreeMap::new(),
+            },
         }
     }
 
@@ -209,15 +232,7 @@ impl PartitionVersionMap {
     }
 
     pub fn scoped(&self, scope: &PartitionSubscription) -> AspectVersion {
-        if scope.detail.is_some() {
-            if let Some(version) = self.details.get(scope) {
-                return *version;
-            }
-        }
-        self.partitions
-            .get(&scope.partition)
-            .copied()
-            .unwrap_or(self.global)
+        self.overrides.scoped_or_global(scope, self.global)
     }
 
     pub fn version_for_scope(&self, aspect: Aspect, scope: Option<&PartitionSubscription>) -> u64 {
@@ -229,22 +244,12 @@ impl PartitionVersionMap {
 
     pub fn set_global(&mut self, version: AspectVersion) {
         self.global = version;
-        for partition in self.partitions.values_mut() {
-            *partition = version;
-        }
-        for detail in self.details.values_mut() {
-            *detail = version;
-        }
+        self.overrides.set_global(version);
     }
 
     pub fn apply_evaluation(&mut self, version: AspectVersion, changed_regions: &[ChangedRegion]) {
         self.global = version;
-        evaluation::apply(
-            &mut self.partitions,
-            &mut self.details,
-            version,
-            changed_regions,
-        );
+        self.overrides.apply_evaluation(version, changed_regions);
     }
 
     /// Apply one producer-local aspect change without projecting that aspect's
@@ -254,60 +259,23 @@ impl PartitionVersionMap {
         &mut self,
         aspect: Aspect,
         changed_regions: &[ChangedRegion],
-        baseline: &Self,
+        _baseline: &Self,
     ) {
         let previous_global = self.global;
         let next_value = previous_global.get(aspect) + 1;
         self.global = previous_global.with(aspect, next_value);
 
         if changed_regions.is_empty() {
-            for version in self.partitions.values_mut() {
-                *version = version.with(aspect, next_value);
-            }
-            for version in self.details.values_mut() {
-                *version = version.with(aspect, next_value);
-            }
-            return;
-        }
-
-        for region in changed_regions {
-            let previous_partition = self
-                .partitions
-                .get(&region.partition)
-                .copied()
-                .or_else(|| baseline.partitions.get(&region.partition).copied())
-                .unwrap_or(baseline.global);
-            self.partitions.insert(
-                region.partition.clone(),
-                previous_partition.with(aspect, next_value),
-            );
-            if let Some(detail) = region.detail.as_ref() {
-                let scope = PartitionSubscription::partition_and_detail(
-                    region.partition.clone(),
-                    detail.clone(),
-                );
-                let previous_detail = self
-                    .details
-                    .get(&scope)
-                    .copied()
-                    .unwrap_or(previous_partition);
-                self.details
-                    .insert(scope, previous_detail.with(aspect, next_value));
-            } else {
-                for (scope, version) in &mut self.details {
-                    if scope.partition == region.partition {
-                        *version = version.with(aspect, next_value);
-                    }
-                }
+            self.overrides.baseline = self.overrides.baseline.with(aspect, next_value);
+        } else {
+            for region in changed_regions {
+                self.overrides.write_aspect(region, aspect, next_value);
             }
         }
     }
 
     pub fn into_storage_parts(self) -> (AspectVersionHeader, PartitionVersionOverrides) {
-        let overrides = PartitionVersionOverrides {
-            partitions: self.partitions,
-            details: self.details,
-        };
+        let overrides = self.overrides;
         (
             AspectVersionHeader {
                 global: self.global,
@@ -323,8 +291,7 @@ impl PartitionVersionMap {
     ) -> Self {
         Self {
             global: header.global(),
-            partitions: overrides.partitions,
-            details: overrides.details,
+            overrides,
         }
     }
 }

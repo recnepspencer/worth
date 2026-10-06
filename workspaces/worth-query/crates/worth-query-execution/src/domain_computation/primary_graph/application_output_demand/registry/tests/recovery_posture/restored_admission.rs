@@ -1,4 +1,6 @@
 use super::*;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 #[test]
 fn repeated_restored_admission_joins_one_semantic_source_record() {
@@ -18,13 +20,22 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     );
     let registry = WorthQueryOutputDemandRegistry::default();
     let restored = restored_output(observation, scope);
+    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
+        maximum_work_visits: 1_000_000,
+        maximum_preparation_bytes: 8 * 1024 * 1024,
+    });
 
+    let (_lineage, settlement) =
+        crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let (first, inserted) = registry
         .admit_restored(
             key_with_identity("restored", 1, 1, 80),
             scope,
             occurrence,
+            super::super::super::DemandAdmissionKind::Ordinary,
             restored.clone(),
+            &settlement,
+            &mut admission,
         )
         .expect("the recovered output admits its first demand");
     let (second, reinserted) = registry
@@ -32,7 +43,10 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             key_with_identity("restored", 2, 1, 80),
             scope,
             occurrence,
+            super::super::super::DemandAdmissionKind::Ordinary,
             restored,
+            &settlement,
+            &mut admission,
         )
         .expect("a later observation joins the recovered semantic source");
 
@@ -41,6 +55,12 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     assert_eq!(first.key, second.key);
     assert_eq!(registry.state.lock().unwrap().records.len(), 1);
     assert_eq!(registry.accepted_checkpoint_identities().len(), 1);
+    assert!(
+        registry
+            .posts_settlement(&settlement, &mut admission)
+            .unwrap(),
+        "a dependent claims the restored output through its posted settlement"
+    );
 }
 
 fn restored_output(
@@ -50,6 +70,7 @@ fn restored_output(
     super::super::super::WorthQueryRestoredAcceptedOutput {
         checkpoint: super::super::super::WorthQueryAcceptedOutputCheckpointIdentity {
             producer: "restored".to_owned(),
+            posture: super::super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source: [0x55; 32],
             scope,
             source_partition: [0x66; 32],
@@ -58,6 +79,7 @@ fn restored_output(
             resources: None,
             roles: Vec::new(),
             producer_facts: None,
+            producer_fact_wire_version: 0,
         },
         correspondence: Arc::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::default(),
@@ -66,5 +88,6 @@ fn restored_output(
         source_scope: scope,
         source_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x55; 32]),
         observed_source_facts: Arc::from([]),
+        native_output_witness: None,
     }
 }

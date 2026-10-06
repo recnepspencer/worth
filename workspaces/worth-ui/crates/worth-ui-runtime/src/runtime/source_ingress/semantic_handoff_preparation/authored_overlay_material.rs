@@ -79,7 +79,8 @@ impl WorthUiAuthoredOverlayMaterial {
                     | WorthUiSemanticDeclaration::Projection(_)
                     | WorthUiSemanticDeclaration::Token(_)
                     | WorthUiSemanticDeclaration::AppearanceRole(_)
-                    | WorthUiSemanticDeclaration::Layout(_) => {}
+                    | WorthUiSemanticDeclaration::Layout(_)
+                    | WorthUiSemanticDeclaration::Expression(_) => {}
                 }
             }
         }

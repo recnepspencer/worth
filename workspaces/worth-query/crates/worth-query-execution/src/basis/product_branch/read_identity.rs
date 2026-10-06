@@ -18,6 +18,21 @@ pub struct WorthQueryProductBranchReadIdentity {
 }
 
 impl WorthQueryProductBranchReadIdentity {
+    pub(crate) fn matches_observation(&self, observation: &ProductBranchObservation) -> bool {
+        self.same_branch_occurrence_observation(observation)
+            && self.generation == observation.reference_generation()
+            && &self.commit == observation.selected_commit()
+            && &self.basis == observation.basis().identity()
+    }
+
+    pub(crate) fn same_branch_occurrence_observation(
+        &self,
+        observation: &ProductBranchObservation,
+    ) -> bool {
+        &self.branch == observation.branch_identity()
+            && self.incarnation == observation.lifecycle_incarnation()
+    }
+
     pub(crate) fn from_observation(observation: &ProductBranchObservation) -> Self {
         Self {
             branch: observation.branch_identity().clone(),

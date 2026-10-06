@@ -121,13 +121,53 @@ impl<'session> super::WorthUiPreparedMountedContentRebind<'session> {
     }
 }
 
+impl super::WorthUiMountedContentPublication {
+    /// Whether an authored successor's prepared owners still stand on the
+    /// session as it is now: the pointer succession and the retained
+    /// appearance owners. Any other publication prepares none. The expression
+    /// succession needs no check: its owner and the published frame change
+    /// only through a commit on the session this preparation holds.
+    pub(super) fn prepared_owners_are_current(
+        &self,
+        session: &WorthUiActiveApplicationSession,
+    ) -> bool {
+        let super::WorthUiMountedContentPublication::AuthoredSuccessor {
+            authority,
+            appearance_succession,
+            pointer_succession,
+            owners,
+            ..
+        } = self
+        else {
+            return true;
+        };
+        pointer_succession
+            .validate_predecessor(
+                &session.active_generation_identity(),
+                session.pointer_affordance_snapshot.as_ref(),
+                session
+                    .observation_clock
+                    .as_ref()
+                    .map(|clock| clock.sample_millis()),
+                &session.mounted,
+            )
+            .is_ok()
+            && owners.matches_projection(session.appearance_owner_snapshot.as_ref())
+            && session
+                .prepare_retained_appearance_owners(authority, appearance_succession)
+                .is_ok()
+    }
+}
+
 impl super::WorthUiPreparedMountedContentRebind<'_> {
     pub(crate) fn refresh_before_effects(
         &mut self,
         plan: &mut crate::runtime::rebind::UiRebindPlan,
     ) -> Result<(), crate::runtime::rebind::UiRebindPreparationDenial> {
+        let current = self.publication.prepared_owners_are_current(self.session);
         let super::WorthUiMountedContentPublication::AuthoredSuccessor {
             authority,
+            expressions,
             pointer_succession,
             appearance_succession,
             occurrence_geometry,
@@ -137,30 +177,13 @@ impl super::WorthUiPreparedMountedContentRebind<'_> {
         else {
             return Ok(());
         };
-        if pointer_succession
-            .validate_predecessor(
-                &self.session.active_generation_identity(),
-                self.session.pointer_affordance_snapshot.as_ref(),
-                self.session
-                    .observation_clock
-                    .as_ref()
-                    .map(|clock| clock.sample_millis()),
-                &self.session.mounted,
-            )
-            .is_ok()
-            && owners.matches_projection(self.session.appearance_owner_snapshot.as_ref())
-            && self
-                .session
-                .prepare_retained_appearance_owners(authority, appearance_succession)
-                .is_ok()
-        {
+        if current {
             self.session
                 .include_pointer_publication(plan, pointer_succession)?;
             return Ok(());
         }
-        let refreshed = self
-            .session
-            .prepare_pointer_generation_succession(authority)?;
+        let (refreshed_expressions, refreshed) =
+            self.session.prepare_retained_successions(authority)?;
         let refreshed_owners = self
             .session
             .prepare_retained_appearance_owners(authority, appearance_succession)?;
@@ -172,6 +195,7 @@ impl super::WorthUiPreparedMountedContentRebind<'_> {
             &refreshed_owners,
             occurrence_geometry,
         )?;
+        *expressions = refreshed_expressions;
         *pointer_succession = refreshed;
         *owners = refreshed_owners;
         self.frame = frame;

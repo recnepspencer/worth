@@ -5,7 +5,7 @@ use worth_relational::facade::indexes::{
 };
 
 use super::{
-    read_execution_denial, WorthQueryApplicationReadExecutionDenial,
+    read_execution_denial, OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial,
     WorthQueryApplicationReadExecutionDenialKind,
 };
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
@@ -35,107 +35,8 @@ pub(super) struct BoundedRootSelection {
     pub(super) relation_records_examined: usize,
 }
 
-pub(super) struct RootSelectionWork {
-    maximum_work: usize,
-    work_units: usize,
-    adjacency_lists_read: usize,
-    relation_records_examined: usize,
-    predicate_records_examined: usize,
-    predicate_work_units: usize,
-}
-
-impl RootSelectionWork {
-    fn new(maximum_work: usize) -> Self {
-        Self {
-            maximum_work,
-            work_units: 0,
-            adjacency_lists_read: 0,
-            relation_records_examined: 0,
-            predicate_records_examined: 0,
-            predicate_work_units: 0,
-        }
-    }
-
-    fn remaining(&self) -> usize {
-        self.maximum_work.saturating_sub(self.work_units)
-    }
-
-    fn charge(
-        &mut self,
-        adjacency_lists_read: usize,
-        relation_records_examined: usize,
-        endpoint_records_reserved: usize,
-        subject: &str,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-        let charged = adjacency_lists_read
-            .saturating_add(relation_records_examined)
-            .saturating_add(endpoint_records_reserved);
-        if self.work_units.saturating_add(charged) > self.maximum_work {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
-        self.work_units = self.work_units.saturating_add(charged);
-        self.adjacency_lists_read = self
-            .adjacency_lists_read
-            .saturating_add(adjacency_lists_read);
-        self.relation_records_examined = self
-            .relation_records_examined
-            .saturating_add(relation_records_examined);
-        Ok(())
-    }
-
-    fn charge_predicate(
-        &mut self,
-        records_examined: usize,
-        matches_reserved: usize,
-        subject: &str,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-        let charged = records_examined.saturating_add(matches_reserved);
-        if self.work_units.saturating_add(charged) > self.maximum_work {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
-        self.work_units = self.work_units.saturating_add(charged);
-        self.predicate_records_examined = self
-            .predicate_records_examined
-            .saturating_add(records_examined);
-        self.predicate_work_units = self.predicate_work_units.saturating_add(charged);
-        Ok(())
-    }
-
-    fn charge_source_observation(
-        &mut self,
-        subject: &str,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-        if self.work_units >= self.maximum_work {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
-        self.work_units += 1;
-        Ok(())
-    }
-
-    fn charge_source_copy(
-        &mut self,
-        units: usize,
-        subject: &str,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-        if self.work_units.saturating_add(units) > self.maximum_work {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
-        self.work_units += units;
-        Ok(())
-    }
-}
+mod work;
+use work::RootSelectionWork;
 
 pub(super) fn select_bounded_roots<
     Schema,
@@ -160,7 +61,10 @@ pub(super) fn select_bounded_roots<
     >,
     result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation>,
+    maximum_work: usize,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    super::interruption::checkpoint(plan.controls.request_scope(), plan.query.name())?;
     let contract = plan.query.read_family_binding().planning_contract();
     if !contract.root_paths().is_empty() {
         return path_union::select_root_path_union(
@@ -170,10 +74,15 @@ pub(super) fn select_bounded_roots<
             contract.root_paths(),
             result_buffer,
             capture_result_set,
+            spent,
+            maximum_work,
         );
     }
     match contract.predicates() {
         [] => {
+            if let Some(spent) = spent {
+                spent.root(1);
+            }
             let result_set_source = if capture_result_set {
                 let mut source = RootPathSourceBuilder::default();
                 source.observe_entity(plan.scope.entity_id());
@@ -201,6 +110,8 @@ pub(super) fn select_bounded_roots<
             predicate,
             result_buffer,
             capture_result_set,
+            spent,
+            maximum_work,
         ),
         _ => Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
@@ -233,6 +144,8 @@ fn select_indexed_root<
     predicate: &worth_query_installation::facade::WorthQueryInstalledGraphPredicate,
     result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation>,
+    maximum_work: usize,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let (entity, aspect, field) = predicate.field();
     let computation = plan
@@ -292,6 +205,7 @@ fn select_indexed_root<
             field,
         )
     })?;
+    super::interruption::checkpoint(plan.controls.request_scope(), field)?;
     let lookup =
         execute_governed_predicate_lookup(runtime, computation, request).map_err(|_| {
             read_execution_denial(
@@ -299,6 +213,7 @@ fn select_indexed_root<
                 field,
             )
         })?;
+    super::interruption::checkpoint(plan.controls.request_scope(), field)?;
     let scoped = lookup
         .candidate_entity_ids()
         .iter()
@@ -319,7 +234,7 @@ fn select_indexed_root<
                 field,
             )
         })?;
-    let mut work = RootSelectionWork::new(plan.controls.maximum_work().get());
+    let mut work = RootSelectionWork::new(maximum_work, plan.controls.request_scope(), spent);
     work.charge_predicate(lookup.examined_entry_count(), 0, field)?;
     let mut set_source = RootPathSourceBuilder::default();
     let selected_predicate_source = if capture_result_set || scoped.is_some() {

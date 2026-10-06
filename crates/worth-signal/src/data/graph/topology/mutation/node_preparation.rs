@@ -39,7 +39,7 @@ impl SignalGraph {
         node: NodeId,
         edges: &[DependencyEdge],
         delta: DependencyTopologyDelta,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         self.validate_handle(node)?;
         let previous = self.node_pending_revalidation(node)?;
@@ -126,7 +126,7 @@ fn prepare_waiter_update(
     graph: &mut SignalGraph,
     update: crate::data::graph::PreparedPendingRevalidationIndex,
     maximum: crate::runtime_policy::SignalConditionalEvaluationBudget,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<PreparedTopologyWaiterUpdate, SignalError> {
     let Some(ledger) = graph.arena.retained_node_ledger.clone() else {
         return Ok(PreparedTopologyWaiterUpdate::Direct(update));
@@ -141,6 +141,9 @@ fn prepare_waiter_update(
             .map(PreparedTopologyWaiterUpdate::Retained)
     };
     match work {
+        EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
+            "request discovery checkpoint cannot prepare topology publication",
+        )),
         EvaluationWork::Conditional(work) => prepare(graph, work),
         EvaluationWork::Ordinary => prepare(graph, &mut Work::new(maximum_visits)),
     }
@@ -151,7 +154,7 @@ fn prepare_node_update(
     node: NodeId,
     update: TopologyNodeUpdate,
     maximum: crate::runtime_policy::SignalConditionalEvaluationBudget,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<PreparedTopologyNodeUpdate, SignalError> {
     let Some(ledger) = &arena.retained_node_ledger else {
         return Ok(PreparedTopologyNodeUpdate::Direct(update));
@@ -178,6 +181,11 @@ fn prepare_node_update(
             .map_err(map_node_edit)
     };
     let prepared = match work {
+        EvaluationWork::RequestCheckpoint(_) => {
+            return Err(SignalError::internal(
+                "request discovery checkpoint cannot prepare topology publication",
+            ))
+        }
         EvaluationWork::Conditional(work) => prepare(work)?,
         EvaluationWork::Ordinary => prepare(&mut Work::new(maximum.maximum_attempt_visits))?,
     };

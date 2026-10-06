@@ -9,19 +9,20 @@ pub(crate) use application_fact_state::{
     UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial,
 };
 pub(crate) use application_fact_state::{
-    UiIntentApplicationFactState, UiIntentApplicationInputReference,
-    UiPreparedValidationAppearanceReceiptSuccession, UiValidationAppearanceClass,
-    UiValidationAppearanceFactSnapshot,
+    UiIntentApplicationFactState, UiPreparedValidationAppearanceReceiptSuccession,
+    UiValidationAppearanceClass, UiValidationAppearanceFactSnapshot,
 };
 pub use application_fact_state::{
     UiIntentApplicationFactUpdateDenial, UiIntentApplicationFactUpdateReceipt,
+    UiIntentApplicationInputReference, UiIntentApplicationInputRevision,
 };
 pub use input_basis::{
-    UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentInputBasisReceipt,
-    UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost, UiIntentQueryInputRevision,
+    UiIntentApplicationFactRevision, UiIntentDraftInputRevision, UiIntentExpressionInputRevision,
+    UiIntentInputBasisReceipt, UiIntentInputOwnerRevision, UiIntentPayloadProjectionCost,
+    UiIntentQueryInputRevision,
 };
 pub(crate) use input_basis::{
-    UiIntentInputBasis, UiIntentInputBasisMaterial, UiIntentInputBasisView,
+    UiIntentInputBasis, UiIntentInputBasisMaterial, UiIntentInputBasisView, UiIntentInputOwners,
 };
 pub use prepared::UiPreparedIntentPayload;
 pub(crate) use projection::prepare_intent_payload;

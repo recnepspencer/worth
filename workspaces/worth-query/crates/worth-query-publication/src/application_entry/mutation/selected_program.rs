@@ -60,33 +60,13 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        if !std::ptr::eq(application.runtime(), self.request.application) {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
+        let mut request = self;
+        match request.prepare_in_program(application)? {
+            super::WorthQueryApplicationProgramMutationPreparation::Prepared(candidate) => {
+                Ok(candidate.commit())
+            }
+            super::WorthQueryApplicationProgramMutationPreparation::Settled(outcome) => Ok(outcome),
         }
-        let selected = self
-            .request
-            .application
-            .on_branch(self.request.branch)
-            .select()
-            .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-        let owner = application
-            .selected_program_owner(&selected)
-            .map_err(map_selected_program_owner_denial)?;
-        let selected_owns_action = owner.contains_action::<Intent::Binding>();
-        if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
-        self.execute_with_preparation_and_commit(
-            move |request| super::authorization::prepare_selected(request, &selected),
-            |_, program, idempotency| {
-                if selected_owns_action {
-                    owner.compare_and_commit_program_action::<Intent::Binding>(program, idempotency)
-                } else {
-                    application
-                        .compare_and_commit_program_action::<Intent::Binding>(program, idempotency)
-                }
-            },
-        )
     }
 
     /// Capability counterpart to [`Self::execute_in_program`],
@@ -130,13 +110,24 @@ where
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
         self.execute_with_preparation_and_commit(
-            move |request| super::authorization::prepare_capability_selected(request, &selected),
-            |_, program, idempotency| {
+            move |request, identities, staged| {
+                super::authorization::prepare_capability_selected(
+                    request, identities, staged, &selected,
+                )
+            },
+            |_, program, binding| {
                 if selected_owns_action {
-                    owner.compare_and_commit_program_action::<Intent::Binding>(program, idempotency)
+                    owner.compare_and_commit_program_action(
+                        program,
+                        binding.identities(),
+                        |idempotency| binding.extension().apply(idempotency),
+                    )
                 } else {
-                    application
-                        .compare_and_commit_program_action::<Intent::Binding>(program, idempotency)
+                    application.compare_and_commit_program_action(
+                        program,
+                        binding.identities(),
+                        |idempotency| binding.extension().apply(idempotency),
+                    )
                 }
             },
         )

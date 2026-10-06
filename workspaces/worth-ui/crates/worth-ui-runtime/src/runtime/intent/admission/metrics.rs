@@ -9,6 +9,7 @@ pub struct UiIntentAdmissionMetrics {
     released: u64,
     lifecycle_cancelled: u64,
     stopped: u64,
+    operability_reobservations: u64,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -29,6 +30,7 @@ pub(super) struct UiIntentAdmissionMetricInput {
     pub(super) released: u64,
     pub(super) lifecycle_cancelled: u64,
     pub(super) stopped: u64,
+    pub(super) operability_reobservations: u64,
 }
 
 impl UiIntentAdmissionMetrics {
@@ -43,6 +45,7 @@ impl UiIntentAdmissionMetrics {
             released: input.released,
             lifecycle_cancelled: input.lifecycle_cancelled,
             stopped: input.stopped,
+            operability_reobservations: input.operability_reobservations,
         }
     }
 
@@ -80,6 +83,12 @@ impl UiIntentAdmissionMetrics {
 
     pub const fn stopped(self) -> u64 {
         self.stopped
+    }
+
+    /// Standing operability facts a condition change re-observed, one per
+    /// attempted refresh of an existing fact.
+    pub const fn operability_reobservations(self) -> u64 {
+        self.operability_reobservations
     }
 }
 

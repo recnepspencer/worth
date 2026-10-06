@@ -5,6 +5,7 @@ mod controls;
 mod credential;
 mod denial;
 mod elevation;
+pub(crate) mod inbound_completion;
 mod mutation;
 mod query_publication;
 mod recovery;

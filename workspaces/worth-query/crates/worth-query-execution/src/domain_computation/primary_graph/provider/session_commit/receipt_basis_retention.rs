@@ -56,23 +56,67 @@ impl Eq for WorthQueryRetainedApplicationCommitBasis {}
 pub(in crate::domain_computation::primary_graph) struct WorthQueryReceiptBasisRetentionStore {
     order: VecDeque<CommitId>,
     by_commit: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
+    mandatory: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
 }
 
 impl WorthQueryReceiptBasisRetentionStore {
+    pub(in crate::domain_computation::primary_graph::provider) fn has_mandatory(
+        &self,
+        commit: CommitId,
+    ) -> bool {
+        self.mandatory.contains_key(&commit)
+    }
+
+    /// Commits whose dispatch basis is mandatory; their evidence never leaves
+    /// the idempotency window.
+    pub(in crate::domain_computation::primary_graph::provider) fn mandatory_commits(
+        &self,
+    ) -> std::collections::BTreeSet<CommitId> {
+        self.mandatory.keys().copied().collect()
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn release_mandatory(
+        &mut self,
+        commit: CommitId,
+    ) {
+        assert!(
+            self.mandatory.remove(&commit).is_some(),
+            "terminal release owns an exact mandatory basis"
+        );
+    }
     pub(in crate::domain_computation::primary_graph::provider) fn release(
         &mut self,
         commit: CommitId,
     ) {
         self.by_commit.remove(&commit);
+        self.mandatory.remove(&commit);
         self.order.retain(|indexed| *indexed != commit);
+    }
+
+    /// A mandatory basis belongs to its dispatch terminal, not to history.
+    pub(in crate::domain_computation::primary_graph::provider) fn release_ordinary(
+        &mut self,
+        commit: CommitId,
+    ) {
+        if self.by_commit.remove(&commit).is_some() {
+            self.order.retain(|indexed| *indexed != commit);
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn retain(
         &mut self,
         commit: CommitId,
         lease: RelationalBranchRetentionLease,
+        mandatory: bool,
     ) {
         let retention = WorthQueryRetainedApplicationCommitBasis::new(lease);
+        if mandatory {
+            assert!(
+                self.mandatory.insert(commit, retention).is_none(),
+                "one mandatory dispatch basis per commit"
+            );
+            return;
+        }
         assert!(
             self.by_commit.insert(commit, retention).is_none(),
             "one Relational commit may open one receipt-basis lifecycle"
@@ -91,11 +135,14 @@ impl WorthQueryReceiptBasisRetentionStore {
         &self,
         commit: CommitId,
     ) -> Option<WorthQueryRetainedApplicationCommitBasis> {
-        self.by_commit.get(&commit).cloned()
+        self.mandatory
+            .get(&commit)
+            .or_else(|| self.by_commit.get(&commit))
+            .cloned()
     }
 
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_count(&self) -> usize {
-        self.by_commit.len()
+        self.by_commit.len() + self.mandatory.len()
     }
 }

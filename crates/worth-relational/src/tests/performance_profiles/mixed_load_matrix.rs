@@ -128,9 +128,7 @@ fn perf_mixed_load_matrix() {
 
     let relation_index_pressure_samples =
         capture_perf_samples(suite, "concurrent_relation_index_parity_pressure", || {
-            let runtime = runtime_with_test_schema_execution_model(
-                crate::facade::runtime::RelationalExecutionModel::ParallelPreparation,
-            );
+            let runtime = runtime_with_test_schema();
             let source = create_entity_outcome(&runtime, "source");
             let source_id = changed_entities(&source)[0];
             let targets = [

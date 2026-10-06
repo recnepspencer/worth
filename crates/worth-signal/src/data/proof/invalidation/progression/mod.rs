@@ -12,6 +12,7 @@ mod binding;
 mod committed;
 mod denial;
 mod executed;
+mod graph_batch;
 mod lowered;
 mod owner;
 mod prepared;
@@ -27,6 +28,9 @@ pub(crate) use binding::{
 pub(crate) use committed::{AdmittedDependencyRecompute, CommittedDirectInvalidation};
 pub(crate) use denial::{InvalidationOriginAdmissionOutcome, InvalidationProgressionDenial};
 pub(crate) use executed::ExecutedInvalidationBatch;
+pub(crate) use graph_batch::{
+    DisjointGraphBatch, GraphBatchBindingAxes, GraphMemberBinding, GraphProposalKey,
+};
 pub(crate) use lowered::LoweredInvalidationBatch;
 pub(crate) use owner::InvalidationProgressionOwner;
 pub(crate) use prepared::PreparedDirectInvalidation;

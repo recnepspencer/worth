@@ -16,6 +16,8 @@ pub enum WorthUiArtifactInputNodeKind {
     AppearanceRole,
     Backdrop,
     Layout,
+    Condition,
+    Derived,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -34,6 +36,7 @@ pub enum WorthUiArtifactInputBodyAtom {
     KeywordAppearance,
     KeywordBackdrop,
     NumberLiteral(String),
+    ExpressionBody(crate::WorthUiExpressionBody),
     LeftBrace,
     RightBrace,
     LeftBracket,
@@ -59,6 +62,8 @@ pub enum WorthUiArtifactInputNode {
     AppearanceRole(WorthUiArtifactInputAppearanceRoleNode),
     Backdrop(WorthUiArtifactInputBackdropNode),
     Layout(WorthUiArtifactInputLayoutNode),
+    Condition(WorthUiArtifactInputBlockNode),
+    Derived(WorthUiArtifactInputBlockNode),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -122,6 +127,8 @@ impl WorthUiArtifactInputNode {
             Self::AppearanceRole(_) => WorthUiArtifactInputNodeKind::AppearanceRole,
             Self::Backdrop(_) => WorthUiArtifactInputNodeKind::Backdrop,
             Self::Layout(_) => WorthUiArtifactInputNodeKind::Layout,
+            Self::Condition(_) => WorthUiArtifactInputNodeKind::Condition,
+            Self::Derived(_) => WorthUiArtifactInputNodeKind::Derived,
         }
     }
 
@@ -133,7 +140,9 @@ impl WorthUiArtifactInputNode {
             | Self::Surface(node)
             | Self::Binding(node)
             | Self::QueryScalar(node)
-            | Self::QueryCollection(node) => node.provenance(),
+            | Self::QueryCollection(node)
+            | Self::Condition(node)
+            | Self::Derived(node) => node.provenance(),
             Self::Token(node) => node.provenance(),
             Self::SemanticArtifact(node) => node.provenance(),
             Self::AppearanceRole(node) => node.provenance(),

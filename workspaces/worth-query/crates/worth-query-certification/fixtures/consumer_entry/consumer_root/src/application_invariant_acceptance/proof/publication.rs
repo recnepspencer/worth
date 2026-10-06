@@ -3,12 +3,12 @@ use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
     },
-    primary_graph::{
-        WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-        WorthQueryEntityResolutionDenialKind, WorthQueryPreserveOutput,
-    },
+    declaration::application_operation::WorthQueryCreateOutput,
+    primary_graph::WorthQueryEntityResolutionDenialKind,
 };
-use worth_query_topology_entry::{Body, PlanarEditBinding, PlanarMutation, PlanarRead};
+use worth_query_topology_entry::{
+    PlanarAnchorOutput, PlanarCreatedOutputs, PlanarMutation, PlanarOutputs, PlanarRead,
+};
 
 use super::{
     length, mutate, read_y, require_planar_violation, source_version, ProgramApplication, Request,
@@ -51,21 +51,18 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
             panic!("the complete positive-turn ring must publish: {outcome:?}")
         };
         assert_eq!(result.changed_vertices, vertices.len());
-        receipt.output_correspondence().entity(
-            WorthQueryApplicationOutputRole::<PlanarEditBinding<crate::ConsumerSchema>, Body, WorthQueryPreserveOutput>::from_static("anchor"),
-        ).expect("the committed group preserves its declared anchor through owner identity correspondence");
+        let outputs = receipt
+            .outputs_of::<PlanarOutputs>()
+            .expect("the cycle commits under the planar contract");
+        outputs
+            .entity::<PlanarAnchorOutput<crate::ConsumerSchema>>()
+            .expect("the committed group preserves its declared anchor through owner identity correspondence");
         let created = vertices
             .iter()
             .map(|vertex| {
-                receipt
-                    .output_correspondence()
-                    .entity(
-                        WorthQueryApplicationOutputRole::<
-                            PlanarEditBinding<crate::ConsumerSchema>,
-                            Body,
-                            WorthQueryCreateOutput,
-                        >::try_new(format!("created.{}", vertex.body_key))
-                        .expect("fixture keys form valid source-derived role names"),
+                outputs
+                    .member::<PlanarCreatedOutputs<crate::ConsumerSchema>, WorthQueryCreateOutput>(
+                        &vertex.body_key,
                     )
                     .expect("every created cycle member is sealed under its source-derived role")
                     .entity_id()

@@ -32,7 +32,9 @@ pub(crate) use history::{
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
-pub(crate) use indexing::{IndexingState, IndexingSubsystem};
+pub(crate) use indexing::{
+    ExactLookupInputs, IndexDefinitionReadBinding, IndexingState, IndexingSubsystem,
+};
 pub(crate) use lineage::{LineageState, LineageSubsystem, ValidatedLineageEventBatch};
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use owned_state::RuntimeOwnedState;

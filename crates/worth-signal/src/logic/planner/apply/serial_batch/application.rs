@@ -8,7 +8,7 @@ use crate::diagnostics::failure::{ExecutionFailureContext, ExecutionFailurePhase
 use crate::logic::evaluation::{
     apply_prepared_evaluation_after_dependencies_with_policy, EvaluationVerdict,
 };
-use crate::logic::planner::types::{EligibleTask, StageExecutor};
+use crate::logic::planner::types::EligibleTask;
 
 use super::preparation::{DeferredSnapshotBatch, PreparedSerialStageBatch, SerialApplyInput};
 use super::witness::ExactStageWidth;
@@ -56,19 +56,12 @@ impl PreparedSerialStageBatch {
         graph: &mut SignalGraph,
         summary: &PlanSummary,
         comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
-        executor: StageExecutor,
     ) -> Result<AppliedSerialStageBatch, SignalError> {
         let stage_index = self.stage_index;
         let mut applied_tasks = Vec::with_capacity(self.exact_width.get());
         for input in self.apply_inputs {
-            let apply_result = apply_serial_input(
-                graph,
-                summary,
-                stage_index,
-                input,
-                executor,
-                comparator_resolver,
-            )?;
+            let apply_result =
+                apply_serial_input(graph, summary, stage_index, input, comparator_resolver)?;
             if let Some(snapshot) = apply_result.pending_snapshot {
                 self.pending_snapshots.push(snapshot);
             }
@@ -114,7 +107,6 @@ fn apply_serial_input(
     summary: &PlanSummary,
     stage_index: u32,
     input: SerialApplyInput,
-    executor: StageExecutor,
     comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
 ) -> Result<SerialApplyResult, SignalError> {
     let node = input.node;
@@ -136,7 +128,7 @@ fn apply_serial_input(
                 ExecutionFailurePhase::Apply,
                 Some(stage_index),
                 Some(node),
-                Some(executor),
+                None,
                 Some(record_id),
                 Some(*summary),
                 err.to_string(),

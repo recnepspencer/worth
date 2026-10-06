@@ -9,7 +9,7 @@ use worth_query_host::facade::application_contribution::{
 
 use super::super::{
     retention_entry::{DocumentRetentionQueryBinding, DocumentRetentionRead},
-    schema::{DocumentRetentionRow, DocumentRetentionSchema},
+    schema::{Document, DocumentRetentionRow, DocumentRetentionSchema},
 };
 use super::{RetentionAssessmentOutputFamily, APPLICABILITY};
 
@@ -19,6 +19,7 @@ impl WorthQueryProducerOutputFamily<DocumentRetentionSchema>
     for LookalikeRetentionAssessmentOutputFamily
 {
     type Source = DocumentRetentionQueryBinding;
+    type Entity = Document;
     const IDENTITY: &'static str = RetentionAssessmentOutputFamily::IDENTITY;
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
 

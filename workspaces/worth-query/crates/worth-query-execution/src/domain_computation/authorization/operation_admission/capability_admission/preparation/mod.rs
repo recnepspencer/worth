@@ -4,6 +4,10 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
 };
+use worth_query_declaration::facade::application_operation::{
+    ApplicationCanonicalWork, ApplicationEncodedInput,
+};
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationCapability,
 };
@@ -30,6 +34,30 @@ pub(in crate::domain_computation::authorization) use observation::{
     WorthQueryCurrentCapabilityObservation, WorthQueryDelegationResolvedRequest,
     WorthQueryExactCapabilityObservationContext,
 };
+
+/// The input one capability admission governs.
+pub(super) enum CapabilityAdmissionInput<InputBinding>
+where
+    InputBinding: ApplicationStructuredValueBinding,
+{
+    /// Admission derives the input identity itself and reports that work.
+    Derive(InputBinding::Value),
+    /// The request already encoded the input; admission reuses its identity
+    /// and reports only the work the carrier still has to report.
+    Encoded(ApplicationEncodedInput<InputBinding>),
+}
+
+impl<InputBinding> CapabilityAdmissionInput<InputBinding>
+where
+    InputBinding: ApplicationStructuredValueBinding,
+{
+    const fn value(&self) -> &InputBinding::Value {
+        match self {
+            Self::Derive(input) => input,
+            Self::Encoded(encoded) => encoded.input(),
+        }
+    }
+}
 
 pub(super) fn complete_capability_admission<
     'a,
@@ -84,6 +112,8 @@ pub(super) struct PreparedCapabilityAdmission<
         <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
         <Input as ApplicationCapabilityRequest<Schema, Capability>>::Context,
     >,
+    governed_input_identity: [u8; 32],
+    governed_input_work: ApplicationCanonicalWork,
     sample: WorthQueryRuntimeTimeSample,
     operation_admission_identity: WorthQueryOperationAdmissionIdentity,
     graph_work: WorthQueryManagedGraphWorkSession,
@@ -165,7 +195,9 @@ pub(super) fn prepare_capability_admission<
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
-    input: Input,
+    input: CapabilityAdmissionInput<
+        <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding,
+    >,
     request: &WorthQueryRequestScope,
     approved: Option<&'a WorthQueryApprovedElevation>,
 ) -> Result<
@@ -195,8 +227,13 @@ where
     preflight::validate_static_authority(runtime, principal, capability)?;
     let installed = preflight::admit_installed_plan(runtime, capability, approved)?;
     let operation = preflight::resolve_installed_operation(runtime, capability)?;
-    preflight::validate_input::<Schema, Operation, Input>(&input, &operation)?;
-    let projection = preflight::project_request(&input, installed, capability, approved)?;
+    preflight::validate_input::<Schema, Operation, Input>(input.value(), &operation)?;
+    let projection = preflight::project_request(input.value(), installed, capability, approved)?;
+    let governed_input =
+        preflight::govern_input::<Schema, Capability, Operation, Input>(input, capability)?;
+    let governed_input_identity = *governed_input.identity();
+    let governed_input_work = governed_input.canonical_work();
+    let input = governed_input.into_input();
     let sample = preflight::sample_trusted_time(runtime, capability, installed)?;
     let operation_admission_identity = preflight::mint_operation_admission(capability)?;
     let graph_work = preflight::start_graph_work(
@@ -215,6 +252,8 @@ where
         request_scope: request.clone(),
         installed,
         projection,
+        governed_input_identity,
+        governed_input_work,
         sample,
         operation_admission_identity,
         graph_work,

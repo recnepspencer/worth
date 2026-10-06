@@ -82,7 +82,7 @@ fn compile_file(
             basis.clone(),
         )
     })?;
-    let (artifact, declaration, handoff) = material.into_parts();
+    let (artifact, declaration, handoff, expressions) = material.into_parts();
     let candidate = file_authored_replacement_candidate(
         artifact,
         handoff.successor_snapshot_digest(),
@@ -101,6 +101,7 @@ fn compile_file(
         candidate,
         declaration,
         handoff,
+        expressions,
     ))
 }
 
@@ -121,7 +122,7 @@ fn compile_rust(
             basis.clone(),
         )
     })?;
-    let (artifact, declaration, handoff) = material.into_parts();
+    let (artifact, declaration, handoff, expressions) = material.into_parts();
     let candidate = rust_authored_replacement_candidate(
         artifact,
         handoff.successor_snapshot_digest(),
@@ -139,6 +140,7 @@ fn compile_rust(
         candidate,
         declaration,
         handoff,
+        expressions,
     ))
 }
 

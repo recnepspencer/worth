@@ -1,18 +1,18 @@
 error[E0277]: the trait bound `Proof<CanonicalOrder, StructuralProofAuthority>: Clone` is not satisfied
- --> tests/ui/sealed_minting/observed_proofs_cannot_be_duplicated.rs:8:20
+ --> tests/ui/sealed_minting/observed_proofs_cannot_be_duplicated.rs:7:20
   |
-8 |     requires_clone(proof);
+7 |     requires_clone(proof);
   |     -------------- ^^^^^ the trait `Clone` is not implemented for `Proof<CanonicalOrder, StructuralProofAuthority>`
   |     |
   |     required by a bound introduced by this call
   |
   = note: required for `Proof<CanonicalOrder, StructuralProofAuthority>` to implement `Clone`
 note: required by a bound in `requires_clone`
- --> tests/ui/sealed_minting/observed_proofs_cannot_be_duplicated.rs:5:22
+ --> tests/ui/sealed_minting/observed_proofs_cannot_be_duplicated.rs:4:22
   |
-5 | fn requires_clone<T: Clone>(_: &T) {}
+4 | fn requires_clone<T: Clone>(_: &T) {}
   |                      ^^^^^ required by this bound in `requires_clone`
 help: consider borrowing here
   |
-8 |     requires_clone(&proof);
+7 |     requires_clone(&proof);
   |                    +

@@ -1,4 +1,5 @@
 use crate::source::WorthUiSourceSpan;
+use crate::WorthUiExpressionBody;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum WorthUiSourceTokenKind {
@@ -16,6 +17,7 @@ pub(crate) enum WorthUiSourceTokenKind {
     KeywordAppearance,
     KeywordBackdrop,
     NumberLiteral(String),
+    ExpressionBody(WorthUiExpressionBody),
     LeftBrace,
     RightBrace,
     LeftBracket,

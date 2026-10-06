@@ -112,4 +112,5 @@ fn request_entry_replays_exact_input_and_denies_changed_reason() {
     );
 }
 
+mod lifecycle_canonical_work;
 mod lifecycle_replay;

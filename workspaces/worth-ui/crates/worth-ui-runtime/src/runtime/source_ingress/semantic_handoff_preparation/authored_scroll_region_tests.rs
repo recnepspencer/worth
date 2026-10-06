@@ -24,7 +24,7 @@ fn an_authored_line_extent_reaches_the_region_descriptor_it_names() {
     let app = scroll_region_app(RustScrollClauses::none());
     let material = prepare_semantic_handoff(scroll_package("line_extent 20"), app.capabilities())
         .expect("an authored line extent for a registered region admits");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
     let successor = evidence
         .successor_snapshot()
         .expect("an authored clause the registry does not yet state owes a successor");
@@ -60,7 +60,7 @@ fn authored_chrome_reaches_the_region_descriptor_as_one_contract() {
         app.capabilities(),
     )
     .expect("an authored chrome contract for a registered region admits");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
     let successor = evidence
         .successor_snapshot()
         .expect("an authored clause the registry does not yet state owes a successor");
@@ -90,7 +90,7 @@ fn a_source_that_agrees_with_the_registered_descriptor_owes_no_successor() {
         app.capabilities(),
     )
     .expect("a source that repeats the registered answer admits");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
 
     assert_eq!(evidence.successor_snapshot(), None);
 }
@@ -166,7 +166,7 @@ fn a_policy_only_scroll_block_names_no_region_descriptor() {
 
     let material = prepare_semantic_handoff(package, app.capabilities())
         .expect("a policy-only scroll declaration names no region kind");
-    let (_, _, evidence) = material.into_parts();
+    let (_, _, evidence, _) = material.into_parts();
 
     assert_eq!(evidence.successor_snapshot(), None);
 }

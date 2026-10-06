@@ -28,6 +28,7 @@ pub(crate) fn motion_sampling_hit_test_mechanic_for_test(
             node_receipt: receipt,
             bounds,
             clip_bounds: bounds,
+            painted_bounds: None,
             order: worth_ui_host_contract::UiMountedHitTestOrder::from_runtime_plan(1),
         },
     )

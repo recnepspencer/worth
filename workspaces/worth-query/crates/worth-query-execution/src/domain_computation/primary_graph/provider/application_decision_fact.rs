@@ -98,9 +98,9 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
 
     pub(in crate::domain_computation) fn locator_identity(&self) -> String {
         match self {
-            Self::Application { fact, .. } => fact.locator_identity(),
-            Self::ObservedSource { fact } => fact.locator_identity(),
-            Self::ApplicationObservedSource { fact, .. } => fact.locator_identity(),
+            Self::Application { fact, .. } => fact.dependency_locator_identity(),
+            Self::ObservedSource { fact } => fact.dependency_locator_identity(),
+            Self::ApplicationObservedSource { fact, .. } => fact.dependency_locator_identity(),
             Self::Principal(_) => "application-principal-currentness".to_string(),
             Self::Authorization { locator, .. } => locator.to_string(),
         }

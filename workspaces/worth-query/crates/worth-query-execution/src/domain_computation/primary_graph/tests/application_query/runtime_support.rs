@@ -26,6 +26,8 @@ use crate::domain_computation::primary_graph::{
     application_query::primary_graph_support_inventory, schema_layout::WorthQueryPrimaryGraphLayout,
 };
 
+mod admitted;
+
 #[test]
 fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
     let world = installed_authorization_world(true);

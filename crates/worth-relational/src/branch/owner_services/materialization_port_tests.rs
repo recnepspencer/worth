@@ -12,6 +12,8 @@ use crate::transactions::data::{
 
 #[path = "materialization_port_tests/generated_group.rs"]
 mod generated_group;
+#[path = "materialization_port_tests/required_child.rs"]
+mod required_child;
 
 #[test]
 fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
@@ -48,6 +50,53 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
         .basis_port()
         .observe_branch(&identity)
         .expect("the suspended boundary link retains an owner basis");
+    let port = services.materialization_port();
+    assert_eq!(
+        port.retained_entity_kind(&unavailable_basis, &suspended.custody, external)
+            .expect("the exact live retained endpoint remains observable without payload access"),
+        KindId(1)
+    );
+    assert!(
+        matches!(
+            port.retained_entity_kind(&unavailable_basis, &suspended.custody, internal),
+            Err(RelationalMaterializationError::CandidateManifestMismatch)
+        ),
+        "custody-owned generated identity cannot be reclassified as retained"
+    );
+    assert!(
+        matches!(
+            port.retained_entity_kind(&basis, &suspended.custody, external),
+            Err(RelationalMaterializationError::SuspensionCommitMismatch)
+        ),
+        "the old complete basis cannot stand in for the exact suspension"
+    );
+    let foreign = runtime_with_test_schema();
+    assert!(
+        matches!(
+            foreign
+                .owner_component_services()
+                .materialization_port()
+                .retained_entity_kind(&unavailable_basis, &suspended.custody, external),
+            Err(RelationalMaterializationError::BranchMismatch)
+        ),
+        "a foreign owner cannot observe through transported custody and basis"
+    );
+    let (_, foreign_basis) = foreign
+        .owner_component_services()
+        .basis_port()
+        .observe_branch(&foreign.main_branch_identity())
+        .expect("the foreign owner admits its own basis");
+    assert!(
+        matches!(
+            foreign
+                .owner_component_services()
+                .materialization_port()
+                .retained_entity_kind(&foreign_basis, &suspended.custody, external),
+            Err(RelationalMaterializationError::BranchMismatch)
+        ),
+        "own admitted basis cannot make another branch's custody authoritative"
+    );
+
     let failed = services
         .materialization_port()
         .rematerialize_generated_materialization(

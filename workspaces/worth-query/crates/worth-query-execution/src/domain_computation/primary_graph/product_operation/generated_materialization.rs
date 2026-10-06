@@ -10,7 +10,8 @@ mod reconstruction;
 pub use reconstruction::{
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
     WorthQueryGeneratedOutputReconstruction, WorthQueryGeneratedOutputReconstructionDenial,
-    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryRetainedGeneratedOutputEntity,
+    WorthQueryGeneratedOutputReconstructionFailure, WorthQueryReconstructedOutputEntity,
+    WorthQueryRetainedGeneratedOutputEntity,
 };
 mod suspension;
 pub use suspension::{
@@ -158,6 +159,9 @@ impl WorthQuerySuspendedGeneratedOutput {
 /// Why a generated output did not qualify for suspension. Nothing changed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputSuspensionDenial {
+    /// The current output retains every entity, so there is no generated payload
+    /// to suspend. The current output remains readable and no effect occurred.
+    NoGeneratedPayload,
     /// The producer is not installed.
     ProducerUnavailable,
     /// No output from this producer is recorded at the current branch position.
@@ -178,11 +182,29 @@ pub enum WorthQueryGeneratedOutputSuspensionFailure {
     /// The product's program activation could not admit a publication. Nothing
     /// changed.
     ProductActivationUnavailable,
-    /// The suspension could not be prepared. Nothing was published.
-    Preparation,
+    /// The suspension could not be prepared. Carries the owning Relational
+    /// denial; nothing was published and no materialization custody was issued.
+    Preparation(worth_relational::facade::branch::RelationalMaterializationError),
     /// The publication was refused or had no effect. Nothing was published.
     PublicationNoEffect,
     /// Some owners moved, but the product head did not. Continue the recovery
     /// this carries.
     ProductUnpublished(WorthQueryGeneratedOutputSuspensionRecovery),
+}
+
+impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Qualification(denial) => formatter
+                .debug_tuple("Qualification")
+                .field(denial)
+                .finish(),
+            Self::ProductActivationUnavailable => {
+                formatter.write_str("ProductActivationUnavailable")
+            }
+            Self::Preparation(cause) => formatter.debug_tuple("Preparation").field(cause).finish(),
+            Self::PublicationNoEffect => formatter.write_str("PublicationNoEffect"),
+            Self::ProductUnpublished(_) => formatter.write_str("ProductUnpublished"),
+        }
+    }
 }

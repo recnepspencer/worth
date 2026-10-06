@@ -90,23 +90,17 @@ impl UiPreparedIntentPayload {
 
     pub(crate) fn payload_inputs_are_current(
         &self,
-        mounted: &crate::mounting::WorthUiMountedSessionState,
-        application_facts: &super::UiIntentApplicationFactState,
+        owners: super::UiIntentInputOwners<'_>,
         generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     ) -> bool {
-        self.basis
-            .payload_inputs_are_current(mounted, application_facts, generation)
+        self.basis.payload_inputs_are_current(owners, generation)
     }
 
     pub(crate) fn operability_dependencies_are_current(
         &self,
-        mounted: &crate::mounting::WorthUiMountedSessionState,
-        application_facts: &super::UiIntentApplicationFactState,
-        generation: &crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        reads: &super::super::operability::UiIntentOperabilityDependencyReads<'_>,
     ) -> Result<(), super::super::operability::UiIntentOperabilityDependencyDrift> {
-        self.basis
-            .operability()
-            .currentness(mounted, application_facts, generation)
+        self.basis.operability().currentness(reads)
     }
 
     pub(crate) fn declaration_reference(

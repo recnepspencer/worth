@@ -102,7 +102,8 @@ fn denied(request_id: Option<String>, denial: BankHttpDenial) -> BankHttpMutatio
 
 fn response(outcome: BankHttpMutationOutcome) -> (StatusCode, Json<BankHttpMutationOutcome>) {
     let status = match &outcome {
-        BankHttpMutationOutcome::Applied { .. } => StatusCode::OK,
+        BankHttpMutationOutcome::Applied { .. }
+        | BankHttpMutationOutcome::PreviouslyCommitted { .. } => StatusCode::OK,
         BankHttpMutationOutcome::NotApplied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))

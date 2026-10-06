@@ -37,11 +37,23 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
 {
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
+    /// The key records `commit` for this intent, but this provider does not
+    /// retain its receipt.
+    CommittedReceiptNotRetained {
+        commit: worth_relational::facade::history::CommitId,
+    },
+    /// The key's first-encoding record matches every durable part of this
+    /// intent but names its operation by a seal no later runtime can confirm.
+    RecordedIntentUnverifiable,
     Unavailable,
+    /// The commit's evidence left the declared idempotency window.
+    WindowExpired,
 }
 
 impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {
@@ -96,24 +108,18 @@ impl WorthQueryPrimaryGraphProvider {
 
         let affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        if let Some(pending) = self.inspect_pending_application_idempotency(affinity.incarnation())
-        {
-            match pending {
-                None => {
-                    return Custody::Indeterminate(
-                        WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
-                    )
-                }
-                Some(recorded) if recorded.key_identity() == binding.key_identity() => {
-                    return if recorded == binding {
-                        Custody::PublicationPending
-                    } else {
-                        Custody::IntentDrift
-                    };
-                }
-                Some(_) => {}
+        let pending = self.inspect_pending_application_idempotency(affinity.incarnation());
+        if let Some(Some(recorded)) = pending {
+            if recorded.key_identity() == binding.key_identity() {
+                return if recorded == binding {
+                    Custody::PublicationPending
+                } else {
+                    Custody::IntentDrift
+                };
             }
         }
+        // A retained World partial keeps its publication slot reserved for
+        // resumption, so exact unpublished custody outranks that reservation.
         if let Some((recorded, handle)) =
             self.inspect_unpublished_application_idempotency(&affinity, binding)
         {
@@ -122,6 +128,11 @@ impl WorthQueryPrimaryGraphProvider {
             } else {
                 Custody::IntentDrift
             };
+        }
+        if let Some(None) = pending {
+            return Custody::Indeterminate(
+                WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+            );
         }
         match self.resolve_idempotency_binding_at_product(binding, product) {
             Ok(WorthQueryProviderIdempotencyResolution::Absent) => Custody::Unseen,
@@ -181,7 +192,7 @@ impl WorthQueryPrimaryGraphProvider {
                 binding,
             );
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            let resolution = resolution.map_err(WorthQueryProviderIdempotencyResolutionDenial::from)?;
+            let resolution = resolution?;
             if let WorthQueryProviderIdempotencyResolution::Equivalent(committed) = &resolution {
                 self.repair_equivalent_publication_settlement(runtime, committed)?;
             }

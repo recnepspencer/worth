@@ -4,16 +4,47 @@ pub enum UiIntentSupportPosture {
     Unsupported,
 }
 
+/// The condition an axis reads when it holds no truth value. The slot names
+/// the condition in the active expression catalog only, and slots renumber
+/// across generations, so it stays inside the runtime; inspection projects
+/// the condition's identity from that catalog.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UiIntentWithheldCondition {
+    slot: crate::runtime::expression::UiExpressionSlot,
+    withholding: crate::runtime::expression::UiExpressionWithholding,
+}
+
+impl UiIntentWithheldCondition {
+    pub(crate) const fn new(
+        slot: crate::runtime::expression::UiExpressionSlot,
+        withholding: crate::runtime::expression::UiExpressionWithholding,
+    ) -> Self {
+        Self { slot, withholding }
+    }
+
+    pub(crate) const fn slot(self) -> crate::runtime::expression::UiExpressionSlot {
+        self.slot
+    }
+
+    pub const fn withholding(self) -> crate::runtime::expression::UiExpressionWithholding {
+        self.withholding
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiIntentMutabilityPosture {
     Writable,
     Readonly,
+    /// A condition source holds no truth value; never read as `Readonly`.
+    Withheld(UiIntentWithheldCondition),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiIntentReadinessPosture {
     Ready,
     Pending,
+    /// A condition source holds no truth value; never read as `Pending`.
+    Withheld(UiIntentWithheldCondition),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -26,6 +57,8 @@ pub enum UiIntentOccupancyPosture {
 pub enum UiIntentPolicyPosture {
     Admitted,
     Denied,
+    /// A condition source holds no truth value; never read as `Denied`.
+    Withheld(UiIntentWithheldCondition),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

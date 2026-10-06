@@ -21,6 +21,12 @@ pub enum WorthQueryEntityResolutionDenialKind {
     CorruptIdentityIndex,
     /// Resolution exceeded its work budget.
     ProjectionWorkBudgetExceeded,
+    /// The exact selected lookup could not reserve its preparation backing.
+    ProjectionPreparationMemoryExhausted,
+    /// A complete selection needs a nonzero finite candidate limit.
+    InvalidCandidateLimit,
+    /// The complete equality result exceeds the caller's candidate limit.
+    CandidateLimitExceeded { maximum: usize },
     /// The installed limit on concurrently active snapshots was reached.
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     /// The runtime ran out of snapshot identities.

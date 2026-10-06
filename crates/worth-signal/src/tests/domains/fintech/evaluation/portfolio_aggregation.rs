@@ -1,14 +1,14 @@
+use super::FintechEvaluationView;
 use crate::data::error::SignalError;
 use crate::facade::{AspectVersion, NodeEvaluationResult};
-use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationOutput;
 
 use super::super::aspects::{ALERT, PRICE, RISK};
 
 impl super::FintechEvaluationShape {
-    pub(super) fn evaluate_portfolio_aggregation(
+    pub(super) fn evaluate_portfolio_aggregation<V: FintechEvaluationView>(
         &self,
-        view: &mut EvaluationContext<'_, ()>,
+        view: &mut V,
     ) -> Result<Option<EvaluationOutput>, SignalError> {
         let node = view.node();
         if let Some(book_index) = self

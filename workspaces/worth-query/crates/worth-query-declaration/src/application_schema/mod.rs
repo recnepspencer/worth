@@ -27,6 +27,7 @@ mod external_effect_protocol;
 mod field_presence;
 mod field_reference;
 mod identifier_validation;
+mod inbound_occurrence;
 mod invariant;
 mod member_closure;
 mod member_identity_uniqueness;
@@ -124,6 +125,10 @@ pub use external_effect_protocol::ApplicationExternalEffectProtocol;
 pub use field_presence::ApplicationFieldPresence;
 pub use field_reference::{
     ApplicationEntityMarkerIdentity, ApplicationFieldMarkerIdentity, ApplicationFieldRef,
+};
+pub use inbound_occurrence::{
+    ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
+    ApplicationInboundOccurrenceProtocol,
 };
 pub use invariant::{
     ApplicationInvariantCostPosture, ApplicationInvariantDefinition,

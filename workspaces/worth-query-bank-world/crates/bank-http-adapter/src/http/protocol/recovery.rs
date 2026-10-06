@@ -98,6 +98,13 @@ pub enum BankHttpRecoverySafeRetryOutcome {
         external_completion: bool,
         fresh_attempt: bool,
     },
+    /// The recovered effect already reached its one terminal completion, so no
+    /// attempt was made. `commit` describes the original commit this recovery
+    /// token was issued for; there is nothing to refresh or retry.
+    AlreadyCompleted {
+        request_id: String,
+        commit: BankHttpCommitDescription,
+    },
     Denied {
         request_id: Option<String>,
         denial: BankHttpDenial,

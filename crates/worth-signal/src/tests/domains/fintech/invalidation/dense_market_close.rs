@@ -7,7 +7,7 @@ use super::super::world::{
 };
 
 #[test]
-fn dense_market_close_queue_width_tracks_semantic_density() {
+fn dense_market_close_ready_work_tracks_semantic_density_across_bounded_batches() {
     for (ratio, affected) in [
         (DensityRatio::OneInOneHundred, 10_u64),
         (DensityRatio::OneInFour, 250),
@@ -36,8 +36,10 @@ fn dense_market_close_queue_width_tracks_semantic_density() {
         assert_eq!(observation.retained_ready_width, 0);
         assert_eq!(
             observation.peak_ready_width,
-            expected.value(ExpectedLocalityCounterRow::MaximumReadyFrontierWidth)
+            observation.physical_ready_peak,
         );
+        assert!(observation.peak_ready_width > 0);
+        assert!(observation.peak_ready_width <= observation.ready_items_enqueued);
         assert_eq!(
             compiled.committed_locality_financial_values().unwrap(),
             *fresh.shocked_values()

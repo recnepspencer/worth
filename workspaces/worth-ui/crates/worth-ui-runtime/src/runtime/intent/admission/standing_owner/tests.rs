@@ -1,4 +1,5 @@
 use super::*;
+use crate::runtime::intent::operability::UiIntentOperabilityDecision;
 use crate::runtime::persistent_index::{begin_all_test_observation, test_work};
 
 // These tests exercise private storage and its cost. The mounted integration
@@ -77,8 +78,8 @@ fn operability_snapshot_lookup_and_indexed_retirement_preserve_unrelated_instanc
         owner.retire_binding(binding);
         assert_eq!(
             test_work().iterated_entries(),
-            2,
-            "retirement visits exactly the binding's membership"
+            2 + 2 * routes,
+            "retirement visits the binding's membership and each member's routes"
         );
         let retired = owner.snapshot();
         assert_eq!(retired.changed_instances(&before).as_ref(), &instances[..2]);
@@ -164,4 +165,76 @@ fn physical_surface_rebind_preserves_standing_meaning_under_the_successor_bindin
     );
     assert_eq!(owner.facts.get(&instance).unwrap().binding, successor);
     assert_eq!(owner.snapshot().facts().len(), 2);
+}
+
+fn readonly() -> UiIntentOperabilityDecision {
+    use crate::runtime::intent::operability::*;
+    UiIntentOperabilityDecision::new(UiIntentOperabilityDecisionInput {
+        contract_identity: "appearance-state-test-intent".into(),
+        support: UiIntentSupportPosture::Supported,
+        mutability: UiIntentMutabilityPosture::Readonly,
+        readiness: UiIntentReadinessPosture::Ready,
+        occupancy: UiIntentOccupancyPosture::Idle,
+        policy: UiIntentPolicyPosture::Admitted,
+        affinity: UiIntentAffinityPosture::Current,
+        confirmation: UiIntentConfirmationPosture::NotRequired,
+        selected_dependencies_visited: 0,
+    })
+}
+
+#[test]
+fn condition_reobservation_refreshes_only_existing_facts_of_the_named_routes() {
+    let mut owner = UiIntentOperabilityStandingOwner::default();
+    let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let instances: Vec<_> = (0..3)
+        .map(|_| UiMountedInstanceIdentity::mint_unbound().unwrap())
+        .collect();
+    for (index, instance) in instances.iter().enumerate() {
+        owner.replace_instance(*instance, row(*instance, binding, 1 + index % 2, 1));
+    }
+    owner.revision = 1;
+    assert_eq!(owner.route_members("route.0"), 3);
+    assert_eq!(owner.route_members("route.1"), 1);
+    let ready = UiIntentOperabilityDecision::ready_for_test();
+    let before = owner.snapshot();
+
+    assert_eq!(
+        owner.reobserve(["route.1", "missing"], |_| Some(ready.clone())),
+        1,
+        "each existing fact of a named route is one attempt; a missing route is none"
+    );
+    assert_eq!(owner.reobserve(["route.0"], |_| None), 3);
+    assert_eq!(
+        owner.snapshot(),
+        before,
+        "an equal or unavailable decision leaves the owner and its revision alone"
+    );
+
+    let readonly = readonly();
+    assert_eq!(owner.reobserve(["route.1"], |_| Some(readonly.clone())), 1);
+    let after = owner.snapshot();
+    assert_eq!(after.owner_revision(), 2);
+    assert_eq!(after.changed_instances(&before).as_ref(), &[instances[1]]);
+    assert_eq!(after.facts().len(), before.facts().len());
+    let graph = crate::graph::UiGraphNodeIdentity::new(71);
+    let refreshed = after.fact_for(graph, instances[1], "route.1").unwrap();
+    assert_eq!(refreshed.decision(), &readonly);
+    assert_eq!(refreshed.owner_revision(), 2);
+    assert_eq!(
+        after
+            .fact_for(graph, instances[1], "route.0")
+            .unwrap()
+            .decision(),
+        &ready
+    );
+
+    owner.retire_instance(instances[1]);
+    assert_eq!(owner.route_members("route.1"), 0);
+    assert_eq!(owner.route_members("route.0"), 2);
+    owner.retire_binding(binding);
+    assert_eq!(owner.route_members("route.0"), 0);
+    assert_eq!(
+        owner.reobserve(["route.0", "route.1"], |_| Some(ready.clone())),
+        0
+    );
 }

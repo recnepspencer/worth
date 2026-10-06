@@ -234,8 +234,8 @@ fn partition_for(
         .find(|binding: &&PhysicalSignalAspectBindingObservation| binding.digest() == digest)
         .and_then(|binding| binding.partition())
         .expect("failed scan work must identify one installed partition")
-        .partition
-        .0
+        .path()
+        .segments()[0]
         .clone()
 }
 

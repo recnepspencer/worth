@@ -37,6 +37,10 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DuplicateOutputRole,
     OutputRoleEntityMismatch,
     OutputRoleActionMismatch,
+    /// The role's cardinality differs from the one the installed contract
+    /// records for it. A typed use cannot disagree with its contract, so this
+    /// guards the installed form as defense in depth.
+    OutputRoleCardinalityMismatch,
     DuplicateEffectKey,
     ConflictingEffectStep,
     CandidateCapacityExceeded,
@@ -116,6 +120,11 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// been consumed by a receipted settlement.
     WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
+    /// A condition's expression denied over its current operand values, or a
+    /// value could not be read as its declared type. The expression decided
+    /// neither outcome; [`expression`](WorthQueryApplicationAttemptDenial::expression)
+    /// carries the language denial.
+    WorkflowConditionExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -134,6 +143,18 @@ pub enum WorthQueryApplicationAttemptDenialKind {
 pub struct WorthQueryApplicationAttemptDenial {
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: String,
+    cause: AttemptDenialCause,
+}
+
+/// The typed denial a kind carries, when it has one. The request's stop is
+/// held apart: every refusal that carries an attempt denial stays small.
+#[derive(Debug)]
+enum AttemptDenialCause {
+    None,
+    Expression(worth_foundational::expression_api::ExpressionDenial),
+    RequestAuthority(
+        Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>,
+    ),
 }
 
 impl WorthQueryApplicationAttemptDenial {
@@ -144,6 +165,30 @@ impl WorthQueryApplicationAttemptDenial {
         Self {
             kind,
             subject: subject.into(),
+            cause: AttemptDenialCause::None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn condition_expression(
+        subject: impl Into<String>,
+        denial: worth_foundational::expression_api::ExpressionDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
+            subject: subject.into(),
+            cause: AttemptDenialCause::Expression(denial),
+        }
+    }
+
+    /// The attempt's request lost its authority: it was cancelled, passed
+    /// its deadline, or its authentication expired.
+    pub(in crate::domain_computation::primary_graph) fn request_authority_lost(
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
+            subject: denial.subject().to_owned(),
+            cause: AttemptDenialCause::RequestAuthority(Box::new(denial)),
         }
     }
 
@@ -153,6 +198,28 @@ impl WorthQueryApplicationAttemptDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+
+    /// The language denial behind `WorkflowConditionExpressionDenied`.
+    pub const fn expression(
+        &self,
+    ) -> Option<&worth_foundational::expression_api::ExpressionDenial> {
+        match &self.cause {
+            AttemptDenialCause::Expression(denial) => Some(denial),
+            _ => None,
+        }
+    }
+
+    /// The request's own stop behind `CurrentAuthorityDenied`, when the
+    /// request rather than the attempt lost its authority.
+    pub const fn request_authority(
+        &self,
+    ) -> Option<&crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    {
+        match &self.cause {
+            AttemptDenialCause::RequestAuthority(denial) => Some(denial),
+            _ => None,
+        }
     }
 }
 

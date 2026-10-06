@@ -1,13 +1,12 @@
 use super::*;
 
 #[test]
-fn planned_query_execution_parallelizes_profitable_multi_seed_traversal_packets() {
+fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(declared_aspect_schema_registry(
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
-        .execution_model(crate::facade::runtime::RelationalExecutionModel::ParallelPreparation)
         .build();
     let seeds = vec![
         create_entity_in_partition(&runtime, "s0", PartitionId(7)),
@@ -77,8 +76,8 @@ fn planned_query_execution_parallelizes_profitable_multi_seed_traversal_packets(
     assert_eq!(counters.query_packet_peak_width_total, 4);
     assert_eq!(counters.query_parallel_legal_count, 1);
     assert_eq!(counters.query_parallel_profitable_count, 1);
-    assert_eq!(counters.query_staged_parallel_strategy_count, 1);
-    assert_eq!(counters.query_serial_strategy_count, 0);
+    assert_eq!(counters.query_staged_parallel_strategy_count, 0);
+    assert_eq!(counters.query_serial_strategy_count, 1);
     assert_eq!(
         outcome
             .result

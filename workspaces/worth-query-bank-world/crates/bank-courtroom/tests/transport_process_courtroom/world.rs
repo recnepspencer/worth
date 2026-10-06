@@ -257,7 +257,7 @@ async fn spawn_bank_server() -> (CourtroomProcess, super::process::ProcessPostur
         .expect("authoritative Bank process should bind")
 }
 
-async fn authenticate_node(
+pub(super) async fn authenticate_node(
     client: &reqwest::Client,
     address: SocketAddr,
     webdriver: &str,
@@ -282,7 +282,7 @@ async fn authenticate_node(
         .expect("real browser authorization should complete at the node");
 }
 
-fn server_configuration(
+pub(super) fn server_configuration(
     fixture: &IdentityFixture,
     endpoints: &IdentityEndpoints,
     redirect_url: &str,
@@ -356,7 +356,7 @@ fn server_configuration(
     })
 }
 
-fn node_configuration(
+pub(super) fn node_configuration(
     fixture: &IdentityFixture,
     endpoints: &IdentityEndpoints,
     server: SocketAddr,
@@ -380,7 +380,7 @@ fn parse_address(value: &str) -> SocketAddr {
     value.parse().expect("process address should be canonical")
 }
 
-fn external_redirect(address: SocketAddr) -> String {
+pub(super) fn external_redirect(address: SocketAddr) -> String {
     format!(
         "http://host.docker.internal:{}/oidc/callback",
         address.port()

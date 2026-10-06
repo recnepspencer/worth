@@ -70,7 +70,7 @@ pub type WorkflowDefinitionAuthoringInputBinding = SetRetentionInputBinding;
 worth_query_operation!(pub WorkflowDefinitionAuthoringOperation for DocumentRetentionSchema, input WorkflowDefinitionAuthoringInputBinding);
 worth_query_operation_reads!(WorkflowDefinitionAuthoringOperation => [DocumentIdentityField]);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorkflowInstanceStartInput {
     pub document_identity: String,
 }

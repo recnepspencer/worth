@@ -4,17 +4,16 @@ use bank_domain::proposals::{
 use bank_domain::schema::{
     AccountAccessResult, AccountAuthorization, AccountAuthorizationIdentity, AccountAuthorizedUser,
     AccountIdentity, AuthorizationAccount, AuthorizationRole, BankSchema,
-    GrantAccountAccessMutationBinding, GrantAccountAuthorization, PrincipalIdentityField,
-    RevokeAccountAccessMutationBinding, RevokeAccountAuthorization,
-    ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION,
+    GrantAccountAccessMutationBinding, GrantAccountAuthorization,
+    GrantedAccountAuthorizationOutput, PrincipalIdentityField, RevokeAccountAccessMutationBinding,
+    RevokeAccountAuthorization, RevokedAccountAuthorizationOutput,
 };
 use worth_query_host::facade::declaration::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryApplicationEntityKey, WorthQueryApplicationOutputRole, WorthQueryCreateOutput,
-    WorthQueryRetireOutput,
+    WorthQueryApplicationEntityKey,
 };
 
 use crate::bank_projection::{
@@ -176,14 +175,7 @@ fn author_grant(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .create_output(
-            WorthQueryApplicationOutputRole::<
-                GrantAccountAccessMutationBinding,
-                AccountAuthorization,
-                WorthQueryCreateOutput,
-            >::from_static(ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION),
-            &created,
-        )
+        .create_output::<GrantedAccountAuthorizationOutput>(&created)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(AccountAccessResult {
         authorization: authorization.id(),
@@ -224,14 +216,7 @@ fn author_revoke(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .retire_output(
-            WorthQueryApplicationOutputRole::<
-                RevokeAccountAccessMutationBinding,
-                AccountAuthorization,
-                WorthQueryRetireOutput,
-            >::from_static(ACCOUNT_ACCESS_OUTPUT_AUTHORIZATION),
-            &authorization_entity,
-        )
+        .retire_output::<RevokedAccountAuthorizationOutput>(&authorization_entity)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .delete_entity(AccountAuthorization::reference(), &authorization_entity)

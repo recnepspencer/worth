@@ -7,6 +7,7 @@ use super::{
     WorthQueryConditionalTruthBasis,
 };
 use crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::WorthQueryRetainedConditionalWake;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchesStop;
 
 pub(super) struct AuthoritativeClockWork<'a, Schema> {
     pub(super) runtime:
@@ -17,13 +18,15 @@ pub(super) struct AuthoritativeClockWork<'a, Schema> {
     pub(super) signal_basis: &'a BridgeConditionalSignalBasisBinding,
     pub(super) relational_branch: &'a worth_relational::facade::history::BranchId,
     pub(super) relational_commit_ceiling: Option<worth_relational::facade::history::CommitId>,
-    pub(super) cursor: &'a mut u64,
+    pub(super) cursor: &'a mut Option<worth_relational::facade::publication::PatchStreamPosition>,
     pub(super) maximum_commits: usize,
-    pub(super) watched_records: Vec<worth_relational::facade::transactions::RecordRef>,
-    pub(super) include_whole_graph: bool,
-    pub(super) bootstrap_identity: Option<&'a str>,
-    pub(super) preperformed_deliveries:
-        &'a [worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery],
+    pub(super) interest:
+        crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchInterest<
+            'a,
+        >,
+    /// Receives every invalidation consumed from the subscription, so a
+    /// later failure or refused reading cannot drop it.
+    pub(super) pending: &'a mut super::WorthQueryPendingGranularInvalidations,
     pub(super) retained_wakes: &'a mut [WorthQueryRetainedConditionalWake],
     pub(super) runtime_binding_identity: &'a str,
     pub(super) runtime_capability_identity: u64,
@@ -34,24 +37,35 @@ pub(super) struct AuthoritativeClockProgress {
     pub(super) commit_count: usize,
     pub(super) work_remaining: bool,
     pub(super) caught_up_to_latest: bool,
-    pub(super) granular_invalidations:
-        Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
+}
+
+/// Why authoritative progression stopped before the clock advance.
+pub(super) enum AuthoritativeClockStop {
+    /// The cursor fell behind the subscription's retained window; truth at the
+    /// selected ceiling must be reconstructed, then progress resumes after
+    /// `resume_after`.
+    Lagging {
+        resume_after: Option<worth_relational::facade::publication::PatchStreamPosition>,
+    },
+    Failed(ErasedClockObservationOutcome),
 }
 
 pub(super) fn reconsider_authoritative_clock_work<Schema>(
     work: AuthoritativeClockWork<'_, Schema>,
-) -> Result<AuthoritativeClockProgress, ErasedClockObservationOutcome> {
+) -> Result<AuthoritativeClockProgress, AuthoritativeClockStop> {
     let commits = super::super::authoritative_reconsideration::relevant_authoritative_commits(
         work.runtime,
         work.relational_branch,
         work.relational_commit_ceiling,
         *work.cursor,
         work.maximum_commits,
-        work.watched_records,
-        work.include_whole_graph,
-        work.bootstrap_identity,
+        work.interest,
     )
-    .map_err(runtime_rejection)?;
+    .map_err(|stop| match stop {
+        CommitTouchesStop::RequiresReconstruction { resume_after } => {
+            AuthoritativeClockStop::Lagging { resume_after }
+        }
+    })?;
     let commit_count = commits.commit_count();
     let delivered = super::super::authoritative_reconsideration::deliver_authoritative_commits(
         work.bridge,
@@ -62,15 +76,24 @@ pub(super) fn reconsider_authoritative_clock_work<Schema>(
         work.runtime_binding_identity,
         work.runtime_capability_identity,
         work.truth,
-        work.preperformed_deliveries,
+        work.pending,
     )
-    .map_err(runtime_rejection)?;
+    .map_err(|detail| AuthoritativeClockStop::Failed(runtime_rejection(detail)))?;
     Ok(AuthoritativeClockProgress {
         commit_count,
         work_remaining: delivered.work_remaining,
         caught_up_to_latest: delivered.caught_up_to_latest,
-        granular_invalidations: delivered.granular_invalidations,
     })
+}
+
+/// In-observation reconstruction was itself denied.
+pub(super) fn reconstruction_failure(
+    denial: super::super::installation::WorthQueryConditionalRuntimeInstallationDenial,
+) -> ErasedClockObservationOutcome {
+    ErasedClockObservationOutcome::Failed {
+        kind: WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(denial.kind()),
+        detail: denial.subject().to_string(),
+    }
 }
 
 pub(super) fn runtime_rejection(detail: String) -> ErasedClockObservationOutcome {

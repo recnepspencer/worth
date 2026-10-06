@@ -113,7 +113,11 @@ where
             .map_err(
                 WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
             )?;
-        let mutation = authorization::prepare_capability_selected(&mut self, &selected).map_err(
+        let staged = self.stage().map_err(WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission)?;
+        let identities = self.identities().map_err(
+            WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
+        )?;
+        let mutation = authorization::prepare_capability_selected(&self, &identities, staged, &selected).map_err(
             WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
         )?;
         let prepared = WorthQueryWorkflowDefinitionPublicationAdapter::prepare::<

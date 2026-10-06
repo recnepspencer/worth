@@ -53,46 +53,12 @@ fn mount_nodes(
     worth_ui_host_contract::UiSemanticSurfaceIdentity,
     crate::graph::UiGraphNodeIdentity,
 ) {
-    let surface = session.create_semantic_surface().unwrap();
-    session
-        .register_host_surface(
-            surface,
-            crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
-            crate::facade::mounted::UiSurfaceBindingProfile::new(
-                device_scale_milli,
-                crate::facade::mounted::UiSurfaceBindingCoordinatePosture::LogicalPoints,
-                1,
-            )
-            .unwrap(),
-        )
-        .unwrap();
-    let graph_nodes = {
-        let graph = session.graph();
-        graph
-            .node_identities()
-            .filter_map(|identity| {
-                let lookup = graph.lookup().graph_node(identity)?;
-                let semantic = lookup
-                    .value()
-                    .declaration_identity()
-                    .authored_semantic_name()
-                    .to_owned();
-                (semantic != "worth_ui.runtime.bootstrap.product_root")
-                    .then(|| (identity, Box::<str>::from(semantic)))
-            })
-            .collect::<Vec<_>>()
-    };
-    let mut non_targets = Vec::new();
-    for (mounted_graph, authored_semantic_identity) in graph_nodes {
-        session
-            .register_application_semantic_text(authored_semantic_identity, mounted_graph)
-            .unwrap();
-        let mounted_node = session.mounted_graph_node(mounted_graph).unwrap();
-        let instance = session.mount_instance(mounted_node, surface).unwrap();
-        if mounted_graph != graph_node {
-            non_targets.push(instance);
-        }
-    }
+    let (surface, mounted) = mount_unestablished(session, device_scale_milli);
+    let non_targets = mounted
+        .into_iter()
+        .filter(|(mounted_graph, _)| *mounted_graph != graph_node)
+        .map(|(_, instance)| instance)
+        .collect::<Vec<_>>();
     let capability = session.host_measurement_capability();
     let assumptions = crate::host::UiHostMeasurementAssumptionProfile::from_capability_report(
         capability.capability_report(),
@@ -147,6 +113,60 @@ fn mount_nodes(
         &[],
     );
     (surface, graph_node)
+}
+
+/// Registers a surface and mounts every authored graph node on it, leaving
+/// the mounted allocation unestablished. Returns the surface and each
+/// mounted graph node with its instance.
+pub(super) fn mount_unestablished(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    device_scale_milli: u32,
+) -> (
+    worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    Vec<(
+        crate::graph::UiGraphNodeIdentity,
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+    )>,
+) {
+    let surface = session.create_semantic_surface().unwrap();
+    session
+        .register_host_surface(
+            surface,
+            crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
+            crate::facade::mounted::UiSurfaceBindingProfile::new(
+                device_scale_milli,
+                crate::facade::mounted::UiSurfaceBindingCoordinatePosture::LogicalPoints,
+                1,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    let graph_nodes = {
+        let graph = session.graph();
+        graph
+            .node_identities()
+            .filter_map(|identity| {
+                let lookup = graph.lookup().graph_node(identity)?;
+                let semantic = lookup
+                    .value()
+                    .declaration_identity()
+                    .authored_semantic_name()
+                    .to_owned();
+                (semantic != "worth_ui.runtime.bootstrap.product_root")
+                    .then(|| (identity, Box::<str>::from(semantic)))
+            })
+            .collect::<Vec<_>>()
+    };
+    let mut mounted = Vec::new();
+    for (mounted_graph, authored_semantic_identity) in graph_nodes {
+        session
+            .register_application_semantic_text(authored_semantic_identity, mounted_graph)
+            .unwrap();
+        let mounted_node = session.mounted_graph_node(mounted_graph).unwrap();
+        let instance = session.mount_instance(mounted_node, surface).unwrap();
+        mounted.push((mounted_graph, instance));
+    }
+    (surface, mounted)
 }
 
 pub(super) fn mount_only_graph_node(

@@ -11,6 +11,12 @@ pub struct CanonicalBasisEntry {
 }
 
 impl CanonicalBasisEntry {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.locus
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.value.owned_allocation_capacity_bytes())
+    }
+
     pub fn new(
         domain: CanonicalBasisDomain,
         locus: CanonicalBasisLocus,

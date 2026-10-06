@@ -7,6 +7,7 @@ use super::WorthQueryProductUnpublishedApplication;
 
 /// Exact access to one World-owned partial record. Holding this handle keeps no
 /// strong effects view live and cannot authorize a committed application.
+#[derive(Clone)]
 pub struct WorthQueryProductUnpublishedRecovery {
     handle: ProductUnpublishedRecoveryHandle,
     recovery: RuntimeWorldRecoveryPort,
@@ -68,6 +69,8 @@ impl WorthQueryProductUnpublishedRecovery {
 pub enum WorthQueryProductUnpublishedRecoveryReleaseDenial {
     /// Runtime World refused to inspect or release the record.
     World(RuntimeWorldRecoveryDenial),
+    /// A managed recovery or another release owns this exact provider partial.
+    ProviderBusy,
     /// No owner-cleanup capacity was available; retry later.
     CleanupCapacityExhausted,
 }

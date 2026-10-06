@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::notice::{EstateDeathNotice, RailRejection};
+use crate::RailCompletionDeliveryPosture;
 
 /// The rail's own record of what happened to a correlation, independent of
 /// whatever bytes the caller did or did not receive.
@@ -41,4 +42,5 @@ pub enum RailResponseFrame {
     DispatchContactCount(u64),
     CompletedEffectCount(u64),
     CompletedNoticeReport(Option<EstateDeathNotice>),
+    CompletionDeliveryPosture(RailCompletionDeliveryPosture),
 }

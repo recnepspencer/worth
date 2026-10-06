@@ -59,11 +59,15 @@ impl HeldAuthenticationControl {
     }
 }
 
-impl BankHttpApplicationAuthenticator for HeldAuthenticationApplication {
+impl super::super::super::inbound_completion::BankRailCompletionRuntime
+    for HeldAuthenticationApplication
+{
     fn runtime(&self) -> &BankIdentityRuntime {
         &self.inner.runtime
     }
+}
 
+impl BankHttpApplicationAuthenticator for HeldAuthenticationApplication {
     fn authenticate<'a>(
         &'a self,
         credential: BankHttpCredential,

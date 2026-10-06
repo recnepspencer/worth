@@ -1,10 +1,11 @@
 use super::super::{
-    CanonicalBasisDomain, CanonicalBasisEntry, CanonicalizationCost, CanonicalizationRuleVersion,
+    CanonicalBasisDomain, CanonicalBasisEntry, CanonicalBasisSequence, CanonicalizationCost,
+    CanonicalizationRuleVersion,
 };
 use super::algorithm::{
     CanonicalDigestAlgorithmMetadata, CanonicalDigestInputDomain, CanonicalDigestInputShape,
 };
-use super::material::domain_material_token;
+use super::material::digest_input_id;
 use super::CanonicalDigestWorkEvidence;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,16 +91,8 @@ impl CanonicalDigestInputEvidence {
     }
 
     pub fn input_id(&self) -> CanonicalDigestInputId {
-        match self {
-            Self::SingleSequence(sequence) => CanonicalDigestInputId::new(format!(
-                "sequence:{}:{}:{}",
-                domain_material_token(sequence.domain()),
-                sequence.version().as_str(),
-                sequence.cost().entry_count()
-            )),
-            Self::DomainBundle(bundle) => bundle_input_id("domain-bundle", bundle),
-            Self::ExportBundle(bundle) => bundle_input_id("export-bundle", bundle),
-        }
+        digest_input_id(self, None)
+            .expect("ordinary canonical input identity has no resource refusal")
     }
 }
 
@@ -135,6 +128,16 @@ pub struct CanonicalDigestBasisSequence {
 }
 
 impl CanonicalDigestBasisSequence {
+    pub(super) fn from_owned_sequence(sequence: CanonicalBasisSequence) -> Self {
+        let (version, domain, entries, cost) = sequence.into_parts();
+        Self {
+            version,
+            domain,
+            entries,
+            cost,
+        }
+    }
+
     pub(super) fn new(
         version: CanonicalizationRuleVersion,
         domain: CanonicalBasisDomain,
@@ -177,19 +180,4 @@ impl CanonicalDigestInputId {
     pub fn as_str(&self) -> &str {
         &self.0
     }
-}
-
-fn bundle_input_id(kind: &str, bundle: &CanonicalDigestBasisBundle) -> CanonicalDigestInputId {
-    let domains = bundle
-        .sequences()
-        .iter()
-        .map(|sequence| domain_material_token(sequence.domain()))
-        .collect::<Vec<_>>()
-        .join(",");
-    CanonicalDigestInputId::new(format!(
-        "{}:{}:{}",
-        kind,
-        bundle.version().as_str(),
-        domains
-    ))
 }

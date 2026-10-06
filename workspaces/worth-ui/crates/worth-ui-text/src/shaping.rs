@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
-    UiQualifiedTextGlyphInput, UiQualifiedTextGlyphRecord, UiQualifiedTextRunRecord,
-    UiTextFontUnitRect, UiTextOriginalRange,
+    UiQualifiedTextCostInput, UiQualifiedTextCostRecord, UiQualifiedTextGlyphInput,
+    UiQualifiedTextGlyphRecord, UiQualifiedTextRunRecord, UiTextFontUnitRect, UiTextOriginalRange,
 };
 
 use crate::{UiFallbackTextParagraph, UiSelectedTextCluster};
@@ -115,13 +115,30 @@ impl UiShapedTextParagraph {
     pub const fn text_scale_generation(&self) -> worth_ui_host_contract::UiTextScaleGeneration {
         self.fallback.text_scale_generation()
     }
-    pub const fn request_identity(
-        &self,
-    ) -> worth_ui_host_contract::UiQualifiedTextLayoutRequestIdentity {
-        self.fallback.request_identity()
-    }
-    pub const fn cost(&self) -> UiTextShapingCost {
-        self.cost
+    /// What qualifying this paragraph cost at every stage, given what laying
+    /// it out cost.
+    pub(crate) fn cost_record(&self, layout: crate::UiTextLayoutCost) -> UiQualifiedTextCostRecord {
+        let analysis = self.analysis_cost();
+        let fallback = self.fallback_cost();
+        UiQualifiedTextCostRecord::from_text_mechanics(UiQualifiedTextCostInput {
+            analyzed_bytes: analysis.analyzed_bytes(),
+            graphemes: analysis.grapheme_records(),
+            word_boundaries: analysis.word_boundaries(),
+            line_opportunities: analysis.line_opportunities(),
+            bidi_contexts: analysis.bidi_contexts(),
+            fallback_clusters: fallback.clusters_considered(),
+            coverage_index_queries: fallback.coverage_index_queries(),
+            face_shape_attempts: fallback.face_shape_attempts(),
+            probed_glyphs: fallback.glyphs_probed(),
+            shaped_runs: self.cost.runs_shaped(),
+            shaped_scalars: self.cost.input_scalars_shaped(),
+            emitted_glyphs: self.cost.glyphs_emitted(),
+            fitted_units: layout.units_fitted(),
+            emitted_lines: layout.lines_emitted(),
+            emitted_visual_runs: layout.visual_runs_emitted(),
+            positioned_glyphs: layout.glyphs_positioned(),
+            emitted_carets: layout.caret_records_emitted(),
+        })
     }
     pub const fn analysis_cost(&self) -> crate::UiTextAnalysisCost {
         self.fallback.analysis_cost()

@@ -1,0 +1,17 @@
+[package]
+name = "worth-execution"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Bounded platform computation authority for WORTH runtimes."
+
+[dependencies]
+worth-foundational.workspace = true
+worth-proof.workspace = true
+rayon.workspace = true
+
+[dev-dependencies]
+trybuild.workspace = true
+
+[lints]
+workspace = true

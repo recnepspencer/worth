@@ -106,7 +106,7 @@ fn read_binding_partitions(bindings: &[PhysicalSignalAspectBindingObservation]) 
         .map(|binding| {
             binding
                 .partition()
-                .map(|partition| partition.partition.0.clone())
+                .map(|partition| partition.path().segments()[0].clone())
                 .unwrap_or_else(|| "<unpartitioned>".to_owned())
         })
         .collect::<Vec<_>>();
@@ -125,7 +125,7 @@ fn causal_partitions(
                 .iter()
                 .find(|binding| binding.digest() == record.signal_binding())
                 .and_then(|binding| binding.partition())
-                .map(|partition| partition.partition.0.clone())
+                .map(|partition| partition.path().segments()[0].clone())
                 .expect("settled read work must identify one installed partitioned binding")
         })
         .collect()

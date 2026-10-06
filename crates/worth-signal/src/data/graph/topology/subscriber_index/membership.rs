@@ -39,7 +39,7 @@ impl SignalGraph {
         &self,
         consumer: NodeId,
         edges: &[DependencyEdge],
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<PreparedReverseSubscriptionReplacement, SignalError> {
         self.validate_handle(consumer)?;
         work.reserve(

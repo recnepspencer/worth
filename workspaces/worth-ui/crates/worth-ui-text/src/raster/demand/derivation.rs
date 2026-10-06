@@ -133,6 +133,10 @@ fn collect_demand_records(
     let mut counters = DemandCounters::default();
     for (positioned_index, positioned) in layout.positioned_glyphs().iter().enumerate() {
         counters.layout_visits = counters.layout_visits.saturating_add(1);
+        worth_ui_host_contract::record_presentation_glyphs(
+            worth_ui_host_contract::UiPresentationWorkStage::DemandDerivation,
+            1,
+        );
         if let UiGlyphRasterDemandSelection::LogicalDamage(damage) = request.selection {
             if !damage_intersects(positioned.ink_bounds(), request.placement, damage) {
                 continue;
@@ -169,6 +173,7 @@ fn collect_demand_records(
             glyph_index: candidate.glyph_index,
         });
         counters.unique_keys.insert(candidate.key);
+        worth_ui_host_contract::record_presentation_map_inserts(1);
     }
     Ok((records, provenance, counters))
 }

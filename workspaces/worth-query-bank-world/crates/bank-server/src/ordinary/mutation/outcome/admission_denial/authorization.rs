@@ -103,6 +103,14 @@ impl std::fmt::Display for BankAuthorizationDenial {
     }
 }
 
+/// Every Query authorization kind keeps its own Bank kind, so a request-level
+/// refusal carries the same cause as a Bank-level one.
+impl From<QueryKind> for BankAuthorizationDenialKind {
+    fn from(kind: QueryKind) -> Self {
+        map_kind(kind)
+    }
+}
+
 const fn map_kind(kind: QueryKind) -> BankAuthorizationDenialKind {
     use BankAuthorizationDenialKind as Bank;
     match kind {

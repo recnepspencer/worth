@@ -34,4 +34,9 @@ pub use protocol::{
     BankHttpRecoverySafeRetryOutcome, BankHttpRecoveryStatus, BankHttpRecoveryWork,
     BankHttpRequestControls, BankHttpRestrictedBankField,
 };
-pub use server::{BankHttpServer, BankHttpServerBinding, BankHttpServerConfiguration};
+pub use server::{
+    BankHttpServer, BankHttpServerBinding, BankHttpServerClose, BankHttpServerCloseFailure,
+    BankHttpServerConfiguration, BankRailCallbackServer, BankRailCallbackServerBinding,
+    BankRailCloseAssessment, BankRailCompletionClose, BankRailCompletionCloseFailure,
+    BankRailCompletionContinuation, BankRailCompletionServerInstallation,
+};

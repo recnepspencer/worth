@@ -217,6 +217,7 @@ impl super::WorthUiActiveApplicationSession {
                 generation: pointer_generation,
                 mounted: &self.mounted,
                 application_facts: &self.intent_application_facts,
+                expressions: &self.expressions,
                 occupancy: self.intent_execution.occupancy(),
                 interaction: &self.interaction,
             }

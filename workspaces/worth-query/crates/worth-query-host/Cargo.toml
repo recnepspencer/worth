@@ -7,7 +7,9 @@ description = "Query host audience facade over the production authority graph."
 publish = false
 
 [features]
+test-invalidation-equivalence = ["worth-query-execution/certification-invalidation-equivalence"]
 test-output-delivery-faults = ["worth-query-execution/test-primary-graph-faults"]
+test-query-execution-observer = ["worth-query-execution/test-query-execution-observer"]
 test-world-operation-control = ["worth-query-execution/test-world-operation-control"]
 test-durability-faults = ["worth-query-execution/test-durability-faults"]
 

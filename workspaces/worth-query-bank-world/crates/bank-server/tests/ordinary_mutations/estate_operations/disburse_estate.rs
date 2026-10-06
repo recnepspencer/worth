@@ -36,7 +36,7 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
         !receipt.retained_preimage(),
         "compensation operations must not promise an inverse pre-image"
     );
-    assert_single_admission_digest(&receipt);
+    assert_admission_derives_the_request_identities_once(&receipt);
     assert_authoritative_activity(&fixture);
     assert_equivalent_retry(&fixture, &specialist, &key, &receipt);
 }
@@ -120,6 +120,7 @@ fn assert_equivalent_retry(
         panic!("the retry must recover the authoritative commit: {retry:?}");
     };
     assert_eq!(committed.aftermath(), recovered.aftermath());
+    assert_admission_derives_the_request_identities_once(&recovered);
 }
 
 fn assert_authoritative_activity(fixture: &DisbursementFixture) {
@@ -204,12 +205,22 @@ fn assert_no_disbursement_effects(fixture: &DisbursementFixture) {
     );
 }
 
-fn assert_single_admission_digest(receipt: &BankCommitReceipt) {
+fn assert_admission_derives_the_request_identities_once(receipt: &BankCommitReceipt) {
     let phases = receipt.canonical_work();
-    assert_eq!(phases.admission().basis_preparations(), 1);
-    assert_eq!(phases.admission().digest_derivations(), 1);
-    assert_eq!(phases.admission().canonical_entries(), 10);
-    assert!(phases.admission().canonical_encoded_bytes() <= 4_096);
+    // Admission derives the request's two identities once each, streamed into
+    // their hashes with no basis sequence: the governed input (563 encoded
+    // bytes + 67 framing, 10 blocks) and the key `estate-disbursement-11` (44
+    // encoded bytes + 85 framing, ceil((129 + 9) / 64) = 3 blocks). A
+    // replayed retry is admitted the same way and reports the same work. Every
+    // other phase performs no canonical work.
+    let admission = phases.admission();
+    assert_eq!(admission.basis_preparations(), 0);
+    assert_eq!(admission.digest_derivations(), 2);
+    assert_eq!(admission.canonical_entries(), 2);
+    assert_eq!(admission.canonical_encoded_bytes(), 607);
+    assert_eq!(admission.sha256_input_bytes(), 759);
+    assert_eq!(admission.sha256_compression_blocks(), 13);
+    assert_eq!(admission.digest_text_materializations(), 0);
     for phase in [
         phases.installation(),
         phases.execution(),

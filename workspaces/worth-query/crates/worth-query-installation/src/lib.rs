@@ -188,13 +188,14 @@ pub mod facade {
         WorthQueryInstalledApplicationWorkflowSpec, WorthQueryInstalledDerivedArtifact,
         WorthQueryInstalledEvaluatedRequirement, WorthQueryInstalledExternalInputProvider,
         WorthQueryInstalledRepeatedOptionalMember, WorthQueryInstalledScopedAction,
-        WorthQueryInstalledWorkflowApprovalBinding, WorthQueryInstalledWorkflowDefinitionContract,
-        WorthQueryInstalledWorkflowDefinitionParts, WorthQueryProgramAddedRule,
-        WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial,
-        WorthQueryProgramArtifactPosture, WorthQueryProgramCustodyInventoryKind,
-        WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramRuleKey,
-        WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial,
-        WorthQueryProgramSupportEntry, WorthQueryProgramSupportPartialRetirementInventory,
+        WorthQueryInstalledWorkflowApprovalBinding, WorthQueryInstalledWorkflowConditionBinding,
+        WorthQueryInstalledWorkflowDefinitionContract, WorthQueryInstalledWorkflowDefinitionParts,
+        WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
+        WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramArtifactPosture,
+        WorthQueryProgramCustodyInventoryKind, WorthQueryProgramCustodyInventoryRequirement,
+        WorthQueryProgramRuleKey, WorthQueryProgramSupportAdmission,
+        WorthQueryProgramSupportDenial, WorthQueryProgramSupportEntry,
+        WorthQueryProgramSupportPartialRetirementInventory,
         WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
         WorthQueryProgramSupportRoster, WorthQueryProgramValidationScope,
         WorthQueryRepeatedOptionalMemberState, WorthQueryWorkflowDependencyName,
@@ -202,8 +203,8 @@ pub mod facade {
         WorthQueryWorkflowVocabularyCoverage,
     };
     pub use crate::application_query::{
-        prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,
-        WorthQueryApplicationQueryCanonicalWorkPolicy,
+        prepare_canonical_read_graph_planning_basis, WorthQueryAdmittedReadGraphPlanningInventory,
+        WorthQueryApplicationCanonicalArtifact, WorthQueryApplicationQueryCanonicalWorkPolicy,
         WorthQueryApplicationQueryInstallationDenial,
         WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryLimitDenial,
         WorthQueryInstalledApplicationContinuationContract,
@@ -215,16 +216,19 @@ pub mod facade {
         WorthQueryInstalledGraphOrdering, WorthQueryInstalledGraphPredicate,
         WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
         WorthQueryInstalledGraphRelation, WorthQueryInstalledOutputDependencyContract,
-        WorthQueryInstalledRootPath, WorthQueryInstalledRootPathGuard,
-        WorthQueryInstalledRootPathStep, WorthQueryPreparedReadGraphPlanningContract,
+        WorthQueryInstalledQueryBindingAdmissionStop, WorthQueryInstalledRootPath,
+        WorthQueryInstalledRootPathGuard, WorthQueryInstalledRootPathStep,
+        WorthQueryPlanningInventoryStop, WorthQueryPreparedReadGraphPlanningContract,
         WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
         WorthQueryReadGraphOrderingView, WorthQueryReadGraphPlanningContract,
         WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
         WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
+        WorthQueryResolvedApplicationQueryLimits,
+        WorthQueryRetainedApplicationQueryGraphObligations,
     };
     pub use crate::application_schema::{
-        WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
-        WorthQueryInstalledApplicationContribution,
+        InstalledInboundOccurrenceContract, WorthQueryInstalledApplicationAspectContract,
+        WorthQueryInstalledApplicationAspectLocus, WorthQueryInstalledApplicationContribution,
         WorthQueryInstalledApplicationContributionCatalog, WorthQueryInstalledApplicationInvariant,
         WorthQueryInstalledApplicationInvariantCatalog,
         WorthQueryInstalledApplicationInvariantDescriptor, WorthQueryInstalledApplicationSchema,
@@ -267,10 +271,16 @@ pub mod facade {
         WorthQueryDomainHandleDenial, WorthQueryDomainHandleDenialKind,
     };
     pub use crate::installed_index::{
+        WorthQueryCurrentRetainedMutationBinding, WorthQueryRetainedMutationBindingAdmissionStop,
+    };
+    pub use crate::installed_index::{
         WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageIndex,
         WorthQueryInstalledPackageIndexCounters, WorthQueryInstalledPackageIndexDenial,
         WorthQueryInstalledPackageIndexDenialKind, WorthQueryInstalledPackageIndexRebuildReport,
         WorthQueryInstalledPackageIndexRelation,
+    };
+    pub use crate::installed_index::{
+        WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,
     };
     pub use crate::installed_operation::WorthQueryInstalledOperationAuthority;
     pub use crate::package::{

@@ -128,6 +128,13 @@ fn describe_outcome(
             BankHttpCommitDisposition::AlreadyCommitted,
             receipt,
         ),
+        Ok(WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation)) => {
+            BankHttpMutationOutcome::PreviouslyCommitted {
+                request_id,
+                commit_id: observation.commit_id().0,
+                next_action: BankHttpNextAction::Refresh,
+            }
+        }
         Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift) => not_applied(
             Some(request_id),
             BankHttpMutationFailureKind::Aborted,
@@ -321,6 +328,24 @@ pub(super) fn commit_denial(
                 BankHttpNextAction::CorrectRequest,
             ),
         ),
+        // The original request applied; only its answer left the window. A
+        // dedicated kind keeps clients from resubmitting it under a new key.
+        Denial::IdempotencyWindowExpired => (
+            BankHttpMutationFailureKind::IdempotencyWindowExpired,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
+        // The key's earlier commit took effect; reading current state shows it.
+        Denial::IdempotencyReceiptNotRetained { .. } => (
+            BankHttpMutationFailureKind::Stale,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
+        Denial::IdempotencyIntentUnverifiable => (
+            BankHttpMutationFailureKind::Aborted,
+            BankHttpDenial::new(
+                BankHttpDenialKind::InternalDenied,
+                BankHttpNextAction::ContactOperator,
+            ),
+        ),
         Denial::CandidateValidatorWorkExceeded { .. }
         | Denial::WorkflowSettlementDenied { .. }
         | Denial::PreparedRootBudgetExhausted { .. }
@@ -351,7 +376,9 @@ pub(super) fn commit_denial(
         | Denial::CandidateIdentityExhausted
         | Denial::IndexGenerationIdentityExhausted
         | Denial::ProgramActivationUnresolved
-        | Denial::ProgramSupportRetired => (
+        | Denial::ProgramSupportRetired
+        | Denial::MutationBindingMismatch
+        | Denial::MutationInputMismatch => (
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(
                 BankHttpDenialKind::Unavailable,

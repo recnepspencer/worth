@@ -85,10 +85,16 @@ impl CourtroomWorld {
         }
         let change = product::WorthQueryAdmittedChange::new(
             effects.finish().unwrap(),
-            primary_graph::WorthQueryApplicationIdempotencyBinding::new(
-                [0x63 ^ touched_records as u8; 32],
-                [0x36 ^ touched_records as u8; 32],
-            ),
+            primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
+                TemporalHostSchema,
+                AmendTemporal,
+                _,
+                _,
+            >(
+                &("scaled-amendment", touched_records),
+                &("scaled-amendment", touched_records),
+            )
+            .unwrap(),
         );
         self.application
             .on_branch(branch)

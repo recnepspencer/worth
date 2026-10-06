@@ -13,10 +13,17 @@ pub enum WorthQueryGeneratedOutputReconstructionDenial {
     StaleProducerVersion,
     /// The runtime no longer records this output for its source.
     StaleOutputLineage,
-    /// The suspended output bound no entity to the output role.
+    /// The suspended output bound no entity to the exactly-one output role.
     MissingOutputRole,
+    /// The role's cardinality differs from the one the producer's installed
+    /// contract records for it.
+    OutputRoleCardinalityMismatch,
     /// The entity is not in the suspension manifest.
     MissingEntity,
+    /// The role is retired or its recorded action is not admitted by the declaration.
+    OutputRoleActionMismatch,
+    /// A preserved output identity is not live outside this suspension.
+    MissingRetainedEntity,
     /// The entity type is undeclared or differs from the manifest.
     EntityKindMismatch,
     /// The entity was already claimed.

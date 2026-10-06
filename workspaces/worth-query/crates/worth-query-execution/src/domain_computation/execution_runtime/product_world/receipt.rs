@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
-use worth_runtime_world::facade::{ConsumedCompositePublication, ProductUnpublishedRecoveryHandle};
+use worth_runtime_world::facade::{
+    ConsumedCompositePublication, ProductUnpublishedRecoveryHandle,
+    RuntimeWorldPerformedPublicationProtection,
+};
 
 use super::{runtime::WorthQueryProductRootIdentity, WorthQueryPerformedRelationalProductChange};
 
@@ -29,13 +32,51 @@ pub(crate) struct WorthQueryReservedProductPublicationReceipt {
 }
 
 /// Named read-only custody shared by committed Query result observers after
-/// the linear World handoff was consumed exactly once.
+/// the linear World handoff was consumed exactly once. The fresh caller's
+/// receipt keeps the commit in World history; completed-commit evidence and
+/// replay copies are detached so that replay outlives the commit's history.
 #[derive(Clone)]
 pub(crate) struct WorthQueryProductPublicationReceipt {
     custody: Arc<WorthQueryProductPublicationCustody>,
+    history: Option<WorthQueryCommitHistoryHold>,
+}
+
+/// What keeps one performed commit in World history, handed from completed
+/// evidence to the fresh caller's receipt exactly once.
+#[derive(Clone)]
+pub(crate) struct WorthQueryCommitHistoryHold {
+    _protection: Arc<RuntimeWorldPerformedPublicationProtection>,
 }
 
 impl WorthQueryReservedProductPublicationReceipt {
+    /// The replacement is prepared before World can perform a recovery
+    /// successor. The old unfilled custody remains valid on a denied attempt.
+    pub(crate) fn replacement_request_bytes() -> Option<u64> {
+        let bytes = std::mem::size_of::<WorthQueryProductPublicationCustody>()
+            .checked_add(std::mem::size_of::<usize>().checked_mul(2)?)?
+            .checked_add(std::mem::align_of::<WorthQueryProductPublicationCustody>())?;
+        u64::try_from(bytes).ok()
+    }
+
+    pub(crate) fn matches_recovery_handle(
+        &self,
+        handle: &ProductUnpublishedRecoveryHandle,
+    ) -> bool {
+        &self.custody._recovery_handle == handle
+    }
+
+    pub(crate) fn rebind_unfilled(&mut self, handle: ProductUnpublishedRecoveryHandle) {
+        assert!(self.custody.terminal.get().is_none());
+        let replacement = Self::new(
+            Arc::clone(&self.custody.root_identity),
+            handle,
+            self.custody.retain_live_observation,
+            self.custody.retain_output_demand_observation,
+            self.custody.retain_client_observation,
+        );
+        *self = replacement;
+    }
+
     pub(crate) fn new(
         root_identity: Arc<WorthQueryProductRootIdentity>,
         recovery_handle: ProductUnpublishedRecoveryHandle,
@@ -65,6 +106,7 @@ impl WorthQueryReservedProductPublicationReceipt {
         conditional_definition_generation: Option<u64>,
     ) -> WorthQueryProductPublicationReceipt {
         let successor_observation = publication.take_successor_observation();
+        let history = publication.take_history_protection().map(Arc::new);
         if self.custody.retain_live_observation {
             *self
                 .custody
@@ -95,6 +137,9 @@ impl WorthQueryReservedProductPublicationReceipt {
         self.custody.terminal.get_or_init(|| terminal);
         WorthQueryProductPublicationReceipt {
             custody: self.custody,
+            history: history.map(|protection| WorthQueryCommitHistoryHold {
+                _protection: protection,
+            }),
         }
     }
 }
@@ -109,6 +154,16 @@ impl WorthQueryProductPublicationReceipt {
 
     pub(crate) fn publication(&self) -> &ConsumedCompositePublication {
         &self.terminal().publication
+    }
+
+    /// Takes this copy's World history protection, leaving it detached.
+    pub(crate) fn take_history(&mut self) -> Option<WorthQueryCommitHistoryHold> {
+        self.history.take()
+    }
+
+    /// Keeps this copy's commit in World history for as long as it lives.
+    pub(crate) fn hold_history(&mut self, hold: WorthQueryCommitHistoryHold) {
+        self.history = Some(hold);
     }
 
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
@@ -132,6 +187,22 @@ impl WorthQueryProductPublicationReceipt {
         Some(WorthQueryPerformedRelationalProductChange::new(
             self.clone(),
         ))
+    }
+
+    /// Discharges the one-shot direct witness without creating a witness to
+    /// be dropped. Conditional operations observe the performed commit through
+    /// the canonical Relational subscription, whichever writer produced it.
+    pub(crate) fn discharge_fresh_delivery(&self) -> bool {
+        let mut available = self
+            .custody
+            .fresh_delivery_available
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !*available {
+            return false;
+        }
+        *available = false;
+        true
     }
 
     pub(crate) fn take_live_successor_observation(

@@ -30,6 +30,7 @@ pub enum UiMountedHitTestCompletionDenial {
     CoordinateSpaceMismatch,
     NodeReceiptFrameMismatch,
     NodeReceiptInstanceMismatch,
+    PaintedExtentMismatch,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -41,6 +42,7 @@ pub struct UiMountedHitTestMechanic {
     node_receipt: UiMountedNodeReceiptIdentity,
     bounds: super::UiMountedCanonicalBox,
     clip_bounds: super::UiMountedCanonicalBox,
+    painted_bounds: Option<super::UiMountedCanonicalBox>,
     order: UiMountedHitTestOrder,
     semantic_digest: u64,
 }
@@ -55,6 +57,9 @@ pub struct UiMountedHitTestCompletionInput {
     pub node_receipt: UiMountedNodeReceiptIdentity,
     pub bounds: super::UiMountedCanonicalBox,
     pub clip_bounds: super::UiMountedCanonicalBox,
+    /// The box the node is painted in when the device grid moved it off
+    /// `bounds`, which hit testing reads; `None` when it is painted there.
+    pub painted_bounds: Option<super::UiMountedCanonicalBox>,
     pub order: UiMountedHitTestOrder,
 }
 
@@ -115,6 +120,12 @@ impl UiMountedHitTestMechanic {
         if input.bounds.coordinate_space() != input.clip_bounds.coordinate_space() {
             return Err(UiMountedHitTestCompletionDenial::CoordinateSpaceMismatch);
         }
+        if input
+            .painted_bounds
+            .is_some_and(|painted| !moves_without_resizing(input.bounds, painted))
+        {
+            return Err(UiMountedHitTestCompletionDenial::PaintedExtentMismatch);
+        }
         if input.node_receipt.frame() != input.frame {
             return Err(UiMountedHitTestCompletionDenial::NodeReceiptFrameMismatch);
         }
@@ -129,6 +140,7 @@ impl UiMountedHitTestMechanic {
             node_receipt: input.node_receipt,
             bounds: input.bounds,
             clip_bounds: input.clip_bounds,
+            painted_bounds: input.painted_bounds,
             order: input.order,
             semantic_digest: semantic_digest(&input),
         })
@@ -155,6 +167,12 @@ impl UiMountedHitTestMechanic {
     pub const fn clip_bounds(self) -> super::UiMountedCanonicalBox {
         self.clip_bounds
     }
+    /// The box the node is painted in when the device grid moved it off
+    /// [`Self::bounds`], which hit testing reads; `None` when it is painted
+    /// there.
+    pub const fn painted_bounds(self) -> Option<super::UiMountedCanonicalBox> {
+        self.painted_bounds
+    }
     pub const fn order(self) -> UiMountedHitTestOrder {
         self.order
     }
@@ -178,6 +196,11 @@ impl UiMountedHitTestMechanic {
         else {
             return Ok(None);
         };
+        let painted_bounds = self
+            .painted_bounds
+            .map(|painted| super::portal_child_geometry::translate(painted, portal, source_anchor))
+            .transpose()
+            .map_err(|_| UiMountedHitTestCompletionDenial::NonAreaGeometry)?;
         Self::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
             frame: self.frame,
             surface: self.surface,
@@ -186,6 +209,7 @@ impl UiMountedHitTestMechanic {
             node_receipt: self.node_receipt,
             bounds: geometry.bounds,
             clip_bounds: geometry.clip,
+            painted_bounds,
             order: self.order.presented_within_portal(),
         })
         .map(Some)
@@ -220,6 +244,18 @@ impl UiMountedHitTestTable {
     }
 }
 
+/// Whether `painted` is `bounds` moved: the device grid only ever moves a
+/// box, so it keeps the extent, coordinate space, and posture.
+fn moves_without_resizing(
+    bounds: super::UiMountedCanonicalBox,
+    painted: super::UiMountedCanonicalBox,
+) -> bool {
+    painted.coordinate_space() == bounds.coordinate_space()
+        && painted.posture() == bounds.posture()
+        && painted.width().to_bits() == bounds.width().to_bits()
+        && painted.height().to_bits() == bounds.height().to_bits()
+}
+
 fn semantic_digest(input: &UiMountedHitTestCompletionInput) -> u64 {
     [
         input.frame.diagnostic_value(),
@@ -235,6 +271,12 @@ fn semantic_digest(input: &UiMountedHitTestCompletionInput) -> u64 {
         u64::from(input.clip_bounds.y().to_bits()),
         u64::from(input.clip_bounds.width().to_bits()),
         u64::from(input.clip_bounds.height().to_bits()),
+        // A presence tag keeps a row painted at the origin apart from one
+        // painted where it is hit.
+        u64::from(input.painted_bounds.is_some()),
+        input.painted_bounds.map_or(0, |painted| {
+            (u64::from(painted.x().to_bits()) << 32) | u64::from(painted.y().to_bits())
+        }),
         input.order.presentation_layer_digest(),
         u64::from(input.order.rank()),
     ]

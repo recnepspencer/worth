@@ -1,5 +1,8 @@
 //! What a host's rostered programs mean before anything adopts a new one.
 
+#[path = "adoption/checkpoint_transition.rs"]
+mod checkpoint_transition;
+
 #[path = "adoption/branch_adoption.rs"]
 mod branch_adoption;
 #[path = "adoption/branch_adoption_recovery.rs"]
@@ -12,6 +15,8 @@ mod broader_scope;
 mod consumer_closure;
 #[path = "adoption/custody.rs"]
 mod custody;
+#[path = "adoption/live_outputs.rs"]
+mod live_outputs;
 #[path = "adoption/migration.rs"]
 mod migration;
 #[path = "adoption/program_codec.rs"]
@@ -38,5 +43,7 @@ mod workflow_identity;
 mod workflow_participant;
 #[path = "adoption/workflow_participant_races.rs"]
 mod workflow_participant_races;
+#[path = "adoption/workflow_pinned_basis.rs"]
+mod workflow_pinned_basis;
 #[path = "adoption/workflow_vocabulary.rs"]
 mod workflow_vocabulary;

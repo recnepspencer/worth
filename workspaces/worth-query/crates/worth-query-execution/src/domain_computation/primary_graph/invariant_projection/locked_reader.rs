@@ -45,6 +45,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
     pub(super) output_lineage:
         Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub(super) invalidation_owner: Arc<super::super::SourceInvalidationOwner>,
     pub(super) selected_product_occurrence:
         Option<worth_runtime_world::facade::ProductBranchIncarnation>,
     pub(super) selected_product_generation: Option<u64>,
@@ -56,10 +57,19 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             std::any::TypeId,
             worth_relational::facade::identity::EntityId,
         ),
-        Vec<Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
+        Vec<(
+            Arc<super::super::WorthQueryApplicationOutputCorrespondence>,
+            String,
+        )>,
     >,
-    pub(super) dependent_source_facts:
-        BTreeMap<String, super::super::application_attempt::WorthQueryApplicationObservedFact>,
+    pub(super) dependent_source_facts: BTreeMap<
+        super::super::application_attempt::WorthQueryApplicationFactStorageKey,
+        super::super::application_attempt::WorthQueryApplicationObservedFact,
+    >,
+    pub(super) consumed_outputs: BTreeMap<
+        Arc<super::super::output_lineage::RecordedSettlementIdentity>,
+        super::ConsumedOutputEvidence,
+    >,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -148,11 +158,13 @@ where
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
                     output_lineage: Arc::clone(&self.graph.output_lineage),
+                    invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
                     selected_product_occurrence: None,
                     selected_product_generation: None,
                     selected_source_partition_identity: None,
                     prior_output_bindings: HashMap::new(),
                     current_output_families: HashMap::new(),
+                    consumed_outputs: BTreeMap::new(),
                     dependent_source_facts: BTreeMap::new(),
                     _schema: PhantomData,
                 };
@@ -161,20 +173,24 @@ where
                     output,
                     reader.work,
                     reader.realized_scope,
+                    reader.consumed_outputs,
                     reader.dependent_source_facts,
                     reader.work_budget.exceeded(),
                 )
             }))
         });
-        let (output, work, realized_scope, dependent_source_facts, exceeded) = match projected {
-            Ok(completed) => completed,
-            Err(payload) => {
-                self.graph.with_runtime_mut(|runtime| {
-                    crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-                });
-                resume_unwind(payload)
-            }
-        };
+        let (output, work, realized_scope, consumed_outputs, dependent_source_facts, exceeded) =
+            match projected {
+                Ok(completed) => completed,
+                Err(payload) => {
+                    self.graph.with_runtime_mut(|runtime| {
+                        crate::relational_snapshot_release::release_query_snapshot(
+                            runtime, &snapshot,
+                        );
+                    });
+                    resume_unwind(payload)
+                }
+            };
         if exceeded {
             self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
@@ -192,6 +208,7 @@ where
                 binding_identity: self.binding_identity.clone(),
                 authority_identity: self.authority_identity,
                 realized_scope,
+                consumed_outputs,
                 dependent_source_facts,
                 _schema: PhantomData,
             },

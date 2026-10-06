@@ -14,10 +14,11 @@ mod standing_observation;
 pub use axes::{
     UiIntentAffinityPosture, UiIntentConfirmationPosture, UiIntentMutabilityPosture,
     UiIntentOccupancyPosture, UiIntentPolicyPosture, UiIntentReadinessPosture,
-    UiIntentSupportPosture,
+    UiIntentSupportPosture, UiIntentWithheldCondition,
 };
 pub(crate) use basis::{
     observe_operability_basis, UiIntentOperabilityBasis, UiIntentOperabilityDependencyDrift,
+    UiIntentOperabilityDependencyReads,
 };
 pub(crate) use decision::UiIntentOperabilityDecisionInput;
 pub use decision::{
@@ -45,6 +46,7 @@ pub(crate) use standing_fact::{
     UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact,
 };
 pub(crate) use standing_observation::{
-    observe_activation_operability, UiIntentStandingOperabilityObservation,
+    observe_activation_operability, reobserve_standing_fact, UiIntentOperabilityAuthority,
+    UiIntentOperabilityReadOwners, UiIntentStandingOperabilityObservation,
     UiIntentStandingOperabilityUnavailable,
 };

@@ -1,6 +1,9 @@
 //! Whether this process runs the visual identity journey at all.
 //!
-//! The journey is chosen once from the process environment. A disabled Pulse
+//! The journey is chosen once, when the application is made: a product run
+//! follows the process environment, and an offscreen run never takes the
+//! journey, whose capture and dwell timers would land inside its measured
+//! steps. A disabled Pulse
 //! still owns exactly one first frame, which retires it; it never captures,
 //! schedules readiness, or retains a rebind receipt.
 
@@ -22,8 +25,13 @@ pub(crate) enum PlatformPulseDisabledVisualIdentity {
 }
 
 impl PlatformPulseVisualIdentityExecution {
-    pub(crate) fn new() -> Self {
-        if std::env::var_os("WORTH_UI_VISUAL_IDENTITY_JOURNEY").is_some_and(|value| value == "1") {
+    /// Whether the process environment asks for the journey.
+    pub(crate) fn requested_by_process() -> bool {
+        std::env::var_os("WORTH_UI_VISUAL_IDENTITY_JOURNEY").is_some_and(|value| value == "1")
+    }
+
+    pub(crate) fn new(journey: bool) -> Self {
+        if journey {
             Self::Enabled(PlatformPulseVisualIdentityJourney::new())
         } else {
             Self::Disabled(PlatformPulseDisabledVisualIdentity::AwaitingFirstFrame)

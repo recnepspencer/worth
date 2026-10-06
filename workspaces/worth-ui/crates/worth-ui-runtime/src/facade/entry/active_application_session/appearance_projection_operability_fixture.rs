@@ -5,6 +5,7 @@ use worth_ui_dsl::*;
 pub(super) const ROUTE: &str = "test.appearance.activate";
 pub(super) const MUTABLE: &str = "test.appearance.mutable";
 pub(super) const POLICY: &str = "test.appearance.policy";
+pub(super) const READY: &str = "test.appearance.ready";
 pub(super) struct Payload;
 pub(super) struct Outcome;
 pub(super) struct Intent;
@@ -90,6 +91,33 @@ pub(super) fn source_with_role(
     role: Option<&UiAppearanceRoleDeclaration>,
     routes: usize,
 ) -> WorthUiRustAuthoredArtifactInput {
+    WorthUiRustAuthoredArtifactInput::from_modules([consumer_module(role, routes)])
+}
+
+/// The consumer module: `routes` operability-gated control routes on the
+/// appearance node, attached to `role` when one is given.
+pub(super) fn consumer_module(
+    role: Option<&UiAppearanceRoleDeclaration>,
+    routes: usize,
+) -> WorthUiRustAuthoredArtifactInputModule {
+    consumer_module_with(
+        role,
+        routes,
+        &WorthUiIntentOperabilityContractSpec::new(
+            "test.appearance.operability",
+            WorthUiIntentMutabilitySourceSpec::application_boolean(MUTABLE),
+            WorthUiIntentReadinessSourceSpec::application_boolean(READY),
+            WorthUiIntentPolicySourceSpec::application_boolean(POLICY),
+        ),
+    )
+}
+
+/// The consumer module whose declarations read `operability`.
+pub(super) fn consumer_module_with(
+    role: Option<&UiAppearanceRoleDeclaration>,
+    routes: usize,
+    operability: &WorthUiIntentOperabilityContractSpec,
+) -> WorthUiRustAuthoredArtifactInputModule {
     let mut module = WorthUiRustAuthoredArtifactInputModule::new("appearance/consumer");
     let mut bindings = Vec::new();
     for (identity, family) in [
@@ -106,12 +134,7 @@ pub(super) fn source_with_role(
             identity,
             "test.appearance.intent",
             family,
-            WorthUiIntentOperabilityContractSpec::new(
-                "test.appearance.operability",
-                WorthUiIntentMutabilitySourceSpec::application_boolean(MUTABLE),
-                WorthUiIntentReadinessSourceSpec::application_boolean("test.appearance.ready"),
-                WorthUiIntentPolicySourceSpec::application_boolean(POLICY),
-            ),
+            operability.clone(),
             WorthUiIntentConfirmationContractSpec::not_required("test.appearance.confirmation"),
             WorthUiIntentConcurrencyScope::TargetRouteSingleFlight,
             WorthUiIntentConsequenceContractSpec::none(),
@@ -128,7 +151,7 @@ pub(super) fn source_with_role(
             )
             .unwrap();
     }
-    WorthUiRustAuthoredArtifactInput::from_modules([module])
+    module
 }
 
 pub(super) fn component() -> crate::capability::ComponentDescriptor {
@@ -144,6 +167,7 @@ pub(super) fn component() -> crate::capability::ComponentDescriptor {
 pub(super) fn builder_with_component(
     role: &UiAppearanceRoleDeclaration,
     component: crate::capability::ComponentDescriptor,
+    profile: crate::runtime::rebind::UiChangeProfile,
 ) -> crate::facade::entry::WorthUiApplicationBuilder {
     use crate::runtime::tests::source_ingress_boundary_test_support::{
         source_backed_package_region, source_backed_package_sizing,
@@ -151,7 +175,7 @@ pub(super) fn builder_with_component(
     let (_, _, world) = crate::evidence::measurement::projection::fact_test_support::display_field_projection_context("appearance-operability");
     let token = crate::capability::ThemeTokenId::new(support::APPEARANCE_BASE_TOKEN).unwrap();
     crate::facade::WorthUi::app()
-        .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
+        .with_change_profile(profile)
         .with_graph_world_profile(world)
         .register_component(component)
         .register_theme_token(support::appearance_theme_token(token))
@@ -165,7 +189,7 @@ pub(super) fn builder_with_component(
         .unwrap()
         .register_intent_boolean_fact(fact(MUTABLE), true)
         .unwrap()
-        .register_intent_boolean_fact(fact("test.appearance.ready"), true)
+        .register_intent_boolean_fact(fact(READY), true)
         .unwrap()
         .register_intent_boolean_fact(fact(POLICY), true)
         .unwrap()
@@ -226,11 +250,28 @@ pub(super) fn session_with_component(
     crate::facade::WorthUiActiveApplicationSession,
     crate::certification_support::ScriptedPresentationHost,
 ) {
+    session_with_registrations(role, source, component, |builder| builder)
+}
+
+/// A session over `source` whose application also carries what `register`
+/// adds to the fixture registrations.
+pub(super) fn session_with_registrations(
+    role: &UiAppearanceRoleDeclaration,
+    source: WorthUiRustAuthoredArtifactInput,
+    component: crate::capability::ComponentDescriptor,
+    register: impl Fn(
+        crate::facade::entry::WorthUiApplicationBuilder,
+    ) -> crate::facade::entry::WorthUiApplicationBuilder,
+) -> (
+    crate::facade::WorthUiActiveApplicationSession,
+    crate::certification_support::ScriptedPresentationHost,
+) {
     let requires_text_presentation = component.semantic_text_contract().is_some();
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     host.set_capabilities(worth_ui_host_native::appearance_capability_report());
     let observer = host.clone();
-    let capabilities = builder_with_component(role, component.clone())
+    let pulse = crate::runtime::rebind::UiChangeProfile::platform_pulse;
+    let capabilities = register(builder_with_component(role, component.clone(), pulse()))
         .freeze()
         .unwrap();
     let launch = crate::runtime::tests::source_ingress_boundary_test_support::lower_rust_submission(
@@ -241,7 +282,7 @@ pub(super) fn session_with_component(
         )],
         capabilities.capabilities(),
     );
-    let app = builder_with_component(role, component)
+    let app = register(builder_with_component(role, component, pulse()))
         .with_candidate_submission(launch)
         .freeze()
         .unwrap();

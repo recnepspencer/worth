@@ -22,7 +22,7 @@ fn candidate(input_identity: &str) -> WorthQueryTemporalIntentCandidate<TestCloc
         WorthQueryClockCoordinate::from_nanoseconds(90),
         "operation-input".to_string(),
         WorthQueryTemporalOperationInputIdentity::declare(input_identity).unwrap(),
-        WorthQueryTemporalIntentIdempotencyRelation::declare("relation-7").unwrap(),
+        WorthQueryTemporalIntentIdempotencyRelation::declare(&"relation-7").unwrap(),
     )
     .expect("fixture record identity must encode")
 }

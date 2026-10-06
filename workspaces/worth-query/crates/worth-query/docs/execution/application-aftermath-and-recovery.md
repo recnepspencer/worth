@@ -44,6 +44,9 @@ Declaration consumers use `worth_query_decl::facade`:
 - `application_schema::WorthQueryExternalEffectCorrelationFamily`
 - `application_schema::ApplicationOperationDefinitionBuilder::external_effect`
 - `application_schema::ApplicationOperationDefinitionBuilder::no_external_effect`
+- `application_schema::ApplicationInboundOccurrenceBinding` and
+  `ApplicationInboundOccurrenceLimits`
+- `application_schema::ApplicationOperationDefinitionBuilder::external_effect_with_inbound`
 - `application_aftermath::DeclaredApplicationAftermathContract`
 - `application_aftermath::DeclaredPreImageDemand`
 - `application_schema::ApplicationOperationDefinitionBuilder::aftermath`
@@ -58,6 +61,8 @@ Hosts use `worth_query_host::facade`:
 - `publication::domain_computation::publish_application_commit`
 - `publication::application_aftermath::publish_application_aftermath`
 - `publication::application_aftermath::publish_recovery_support`
+- `application_entry::WorthQueryApplicationInboundOccurrencesExt`
+- `primary_graph::WorthQueryPrimaryGraphApplicationRuntime::install_inbound_occurrence_verifier`
 
 Application hosts should normally wrap the generic host surface in domain-named
 operations, as Bank does with `BankCommitReceipt::aftermath()` and its recovery
@@ -74,6 +79,101 @@ The executable does not manufacture an owner failure to enter those arms.
 
 The `provisional_aftermath` facade contains the current undo/redo experiment.
 It is not part of the stable feature described here.
+
+## Authenticated Inbound Completion
+
+An operation with an external dispatch can declare one inbound source, protocol,
+version, and finite receiver limits with `external_effect_with_inbound`. The
+host installs a verifier for that exact operation. Incoming bytes cannot select
+a different verifier or completion target. The public host entry is
+`worth_query_host::facade::application_entry::WorthQueryApplicationInboundOccurrencesExt`:
+
+```rust
+let receipt = application.inbound_occurrences()
+    .receive(&installed_source, bounded_envelope, &scope)
+    .execute();
+```
+
+`receipt` is a `Result<WorthQueryInboundReceipt,
+WorthQueryInboundAdmissionDenial>`. A denial before custody receives no Bank
+signed ACK; the sender retains the same signed bytes for its bounded retry.
+`AcceptedPending` and `AlreadyAccepted` acknowledge retained Query custody,
+not external completion. `Performed` and `AlreadyCompleted` require the exact
+World terminal. A route may diagnose a terminal only through its installed
+ host handle; a public raw-correlation status endpoint would bypass this
+ boundary.
+
+The advanced Query path exposes sealed authenticated, correlated and admitted
+phases through `authenticate_inbound_occurrence`, `.correlate()`, `.accept()`
+and `.execute(&scope)`. A dropped admitted phase returns its publication slot to
+bounded pending custody. Query keeps the prepared Relational candidate and World
+publication lease private while holding the exact incarnation guard through
+execution; no caller can manufacture or carry a prepared completion.
+
+The compiled Bank [payment declaration](../../../../../worth-query-bank-world/crates/bank-domain/src/schema/contributions/payments.rs)
+and [workflow definition](../../../../../worth-query-bank-world/crates/bank-server/src/application_definition/workflows.rs)
+use the same typed inbound binding. Bank's
+[installed route](../../../../../worth-query-bank-world/crates/bank-server/src/inbound_completion.rs)
+obtains the verifier handle from the operation contract, then the
+[HTTP composition](../../../../../worth-query-bank-world/crates/bank-http-adapter/src/http/server/inbound_completion/route.rs)
+signs an ACK only from the resulting Query receipt. These are the executable
+source locations for the declaration, installation and host progression shown
+above.
+
+Query first verifies the signed envelope against the installed source and clock,
+then matches its correlation to one committed dispatch on the original product
+incarnation. It retains accepted evidence before attempting the completion
+publication. Only a World `Performed` publication establishes terminal truth.
+The installed verifier must calculate `signed_meaning_digest` from every signed
+semantic field, including audience, source, key epoch, message identity,
+validity times, protocol, correlation and payload; only detached signature
+material is excluded. Query uses zero clock-skew allowance. An overlong signed
+validity span returns `ValidityWindowExceeded`; a past cutoff returns `Expired`.
+The first Bank protocol confirms the exact dispatched payload. It does not
+record a separate remote result body, such as a settlement reference; adding
+that meaning requires a separately declared effect and protocol.
+An installed transport's immediate `Completed` observation enters this same
+World path with its original committed operation and physical attempt proof.
+It is recorded as transport provenance, never as a fabricated signed message.
+If a callback and that observation race, the incarnation lane admits one
+terminal publication; the later matching source message returns
+`AlreadyCompleted`.
+`ProductUnpublished` keeps exact recovery custody; a retry must settle or clean
+that attempt before another publication. `NoEffect` and denied publications do
+not establish completion. Once Query has accepted the message, a blocked attempt
+still returns an acknowledged `AcceptedPending` receipt with a typed pending
+reason; unpublished World work reports `RetainedUnpublished`.
+
+The receipt distinguishes `AcceptedPending`, `AlreadyAccepted`, `Performed`,
+and `AlreadyCompleted`. A duplicate with the same authenticated message meaning
+may repeat authentication and exact lookup, but adds no completion prepare,
+World publication, redispatch or retained occurrence. A fresh message identity
+for an already completed effect is
+compared with the original effect meaning and returns `AlreadyCompleted` without
+republishing. Reusing a message identity with altered signed meaning, or changing
+the correlated effect, is denied. Bank signs its transport ACK only from a Query
+receipt; HTTP receipt of bytes alone does not discharge the rail sender.
+
+Accepted evidence has finite count and byte limits. Pending and unpublished
+work cannot be evicted by age or request cancellation. After the signed replay
+cutoff and explicit delivery settlement, bounded host cleanup can release the
+accepted payload slot. The compact terminal index remains available for ordinary
+exact lookup, with its authoritative performed publication retained in World
+history. An installed host may call `repair_completed_inbound_index` with its
+verifier handle and finite World-page, changed-record and ancestry budgets.
+Ordinary exact lookup remains unavailable while that separate repair is
+incomplete. This custody guarantee is process-local; forced
+process death has no recovery promise. In particular, an authentic callback can
+receive unknown correlation if the original outstanding-dispatch provenance was
+lost; that response is not a signed permanent denial to the rail.
+
+The installed host wakes bounded custodian maintenance for retained work,
+explicit owner continuation, and the next terminal expiry after callbacks stop. It
+selects already accepted pending work internally, so an expired signature is
+never reauthenticated to continue its exact World recovery. A blocked item
+does not prevent later entries from being considered. The route-bound terminal
+observation on the Bank server handle is a privileged host diagnostic; it is
+not an authenticated operator inspection endpoint.
 
 ## Core Mental Model
 
@@ -320,8 +420,44 @@ notice to its ledger.
 A lost response can therefore leave Query unresolved even when the rail has
 completed the effect; safe retry relies on the rail's idempotent correlation,
 not on Query guessing what happened.
+Once Query's terminal effect owner holds the completion, safe retry makes no new
+physical attempt. It is refused with `WorthQueryRecoveryHandleDenialKind::AlreadyCompleted`
+and the live handle is returned.
+While a completion is still settling, safe retry also makes no attempt and
+returns the live handle, naming why the owner cannot answer yet:
+
+- `CompletionPublicationPending`: the completion is held but its publication is
+  in flight or awaits retry.
+- `TerminalIndexUnavailable`: the terminal index cannot answer until a pending
+  publication resolves or the index is repaired.
+
+Retry later; once the completion settles, retry answers `AlreadyCompleted`.
+Every other re-dispatch refusal also keeps its own kind: `DispatchOutboxMissing`,
+`TransportNotInstalled`, `DispatchOwnerReadDenied`, `AttemptAdmissionDenied`,
+`CanonicalDerivationDenied` and `TimeObservationDenied`. `DispatchOwnerReadDenied`
+carries the exact owner-read cause, and `AttemptAdmissionDenied` carries the exact
+`WorthQueryExternalDispatchAttemptDenial`: a foreign runtime or world, a
+publication commit mismatch, a missing inbound operation slot, spent attempt
+identities, a missing or mismatched outstanding dispatch, an original still
+publishing, or a full in-flight window. A World terminal reached between
+admission and the send answers `AlreadyCompleted`.
 
 ## Publication Settlement Recovery
+
+An ordinary request retry after checkpoint restore or reopening still compares
+the durable intent under fresh authorization. When its original live receipt
+is absent, `WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
+the sealed `WorthQueryHistoricalApplicationCommit` and its `commit_id()`. This
+is a landed historical fact: the request commits nothing again. It carries no
+handler result, publication authority, workflow settlement authority, or live
+receipt. Query current state through a freshly admitted request before further
+work. In-process retries whose original receipt remains retained continue to
+return `AlreadyCommitted(receipt)`.
+
+Lower APIs that require a live receipt retain the typed
+`CommittedReceiptNotRetained { commit }` denial. Its `historical_commit()`
+accessor exposes the same descriptive fact; it cannot grant the missing
+authority or fabricate receipt evidence from durable identifiers.
 
 Split the application commit outcome with `landed()` before entering aftermath
 handling. A landed commit returns its receipt; every other terminal arrives as a
@@ -406,6 +542,12 @@ Inspection borrows the live handle and returns descriptive, publishable state.
 Resolution consumes the handle after a fresh owner-issued effect authority and
 an admitted idempotency read agree with its exact binding. A domain host should
 normally wrap this generic sequence in domain-named methods, as Bank does.
+
+When the admitted request lapses before resolution takes effect, resolution
+names the lapse: `AdmissionCancelled`, `AdmissionDeadlineExceeded` or
+`AdmissionAuthenticationExpired`. A fresh request clears it.
+`FreshAuthorityDenied` means the presented effect authority is not this
+handle's, which a fresh request does not clear.
 
 ## Program Adoption Recovery And Support Retirement
 

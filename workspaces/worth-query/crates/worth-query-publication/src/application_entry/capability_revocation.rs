@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::{
     application_capability::{
         ApplicationCapabilityRef, ApplicationCapabilityRequest,
-        ApplicationCapabilityRevocationRequest, ApplicationCapabilityWorkflowIdempotency,
+        ApplicationCapabilityRevocationRequest,
     },
     application_program::ApplicationProgramDefinition,
     application_schema::{
@@ -20,7 +20,11 @@ use worth_query_execution::facade::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{workflow_key::workflow_idempotency, WorthQueryApplicationRequest};
+use super::WorthQueryApplicationRequest;
+use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
+use worth_query_execution::publication_boundary::{
+    capability_workflow::WorthQueryCapabilityWorkflowIdempotency, program_publication_access,
+};
 
 /// Why `execute_capability_revocation_in_program` refused. `ProgramMismatch` means the
 /// program runtime is not this request's runtime; `IdempotencyIntentDrift` means the key
@@ -44,7 +48,9 @@ pub enum WorthQueryApplicationCapabilityRevocationDenial<PreparationDenial> {
     PrincipalResolution(
         worth_query_execution::facade::primary_graph::WorthQueryPrincipalResolutionDenial,
     ),
-    PrincipalIdentityEncoding(ApplicationValueEncodeDenial),
+    /// The idempotency key, the input or the principal identity could not be
+    /// canonically encoded; the payload names the binding whose value was rejected.
+    IdentityEncoding(ApplicationValueEncodeDenial),
     Authorization(
         worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenial,
     ),
@@ -112,10 +118,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
         Program: ApplicationProgramDefinition<Schema>,
         PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
         PrincipalIdentity: 'static,
-        Operation: ApplicationOperationMarkerIdentity<Schema>
-            + ApplicationCapabilityWorkflowIdempotency<Schema, Input, Key>
-            + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: serde::Serialize,
+        Key: serde::Serialize,
         Input: ApplicationCapabilityRequest<Schema, Capability>
             + ApplicationCapabilityRevocationRequest<Schema, Capability>
             + Clone
@@ -154,18 +160,29 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .map_err(Denial::PrincipalResolution)?;
-        let idempotency = workflow_idempotency::<
+        let input = ApplicationEncodedInput::<Operation::InputBinding>::encode(input)
+            .map_err(Denial::IdentityEncoding)?;
+        let workflow = WorthQueryCapabilityWorkflowIdempotency::bind::<
             Schema,
             Operation,
-            Input,
             Key,
             PrincipalIdentity,
             PrincipalIdentityBinding,
         >(key, &input, principal.principal_identity())
-        .map_err(Denial::PrincipalIdentityEncoding)?;
-        let access = selected
-            .admit_capability_access(&principal, &capability, input, self.scope)
+        .map_err(Denial::IdentityEncoding)?;
+        let idempotency = workflow.binding();
+        let publication = program_publication_access();
+        let mut access = selected
+            .admit_encoded_capability_access(
+                &publication,
+                &principal,
+                &capability,
+                input,
+                self.scope,
+            )
             .map_err(Denial::Authorization)?;
+        access.record_request_identity_work(&publication, workflow.key_work());
+
         let operation = self
             .application
             .installed_schema()

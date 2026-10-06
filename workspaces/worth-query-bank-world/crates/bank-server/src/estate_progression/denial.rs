@@ -3,6 +3,8 @@
 mod idempotency;
 mod lifecycle_projection;
 mod operation_projection;
+#[cfg(test)]
+mod recovery_kind_tests;
 
 pub use idempotency::BankEstateIdempotencyResolutionDenial;
 pub use lifecycle_projection::BankEstateLifecycleProjectionDenial;
@@ -33,8 +35,11 @@ pub enum BankEstateProgressionDenial {
     ProgramAction(WorthQueryApplicationCommitDenial),
     ProgramMismatch,
     PrincipalBindingInstallation(WorthQueryPrincipalBindingInstallationDenial),
-    PrincipalIdentityEncoding(
+    IdentityEncoding(
         worth_query_host::facade::declaration::application_schema::ApplicationValueEncodeDenial,
+    ),
+    MutationIdentityEncoding(
+        worth_query_host::facade::declaration::application_operation::ApplicationMutationIdentityDenial,
     ),
     PrincipalResolution(WorthQueryPrincipalResolutionDenial),
     ApplicationEntry(
@@ -71,17 +76,12 @@ pub enum BankEstateProgressionDenial {
 pub enum BankRecoveryDenialKind {
     RecoveryNotAdmitted,
     RecoveryAlreadyMinted,
-    RuntimeMismatch,
     SchemaMismatch,
     BranchMismatch,
     ApplicationBindingGenerationMismatch,
     OperationMismatch,
     GovernedInputMismatch,
-    AttemptMismatch,
-    PrincipalScopeMismatch,
-    IdempotencyMismatch,
     ForeignIdempotencyRead,
-    ProviderPostureMismatch,
     CorrelationMismatch,
     CompatibilityGenerationMismatch,
     Expired,
@@ -89,12 +89,22 @@ pub enum BankRecoveryDenialKind {
     ForeignPrincipal,
     ForeignRuntime,
     ForeignBranchEqualOrdinal,
-    TransitionNotAdmitted,
+    AlreadyCompleted,
+    CompletionPublicationPending,
+    TerminalIndexUnavailable,
+    DispatchOutboxMissing,
+    TransportNotInstalled,
+    DispatchOwnerReadDenied(crate::BankCommittedDispatchOutboxReadDenial),
+    AttemptAdmissionDenied(crate::BankExternalDispatchAttemptDenial),
+    CanonicalDerivationDenied,
+    TimeObservationDenied,
     CompensationNotAdmitted,
     ReconciliationNotAdmitted,
     FreshAuthorityDenied,
+    AdmissionCancelled,
+    AdmissionDeadlineExceeded,
+    AdmissionAuthenticationExpired,
     DisclosureAdmissionRequired,
-    CurrentPolicyDenied,
     UnresolvedExternalPosture,
 }
 
@@ -114,7 +124,6 @@ impl BankRecoveryDenial {
         let kind = match denial.kind() {
             Query::RecoveryNotAdmitted => Bank::RecoveryNotAdmitted,
             Query::RecoveryAlreadyMinted => Bank::RecoveryAlreadyMinted,
-            Query::RuntimeMismatch => Bank::RuntimeMismatch,
             Query::SchemaMismatch => Bank::SchemaMismatch,
             Query::BranchMismatch => Bank::BranchMismatch,
             Query::ApplicationBindingGenerationMismatch => {
@@ -122,11 +131,7 @@ impl BankRecoveryDenial {
             }
             Query::OperationMismatch => Bank::OperationMismatch,
             Query::GovernedInputMismatch => Bank::GovernedInputMismatch,
-            Query::AttemptMismatch => Bank::AttemptMismatch,
-            Query::PrincipalScopeMismatch => Bank::PrincipalScopeMismatch,
-            Query::IdempotencyMismatch => Bank::IdempotencyMismatch,
             Query::ForeignIdempotencyRead => Bank::ForeignIdempotencyRead,
-            Query::ProviderPostureMismatch => Bank::ProviderPostureMismatch,
             Query::CorrelationMismatch => Bank::CorrelationMismatch,
             Query::CompatibilityGenerationMismatch => Bank::CompatibilityGenerationMismatch,
             Query::Expired => Bank::Expired,
@@ -134,12 +139,22 @@ impl BankRecoveryDenial {
             Query::ForeignPrincipal => Bank::ForeignPrincipal,
             Query::ForeignRuntime => Bank::ForeignRuntime,
             Query::ForeignBranchEqualOrdinal => Bank::ForeignBranchEqualOrdinal,
-            Query::TransitionNotAdmitted => Bank::TransitionNotAdmitted,
+            Query::AlreadyCompleted => Bank::AlreadyCompleted,
+            Query::CompletionPublicationPending => Bank::CompletionPublicationPending,
+            Query::TerminalIndexUnavailable => Bank::TerminalIndexUnavailable,
+            Query::DispatchOutboxMissing => Bank::DispatchOutboxMissing,
+            Query::TransportNotInstalled => Bank::TransportNotInstalled,
+            Query::DispatchOwnerReadDenied(read) => Bank::DispatchOwnerReadDenied(read.into()),
+            Query::AttemptAdmissionDenied(attempt) => Bank::AttemptAdmissionDenied(attempt.into()),
+            Query::CanonicalDerivationDenied => Bank::CanonicalDerivationDenied,
+            Query::TimeObservationDenied => Bank::TimeObservationDenied,
             Query::CompensationNotAdmitted => Bank::CompensationNotAdmitted,
             Query::ReconciliationNotAdmitted => Bank::ReconciliationNotAdmitted,
             Query::FreshAuthorityDenied => Bank::FreshAuthorityDenied,
+            Query::AdmissionCancelled => Bank::AdmissionCancelled,
+            Query::AdmissionDeadlineExceeded => Bank::AdmissionDeadlineExceeded,
+            Query::AdmissionAuthenticationExpired => Bank::AdmissionAuthenticationExpired,
             Query::DisclosureAdmissionRequired => Bank::DisclosureAdmissionRequired,
-            Query::CurrentPolicyDenied => Bank::CurrentPolicyDenied,
             Query::UnresolvedExternalPosture => Bank::UnresolvedExternalPosture,
         };
         Self { kind }
@@ -152,7 +167,8 @@ impl std::fmt::Display for BankEstateProgressionDenial {
             Self::ProgramAction(denial) => write!(formatter, "{denial:?}"),
             Self::ProgramMismatch => formatter.write_str("application-program-mismatch"),
             Self::PrincipalBindingInstallation(denial) => write!(formatter, "{denial:?}"),
-            Self::PrincipalIdentityEncoding(denial) => write!(formatter, "{denial:?}"),
+            Self::IdentityEncoding(denial) => write!(formatter, "{denial:?}"),
+            Self::MutationIdentityEncoding(denial) => write!(formatter, "{denial:?}"),
             Self::PrincipalResolution(denial) => denial.fmt(formatter),
             Self::ProductSelection(denial) => {
                 write!(formatter, "product selection denied: {denial:?}")
@@ -231,6 +247,12 @@ impl BankEstateProgressionDenial {
         denial: WorthQueryApplicationIdempotencyResolutionDenial,
     ) -> Self {
         Self::Idempotency(idempotency::from_query(denial))
+    }
+
+    pub(crate) fn from_mutation_identity(
+        denial: worth_query_host::facade::declaration::application_operation::ApplicationMutationIdentityDenial,
+    ) -> Self {
+        Self::MutationIdentityEncoding(denial)
     }
 
     pub(crate) fn from_attempt(denial: WorthQueryApplicationAttemptDenial) -> Self {

@@ -2,7 +2,10 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
+mod admitted;
+mod custody_work;
 mod denial;
 mod outcome;
 mod result;
@@ -11,15 +14,20 @@ use denial::{authorization_denial, denial};
 pub use denial::{WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
 
 use super::authorized_read::{
-    execute_authorized_read, refresh_governed_authorization,
+    execute_authorized_read, execute_selected_authorized_read, refresh_governed_authorization,
+    SelectedAuthorizationCurrentnessStop, SelectedAuthorizedReadStop,
     WorthQueryAuthorizedApplicationReadDenial,
 };
-use super::read_execution::{read_bounded_root_rows, WorthQueryApplicationReadExecutionDenialKind};
+use super::read_execution::{
+    read_bounded_root_rows, OneShotReadWorkObservation,
+    WorthQueryApplicationReadExecutionDenialKind,
+};
 use super::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
 };
 use crate::domain_computation::primary_graph::{
+    output_lineage::invalidation::{InvalidationEditAdmission, ReservedExternalWork},
     WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use outcome::finalize_one_shot;
@@ -35,11 +43,51 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     request_affinity: super::admitted_result::WorthQueryApplicationQueryRequestAffinity,
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
+
+/// The admitted read keeps its original semantic denial and accounts for
+/// newly performed Query execution work on either outcome.
+pub(in crate::domain_computation::primary_graph) enum WorthQueryAdmittedOneShotStop {
+    Admission(CompanionPreflightStop),
+    WorkUnavailable,
+    WorkCounterOverflow,
+    WorkAccountingMismatch,
+    Execution(WorthQueryApplicationOneShotDenial),
+}
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
     pub fn execute_application_query_one_shot<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        plan: WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+    ) -> Result<
+        WorthQueryApplicationOneShotResult<Query, QueryResult>,
+        WorthQueryApplicationOneShotDenial,
+    >
+    where
+        QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+    {
+        self.execute_application_query_one_shot_core(plan, None)
+    }
+
+    fn execute_application_query_one_shot_core<
         Query,
         Parameters,
         QueryResult,
@@ -58,6 +106,7 @@ where
             PrincipalIdentity,
             Scope,
         >,
+        spent: Option<&OneShotReadWorkObservation>,
     ) -> Result<
         WorthQueryApplicationOneShotResult<Query, QueryResult>,
         WorthQueryApplicationOneShotDenial,
@@ -65,49 +114,113 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        validate_plan_owner(self, &plan)?;
-        if plan.controls.lane()
-            != worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane::OneShot
-        {
-            return Err(denial(
-                WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-                plan.query.name(),
-                plan.query.name(),
-            ));
-        }
-        let request = plan.controls.request_scope();
-        admit_request(request, plan.query.name())?;
-        validate_basis_lifetime(&plan.controls, plan.query.name())?;
-        validate_authentication_lifetime(self, plan.principal, plan.query.name())?;
-        if !plan.basis.is_live() {
-            return Err(denial(
-                WorthQueryApplicationOneShotDenialKind::BasisUnavailable,
-                plan.query.name(),
-                plan.query.name(),
-            ));
-        }
+        validate_one_shot_plan(self, &plan)?;
         refresh_governed_authorization(self, &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-
-        self.runtime.primary_graph().ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-        let result_buffer = self.result_buffers.reserve(
-            plan.graph_read_plan()
-                .budget_check()
-                .max_inline_result_bytes(),
-        );
+        let result_buffer = reserve_one_shot_result_buffer(self, &plan)?;
         let (raw, authorization_work, read_proof) =
             execute_authorized_read(self, &plan, |runtime, graph, plan| {
-                read_bounded_root_rows(runtime, graph, plan, result_buffer)
+                read_bounded_root_rows(
+                    runtime,
+                    graph,
+                    plan,
+                    result_buffer,
+                    spent,
+                    plan.controls.maximum_work().get(),
+                )
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        finalize_one_shot(self, plan, raw, authorization_work, read_proof)
+        finalize_one_shot(self, plan, raw, authorization_work, read_proof, spent)
     }
+}
+
+fn validate_one_shot_plan<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    plan: &WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+) -> Result<(), WorthQueryApplicationOneShotDenial>
+where
+    Schema: ApplicationSchema,
+{
+    validate_plan_owner(application, plan)?;
+    if plan.controls.lane()
+        != worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane::OneShot
+    {
+        return Err(denial(
+            WorthQueryApplicationOneShotDenialKind::ForeignPlan,
+            plan.query.name(),
+            plan.query.name(),
+        ));
+    }
+    let request = plan.controls.request_scope();
+    admit_request(request, plan.query.name())?;
+    validate_basis_lifetime(&plan.controls, plan.query.name())?;
+    validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
+    if !plan.basis.is_live() {
+        return Err(denial(
+            WorthQueryApplicationOneShotDenialKind::BasisUnavailable,
+            plan.query.name(),
+            plan.query.name(),
+        ));
+    }
+    Ok(())
+}
+
+fn reserve_one_shot_result_buffer<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    plan: &WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+) -> Result<
+    super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+    WorthQueryApplicationOneShotDenial,
+>
+where
+    Schema: ApplicationSchema,
+{
+    application.runtime.primary_graph().ok_or_else(|| {
+        denial(
+            WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
+            plan.query.name(),
+            plan.query.name(),
+        )
+    })?;
+    Ok(application.result_buffers.reserve(
+        plan.graph_read_plan()
+            .budget_check()
+            .max_inline_result_bytes(),
+    ))
 }
 
 fn map_authorized_read_denial(
@@ -129,6 +242,12 @@ fn map_authorized_read_denial(
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
             let kind = match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::Cancelled => {
+                    WorthQueryApplicationOneShotDenialKind::Cancelled
+                }
+                WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded => {
+                    WorthQueryApplicationOneShotDenialKind::DeadlineExceeded
+                }
                 WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable => {
                     WorthQueryApplicationOneShotDenialKind::PredicateIndexUnavailable
                 }
@@ -163,7 +282,7 @@ fn map_authorized_read_denial(
                     WorthQueryApplicationOneShotDenialKind::TraversalUnavailable
                 }
             };
-            return denial(kind, query, read.subject());
+            return denial(kind, query, read.into_subject());
         }
         WorthQueryAuthorizedApplicationReadDenial::Session => (
             WorthQueryApplicationOneShotDenialKind::ForeignPlan,

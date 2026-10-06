@@ -58,12 +58,16 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
     }
 
     fn acquire(&mut self, prepared: Self::Prepared) -> Result<Self::Acquired, Self::Failure> {
+        let _stage =
+            crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Acquire);
         prepared
             .acquire(self.graphics)
             .map_err(UiNativePresentationPortFailure::Surface)
     }
 
     fn encode(&mut self, acquired: Self::Acquired) -> Result<Self::Encoded, Self::Failure> {
+        let _stage =
+            crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Encode);
         let plan = self
             .plan
             .take()
@@ -74,6 +78,8 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
     }
 
     fn submit(&mut self, encoded: Self::Encoded) -> Result<Self::Submitted, Self::Failure> {
+        let _stage =
+            crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Submit);
         Ok(encoded.submit(self.graphics.queue()))
     }
 
@@ -82,7 +88,9 @@ impl UiNativePresentationStagePort for UiWgpuPresentationTransaction<'_, '_> {
         submitted: Self::Submitted,
     ) -> Result<Self::PresentHandoff, Self::Failure> {
         let handoff = submitted.hand_off();
-        crate::native::resize_trace::submitted(self.frame, self.graphics.extent());
+        let extent = self.graphics.extent();
+        crate::native::resize_trace::submitted(self.frame, extent);
+        crate::native::frame_work::charge_submitted(self.frame, extent);
         Ok(handoff)
     }
 
@@ -231,7 +239,8 @@ fn encode(
         &surface_view,
         &surface_pipeline,
         &surface_bind_group,
-        stamp.map(|stamp| (stamp, graphics.extent())),
+        graphics.extent(),
+        stamp,
     );
     copy_evidence_pixels(
         &mut encoder,
@@ -260,10 +269,12 @@ fn raster_vertices(operations: &[UiNativeRasterOperation]) -> Vec<RasterVertex> 
 }
 
 fn glyph_vertices(operations: &[UiNativeRasterOperation], extent: [u32; 2]) -> Vec<GlyphVertex> {
-    operations
+    let mut glyphs = 0;
+    let vertices = operations
         .iter()
         .filter_map(|operation| match operation {
             UiNativeRasterOperation::Glyph(command) => {
+                glyphs += 1;
                 Some(super::super::text::glyph_vertices(*command, extent))
             }
             UiNativeRasterOperation::Clear(_)
@@ -271,7 +282,12 @@ fn glyph_vertices(operations: &[UiNativeRasterOperation], extent: [u32; 2]) -> V
             | UiNativeRasterOperation::Surface(_) => None,
         })
         .flatten()
-        .collect()
+        .collect();
+    worth_ui_host_contract::record_presentation_glyphs(
+        worth_ui_host_contract::UiPresentationWorkStage::VertexEncode,
+        glyphs,
+    );
+    vertices
 }
 
 fn encode_raster_vertices(vertices: &[RasterVertex]) -> Vec<u8> {
@@ -298,3 +314,7 @@ fn encode_glyph_vertices(vertices: &[GlyphVertex]) -> Vec<u8> {
     }
     bytes
 }
+
+#[cfg(test)]
+#[path = "transaction_work_tests.rs"]
+mod work_tests;

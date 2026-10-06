@@ -1,13 +1,13 @@
 //! Allocation custody for selected payload clones and staged node roots.
 use std::sync::Arc;
 
-use super::{map_mutation_denial, NodeArena, RetainedNodeEditDenial, RetainedNodePayload};
+use super::{map_mutation_denial, NodeArena, RetainedNodeEditDenial};
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStoragePreparation as Work,
     SignalConditionalRetentionLedger, SignalConditionalRetentionReservation,
 };
 
-pub(super) fn reserve_payload_draft(
+pub(super) fn reserve_payload_draft<T>(
     arena: &NodeArena,
     count: usize,
     ledger: &Arc<SignalConditionalRetentionLedger>,
@@ -15,8 +15,7 @@ pub(super) fn reserve_payload_draft(
 ) -> Result<SignalConditionalRetentionReservation, RetainedNodeEditDenial> {
     work.reserve_visits(4)
         .map_err(RetainedNodeEditDenial::Accounting)?;
-    let payloads = Charge::capacity::<RetainedNodePayload>(count)
-        .map_err(RetainedNodeEditDenial::Accounting)?;
+    let payloads = Charge::capacity::<T>(count).map_err(RetainedNodeEditDenial::Accounting)?;
     // Cloning selected payloads cannot exceed all reachable lane payloads.
     // Carried charges avoid a warm scan; the vector capacity is separate.
     let charge = [

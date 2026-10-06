@@ -91,7 +91,7 @@ impl BankHttpRecoveryRegistry {
         BankHttpCommitReplay::Applied {
             commit: record.commit,
             recovery: token.clone(),
-            completed: record.retried.is_some(),
+            completed: record.settled.is_some(),
         }
     }
 

@@ -126,8 +126,12 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
     assert!(matches!(
         denied,
         Err(ref denial)
-            if denial.kind()
-                == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
+            if matches!(
+                denial.kind(),
+                worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(
+                    worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+                )
+            )
     ));
 
     assert_program_committed::<SendMoney>(

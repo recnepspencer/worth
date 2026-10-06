@@ -132,6 +132,15 @@ examples compile against the public facade and execute through the host entry.
 
 ## Authoring rule
 
+An ordinary mutation may attach an external source contract with
+`mutation_with_external_input::<Binding, Provider>()` or the matching
+`mutation_with_external_input(Binding, Provider);` capsule form. This requires no
+evaluated requirement or output correspondence. The installed provider slot
+captures the provider's resolved values and revision; admission revalidates that
+revision. The caller must pass those captured values into the ordinary operation.
+The declaration does not itself replace the mutation input or prove the external
+source stayed current through graph publication.
+
 Add meaning at its owner: schema members in the schema declaration, operation
 and scope in the binding, feature membership in the capsule, cross-feature
 relationships in the program, and runtime implementations in the contribution

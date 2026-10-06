@@ -110,7 +110,11 @@ pub mod integration {
         WorthQueryProductRelationalInstallation, WorthQueryProductRuntime,
         WorthQueryProductRuntimeInstallationDenial, WorthQueryProductSharedRoot,
         WorthQueryProductWorldClock, WorthQueryProductWorldResources,
-        WorthQueryRelationalSourceOwner,
+        WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
+    };
+    pub use crate::domain_computation::execution_runtime::{
+        WorthQueryInvalidationResourceDenial, WorthQueryInvalidationResourceInstallation,
+        WorthQueryInvalidationResources,
     };
     use worth_query_installation::facade::{
         ApplicationSchema, WorthQueryInstalledApplicationSchema,

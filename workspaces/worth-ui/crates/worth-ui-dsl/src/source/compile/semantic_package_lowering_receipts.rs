@@ -63,7 +63,10 @@ fn lower_declaration(view: WorthUiSemanticDeclarationView<'_>) -> Option<Lowerin
         | WorthUiSemanticDeclaration::Token(_)
         | WorthUiSemanticDeclaration::AppearanceRole(_)
         | WorthUiSemanticDeclaration::Backdrop(_)
-        | WorthUiSemanticDeclaration::Layout(_) => {
+        | WorthUiSemanticDeclaration::Layout(_)
+        // Expressions have no runtime declaration in this phase; the runtime
+        // admits them when a later phase defines what it evaluates them for.
+        | WorthUiSemanticDeclaration::Expression(_) => {
             return None;
         }
     };

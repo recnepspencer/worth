@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum CustomerRole {
     PersonalOwner,
     BusinessOwner,

@@ -7,14 +7,17 @@ use std::time::Instant;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
 mod capability_admission;
-pub(in crate::domain_computation) use capability_admission::admit_capability_access;
 pub use capability_admission::WorthQueryAdmittedApplicationCapabilityAccess;
+pub(in crate::domain_computation) use capability_admission::{
+    admit_capability_access, admit_encoded_capability_access,
+};
 pub(in crate::domain_computation::authorization) use capability_admission::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
     WorthQueryResolvedCapabilityRequest,
 };
 
+use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkEvidence,
     WorthQueryCanonicalWorkPhases, WorthQueryCompiledApplicationOperationContracts,
@@ -43,12 +46,22 @@ mod elevation_request;
 mod graph_work_inspection;
 #[path = "operation_admission/idempotency_binding.rs"]
 mod idempotency_binding;
+#[path = "operation_admission/identity_admitted.rs"]
+mod identity_admitted;
 #[path = "operation_admission/mandatory_review.rs"]
 mod mandatory_review;
+#[path = "operation_admission/output_demand.rs"]
+mod output_demand;
+#[path = "operation_admission/selected_conventional.rs"]
+mod selected_conventional;
+pub(in crate::domain_computation) use selected_conventional::{
+    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+};
 
 pub(in crate::domain_computation::authorization) use authorization_basis::WorthQueryOperationAuthorizationBasis;
 
 static NEXT_OPERATION_ADMISSION_IDENTITY: AtomicU64 = AtomicU64::new(1);
+const RESOURCE_LABEL: &str = "worth-query-application-admission:";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct WorthQueryOperationAdmissionIdentity(u64);
@@ -61,7 +74,7 @@ impl WorthQueryOperationAdmissionIdentity {
     pub(in crate::domain_computation::authorization) fn resource_binding_identity(
         self,
     ) -> Arc<str> {
-        Arc::from(format!("worth-query-application-admission:{}", self.0))
+        Arc::from(format!("{RESOURCE_LABEL}{}", self.0))
     }
 
     fn mint_from(counter: &AtomicU64) -> Option<Self> {
@@ -108,6 +121,7 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     operation: String,
     operation_authority_identity: Arc<str>,
     operation_authority_identity_bytes: [u8; 32],
+    operation_definition_identity: [u8; 32],
     admission_identity: WorthQueryOperationAdmissionIdentity,
     resource_binding_identity: Arc<str>,
     operation_scope_binding: WorthQueryOperationScopeBinding,
@@ -117,7 +131,7 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     scope_entity_name: String,
     authentication_valid_until: Instant,
     request_scope: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    contracts: WorthQueryCompiledApplicationOperationContracts,
+    contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     mutation_preconditions: WorthQueryBoundMutationPreconditions,
     authorization: Option<WorthQueryRetainedAuthorizationDecisionFacts>,
     governed_input_identity: Option<[u8; 32]>,
@@ -125,6 +139,8 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     source_partition_identity: Option<[u8; 32]>,
     source_facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+    required_output_demand:
+        Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     _marker: PhantomData<fn(Input) -> (Schema, Operation, Scope)>,
 }
 
@@ -136,6 +152,19 @@ impl<Schema, Operation, Input, Scope>
         work: WorthQueryCanonicalWorkEvidence,
     ) {
         self.canonical_work = self.canonical_work.with_execution_work(work);
+    }
+
+    /// Reports the derivations that encoded this request's key and input in
+    /// the admission phase, so a fresh commit and a replayed retry both carry
+    /// them. Only Publication's request entries report them, once per request.
+    pub fn record_request_identity_work(
+        &mut self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        work: ApplicationCanonicalWork,
+    ) {
+        self.canonical_work = self
+            .canonical_work
+            .with_admission_work(WorthQueryCanonicalWorkEvidence::streamed_identities(work));
     }
 }
 

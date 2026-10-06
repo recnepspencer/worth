@@ -39,24 +39,24 @@ pub(in crate::domain_computation::primary_graph) use capability_access_fixture::
 #[path = "fixture/capability_status_mutation.rs"]
 mod capability_status_mutation;
 pub(super) use capability::{
-    canonical_governed_input_materialization_count, elevated_account_activity_parameters,
-    ApproveCapabilityElevationOperation, ApproveElevationCapability, ApproveElevationInput,
-    CapabilityAction, CapabilityActionBinding, CapabilityDisclosure, CapabilityDisclosureBinding,
-    CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationIdentity,
-    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
-    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
-    CapabilityElevationStatus, CapabilityElevationStatusBinding, CapabilityElevationStatusField,
-    CapabilityGovernedInputIdentity, CapabilityIdentity, CapabilityPurpose,
-    CapabilityPurposeBinding, CapabilityRequestContext, CapabilityReviewIdentity,
-    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewStatus,
-    CapabilityReviewStatusBinding, CapabilityReviewStatusField, CapabilityReviewer,
-    CapabilityStatus, CapabilityStatusBinding, CapabilityStatusField, CapabilityTouchInput,
-    CapabilityTouchOperation, CloseElevationInput, CompleteCapabilityReviewOperation,
-    CompleteElevationReviewCapability, CompleteElevationReviewInput, ElevatedAccountActivityCause,
-    ElevatedAccountActivityQuery, ElevatedAccountActivityResult, ElevatedCapabilityTouchInput,
-    ElevatedCapabilityTouchOperation, ElevatedTouchAccountCapability,
-    RequestCapabilityElevationOperation, RequestElevationCapability, RequestElevationInput,
-    RevokeCapabilityElevationOperation, RevokeElevationCapability, TouchAccountCapability,
+    elevated_account_activity_parameters, ApproveCapabilityElevationOperation,
+    ApproveElevationCapability, ApproveElevationInput, CapabilityAction, CapabilityActionBinding,
+    CapabilityDisclosure, CapabilityDisclosureBinding, CapabilityElevationApprover,
+    CapabilityElevationGrant, CapabilityElevationIdentity, CapabilityElevationNotAfter,
+    CapabilityElevationNotBefore, CapabilityElevationReason, CapabilityElevationRequester,
+    CapabilityElevationResource, CapabilityElevationReview, CapabilityElevationStatus,
+    CapabilityElevationStatusBinding, CapabilityElevationStatusField, CapabilityIdentity,
+    CapabilityPurpose, CapabilityPurposeBinding, CapabilityRequestContext,
+    CapabilityReviewIdentity, CapabilityReviewKindField, CapabilityReviewResource,
+    CapabilityReviewStatus, CapabilityReviewStatusBinding, CapabilityReviewStatusField,
+    CapabilityReviewer, CapabilityStatus, CapabilityStatusBinding, CapabilityStatusField,
+    CapabilityTouchInput, CapabilityTouchOperation, CloseElevationInput,
+    CompleteCapabilityReviewOperation, CompleteElevationReviewCapability,
+    CompleteElevationReviewInput, ElevatedAccountActivityCause, ElevatedAccountActivityQuery,
+    ElevatedAccountActivityResult, ElevatedCapabilityTouchInput, ElevatedCapabilityTouchOperation,
+    ElevatedTouchAccountCapability, RequestCapabilityElevationOperation,
+    RequestElevationCapability, RequestElevationInput, RevokeCapabilityElevationOperation,
+    RevokeElevationCapability, TouchAccountCapability,
 };
 pub(in crate::domain_computation::primary_graph) use capability_status_mutation::revoke_current_capability;
 #[path = "fixture/application_queries.rs"]
@@ -65,12 +65,13 @@ mod application_queries;
 mod current_output_source;
 #[path = "fixture/filtered_activity_query.rs"]
 mod filtered_activity_query;
-pub(in crate::domain_computation::primary_graph) use application_queries::AccountSummaryParameters;
 pub(super) use application_queries::{
-    cross_root_definition, status_parameter, AccountSummaryQuery, AccountSummaryResult,
-    CrossRootQuery, GovernedAccountSummaryQuery, OrderedAccountSummaryQuery,
-    PublicAccountMembershipQuery, PublicAccountMembershipResult, PublicScopedAccountSummaryQuery,
-    ScopedAccountSummaryQuery,
+    cross_root_definition, AccountSummaryQuery, AccountSummaryResult, CrossRootQuery,
+    GovernedAccountSummaryQuery, OrderedAccountSummaryQuery, PublicAccountMembershipQuery,
+    PublicAccountMembershipResult, PublicScopedAccountSummaryQuery, ScopedAccountSummaryQuery,
+};
+pub(in crate::domain_computation::primary_graph) use application_queries::{
+    status_parameter, AccountSummaryParameters,
 };
 pub(super) use current_output_source::TestAccountSourceBinding;
 pub(super) use filtered_activity_query::{
@@ -84,7 +85,8 @@ pub(super) use optional_account_field_query::{
 };
 #[path = "fixture/nested_account.rs"]
 mod nested_account;
-pub(super) use nested_account::{NestedAccountQuery, NestedAccountResult};
+pub(in crate::domain_computation::primary_graph) use nested_account::NestedAccountQuery;
+pub(super) use nested_account::NestedAccountResult;
 #[path = "fixture/forged_selector.rs"]
 mod forged_selector;
 pub(super) use forged_selector::{ForgedSelectorQuery, ForgedSelectorResult};
@@ -127,17 +129,30 @@ mod invalid_disclosure_queries;
 pub(super) use invalid_disclosure_queries::{
     ForbiddenInfluenceQuery, IncompleteDisclosureQuery, ResultRulePredicateQuery,
 };
+#[path = "fixture/capability_touch_binding.rs"]
+mod capability_touch_binding;
+#[path = "fixture/handler_installation.rs"]
+mod handler_installation;
 #[path = "fixture/operation_contracts.rs"]
 mod operation_contracts;
+#[path = "fixture/optional_output_binding.rs"]
+mod optional_output_binding;
+pub(super) use optional_output_binding::{
+    OptionalCompanion, OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
+    OptionalOutputPlan, OptionalOutputs, OptionalSubject,
+};
 #[path = "fixture/program_required_binding.rs"]
 mod program_required_binding;
-use program_required_binding::ProgramRequiredHandler;
+pub(super) use capability_touch_binding::CapabilityTouchMutationBinding;
+pub(in crate::domain_computation::primary_graph) use program_required_binding::{
+    ProgramRequiredInput, ProgramRequiredMutationBinding,
+};
 pub(super) use program_required_binding::{
-    ProgramRequiredInput, ProgramRequiredMutationBinding, ProgramRequiredOperation,
+    ProgramRequiredOperation, ProgramRequiredSiblingBinding,
 };
 #[path = "fixture/program_roster.rs"]
 mod program_roster;
-pub(super) use program_roster::{
+pub(in crate::domain_computation::primary_graph) use program_roster::{
     installed_program_support, rostered_program_revision, unadmitted_program_revision,
 };
 #[path = "fixture/schema_types.rs"]
@@ -159,11 +174,14 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_label,
+    installed_authorization_world, installed_authorization_world_with_completed_evidence_capacity,
+    installed_authorization_world_with_label, installed_authorization_world_with_product_resources,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
     installed_two_principal_authorization_world,
 };
-pub(super) use world_installation::{installed_world, installed_world_with_policy_fact};
+pub(super) use world_installation::{
+    installed_world, installed_world_with_policy_fact, restored_world,
+};
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_declaration::facade::authentication::{
@@ -266,10 +284,12 @@ worth_query_application_schema! {
                 .effect(RetainedStatusEffect::reference())
                 .effect(MutationFreeExternalEffect::reference())
                 .effect(LiveActivityEffect::reference());
-            let schema = operation_contracts::install(schema)
+            let schema = optional_output_binding::declare(operation_contracts::install(schema))
                 .application_mutation_binding::<
                     program_required_binding::ProgramRequiredMutationBinding,
                 >()
+                .application_mutation_binding::<CapabilityTouchMutationBinding>()
+
                 .policy(AccountAccessPolicy::reference())
                 .ability_policy(
                     ViewAccount::reference(),

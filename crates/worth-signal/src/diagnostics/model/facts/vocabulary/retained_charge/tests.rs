@@ -123,13 +123,16 @@ fn provenance_nested_edges_and_rewiring_contribute_payload_and_vector_capacity()
     fact.rewiring = None;
     let before = fact.retained_heap_charge(&mut Work::new(10000)).unwrap();
     let previous_capacity = fact.edges.capacity();
-    let partition = String::with_capacity(512);
-    let detail = String::with_capacity(256);
+    let mut partition = String::with_capacity(512);
+    partition.push('p');
+    let mut detail = String::with_capacity(256);
+    detail.push('d');
     let comparator = String::with_capacity(1024);
     let reason = String::with_capacity(2048);
     let edge_bytes =
         (partition.capacity() + detail.capacity() + comparator.capacity() + reason.capacity())
-            as u64;
+            as u64
+            + (2 * std::mem::size_of::<String>()) as u64;
     let edge = ProvenanceEdge {
         kind: super::super::ProvenanceEdgeKind::Changed,
         source: explanation.node,
@@ -155,9 +158,11 @@ fn provenance_nested_edges_and_rewiring_contribute_payload_and_vector_capacity()
     let mut removed = Vec::with_capacity(32);
     let mut scope_bytes = 0;
     for destination in [&mut added, &mut removed] {
-        let partition = String::with_capacity(4096);
-        let detail = String::with_capacity(8192);
-        scope_bytes += partition.capacity() + detail.capacity();
+        let mut partition = String::with_capacity(4096);
+        partition.push('p');
+        let mut detail = String::with_capacity(8192);
+        detail.push('d');
+        scope_bytes += partition.capacity() + detail.capacity() + 2 * std::mem::size_of::<String>();
         destination.push(RewiringDependency {
             source: explanation.node,
             aspect: ASPECT_A,

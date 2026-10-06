@@ -14,6 +14,8 @@ pub(super) use completion::{
 };
 pub(super) use formatting::{lower_semantic_text_formatting, UiMountedSemanticTextFormattingSeed};
 pub(in crate::mounting::projection) use profile::current_text_profile_generation;
+#[cfg(test)]
+pub(in crate::mounting::projection) use qualification_cache::request_for_test;
 pub(super) use qualification_cache::{
     UiMountedRetainedTextLayouts, UiMountedTextQualificationCache,
 };

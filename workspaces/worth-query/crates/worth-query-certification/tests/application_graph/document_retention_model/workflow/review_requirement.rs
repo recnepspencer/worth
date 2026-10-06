@@ -44,7 +44,7 @@ worth_query_relation!(pub ReviewRequired in DocumentRetentionSchema, Document =>
     ..ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
 });
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct ReviewRequirementInput {
     pub resource: String,
     pub related: String,
@@ -114,21 +114,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewRequirementBi
             ApplicationCandidateResourceCeiling::bounded(1024, 1024),
         );
 
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        identity(&key.to_le_bytes())
-    }
-    fn input_identity(input: &ReviewRequirementInput) -> [u8; 32] {
-        identity(
-            format!(
-                "{}:{}:{}:{}",
-                input.resource.len(),
-                input.resource,
-                input.related.len(),
-                input.related
-            )
-            .as_bytes(),
-        )
-    }
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
         Document,
@@ -266,14 +251,6 @@ pub fn declare(
         )
         .application_mutation_binding::<ReviewRequirementBinding>();
     unlink::declare(schema)
-}
-
-fn identity(bytes: &[u8]) -> [u8; 32] {
-    let mut result = [0; 32];
-    for (index, byte) in bytes.iter().enumerate() {
-        result[index % 32] ^= byte.wrapping_mul(31);
-    }
-    result
 }
 
 pub fn link_review_requirement(

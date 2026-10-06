@@ -89,7 +89,7 @@ async fn post_request(
     client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v1",
+            "protocol": "v3",
             "request_id": request_id,
             "credential": {
                 "id_token": "test-only",

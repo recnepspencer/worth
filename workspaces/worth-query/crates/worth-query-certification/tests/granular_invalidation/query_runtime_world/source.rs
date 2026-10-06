@@ -60,21 +60,24 @@ impl WorthQueryPrimaryGraphSourceProjection for IntentSourceProjection {
         scope: &domain::WorthQueryMaintenanceScope,
         basis: &runtime::WorthQueryGranularSourceReadBasis,
     ) -> Result<Vec<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
-        let domain::WorthQueryMaintenanceScope::ExactSourceRecord {
-            partition_id,
-            local_slot,
-            generation,
-        } = scope
-        else {
-            return Err(foundation::WorthQueryWorkspaceError::new(
-                "the temporal certification source admits exact records only",
-            ));
+        let requested = match scope {
+            domain::WorthQueryMaintenanceScope::ExactSourceRecord {
+                partition_id,
+                local_slot,
+                generation,
+            } => worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
+                *partition_id,
+                *local_slot,
+                *generation,
+            ),
+            // The full scope of this live target is its one record.
+            domain::WorthQueryMaintenanceScope::WholeLogicalGraph => self.record,
+            domain::WorthQueryMaintenanceScope::SourcePartition(_) => {
+                return Err(foundation::WorthQueryWorkspaceError::new(
+                    "the temporal certification source admits records or its full scope only",
+                ))
+            }
         };
-        let requested = worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
-            *partition_id,
-            *local_slot,
-            *generation,
-        );
         if requested != self.record {
             return Ok(Vec::new());
         }

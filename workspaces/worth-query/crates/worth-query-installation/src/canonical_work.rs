@@ -1,10 +1,32 @@
 use worth_foundational::facade::CanonicalDigestWorkEvidence;
+use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
 
 // Complete application installation includes package and schema meaning. Keep
 // this finite while admitting the measured House composition that first
-// crossed the former 4 MiB ceiling through ordinary typed declarations.
-pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 8 * 1_024 * 1_024;
+// crossed the former 8 MiB ceiling through ordinary typed catalog pages.
+pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 16 * 1_024 * 1_024;
 
+/// Deterministic counts of the canonical work Query performed for one phase.
+///
+/// It covers the derivations Query owns while it admits, executes and commits
+/// an operation: installed meaning and lookup bases, request identities,
+/// proposals, recovery and dispatch identities. A streamed derivation prepares
+/// no basis sequence, so it reports `digest_derivations` with its bytes and
+/// compression blocks but no `basis_preparations`.
+///
+/// Request identities count in the admission phase, because they are derived
+/// to admit the request: a mutation request's idempotency key and input (two
+/// derivations, whether the admission is conventional or governed by a
+/// capability, which reuses the request's input identity), and a capability
+/// workflow request's input and principal-scoped key (two derivations, the
+/// input one governed by its capability admission). A retry that resolves to
+/// an earlier commit is admitted the same way, so its receipt reports the same
+/// admission work.
+///
+/// It excludes the key and intent a host derives for
+/// `WorthQueryApplicationIdempotencyBinding::for_host_commit`, which it builds
+/// before any request reaches Query; a phase reading zero therefore means Query
+/// performed no canonical work in it, not that the host performed none.
 #[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryCanonicalWorkEvidence {
     basis_preparations: u32,
@@ -40,6 +62,24 @@ impl WorthQueryCanonicalWorkEvidence {
             canonical_material_allocation_bytes: work.canonical_material_allocation_bytes(),
             sha256_input_bytes: work.sha256_input_bytes(),
             sha256_compression_blocks: work.sha256_compression_block_count(),
+            digest_text_materializations: 0,
+        }
+    }
+
+    /// The work of identities that streamed straight into their hashers.
+    ///
+    /// Each derivation counts once, encodes one value and prepares no basis
+    /// sequence; the bytes buffered to sort map entries are the only material
+    /// it allocates.
+    pub const fn streamed_identities(work: ApplicationCanonicalWork) -> Self {
+        Self {
+            basis_preparations: 0,
+            digest_derivations: work.derivations(),
+            canonical_entries: work.derivations(),
+            canonical_encoded_bytes: work.encoded_bytes(),
+            canonical_material_allocation_bytes: work.buffered_bytes(),
+            sha256_input_bytes: work.sha256_input_bytes(),
+            sha256_compression_blocks: work.sha256_compression_blocks(),
             digest_text_materializations: 0,
         }
     }
@@ -189,6 +229,14 @@ impl WorthQueryCanonicalWorkPhases {
 
     pub const fn execution(self) -> WorthQueryCanonicalWorkEvidence {
         self.execution
+    }
+
+    /// Adds the request's own identity derivations to the admission phase.
+    pub const fn with_admission_work(self, work: WorthQueryCanonicalWorkEvidence) -> Self {
+        Self {
+            admission: self.admission.combine(work),
+            ..self
+        }
     }
 
     pub const fn with_execution_work(self, work: WorthQueryCanonicalWorkEvidence) -> Self {

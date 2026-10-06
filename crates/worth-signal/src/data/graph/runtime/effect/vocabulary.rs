@@ -6,29 +6,27 @@ use crate::logic::evaluation::{EvaluationEffect, EvaluationVerdict, SuppressionR
 
 pub(super) fn count_changed_partitions(
     changed_regions: &[crate::data::output::ChangedRegion],
-    work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
 ) -> Result<u32, crate::data::error::SignalError> {
     work.reserve(
         changed_regions
             .len()
-            .checked_mul(std::mem::size_of::<&crate::data::output::PartitionToken>() + 1)
+            .checked_mul(std::mem::size_of::<&str>() + 1)
             .filter(|bytes| *bytes <= isize::MAX as usize),
     )?;
     // Borrow partition payloads; counting never needs an owned string copy.
-    let mut partitions: Vec<&crate::data::output::PartitionToken> =
-        Vec::with_capacity(changed_regions.len());
+    let mut partitions: Vec<&str> = Vec::with_capacity(changed_regions.len());
     for region in changed_regions {
+        let partition = region.path().segments()[0].as_str();
         work.reserve(
-            region
-                .partition
-                .0
+            partition
                 .len()
                 .checked_mul(2)
                 .and_then(|n| n.checked_add(2))
                 .and_then(|cost| cost.checked_mul(partitions.len())),
         )?;
-        if !partitions.contains(&&region.partition) {
-            partitions.push(&region.partition);
+        if !partitions.contains(&partition) {
+            partitions.push(partition);
         }
     }
     u32::try_from(partitions.len()).map_err(|_| {

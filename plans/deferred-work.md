@@ -128,9 +128,30 @@ needs an accelerator.
 
 Deferred on 2026-10-05 so that runtime integration (Part II Milestone 1) can
 start on the C.13 facade handoff. Until each item lands, its capability
-reports `Absent` and its production entry points are unreachable. C.11 closes
-on its full closeout gate, including the heavy lane and full matrix, before
-C.13; nothing in it is deferred.
+reports `Absent` and no facade port reaches it.
+
+### C.11 remainder
+
+Spec: [physical-reconstruction-fast-track-to-runtime-integration.md](worth-store/physical-reconstruction-fast-track-to-runtime-integration.md),
+"Deferred Work". Deferred on 2026-10-06. C.13 takes only the C.11 items that
+Part II Milestones 1 to 3 need:
+
+- recovery before the first checkpoint;
+- truthful capability rows;
+- honest observer coverage;
+- the record-path crash seams.
+
+Deferred:
+
+- facade ports for blob ingest and read, maintenance, relocation and layout
+  rebuild;
+- the linear ordered-history walk and the release rejoin rework;
+- the rest of Phase 6, which is release, retirement and tier movement;
+- Phase 7;
+- the Phase 8 matrix and heavy lane.
+
+Each returns before the Part II milestone named in the spec's table. The
+earliest is Milestone 4, for the linear ordered-history walk.
 
 ### S.10, S.11 and S.12
 

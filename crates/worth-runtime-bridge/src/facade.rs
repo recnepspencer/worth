@@ -60,6 +60,7 @@
 //! ```
 
 use std::sync::Arc;
+pub use worth_execution::ExecutionResourceLease;
 
 use crate::diagnostics::DiagnosticSink;
 use crate::mapping::{FrozenAspectMappingRegistry, FrozenMappingRegistry};
@@ -82,8 +83,9 @@ pub use crate::authorization::{
     BridgeAuthorizationDependencyCardinality, BridgeAuthorizationInstallationBatch,
     BridgeAuthorizationInstallationRequest, BridgeAuthorizationObservation,
     BridgeAuthorizationRequirementContract, BridgeAuthorizationRequirementObservation,
-    BridgeAuthorizationRuleContract, BridgeAuthorizationRuleDecisionEvidence,
-    BridgeAuthorizationRuleEffect, BridgeAuthorizationRuleObservation, BridgeAuthorizationRuntime,
+    BridgeAuthorizationRetentionStop, BridgeAuthorizationRuleContract,
+    BridgeAuthorizationRuleDecisionEvidence, BridgeAuthorizationRuleEffect,
+    BridgeAuthorizationRuleObservation, BridgeAuthorizationRuntime,
 };
 pub use crate::correspondence::{
     AdmittedRuntimeWorldCorrespondenceBasis, BridgeCorrespondenceAdmissionIdentity,

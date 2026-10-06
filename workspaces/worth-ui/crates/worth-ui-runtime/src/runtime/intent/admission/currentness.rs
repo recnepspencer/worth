@@ -14,7 +14,19 @@ pub(crate) struct UiIntentAdmissionCurrentnessContext<'state> {
     pub(crate) generation: &'state crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pub(crate) mounted: &'state crate::mounting::WorthUiMountedSessionState,
     pub(crate) application_facts: &'state super::super::payload::UiIntentApplicationFactState,
+    pub(crate) expressions: &'state crate::runtime::expression::UiExpressionRuntimeState,
     pub(crate) command_contexts: Box<[crate::runtime::command_routing::UiCommandRoutingContext]>,
+}
+
+impl<'state> UiIntentAdmissionCurrentnessContext<'state> {
+    /// The owners a prepared payload read its inputs from, as they are now.
+    fn payload_input_owners(&self) -> super::super::payload::UiIntentInputOwners<'state> {
+        super::super::payload::UiIntentInputOwners {
+            mounted: self.mounted,
+            application_facts: self.application_facts,
+            expressions: self.expressions,
+        }
+    }
 }
 
 pub(crate) struct UiIntentAdmissionPreparationFailure {
@@ -210,11 +222,7 @@ fn validate_currentness(
             ));
         }
     }
-    if !payload.payload_inputs_are_current(
-        context.mounted,
-        context.application_facts,
-        context.generation,
-    ) {
+    if !payload.payload_inputs_are_current(context.payload_input_owners(), context.generation) {
         return Err((
             UiIntentCandidateCurrentnessViolation::PayloadInputChanged,
             8,
@@ -222,9 +230,12 @@ fn validate_currentness(
     }
     payload
         .operability_dependencies_are_current(
-            context.mounted,
-            context.application_facts,
-            context.generation,
+            &super::super::operability::UiIntentOperabilityDependencyReads {
+                mounted: context.mounted,
+                application_facts: context.application_facts,
+                expressions: context.expressions,
+                generation: context.generation,
+            },
         )
         .map_err(|drift| {
             (
@@ -293,16 +304,15 @@ impl UiIntentCandidateCurrentnessViolation {
     fn from_dependency_drift(
         drift: super::super::operability::UiIntentOperabilityDependencyDrift,
     ) -> Self {
+        use super::super::operability::UiIntentOperabilityDependencyDrift as Drift;
+        use crate::declaration::UiIntentOperabilityDependencyAxis as Axis;
         match drift {
-            super::super::operability::UiIntentOperabilityDependencyDrift::DeclaredDependency => {
-                Self::OperabilityDependencyChanged
-            }
-            super::super::operability::UiIntentOperabilityDependencyDrift::Policy => {
-                Self::PolicyChanged
-            }
-            super::super::operability::UiIntentOperabilityDependencyDrift::Confirmation => {
-                Self::ConfirmationPolicyChanged
-            }
+            Drift::DeclaredDependency
+            | Drift::ExpressionResult {
+                axis: Axis::Mutability | Axis::Readiness,
+            } => Self::OperabilityDependencyChanged,
+            Drift::Policy | Drift::ExpressionResult { axis: Axis::Policy } => Self::PolicyChanged,
+            Drift::Confirmation => Self::ConfirmationPolicyChanged,
         }
     }
 

@@ -99,6 +99,33 @@ impl WorthQueryPrimaryGraphProvider {
             resolution.map_err(Into::into)
         })
     }
+
+    /// Reads the co-committed relation through an already open snapshot of
+    /// `basis`, as publication does once, before the commit's history may
+    /// retire.
+    pub(in crate::domain_computation::primary_graph) fn resolve_aftermath_causality_in_snapshot(
+        &self,
+        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        pending: &WorthQueryPendingAftermathCausality,
+        outcome_identity: Option<WorthQueryApplicationCommitOutcomeIdentity>,
+    ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial>
+    {
+        let layout = self.graph.layout.provider_aftermath_causality().clone();
+        self.graph
+            .ensure_primary_indexes_for_basis(runtime, basis)
+            .map_err(aftermath_index_currency_denial)?;
+        WorthQueryAftermathCausalityRead {
+            runtime,
+            snapshot,
+            layout: &layout,
+            pending,
+            outcome_identity,
+        }
+        .resolve()
+        .map_err(Into::into)
+    }
 }
 
 fn aftermath_index_currency_denial(

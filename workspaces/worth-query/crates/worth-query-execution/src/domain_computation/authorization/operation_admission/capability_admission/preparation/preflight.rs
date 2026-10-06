@@ -3,12 +3,16 @@
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
 };
+use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
+};
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationCapability,
     WorthQueryInstalledApplicationOperationGraphAuthority,
 };
 
-use super::denial;
+use super::{denial, CapabilityAdmissionInput};
 use crate::domain_computation::authorization::capability_elevation_projection::validate_elevation_projection;
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
 use crate::domain_computation::authorization::graph_work_session::start_capability_graph_work;
@@ -130,6 +134,36 @@ where
     validate_elevation_projection(installed.contract(), &projection)?;
     require_approved_transition(installed, capability, approved)?;
     Ok(projection)
+}
+
+/// The governed input with its operation input identity.
+///
+/// It is the identity the operation's input binding derives, so a mutation
+/// handler can compare it to the identity a retry key was bound to. An input
+/// the request already encoded keeps its identity; any other is encoded here,
+/// once. An input that cannot be encoded is refused as an invalid operation
+/// input: its drift could not be told apart, so no retry or redo could rely on
+/// it.
+pub(super) fn govern_input<Schema, Capability, Operation, Input>(
+    input: CapabilityAdmissionInput<Operation::InputBinding>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+) -> Result<ApplicationEncodedInput<Operation::InputBinding>, WorthQueryOperationAuthorizationDenial>
+where
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    match input {
+        CapabilityAdmissionInput::Encoded(encoded) => Ok(encoded),
+        CapabilityAdmissionInput::Derive(input) => {
+            ApplicationEncodedInput::encode(input).map_err(|_| {
+                denial(
+                    WorthQueryOperationAuthorizationDenialKind::InvalidOperationInput,
+                    capability.contract().name(),
+                )
+            })
+        }
+    }
 }
 
 pub(super) fn validate_input<Schema, Operation, Input>(

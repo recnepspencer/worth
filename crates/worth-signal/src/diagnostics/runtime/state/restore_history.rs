@@ -37,6 +37,7 @@ impl DiagnosticsState {
                 self.remove_lineage_record_from_index(&record);
             }
         }
+        self.reconstitute_selected_epoch_charge();
     }
 }
 

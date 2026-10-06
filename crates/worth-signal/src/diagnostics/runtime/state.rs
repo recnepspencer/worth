@@ -11,7 +11,10 @@ pub(crate) use history::{DiagnosticHistory, DiagnosticHistoryEditDenial};
 mod lifecycle;
 mod lineage;
 mod lineage_publication;
+mod operational_clone;
 pub(crate) use lineage_publication::LineagePublicationDenial;
+mod epoch_diagnostics;
+pub(crate) use epoch_diagnostics::PreparedEpochDiagnostics;
 mod publication_work;
 mod replay;
 pub(crate) use publication_work::DiagnosticPublicationWork;
@@ -42,7 +45,7 @@ use crate::runtime_policy::SignalRuntimePolicy;
 use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 use retained_flow::RetainedFlow;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub(crate) struct DiagnosticsState {
     #[serde(default)]
     request_mirror: SignalRuntimePolicy,
@@ -120,6 +123,8 @@ pub(crate) struct DiagnosticsState {
     observation_activation_mask: u8,
     #[serde(skip)]
     lineage_custody: lineage_publication::LineageRetentionCustody,
+    #[serde(skip)]
+    fact_custody: lineage_publication::LineageRetentionCustody,
     /// Whether a `SignalTransaction` is open on this graph and whether it has
     /// already recorded its flow. Runtime-only: a transaction never spans a
     /// serialized snapshot.

@@ -29,6 +29,7 @@ fn nested_children_use_occurrence_origin_without_relabeling_the_observed_anchor(
             node_receipt: input.node_receipt,
             bounds: input.bounds,
             clip_bounds: input.clip_bounds,
+            painted_bounds: None,
             order: UiMountedHitTestOrder::from_runtime_plan(9),
         })
         .unwrap();
@@ -138,6 +139,7 @@ fn portal_child_families_preserve_child_and_portal_clip_intersections() {
                 node_receipt: input.node_receipt,
                 bounds: input.bounds,
                 clip_bounds: input.clip_bounds,
+                painted_bounds: None,
                 order: UiMountedHitTestOrder::from_runtime_plan(9),
             },
         )

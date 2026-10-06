@@ -16,6 +16,7 @@ use crate::authorization::{
 };
 
 use super::super::{
+    approved_payment_inbound_binding,
     decision_read_manifest::install_payment_decision_reads,
     entities::*,
     fields::*,
@@ -97,6 +98,8 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<ApprovePaymentMutationBinding>()
                 .application_mutation_binding::<RejectPaymentMutationBinding>()
                 .application_query_binding::<crate::queries::PaymentDetailQueryBinding>()
+                .application_query(crate::queries::payment_amount_definition())
+                .application_query_binding::<crate::queries::PaymentAmountQueryBinding>()
                 .application_query(crate::queries::pending_payments_definition())
                 .application_query_binding::<crate::queries::PendingPaymentsQueryBinding>();
             install_payment_operation_abilities(install_payment_ability_policies(schema))
@@ -232,10 +235,11 @@ fn approved_payment_operation(
 ) -> ApplicationOperationDefinition<BankSchema, ApprovePaymentOperation, ApprovePayment> {
     ApprovePaymentOperation::reference()
         .definition()
-        .external_effect(
+        .external_effect_with_inbound(
             ApprovedPaymentSettlementEffect::reference(),
             WorthQueryExternalEffectCorrelationFamily::new(APPROVED_PAYMENT_SETTLEMENT_RAIL)
                 .expect("the approved-payment settlement rail is an atomic identity"),
+            approved_payment_inbound_binding(),
         )
         .aftermath(
             DeclaredApplicationAftermathContract::runtime_with_external_owner(

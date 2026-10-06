@@ -10,7 +10,7 @@ use super::super::super::context::InvariantExecutionContext;
 use super::super::common::{storage_inconsistency_violation, StorageInconsistencyContext};
 
 pub(super) fn evaluate_live_record_sidecar_rule(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     kind: &RecordKindTag,
 ) -> Option<InvariantViolation> {
@@ -19,6 +19,7 @@ pub(super) fn evaluate_live_record_sidecar_rule(
             context,
             class,
             |state, partition_id| state.touched_entity_slots(partition_id),
+            |state, partition_id| state.has_touched_entity_slots(partition_id),
             |slot_view| slot_view.kind_id().is_some(),
             "kind id",
             |context, slots| context.metrics().count_entity_slot_scans(slots),
@@ -27,6 +28,7 @@ pub(super) fn evaluate_live_record_sidecar_rule(
             context,
             class,
             |state, partition_id| state.touched_relation_slots(partition_id),
+            |state, partition_id| state.has_touched_relation_slots(partition_id),
             |slot_view| slot_view.extra().endpoints.is_some(),
             "endpoints",
             |context, slots| context.metrics().count_relation_slot_scans(slots),
@@ -35,33 +37,39 @@ pub(super) fn evaluate_live_record_sidecar_rule(
 }
 
 fn evaluate_live_record_sidecar<K: RecordKind>(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     touched_slots: impl Fn(
         &dyn crate::runtime::PartitionAccess,
         crate::identity::data::PartitionId,
     ) -> Option<Vec<usize>>,
+    has_touched_slots: impl Fn(
+        &dyn crate::runtime::PartitionAccess,
+        crate::identity::data::PartitionId,
+    ) -> bool,
     has_required_sidecar: impl Fn(&SlotView<'_, K>) -> bool,
     missing_label: &str,
-    count_scans: impl Fn(&InvariantExecutionContext<'_>, usize),
+    count_scans: impl Fn(&InvariantExecutionContext<'_, '_>, usize),
 ) -> Option<InvariantViolation> {
-    let partition_ids = context.partition_access().partition_ids();
-    let touched_by_partition = partition_ids
-        .iter()
-        .copied()
-        .map(|partition_id| {
-            (
-                partition_id,
-                touched_slots(context.partition_access(), partition_id),
-            )
-        })
-        .collect::<Vec<_>>();
-    let has_touched_surface = touched_by_partition
-        .iter()
-        .any(|(_, slots)| slots.is_some());
+    let mut has_touched_surface = false;
+    for partition_id in context.partition_access().partition_ids_iter() {
+        if !context.checkpoint(1) {
+            return None;
+        }
+        if has_touched_slots(context.partition_access(), partition_id) {
+            has_touched_surface = true;
+            break;
+        }
+    }
 
-    for (partition_id, touched_slots_for_partition) in touched_by_partition {
+    for partition_id in context.partition_access().partition_ids_iter() {
+        if !context.checkpoint(1) {
+            return None;
+        }
         let Some(partition) = context.partition_access().get_partition(partition_id) else {
+            if !context.claim_result(4096) {
+                return None;
+            }
             return Some(storage_inconsistency_violation(
                 class,
                 format!(
@@ -73,9 +81,27 @@ fn evaluate_live_record_sidecar<K: RecordKind>(
                     .with_scan(StorageInconsistencyScan::LiveRecordSidecar),
             ));
         };
+        let has_touched_partition = has_touched_slots(context.partition_access(), partition_id);
+        let touched_slots_for_partition = if has_touched_partition {
+            let arena = K::arena(partition);
+            if !context.check_scratch_peak(
+                (arena.slot_count() as u64).saturating_mul(std::mem::size_of::<usize>() as u64),
+            ) {
+                return None;
+            }
+            touched_slots(context.partition_access(), partition_id)
+        } else {
+            None
+        };
         if let Some(slots) = touched_slots_for_partition {
             count_scans(context, slots.len());
             for slot in slots {
+                if !context.checkpoint(1) {
+                    return None;
+                }
+                if !context.check_result_peak(4096) {
+                    return None;
+                }
                 if let Some(violation) = sidecar_violation_for_slot(
                     class,
                     partition,
@@ -83,13 +109,22 @@ fn evaluate_live_record_sidecar<K: RecordKind>(
                     &has_required_sidecar,
                     missing_label,
                 ) {
+                    if !context.claim_result(4096) {
+                        return None;
+                    }
                     return Some(violation);
                 }
             }
         } else if !has_touched_surface {
             let arena = K::arena(partition);
             count_scans(context, arena.slot_count());
-            for slot in arena.occupied_slots() {
+            for slot in arena.occupied_slots_iter() {
+                if !context.checkpoint(1) {
+                    return None;
+                }
+                if !context.check_result_peak(4096) {
+                    return None;
+                }
                 if let Some(violation) = sidecar_violation_for_slot(
                     class,
                     partition,
@@ -97,6 +132,9 @@ fn evaluate_live_record_sidecar<K: RecordKind>(
                     &has_required_sidecar,
                     missing_label,
                 ) {
+                    if !context.claim_result(4096) {
+                        return None;
+                    }
                     return Some(violation);
                 }
             }

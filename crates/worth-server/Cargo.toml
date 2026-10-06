@@ -13,6 +13,7 @@ axum = "0.8"
 tokio = { version = "1", features = ["net"] }
 worth-foundational.workspace = true
 worth-proof.workspace = true
+worth-execution.workspace = true
 worth-query.workspace = true
 worth-query-host = { path = "../../workspaces/worth-query/crates/worth-query-host" }
 serde.workspace = true
@@ -23,6 +24,7 @@ tracing.workspace = true
 
 [dev-dependencies]
 worth-runtime-bridge.workspace = true
+worth-relational.workspace = true
 sha2 = "0.10"
 tower = { version = "0.5", features = ["util"] }
 trybuild.workspace = true

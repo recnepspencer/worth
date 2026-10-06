@@ -68,7 +68,9 @@ pub use raster::{
     UiGlyphRasterScale, UiGlyphRasterSource, UiGlyphRasterizationDenial,
 };
 pub use reconstruction::{UiQualifiedTextReconstructionSource, UiTextReconstructionDenial};
-pub use request::{UiQualifiedTextLayoutRequest, UiQualifiedTextLayoutRequestIdentity};
+pub use request::{
+    UiQualifiedTextLayoutRequest, UiQualifiedTextLayoutRequestIdentity, UiQualifiedTextReflowKey,
+};
 pub(crate) use shaping::UiShapedTextParagraph;
 pub use shaping::{UiTextShapingCost, UiTextShapingDenial};
 pub use style::{

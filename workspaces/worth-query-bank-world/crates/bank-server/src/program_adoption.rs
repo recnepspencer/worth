@@ -1,8 +1,9 @@
 use bank_domain::schema::BankSchema;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationProgramAdoptionPreparationDenial,
+    PublishedWorkflowDefinitionRef, WorthQueryApplicationProgramAdoptionPreparationDenial,
     WorthQueryApplicationProgramInspectionDenial, WorthQueryPreparedBranchAdoption,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositionDenial,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::declaration::application_program::{
@@ -21,6 +22,9 @@ pub enum BankProgramInspectionDenial {
 #[derive(Debug)]
 pub enum BankProgramAdoptionPreparationDenial {
     TargetUnsupported,
+    WorkflowDefinitionMismatch,
+    LiveWorkflowInstances,
+    WorkflowDisposition(WorthQueryWorkflowDispositionDenial),
     Query(Box<WorthQueryApplicationProgramAdoptionPreparationDenial>),
 }
 
@@ -83,6 +87,52 @@ impl BankIdentityRuntime {
         programs
             .adopt(&requirements)
             .prepare(maximum_selection_work)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))
+    }
+
+    /// Retire one exact current definition while adopting a rostered program.
+    /// A live instance must finish under its source program before this move.
+    pub fn prepare_branch_program_adoption_retiring_definition<Target>(
+        &self,
+        principal: &BankAuthenticatedPrincipal,
+        scope: &WorthQueryRequestScope,
+        branch: WorthQueryProductBranch,
+        expected: &PublishedWorkflowDefinitionRef,
+        maximum_work_units: usize,
+    ) -> Result<WorthQueryPreparedBranchAdoption, BankProgramAdoptionPreparationDenial>
+    where
+        Target: ApplicationProgramDefinition<BankSchema> + 'static,
+    {
+        let target = self
+            .supported_program_revision::<Target>()
+            .ok_or(BankProgramAdoptionPreparationDenial::TargetUnsupported)?;
+        let programs = self.request(principal, scope).on_branch(branch).programs();
+        let requirements = programs
+            .compare(&target)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
+        let adoption = programs.adopt(&requirements);
+        let inventory = adoption
+            .workflow_inventory(maximum_work_units)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
+        if expected.branch() != branch
+            || inventory.definitions().len() != 1
+            || inventory.definitions()[0].entity_id() != expected.entity_id()
+        {
+            return Err(BankProgramAdoptionPreparationDenial::WorkflowDefinitionMismatch);
+        }
+        if !inventory.instances().is_empty() {
+            return Err(BankProgramAdoptionPreparationDenial::LiveWorkflowInstances);
+        }
+        let choices = inventory
+            .dispositions()
+            .definition(
+                &inventory.definitions()[0],
+                WorthQueryWorkflowDefinitionDisposition::Retire,
+            )
+            .map_err(BankProgramAdoptionPreparationDenial::WorkflowDisposition)?;
+        adoption
+            .workflow(choices)
+            .prepare(maximum_work_units)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))
     }
 }

@@ -1,3 +1,4 @@
+use crate::runtime::expression::WorthUiAuthoredExpressionMaterial;
 use crate::source::WorthUiArtifact;
 
 use super::{WorthUiPreparedDeclarationMaterial, WorthUiSemanticHandoffEvidence};
@@ -6,6 +7,7 @@ pub(in crate::runtime::source_ingress) struct WorthUiPreparedSemanticHandoffMate
     artifact: WorthUiArtifact,
     declaration_material: WorthUiPreparedDeclarationMaterial,
     evidence: WorthUiSemanticHandoffEvidence,
+    expression_material: WorthUiAuthoredExpressionMaterial,
 }
 
 impl WorthUiPreparedSemanticHandoffMaterial {
@@ -13,11 +15,13 @@ impl WorthUiPreparedSemanticHandoffMaterial {
         artifact: WorthUiArtifact,
         declaration_material: WorthUiPreparedDeclarationMaterial,
         evidence: WorthUiSemanticHandoffEvidence,
+        expression_material: WorthUiAuthoredExpressionMaterial,
     ) -> Self {
         Self {
             artifact,
             declaration_material,
             evidence,
+            expression_material,
         }
     }
 
@@ -27,7 +31,13 @@ impl WorthUiPreparedSemanticHandoffMaterial {
         WorthUiArtifact,
         WorthUiPreparedDeclarationMaterial,
         WorthUiSemanticHandoffEvidence,
+        WorthUiAuthoredExpressionMaterial,
     ) {
-        (self.artifact, self.declaration_material, self.evidence)
+        (
+            self.artifact,
+            self.declaration_material,
+            self.evidence,
+            self.expression_material,
+        )
     }
 }

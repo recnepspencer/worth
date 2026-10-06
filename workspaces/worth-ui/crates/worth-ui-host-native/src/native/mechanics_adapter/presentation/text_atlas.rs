@@ -24,6 +24,7 @@ pub(super) fn begin(
     state: &mut UiNativeHostState,
     view: &UiMountedFrameConsumptionView<'_>,
 ) -> UiMountedTextWorkOutcome {
+    let _stage = crate::native::trace_resize_stage(crate::native::UiNativeResizeTraceStage::Atlas);
     let Some(work) = view.text_raster_work() else {
         return UiMountedTextWorkOutcome::Ready;
     };

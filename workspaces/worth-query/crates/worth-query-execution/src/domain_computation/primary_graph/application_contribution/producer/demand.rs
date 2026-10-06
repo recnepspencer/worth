@@ -14,11 +14,25 @@ type FamilySourceQuery<Schema, Family> =
 
 mod bridge_denial;
 mod checkpoint_delivery;
-mod disclosure;
+mod denial_diagnostic;
+mod denial_posture;
+pub(super) mod disclosure;
 mod progression;
+pub(in crate::domain_computation::primary_graph) use progression::{
+    MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
+};
 mod readiness;
+mod required_continuations;
+mod required_provenance;
 mod scheduling_progression;
+mod selected_source;
 mod selection;
+pub(super) use progression::resources::validate_retained_resources;
+use required_continuations::RequiredContinuations;
+pub(in crate::domain_computation::primary_graph) use required_continuations::{
+    PreparedRequiredFreshSlot, RequiredFreshOutcome, RequiredFreshProgress,
+};
+use required_provenance::DemandProgressionProvenance;
 
 /// Why an output demand was refused while it was selected, admitted, or
 /// advanced.
@@ -27,6 +41,24 @@ mod selection;
 /// again can succeed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    /// The original source query binding is no longer installed as admitted.
+    SourceQueryInstallation(
+        worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind,
+    ),
+    /// Re-admitting the demand's original source query could not resolve its principal.
+    SourcePrincipal(
+        crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind,
+    ),
+    /// Re-admitting the demand's original source query could not resolve its scope.
+    SourceScope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind),
+    /// The retained source query was refused before its read.
+    SourceQueryAdmission(
+        crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind,
+    ),
+    /// The retained source query was refused during its one-shot read.
+    SourceQueryExecution(
+        crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind,
+    ),
     /// The observed source belongs to another runtime, schema binding, product
     /// commit, or product occurrence, or is not a product-branch source of the
     /// family's installed query.
@@ -39,6 +71,12 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The selected producer, its applicability, or its output binding is no
     /// longer installed.
     ProducerUnavailable,
+    /// The installed producer ran and its domain rejected the decision.
+    ProducerDomainDenied,
+    /// The admitted request lost its operation authorization before publication.
+    RequestAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     /// The product branch could not be selected; the admission denial says why.
     ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     /// Scheduling the producer was refused and will not succeed as asked.
@@ -100,7 +138,8 @@ pub enum WorthQueryOutputDemandRecoveryPosture {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandDenial {
     kind: WorthQueryOutputDemandDenialKind,
-    subject: String,
+    subject: std::borrow::Cow<'static, str>,
+    domain_reason: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) recovery_posture:
         WorthQueryOutputDemandRecoveryPosture,
 }
@@ -114,24 +153,43 @@ impl WorthQueryOutputDemandDenial {
         &self.subject
     }
 
+    /// Domain-owned diagnostic words, when the rejected producer supplies them.
+    /// These words do not replace the typed denial kind or confer authority.
+    pub const fn domain_reason(&self) -> Option<&'static str> {
+        self.domain_reason
+    }
+
     pub const fn recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         self.recovery_posture
     }
 
     pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryOutputDemandDenialKind,
-        subject: impl Into<String>,
+        subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
         Self {
             kind,
             subject: subject.into(),
+            domain_reason: None,
             recovery_posture: kind.default_recovery_posture(),
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
+        subject: impl Into<std::borrow::Cow<'static, str>>,
+        reason: Option<&'static str>,
+    ) -> Self {
+        let mut denial = Self::new(
+            WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
+            subject,
+        );
+        denial.domain_reason = reason;
+        denial
+    }
+
     pub(in crate::domain_computation::primary_graph) fn product_selection(
         denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
-        subject: impl Into<String>,
+        subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
         Self::new(
             WorthQueryOutputDemandDenialKind::ProductSelection(denial),
@@ -148,53 +206,6 @@ impl WorthQueryOutputDemandDenial {
     }
 }
 
-impl WorthQueryOutputDemandDenialKind {
-    const fn default_recovery_posture(self) -> WorthQueryOutputDemandRecoveryPosture {
-        use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
-        match self {
-            Self::ProductSelection(denial) => {
-                if denial.is_transient() {
-                    Retryable
-                } else {
-                    Terminal
-                }
-            }
-            Self::SchedulingDeferred => Retryable,
-            Self::ForeignSource
-            | Self::MissingApplicableProducer
-            | Self::AmbiguousApplicableProducer
-            | Self::ProducerUnavailable
-            | Self::SchedulingRejected
-            | Self::PublicationStale
-            | Self::NoEffect
-            | Self::Superseded
-            | Self::Cancelled
-            | Self::TimedOut
-            | Self::WorkBudgetExceeded
-            | Self::RetentionBudgetExceeded
-            | Self::PublicationCapacityExceeded
-            | Self::ForeignDemand
-            | Self::ForeignSettlement
-            | Self::IncompleteDependencyCoverage
-            | Self::RetainedBasisUnavailable
-            | Self::Closed
-            | Self::DuplicatePerformedSource => Terminal,
-        }
-    }
-}
-
-impl std::fmt::Display for WorthQueryOutputDemandDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "output demand denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryOutputDemandDenial {}
-
 /// The one installed producer chosen for an output family and source, with the
 /// applicability it was chosen for.
 ///
@@ -208,6 +219,9 @@ pub struct WorthQuerySelectedApplicationProducer {
     pub(super) retained_resources: Option<super::WorthQueryProducerDemandResources>,
     pub(super) retained_idempotency_key: Option<[u8; 32]>,
     pub(super) retained_output_binding: Option<std::any::TypeId>,
+    // An exact selection whose producer declares no Preserve posture reuses
+    // the live output it was selected for and never executes over it.
+    pub(super) reuses_live_output_only: bool,
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.
@@ -219,20 +233,40 @@ where
     runtime_authority: u64,
     schema_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     selected: WorthQuerySelectedApplicationProducer,
-    observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
-    currentness_work_limit: std::num::NonZeroUsize,
-    maximum_retained_bytes: usize,
+    installed_entry: std::sync::Arc<super::registry::InstalledProducerProvider<Schema>>,
+    observed_source: std::sync::Arc<
+        super::super::super::application_output_demand::RetainedOutputReadmissionSource<
+            FamilySourceQuery<Schema, Family>,
+        >,
+    >,
+    limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     resources: Option<super::WorthQueryProducerDemandResources>,
     resources_validated: bool,
     producer_contacts_in_this_demand: usize,
+    // Whether an advance of this demand has settled. Until one does, a cached
+    // Ready it joined at its start is still cache: see `caller_custody`.
+    settled: bool,
     admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
     retained_program_basis: Option<
         std::sync::Arc<
             crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
     >,
+    progression_provenance: DemandProgressionProvenance,
+    required_continuations: RequiredContinuations<Schema>,
+    // A selected post-effect publication race returns the original checkpoint
+    // to this real typed demand; its retained successor Interest owns retry.
+    unpublished_selected_checkpoint:
+        Option<super::super::super::application_output_demand::WorthQueryOutputCheckpoint>,
     interest:
         Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>,
+    // A demand at an observation older than the head holds no registry row.
+    // Its settlement was verified at its own snapshot when it was admitted.
+    settled_at_observation: Option<
+        std::sync::Arc<
+            super::super::super::application_output_demand::WorthQueryOutputDemandSettlement,
+        >,
+    >,
 }
 
 impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
@@ -240,6 +274,11 @@ where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
+    fn currentness_work_limit(&self) -> std::num::NonZeroUsize {
+        std::num::NonZeroUsize::new(self.limits.source_currentness_work())
+            .expect("admitted output demand has nonzero source-currentness work")
+    }
+
     pub fn observed_source(&self) -> &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>> {
         &self.observed_source
     }
@@ -269,7 +308,9 @@ where
     }
 
     pub fn close(&mut self) {
+        self.required_continuations = RequiredContinuations::default();
         self.interest.take();
+        self.settled_at_observation.take();
     }
 }
 
@@ -279,7 +320,9 @@ where
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     fn drop(&mut self) {
+        self.required_continuations = RequiredContinuations::default();
         self.interest.take();
+        self.settled_at_observation.take();
     }
 }
 
@@ -312,34 +355,37 @@ where
     pub(super) fn select<Family>(
         &self,
         applicability: WorthQueryProducerApplicability,
-    ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
+        remaining_work: Option<&mut usize>,
+    ) -> Result<
+        (
+            WorthQuerySelectedApplicationProducer,
+            &std::sync::Arc<super::registry::InstalledProducerProvider<Schema>>,
+        ),
+        WorthQueryOutputDemandDenial,
+    >
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let mut matching = self.entries.values().filter(|entry| {
-            entry.declaration.output_family == Family::IDENTITY
-                && entry.declaration.output_family_type == std::any::TypeId::of::<Family>()
-                && entry.declaration.applicability.contains(&applicability)
-        });
-        let selected = matching.next().ok_or_else(|| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::MissingApplicableProducer,
-                Family::IDENTITY,
-            )
-        })?;
-        if matching.next().is_some() {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::AmbiguousApplicableProducer,
-                Family::IDENTITY,
-            ));
-        }
-        Ok(WorthQuerySelectedApplicationProducer {
-            identity: selected.declaration.identity.clone(),
-            applicability,
-            exact_retained_output: false,
-            retained_resources: None,
-            retained_idempotency_key: None,
-            retained_output_binding: None,
-        })
+        let selected = self.select_entry::<Family>(
+            remaining_work,
+            |entry| {
+                entry.declaration.output_family == Family::IDENTITY
+                    && entry.declaration.output_family_type == std::any::TypeId::of::<Family>()
+                    && entry.declaration.applicability.contains(&applicability)
+            },
+            WorthQueryOutputDemandDenialKind::MissingApplicableProducer,
+        )?;
+        Ok((
+            WorthQuerySelectedApplicationProducer {
+                identity: selected.declaration.identity.clone(),
+                applicability,
+                exact_retained_output: false,
+                retained_resources: None,
+                retained_idempotency_key: None,
+                retained_output_binding: None,
+                reuses_live_output_only: false,
+            },
+            selected,
+        ))
     }
 }

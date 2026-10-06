@@ -1,6 +1,7 @@
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
-    ApplicationWorkflowRetry, ApplicationWorkflowSubjectSelector, ValidatedWorkflowDefinition,
+    ApplicationWorkflowConditionOperands, ApplicationWorkflowControlOutcome,
+    ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowRetry,
+    ApplicationWorkflowSubjectSelector, ValidatedWorkflowDefinition,
 };
 
 use super::super::{
@@ -111,7 +112,12 @@ pub fn conditionally_required_related_assessment_definition(
         .operation::<WorkflowDefinitionAuthoringOperation>("propose", false)
         .unwrap();
     let condition = builder
-        .condition::<DocumentRetentionConditionQuery>("positive-retention")
+        .condition(
+            "positive-retention",
+            "retained",
+            ApplicationWorkflowConditionOperands::new()
+                .query::<DocumentRetentionConditionQuery>("retained"),
+        )
         .unwrap();
     let related = builder
         .assessment_when_related_relation_present::<DocumentRetentionQuery, _, _, _>(

@@ -1,18 +1,16 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationMutationOutputContract, ApplicationMutationOutputPosture,
-        ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
+        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+        WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
 use crate::model::{AccountId, BankPrincipalId, InstitutionId};
-use crate::proposals::{
-    BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial, CanonicalProposalPayload,
-};
+use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
 
-use super::create_personal_account_binding::client_key_identity;
 use super::{CreateBusinessAccount, CreateBusinessAccountInputBinding};
 use crate::schema::{
     Account, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
@@ -39,30 +37,25 @@ worth_query_structured_value_binding!(
 
 pub struct CreateBusinessAccountOutputs;
 
-pub const CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT: &str = "account";
+/// The business account the operation creates.
+pub struct CreatedBusinessAccountOutput;
+
+impl WorthQueryApplicationOutputRole for CreatedBusinessAccountOutput {
+    type Schema = BankSchema;
+    type Contract = CreateBusinessAccountOutputs;
+    type Entity = Account;
+    type Action = WorthQueryCreateOutput;
+    type Cardinality = WorthQueryExactlyOneOutput;
+    const NAME: &'static str = "account";
+}
 
 impl ApplicationMutationOutputContract<BankSchema> for CreateBusinessAccountOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[ApplicationMutationOutputRoleDescriptor::for_entity::<
-            BankSchema,
-            Account,
-        >(
-            CREATE_BUSINESS_ACCOUNT_OUTPUT_ACCOUNT,
-            ApplicationMutationOutputPosture::Create,
-        )];
+        &[<CreatedBusinessAccountOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
 }
 
 fn institution_scope(input: &CreateBusinessAccount) -> InstitutionId {
     input.institution
-}
-
-fn input_identity(input: &CreateBusinessAccount) -> [u8; 32] {
-    *CanonicalProposalPayload::new("application-create-business-account")
-        .u64("institution", input.institution.get())
-        .u64("business", input.business.get())
-        .text("display-name", input.display_name.as_str())
-        .derive_identity()
-        .bytes()
 }
 
 worth_query_mutation_binding!(
@@ -73,8 +66,6 @@ worth_query_mutation_binding!(
     result CreateBusinessAccountResultBinding,
     idempotency BankIdempotencyKey,
         identity "bank.application-mutation-client-key.v1",
-        key_identity client_key_identity,
-        input_identity input_identity,
     decision BankInvariantApprovedProposal,
     denial CreateBusinessAccountDenialBinding,
     handler identity "bank.operation.create-business-account.handler.v1",

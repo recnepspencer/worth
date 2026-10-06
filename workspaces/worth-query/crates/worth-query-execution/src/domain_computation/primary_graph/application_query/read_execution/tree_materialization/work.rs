@@ -1,9 +1,11 @@
+use super::super::OneShotReadWorkObservation;
 use super::{
     read_execution_denial, WorthQueryApplicationReadExecutionDenial,
     WorthQueryApplicationReadExecutionDenialKind,
 };
 
-pub(super) struct ResultTreeWork {
+pub(super) struct ResultTreeWork<'a> {
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     maximum_work: usize,
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,
@@ -13,6 +15,7 @@ pub(super) struct ResultTreeWork {
     pub(super) relation_predicate_work_units: usize,
     pub(super) ordering_comparisons: usize,
     pub(super) work_units: usize,
+    spent: Option<&'a OneShotReadWorkObservation>,
 }
 
 fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExecutionDenial {
@@ -22,9 +25,14 @@ fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExe
     )
 }
 
-impl ResultTreeWork {
-    pub(super) fn new(maximum_work: usize) -> Self {
+impl<'a> ResultTreeWork<'a> {
+    pub(super) fn new(
+        maximum_work: usize,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        spent: Option<&'a OneShotReadWorkObservation>,
+    ) -> Self {
         Self {
+            request: request.clone(),
             maximum_work,
             projected_records: 0,
             projected_fields: 0,
@@ -34,6 +42,7 @@ impl ResultTreeWork {
             relation_predicate_work_units: 0,
             ordering_comparisons: 0,
             work_units: 0,
+            spent,
         }
     }
 
@@ -108,6 +117,7 @@ impl ResultTreeWork {
         units: usize,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.checkpoint(subject)?;
         if self.work_units.saturating_add(units) > self.maximum_work {
             return Err(work_limit_denial(subject));
         }
@@ -117,5 +127,20 @@ impl ResultTreeWork {
 
     pub(super) fn remaining_work(&self) -> usize {
         self.maximum_work.saturating_sub(self.work_units)
+    }
+
+    pub(super) fn checkpoint(
+        &self,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        super::super::interruption::checkpoint(&self.request, subject)
+    }
+}
+
+impl Drop for ResultTreeWork<'_> {
+    fn drop(&mut self) {
+        if let Some(spent) = self.spent {
+            spent.tree(self.work_units);
+        }
     }
 }

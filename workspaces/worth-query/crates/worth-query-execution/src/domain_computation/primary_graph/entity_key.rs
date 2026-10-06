@@ -33,6 +33,10 @@ impl<Schema, Entity> WorthQueryApplicationEntityKey<Schema, Entity> {
         &self.value
     }
 
+    pub(super) fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.value.capacity()
+    }
+
     pub(crate) fn into_string(self) -> String {
         self.value
     }

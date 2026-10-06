@@ -3,6 +3,7 @@ mod capability;
 mod compilation;
 mod contribution;
 mod denial;
+mod inbound_occurrence;
 mod installed;
 mod installed_principal_binding;
 mod invariant;
@@ -15,6 +16,10 @@ pub use contribution::{
 };
 pub use denial::{
     WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledApplicationSchemaDenialKind,
+};
+pub use inbound_occurrence::InstalledInboundOccurrenceContract;
+pub(crate) use inbound_occurrence::{
+    install_inbound_occurrence, InboundOccurrenceInstallationDenial,
 };
 pub use installed::WorthQueryInstalledApplicationSchema;
 pub use invariant::{
@@ -37,6 +42,7 @@ pub(crate) use compilation::{
     compile_application_schema, ApplicationSchemaCompilationDenial,
     ApplicationSchemaCompilationInput,
 };
+pub(crate) use installed_principal_binding::AdmittedPrincipalBindingStop;
 pub(crate) use native_contract::{
     compile_native_contract_catalog, compile_portable_native_contract_records,
     WorthQueryApplicationSchemaContractCatalogDenial,

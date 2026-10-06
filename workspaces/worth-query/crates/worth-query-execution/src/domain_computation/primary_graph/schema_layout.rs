@@ -1,8 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_foundational::facade::{
-    AspectContract, AspectFieldLocator, AspectKey, AspectShape, FieldKey, FieldRequirement,
-};
+use worth_foundational::facade::{AspectContract, AspectFieldLocator, AspectKey, FieldKey};
 use worth_query_installation::facade::{
     ErasedApplicationSchemaDeclaration, WorthQueryInstalledApplicationSchemaContractCatalog,
 };
@@ -15,6 +13,8 @@ use super::WorthQueryPrimaryGraphInstallationDenial;
 mod application_layout_lowering;
 mod capability_grant_join;
 mod continuation_ordering;
+mod equality_fields;
+mod field_optionality;
 mod installation_primitives;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
@@ -23,7 +23,12 @@ mod program_activation;
 mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 mod provider_idempotency;
+mod provider_inbound_completion;
 mod registry_lowering;
+mod support_admission;
+#[cfg(test)]
+mod tests;
+pub(in crate::domain_computation::primary_graph) use support_admission::WorthQuerySupportLookupStop;
 
 use super::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
@@ -42,6 +47,7 @@ pub(in crate::domain_computation) use principal_binding::WorthQueryPrimaryPrinci
 pub(in crate::domain_computation::primary_graph) use program_activation::WorthQueryProgramActivationLayout;
 pub(super) use provider_aftermath_causality::WorthQueryAftermathCausalityLayout;
 pub(super) use provider_idempotency::WorthQueryProviderIdempotencyLayout;
+pub(in crate::domain_computation::primary_graph) use provider_inbound_completion::WorthQueryInboundCompletionLayout;
 use registry_lowering::{
     lower_application_contract_bindings, lower_kind_ids, next_provider_kind_id,
     relational_schema_basis,
@@ -58,13 +64,15 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     application_entity_kinds: BTreeSet<KindId>,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
-    aspect_contracts: BTreeMap<(String, AspectKey), AspectContract>,
+    aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>>,
+    aspect_contract_count: usize,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     projection_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     continuation_orderings: Vec<WorthQueryPrimaryContinuationOrderingLayout>,
     capability_grant_joins: BTreeMap<(String, String), WorthQueryCapabilityGrantJoinLayout>,
     provider_idempotency: WorthQueryProviderIdempotencyLayout,
     provider_dispatch_outbox: WorthQueryDispatchOutboxLayout,
+    provider_inbound_completion: WorthQueryInboundCompletionLayout,
     provider_aftermath_causality: WorthQueryAftermathCausalityLayout,
     program_activation: WorthQueryProgramActivationLayout,
     workflow: WorthQueryWorkflowLayout,
@@ -86,6 +94,29 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryFieldLayout {
 }
 
 impl WorthQueryPrimaryGraphLayout {
+    /// The installed native contract inventory is the complete output-aspect
+    /// vocabulary for this application entity, including fields that were not
+    /// written by the performed operation.
+    pub(in crate::domain_computation::primary_graph) fn native_output_aspects<'a>(
+        &'a self,
+        entity: &'a str,
+    ) -> impl Iterator<Item = &'a AspectKey> + Clone {
+        self.aspect_contracts
+            .get(entity)
+            .into_iter()
+            .flat_map(|contracts| contracts.keys())
+    }
+
+    /// Both the native kind and its aspect inventory use entity-name B-trees.
+    /// The kind table contains every entity in the aspect table, so its bounded
+    /// descent also covers the aspect table without reading unrelated aspects.
+    pub(in crate::domain_computation::primary_graph) fn native_output_lookup_work(
+        &self,
+        entity: &str,
+    ) -> Option<u64> {
+        self.entity_kind_lookup_work(entity)?.checked_mul(2)
+    }
+
     pub(super) fn lower(
         schema: &ErasedApplicationSchemaDeclaration,
         native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
@@ -94,17 +125,18 @@ impl WorthQueryPrimaryGraphLayout {
         let (entity_kinds, relation_kinds) = lower_kind_ids(schema, existing_registry)?;
         let (schema_id, schema_version_id) = relational_schema_basis(schema, existing_registry)?;
         let mut registry = RelationalSchemaRegistry::new();
-        let mut aspect_contracts = BTreeMap::new();
+        let mut aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>> =
+            BTreeMap::new();
         let lowered_contracts = lower_application_contract_bindings(native_contracts);
         let mut contracts_by_entity = lowered_contracts.by_entity;
 
         for (entity, kind_id) in &entity_kinds {
             let aspects = contracts_by_entity.remove(entity).unwrap_or_default();
             for binding in &aspects {
-                aspect_contracts.insert(
-                    (entity.clone(), binding.aspect_key()),
-                    binding.contract.clone(),
-                );
+                aspect_contracts
+                    .entry(entity.clone())
+                    .or_default()
+                    .insert(binding.aspect_key(), binding.contract.clone());
             }
             registry = register_entity(
                 registry,
@@ -175,6 +207,7 @@ impl WorthQueryPrimaryGraphLayout {
                 application_entity_kinds,
                 application_relation_kinds,
                 fields,
+                aspect_contract_count: aspect_contracts.values().map(BTreeMap::len).sum(),
                 aspect_contracts,
                 equality_field_keys,
                 projection_field_keys,
@@ -182,6 +215,7 @@ impl WorthQueryPrimaryGraphLayout {
                 capability_grant_joins,
                 provider_idempotency: platform_entities.provider_idempotency,
                 provider_dispatch_outbox: platform_entities.provider_dispatch_outbox,
+                provider_inbound_completion: platform_entities.provider_inbound_completion,
                 provider_aftermath_causality: platform_entities.provider_aftermath_causality,
                 program_activation: platform_entities.program_activation,
                 workflow: platform_entities.workflow,
@@ -215,6 +249,23 @@ impl WorthQueryPrimaryGraphLayout {
 
     pub(in crate::domain_computation) fn entity_kind(&self, entity: &str) -> Option<KindId> {
         self.entity_kinds.get(entity).copied()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn application_entity_kinds(
+        &self,
+    ) -> impl Iterator<Item = KindId> + '_ {
+        self.application_entity_kinds.iter().copied()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn entity_kind_lookup_work(
+        &self,
+        entity: &str,
+    ) -> Option<u64> {
+        let entries = self.entity_kinds.len();
+        let levels = usize::BITS as usize - entries.max(1).leading_zeros() as usize;
+        let comparisons = entries.min(11).checked_mul(levels)?.checked_add(1)?;
+        let bytes_per_comparison = entity.len().checked_add(1)?;
+        u64::try_from(comparisons.checked_mul(bytes_per_comparison)?).ok()
     }
 
     pub(in crate::domain_computation::primary_graph) fn entity_name(
@@ -284,64 +335,11 @@ impl WorthQueryPrimaryGraphLayout {
         entity: &str,
         aspect: &AspectKey,
     ) -> Option<&AspectContract> {
-        self.aspect_contracts
-            .get(&(entity.to_string(), aspect.clone()))
+        self.aspect_contracts.get(entity)?.get(aspect)
     }
 
-    pub(in crate::domain_computation) fn field_is_optional(
-        &self,
-        entity: &str,
-        locator: &AspectFieldLocator,
-    ) -> bool {
-        let Some(field) = locator.field_path().fields().first() else {
-            return false;
-        };
-        let Some(contract) = self.aspect_contract(entity, locator.aspect().aspect_key()) else {
-            return false;
-        };
-        let AspectShape::Struct(shape) = contract.shape() else {
-            return false;
-        };
-        shape
-            .field(field)
-            .is_some_and(|field| field.requirement() == FieldRequirement::Optional)
-    }
-
-    pub(in crate::domain_computation) fn equality_field(
-        &self,
-        entity: &str,
-        aspect: &str,
-        field: &str,
-    ) -> Option<&WorthQueryPrimaryFieldLayout> {
-        self.fields
-            .get(&(entity.to_string(), aspect.to_string(), field.to_string()))
-            .filter(|layout| layout.equality_index_id.is_some())
-    }
-
-    pub(super) fn equality_fields_mut(
-        &mut self,
-    ) -> impl Iterator<Item = (&(String, String, String), &mut WorthQueryPrimaryFieldLayout)> {
-        self.fields
-            .iter_mut()
-            .filter(|(_, layout)| layout.equality_index_id.is_some())
-    }
-
-    pub(super) fn equality_index_ids(&self) -> impl Iterator<Item = DerivedIndexId> + '_ {
-        self.fields
-            .values()
-            .filter_map(|field| field.equality_index_id)
-    }
-
-    pub(super) fn supports_equality_field(&self, aspect: &AspectKey, field: &FieldKey) -> bool {
-        self.equality_field_keys
-            .get(aspect)
-            .is_some_and(|fields| fields.contains(field))
-    }
-
-    pub(super) fn supports_projection_field(&self, aspect: &AspectKey, field: &FieldKey) -> bool {
-        self.projection_field_keys
-            .get(aspect)
-            .is_some_and(|fields| fields.contains(field))
+    pub(in crate::domain_computation::primary_graph) fn aspect_contract_count(&self) -> usize {
+        self.aspect_contract_count
     }
 
     pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {
@@ -354,6 +352,12 @@ impl WorthQueryPrimaryGraphLayout {
 
     pub(super) const fn provider_dispatch_outbox(&self) -> &WorthQueryDispatchOutboxLayout {
         &self.provider_dispatch_outbox
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn provider_inbound_completion(
+        &self,
+    ) -> &WorthQueryInboundCompletionLayout {
+        &self.provider_inbound_completion
     }
 
     pub(super) const fn provider_aftermath_causality(&self) -> &WorthQueryAftermathCausalityLayout {

@@ -6,6 +6,10 @@ use worth_foundational::facade::{
 };
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
+mod admission_stop;
+mod admitted;
+pub use admission_stop::WorthQueryCanonicalIdentityStop;
+
 pub(crate) struct WorthQueryCanonicalIdentityBasis {
     domain: CanonicalBasisDomain,
     version: CanonicalizationRuleVersion,
@@ -83,6 +87,12 @@ impl WorthQueryCanonicalIdentityBasis {
         locus: impl Into<String>,
         value: CanonicalBasisValue,
     ) -> Result<(), CanonicalDigestDerivationDenial> {
+        self.check_entry_limit()?;
+        self.append_value(locus.into(), value);
+        Ok(())
+    }
+
+    fn check_entry_limit(&self) -> Result<(), CanonicalDigestDerivationDenial> {
         let actual = u32::try_from(self.entries.len())
             .unwrap_or(u32::MAX)
             .saturating_add(1);
@@ -92,12 +102,15 @@ impl WorthQueryCanonicalIdentityBasis {
                 actual,
             });
         }
+        Ok(())
+    }
+
+    fn append_value(&mut self, locus: String, value: CanonicalBasisValue) {
         self.entries.push(CanonicalBasisEntry::new(
             self.domain,
-            CanonicalBasisLocus::Named(locus.into().into()),
+            CanonicalBasisLocus::Named(locus.into()),
             CanonicalBasisEntryKind::Field,
             value,
         ));
-        Ok(())
     }
 }

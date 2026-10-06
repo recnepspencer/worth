@@ -95,6 +95,25 @@ impl PreparedBranchPublicationPreflight {
             ));
         }
 
+        if let (Some(effect), Some(binding)) = (&self.companion, &self.companion_binding) {
+            if let Err(stop) = effect.matches(binding) {
+                return RelationalPublicationOutcome::deferred(
+                    RelationalPublicationDeferred::CompanionPreflight(stop),
+                );
+            }
+        }
+        let mut companion_cutover = match self.companion.as_mut() {
+            Some(effect) => match effect.enter_cutover() {
+                Ok(cutover) => Some(cutover),
+                Err(stop) => {
+                    return RelationalPublicationOutcome::deferred(
+                        RelationalPublicationDeferred::CompanionPreflight(stop),
+                    )
+                }
+            },
+            None => None,
+        };
+
         let previous_head_version = observed_root
             .canonical_envelope()
             .map(|envelope| envelope.commit.version_id);
@@ -112,13 +131,16 @@ impl PreparedBranchPublicationPreflight {
         let positioned_commit = match self
             .movement
             .canonical_publication_route
-            .record_performed_with_cutover(self.publication_cell.clone(), || {
+            .record_performed_with_cutover(self.publication_cell.clone(), |position| {
                 // The cutover is the only orchestration this port runs while the
                 // global patch-position reservation is held, so this is where a
                 // concurrent publisher can be made to meet it.
                 #[cfg(any(test, feature = "test-operation-control"))]
                 reservation_pause.pause_holding_patch_position_reservation();
                 let previous_root = publication_state.replace_with(self.next_state);
+                if let Some(companion) = &mut companion_cutover {
+                    companion.install_at(position);
+                }
                 head_retirement.transfer_head(&previous_root, next_root);
                 self.branch_head_versions
                     .move_head(previous_head_version, next_head_version);
@@ -138,6 +160,7 @@ impl PreparedBranchPublicationPreflight {
                 ));
             }
         };
+        drop(companion_cutover);
         let retired_root = retired_root
             .into_inner()
             .expect("performed cutover returns the exact previous head root");

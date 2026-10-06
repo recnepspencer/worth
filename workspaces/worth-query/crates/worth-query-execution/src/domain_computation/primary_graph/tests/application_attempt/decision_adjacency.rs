@@ -11,7 +11,6 @@ use super::super::fixture::{
 };
 use super::{idempotency, installed_authorization_world, live_scope, resolved_account};
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
     WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryPrincipalResolutionMode,
@@ -40,7 +39,7 @@ fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
     let outcome = world
         .application
         .compare_and_commit_application(losing, idempotency(32, 32));
-    assert_product_basis_stale(outcome, "the edge entering the sealed empty adjacency");
+    assert_changed_decision(outcome, "the edge entering the sealed empty adjacency");
 }
 
 #[test]
@@ -80,22 +79,15 @@ fn removing_an_observed_present_relation_stales_a_competing_program() {
     let outcome = world
         .application
         .compare_and_commit_application(loser, idempotency(37, 37));
-    assert_product_basis_stale(outcome, "removing the retained relation");
+    assert_changed_decision(outcome, "removing the retained relation");
     assert_membership_absent(&world, &actor, &principal, &account, &request, "open");
 }
 
-fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome, cause: &str) {
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("{cause} must deny before effects: {outcome:?}");
+fn assert_changed_decision(outcome: WorthQueryApplicationCommitOutcome, cause: &str) {
+    let WorthQueryApplicationCommitOutcome::Stale(stale) = outcome else {
+        panic!("{cause} must stale before effects: {outcome:?}");
     };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
+    assert!(stale.stale_fact_count() > 0);
 }
 
 #[test]

@@ -3,7 +3,8 @@ mod grammar;
 mod readiness;
 
 pub use construction::{
-    prepare_canonical_basis_sequence, CanonicalBasisConstructionDenial, CanonicalBasisEntry,
+    prepare_canonical_basis_sequence, prepare_owned_canonical_basis_sequence_admitted,
+    CanonicalBasisConstructionDenial, CanonicalBasisEntry, CanonicalBasisPreparationStop,
     CanonicalBasisReadyArtifact, CanonicalBasisSequence,
 };
 pub use grammar::{

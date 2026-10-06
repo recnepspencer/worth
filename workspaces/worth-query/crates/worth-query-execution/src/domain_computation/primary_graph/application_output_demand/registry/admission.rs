@@ -1,49 +1,80 @@
-use std::sync::{Arc, Condvar, Mutex};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use std::sync::Arc;
 
+use super::supersession::reject_older_successor;
 use super::{
-    supersede_predecessors, DemandAdmissionKind, DemandRecord, DemandState, DemandWake,
-    WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey, WorthQueryOutputDemandNotifications,
-    WorthQueryOutputDemandRegistry,
+    supersede_predecessors, DemandAdmissionKind, DemandRecord, DemandState,
+    OutputRefreshPredecessor, WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey,
+    WorthQueryOutputDemandNotifications, WorthQueryOutputDemandRegistry,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+mod obligation_capacity;
+mod performed;
+mod selected_output;
+pub(super) use obligation_capacity::performed_obligation_capacity_denial;
+pub(in crate::domain_computation::primary_graph) use selected_output::SelectedOutputAdmission;
+
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn admit(
         &self,
         requested_key: WorthQueryOutputDemandKey,
-        selected_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
+        selected_output: Option<SelectedOutputAdmission<'_>>,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         admission_kind: DemandAdmissionKind,
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
-        successor_of: Option<
-            &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        >,
+        successor_of: Option<OutputRefreshPredecessor<'_>>,
+        admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let matching_delivery = state
-            .records
-            .iter()
-            .find(|(key, record)| {
-                let pending_commit = match &record.state {
-                    DemandState::Output(output) => output
-                        .receipt
-                        .as_ref()
-                        .map(|receipt| receipt.committed_product_publication().composite_commit()),
-                    _ => None,
-                };
-                key.same_occurrence(&requested_key)
-                    && selected_commit.is_some_and(|selected| pending_commit == Some(selected))
+        let stable_refresh = matches!(successor_of, Some(OutputRefreshPredecessor::Stable { .. }));
+        let selected_commit = selected_output.as_ref().map(|selected| selected.commit);
+        let exact_retained_row = selected_output
+            .as_ref()
+            .filter(|_| !stable_refresh)
+            .and_then(|selected| {
+                selected.newest_retained_row(
+                    &requested_key,
+                    state.records.iter().filter(|(_, record)| {
+                        record.product_occurrence == product_occurrence
+                            && record.source_scope == Some(source_scope)
+                            && (admission_kind != DemandAdmissionKind::Recovery
+                                || expected_source_commit.is_some_and(|expected| {
+                                    record.source_commits.contains(expected)
+                                }))
+                    }),
+                )
             })
-            .map(|(key, _)| key.clone());
-        let matching_semantic_source = newest_semantic_key(&state, &requested_key, |record| {
-            accepts_semantic_join(record)
-        });
+            .cloned();
+        let matching_delivery = if stable_refresh {
+            None
+        } else {
+            state
+                .records
+                .iter()
+                .find(|(key, record)| {
+                    let pending_commit = match &record.state {
+                        DemandState::Output(output) => output.published_commit.as_ref(),
+                        _ => None,
+                    };
+                    key.producer == requested_key.producer
+                        && key.applicability == requested_key.applicability
+                        && key.same_occurrence(&requested_key)
+                        && selected_commit.is_some_and(|selected| pending_commit == Some(selected))
+                })
+                .map(|(key, _)| key.clone())
+        };
+        let matching_semantic_source = if stable_refresh {
+            None
+        } else {
+            newest_semantic_key(&state, &requested_key, accepts_semantic_join)
+        };
         let requested_source = requested_key.source.clone();
         let mut retained_key = None;
         if admission_kind == DemandAdmissionKind::Recovery {
@@ -67,11 +98,19 @@ impl WorthQueryOutputDemandRegistry {
             }
             let same_occurrence = custody.occurrence == product_occurrence;
             retained_key = newest_semantic_key(&state, &requested_key, |record| {
-                record.required
+                (record.is_required()
+                    || record.has_cached_ready()
+                    || record.performed_source.as_ref().is_some_and(|source| {
+                        source.change.product_commit() == expected
+                            && source.output_source_identity.as_ref() == Some(&requested_source)
+                    }))
                     && record.source_commits.contains(expected)
                     && record.product_occurrence == product_occurrence
                     && record.source_scope == Some(source_scope)
             });
+            if let Some(key) = retained_key.as_ref() {
+                state.charge_record_lookup(key, admission)?;
+            }
             if let Some(DemandState::Failed(denial)) = retained_key
                 .as_ref()
                 .and_then(|key| state.records.get(key))
@@ -88,8 +127,19 @@ impl WorthQueryOutputDemandRegistry {
                 ));
             }
         }
-        let existing_key = if retained_key.is_some() {
+        state.charge_record_lookup(&requested_key, admission)?;
+        let existing_key = if stable_refresh {
+            // A refreshed Stable alias is bound to the freshly selected
+            // source epoch. A semantic join with an older row would retain
+            // the predecessor's obsolete source address.
+            state
+                .records
+                .contains_key(&requested_key)
+                .then(|| requested_key.clone())
+        } else if retained_key.is_some() {
             retained_key
+        } else if let Some(key) = exact_retained_row {
+            Some(key)
         } else if state.records.contains_key(&requested_key) {
             Some(requested_key.clone())
         } else if let Some(key) = matching_semantic_source {
@@ -104,18 +154,30 @@ impl WorthQueryOutputDemandRegistry {
             .as_ref()
             .cloned()
             .unwrap_or_else(|| requested_key.clone());
-        if existing_key.is_none() {
-            supersede_predecessors(&mut state, &requested_key)?;
+        if let Some(predecessor) = successor_of {
+            predecessor.validate_stable_interest(
+                self,
+                &state,
+                &key,
+                source_scope,
+                product_occurrence,
+            )?;
         }
+        admission.charge_external_work(4).map_err(|_| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                "required work activation exceeds request work",
+            )
+        })?;
+        let required_member = state.prepare_required_member(&key)?;
         if let Some(successor) = successor_of {
+            state.charge_record_lookup(&key, admission)?;
             if let Some(DemandState::Output(output)) =
                 state.records.get(&key).map(|record| &record.state)
             {
                 let matches_ready = output.checkpoint.as_ref().is_some_and(|checkpoint| {
                     matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
-                        if matches!(&completion.authority,
-                            super::WorthQueryAcceptedOutputAuthority::Committed(receipt)
-                            if receipt.is_same_authoritative_commit(successor)))
+                        if successor.matches_ready(&completion.authority))
                 });
                 if matches_ready {
                     if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
@@ -126,6 +188,7 @@ impl WorthQueryOutputDemandRegistry {
                 }
             }
         }
+        state.charge_record_lookup(&key, admission)?;
         let accepts_prepared_source = state.records.get(&key).is_none_or(|record| {
             record.performed_source.is_none() && matches!(record.state, DemandState::Admitted)
         });
@@ -148,6 +211,47 @@ impl WorthQueryOutputDemandRegistry {
                 DemandAdmissionKind::Ordinary => None,
             })
             .flatten();
+        let prepared_source_commit = prepared_commit.clone();
+        let prepared_record = if existing_record {
+            None
+        } else {
+            Some(state.prepare_new_record(
+                &key,
+                prepared_source_commit.as_ref(),
+                product_occurrence,
+                source_scope,
+                successor_of.map(OutputRefreshPredecessor::key_identity),
+                admission,
+            )?)
+        };
+        if prepared_source_commit.is_some() {
+            state.charge_record_lookup(&key, admission)?;
+        }
+        let prepared_commit_growth = if let (Some(commit), Some(record)) =
+            (prepared_source_commit.as_ref(), state.records.get(&key))
+        {
+            if record.source_commits.contains(commit) {
+                None
+            } else {
+                state.prepare_source_commit_growth(record, admission)?
+            }
+        } else {
+            None
+        };
+        if existing_record {
+            state.charge_record_lookup(&key, admission)?;
+        } else {
+            state.charge_record_lookup_after_insert(&key, admission)?;
+        }
+        if existing_key.is_none() {
+            if successor_of.is_some() {
+                // Refresh transfers any performed obligation only after the
+                // replacement is admitted and its custody is prepared.
+                reject_older_successor(&state, &requested_key)?;
+            } else {
+                supersede_predecessors(&mut state, &requested_key)?;
+            }
+        }
         let prepared_source = prepared_commit.and_then(|commit| {
             let custody = state
                 .source_custody
@@ -161,18 +265,10 @@ impl WorthQueryOutputDemandRegistry {
             custody.finish_admission(requested_source);
             performed
         });
-        let prepared_source_commit = prepared_source
-            .as_ref()
-            .map(|source| source.change.product_commit().clone());
-        let record = state.records.entry(key.clone()).or_insert_with(|| {
-            new_record(
-                product_occurrence,
-                source_scope,
-                prepared_source_commit.clone(),
-                admission_kind.is_required(),
-                successor_of.map(|receipt| *receipt.idempotency_binding().key_identity()),
-            )
-        });
+        if let Some(prepared) = prepared_record {
+            state.install_prepared_record(prepared);
+        }
+        let record = state.records.get_mut(&key).expect("admitted record exists");
         if let Some(successor) = successor_of {
             let reopens_exact_ready = matches!(
                 &record.state,
@@ -180,15 +276,20 @@ impl WorthQueryOutputDemandRegistry {
                     if matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle)
                     && output.checkpoint.as_ref().is_some_and(|checkpoint| {
                         matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
-                            if matches!(&completion.authority,
-                                super::WorthQueryAcceptedOutputAuthority::Committed(receipt)
-                                if receipt.is_same_authoritative_commit(successor)))
+                            if successor.matches_ready(&completion.authority))
                     })
             );
             if existing_record && reopens_exact_ready {
-                record.state = DemandState::Admitted;
+                let DemandState::Output(reopened) =
+                    std::mem::replace(&mut record.state, DemandState::Admitted)
+                else {
+                    unreachable!("the reopened row was checked Ready above");
+                };
                 record.performed_source = None;
-                record.successor_of = Some(*successor.idempotency_binding().key_identity());
+                record.successor_of = Some(super::succession::Succession::reopening(
+                    successor.key_identity(),
+                    reopened,
+                ));
                 record.wake.notify();
             }
         }
@@ -197,96 +298,17 @@ impl WorthQueryOutputDemandRegistry {
         }
         if let Some(commit) = prepared_source_commit {
             if !record.source_commits.contains(&commit) {
+                if let Some(growth) = prepared_commit_growth {
+                    growth.install(record);
+                }
                 record.source_commits.push(commit);
             }
         }
         record.interests = record.interests.saturating_add(1);
-        record.required |= admission_kind.is_required();
-        Ok(interest(self, key, record))
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn admit_performed(
-        &self,
-        requested_key: WorthQueryOutputDemandKey,
-        source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(custody) = state.source_custody.get(source_commit) else {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
-                "performed source is absent or has already been consumed",
-            ));
-        };
-        if let Some(denial) = &custody.retired {
-            return Err(denial.clone());
-        }
-        if let Some(denial) = custody.source_denial(&requested_key.source) {
-            return Err(denial);
-        }
-        if !custody.available(&requested_key.source, source_scope) {
-            if custody.bound_sources.is_some() {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "performed source identity does not match its prepared publication",
-                ));
-            }
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
-                "performed source is absent or has already been consumed",
-            ));
-        }
-        let key = newest_semantic_key(&state, &requested_key, accepts_semantic_join)
-            .unwrap_or_else(|| requested_key.clone());
-        if let Some(record) = state.records.get(&key) {
-            if record.product_occurrence != product_occurrence
-                || record.source_scope != Some(source_scope)
-            {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "matching output identity belongs to another source scope or occurrence",
-                ));
-            }
-            if let DemandState::Failed(denial) = &record.state {
-                return Err(denial.clone());
-            }
-        }
-        supersede_predecessors(&mut state, &requested_key)?;
-        let custody = state
-            .source_custody
-            .get_mut(source_commit)
-            .expect("selected custody exists");
-        let mut performed_source = custody
-            .source
-            .as_ref()
-            .expect("available custody retains source")
-            .clone();
-        performed_source.output_source_identity = Some(requested_key.source.clone());
-        custody.finish_admission(requested_key.source.clone());
-        let record = state.records.entry(key.clone()).or_insert_with(|| {
-            new_record(
-                product_occurrence,
-                source_scope,
-                Some(source_commit.clone()),
-                true,
-                None,
-            )
-        });
-        if !record.source_commits.contains(source_commit) {
-            record.source_commits.push(source_commit.clone());
-        }
-        record.required = true;
-        if matches!(record.state, DemandState::Admitted) && record.performed_source.is_none() {
-            record.performed_source = Some(performed_source);
-        } else {
-            drop(performed_source);
-        }
-        record.interests = record.interests.saturating_add(1);
-        Ok(interest(self, key, record))
+        record.required_interests += usize::from(admission_kind.is_required());
+        let interest = interest(self, key, record, admission_kind.is_required());
+        state.install_required_member(required_member);
+        Ok(interest)
     }
 }
 
@@ -314,36 +336,15 @@ pub(super) fn newest_semantic_key(
         .map(|(key, _)| key.clone())
 }
 
-fn new_record(
-    product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    source_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
-    required: bool,
-    successor_of: Option<[u8; 32]>,
-) -> DemandRecord {
-    DemandRecord {
-        interests: 0,
-        required,
-        product_occurrence,
-        source_scope: Some(source_scope),
-        source_commits: source_commit.into_iter().collect(),
-        state: DemandState::Admitted,
-        performed_source: None,
-        successor_of,
-        wake: Arc::new(DemandWake {
-            generation: Mutex::new(0),
-            changed: Condvar::new(),
-        }),
-    }
-}
-
 pub(super) fn interest(
     owner: &WorthQueryOutputDemandRegistry,
     key: WorthQueryOutputDemandKey,
     record: &DemandRecord,
+    requires_output: bool,
 ) -> WorthQueryOutputDemandInterest {
     WorthQueryOutputDemandInterest {
         key,
+        requires_output,
         notifications: WorthQueryOutputDemandNotifications {
             wake: Arc::clone(&record.wake),
         },

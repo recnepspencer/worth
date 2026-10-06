@@ -1,18 +1,13 @@
-#[cfg(feature = "parallel")]
 use std::time::Instant;
 
-#[cfg(feature = "parallel")]
-use crate::logic::planner::{StageExecutionOutcome, StageExecutor};
-#[cfg(feature = "parallel")]
+use crate::logic::planner::StageExecutionOutcome;
 use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, verify_locality_case_with_policy, DensityRatio,
     FinancialWorldDefinition,
 };
 
-#[cfg(feature = "parallel")]
 use super::throughput_definition::{assert_within_throughput_budget, profiles};
 
-#[cfg(feature = "parallel")]
 #[test]
 fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
     let started = Instant::now();
@@ -23,12 +18,10 @@ fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
         .policy;
     let definition =
         FinancialWorldDefinition::dense_market_close(41, 256, DensityRatio::FourInFive);
-    let serial =
-        verify_locality_case_with_policy(definition.clone(), 0, policy, StageExecutor::Serial)
-            .expect("serial throughput court should settle");
-    let parallel =
-        verify_locality_case_with_policy(definition, 0, policy, StageExecutor::balanced_parallel())
-            .expect("parallel throughput court should settle");
+    let serial = verify_locality_case_with_policy(definition.clone(), 0, policy, 1)
+        .expect("serial throughput court should settle");
+    let parallel = verify_locality_case_with_policy(definition, 0, policy, 4)
+        .expect("parallel throughput court should settle");
 
     assert!(
         !serial
@@ -57,7 +50,6 @@ fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
     assert_within_throughput_budget(started, "serial/parallel operational digest");
 }
 
-#[cfg(feature = "parallel")]
 #[test]
 fn all_profiles_preserve_serial_parallel_operational_digest() {
     let started = Instant::now();
@@ -68,11 +60,7 @@ fn all_profiles_preserve_serial_parallel_operational_digest() {
             compile_financial_locality_world_with_policy(definition.clone(), profile.policy)
                 .expect("serial profile world compiles");
         let serial_report = serial_world
-            .run_locality_performance_sequence(
-                8,
-                StageExecutor::Serial,
-                profile.explicit_observation,
-            )
+            .run_locality_performance_sequence(8, 1, profile.explicit_observation)
             .expect("serial profile sequence settles");
         let serial_digest = serial_world
             .locality_operational_digest_without_observation_work()
@@ -82,11 +70,7 @@ fn all_profiles_preserve_serial_parallel_operational_digest() {
             compile_financial_locality_world_with_policy(definition, profile.policy)
                 .expect("parallel profile world compiles");
         let parallel_report = parallel_world
-            .run_locality_performance_sequence(
-                8,
-                StageExecutor::balanced_parallel(),
-                profile.explicit_observation,
-            )
+            .run_locality_performance_sequence(8, 4, profile.explicit_observation)
             .expect("parallel profile sequence settles");
         let parallel_digest = parallel_world
             .locality_operational_digest_without_observation_work()

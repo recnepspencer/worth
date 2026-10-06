@@ -5,8 +5,9 @@ use super::{
     BridgeAuthorizationClauseObservation, BridgeAuthorizationDependencyCardinality,
     BridgeAuthorizationInstallationBatch, BridgeAuthorizationInstallationRequest,
     BridgeAuthorizationObservation, BridgeAuthorizationRequirementContract,
-    BridgeAuthorizationRequirementObservation, BridgeAuthorizationRuleContract,
-    BridgeAuthorizationRuleEffect, BridgeAuthorizationRuleObservation, BridgeAuthorizationRuntime,
+    BridgeAuthorizationRequirementObservation, BridgeAuthorizationRetentionStop,
+    BridgeAuthorizationRuleContract, BridgeAuthorizationRuleEffect,
+    BridgeAuthorizationRuleObservation, BridgeAuthorizationRuntime,
 };
 
 #[test]
@@ -91,6 +92,43 @@ fn installed_correspondence_retains_nested_signal_decision_and_dependency_identi
             (BridgeAuthorizationRuleEffect::Prohibited, false),
         ]
     );
+}
+
+#[test]
+fn admitted_retention_preserves_signal_decision_and_original_late_stop() {
+    let mut runtime = BridgeAuthorizationRuntime::new();
+    let rules = rules();
+    let identity = runtime
+        .install(installation_request([31; 32], rules.clone()))
+        .unwrap();
+    let evidence = runtime
+        .evaluate(observation(identity, &rules, [13; 32], true, false))
+        .unwrap();
+    let mut measured = 0_u64;
+    assert_eq!(
+        runtime.retains_admitted(&evidence, |work, bytes| {
+            assert_eq!(bytes, 0);
+            measured += work;
+            Ok::<_, &'static str>(())
+        }),
+        Ok(true)
+    );
+    assert!(runtime.retains(&evidence));
+    assert!(measured > 3);
+    let mut spent = 0_u64;
+    assert!(matches!(
+        runtime.retains_admitted(&evidence, |work, _| {
+            if spent + work > measured - 1 {
+                return Err("carried work exhausted");
+            }
+            spent += work;
+            Ok(())
+        }),
+        Err(BridgeAuthorizationRetentionStop::Admission(
+            "carried work exhausted"
+        ))
+    ));
+    assert!(spent > 0);
 }
 
 #[test]

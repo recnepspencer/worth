@@ -10,13 +10,13 @@ use worth_query_host::facade::application_contribution;
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-        WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+        WorthQueryDecisionContextDependencies, WorthQueryProducerApplicability,
+        WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
         WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     },
     domain,
     primary_graph::{
         CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryApplicationOutputRole,
     },
 };
 
@@ -28,7 +28,7 @@ pub(crate) const ALTERNATE_OUTPUT_APPLICABILITY: WorthQueryProducerApplicability
         WorthQueryProducerLifecyclePosture::Initial,
     );
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct AlternatePlanarOutput {
     pub scope_key: String,
     pub output_key: String,
@@ -76,23 +76,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 1024, 4096);
-
-    fn idempotency_key_identity(key: &u64) -> [u8; 32] {
-        super::mutation_identity::key_identity(*key)
-    }
-
-    fn input_identity(input: &AlternatePlanarOutput) -> [u8; 32] {
-        super::mutation_identity::input_identity(&PlanarMutation {
-            scope_key: input.scope_key.clone(),
-            operation: worth_query_consumer_values::PlanarOperation::VerifyCurrentOutputs(vec![
-                worth_query_consumer_values::PlanarCurrentOutputExpectation {
-                    producer_key: input.scope_key.clone(),
-                    output_key: input.output_key.clone(),
-                },
-            ]),
-            validator_work: 0,
-        })
-    }
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -175,10 +158,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         if let Err(error) = writer.write_field(&anchor, PositionY::reference(), y) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
-        match writer.preserve_output(
-            WorthQueryApplicationOutputRole::from_static("anchor"),
-            &anchor,
-        ) {
+        match writer.preserve_output::<PlanarAnchorOutput<Schema>>(&anchor) {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
                 changed_vertices: 0,
             }),
@@ -222,12 +202,16 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type Provider = AlternatePlanarOutputProvider;
 
     const IDENTITY: &'static str = "worth.query.certification.alternate-planar-producer.v1";
-    const OUTPUT_ROLE: &'static str = "anchor";
+    type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] =
         &[ALTERNATE_OUTPUT_APPLICABILITY];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "manual-certification-only";
     const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
 }
 
 pub(crate) fn declare_alternate_output<Schema: TopologySchemaBinding>(

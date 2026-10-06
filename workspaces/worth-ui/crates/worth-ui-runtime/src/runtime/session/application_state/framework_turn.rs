@@ -13,6 +13,8 @@ pub(crate) struct WorthUiApplicationFrameworkTurnCompletion<'session> {
     completion: WorthUiFrameworkTurnCompletion<'session>,
     capabilities: &'session CapabilitySnapshot,
     intent_catalog: &'session crate::declaration::UiIntentCatalog,
+    intent_execution_bindings:
+        &'session crate::runtime::intent_execution::FrozenIntentExecutionBindings,
     consumed_facts: &'session crate::graph::UiGraphConsumedFactIndex,
 }
 
@@ -26,6 +28,7 @@ impl WorthUiApplicationSessionState {
         let graph = self.app.graph();
         let capabilities = self.app.capabilities();
         let intent_catalog = self.app.prepared_authority().intent_catalog();
+        let intent_execution_bindings = self.app.prepared_authority().intent_execution_bindings();
         let consumed_facts = self.app.prepared_authority().consumed_fact_index();
         let active_plan_digest = self.runtime.active.active_plan_ref().digest().as_u64();
         let completion = self.runtime.execute_framework_turn(collect_sources);
@@ -37,6 +40,7 @@ impl WorthUiApplicationSessionState {
             completion,
             capabilities,
             intent_catalog,
+            intent_execution_bindings,
             consumed_facts,
         }
     }
@@ -63,6 +67,7 @@ impl<'session> WorthUiApplicationFrameworkTurnCompletion<'session> {
         WorthUiFrameworkTurnCompletion<'session>,
         &'session CapabilitySnapshot,
         &'session crate::declaration::UiIntentCatalog,
+        &'session crate::runtime::intent_execution::FrozenIntentExecutionBindings,
         &'session crate::graph::UiGraphConsumedFactIndex,
     ) {
         (
@@ -73,6 +78,7 @@ impl<'session> WorthUiApplicationFrameworkTurnCompletion<'session> {
             self.completion,
             self.capabilities,
             self.intent_catalog,
+            self.intent_execution_bindings,
             self.consumed_facts,
         )
     }

@@ -9,8 +9,11 @@ use crate::runtime::{
 use std::collections::BTreeMap;
 
 use super::consumer_delivery::current_shared_consumer_delivery_authority;
-use super::primary_runtime::coalesced_plan;
+use super::primary_runtime::{
+    coalesced_plan, full_scope_plan, prepare_covered_projection_maintenance,
+};
 use super::{WorthQueryMaintenanceScope, WorthQueryMaintenanceStrategy};
+use worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationCoverage;
 
 #[path = "shared_primary/consumer_set.rs"]
 mod consumer_set;
@@ -132,6 +135,7 @@ pub struct WorthQueryPreparedSharedPrimaryGranularMaintenance {
     plan: super::primary_runtime::WorthQueryCoalescedMaintenancePlan,
     impacts: Vec<crate::domain_installation::WorthQueryAdmittedInvalidationImpact>,
     admission_counters: crate::domain_installation::WorthQueryGranularAdmissionCounters,
+    coverage: WorthQueryGranularInvalidationCoverage,
 }
 
 pub enum WorthQuerySharedPrimaryGranularSelectionOutcome {
@@ -200,13 +204,23 @@ pub fn prepare_shared_primary_runtime_granular_batch<
     }
     let admitted = admit_primary_runtime_granular_batch(first.snapshot(), binding, batch)
         .map_err(WorthQuerySharedPrimaryGranularMaintenanceDenial::Admission)?;
-    if admitted.is_empty() {
+    let coverage = admitted.coverage();
+    if admitted.is_empty() && coverage == WorthQueryGranularInvalidationCoverage::Exact {
         return Ok(WorthQuerySharedPrimaryGranularSelectionOutcome::NoRelevantChange);
     }
     let admission_counters = admitted.admission_counters();
     let (impacts, _, source_read_basis) = admitted.into_parts();
-    let plan = coalesced_plan(&impacts, source_read_basis)
-        .ok_or(WorthQuerySharedPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?;
+    let plan = match coverage {
+        // Incomplete impacts: refresh the owner's full scope instead.
+        WorthQueryGranularInvalidationCoverage::RefreshAll => full_scope_plan(
+            source_read_basis,
+            WorthQueryMaintenanceStrategy::LocalProjectionPatch,
+        ),
+        WorthQueryGranularInvalidationCoverage::Exact => {
+            coalesced_plan(&impacts, source_read_basis)
+                .ok_or(WorthQuerySharedPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?
+        }
+    };
     let owner = first.owner_identity();
     let selected_consumers = admitted_consumer_set(consumers, owner, workspace)?;
     Ok(WorthQuerySharedPrimaryGranularSelectionOutcome::Prepared(
@@ -216,6 +230,7 @@ pub fn prepare_shared_primary_runtime_granular_batch<
             plan,
             impacts,
             admission_counters,
+            coverage,
         },
     ))
 }
@@ -246,6 +261,7 @@ pub fn perform_prepared_shared_primary_runtime_granular_maintenance<
         plan,
         impacts,
         admission_counters,
+        coverage,
     } = prepared;
     let current_consumers = admitted_consumer_set(consumers, owner, workspace)?;
     if !current_consumers.keys().all(|lease| {
@@ -279,7 +295,8 @@ pub fn perform_prepared_shared_primary_runtime_granular_maintenance<
         .map(crate::domain_installation::WorthQueryAdmittedInvalidationImpact::observation)
         .collect::<Vec<_>>();
     let maintenance_owner = format!("shared-primary:{}", owner.slot());
-    let projection = super::prepare_projection_maintenance(
+    let full_scope = coverage == WorthQueryGranularInvalidationCoverage::RefreshAll;
+    let (projection, maintained_impacts) = prepare_covered_projection_maintenance(
         workspace,
         super::WorthQueryProjectionMaintenanceRequest {
             owner: &maintenance_owner,
@@ -288,21 +305,28 @@ pub fn perform_prepared_shared_primary_runtime_granular_maintenance<
             current: first.snapshot(),
             refresh: &refresh,
         },
+        full_scope,
     );
     let derived = super::derive_performed_maintenance_effect(
         &plan,
-        &impacts,
+        maintained_impacts,
         first.snapshot(),
         &refresh,
         None,
         projection,
     )
-    .map_err(WorthQuerySharedPrimaryGranularMaintenanceDenial::Maintenance)?
-    .ok_or(
-        WorthQuerySharedPrimaryGranularMaintenanceDenial::Maintenance(
-            super::WorthQueryMaintenanceDenial::PerformedEffectUnavailable,
-        ),
-    )?;
+    .map_err(WorthQuerySharedPrimaryGranularMaintenanceDenial::Maintenance)?;
+    let Some(derived) = derived else {
+        // Only a full-scope refresh may find nothing changed.
+        use super::WorthQueryMaintenanceDenial::PerformedEffectUnavailable as Unavailable;
+        let denied = WorthQuerySharedPrimaryGranularMaintenanceDenial::Maintenance(Unavailable);
+        let unchanged = WorthQuerySharedPrimaryGranularMaintenanceOutcome::NoRelevantChange;
+        return if full_scope {
+            Ok(unchanged)
+        } else {
+            Err(denied)
+        };
+    };
     debug_assert!(derived.collection_commit.is_none());
     let effect = derived.effect;
     let mut publications = Vec::new();

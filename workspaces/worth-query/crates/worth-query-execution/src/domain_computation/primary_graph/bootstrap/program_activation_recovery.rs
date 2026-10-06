@@ -21,56 +21,75 @@ pub(in crate::domain_computation::primary_graph) fn recover_program_activation<S
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .map_err(|error| denial(format!("recovered branch basis refused: {error:?}")))?;
-        // Read on main's own root: a version alone would also see a
-        // sibling's later adoption of the same activation record. Recovery
-        // examines the recovered root once, as the unbounded scan it replaces.
-        let records = runtime
+        let branch = runtime
             .read_truth()
             .project_observation(&basis.observation())
-            .map_err(|error| denial(format!("recovered branch is unreadable: {error:?}")))?
-            .bounded_entities_of_kind(layout.entity_kind, usize::MAX)
-            .map_err(|_| denial("recovered program activation scan exceeded its bound"))?
-            .into_records();
-        let [record] = records.as_slice() else {
-            return Err(denial(format!(
-                "recovered branch contains {} program activation records, expected one",
-                records.len()
-            )));
-        };
-        let state = record
-            .authoritative_aspect_state
-            .as_ref()
-            .ok_or_else(|| denial("recovered program activation has no authoritative state"))?;
-        let value = state
-            .get(layout.program_revision_locator.aspect().aspect_key())
-            .ok_or_else(|| denial("recovered program activation has no revision aspect"))?;
-        let ContractValidatedAspectValueView::Struct(fields) = value.view() else {
-            return Err(denial(
-                "recovered program activation has foreign aspect shape",
-            ));
-        };
-        let field = layout
-            .program_revision_locator
-            .field_path()
-            .fields()
-            .first()
-            .ok_or_else(|| denial("program activation layout has no revision field"))?;
-        let rendering = fields
-            .get(field)
-            .ok_or_else(|| denial("recovered program activation has no revision"))?;
-        if !roster
-            .entries()
-            .iter()
-            .any(|entry| program_revision_rendering(entry.revision()) == *rendering)
-        {
-            return Err(denial(
-                "recovered program activation is not in the admitted roster",
-            ));
-        }
-        Ok(record.entity_id)
+            .map_err(|error| denial(format!("recovered branch is unreadable: {error:?}")))?;
+        read_activation(
+            &branch,
+            &layout,
+            usize::MAX,
+            "recovered program activation is not in the admitted roster",
+            |rendering| {
+                roster
+                    .entries()
+                    .iter()
+                    .any(|entry| program_revision_rendering(entry.revision()) == *rendering)
+            },
+        )
+        .map(|(identity, _)| identity)
     })?;
     cell.publish(identity)
         .map_err(|_| denial("recovered program activation was already published"))
+}
+
+/// Reads the activation on the caller's exact branch view, with native scan accounting.
+pub(super) fn read_activation(
+    branch: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    layout: &super::super::schema_layout::WorthQueryProgramActivationLayout,
+    maximum_work_units: usize,
+    mismatch_subject: &str,
+    accepts: impl FnOnce(&worth_foundational::facade::AspectValue) -> bool,
+) -> Result<
+    (worth_relational::facade::identity::EntityId, usize),
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
+    let read = branch
+        .bounded_entities_of_kind(layout.entity_kind, maximum_work_units)
+        .map_err(|_| denial("recovered program activation scan exceeded its bound"))?;
+    let work = read.work_units();
+    let records = read.into_records();
+    let [record] = records.as_slice() else {
+        return Err(denial(format!(
+            "recovered branch contains {} program activation records, expected one",
+            records.len()
+        )));
+    };
+    let state = record
+        .authoritative_aspect_state
+        .as_ref()
+        .ok_or_else(|| denial("recovered program activation has no authoritative state"))?;
+    let value = state
+        .get(layout.program_revision_locator.aspect().aspect_key())
+        .ok_or_else(|| denial("recovered program activation has no revision aspect"))?;
+    let ContractValidatedAspectValueView::Struct(fields) = value.view() else {
+        return Err(denial(
+            "recovered program activation has foreign aspect shape",
+        ));
+    };
+    let field = layout
+        .program_revision_locator
+        .field_path()
+        .fields()
+        .first()
+        .ok_or_else(|| denial("program activation layout has no revision field"))?;
+    let rendering = fields
+        .get(field)
+        .ok_or_else(|| denial("recovered program activation has no revision"))?;
+    if !accepts(rendering) {
+        return Err(denial(mismatch_subject));
+    }
+    Ok((record.entity_id, work))
 }
 
 fn denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {

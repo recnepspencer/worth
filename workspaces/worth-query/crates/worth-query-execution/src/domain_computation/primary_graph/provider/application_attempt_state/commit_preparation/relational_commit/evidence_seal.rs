@@ -1,6 +1,8 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
 mod postcommit_currentness;
+pub(in crate::domain_computation::primary_graph::provider) use postcommit_currentness::PreparedSourceFactRebase;
+pub(in crate::domain_computation::primary_graph) use postcommit_currentness::RebaseVerificationReason;
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{
@@ -26,27 +28,31 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
     operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
-    observed_source_facts: std::sync::Arc<
-        [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
-    >,
+    observed_source_facts: postcommit_currentness::RebasedSourceFacts,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
     counters: WorthQueryPrimaryMutationWorkCounters,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
-    changed_records: Vec<worth_relational::facade::transactions::RecordRef>,
+    touched_records:
+        std::sync::Arc<crate::domain_computation::primary_graph::provider::RetainedTouchedRecords>,
     preimage: WorthQueryPreImageRetentionWork,
 }
 
 pub(super) fn seal(
     provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
-    committed: &WorthQueryCommittedApplicationSession,
-) -> WorthQueryPrimaryGraphCommitEvidence {
+    committed: &mut WorthQueryCommittedApplicationSession,
+) -> (
+    WorthQueryPrimaryGraphCommitEvidence,
+    Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+){
+    let prepared_touched_records = committed.take_prepared_touched_records();
+    let touched_records = prepared_touched_records.fill(&committed.committed().changed_records);
     let mutation_work =
         WorthQueryPrimaryMutationWorkEvidence::from_commit_seal(WorthQueryMutationWorkCommitSeal {
             counters: committed.work(),
             index_maintenance_work: committed.index_maintenance_work(),
-            changed_records: committed.committed().changed_records.clone(),
+            touched_records,
             preimage: committed.preimage_retention_work(),
         });
     let committed_dispatch_outbox = WorthQueryCommittedDispatchOutboxResolution::from_commit(
@@ -56,24 +62,32 @@ pub(super) fn seal(
     let output_correspondence = committed
         .attempt()
         .seal_output_correspondence(committed.committed());
+    let prepared_rebase = committed.take_source_fact_rebase();
+    let mut source_fact_admission = committed.take_source_fact_admission();
+    let producer_output = committed
+        .attempt()
+        .idempotency()
+        .producer_dependency_identity()
+        .is_some();
     let observed_source_facts = provider.graph.with_runtime(|runtime| {
-        postcommit_currentness::rebase(
+        postcommit_currentness::rebase_output(
             runtime,
             &committed.committed().snapshot,
-            committed.attempt().observed_source_facts(),
-            committed
-                .attempt()
-                .idempotency()
-                .producer_dependency_identity()
-                .is_some(),
-            committed
-                .attempt()
-                .validator_work_admission()
-                .maximum_work()
-                .unwrap_or(0),
+            prepared_rebase,
+            &output_correspondence,
+            &committed.committed().changed_records,
+            producer_output,
+            committed.attempt().indexed_rebase_work_budget(),
+            source_fact_admission.as_mut(),
         )
     });
-    WorthQueryPrimaryGraphCommitEvidence {
+    #[cfg(feature = "test-primary-graph-faults")]
+    let observed_source_facts = if producer_output && provider.take_unsealed_producer_settlement() {
+        observed_source_facts.held_for_verification()
+    } else {
+        observed_source_facts
+    };
+    let evidence = WorthQueryPrimaryGraphCommitEvidence {
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
         commit: committed.committed().envelope().commit.clone(),
@@ -84,7 +98,8 @@ pub(super) fn seal(
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
         observed_source_facts,
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
-    }
+    };
+    (evidence, source_fact_admission)
 }
 
 impl WorthQueryMutationWorkCommitSeal {
@@ -93,13 +108,13 @@ impl WorthQueryMutationWorkCommitSeal {
     ) -> (
         WorthQueryPrimaryMutationWorkCounters,
         worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
-        Vec<worth_relational::facade::transactions::RecordRef>,
+        std::sync::Arc<crate::domain_computation::primary_graph::provider::RetainedTouchedRecords>,
         WorthQueryPreImageRetentionWork,
     ) {
         (
             self.counters,
             self.index_maintenance_work,
-            self.changed_records,
+            self.touched_records,
             self.preimage,
         )
     }
@@ -172,9 +187,30 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub(in crate::domain_computation::primary_graph) fn retain_observed_source_facts(
         &self,
-    ) -> std::sync::Arc<
+    ) -> Option<std::sync::Arc<
         [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
-    >{
-        std::sync::Arc::clone(&self.observed_source_facts)
+    >>{
+        self.observed_source_facts.retain_exact()
+    }
+
+    /// Ordinals of the retained source facts the committed effect itself moved.
+    pub(in crate::domain_computation::primary_graph) fn source_facts_superseded_by_own_effect(
+        &self,
+    ) -> &[usize] {
+        self.observed_source_facts.superseded_by_own_effect()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_verification_source_facts(
+        &self,
+    ) -> Option<std::sync::Arc<
+        [crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact],
+    >>{
+        self.observed_source_facts.retain_verification_facts()
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn source_fact_verification_requirement(
+        &self,
+    ) -> Option<RebaseVerificationReason> {
+        self.observed_source_facts.verification_requirement()
     }
 }

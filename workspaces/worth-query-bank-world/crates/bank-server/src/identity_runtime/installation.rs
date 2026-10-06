@@ -1,6 +1,6 @@
 use bank_domain::{
     model::BankPrincipalId,
-    queries::PaymentDetailQueryBinding,
+    queries::{PaymentAmountQueryBinding, PaymentDetailQueryBinding},
     schema::{
         ApprovePayment, ApprovePaymentMutationBinding, ApprovedBusinessPaymentAdvance,
         ApprovedBusinessPaymentAdvanceOperation, ApprovedBusinessPaymentApproval,
@@ -34,7 +34,9 @@ use worth_query_host::facade::{
 
 use super::{BankGraphSeed, BankIdentityRuntime};
 use crate::{
-    application_definition::{validated_bank_application, validated_bank_application_p1},
+    application_definition::{
+        validated_bank_application, validated_bank_application_p1, validated_bank_application_p2,
+    },
     approval_authentication::install_approval_authentication,
     error::BankIdentityRuntimeBuildError,
     graph_bootstrap::bind_bank_world_with_estate,
@@ -66,6 +68,8 @@ pub(super) fn install_prepared(
         .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
     let successor = validated_bank_application_p1()
         .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
+    let successor_p2 = validated_bank_application_p2()
+        .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
     let declaration =
         BankSchema::declaration().map_err(BankIdentityRuntimeBuildError::SchemaDeclaration)?;
     let limits = bank_application_limits();
@@ -81,7 +85,9 @@ pub(super) fn install_prepared(
     let runtime = match authorization_time {
         BankAuthorizationTimeInstallation::System => in_memory_rostered_program(
             program,
-            WorthQueryApplicationProgramRoster::new().support(successor),
+            WorthQueryApplicationProgramRoster::new()
+                .support(successor)
+                .support(successor_p2),
             declaration,
             ((), (), ()),
             limits,
@@ -90,7 +96,9 @@ pub(super) fn install_prepared(
         BankAuthorizationTimeInstallation::Installed(source) => {
             in_memory_rostered_program_with_authorization_time_source(
                 program,
-                WorthQueryApplicationProgramRoster::new().support(successor),
+                WorthQueryApplicationProgramRoster::new()
+                    .support(successor)
+                    .support(successor_p2),
                 declaration,
                 ((), (), ()),
                 limits,
@@ -122,6 +130,8 @@ pub(super) fn install_prepared(
     .operation::<ApprovePaymentMutationBinding>()
     .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
     .assessment::<PaymentDetailQueryBinding>()
+    .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
+    .condition_operand::<PaymentAmountQueryBinding>()
     .map_err(BankIdentityRuntimeBuildError::WorkflowInstallation)?
     .approval::<
         ApprovedBusinessPaymentApproval,

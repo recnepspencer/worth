@@ -22,6 +22,20 @@ pub(crate) struct WorthQueryInstalledApplicationMutationCatalog {
 }
 
 impl WorthQueryInstalledApplicationMutationCatalog {
+    pub(crate) fn contains_exact_binding(
+        &self,
+        identity: &str,
+        meaning: &Arc<WorthQueryCompiledApplicationMutationBinding>,
+    ) -> bool {
+        self.bindings
+            .get(identity)
+            .is_some_and(|installed| Arc::ptr_eq(installed, meaning))
+    }
+
+    pub(crate) fn binding_count(&self) -> usize {
+        self.bindings.len()
+    }
+
     pub(crate) fn get_binding(
         &self,
         identity: &str,

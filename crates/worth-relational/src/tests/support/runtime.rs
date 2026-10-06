@@ -1,7 +1,44 @@
 use super::*;
 use crate::facade::diagnostics::RelationalDiagnosticsProfile;
+use std::{num::NonZeroUsize, sync::OnceLock};
+use worth_execution::{
+    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionResourceLease,
+    LeaseRequest,
+};
+use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+};
 
 static TEST_STORE_COUNTER: AtomicU64 = AtomicU64::new(0);
+static TEST_EXECUTION_AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
+
+pub(crate) fn test_execution_authority() -> &'static ExecutionAuthority {
+    TEST_EXECUTION_AUTHORITY.get_or_init(|| {
+        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
+            max_workers: NonZeroUsize::new(4).expect("positive test worker count"),
+            charged_memory_bytes: 512 * 1024 * 1024,
+        })
+        .expect("one execution authority for relational lib tests")
+    })
+}
+
+pub(crate) fn test_execution_lease() -> ExecutionResourceLease<'static> {
+    test_execution_authority()
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Automatic,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(
+                    NonZeroUsize::new(4).expect("positive test worker count"),
+                    32 * 1024 * 1024,
+                    1_000_000,
+                ),
+            ),
+            deadline: None,
+            cancellation: CancellationToken::new(),
+        })
+        .expect("test execution lease admitted")
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PerfDiagnosticsPolicy {
@@ -66,16 +103,6 @@ pub(crate) fn runtime_with_declared_aspect_schema_profile(
     RelationalRuntimeApi::builder()
         .profile(profile)
         .schema_registry(declared_aspect_schema_registry(cascade_delete_policy))
-        .build()
-}
-
-pub(crate) fn runtime_with_test_schema_execution_model(
-    execution_model: crate::facade::runtime::RelationalExecutionModel,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(test_schema_registry())
-        .execution_model(execution_model)
         .build()
 }
 

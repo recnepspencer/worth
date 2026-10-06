@@ -3,6 +3,7 @@ pub(crate) struct UiPointerAffordanceObservationOwners<'owner> {
     pub(crate) generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pub(crate) mounted: &'owner crate::mounting::WorthUiMountedSessionState,
     pub(crate) application_facts: &'owner crate::runtime::intent::UiIntentApplicationFactState,
+    pub(crate) expressions: &'owner crate::runtime::expression::UiExpressionRuntimeState,
     pub(crate) occupancy: &'owner crate::runtime::intent::UiIntentOccupancyState,
     pub(crate) confirmation: &'owner crate::runtime::intent::UiIntentConfirmationState,
     pub(crate) interaction: &'owner crate::runtime::interaction::UiInteractionRuntimeState,
@@ -63,13 +64,20 @@ impl<'owner> UiPointerAffordanceObservationCloseInput<'owner> {
             |target| {
                 crate::runtime::intent::observe_activation_operability(
                     target,
-                    self.catalog,
-                    self.definitions,
-                    self.bindings,
-                    &owners.generation,
-                    owners.mounted,
-                    owners.application_facts,
-                    owners.occupancy,
+                    crate::runtime::intent::UiIntentOperabilityReadOwners {
+                        authority: crate::runtime::intent::UiIntentOperabilityAuthority {
+                            catalog: self.catalog,
+                            definitions: self.definitions,
+                            execution_bindings: self.bindings,
+                            occupancy: owners.occupancy,
+                        },
+                        generation: &owners.generation,
+                        inputs: crate::runtime::intent::UiIntentInputOwners {
+                            mounted: owners.mounted,
+                            application_facts: owners.application_facts,
+                            expressions: owners.expressions,
+                        },
+                    },
                     owners.confirmation,
                     host_time,
                 )

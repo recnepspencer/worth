@@ -28,3 +28,44 @@ fn nested_work_limits_preserve_consumption_and_restore_ceilings_on_error_and_unw
     work.reserve_visits(6).unwrap();
     assert!(work.visit().is_err());
 }
+
+#[test]
+fn request_checkpoints_precede_visits_and_preserve_consumption_on_error_and_unwind() {
+    let mut work = RetainedStoragePreparation::new(20);
+    work.reserve_visits(3).unwrap();
+    let mut charged = 0;
+    {
+        let mut checkpoint = |units| {
+            charged += units;
+            if charged > 8 {
+                Err(
+                    super::super::RetainedStoragePreparationDenial::WorkExhausted {
+                        maximum_visits: 8,
+                    },
+                )
+            } else {
+                Ok(())
+            }
+        };
+        let mut observed = work.reborrow_with_checkpoint(&mut checkpoint);
+        observed.reserve_visits(2).unwrap();
+        observed.checkpoint_request_only(5).unwrap();
+        assert!(observed.reserve_visits(2).is_err());
+        assert_eq!(observed.visits(), 5);
+    }
+    assert_eq!(charged, 9);
+    assert_eq!((work.visits(), work.maximum_visits()), (5, 20));
+    let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let mut checkpoint = |units| {
+            charged += units;
+            Ok(())
+        };
+        let mut observed = work.reborrow_with_checkpoint(&mut checkpoint);
+        let mut limited = observed.limit_additional_visits(4);
+        limited.reserve_visits(3).unwrap();
+        panic!("request scope unwind");
+    }));
+    assert!(panic.is_err());
+    assert_eq!(charged, 12);
+    assert_eq!((work.visits(), work.maximum_visits()), (8, 20));
+}

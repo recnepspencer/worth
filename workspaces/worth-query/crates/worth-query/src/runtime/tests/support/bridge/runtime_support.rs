@@ -29,6 +29,15 @@ pub(in crate::runtime::tests) fn test_product_world_resources() -> WorthQueryPro
             },
         },
         WorthQueryProductWorldClock::start(),
+        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
+            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+                1_000_000,
+                64 * 1_024 * 1_024,
+                128 * 1_024 * 1_024,
+                128,
+            ),
+        )
+        .expect("the Query invalidation installation is valid"),
     )
     .expect("the test Product World resources are valid")
 }
@@ -151,7 +160,7 @@ fn complete_test_backend(builder: WorthQueryRuntimeBuilder) -> WorthQueryRuntime
 
 pub(in crate::runtime::tests) fn test_product_runtime_builder() -> WorthQueryRuntimeBuilder {
     let product = test_product_root();
-    WorthQueryRuntime::builder(test_product_world_resources())
+    WorthQueryRuntime::builder(product.resources)
         .runtime_bridge(product.bridge)
         .relational_source_owner(product.source)
         .conditional_execution_resources(WorthQueryConditionalExecutionResources::development())

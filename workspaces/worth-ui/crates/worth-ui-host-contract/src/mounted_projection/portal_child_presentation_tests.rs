@@ -1,11 +1,12 @@
 use crate::{
     UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
     UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
-    UiMountedFrameIdentity, UiMountedHitTestCompletionInput, UiMountedHitTestMechanic,
-    UiMountedHitTestOrder, UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer,
-    UiMountedPortalInputShielding, UiMountedPortalOverlayCompletionInput,
-    UiMountedPortalOverlayLifecyclePosture, UiMountedPortalOverlayMechanic, UiMountedRgba8,
-    UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+    UiMountedFrameIdentity, UiMountedHitTestCompletionDenial, UiMountedHitTestCompletionInput,
+    UiMountedHitTestMechanic, UiMountedHitTestOrder, UiMountedInstanceIdentity,
+    UiMountedNodeReceiptIssuer, UiMountedPortalInputShielding,
+    UiMountedPortalOverlayCompletionInput, UiMountedPortalOverlayLifecyclePosture,
+    UiMountedPortalOverlayMechanic, UiMountedRgba8, UiSemanticSurfaceIdentity,
+    UiSurfaceBindingGeneration,
 };
 
 #[test]
@@ -35,6 +36,7 @@ fn portal_children_translate_clip_raise_and_redigest_from_the_portal_surface() {
             node_receipt: child_receipt,
             bounds: occurrence,
             clip_bounds: occurrence,
+            painted_bounds: None,
             order: UiMountedHitTestOrder::from_runtime_plan(9),
         })
         .unwrap();
@@ -50,6 +52,68 @@ fn portal_children_translate_clip_raise_and_redigest_from_the_portal_surface() {
     assert_eq!(presented_hit.order().rank(), 9);
     assert!(presented_hit.order() < hit.order());
     assert_ne!(presented_hit.semantic_digest(), hit.semantic_digest());
+}
+
+#[test]
+fn a_grid_corrected_painted_box_moves_with_its_row_into_the_portal() {
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
+    let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
+    let child = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let node_receipt = UiMountedNodeReceiptIssuer::mint_for(frame)
+        .unwrap()
+        .receipt_for(child);
+    let space = UiMountedCoordinateSpace::HostSurface;
+    let occurrence = canonical_box(100.0, 178.0, 80.0, 32.0, space);
+    let input = |painted_bounds| UiMountedHitTestCompletionInput {
+        frame,
+        surface,
+        binding,
+        mounted_instance: child,
+        node_receipt,
+        bounds: occurrence,
+        clip_bounds: occurrence,
+        painted_bounds,
+        order: UiMountedHitTestOrder::from_runtime_plan(9),
+    };
+
+    assert_eq!(
+        UiMountedHitTestMechanic::complete_from_runtime_mounting(input(Some(canonical_box(
+            100.0, 177.5, 81.0, 32.0, space,
+        )))),
+        Err(UiMountedHitTestCompletionDenial::PaintedExtentMismatch)
+    );
+    let hit = UiMountedHitTestMechanic::complete_from_runtime_mounting(input(Some(canonical_box(
+        100.0, 177.5, 80.0, 32.0, space,
+    ))))
+    .unwrap();
+    let unmoved = UiMountedHitTestMechanic::complete_from_runtime_mounting(input(None)).unwrap();
+    assert_ne!(hit.semantic_digest(), unmoved.semantic_digest());
+    let at_origin = UiMountedHitTestMechanic::complete_from_runtime_mounting(input(Some(
+        canonical_box(0.0, 0.0, 80.0, 32.0, space),
+    )))
+    .unwrap();
+    assert_ne!(
+        at_origin.semantic_digest(),
+        unmoved.semantic_digest(),
+        "a row painted at the origin is not a row painted where it is hit"
+    );
+
+    let portal = portal(frame, surface, binding);
+    let presented = hit
+        .presented_within_portal(portal, portal.anchor_bounds())
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        presented.painted_bounds(),
+        Some(canonical_box(
+            112.0,
+            217.5,
+            80.0,
+            32.0,
+            UiMountedCoordinateSpace::Viewport
+        ))
+    );
 }
 
 fn portal(

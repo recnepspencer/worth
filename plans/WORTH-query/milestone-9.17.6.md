@@ -5,6 +5,11 @@
 > publication return paths and migrated existing consumers. 9.17.5 supplies exact
 > branch-local program adoption and custody disposition. Neither waits for this
 > milestone's new user-authored definition/instance product.
+> **Replaced rules:** [9.17.6.3](./milestone-9.17.6.3.md) makes the touched graph the
+> invalidation cause. Its marking and currentness rules replace this plan's rules that
+> staleness is never a stored flag, that a source commit performs no workflow
+> invalidation work, that touched sets only narrow delivery, that Phase 2.4 retains
+> outputs by demand-time version comparison, and the "plus D" warm-progression cost.
 
 ## Goal, Entry And Completion
 
@@ -571,17 +576,14 @@ an expired challenge or reuse beyond policy cannot authorize the signature even 
 the same principal and proposal are visible. The admission-owned authentication event,
 not a caller flag or principal expiry, records purpose and issuance in the named clock.
 
-Evidence staleness is never an eagerly stored flag. Admission compares bound native
-dependency and contract versions; changes make only affected coverage stale. An
-ordinary source commit performs zero workflow invalidation work. Unrelated edits
-preserve coverage. Reuse is a checked equivalence result, never an ID/value match.
-
-From Phase 2, coverage also retains negative and set-completeness dependencies:
-"no conflicting member" and "all required members" must notice matching insertions,
-removals and ABA even when no previously returned entity changed. Use native query,
-adjacency or indexed-selection evidence at the smallest sound scope. A wake or touched
-set may narrow delivery; it cannot replace admission's authoritative currentness proof.
-No source commit scans waiting workflows to maintain an eager stale flag.
+Evidence currentness follows the exact-invalidation rules of
+[9.17.6.3 Phase 5](./milestone-9.17.6.3.md#phase-5-exact-invalidation) and the public
+[marking and currentness](../../docs/how-it-works.md#105-marking-and-currentness)
+rules. Changes make only affected coverage stale, unrelated edits preserve it, and
+reuse is a checked equivalence result, never an ID/value match. Coverage also retains
+negative and set-completeness dependencies: "no conflicting member" and "all required
+members" must notice matching insertions, removals and ABA even when no previously
+returned entity changed.
 
 ### Instance progression and linear effect custody
 

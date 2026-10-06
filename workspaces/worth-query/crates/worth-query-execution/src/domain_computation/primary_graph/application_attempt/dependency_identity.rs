@@ -27,7 +27,7 @@ impl<Schema, Operation, Input, Scope>
         >,
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
-        maximum_lineage_work: usize,
+        request_admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
         OutputBinding: 'static,
@@ -49,7 +49,8 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .admission
             .retain_execution_canonical_work(work);
-        let (head, _) = runtime
+        // The lineage head lookup is framework preparation on the request meter.
+        let (head, lookup_work) = runtime
             .primary_provider
             .graph
             .output_lineage
@@ -62,25 +63,38 @@ impl<Schema, Operation, Input, Scope>
                     .admission
                     .source_partition_identity()
                     .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?,
-                maximum_lineage_work,
+                request_admission.remaining_work(),
             )
             .map_err(|()| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
+        request_admission
+            .charge_external_work(lookup_work as u64)
+            .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
         let force_successor = successor_of.is_some_and(|stale_key| {
-            head.is_some_and(|head| head.idempotency_key_identity == stale_key)
+            head.as_ref()
+                .is_some_and(|head| head.idempotency_key_identity == stale_key)
         });
-        if let Some(head) = head {
-            if !force_successor
-                && head.occurrence
-                    == self
-                        .read_set
-                        .lease
-                        .product()
-                        .observation()
-                        .lifecycle_incarnation()
-                && head.dependency_identity == Some(dependency)
-            {
+        let occurrence = self
+            .read_set
+            .lease
+            .product()
+            .observation()
+            .lifecycle_incarnation();
+        if let Some(head) = head.as_ref().filter(|head| head.occurrence == occurrence) {
+            // A head that consumed upstream outputs is replayed only while a
+            // row posts it: that row holds its claims, and a replay publishes
+            // none. A head that consumed none is replayed whenever its
+            // dependencies still match, and its row posts it again.
+            let replays = !force_successor && head.dependency_identity == Some(dependency);
+            let unposted = (head.claims_upstream || !replays)
+                && !runtime
+                    .output_demands
+                    .posts_settlement(&head.settlement, request_admission)
+                    .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
+            if replays && !unposted {
                 return Ok((head.idempotency_key_identity, dependency));
             }
+            // This execution commits as the head's successor. Its record
+            // displaces the head, whose settlement the publication retires.
         }
         let prior_head = head
             .map(|head| head.idempotency_key_identity)

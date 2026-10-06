@@ -18,6 +18,8 @@
 >
 > **Primary architectural driver:** make query planning consume lower-runtime frontier posture and deterministic parallel-admission proofs so serial versus parallel execution remains a plan-owned cost choice with identical canonical query meaning instead of an executor-side heuristic
 >
+> **Successor:** [Milestone 9.17.6.3](./milestone-9.17.6.3.md) executes admitted parallel work on leases from the `worth-execution` authority. Signal stays authoritative for frontier and parallel admission.
+>
 > **Companion docs:**
 > - [MENTALITY.md](../../docs/coding-guidelines/MENTALITY.md)
 > - [arch_laws.md](../../docs/coding-guidelines/arch_laws.md)
