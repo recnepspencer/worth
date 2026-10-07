@@ -29,6 +29,8 @@ mod generated_restoration;
 mod input_cutoff;
 #[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
 mod late_cancellation;
+#[cfg(feature = "test-query-execution-observer")]
+mod parallel_history;
 pub(crate) mod required_chain;
 mod stable_refresh;
 mod support;

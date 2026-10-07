@@ -136,6 +136,60 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
 }
 
 #[test]
+fn an_invalidation_window_past_the_world_history_is_refused_at_installation() {
+    use crate::domain_computation::execution_runtime::product_world::{
+        test_product_world_resources, WorthQueryProductWorldResources,
+    };
+    use crate::domain_computation::execution_runtime::{
+        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
+    };
+    let declaration = IdentityExecutionSchema::declaration().unwrap();
+    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+        "identity_execution_test",
+        1,
+        0,
+    ))
+    .application_schema(declaration.clone())
+    .validate()
+    .unwrap();
+    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+        .admit(package)
+        .unwrap();
+    let installation = WorthQueryExecutionRuntimeInstaller::new()
+        .install(WorthQueryInstallationGeneration::initial(), [admitted])
+        .unwrap();
+    let (runtime, authority) = installation.into_parts();
+    let schema = runtime
+        .installed_packages()
+        .bind_application_schema(declaration)
+        .unwrap();
+    // One rule bounds both windows: invalidation keeps no position the World
+    // no longer keeps a commit for.
+    let (budgets, clock, defaults, execution) = test_product_world_resources().into_parts();
+    let commits = budgets.retained_composite_commits().get();
+    let invalidation =
+        WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
+            maximum_retained_positions: commits + 1,
+            ..defaults.installation()
+        })
+        .unwrap();
+    let resources =
+        WorthQueryProductWorldResources::new(budgets, clock, invalidation, execution.policy);
+    let denial = authority
+        .prepare_primary_graph(&runtime, &schema, resources)
+        .err()
+        .unwrap();
+
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPrimaryGraphInstallationDenialKind::InvalidationWindowExceedsHistory {
+            retained_positions: commits + 1,
+            retained_commits: commits,
+        }
+    );
+}
+
+#[test]
 fn typed_policy_facts_publish_atomically_with_principal_identity() {
     let world = installed_world_with_policy_fact(
         &[("alice", WorthQueryPrincipalMappingStatus::Enabled)],

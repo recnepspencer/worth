@@ -58,10 +58,12 @@ pub use super::application_checkpoint::{
 };
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
+    discarded_computation_retention_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
-    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test,
+    published_partitioned_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest, WorthQueryPartitionedComputationFullCause,
-    WorthQueryPartitionedComputationRun,
+    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
 };
 pub use super::application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,
@@ -334,3 +336,6 @@ pub use crate::domain_computation::{
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
     WorthQueryProductUnpublishedRecovery,
 };
+
+/// Exhaustive translation of a Relational execution refusal.
+pub use super::provider::relational_execution_denial::relational_execution_kind;

@@ -1,7 +1,7 @@
 use super::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
-    RequiredOutputDemandContext, SealedComputationRun,
+    RequiredOutputDemandContext, SealedComputationRetention,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -40,13 +40,20 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation) fn record_completed_handler_facts(
         &mut self,
         boundary: CompletedHandlerFactBoundary,
-        computation: Option<SealedComputationRun>,
+        computation: SealedComputationRetention,
     ) {
         if let Some(context) = &mut self.required_output_demand {
             context.record_completed_handler_facts(boundary, computation);
         } else {
+            #[cfg(feature = "test-query-execution-observer")]
+            crate::domain_computation::primary_graph::observe_discarded(&computation);
             #[cfg(test)]
-            SealedComputationRun::keep_in_test(computation);
+            crate::domain_computation::primary_graph::SealedComputationRun::keep_in_test(
+                match computation {
+                    SealedComputationRetention::Produced(run) => Some(run),
+                    SealedComputationRetention::Absent(_) => None,
+                },
+            );
         }
     }
 

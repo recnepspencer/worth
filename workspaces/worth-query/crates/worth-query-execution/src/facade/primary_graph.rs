@@ -256,3 +256,8 @@ pub use worth_runtime_world::facade::{
     RuntimeWorldServiceDenial, RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
+
+pub use crate::domain_computation::primary_graph::relational_execution_kind;
+pub use crate::domain_computation::{
+    WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
+};

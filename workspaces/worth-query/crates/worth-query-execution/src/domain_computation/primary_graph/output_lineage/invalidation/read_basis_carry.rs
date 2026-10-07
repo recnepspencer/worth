@@ -137,17 +137,16 @@ impl SourceInvalidationOwner {
         &self,
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
-        (mut next, before): (MarkState, u64),
+        (next, before): (MarkState, u64),
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementVerificationStop> {
-        retention::admit_replacement(&mut next, before, &self.resources, admission)?;
-        admission.bytes(
-            index_capacity::arc_bytes::<BranchMarkRoot>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        let root = retention::admit_live_replacement(
+            image.payload(),
+            next,
+            before,
+            &self.resources,
+            admission,
         )?;
-        let mut root = (**image.payload()).clone();
-        root.current = Arc::new(next);
-        retention::admit_root(&mut root, None, &self.resources, admission)?;
         let prepared = self
             .prepare_root_replacement(cell, image, Arc::new(root), admission)
             .map_err(SettlementVerificationStop::from)?;

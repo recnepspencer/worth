@@ -153,56 +153,22 @@ where
             RequiredWaveStep::Current(settlement) => {
                 drop(slot);
                 runtime.output_demands.clear_required_stop(selected.key());
-                if stack.frames.is_empty() && !queue.active() {
-                    // A Clean caller with no successor only resets its contact
-                    // scalar. The real demand/continuation transfer is paid
-                    // inside promotion after its exact successor joins.
-                    admission
-                        .charge_external_work(5)
-                        .map_err(|_| work_denial())?;
-                    if let Some(mut successor) = demand
-                        .required_continuations
-                        .promote_caller_successor::<Family>(
-                            &runtime.output_demands,
-                            &wave.caller_ready,
-                            selected,
-                            current_role == FrameRole::CallerSuccessor,
-                            &demand.selected.identity,
-                            commit_authority,
-                            installed_edition,
-                            admission,
-                        )?
-                    {
-                        // The newly admitted typed C demand has an empty
-                        // continuation owner. Move the caller's A/B custody
-                        // before its predecessor demand can be destroyed.
-                        successor.required_continuations = demand.required_continuations.take_all();
-                        *demand = successor;
-                        let successor_interest = demand
-                            .interest
-                            .as_ref()
-                            .expect("promoted required successor retains its Interest");
-                        runtime.output_demands.finish_settlement_admitted(
-                            successor_interest,
-                            selected,
-                            admission,
-                        )?;
-                        demand.producer_contacts_in_this_demand = 0;
-                        finish_caller!('required, WorthQueryOutputDemandAdvance::Settled(settlement))
-                    }
-                    if current.is_none() {
-                        let caller_interest = demand
-                            .interest
-                            .as_ref()
-                            .expect("caller Ready retains its Interest");
-                        runtime.output_demands.finish_settlement_admitted(
-                            caller_interest,
-                            selected,
-                            admission,
-                        )?;
-                        demand.producer_contacts_in_this_demand = 0;
-                        finish_caller!('required, WorthQueryOutputDemandAdvance::Settled(settlement))
-                    }
+                if stack.frames.is_empty()
+                    && !queue.active()
+                    && super::caller_settlement::settle_selected_caller(
+                        runtime,
+                        demand,
+                        &wave,
+                        selected,
+                        current_role == FrameRole::CallerSuccessor,
+                        current.is_none(),
+                        current_contacts,
+                        commit_authority,
+                        installed_edition,
+                        admission,
+                    )?
+                {
+                    finish_caller!('required, WorthQueryOutputDemandAdvance::Settled(settlement))
                 }
                 if current.is_some() {
                     // Admit the reached frame transfer before moving its pin.
@@ -297,7 +263,16 @@ where
                         runtime
                             .output_demands
                             .clear_required_stop(successor.interest().key());
-                        current_contacts = successor.producer_contacts();
+                        let prior_contacts = if successor_role == FrameRole::CallerSuccessor {
+                            if current_role == FrameRole::CallerSuccessor {
+                                current_contacts
+                            } else {
+                                demand.producer_contacts_in_this_demand
+                            }
+                        } else {
+                            0
+                        };
+                        current_contacts = prior_contacts + successor.producer_contacts();
                         if committed_ready(&ready, admission)? {
                             wave = reselect_required_wave(runtime, wave, admission)?;
                             resolved_on_wave.clear();

@@ -1,3 +1,7 @@
+#[path = "fixture/own_write_computation.rs"]
+pub(in crate::domain_computation::primary_graph) mod own_write_computation;
+#[path = "fixture/retained_output_capacity.rs"]
+pub(in crate::domain_computation::primary_graph) mod retained_output_capacity;
 use std::time::{Duration, Instant};
 
 #[path = "fixture/authentication.rs"]

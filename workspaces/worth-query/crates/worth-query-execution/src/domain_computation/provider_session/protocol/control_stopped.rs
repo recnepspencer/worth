@@ -1,5 +1,6 @@
 use super::{WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionProtocolStage};
 
+/// The request control condition that stopped provider execution before publication.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionControlStopKind {
     Cancelled,
@@ -12,6 +13,7 @@ pub struct WorthQueryProviderSessionCommitControlStopped {
     stage: WorthQueryProviderSessionProtocolStage,
     detail: String,
     counters: WorthQueryProviderSessionProtocolCounters,
+    execution_preparation: bool,
 }
 
 impl WorthQueryProviderSessionCommitControlStopped {
@@ -24,7 +26,22 @@ impl WorthQueryProviderSessionCommitControlStopped {
             stage: WorthQueryProviderSessionProtocolStage::Commit,
             detail: detail.into(),
             counters: WorthQueryProviderSessionProtocolCounters::default(),
+            execution_preparation: false,
         }
+    }
+
+    pub(in crate::domain_computation) fn execution_preparation(
+        kind: WorthQueryProviderSessionControlStopKind,
+        detail: impl Into<String>,
+    ) -> Self {
+        Self {
+            execution_preparation: true,
+            ..Self::new(kind, detail)
+        }
+    }
+
+    pub(in crate::domain_computation) const fn is_execution_preparation(&self) -> bool {
+        self.execution_preparation
     }
 
     pub const fn kind(&self) -> WorthQueryProviderSessionControlStopKind {

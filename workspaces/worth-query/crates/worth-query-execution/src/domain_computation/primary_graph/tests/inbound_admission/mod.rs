@@ -4,6 +4,7 @@ mod cleanup_tests;
 mod compact_transport_message_tests;
 mod cost_tests;
 mod delivery_tests;
+mod execution_refusals;
 mod fixture;
 mod head_tests;
 mod operation_binding_tests;

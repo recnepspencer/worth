@@ -79,6 +79,8 @@ pub(in crate::http::server) async fn receive(
                 &result,
                 Err(WorthQueryInboundAdmissionDenial::RetryBeforeAcceptance
                     | WorthQueryInboundAdmissionDenial::PublicationRetryRequired
+                    | WorthQueryInboundAdmissionDenial::PublicationExecutionDenied { .. }
+                    | WorthQueryInboundAdmissionDenial::PublicationExecutionControlStopped { .. }
                     | WorthQueryInboundAdmissionDenial::RecoveryUnavailable
                     | WorthQueryInboundAdmissionDenial::RecoveryStaleProduct
                     | WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)
@@ -108,6 +110,8 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
         | Denial::TerminalCleanupUnavailable
         | Denial::PublicationInProgress
         | Denial::PublicationRetryRequired
+        | Denial::PublicationExecutionDenied { .. }
+        | Denial::PublicationExecutionControlStopped { .. }
         | Denial::RecoveryStaleProduct
         | Denial::RecoveryUnavailable
         | Denial::SourceRevoked => StatusCode::SERVICE_UNAVAILABLE,

@@ -4,6 +4,7 @@
 use super::*;
 #[cfg(not(feature = "certification-invalidation-equivalence"))]
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 use crate::domain_computation::primary_graph::{
     invariant_projection::{ConsumedOutputEvidence, ConsumedOutputVerificationStop},
     output_lineage::{
@@ -116,7 +117,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert_eq!(
             ConsumedOutputEvidence::verify_candidate_with_admission(
                 &a0,
-                std::slice::from_ref(&old_a_fact),
+                &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([old_a_fact.clone()])).for_comparison().unwrap(),
                 &[],
                 None,
                 &before,
@@ -154,7 +155,10 @@ fn register_alias(
             SettlementRegistration {
                 work_membership: None,
                 identity: Arc::clone(successor),
-                facts: Arc::from([field_fact(runtime, handle, entity, locator)]),
+                facts: RetainedSourceFacts::for_test(
+                    false,
+                    Arc::from([field_fact(runtime, handle, entity, locator)]),
+                ),
                 output_facts: None,
                 read_basis: selected.clone(),
                 stale_at_read_basis: OrdSet::new(),
@@ -196,7 +200,12 @@ fn assert_source_only_alias_verification(
 ) {
     let verified = ConsumedOutputEvidence::verify_candidate_with_admission(
         old_identity,
-        std::slice::from_ref(old_fact),
+        &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(
+            false,
+            Arc::from([old_fact.clone()]),
+        )
+        .for_comparison()
+        .unwrap(),
         &[],
         None,
         observed,

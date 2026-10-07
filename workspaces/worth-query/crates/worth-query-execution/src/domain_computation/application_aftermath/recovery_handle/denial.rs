@@ -32,6 +32,16 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     /// returned; once the publication resolves, retry answers
     /// [`Self::AlreadyCompleted`].
     CompletionPublicationPending,
+    /// Publication remains pending with the execution owner's exact refusal.
+    CompletionExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    /// Publication remains pending after the execution owner's control stop.
+    CompletionExecutionControlStopped {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
     /// The terminal completion index cannot answer for this effect, so no
     /// attempt is admitted and the live handle is returned. It answers again
     /// once a pending completion publication resolves or the index is repaired.

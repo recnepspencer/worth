@@ -59,28 +59,36 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputDemand<Schema>
 
 const PRODUCER: &str = "worth.query.certification.region-output-producer.v1";
 
-pub(super) struct RegionOutputProducer<Schema>(PhantomData<fn() -> Schema>);
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
-    for RegionOutputProducer<Schema>
+pub(super) struct RegionOutputProducer<Schema, const REUSE: bool = false, const MODE: u8 = 0>(
+    PhantomData<fn() -> Schema>,
+);
+impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
+    WorthQueryApplicationProducerBinding<Schema> for RegionOutputProducer<Schema, REUSE, MODE>
 {
     type Operation = RegionOutputBinding<Schema>;
     type OutputFamily = RegionOutputFamily;
-    type Provider = RegionOutputProvider;
+    type Provider = RegionOutputProvider<MODE>;
     const IDENTITY: &'static str = PRODUCER;
     type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
-    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = if REUSE {
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            application_contribution::WorthQueryDecisionContextDependencies::NONE,
+        ))
+    } else {
+        None
+    };
 }
 
 /// The scope's ordinate names the set its output totals: an even ordinate
 /// the even set, an odd one the odd set.
-pub(super) struct RegionOutputProvider;
-impl<Schema: TopologySchemaBinding>
-    WorthQueryApplicationProducerProvider<Schema, RegionOutputProducer<Schema>>
-    for RegionOutputProvider
+pub(super) struct RegionOutputProvider<const MODE: u8 = 0>;
+impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
+    WorthQueryApplicationProducerProvider<Schema, RegionOutputProducer<Schema, REUSE, MODE>>
+    for RegionOutputProvider<MODE>
 {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.region-output-provider.v1";
     fn operation_input(&self, source: &PlanarReadResult) -> RegionOutputInput {
@@ -98,7 +106,16 @@ impl<Schema: TopologySchemaBinding>
         planar_source_key(identity) ^ 0x9176_3c0b
     }
     fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        planar_producer_resources()
+        if MODE == 1 {
+            // The wide-key decision may disclose every declared Native fact.
+            // Reserve its finite projection bound, including own-write rebasing.
+            WorthQueryProducerDemandResources::new(
+                4096,
+                super::region_output::DECISION_FACT_BUDGET * 512,
+            )
+        } else {
+            planar_producer_resources()
+        }
     }
 }
 
@@ -114,9 +131,13 @@ worth_query_host::facade::worth_query_conditional_node!(
     RegionOutputReadinessFamily => operation "region-output-ready"
 );
 
-pub(super) struct RegionOutputReadiness<Schema>(PhantomData<fn() -> Schema>);
+pub(super) struct RegionOutputReadiness<Schema, const REUSE: bool = false, const MODE: u8 = 0>(
+    PhantomData<fn() -> Schema>,
+);
 
-impl<Schema: TopologySchemaBinding> RegionOutputReadiness<Schema> {
+impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
+    RegionOutputReadiness<Schema, REUSE, MODE>
+{
     fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
         Schema,
         TotalRegionOutput,
@@ -132,9 +153,9 @@ impl<Schema: TopologySchemaBinding> RegionOutputReadiness<Schema> {
     }
 }
 
-impl<Schema: TopologySchemaBinding>
+impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
     application_contribution::WorthQueryApplicationConditionalBinding<Schema>
-    for RegionOutputReadiness<Schema>
+    for RegionOutputReadiness<Schema, REUSE, MODE>
 {
     type Configuration = ();
     type Installed = ();
@@ -167,7 +188,9 @@ impl<Schema: TopologySchemaBinding>
             .bind_node(RegionOutputReadyNode::reference())
             .unwrap();
         installation
-            .bind_output_readiness::<RegionOutputProducer<Schema>, _, _, _, _, _, _>(node, 0)
+            .bind_output_readiness::<RegionOutputProducer<Schema, REUSE, MODE>, _, _, _, _, _, _>(
+                node, 0,
+            )
     }
 }
 

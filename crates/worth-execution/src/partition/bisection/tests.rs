@@ -1,14 +1,13 @@
 use worth_foundational::PartitionIdentity;
 
 use super::{Bisection, BisectionDenial, WeightedItem};
-use crate::partition::{PartitionItemId, SourceFactId};
+use crate::partition::PartitionItemId;
 
 #[test]
 fn exhausted_cut_path_denial_preserves_retained_tree_routes_and_items() {
     let mut bisection = Bisection::new(1, 0).unwrap();
     let first = WeightedItem {
         item: PartitionItemId(1),
-        source_fact: SourceFactId(11),
         weight: 1,
     };
     bisection.upsert_item(first).unwrap();
@@ -24,7 +23,6 @@ fn exhausted_cut_path_denial_preserves_retained_tree_routes_and_items() {
     let before_route = bisection.route(first.item);
     let second = WeightedItem {
         item: PartitionItemId(2),
-        source_fact: SourceFactId(12),
         weight: 1,
     };
     assert_eq!(

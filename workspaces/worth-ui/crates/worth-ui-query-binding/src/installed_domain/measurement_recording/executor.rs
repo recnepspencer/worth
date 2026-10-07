@@ -29,15 +29,14 @@ impl
         crate::installed_domain::execution_resources::operation_execution_resource_support()
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (input, _computed, context, workspace) = application.into_parts();
         match context.stage().identity() {
             IDENTIFY_STAGE => identify(input),
             RECORD_STAGE => record(input, context, workspace),

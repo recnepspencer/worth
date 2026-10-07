@@ -4,9 +4,8 @@ use crate::live::LiveQueryPlan;
 
 use super::{
     BundleResolvedBasisDigest, FrontierBreadthPrediction, FrontierComplexityContract,
-    FrontierDisjointnessClass, FrontierPerformanceStatus, FrontierPlanFamily,
-    FrontierPlanningCounters, FrontierPlanningReport, FrontierPredictionDriftOutcome,
-    PlannedWorkPacketSet,
+    FrontierPerformanceStatus, FrontierPlanFamily, FrontierPlanningCounters,
+    FrontierPlanningReport, FrontierPredictionDriftOutcome, PlannedWorkPacketSet,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -18,7 +17,6 @@ pub struct FrontierAwarePlan {
     pub(in crate::frontier_planning::testing) packet_set: PlannedWorkPacketSet,
     pub(in crate::frontier_planning::testing) predicted_breadth: FrontierBreadthPrediction,
     pub(in crate::frontier_planning::testing) drift_outcome: FrontierPredictionDriftOutcome,
-    pub(in crate::frontier_planning::testing) disjointness_class: FrontierDisjointnessClass,
     pub(in crate::frontier_planning::testing) complexity_contract: FrontierComplexityContract,
     pub(in crate::frontier_planning::testing) performance_status: FrontierPerformanceStatus,
     pub(in crate::frontier_planning::testing) report: FrontierPlanningReport,
@@ -52,10 +50,6 @@ impl FrontierAwarePlan {
 
     pub fn drift_outcome(&self) -> &FrontierPredictionDriftOutcome {
         &self.drift_outcome
-    }
-
-    pub fn disjointness_class(&self) -> &FrontierDisjointnessClass {
-        &self.disjointness_class
     }
 
     pub fn complexity_contract(&self) -> &FrontierComplexityContract {

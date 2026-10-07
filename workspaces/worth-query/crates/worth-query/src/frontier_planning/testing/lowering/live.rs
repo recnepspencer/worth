@@ -2,8 +2,8 @@ use crate::live::{LiveQueryFamily, LiveQueryPlan};
 
 use super::super::{
     BundleResolvedBasisDigest, FrontierAwarePlan, FrontierBreadthPrediction,
-    FrontierComplexityContract, FrontierDisjointnessClass, FrontierPerformanceStatus,
-    FrontierPlanFamily, FrontierPlanningCounters, FrontierPlanningError, FrontierPlanningReport,
+    FrontierComplexityContract, FrontierPerformanceStatus, FrontierPlanFamily,
+    FrontierPlanningCounters, FrontierPlanningError, FrontierPlanningReport,
     FrontierPredictionDriftOutcome, PacketEquivalenceContract, PacketMergeBoundary,
     PacketMergeContract, PlannedWorkPacket, PlannedWorkPacketFamily, PlannedWorkPacketSet,
 };
@@ -99,7 +99,6 @@ pub(crate) fn lower_live_plan_to_frontier_plan(
     let counters = FrontierPlanningCounters::single_route(
         predicted_breadth.value(),
         packet_set.packets().len(),
-        packet_set.packets().len(),
     );
 
     Ok(FrontierAwarePlan {
@@ -110,7 +109,6 @@ pub(crate) fn lower_live_plan_to_frontier_plan(
         packet_set,
         predicted_breadth,
         drift_outcome: FrontierPredictionDriftOutcome::WithinBudget,
-        disjointness_class: FrontierDisjointnessClass::LiveMaintenanceSurface,
         complexity_contract,
         performance_status,
         report,

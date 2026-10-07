@@ -2,12 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::PartitionIdentity;
 
-use super::{PartitionItemId, PartitionRoute, PartitionWork, SourceFactId};
+use super::{PartitionItemId, PartitionWork};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WeightedItem {
     pub item: PartitionItemId,
-    pub source_fact: SourceFactId,
     pub weight: u64,
 }
 
@@ -78,11 +77,8 @@ impl Bisection {
         })
     }
 
-    pub fn route(&self, item: PartitionItemId) -> Option<PartitionRoute> {
-        Some(PartitionRoute {
-            partition: *self.routes.get(&item)?,
-            source_fact: self.items.get(&item)?.source_fact,
-        })
+    pub fn route(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
+        self.routes.get(&item).copied()
     }
 
     pub fn upsert_item(&mut self, item: WeightedItem) -> Result<PartitionWork, BisectionDenial> {
@@ -94,13 +90,6 @@ impl Bisection {
             return Ok(PartitionWork::default());
         }
         let previous = self.items.get(&item.item).copied();
-        if previous.is_some_and(|old| old.weight == item.weight) {
-            self.items.insert(item.item, item);
-            return Ok(PartitionWork {
-                members_visited: 1,
-                ..PartitionWork::default()
-            });
-        }
         let total = self
             .tree
             .as_ref()

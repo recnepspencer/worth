@@ -1,8 +1,6 @@
 use std::{cell::RefCell, mem::size_of};
 
-use worth_execution::{
-    ChargedBytes, ExecutionResourceLease, ExecutionScan, MapKernelFailure, ScanDenial, ScanOutcome,
-};
+use worth_execution::{ChargedBytes, ExecutionResourceLease, MapKernelFailure, ScanOutcome};
 use worth_foundational::PartitionIdentity;
 
 use super::{reduce_inner, ReducedInvariants};
@@ -50,25 +48,13 @@ pub(crate) fn reduce_invariant_execution_checked(
                 .fold(0_u64, u64::saturating_add),
         );
     let identity = PartitionIdentity::new(1);
-    let scan = ExecutionScan::try_from_ordered(
-        vec![identity],
-        vec![(
-            identity,
-            ReductionInput {
-                envelopes: RefCell::new(Some(envelopes)),
-                owned_bytes,
-            },
-        )],
-    )
-    .map_err(|denial| {
-        PacketExecutionStop::Admission(match denial {
-            ScanDenial::IdentitiesNotCanonical => {
-                worth_execution::MapDenial::ExpectedIdentitiesNotCanonical
-            }
-            ScanDenial::CoverageMismatch => worth_execution::MapDenial::CoverageMismatch,
-            ScanDenial::MemoryOverflow => worth_execution::MapDenial::MemoryOverflow,
-        })
-    })?;
+    let scan = crate::execution::admit_ordered_scan(vec![(
+        identity,
+        ReductionInput {
+            envelopes: RefCell::new(Some(envelopes)),
+            owned_bytes,
+        },
+    )])?;
     let ceiling = owned_bytes
         .saturating_mul(12)
         .saturating_add(8192)

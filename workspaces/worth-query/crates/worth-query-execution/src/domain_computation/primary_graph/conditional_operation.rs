@@ -68,3 +68,6 @@ pub use reconstruction_authority::{
     WorthQueryTemporalReconstructionAccess,
 };
 pub use reinstallation::WorthQueryConditionalRuntimeReinstallationReceipt;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use application_operation_reentry::assert_preparation_retry;

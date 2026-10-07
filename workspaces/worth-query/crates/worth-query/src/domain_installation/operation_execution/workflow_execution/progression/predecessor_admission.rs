@@ -15,14 +15,18 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             .iter()
             .map(|predecessor| {
                 self.counters.predecessor_receipt_lookups += 1;
-                self.receipt_index.get(predecessor).copied().ok_or_else(|| {
-                    WorthQueryWorkflowAdvanceDenial::new(
-                        WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(
-                            predecessor.clone(),
-                        ),
-                        self.counters,
-                    )
-                })
+                self.receipt_index
+                    .get(predecessor)
+                    .copied()
+                    .filter(|index| self.receipts.get(*index).is_some())
+                    .ok_or_else(|| {
+                        WorthQueryWorkflowAdvanceDenial::new(
+                            WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(
+                                predecessor.clone(),
+                            ),
+                            self.counters,
+                        )
+                    })
             })
             .collect()
     }

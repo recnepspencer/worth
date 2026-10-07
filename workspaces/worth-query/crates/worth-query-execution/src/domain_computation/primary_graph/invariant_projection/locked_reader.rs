@@ -40,6 +40,10 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) authority_identity: u64,
     pub(super) work: WorthQueryInvariantProjectionWork,
     pub(super) work_budget: WorthQueryInvariantProjectionWorkBudget,
+    /// A read found no capacity to retain its evidence. The projection then
+    /// ends as that capacity's stop, whatever the closure made of the read's
+    /// refusal, as it ends for an exceeded work budget.
+    pub(super) retention_exhausted: bool,
     pub(super) realized_scope: WorthQueryRealizedProjectionScope,
     pub(super) aggregate_projections:
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
@@ -57,10 +61,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             std::any::TypeId,
             worth_relational::facade::identity::EntityId,
         ),
-        Vec<(
-            Arc<super::super::WorthQueryApplicationOutputCorrespondence>,
-            String,
-        )>,
+        Vec<super::operation_reader::CertifiedOutputCorrespondence>,
     >,
     pub(super) dependent_source_facts: BTreeMap<
         super::super::application_attempt::WorthQueryApplicationFactStorageKey,
@@ -155,6 +156,7 @@ where
                     authority_identity: self.authority_identity,
                     work: WorthQueryInvariantProjectionWork::default(),
                     work_budget,
+                    retention_exhausted: false,
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
                     output_lineage: Arc::clone(&self.graph.output_lineage),
@@ -176,26 +178,41 @@ where
                     reader.consumed_outputs,
                     reader.dependent_source_facts,
                     reader.work_budget.exceeded(),
+                    reader.retention_exhausted,
                 )
             }))
         });
-        let (output, work, realized_scope, consumed_outputs, dependent_source_facts, exceeded) =
-            match projected {
-                Ok(completed) => completed,
-                Err(payload) => {
-                    self.graph.with_runtime_mut(|runtime| {
-                        crate::relational_snapshot_release::release_query_snapshot(
-                            runtime, &snapshot,
-                        );
-                    });
-                    resume_unwind(payload)
-                }
-            };
-        if exceeded {
+        let (
+            output,
+            work,
+            realized_scope,
+            consumed_outputs,
+            dependent_source_facts,
+            exceeded,
+            retention_exhausted,
+        ) = match projected {
+            Ok(completed) => completed,
+            Err(payload) => {
+                self.graph.with_runtime_mut(|runtime| {
+                    crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+                });
+                resume_unwind(payload)
+            }
+        };
+        let stopped = if exceeded {
+            Some(WorthQueryInvariantProjectionDenial::work_budget_exceeded())
+        } else {
+            retention_exhausted.then(|| {
+                WorthQueryInvariantProjectionDenial::from_kind(
+                    super::WorthQueryInvariantProjectionDenialKind::RetentionCapacityExhausted,
+                )
+            })
+        };
+        if let Some(denial) = stopped {
             self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             });
-            return Err(WorthQueryInvariantProjectionDenial::work_budget_exceeded());
+            return Err(denial);
         }
         Ok(WorthQueryCompletedInvariantProjection {
             output,

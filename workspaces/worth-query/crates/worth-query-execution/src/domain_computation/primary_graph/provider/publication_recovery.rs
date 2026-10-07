@@ -81,8 +81,56 @@ fn settlement_publication_denial(
         Kind::SnapshotIdentityExhausted => {
             WorthQueryApplicationSettlementRecoveryError::SnapshotIdentityExhausted
         }
-        _ => WorthQueryApplicationSettlementRecoveryError::Publication(
-            "application publication could not resume from its retained settlement",
-        ),
+        kind @ (Kind::ExecutionResource { .. }
+        | Kind::ExecutionNestedPatternStopped { .. }
+        | Kind::ExecutionWorkerPanicked { .. }
+        | Kind::ExecutionIdentitiesNotCanonical { .. }
+        | Kind::ExecutionUncheckedCustomKernel { .. }) => {
+            WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(kind)
+        }
+        Kind::ForeignOperationAttempt
+        | Kind::ForeignExecutionBasis
+        | Kind::ForeignGraphAuthority
+        | Kind::UndeclaredOperationScope
+        | Kind::ResourceEnvelopeMismatch
+        | Kind::CandidateIdentityExhausted
+        | Kind::PreparedRootBudgetExhausted { .. }
+        | Kind::IndexMaintenanceBudgetExceeded
+        | Kind::IndexGenerationIdentityExhausted
+        | Kind::ProviderIdentityMismatch
+        | Kind::ProviderGenerationMismatch
+        | Kind::SessionProtocolUnsupported
+        | Kind::ProviderRejected
+        | Kind::ProviderPanicked
+        | Kind::TokenNotMintedForPlan
+        | Kind::EmptyPhysicalSessionIdentity
+        | Kind::SessionIdentityExhausted => {
+            WorthQueryApplicationSettlementRecoveryError::Publication(
+                "application publication could not resume from its retained settlement",
+            )
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn mapping_contract_settlement_execution_retains_kind_and_partition() {
+        use crate::domain_computation::{
+            WorthQueryProviderSessionDenialKind as Kind, WorthQueryProviderSessionFailure,
+        };
+        let kind = Kind::ExecutionWorkerPanicked {
+            partition_identity: Some(3),
+        };
+        let observed = settlement_publication_denial(WorthQueryProviderSessionFailure::new(
+            kind,
+            crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+            "mapping contract",
+            Default::default(),
+        ));
+        assert!(
+            matches!(observed, WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(actual) if actual == kind)
+        );
     }
 }

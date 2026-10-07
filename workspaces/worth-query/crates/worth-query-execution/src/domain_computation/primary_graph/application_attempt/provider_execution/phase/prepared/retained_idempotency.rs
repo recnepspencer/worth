@@ -1,4 +1,8 @@
 use super::*;
+use crate::domain_computation::primary_graph as graph;
+use graph::application_attempt::provider_compare_denial::provider_session_kind_denied;
+use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
+use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 
 pub(super) fn resolve_retained_idempotency<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -75,7 +79,7 @@ where
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Unpublished)) => {
             Some(denied(DenialStage::Idempotency))
         }
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
+        Ok(Err(IdempotencyDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         })) => Some(WorthQueryApplicationCommitOutcome::Denied(
             WorthQueryApplicationCommitDenial::active_snapshot_capacity_exhausted(
@@ -83,37 +87,44 @@ where
                 maximum_active_snapshots,
             ),
         )),
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)) => {
-            Some(denied(DenialStage::Idempotency))
+        Ok(Err(IdempotencyDenial::ExecutionDenied(kind))) => Some(
+            WorthQueryApplicationCommitOutcome::Denied(provider_session_kind_denied(
+                kind,
+                ExecutionDenialStage::Idempotency,
+                "pending publication execution refused",
+            )),
+        ),
+        Ok(Err(IdempotencyDenial::Unavailable)) => Some(denied(DenialStage::Idempotency)),
+        Ok(Err(IdempotencyDenial::WindowExpired)) => {
+            Some(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_window_expired(),
+            ))
         }
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::WindowExpired)) => Some(WorthQueryApplicationCommitOutcome::Denied(
-            WorthQueryApplicationCommitDenial::idempotency_window_expired(),
-        )),
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { commit })) => {
+        Ok(Err(IdempotencyDenial::CommittedReceiptNotRetained { commit })) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
             ))
         }
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RecordedIntentUnverifiable)) => {
+        Ok(Err(IdempotencyDenial::RecordedIntentUnverifiable)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_unverifiable(),
             ))
         }
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted)) => {
+        Ok(Err(IdempotencyDenial::RetentionCapacityExhausted)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
                     DenialStage::Idempotency,
                 ),
             ))
         }
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted)) => {
+        Ok(Err(IdempotencyDenial::RetentionIdentityExhausted)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_identity_exhausted(
                     DenialStage::Idempotency,
                 ),
             ))
         }
-        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted)) => {
+        Ok(Err(IdempotencyDenial::SnapshotIdentityExhausted)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::snapshot_identity_exhausted(
                     DenialStage::Idempotency,

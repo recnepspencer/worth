@@ -7,7 +7,6 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::{
     FullVerificationDecision, FullVerificationImage, FullVerificationStop,
     InvalidationEditAdmission,
 };
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum DecisiveMeaning {
@@ -65,16 +64,12 @@ fn compare(
     let full = match full {
         Ok(FullVerificationDecision::Current) => DecisiveMeaning::Current,
         Ok(FullVerificationDecision::Changed) => DecisiveMeaning::Changed,
-        Err(FullVerificationStop::Admission(
-            CompanionPreflightStop::WorkExhausted { .. } | CompanionPreflightStop::WorkCounterOverflow,
-        ) | FullVerificationStop::SourceRead(
+        Err(FullVerificationStop::Admission(stop)) => {
+            return EquivalenceComparison::Inconclusive(super::verification::map_admission_stop(stop));
+        }
+        Err(FullVerificationStop::SourceRead(
             crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
         )) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::WorkExhausted),
-        Err(FullVerificationStop::Admission(CompanionPreflightStop::Interrupted(event))) => {
-            return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Interrupted(
-                event,
-            ))
-        }
         Err(FullVerificationStop::ActorImageChanged) => return EquivalenceComparison::Inconclusive(
             ConsumedOutputVerificationStop::RetryCurrentness(worth_relational::facade::mvcc::CompanionCellEditStop::TopologyGenerationChanged)),
         Err(_) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Unavailable),
@@ -89,6 +84,24 @@ fn compare(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+
+    #[test]
+    fn observer_capacity_is_not_missing_evidence() {
+        assert_eq!(
+            compare(
+                Ok(ConsumedOutputVerification::Current),
+                Err(FullVerificationStop::Admission(
+                    CompanionPreflightStop::RetainedCompanionCapacityExhausted {
+                        requested: 1,
+                        retained: 1,
+                        maximum: 1,
+                    },
+                )),
+            ),
+            EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::CapacityExhausted),
+        );
+    }
 
     #[test]
     fn changed_ordinals_compare_by_meaning_and_pending_is_never_equivalent() {

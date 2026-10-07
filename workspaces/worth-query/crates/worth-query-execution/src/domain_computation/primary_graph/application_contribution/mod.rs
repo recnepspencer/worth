@@ -32,13 +32,17 @@ pub use contracts::{
 pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
 #[cfg(feature = "test-query-execution-observer")]
 pub use partitioned_computation::{
-    partitioned_computation_runs_on_this_thread_for_test, WorthQueryPartitionedComputationRun,
+    discarded_computation_retention_on_this_thread_for_test,
+    partitioned_computation_runs_on_this_thread_for_test,
+    published_partitioned_computations_on_this_thread_for_test,
+    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
-    Comparator, ComputationDeposit, ComputationRetention,
+    Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
 };
 pub(in crate::domain_computation) use partitioned_computation::{
-    ComputationPrior, RetainedComputation, SealedComputationRun,
+    ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,
+    SealedComputationRun, Suppression,
 };
 pub use partitioned_computation::{
     WorthQueryCompletedPartitionedComputation, WorthQueryComputationInputDenial,
@@ -72,3 +76,11 @@ pub use request_execution::{
     WorthQueryExecutionPlacementForTest,
 };
 pub use setup::WorthQueryApplicationContributionSetup;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use partitioned_computation::sealed_run_for_lineage_test;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;

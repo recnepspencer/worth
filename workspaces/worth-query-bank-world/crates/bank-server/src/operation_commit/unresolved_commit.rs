@@ -123,6 +123,11 @@ const fn provider_failure_kind(
 ) -> BankProviderFailureKind {
     use WorthQueryProviderSessionDenialKind as Query;
     match kind {
+        Query::ExecutionResource { .. } => BankProviderFailureKind::ProviderRejected,
+        Query::ExecutionNestedPatternStopped { .. } => BankProviderFailureKind::ProviderRejected,
+        Query::ExecutionWorkerPanicked { .. } => BankProviderFailureKind::ProviderPanicked,
+        Query::ExecutionUncheckedCustomKernel { .. } => BankProviderFailureKind::ProviderRejected,
+        Query::ExecutionIdentitiesNotCanonical { .. } => BankProviderFailureKind::ProviderRejected,
         Query::ForeignOperationAttempt => BankProviderFailureKind::ForeignOperationAttempt,
         Query::ForeignExecutionBasis => BankProviderFailureKind::ForeignExecutionBasis,
         Query::ForeignGraphAuthority => BankProviderFailureKind::ForeignGraphAuthority,

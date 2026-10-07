@@ -12,10 +12,14 @@ pub enum WorthQueryManagedComputationResourceDenial {
     WorkCounterOverflow,
     /// What the computation retains would pass its declared bytes.
     RetainedBytesExhausted,
+    /// Temporary kernel scratch passed its declared ceiling.
+    ScratchCapacityExceeded,
     /// A result passed the bytes its pattern declared for one result.
     ResultCapacityExceeded,
     /// A declared byte count does not fit a byte count.
     CapacityOverflow,
+    /// The authority could not add a charged reservation to its byte counter.
+    ChargedBytesOverflow,
     /// A memory limit refused a reservation. `level` names the limit, the
     /// innermost one that refused, and `admitted` is the room it left.
     MemoryLimit {
@@ -31,6 +35,7 @@ pub enum WorthQueryManagedComputationResourceDenial {
     WorkLimit,
     /// A pattern ran under a lease that is not its run's.
     NestedLeaseMisuse,
+    /// Bytes were reserved where no request's execution was running.
     NoActiveExecutionScope,
     /// The policy names an equivalence contract the authority does not hold.
     EquivalenceContractUnavailable,

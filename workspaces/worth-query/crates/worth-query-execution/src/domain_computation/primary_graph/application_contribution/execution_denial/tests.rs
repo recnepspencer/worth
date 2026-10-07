@@ -38,11 +38,15 @@ fn every_lease_refusal_and_kernel_stop_is_its_own_cause() {
         (LeaseDenial::WorkLimitExceedsParent, Resource::WorkLimit),
         (
             LeaseDenial::ChargedBytesOverflow,
-            Resource::CapacityOverflow,
+            Resource::ChargedBytesOverflow,
         ),
         (
             LeaseDenial::UnrelatedNestedLease,
             Resource::NestedLeaseMisuse,
+        ),
+        (
+            LeaseDenial::NoActiveExecutionScope,
+            Resource::NoActiveExecutionScope,
         ),
         (
             LeaseDenial::EquivalenceContractUnavailable,
@@ -223,6 +227,7 @@ fn a_partitions_refusal_round_trips_through_its_kernel() {
         Resource::PolicyMemoryLimit,
         Resource::WorkLimit,
         Resource::NestedLeaseMisuse,
+        Resource::NoActiveExecutionScope,
         Resource::EquivalenceContractUnavailable,
     ];
     distinct(&resources);

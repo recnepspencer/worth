@@ -1,6 +1,8 @@
+use std::collections::BTreeMap;
+
 use worth_execution::{
-    ChargedBytes, ExecutionMap, ExecutionResourceLease, MapDenial, MapKernelContext,
-    MapKernelFailure, MapOutcome, MapPartition, MapStop,
+    ChargedBytes, ExecutionMap, ExecutionResourceLease, KeylessPartition, MapKernelContext,
+    MapKernelFailure, MapOutcome, MapStop,
 };
 use worth_foundational::PartitionIdentity;
 
@@ -8,11 +10,18 @@ use worth_foundational::PartitionIdentity;
 /// publish its result only after the whole canonical batch settles.
 #[derive(Debug)]
 pub(crate) enum PacketExecutionStop {
-    Admission(MapDenial),
+    Admission(PacketAdmissionDenial),
     Execution {
         boundary: Option<PartitionIdentity>,
         reason: MapStop<PacketBudgetDenial>,
     },
+}
+
+/// Refusals representable by Relational's canonical keyless construction.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum PacketAdmissionDenial {
+    ExpectedIdentitiesNotCanonical,
+    MemoryOverflow,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -147,49 +156,6 @@ impl PacketKernelContext<'_, '_, '_> {
     }
 }
 
-impl From<PacketExecutionStop> for crate::transactions::data::CommitExecutionDenial {
-    fn from(stop: PacketExecutionStop) -> Self {
-        use crate::transactions::data::CommitExecutionDenialKind as Kind;
-        use worth_execution::{MapKernelFailure, MapKernelStop};
-        let (kind, partition_identity) = match stop {
-            PacketExecutionStop::Admission(denial) => (
-                if denial == MapDenial::MemoryOverflow {
-                    Kind::ResourceExhausted
-                } else {
-                    Kind::Admission
-                },
-                None,
-            ),
-            PacketExecutionStop::Execution { boundary, reason } => {
-                let kind = match reason {
-                    MapStop::Admission(_) => Kind::ResourceExhausted,
-                    MapStop::WorkExhausted { .. } => Kind::WorkExhausted,
-                    MapStop::Failure { cause, .. } => match cause {
-                        MapKernelFailure::Stop(MapKernelStop::Cancelled) => Kind::Cancelled,
-                        MapKernelFailure::Stop(MapKernelStop::DeadlineElapsed) => {
-                            Kind::DeadlineElapsed
-                        }
-                        MapKernelFailure::Stop(_) => Kind::WorkExhausted,
-                        MapKernelFailure::ResultCapacityExceeded => Kind::ResultCapacityExceeded,
-                        MapKernelFailure::Domain(PacketBudgetDenial::ScratchCapacityExceeded) => {
-                            Kind::ResourceExhausted
-                        }
-                        MapKernelFailure::Domain(PacketBudgetDenial::UncheckedCustomKernel) => {
-                            Kind::Admission
-                        }
-                        MapKernelFailure::Panic => Kind::WorkerFailed,
-                    },
-                };
-                (kind, boundary.map(PartitionIdentity::value))
-            }
-        };
-        Self {
-            kind,
-            partition_identity,
-        }
-    }
-}
-
 impl From<PacketExecutionStop> for crate::transactions::data::TransactionCommitError {
     fn from(stop: PacketExecutionStop) -> Self {
         Self::execution(stop.into())
@@ -266,16 +232,15 @@ where
         + Sync,
     C: Fn(&T) -> u64 + Sync,
 {
-    let identities = packets
-        .iter()
-        .map(|packet| packet.identity)
-        .collect::<Vec<_>>();
+    if packets
+        .windows(2)
+        .any(|pair| pair[0].identity >= pair[1].identity)
+    {
+        return Err(PacketExecutionStop::Admission(
+            PacketAdmissionDenial::ExpectedIdentitiesNotCanonical,
+        ));
+    }
     if lease.is_none() {
-        if identities.windows(2).any(|pair| pair[0] >= pair[1]) {
-            return Err(PacketExecutionStop::Admission(
-                MapDenial::ExpectedIdentitiesNotCanonical,
-            ));
-        }
         return Ok(packets
             .iter()
             .map(|packet| {
@@ -291,24 +256,29 @@ where
             })
             .collect());
     }
-    let partitions = packets
+    let partitions: BTreeMap<_, _> = packets
         .into_iter()
-        .map(|packet| MapPartition {
-            identity: packet.identity,
-            value: ChargedPacketInput {
-                value: packet.value,
-                owned_bytes: packet.input_bytes,
-                scratch_limit: packet.kernel_scratch_bytes,
-                result_limit: packet.max_result_bytes,
-            },
-            read_keys: Vec::<u64>::new(),
-            write_keys: Vec::<u64>::new(),
-            kernel_scratch_bytes: packet.kernel_scratch_bytes,
-            max_result_bytes: packet.max_result_bytes,
+        .map(|packet| {
+            (
+                packet.identity,
+                KeylessPartition {
+                    value: ChargedPacketInput {
+                        value: packet.value,
+                        owned_bytes: packet.input_bytes,
+                        scratch_limit: packet.kernel_scratch_bytes,
+                        result_limit: packet.max_result_bytes,
+                    },
+                    kernel_scratch_bytes: packet.kernel_scratch_bytes,
+                    max_result_bytes: packet.max_result_bytes,
+                },
+            )
         })
         .collect();
-    let batch = ExecutionMap::try_from_declared_partitions(identities, partitions)
-        .map_err(PacketExecutionStop::Admission)?;
+    let batch = ExecutionMap::<_, u64>::from_keyless_partitions(partitions).map_err(
+        |worth_execution::MapMemoryOverflow| {
+            PacketExecutionStop::Admission(PacketAdmissionDenial::MemoryOverflow)
+        },
+    )?;
     let outcome = super::run_with_remaining_request_work(
         lease.expect("checked above"),
         budget,

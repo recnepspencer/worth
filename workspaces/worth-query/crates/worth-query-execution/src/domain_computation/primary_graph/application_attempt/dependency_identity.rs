@@ -4,6 +4,7 @@ mod canonical_encoding;
 mod output_postcondition;
 
 use canonical_encoding::{dependency_identity, lineage_identity};
+pub(in crate::domain_computation::primary_graph) use output_postcondition::OutputCurrentnessFacts;
 use output_postcondition::{complete_output_currentness_facts, normalized_output_facts};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -45,7 +46,13 @@ impl<Schema, Operation, Input, Scope>
                 .map_err(|_| {
                     WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected
                 })?;
-        self.output_currentness_facts = Some(complete_output_currentness_facts(dependency_facts));
+        // An owner call read its facts before this effect, so a field the
+        // effect replaced is one the computation has not seen.
+        let moved = (self.read_set.computation_fact_ordinals.iter().copied())
+            .filter(|&ordinal| dependency_facts[ordinal] != self.read_set.facts[ordinal])
+            .collect();
+        self.output_currentness_facts =
+            Some(complete_output_currentness_facts(dependency_facts, moved));
         self.read_set
             .admission
             .retain_execution_canonical_work(work);

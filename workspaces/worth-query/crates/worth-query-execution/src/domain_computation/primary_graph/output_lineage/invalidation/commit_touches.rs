@@ -71,7 +71,7 @@ impl SourceInvalidationOwner {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .cells
             .values()
-            .cloned()
+            .filter_map(|slot| slot.admitted())
             .collect::<Vec<_>>();
         cells
             .iter()
@@ -96,7 +96,7 @@ impl SourceInvalidationOwner {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .cells
             .get(branch)
-            .cloned();
+            .and_then(|slot| slot.admitted());
         let mut batch = TouchedCommits {
             commits: Vec::new(),
             next_cursor: cursor,

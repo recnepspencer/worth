@@ -29,6 +29,26 @@ impl<Schema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema + 'static,
 {
+    /// Capture the same Native truth with no derived Query records, so the
+    /// certification reference must execute a fresh producer computation.
+    #[cfg(feature = "test-query-execution-observer")]
+    #[doc(hidden)]
+    pub fn capture_native_truth_checkpoint_for_test(
+        &self,
+    ) -> Result<
+        WorthQueryApplicationCheckpoint,
+        worth_relational::facade::durability::DurabilityError,
+    > {
+        self.primary_provider.graph.with_runtime(|runtime| {
+            runtime
+                .durability_authority()
+                .native_checkpoint()
+                .map(|native| {
+                    WorthQueryApplicationCheckpoint::encode(native, self.publication(), &[]).0
+                })
+        })
+    }
+
     pub fn capture_application_checkpoint(
         &self,
     ) -> Result<

@@ -11,9 +11,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutput
         Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) source_identity:
         Option<RecordedSourceIdentity>,
-    pub(in crate::domain_computation::primary_graph) observed_source_facts: Option<
-        Arc<[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact]>,
-    >,
+    pub(in crate::domain_computation::primary_graph) observed_source_facts: Option<super::super::ComparableSourceFacts>,
     /// The performed output's sealed witness: its origin's for a stable
     /// alias. A restored row has none until a full verification builds it.
     pub(in crate::domain_computation::primary_graph) native_output_witness:
@@ -112,7 +110,9 @@ impl WorthQueryApplicationOutputLineage {
                         binding: *output_binding,
                         correspondence: Arc::clone(&recorded.correspondence),
                         source_identity: recorded.source_identity,
-                        observed_source_facts: recorded.observed_source_facts(),
+                        observed_source_facts: recorded
+                            .observed_source_facts()
+                            .and_then(|facts| facts.for_comparison()),
                         // A stable alias seals no witness: its output is
                         // its origin's, compared by the origin's witness.
                         native_output_witness: recorded

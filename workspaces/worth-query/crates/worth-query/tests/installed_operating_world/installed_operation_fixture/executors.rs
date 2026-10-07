@@ -9,7 +9,8 @@ use super::{
 mod workflow;
 
 pub(super) use workflow::{
-    MismatchedWorkflowDeterminismExecutor, MismatchedWorkflowStageExecutor, WorkflowStageExecutor,
+    materialize_owned_workflow_stage, MismatchedWorkflowDeterminismExecutor,
+    MismatchedWorkflowStageExecutor, WorkflowStageExecutor,
 };
 
 #[derive(Clone, Copy)]

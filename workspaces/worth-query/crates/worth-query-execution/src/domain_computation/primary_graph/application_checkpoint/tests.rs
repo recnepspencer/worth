@@ -69,7 +69,7 @@ fn decoded_native_payload_uses_the_verified_query_buffer() {
 #[test]
 fn producer_identity_length_and_utf8_are_guarded() {
     let mut zero = 0_u64.to_be_bytes().to_vec();
-    zero.resize(super::MINIMUM_V8_ACCEPTED_OUTPUT_BYTES, 0);
+    zero.resize(super::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, zero),
         "producer identity length is invalid",
@@ -78,7 +78,7 @@ fn producer_identity_length_and_utf8_are_guarded() {
     let mut oversized = ((MAXIMUM_PRODUCER_IDENTITY_BYTES + 1) as u64)
         .to_be_bytes()
         .to_vec();
-    oversized.resize(super::MINIMUM_V8_ACCEPTED_OUTPUT_BYTES, 0);
+    oversized.resize(super::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, oversized),
         "producer identity length is invalid",
@@ -194,7 +194,7 @@ fn duplicate_slot_and_copied_fact_payload_cannot_form_two_recovered_candidates()
             ),
         },
     ]).unwrap();
-    copied_facts.extend_from_slice(&6_u16.to_be_bytes());
+    copied_facts.extend_from_slice(&super::facts::WIRE_VERSION.to_be_bytes());
     copied_facts.extend_from_slice(&(fact.len() as u64).to_be_bytes());
     copied_facts.extend_from_slice(&fact);
     let mut duplicate_identity = first;
@@ -243,7 +243,7 @@ fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]
 }
 
 #[test]
-fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
+fn producer_resource_profile_roundtrips_and_legacy_is_refused() {
     let mut accepted = accepted_prefix(b"producer", 0, [0; 32]);
     accepted.truncate(accepted.len() - 17);
     super::resources::encode_profile(
@@ -255,7 +255,7 @@ fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
     accepted.extend_from_slice(&0_u64.to_be_bytes());
     let decoded = checkpoint_from_body(checkpoint_body(1, accepted))
         .decode()
-        .expect("v5 resource evidence decodes");
+        .expect("current resource evidence decodes");
     let profile = decoded.accepted_outputs[0].resources.unwrap();
     assert_eq!((profile.work(), profile.retained_bytes()), (4_096, 8_192));
 
@@ -265,21 +265,7 @@ fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
     legacy.extend_from_slice(&0_u64.to_be_bytes());
     let mut body = checkpoint_body(1, legacy);
     body[..2].copy_from_slice(&3_u16.to_be_bytes());
-    let decoded = checkpoint_from_body(body)
-        .decode()
-        .expect("legacy output identity decodes without new resource evidence");
-    assert_eq!(decoded.accepted_outputs[0].resources, None);
-    assert_eq!(decoded.accepted_outputs[0].producer_facts, None);
-
-    let mut v4 = accepted_prefix(b"producer", 0, [0; 32]);
-    v4.remove(8 + b"producer".len());
-    v4.extend_from_slice(&0_u64.to_be_bytes());
-    let mut body = checkpoint_body(1, v4);
-    body[..2].copy_from_slice(&4_u16.to_be_bytes());
-    let decoded = checkpoint_from_body(body)
-        .decode()
-        .expect("v4 remains readable");
-    assert_eq!(decoded.accepted_outputs[0].producer_facts, None);
+    assert_denied(body, "Query application checkpoint format 3 is unsupported");
 }
 
 #[test]
@@ -347,7 +333,7 @@ fn entity_bytes() -> [u8; 16] {
 }
 
 fn padded(mut accepted: Vec<u8>) -> Vec<u8> {
-    accepted.resize(super::MINIMUM_V8_ACCEPTED_OUTPUT_BYTES, 0);
+    accepted.resize(super::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
     accepted
 }
 

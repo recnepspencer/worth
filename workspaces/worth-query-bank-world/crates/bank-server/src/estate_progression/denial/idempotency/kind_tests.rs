@@ -66,3 +66,15 @@ fn every_other_refusal_keeps_its_own_cause() {
         assert_eq!(from_kind(query, 0), bank, "{query:?}");
     }
 }
+
+#[test]
+fn pending_execution_refusal_preserves_exact_kind() {
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind;
+    let kind = WorthQueryProviderSessionDenialKind::ExecutionWorkerPanicked {
+        partition_identity: Some(3),
+    };
+    assert_eq!(
+        from_kind(Query::ExecutionDenied(kind), 0),
+        Bank::ExecutionDenied(kind)
+    );
+}

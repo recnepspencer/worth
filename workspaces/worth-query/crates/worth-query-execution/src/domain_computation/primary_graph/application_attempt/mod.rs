@@ -6,7 +6,9 @@ mod compare_and_commit;
 mod delegation_activation_program;
 mod denial;
 mod dependency_identity;
-pub(in crate::domain_computation::primary_graph) use dependency_identity::WorthQueryProducerIdentityDenial;
+pub(in crate::domain_computation::primary_graph) use dependency_identity::{
+    OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
+};
 mod effect_program;
 mod effect_validation;
 mod elevation_approval_outcome;
@@ -32,6 +34,7 @@ pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryPrimaryGraphApplicationAttempt;
+pub(in crate::domain_computation::primary_graph) mod provider_compare_denial;
 mod provider_execution;
 mod provider_recomparison;
 mod read_phase;

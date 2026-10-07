@@ -1,8 +1,7 @@
 use std::mem::size_of;
 
 use worth_execution::{
-    ChargedBytes, ExecutionResourceLease, ExecutionScan, MapKernelContext, MapKernelFailure,
-    ScanDenial, ScanOutcome,
+    ChargedBytes, ExecutionResourceLease, MapKernelContext, MapKernelFailure, ScanOutcome,
 };
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
@@ -78,8 +77,7 @@ pub(crate) fn prepare_borrowed_artifact<T>(
     ) -> Result<(T, u64), MapKernelFailure<super::PacketBudgetDenial>>,
 ) -> Result<T, PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
-    let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())])
-        .map_err(|_| PacketExecutionStop::Admission(worth_execution::MapDenial::MemoryOverflow))?;
+    let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
     let ceiling = lease.policy().budget().charged_memory_bytes() / PREPARATION_MEMORY_DIVISOR;
     let mut build = Some(build);
     let outcome = super::run_with_remaining_request_work(
@@ -135,17 +133,7 @@ pub(crate) fn prepare_borrowed_packets<T>(
         -> Result<Vec<ReadOnlyPacket<T>>, MapKernelFailure<super::PacketBudgetDenial>>,
 ) -> Result<(Vec<ReadOnlyPacket<T>>, ExecutionReport), PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
-    let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).map_err(
-        |denial| {
-            PacketExecutionStop::Admission(match denial {
-                ScanDenial::IdentitiesNotCanonical => {
-                    worth_execution::MapDenial::ExpectedIdentitiesNotCanonical
-                }
-                ScanDenial::CoverageMismatch => worth_execution::MapDenial::CoverageMismatch,
-                ScanDenial::MemoryOverflow => worth_execution::MapDenial::MemoryOverflow,
-            })
-        },
-    )?;
+    let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
     let ceiling = lease.policy().budget().charged_memory_bytes() / PREPARATION_MEMORY_DIVISOR;
     let mut build = Some(build);
     let outcome = super::run_with_remaining_request_work(

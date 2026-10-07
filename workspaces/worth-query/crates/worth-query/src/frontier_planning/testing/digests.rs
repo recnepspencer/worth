@@ -141,23 +141,6 @@ impl FrontierPredictionDriftOutcome {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum FrontierDisjointnessClass {
-    CollectionWindowSurface,
-    TraversalScopeSurface,
-    LiveMaintenanceSurface,
-}
-
-impl FrontierDisjointnessClass {
-    pub(in crate::frontier_planning::testing) fn as_str(&self) -> &'static str {
-        match self {
-            Self::CollectionWindowSurface => "collection_window_surface",
-            Self::TraversalScopeSurface => "traversal_scope_surface",
-            Self::LiveMaintenanceSurface => "live_maintenance_surface",
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct FrontierBreadthPrediction(usize);
 
 impl FrontierBreadthPrediction {

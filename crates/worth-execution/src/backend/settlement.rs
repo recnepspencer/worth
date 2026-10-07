@@ -5,15 +5,15 @@ use worth_foundational::{
 };
 
 use super::{
-    admission::AdmittedBatch,
+    admission::BatchDeclaration,
     meter::{KernelFailure, KernelStop, RunLimits},
     port::{BatchOutcome, BatchStop, TaskOutcome},
 };
 
 /// Completion order is discarded here. Only the canonical identity prefix
 /// decides published values, charged work, span, and the reported failure.
-pub(crate) fn settle<T, R, E>(
-    batch: &AdmittedBatch<T>,
+pub(crate) fn settle<R, E>(
+    batch: &BatchDeclaration,
     outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>>,
     limits: &RunLimits,
     posture: ExecutionPosture,

@@ -119,7 +119,15 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
             panic!("a just-settled caller cannot lose its successor interest")
         }
     };
-    assert_eq!(reused.producer_contacts_in_this_demand(), 0);
+    // C initiated once initially and once to refresh after the upstream write.
+    assert_eq!(
+        settled.producer_contacts_in_this_demand(),
+        initial_c.producer_contacts_in_this_demand() + 1
+    );
+    assert_eq!(
+        reused.producer_contacts_in_this_demand(),
+        settled.producer_contacts_in_this_demand()
+    );
     assert_eq!(
         reused.observation().selected_commit(),
         after.selected_commit()

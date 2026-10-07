@@ -12,7 +12,10 @@ use crate::domain_computation::primary_graph::{
     invariant_projection::ConsumedOutputEvidence,
 };
 
-pub(super) struct RecordedOutput {
+pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
+    /// The performed computation read a fact that its own effect replaced.
+    /// Postcondition facts cannot discharge this knowledge after index loss.
+    pub(super) computation_source: super::ComputationSourceEvidence,
     pub(super) _retained_capacity: Option<RetainedLineageCapacity>,
     /// Stable settlements pin the original performed record, never another
     /// alias. This preserves completion proof and its original lifetime cost.
@@ -35,11 +38,47 @@ pub(super) struct RecordedOutput {
 
 pub(super) struct RecordedOutputMutable {
     pub(super) verification_requirement: Option<FullVerificationReason>,
-    pub(super) observed_source_facts: Option<Arc<[WorthQueryApplicationObservedFact]>>,
+    observed_source_facts: Option<Arc<[WorthQueryApplicationObservedFact]>>,
     pub(super) resources: Option<WorthQueryProducerDemandResources>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
-    pub(super) computation: Option<super::retained_computation::RecordedComputation>,
+    pub(super) computation: super::retained_computation::RecordedComputation,
+}
+
+impl RecordedOutputMutable {
+    pub(super) fn new(
+        verification_requirement: Option<FullVerificationReason>,
+        facts: Option<super::RetainedSourceFacts>,
+        resources: Option<WorthQueryProducerDemandResources>,
+        computation: super::retained_computation::RecordedComputation,
+    ) -> Self {
+        #[cfg(feature = "test-query-execution-observer")]
+        match &computation {
+            super::retained_computation::RecordedComputation::Retained { state, .. } =>
+                crate::domain_computation::primary_graph::application_contribution::observe_published(Some(Arc::clone(state)), None),
+            super::retained_computation::RecordedComputation::Absent(reason) =>
+                crate::domain_computation::primary_graph::application_contribution::observe_published(None, Some(reason.full_cause())),
+        }
+        Self {
+            verification_requirement,
+            observed_source_facts: facts.map(|facts| Arc::clone(facts.postconditions())),
+            resources,
+            computation,
+        }
+    }
+    pub(super) fn replace_retained_facts(&mut self, facts: super::RetainedSourceFacts) {
+        self.observed_source_facts = Some(Arc::clone(facts.postconditions()));
+    }
+    /// Match immutable qualified custody while holding the row's mutable fence.
+    pub(super) fn same_qualified_facts(
+        &self,
+        qualified: &super::ComparableSourceFacts,
+    ) -> Option<super::ComparableSourceFacts> {
+        self.observed_source_facts
+            .as_ref()
+            .filter(|facts| Arc::ptr_eq(facts, qualified.facts()))
+            .map(|_| qualified.clone())
+    }
 }
 
 impl RecordedOutput {
@@ -59,12 +98,13 @@ impl RecordedOutput {
             .verification_requirement
     }
 
-    pub(super) fn observed_source_facts(&self) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+    pub(super) fn observed_source_facts(&self) -> Option<super::RetainedSourceFacts> {
         self.mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .observed_source_facts
             .clone()
+            .map(|facts| super::RetainedSourceFacts::retain(self.computation_source, facts))
     }
 
     /// The facts a checkpoint may carry for this output. A restored row is
@@ -77,7 +117,9 @@ impl RecordedOutput {
         self.consumed_outputs
             .is_empty()
             .then(|| self.observed_source_facts())
-            .flatten()
+            .flatten()?
+            .for_comparison()
+            .map(|facts| Arc::clone(facts.facts()))
     }
 
     pub(super) fn resources(&self) -> Option<WorthQueryProducerDemandResources> {
@@ -105,7 +147,9 @@ impl RecordedOutput {
         row.observed_source_facts = Some(facts);
         row.verification_requirement = Some(FullVerificationReason::CheckpointRestore);
         // A restored row's computation state is not the one its facts carry.
-        row.computation = None;
+        row.computation = super::retained_computation::RecordedComputation::Absent(
+            crate::domain_computation::primary_graph::application_contribution::PriorAbsence::Restored,
+        );
         row.resources = resources;
         if let Some(witness) = verified_witness {
             // An initialized original witness is immutable. Repeated exact

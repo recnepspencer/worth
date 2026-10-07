@@ -77,10 +77,14 @@ impl SourceInvalidationOwner {
             admission.bytes(slots_bytes::<CompanionBranchCell<BranchMarkRoot>>(
                 branches.cells.len(),
             )?)?;
-            branches.cells.values().cloned().collect::<Vec<_>>()
+            branches
+                .cells
+                .values()
+                .filter_map(|slot| slot.admitted())
+                .collect::<Vec<_>>()
         };
+        admission.bytes(slots_bytes::<Identity>(candidates.len())?)?;
         let mut visited = candidates.to_vec();
-        admission.bytes(slots_bytes::<Identity>(visited.len())?)?;
         admission.bytes(slots_bytes::<(
             Arc<MarkState>,
             Option<PreparedSettlementRegistration>,
@@ -186,15 +190,14 @@ impl SourceInvalidationOwner {
         if !changed {
             return Ok((Arc::clone(&image.payload().current), None));
         }
-        retention::admit_replacement(&mut state, before, &self.resources, admission)?;
-        admission.bytes(
-            arc_bytes::<BranchMarkRoot>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        let root = retention::admit_live_replacement(
+            image.payload(),
+            state,
+            before,
+            &self.resources,
+            admission,
         )?;
-        let state = Arc::new(state);
-        let mut root = (**image.payload()).clone();
-        root.current = Arc::clone(&state);
-        retention::admit_root(&mut root, None, &self.resources, admission)?;
+        let state = Arc::clone(&root.current);
         let prepared = self.prepare_root_replacement(cell, image, Arc::new(root), admission)?;
         Ok((state, Some(prepared)))
     }

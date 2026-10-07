@@ -40,7 +40,7 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature> for 
         )];
     const REUSE_RULE: &'static str = "exact-source";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(TOTALS_WORK, TOTALS_RETAINED_BYTES);
+        ApplicationArtifactResourceCeiling::new(TOTALS_WORK, DECISION_FACT_BUDGET * 512);
     const STOPPED_OUTCOME: &'static str = "region-output-resource-denied";
 }
 
@@ -98,3 +98,20 @@ pub(super) type OracleRoot = ApplicationOutputGraph<
         ApplicationOutputEdge<AlternateConnection, ApplicationOutputLeaf>,
     ),
 >;
+
+/// The same declared work in an operation that has no producer output slot.
+pub(super) struct UnretainedTotals<const WORK: usize>;
+impl<const WORK: usize> ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>
+    for UnretainedTotals<WORK>
+{
+    type Input = RegionEntries;
+    type Output = RegionArtifact;
+    type Partition = RegionKey;
+    type Reuse = NoWarmStart;
+    type Stopped = RegionStopped;
+    const IDENTITY: &'static str = "checkpoint-unretained-oracle-totals";
+    const EXECUTION: ApplicationComputationExecution =
+        ApplicationComputationExecution::DeterministicPartitioned;
+    const RESOURCES: ApplicationComputationResourceCeiling =
+        ApplicationComputationResourceCeiling::new(WORK, TOTALS_RETAINED_BYTES);
+}

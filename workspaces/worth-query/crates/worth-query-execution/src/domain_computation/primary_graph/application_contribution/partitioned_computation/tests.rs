@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_program::ApplicationComputation
 
 use super::super::WorthQueryManagedComputationResourceDenial;
 use super::installed::input_digest;
+use super::items::planned_items;
 use super::remaining_work::RemainingWork;
 use super::routing::{ComputationPartitionRouting, ComputationPartitionRoutingDenial};
 use super::WorthQueryPartitionedComputationDenial;
@@ -61,19 +62,28 @@ fn two_digests_sharing_their_first_eight_bytes_are_a_collision_naming_the_partit
 }
 
 #[test]
-fn an_item_identity_named_twice_is_denied() {
+fn an_item_routed_again_leaves_its_last_partition_and_charges_a_fresh_route() {
     let mut routing = ComputationPartitionRouting::default();
-    routing
+    let (left, first) = routing
         .route(PartitionItemId(7), digest(1, 0), |_| Ok(()))
-        .expect("the item routes once");
-    let duplicate = routing
+        .expect("the item routes");
+    let (joined, again) = routing
         .route(PartitionItemId(7), digest(2, 0), |_| Ok(()))
-        .expect_err("the plan may not name one item twice");
+        .expect("the item routes again");
+    assert_ne!(joined, left);
+    assert_eq!(again.units(), first.units());
+    assert_eq!(routing.partition_of(PartitionItemId(7)), Some(joined));
+    assert_eq!(routing.partitions().collect::<Vec<_>>(), [joined]);
+}
+
+#[test]
+fn a_plan_naming_items_twice_is_denied_at_the_least() {
+    let entries = [9, 3, 9, 3].map(|item| (PartitionItemId(item), ()));
     assert_eq!(
-        WorthQueryPartitionedComputationDenial::<()>::from(duplicate),
-        WorthQueryPartitionedComputationDenial::DuplicateItem {
-            item: PartitionItemId(7)
-        }
+        planned_items::<(), ()>(entries.into()).err(),
+        Some(WorthQueryPartitionedComputationDenial::DuplicateItem {
+            item: PartitionItemId(3)
+        })
     );
 }
 

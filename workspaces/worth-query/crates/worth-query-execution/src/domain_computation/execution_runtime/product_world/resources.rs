@@ -73,6 +73,14 @@ impl WorthQueryProductWorldResources {
         self.invalidation.clone()
     }
 
+    /// The invalidation window's retained positions and the World's retained
+    /// commits, when the window holds more than the World keeps.
+    pub(crate) fn invalidation_window_past_history(&self) -> Option<(usize, usize)> {
+        let positions = self.invalidation.installation().maximum_retained_positions;
+        let commits = self.budgets.retained_composite_commits().get();
+        (positions > commits).then_some((positions, commits))
+    }
+
     pub(crate) fn into_parts(
         self,
     ) -> (

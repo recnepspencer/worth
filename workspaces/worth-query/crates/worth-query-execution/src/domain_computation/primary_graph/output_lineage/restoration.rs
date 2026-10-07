@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::any::TypeId;
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -14,8 +15,7 @@ mod republication;
 pub(in crate::domain_computation::primary_graph) struct RestoredRecord {
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts:
-        Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
+    pub(in crate::domain_computation::primary_graph) facts: super::RetainedSourceFacts,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -67,14 +67,14 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
-        observed_source_facts: Arc<
-            [super::super::application_attempt::WorthQueryApplicationObservedFact],
-        >,
+        observed_source_facts: super::RetainedSourceFacts,
         resources: Option<
             super::super::application_contribution::WorthQueryProducerDemandResources,
         >,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) -> Option<RestoredRecord> {
+        let computation_source = observed_source_facts.source();
+        let observed_source_facts = Arc::clone(observed_source_facts.postconditions());
         self.record_restored_row(
             output_binding,
             runtime_authority,
@@ -90,6 +90,7 @@ impl WorthQueryApplicationOutputLineage {
             resources,
             verified_witness,
             &mut None,
+            computation_source,
         )
     }
 
@@ -117,6 +118,7 @@ impl WorthQueryApplicationOutputLineage {
         >,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
         republished: &mut Option<republication::RepublishedOutput>,
+        computation_source: super::ComputationSourceEvidence,
     ) -> Option<RestoredRecord> {
         let source = SemanticSource {
             runtime_authority,
@@ -184,6 +186,7 @@ impl WorthQueryApplicationOutputLineage {
             |output| output.facts(),
         );
         let mut recorded = RecordedOutput {
+            computation_source,
             performed_origin: None,
             _retained_capacity: None,
             consumed_outputs: Arc::from([]),
@@ -191,14 +194,12 @@ impl WorthQueryApplicationOutputLineage {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             native_output_witness: verified_witness.map(OnceLock::from).unwrap_or_default(),
-            mutable: Mutex::new(RecordedOutputMutable {
-                computation: None,
-                verification_requirement: Some(
-                    super::invalidation::FullVerificationReason::CheckpointRestore,
-                ),
-                observed_source_facts: Some(observed_source_facts),
+            mutable: Mutex::new(RecordedOutputMutable::new(
+                Some(super::invalidation::FullVerificationReason::CheckpointRestore),
+                (Some(observed_source_facts)).map(|facts| computation_source.retain_facts(facts)),
                 resources,
-            }),
+                super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
+            )),
             settlement_identity: super::RecordedSettlementIdentity::retain(
                 &source,
                 super::ProductCoordinate {
@@ -216,6 +217,7 @@ impl WorthQueryApplicationOutputLineage {
         if let Some(republished) = republished {
             republished.continue_in(&mut recorded);
         }
+        let recorded_source = recorded.computation_source;
         let identity = Arc::clone(&recorded.settlement_identity);
         let cell = Arc::new(OnceLock::new());
         assert!(cell.set(recorded).is_ok());
@@ -229,6 +231,7 @@ impl WorthQueryApplicationOutputLineage {
         );
         self.live_occurrences
             .insert(observation.lifecycle_incarnation());
+        let facts = super::RetainedSourceFacts::retain(recorded_source, facts);
         Some(RestoredRecord { identity, facts })
     }
 
@@ -313,6 +316,7 @@ impl WorthQueryApplicationOutputLineage {
             .or_default();
         let slot = records.len();
         let recorded = RecordedOutput {
+            computation_source: super::ComputationSourceEvidence::unavailable(),
             performed_origin: None,
             _retained_capacity: None,
             consumed_outputs: Arc::from([]),
@@ -320,14 +324,12 @@ impl WorthQueryApplicationOutputLineage {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
-            mutable: Mutex::new(RecordedOutputMutable {
-                computation: None,
-                verification_requirement: Some(
-                    super::invalidation::FullVerificationReason::CheckpointRestore,
-                ),
-                observed_source_facts: None,
+            mutable: Mutex::new(RecordedOutputMutable::new(
+                Some(super::invalidation::FullVerificationReason::CheckpointRestore),
+                None,
                 resources,
-            }),
+                super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
+            )),
             settlement_identity: super::RecordedSettlementIdentity::retain(
                 &source,
                 super::ProductCoordinate {

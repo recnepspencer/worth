@@ -7,6 +7,7 @@ pub(in crate::http::server) fn request_mutation_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
     match kind {
+        Denial::IdempotencyExecutionDenied(kind) => pending_execution_denial(kind),
         Denial::ProductSelection => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
@@ -62,6 +63,48 @@ pub(in crate::http::server) fn request_mutation_denial(
         | Denial::Handler
         | Denial::SourceExpectation
         | Denial::ProgramSelection => {
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
+        }
+    }
+}
+
+// Pending publication uses the same action law as a commit refusal.
+pub(in crate::http::server) fn pending_execution_denial(
+    kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+) -> BankHttpDenial {
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
+    match kind {
+        Kind::ExecutionResource { denial, .. } => {
+            super::commit_denial::execution_resource(denial).1
+        }
+        Kind::ExecutionWorkerPanicked { .. }
+        | Kind::ExecutionUncheckedCustomKernel { .. }
+        | Kind::ExecutionIdentitiesNotCanonical { .. }
+        | Kind::RetentionIdentityExhausted
+        | Kind::SnapshotIdentityExhausted
+        | Kind::CandidateIdentityExhausted
+        | Kind::IndexGenerationIdentityExhausted
+        | Kind::ForeignOperationAttempt
+        | Kind::ForeignExecutionBasis
+        | Kind::ForeignGraphAuthority
+        | Kind::UndeclaredOperationScope
+        | Kind::ResourceEnvelopeMismatch
+        | Kind::ProviderIdentityMismatch
+        | Kind::ProviderGenerationMismatch
+        | Kind::SessionProtocolUnsupported
+        | Kind::ProviderPanicked
+        | Kind::TokenNotMintedForPlan
+        | Kind::EmptyPhysicalSessionIdentity
+        | Kind::SessionIdentityExhausted => BankHttpDenial::new(
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
+        ),
+        Kind::ExecutionNestedPatternStopped { .. }
+        | Kind::ActiveSnapshotCapacityExhausted { .. }
+        | Kind::RetentionCapacityExhausted
+        | Kind::PreparedRootBudgetExhausted { .. }
+        | Kind::IndexMaintenanceBudgetExceeded
+        | Kind::ProviderRejected => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }
     }
@@ -154,3 +197,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod pending_execution_tests;

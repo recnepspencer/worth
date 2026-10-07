@@ -1,9 +1,9 @@
 //! The compute and complete phases of a prepared partitioned computation.
 
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
-use worth_execution::{ExecutionMap, MapKernelContext, MapKernelStop, PartitionItemId};
+use worth_execution::{ExecutionMap, MapKernelContext, MapKernelStop};
 use worth_query_declaration::facade::application_program::{
     ApplicationFeature, ApplicationManagedComputation,
 };
@@ -16,8 +16,9 @@ use super::super::{
 };
 use super::gather_memory::GatheredMemory;
 use super::incremental::{
-    observe_unretained, ComputationDeposit, ComputedIncremental, FullRecording,
-    PreparedIncremental, WorthQueryPartitionedComputationFullCause,
+    observe_unretained, CompletedComputationRetention, ComputationDeposit, ComputedIncremental,
+    FullRecording, PreparedIncremental, PriorAbsence, Suppression,
+    WorthQueryPartitionedComputationFullCause,
 };
 use super::plan::GatheredComputationPartition;
 use super::{
@@ -58,7 +59,7 @@ where
     pub(super) prepared_work: u64,
     pub(super) run: PreparedRun<Schema, Feature, Computation, Owner>,
     /// Where the completed run is left for seal, when a producer runs it.
-    pub(super) deposit: Option<ComputationDeposit>,
+    pub(super) deposit: ComputationDeposit,
 }
 
 /// Every partition gathered, or only the marked ones.
@@ -75,8 +76,7 @@ where
         /// admission takes it over.
         memory: GatheredMemory,
         remaining_work: u64,
-        items: Arc<BTreeMap<PartitionItemId, Owner::Item>>,
-        recording: Option<FullRecording<Computation::Partition>>,
+        recording: Result<FullRecording<Computation::Partition, Owner::Item>, Suppression>,
         cause: WorthQueryPartitionedComputationFullCause,
     },
     Incremental(
@@ -164,7 +164,6 @@ where
                 map,
                 memory,
                 remaining_work,
-                items,
                 recording,
                 cause,
             } => {
@@ -201,22 +200,19 @@ where
                     reduced.map_err(WorthQueryPartitionedComputationDenial::from_reduce)?;
                 let reduced = tree.result().clone();
                 let completed = match recording {
-                    Some(recording) => Some(
-                        recording.complete(
-                            items,
-                            kernel_units
-                                .into_inner()
-                                .unwrap_or_else(std::sync::PoisonError::into_inner),
-                            tree,
-                            tree_memory,
-                            metrics.charged_work,
-                            cause,
-                            report,
-                        ),
+                    Ok(recording) => recording.complete(
+                        kernel_units
+                            .into_inner()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner),
+                        tree,
+                        tree_memory,
+                        metrics.charged_work,
+                        cause,
+                        report,
                     ),
-                    None => {
+                    Err(reason) => {
                         observe_unretained(cause, report);
-                        None
+                        CompletedComputationRetention::Absent(PriorAbsence::Suppressed(reason))
                     }
                 };
                 (reduced, report.charged_work(), completed)
@@ -227,18 +223,14 @@ where
                     computed_work,
                     completed,
                 } = prepared.compute(execution.request, kernel, &reducer)?;
-                (reduced, computed_work, Some(completed))
+                (reduced, computed_work, completed)
             }
         };
         let charged_work = self
             .prepared_work
             .checked_add(computed_work)
             .ok_or_else(exhausted)?;
-        if let (Some(deposit), Some(completed)) = (self.deposit, completed) {
-            *deposit
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(completed);
-        }
+        self.deposit.write(completed);
         Ok(WorthQueryCompletedPartitionedComputation {
             installed: self.installed,
             reduced,

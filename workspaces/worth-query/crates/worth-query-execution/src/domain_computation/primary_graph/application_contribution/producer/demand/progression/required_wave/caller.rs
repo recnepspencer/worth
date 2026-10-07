@@ -121,6 +121,12 @@ where
         );
         match pending {
             Ok(Some(_)) => {}
+            Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+                return Err(denial(
+                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+                    "",
+                ))
+            }
             Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),
             Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
                 return Err(denial(

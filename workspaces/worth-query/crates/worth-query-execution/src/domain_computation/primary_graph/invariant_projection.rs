@@ -1,6 +1,7 @@
 mod admission_denial;
 mod aggregate;
 mod consumed_output;
+mod identity_encoding;
 mod inventory;
 mod locked_reader;
 mod operation_projection_denial;
@@ -365,7 +366,10 @@ impl<Schema, Entity> serde::Serialize for WorthQueryInvariantEntityIdentity<Sche
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
         let mut identity = serializer.serialize_struct("WorthQueryInvariantEntityIdentity", 4)?;
-        identity.serialize_field("authority_identity", &self.authority_identity)?;
+        identity.serialize_field(
+            "authority_identity",
+            &identity_encoding::ProjectionAuthorityEncoding(self.authority_identity),
+        )?;
         identity.serialize_field("entity_id", &self.entity_id)?;
         identity.serialize_field("kind", &self.kind)?;
         identity.serialize_field("entity", self.entity.as_ref())?;

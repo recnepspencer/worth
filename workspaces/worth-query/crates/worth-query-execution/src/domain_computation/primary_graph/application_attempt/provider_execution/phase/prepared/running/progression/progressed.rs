@@ -1,3 +1,4 @@
+mod cleanup_failure;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::{
@@ -34,26 +35,7 @@ where
     let completion = match cleanup.finish(running, terminal, snapshot_release) {
         Ok(completion) => completion,
         Err(()) => {
-            return match outcome {
-                WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished) => {
-                    WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
-                }
-                WorthQueryProviderProgressionOutcome::ProductStale(stale) => {
-                    WorthQueryApplicationCommitOutcome::ProductStale(stale)
-                }
-                WorthQueryProviderProgressionOutcome::NoEffect(no_effect) => {
-                    WorthQueryApplicationCommitOutcome::NoEffect(
-                        crate::domain_computation::primary_graph::WorthQueryApplicationNoEffect::from_world(
-                            no_effect,
-                        ),
-                    )
-                }
-                _ => WorthQueryApplicationCommitOutcome::Indeterminate(
-                    unknown_commit_recovery_evidence(
-                        "managed mutation run failed to finish after provider progression",
-                    ),
-                ),
-            }
+            return cleanup_failure::cleanup_failed_outcome(outcome);
         }
     };
     let committed = outcome.finish(completion).unwrap_or_else(|| {

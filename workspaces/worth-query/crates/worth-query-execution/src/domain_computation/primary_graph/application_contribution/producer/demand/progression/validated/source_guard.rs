@@ -105,7 +105,16 @@ where
             OutputRowStage::Stopped(_) | OutputRowStage::BeforeReady => None,
         };
         let held = ready.as_ref().map(|completion| &completion.authority);
-        if !demand.settled && !matches!(held, Some(Authority::Stable(_) | Authority::Restored(_))) {
+        // A changed source at the Ready's own publication is born stale:
+        // this demand must refresh to the lasting result of that source.
+        // An unrelated later publication still supersedes an unsettled caller.
+        let own_publication = matches!(held, Some(Authority::Committed(receipt))
+            if disclosure.source().selected_product_commit()
+                == Some(receipt.committed_product_publication().composite_commit()));
+        if !demand.settled
+            && !own_publication
+            && !matches!(held, Some(Authority::Stable(_) | Authority::Restored(_)))
+        {
             return Err(match held {
                 Some(_) => denial(
                     WorthQueryOutputDemandDenialKind::Superseded,

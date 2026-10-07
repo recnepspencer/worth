@@ -4,9 +4,7 @@ use bank_domain::model::{AccountId, BankPrincipalId, InstitutionId, Money, USD};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{Deposit, SendMoney, Withdraw};
 use bank_server::{mutations, BankMoneyMovementExecution, BankMutationControls};
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitRecoveryKind,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitRecoveryKind;
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationToken, WorthQueryRequestScope},
     application_entry::WorthQueryApplicationMutationOutcome,
@@ -20,8 +18,10 @@ use super::super::protocol::{
 };
 use super::authentication::BankHttpApplicationAuthenticator;
 
+mod commit_denial;
+pub(super) use commit_denial::commit_denial;
 mod denial;
-pub(super) use denial::request_mutation_denial;
+pub(super) use denial::{pending_execution_denial, request_mutation_denial};
 
 pub(super) enum AdmittedBankHttpMutation {
     Deposit(Deposit),
@@ -302,94 +302,5 @@ fn cancelled_or_denied(denial: BankHttpDenial) -> BankHttpMutationFailureKind {
         BankHttpDenialKind::Cancelled => BankHttpMutationFailureKind::Cancelled,
         BankHttpDenialKind::DeadlineExceeded => BankHttpMutationFailureKind::DeadlineExceeded,
         _ => BankHttpMutationFailureKind::Aborted,
-    }
-}
-
-pub(super) fn commit_denial(
-    kind: WorthQueryApplicationCommitDenialKind,
-) -> (BankHttpMutationFailureKind, BankHttpDenial) {
-    use WorthQueryApplicationCommitDenialKind as Denial;
-    match kind {
-        Denial::ProductBasisStale => (
-            BankHttpMutationFailureKind::ProductStale,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        ),
-        Denial::CustomInvariantDenied => (
-            BankHttpMutationFailureKind::InvariantViolated,
-            BankHttpDenial::new(
-                BankHttpDenialKind::MalformedRequest,
-                BankHttpNextAction::CorrectRequest,
-            ),
-        ),
-        Denial::IdempotencyIntentDrift => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::Stale,
-                BankHttpNextAction::CorrectRequest,
-            ),
-        ),
-        // The original request applied; only its answer left the window. A
-        // dedicated kind keeps clients from resubmitting it under a new key.
-        Denial::IdempotencyWindowExpired => (
-            BankHttpMutationFailureKind::IdempotencyWindowExpired,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        ),
-        // The key's earlier commit took effect; reading current state shows it.
-        Denial::IdempotencyReceiptNotRetained { .. } => (
-            BankHttpMutationFailureKind::Stale,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        ),
-        Denial::IdempotencyIntentUnverifiable => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::InternalDenied,
-                BankHttpNextAction::ContactOperator,
-            ),
-        ),
-        Denial::UniqueValueTaken
-        | Denial::CandidateValidatorWorkExceeded { .. }
-        | Denial::WorkflowSettlementDenied { .. }
-        | Denial::PreparedRootBudgetExhausted { .. }
-        | Denial::ElevationTransitionRequired
-        | Denial::ElevationRequestProgramMismatch
-        | Denial::ElevationApprovalProgramMismatch
-        | Denial::ElevationCloseProgramMismatch
-        | Denial::MandatoryReviewProgramMismatch
-        | Denial::DelegationActivationRequired
-        | Denial::CapabilityRevocationRequired
-        | Denial::ApplicationProgramRequired
-        | Denial::WorkflowAuthorityRequired => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::MalformedRequest,
-                BankHttpNextAction::CorrectRequest,
-            ),
-        ),
-        Denial::ProviderRejected
-        | Denial::ActiveSnapshotCapacityExhausted { .. }
-        | Denial::RetentionCapacityExhausted
-        | Denial::IndexMaintenanceBudgetExceeded => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
-        ),
-        Denial::RetentionIdentityExhausted
-        | Denial::SnapshotIdentityExhausted
-        | Denial::CandidateIdentityExhausted
-        | Denial::IndexGenerationIdentityExhausted
-        | Denial::ProgramActivationUnresolved
-        | Denial::UniqueIndexUnavailable
-        | Denial::ProgramSupportRetired
-        | Denial::MutationBindingMismatch
-        | Denial::MutationInputMismatch => (
-            BankHttpMutationFailureKind::Aborted,
-            BankHttpDenial::new(
-                BankHttpDenialKind::Unavailable,
-                BankHttpNextAction::ContactOperator,
-            ),
-        ),
-        Denial::ProgramNotActiveOnOccurrence { .. } => (
-            BankHttpMutationFailureKind::ProductStale,
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        ),
     }
 }

@@ -155,7 +155,8 @@ mod tests {
                     super::super::rebase(
                         runtime,
                         snapshot,
-                        super::super::PreparedSourceFactRebase::admit(vec![fact]).unwrap(),
+                        super::super::PreparedSourceFactRebase::admit(vec![fact], [].into())
+                            .unwrap(),
                         &std::collections::BTreeSet::new(),
                         true,
                         0,
@@ -178,8 +179,11 @@ mod tests {
                 super::super::rebase(
                     runtime,
                     snapshot,
-                    super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()])
-                        .unwrap(),
+                    super::super::PreparedSourceFactRebase::admit(
+                        vec![stale_revision.clone()],
+                        [].into()
+                    )
+                    .unwrap(),
                     &std::collections::BTreeSet::new(),
                     true,
                     64,
@@ -191,8 +195,11 @@ mod tests {
             match super::super::rebase(
                 runtime,
                 snapshot,
-                super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()])
-                    .unwrap(),
+                super::super::PreparedSourceFactRebase::admit(
+                    vec![stale_revision.clone()],
+                    [].into(),
+                )
+                .unwrap(),
                 &std::collections::BTreeSet::new(),
                 false,
                 64,

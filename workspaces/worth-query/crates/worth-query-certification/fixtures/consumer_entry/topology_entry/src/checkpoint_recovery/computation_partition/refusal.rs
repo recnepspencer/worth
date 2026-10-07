@@ -175,7 +175,7 @@ fn installation_refusal<Binding: RegionTotalsBinding>(
         Default::default(),
         support::limits(
             32,
-            support::invalidation(128 * 1_024 * 1_024, 1_000_000, 128),
+            support::invalidation(128 * 1_024 * 1_024, 1_000_000, 32),
         ),
         support::seed_cycle,
     );

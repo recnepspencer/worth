@@ -4,6 +4,7 @@ mod cancellation;
 mod capacity;
 mod preparation;
 mod recovery;
+use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
 pub(super) use capacity::{arc_bytes, denial, tree_insert_bytes, tree_work};
 pub(in crate::domain_computation::primary_graph) use preparation::prepare;
 pub(in crate::domain_computation::primary_graph) use recovery::PreparedLineageRecoveryMetadata;
@@ -37,11 +38,10 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     pub(super) actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
     /// A sealed partitioned computation run and the record its prior state
-    /// came from. A recovered slot has none.
-    pub(super) computation: Option<(
-        crate::domain_computation::primary_graph::application_contribution::SealedComputationRun,
-        Option<super::PriorComputationRecord>,
-    )>,
+    /// came from. World recovery carries both unchanged to its replacement slot.
+    pub(super) computation: Option<SealedComputationRetention>,
+    pub(super) computation_assigned: bool,
+    pub(super) prior_computation: Option<super::PriorComputationRecord>,
     filled: bool,
 }
 
@@ -90,6 +90,8 @@ impl CancelledLineageSlot {
 
 /// What filling a prepared slot hands its publication.
 pub(in crate::domain_computation::primary_graph) struct RecordedLineageSlot {
+    pub(in crate::domain_computation::primary_graph) computation_source:
+        super::ComputationSourceEvidence,
     pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
@@ -118,10 +120,16 @@ impl PreparedOutputLineageSlot {
 
     pub(in crate::domain_computation::primary_graph) fn retain_computation(
         &mut self,
-        sealed: crate::domain_computation::primary_graph::application_contribution::SealedComputationRun,
+        sealed: SealedComputationRetention,
         prior: Option<super::PriorComputationRecord>,
     ) {
-        assert!(self.computation.replace((sealed, prior)).is_none());
+        assert!(
+            !self.computation_assigned,
+            "a prepared slot retains completion once"
+        );
+        self.computation_assigned = true;
+        self.computation = Some(sealed);
+        self.prior_computation = prior;
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_completed_decision_reuse(
@@ -174,9 +182,20 @@ impl PreparedOutputLineageSlot {
             let displaced = self.partition.and_then(|partition| {
                 lineage.displaced_settlement(&self.source, self.coordinate, partition)
             });
-            let computation = self.computation.take().map(|(sealed, prior)| {
-                lineage.retain_computation(sealed, prior.as_ref(), displaced.as_ref())
-            });
+            let sealed = self
+                .computation
+                .take()
+                .expect("unfilled slot owns its total retention result");
+            let computation = match sealed {
+                SealedComputationRetention::Produced(sealed) => lineage.retain_computation(
+                    sealed,
+                    self.prior_computation.as_ref(),
+                    displaced.as_ref(),
+                ),
+                SealedComputationRetention::Absent(absence) => {
+                    super::retained_computation::RecordedComputation::Absent(absence)
+                }
+            };
             let identity = lineage.record_prepared(
                 application,
                 consumed_outputs,
@@ -191,6 +210,11 @@ impl PreparedOutputLineageSlot {
         };
         self.filled = true;
         RecordedLineageSlot {
+            computation_source: self
+                .record_cell
+                .get()
+                .expect("performed slot is filled")
+                .computation_source,
             identity,
             output_witness,
             displaced,

@@ -45,6 +45,32 @@ fn a_leaf_reads_the_value_its_partition_holds() {
     assert_eq!(*tree.result(), 127, "the result reduces the leaves read");
 }
 
+#[test]
+fn a_plans_build_work_is_the_work_its_checked_build_charges() {
+    let mut state = 0x2545_f491_4f6c_dd1d_u64;
+    let mut next = move || {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        state
+    };
+    for case in 0..200 {
+        let count = usize::try_from(case % 40).unwrap();
+        let mut identities = (0..count)
+            .map(|_| if case % 2 == 0 { next() % 64 } else { next() })
+            .collect::<Vec<_>>();
+        identities.sort_unstable();
+        identities.dedup();
+        let values = identities.iter().map(|value| value % 7).collect();
+        let (_, metrics) = from_plan(plan(&identities), values, 0, sum).unwrap();
+        assert_eq!(
+            plan(&identities).checked_build_work(),
+            Some(metrics.charged_work),
+            "{identities:?}"
+        );
+    }
+}
+
 fn oracle(values: &[(PartitionIdentity, f64)]) -> f64 {
     if values.is_empty() {
         return 0.0;
@@ -223,4 +249,21 @@ fn equal_interior_encoding_cuts_off_ancestor_recombination() {
         ) > 2
     );
     assert_eq!(*tree.result(), 100);
+}
+
+#[test]
+fn declared_build_work_has_hand_counted_small_shapes() {
+    // 1 alone: both spines contain 1. In [1, 2], root 1 has right child 2:
+    // L=1, R=2. In [1, 2, 3], root 3 has left 1, whose right child is 2:
+    // L=2, R=1. Count nodes and spine nodes, not the implementation's meter.
+    for (ids, left, right, expected) in [
+        (&[1][..], 1, 1, 7),
+        (&[1, 2][..], 1, 2, 15),
+        (&[1, 2, 3][..], 2, 1, 24),
+    ] {
+        assert_eq!(9 * ids.len() as u64 - left - right, expected);
+        assert_eq!(plan(ids).checked_build_work(), Some(expected));
+        let (_, metrics) = from_plan(plan(ids), vec![1_u64; ids.len()], 0, sum).unwrap();
+        assert_eq!(metrics.charged_work, expected);
+    }
 }

@@ -3,11 +3,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock, RwLockReadGuard, Weak};
 
 use crate::runtime::{
-    PositionedRelationalSnapshot, RelationalRuntime, RelationalRuntimeOwnerBinding,
-    RelationalRuntimePublicationBinding,
+    RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
 };
 
-use super::{CompanionBranchCell, CompanionPreflightBudget, RelationalPublicationCompanion};
+use super::{CompanionPreflightBudget, RelationalPublicationCompanion};
+
+mod head_cell;
 
 #[derive(Debug)]
 pub(crate) enum CompanionRegistrationState {
@@ -150,11 +151,16 @@ impl CompanionRegistrationEpoch<'_> {
 pub enum PublicationCompanionRegistrationStop {
     OwnerUnavailable,
     PublicationPending,
+    /// A publication holds its companion epoch; head-cell installation did not run.
+    HeadCellPublicationContended,
     RebindRequired,
     Superseded,
     IdentityExhausted,
-    ForeignSnapshot,
-    CellCapacityExhausted { maximum_bytes: u64 },
+    ForeignRuntime,
+    HeadUnavailable,
+    CellCapacityExhausted {
+        maximum_bytes: u64,
+    },
 }
 
 /// A runtime-owned registration entry, separate from individual publications.
@@ -268,14 +274,6 @@ impl PublicationCompanionRegistrationPort {
 }
 
 impl PendingCompanionRegistration {
-    pub fn mint_branch_cell<T: Send + Sync + 'static>(
-        &self,
-        selected: &PositionedRelationalSnapshot,
-        initial: Arc<T>,
-    ) -> Result<CompanionBranchCell<T>, PublicationCompanionRegistrationStop> {
-        self.port.mint_cell(self.generation, selected, initial)
-    }
-
     pub fn activate(
         self,
         participant: Arc<dyn RelationalPublicationCompanion>,
@@ -309,46 +307,6 @@ impl PendingCompanionRegistration {
                     generation: self.generation,
                     _client: client,
                 })
-            }
-            _ => Err(PublicationCompanionRegistrationStop::Superseded),
-        }
-    }
-}
-
-impl PublicationCompanionRegistration {
-    pub fn mint_branch_cell<T: Send + Sync + 'static>(
-        &self,
-        selected: &PositionedRelationalSnapshot,
-        initial: Arc<T>,
-    ) -> Result<CompanionBranchCell<T>, PublicationCompanionRegistrationStop> {
-        self.port.mint_cell(self.generation, selected, initial)
-    }
-}
-
-impl PublicationCompanionRegistrationPort {
-    fn mint_cell<T: Send + Sync + 'static>(
-        &self,
-        generation: u64,
-        selected: &PositionedRelationalSnapshot,
-        initial: Arc<T>,
-    ) -> Result<CompanionBranchCell<T>, PublicationCompanionRegistrationStop> {
-        let _operation = self
-            .owner
-            .admit()
-            .ok_or(PublicationCompanionRegistrationStop::OwnerUnavailable)?;
-        if selected.runtime_instance_id() != self.runtime_instance_id {
-            return Err(PublicationCompanionRegistrationStop::ForeignSnapshot);
-        }
-        let epoch = self.publication.companion_registry().enter()?;
-        match &*epoch.state {
-            CompanionRegistrationState::RequiredRebind { generation: active }
-            | CompanionRegistrationState::RequiredActive {
-                generation: active, ..
-            } if *active == generation => {
-                let retention = self.publication.companion_registry().reserve_cell()?;
-                Ok(CompanionBranchCell::new(
-                    selected, generation, initial, retention,
-                ))
             }
             _ => Err(PublicationCompanionRegistrationStop::Superseded),
         }

@@ -320,7 +320,7 @@ where
         &self,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<
-        Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+        crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         WorthQueryOutputDemandDenial,
     > {
         if !settlement.belongs_to(self) {

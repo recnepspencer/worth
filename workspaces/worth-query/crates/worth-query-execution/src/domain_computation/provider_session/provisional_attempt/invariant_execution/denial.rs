@@ -26,6 +26,10 @@ pub enum WorthQueryCustomInvariantDenial {
 /// amount the attempt needed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantExecutionDenialKind {
+    /// Validation was refused by the execution owner before effects.
+    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    /// Validation was stopped by cancellation or its deadline.
+    ExecutionControlStopped(crate::domain_computation::WorthQueryProviderSessionControlStopKind),
     /// No installed invariant requirement exists for the requested slot.
     InvariantNotInstalled,
     /// The requirement's executor role is not the role of the provider running

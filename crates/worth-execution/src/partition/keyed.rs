@@ -3,13 +3,12 @@ use std::mem::size_of;
 
 use worth_foundational::PartitionIdentity;
 
-use super::{PartitionItemId, PartitionRoute, PartitionWork, SourceFactId};
+use super::{PartitionItemId, PartitionWork};
 use crate::report::ChargedBytes;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyedItem<K> {
     pub item: PartitionItemId,
-    pub source_fact: SourceFactId,
     pub key: K,
     pub partition: PartitionIdentity,
 }
@@ -58,17 +57,95 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
         Self::default()
     }
 
-    pub fn route(&self, item: PartitionItemId) -> Option<PartitionRoute> {
-        self.items.get(&item).map(|entry| PartitionRoute {
-            partition: entry.partition,
-            source_fact: entry.source_fact,
-        })
+    pub fn route(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
+        self.items.get(&item).map(|entry| entry.partition)
+    }
+
+    /// The full key owning this compact partition identity.
+    pub fn key(&self, partition: PartitionIdentity) -> Option<&K> {
+        self.identities.get(&partition)
     }
 
     pub fn members(&self, partition: PartitionIdentity) -> Option<&BTreeSet<PartitionItemId>> {
         self.identities
             .get(&partition)
             .and_then(|key| self.keys.get(key).map(|(_, members)| members))
+    }
+
+    /// Every partition that holds an item, in ascending identity order.
+    pub fn partitions(&self) -> impl Iterator<Item = PartitionIdentity> + '_ {
+        self.identities.keys().copied()
+    }
+
+    /// What the partitioner retains now, as `retained_bytes` counts it, or
+    /// `None` when that does not fit a byte count.
+    pub fn charged_bytes(&self) -> Option<u64> {
+        Self::retained_bytes(self.items.len(), self.keys.len(), self.key_bytes)
+    }
+
+    /// A copy holding only the items `keep` names, each in the partition it
+    /// has here: the partitioner that upserting exactly those items would
+    /// leave. Before the copy is built, `admit` is offered its retained
+    /// bound, counted as `upsert` counts it; a refusal builds nothing.
+    /// `keep` must return the same answer on both passes. Bound counting walks
+    /// retained key groups without proportional allocation; after admission,
+    /// copying evaluates every item again in ascending item identity order.
+    pub fn kept<Admission>(
+        &self,
+        mut keep: impl FnMut(PartitionItemId) -> bool,
+        admit: impl FnOnce(u64) -> Result<(), Admission>,
+    ) -> Result<Self, KeyedEditDenial<Admission>> {
+        let (mut item_count, mut key_count, mut key_bytes) = (0_usize, 0_usize, 0_u64);
+        for (_, members) in self.keys.values() {
+            let mut first = true;
+            for item in members {
+                if !keep(*item) {
+                    continue;
+                }
+                let entry = &self.items[item];
+                item_count = item_count
+                    .checked_add(1)
+                    .ok_or(KeyedEditDenial::BoundOverflow)?;
+                let copies = if first {
+                    key_count = key_count
+                        .checked_add(1)
+                        .ok_or(KeyedEditDenial::BoundOverflow)?;
+                    first = false;
+                    3
+                } else {
+                    1
+                };
+                key_bytes = entry
+                    .key
+                    .additional_charged_bytes()
+                    .checked_mul(copies)
+                    .and_then(|bytes| key_bytes.checked_add(bytes))
+                    .ok_or(KeyedEditDenial::BoundOverflow)?;
+            }
+        }
+        let bound = Self::retained_bytes(item_count, key_count, key_bytes)
+            .ok_or(KeyedEditDenial::BoundOverflow)?;
+        admit(bound).map_err(KeyedEditDenial::Admission)?;
+        let mut copy = Self::default();
+        for entry in self.items.values().filter(|entry| keep(entry.item)) {
+            let key_heap = entry.key.additional_charged_bytes();
+            if !copy.keys.contains_key(&entry.key) {
+                let (identity_key, group_key) = (entry.key.clone(), entry.key.clone());
+                copy.key_bytes = copy
+                    .key_bytes
+                    .saturating_add(identity_key.additional_charged_bytes())
+                    .saturating_add(group_key.additional_charged_bytes());
+                copy.identities.insert(entry.partition, identity_key);
+                copy.keys
+                    .insert(group_key, (entry.partition, BTreeSet::new()));
+            }
+            if let Some((_, members)) = copy.keys.get_mut(&entry.key) {
+                members.insert(entry.item);
+            }
+            copy.key_bytes = copy.key_bytes.saturating_add(key_heap);
+            copy.items.insert(entry.item, entry.clone());
+        }
+        Ok(copy)
     }
 
     /// The most bytes the partitioner retains with `items` items in `keys`
@@ -130,19 +207,6 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
         admit(bound).map_err(KeyedEditDenial::Admission)?;
         if self.items.get(&entry.item) == Some(&entry) {
             return Ok(PartitionWork::default());
-        }
-        if self.items.get(&entry.item).is_some_and(|previous| {
-            previous.key == entry.key && previous.partition == entry.partition
-        }) {
-            self.key_bytes = self
-                .key_bytes
-                .saturating_sub(previous_heap)
-                .saturating_add(key_heap);
-            self.items.insert(entry.item, entry);
-            return Ok(PartitionWork {
-                members_visited: 1,
-                ..PartitionWork::default()
-            });
         }
         let rerouted = self
             .items

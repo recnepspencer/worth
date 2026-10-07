@@ -112,6 +112,10 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// The provider could not resolve the key yet: its snapshot or retention
     /// capacity is in use, or it could not answer. Nothing took effect.
     IdempotencyUnavailable,
+    /// Execution refused pending-publication recovery while resolving this key.
+    IdempotencyExecutionDenied(
+        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+    ),
     /// The provider has run out of snapshot or retention identities, so no
     /// key resolves until the runtime is reconfigured.
     IdempotencyIdentityExhausted,
@@ -254,6 +258,7 @@ const fn idempotency_kind(
     use WorthQueryApplicationIdempotencyResolutionDenialKind as Resolution;
     use WorthQueryApplicationRequestMutationDenialKind as Request;
     match kind {
+        Resolution::ExecutionDenied(kind) => Request::IdempotencyExecutionDenied(kind),
         Resolution::Authorization(kind) => Request::Authorization(kind),
         Resolution::ForeignAdmission => Request::IdempotencyForeignAdmission,
         Resolution::ActiveSnapshotCapacityExhausted { .. }

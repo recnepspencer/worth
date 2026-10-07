@@ -11,6 +11,13 @@ use crate::domain_computation::primary_graph::application_runtime::WorthQueryExt
 use crate::domain_computation::primary_graph::provider::WorthQueryOutstandingInFlightDenial;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
 
+use crate::domain_computation::primary_graph::application_runtime::InstalledTransportPendingReason;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
+use crate::domain_computation::{
+    WorthQueryProviderSessionControlStopKind as Control,
+    WorthQueryProviderSessionDenialKind as SessionKind,
+};
+
 /// Why a host could not install an external-effect transport.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryExternalTransportInstallationDenial {
@@ -50,6 +57,16 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
     AttemptAdmissionDenied(WorthQueryExternalDispatchAttemptDenial),
     AlreadyCompleted,
     CompletionPublicationPending,
+    /// Completion publication is retryable; its execution refusal stays typed.
+    CompletionExecutionDenied {
+        stage: Stage,
+        kind: SessionKind,
+    },
+    /// Completion publication is retryable after this control stop.
+    CompletionExecutionControlStopped {
+        stage: Stage,
+        kind: Control,
+    },
     TerminalIndexUnavailable,
     CanonicalDerivationDenied,
     TimeObservationDenied,
@@ -80,6 +97,16 @@ pub enum WorthQueryExternalRedispatchDenial {
     AttemptAdmissionDenied(WorthQueryExternalDispatchAttemptDenial),
     AlreadyCompleted,
     CompletionPublicationPending,
+    /// Completion publication is retryable; its execution refusal stays typed.
+    CompletionExecutionDenied {
+        stage: Stage,
+        kind: SessionKind,
+    },
+    /// Completion publication is retryable after this control stop.
+    CompletionExecutionControlStopped {
+        stage: Stage,
+        kind: Control,
+    },
     TerminalIndexUnavailable,
     /// Canonical derivation for the dispatch event identity failed.
     CanonicalDerivationDenied,
@@ -106,6 +133,12 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
             Redispatch::AttemptAdmissionDenied(attempt) => Kind::AttemptAdmissionDenied(attempt),
             Redispatch::AlreadyCompleted => Kind::AlreadyCompleted,
             Redispatch::CompletionPublicationPending => Kind::CompletionPublicationPending,
+            Redispatch::CompletionExecutionDenied { stage, kind } => {
+                Kind::CompletionExecutionDenied { stage, kind }
+            }
+            Redispatch::CompletionExecutionControlStopped { stage, kind } => {
+                Kind::CompletionExecutionControlStopped { stage, kind }
+            }
             Redispatch::TerminalIndexUnavailable => Kind::TerminalIndexUnavailable,
             Redispatch::CanonicalDerivationDenied => Kind::CanonicalDerivationDenied,
             Redispatch::TimeObservationDenied => Kind::TimeObservationDenied,
@@ -177,6 +210,12 @@ pub(super) fn redispatch_preparation(
         Preparation::AttemptAdmissionDenied(attempt) => Redispatch::AttemptAdmissionDenied(attempt),
         Preparation::AlreadyCompleted => Redispatch::AlreadyCompleted,
         Preparation::CompletionPublicationPending => Redispatch::CompletionPublicationPending,
+        Preparation::CompletionExecutionDenied { stage, kind } => {
+            Redispatch::CompletionExecutionDenied { stage, kind }
+        }
+        Preparation::CompletionExecutionControlStopped { stage, kind } => {
+            Redispatch::CompletionExecutionControlStopped { stage, kind }
+        }
         Preparation::TerminalIndexUnavailable => Redispatch::TerminalIndexUnavailable,
         Preparation::CanonicalDerivationDenied => Redispatch::CanonicalDerivationDenied,
         Preparation::TimeObservationDenied => Redispatch::TimeObservationDenied,
@@ -187,3 +226,36 @@ pub(super) fn redispatch_preparation(
 #[cfg(test)]
 #[path = "denial_tests.rs"]
 mod tests;
+
+impl InstalledTransportPendingReason {
+    pub(in crate::domain_computation::primary_graph) const fn dispatch_preparation_denial(
+        self,
+    ) -> WorthQueryExternalDispatchPreparationDenial {
+        use InstalledTransportPendingReason as Pending;
+        use WorthQueryExternalDispatchPreparationDenial as Preparation;
+        match self {
+            Pending::ExecutionDenied { stage, kind } => {
+                Preparation::CompletionExecutionDenied { stage, kind }
+            }
+            Pending::ExecutionControlStopped { stage, kind } => {
+                Preparation::CompletionExecutionControlStopped { stage, kind }
+            }
+            Pending::UnknownCompletion
+            | Pending::ConcurrentContinuation
+            | Pending::PublicationRetryRequired
+            | Pending::PublicationAtCapacity
+            | Pending::ProductRecoveryRequired
+            | Pending::RecoveryStaleProduct
+            | Pending::TerminalProtectionUnavailable
+            | Pending::TerminalReleaseUnavailable => Preparation::CompletionPublicationPending,
+        }
+    }
+}
+
+impl WorthQueryExternalDispatchPreparationDenial {
+    pub(in crate::domain_computation::primary_graph) fn redispatch_denial(
+        self,
+    ) -> WorthQueryExternalRedispatchDenial {
+        redispatch_preparation(self)
+    }
+}

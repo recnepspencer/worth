@@ -3,6 +3,10 @@ use sha2::{Digest, Sha256};
 mod capture;
 mod encode;
 mod facts;
+mod producer_computation;
+pub(in crate::domain_computation::primary_graph) use producer_computation::{
+    decode as decode_checkpoint_computation, CheckpointProducerFacts,
+};
 mod resources;
 mod section_bytes;
 #[cfg(test)]
@@ -11,7 +15,6 @@ mod tests;
 use capture::merge_accepted_outputs;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;
-pub(in crate::domain_computation::primary_graph) use facts::decode_for_wire_version as decode_producer_facts_for_wire_version;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::encode as encode_producer_facts;
 pub use section_bytes::{
@@ -19,17 +22,12 @@ pub use section_bytes::{
 };
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 8;
+const FORMAT_VERSION: u16 = 9;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
-const LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
-const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES + 17;
-/// Formats 5, 6 and 7 share one row layout; they differ in the fact kinds
-/// their payload may hold, and that payload is never read.
-const MINIMUM_V5_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_ACCEPTED_OUTPUT_BYTES + 8;
-/// Format 8 adds the accepted-output posture and the fact wire version.
-const MINIMUM_V8_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_V5_ACCEPTED_OUTPUT_BYTES + 1 + 2;
+// Version 9 preserves the row layout and certifies the exporter exclusion.
+const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8 + 17 + 8 + 1 + 2;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
@@ -87,7 +85,7 @@ impl WorthQueryApplicationCheckpoint {
             return Err("Query application checkpoint checksum differs".to_owned());
         }
         let version = u16::from_be_bytes([body[0], body[1]]);
-        if !(3..=FORMAT_VERSION).contains(&version) {
+        if version != FORMAT_VERSION {
             return Err(format!(
                 "Query application checkpoint format {version} is unsupported"
             ));
@@ -99,12 +97,7 @@ impl WorthQueryApplicationCheckpoint {
         let accepted_count = usize::try_from(cursor.next_u64()?)
             .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
         cursor.next_bytes(native_len)?;
-        let minimum = match version {
-            3 => LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES,
-            4 => MINIMUM_ACCEPTED_OUTPUT_BYTES,
-            5..=7 => MINIMUM_V5_ACCEPTED_OUTPUT_BYTES,
-            _ => MINIMUM_V8_ACCEPTED_OUTPUT_BYTES,
-        };
+        let minimum = MINIMUM_ACCEPTED_OUTPUT_BYTES;
         if accepted_count > cursor.remaining.len() / minimum {
             return Err("checkpoint accepted-output count exceeds its payload".to_owned());
         }
@@ -118,14 +111,10 @@ impl WorthQueryApplicationCheckpoint {
             let producer = std::str::from_utf8(cursor.next_bytes(producer_len)?)
                 .map_err(|_| "checkpoint producer identity is not UTF-8".to_owned())?
                 .to_owned();
-            let posture = if version >= FORMAT_VERSION {
-                match cursor.next_byte()? {
-                    0 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
-                    1 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::StableReused,
-                    _ => return Err("checkpoint accepted output posture is invalid".to_owned()),
-                }
-            } else {
-                super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed
+            let posture = match cursor.next_byte()? {
+                0 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
+                1 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::StableReused,
+                _ => return Err("checkpoint accepted output posture is invalid".to_owned()),
             };
             let source = cursor
                 .next_bytes(32)?
@@ -158,7 +147,7 @@ impl WorthQueryApplicationCheckpoint {
                 .next_bytes(32)?
                 .try_into()
                 .expect("the checkpoint idempotency identity length is exact");
-            let resources = resources::decode_profile(&mut cursor, version)?;
+            let resources = resources::decode_profile(&mut cursor)?;
             let role_count = usize::try_from(cursor.next_u64()?)
                 .map_err(|_| "checkpoint output-role count exceeds this host".to_owned())?;
             if role_count > cursor.remaining.len() / (8 + 1 + 8 + 16) {
@@ -190,45 +179,24 @@ impl WorthQueryApplicationCheckpoint {
             if roles.windows(2).any(|pair| pair[0].role >= pair[1].role) {
                 return Err("checkpoint output roles are duplicated or non-canonical".to_owned());
             }
-            let (producer_facts, producer_fact_wire_version) = if version >= 5 {
-                // Before format 8 a row's facts are at its format's version.
-                let fact_version = if version >= FORMAT_VERSION {
-                    cursor.next_u16()?
-                } else {
-                    version
-                };
-                let fact_len = usize::try_from(cursor.next_u64()?)
-                    .map_err(|_| "checkpoint producer fact length exceeds this host".to_owned())?;
-                if fact_len > facts::MAXIMUM_FACT_BYTES {
-                    return Err("checkpoint producer fact payload length is invalid".to_owned());
+            let fact_version = cursor.next_u16()?;
+            let fact_len = usize::try_from(cursor.next_u64()?)
+                .map_err(|_| "checkpoint producer fact length exceeds this host".to_owned())?;
+            if fact_len > facts::MAXIMUM_FACT_BYTES {
+                return Err("checkpoint producer fact payload length is invalid".to_owned());
+            }
+            let (producer_facts, producer_fact_wire_version) = if fact_len == 0 {
+                if fact_version != 0 {
+                    return Err("checkpoint empty producer facts carry a wire version".to_owned());
                 }
-                if fact_len == 0 {
-                    if version >= FORMAT_VERSION && fact_version != 0 {
-                        return Err(
-                            "checkpoint empty producer facts carry a wire version".to_owned()
-                        );
-                    }
-                    (None, 0)
-                } else {
-                    let bytes = cursor.next_bytes(fact_len)?;
-                    match fact_version {
-                        facts::WIRE_VERSION => {
-                            facts::decode_for_wire_version(bytes, fact_version)?;
-                            (Some(bytes.to_vec()), fact_version)
-                        }
-                        // Captured before facts were kept for roots alone:
-                        // the row may have consumed other outputs. Its facts
-                        // are not read, and the row starts Fresh.
-                        5..=7 => (None, 0),
-                        _ => {
-                            return Err(
-                                "checkpoint producer fact wire version is unsupported".to_owned()
-                            )
-                        }
-                    }
-                }
-            } else {
                 (None, 0)
+            } else {
+                if fact_version != facts::WIRE_VERSION {
+                    return Err("checkpoint producer fact wire version is unsupported".to_owned());
+                }
+                let bytes = cursor.next_bytes(fact_len)?;
+                facts::decode_for_wire_version(bytes, fact_version)?;
+                (Some(bytes.to_vec()), fact_version)
             };
             accepted_outputs.push(
                 super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {

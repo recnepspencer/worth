@@ -1,7 +1,4 @@
-use std::{
-    mem::size_of,
-    panic::{catch_unwind, AssertUnwindSafe},
-};
+use std::{mem::size_of, panic::AssertUnwindSafe};
 
 use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture, ExecutionReport};
 
@@ -204,7 +201,7 @@ where
         Err(stop) => Err(KernelFailure::Stop(stop)),
         Ok(()) => {
             let _meter_context = context.enter();
-            catch_unwind(AssertUnwindSafe(|| kernel(&mut context)))
+            super::panic_boundary::contain(AssertUnwindSafe(|| kernel(&mut context)))
                 .unwrap_or(Err(KernelFailure::Panic))
         }
     };

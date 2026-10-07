@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::provider::relational_execution_denial;
 use worth_relational::facade::{
     branch::RelationalMaterializationError,
     transactions::{ConflictClass, InvariantViolationFields, TransactionCommitError},
@@ -25,6 +26,10 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
     ProductActivationUnavailable,
     /// The prepared restoration's invariant evidence was not admitted.
     InvariantAdmission(WorthQueryGeneratedOutputInvariantAdmissionDenial),
+    /// The execution owner refused restoration before publication.
+    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    /// The execution owner stopped restoration before publication.
+    ExecutionControlStopped(crate::domain_computation::WorthQueryProviderSessionControlStopKind),
     /// The restoration could not be prepared.
     Preparation,
     /// A custom invariant rejected the prepared restoration; the fields name it
@@ -41,10 +46,47 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
 pub(super) fn preparation_failure_cause(
     error: &RelationalMaterializationError,
 ) -> WorthQueryGeneratedOutputRestorationFailureCause {
-    let RelationalMaterializationError::Commit(TransactionCommitError::Conflict { error, .. }) =
-        error
-    else {
-        return WorthQueryGeneratedOutputRestorationFailureCause::Preparation;
+    use WorthQueryGeneratedOutputRestorationFailureCause as Cause;
+    let error = match error {
+        RelationalMaterializationError::Commit(error) => error,
+        RelationalMaterializationError::OwnerUnavailable
+        | RelationalMaterializationError::SourceCommitMismatch
+        | RelationalMaterializationError::SourceIsNotCompleteCreatePublication
+        | RelationalMaterializationError::SourceRecordUnavailable(_)
+        | RelationalMaterializationError::BranchMismatch
+        | RelationalMaterializationError::SuspensionCommitMismatch
+        | RelationalMaterializationError::CandidateManifestMismatch
+        | RelationalMaterializationError::PublicationResultMismatch
+        | RelationalMaterializationError::TransactionAdmission(_)
+        | RelationalMaterializationError::TransactionStaging(_) => return Cause::Preparation,
+    };
+    let error = match error {
+        TransactionCommitError::Execution { denial, .. } => {
+            // A new public denial kind must force an explicit decision here.
+            #[allow(clippy::infallible_destructuring_match)]
+            let cause = match denial.kind {
+                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
+                    cause
+                }
+            };
+            return match relational_execution_denial::relational_execution_kind(
+                cause,
+                denial.partition_identity,
+            ) {
+                Ok(kind) => Cause::ExecutionDenied(kind),
+                Err(kind) => Cause::ExecutionControlStopped(kind),
+            };
+        }
+        TransactionCommitError::Conflict { error, .. } => error,
+        TransactionCommitError::Publication { .. }
+        | TransactionCommitError::Preparation { .. }
+        | TransactionCommitError::Interrupted { .. }
+        | TransactionCommitError::PublicationDenied { .. }
+        | TransactionCommitError::PublicationDeferred { .. }
+        | TransactionCommitError::PublicationFailed { .. }
+        | TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
+            return Cause::Preparation
+        }
     };
     let ConflictClass::InvariantViolation {
         fields: InvariantViolationFields::CustomInvariantViolation { identity },
@@ -66,3 +108,6 @@ pub(super) fn restoration_failure(
 ) -> WorthQueryGeneratedOutputRestorationFailure {
     WorthQueryGeneratedOutputRestorationFailure::Rejected { suspended, cause }
 }
+
+#[cfg(test)]
+mod tests;

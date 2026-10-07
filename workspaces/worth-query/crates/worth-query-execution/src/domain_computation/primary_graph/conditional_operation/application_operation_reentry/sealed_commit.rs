@@ -126,21 +126,7 @@ fn classify_commit(
                 super::WorthQueryTemporalControlStop::TimedOut,
             )
         }
-        WorthQueryApplicationCommitOutcome::Denied(denial) => {
-            match denial.kind() {
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ActiveSnapshotCapacityExhausted {
-                    maximum_active_snapshots,
-                } => WorthQueryTemporalReentryOutcome::SnapshotCapacityBackpressured {
-                    maximum_active_snapshots,
-                },
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::RetentionCapacityExhausted => {
-                    WorthQueryTemporalReentryOutcome::RetentionCapacityBackpressured
-                }
-                kind => WorthQueryTemporalReentryOutcome::TerminalFailure(
-                    super::WorthQueryTemporalTerminalFailure::ApplicationCommit(kind),
-                ),
-            }
-        }
+        WorthQueryApplicationCommitOutcome::Denied(denial) => denial::classify_denial(&denial),
         WorthQueryApplicationCommitOutcome::Aborted => {
             WorthQueryTemporalReentryOutcome::RetryableFailure(
                 "temporal application commit aborted before effect".to_string(),
@@ -157,3 +143,8 @@ fn classify_commit(
         }
     }
 }
+
+mod denial;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use denial::tests::assert_preparation_retry;

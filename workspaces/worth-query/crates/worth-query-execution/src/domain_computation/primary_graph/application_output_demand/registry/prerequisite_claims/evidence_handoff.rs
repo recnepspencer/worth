@@ -19,10 +19,10 @@ impl PreparedPrerequisiteClaims {
 
     pub(in crate::domain_computation::primary_graph) fn take_sealed_computation(
         &mut self,
-    ) -> Option<(
-        crate::domain_computation::primary_graph::SealedComputationRun,
+    ) -> (
+        crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention,
         Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
-    )> {
+    ){
         self.context.take_sealed_computation()
     }
 

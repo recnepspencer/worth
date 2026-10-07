@@ -53,7 +53,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(evidence_currentness),
+            output_currentness_facts: Some(evidence_currentness.into()),
         },
         program_revision,
         transition_identity,

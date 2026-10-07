@@ -21,6 +21,7 @@ mod decision_plan_denial;
 mod source_liveness;
 #[cfg(test)]
 mod tests;
+mod verification_denial;
 use cardinality::{classify_current_entities, CurrentOutputCardinality};
 use decision_plan_denial::decision_plan_denial;
 
@@ -135,7 +136,10 @@ where
     {
         let cache_key = (TypeId::of::<Family>(), producer.entity_id());
         if let Some(cached) = self.reader.current_output_families.get(&cache_key) {
-            return Ok(cached.clone());
+            return Ok(cached
+                .iter()
+                .map(super::CertifiedOutputCorrespondence::pair)
+                .collect());
         }
         let occurrence = self.reader.selected_product_occurrence.ok_or_else(|| {
             WorthQueryCurrentOutputDenial::new(
@@ -205,14 +209,18 @@ where
         for candidate in resolution.candidates {
             self.require_current_output_budget(1, Family::IDENTITY)?;
             self.reader.work_budget.consume(1);
-            let Some((witness, verification)) =
+            let Some(verification) =
                 self.verify_current_candidate(&candidate, &selected_native_root, Family::IDENTITY)?
             else {
                 stale = true;
                 continue;
             };
             match verification {
-                ConsumedOutputVerification::Current => {
+                candidate_verification::VerifiedCandidate::Current {
+                    facts,
+                    witness,
+                } => {
+                    let computation = facts.computation();
                     // Retention is paid from the reader's remaining work.
                     let Some(maximum_work) =
                         std::num::NonZeroUsize::new(self.reader.work_budget.remaining())
@@ -228,7 +236,7 @@ where
                         .invalidation_owner
                         .edit_admission_within(maximum_work);
                     let capacity = self.reader.invalidation_owner.retain_consumed_output(
-                        &candidate.observed_source_facts,
+                        &facts,
                         &selected_native_root,
                         ConsumedOutputEvidence::metadata_bytes(),
                         &mut admission,
@@ -237,26 +245,17 @@ where
                     self.reader.work_budget.consume(charged);
                     self.reader.work.record_output_lineage_selection(charged);
                     let capacity = capacity.map_err(|stop| {
-                        let work = matches!(
-                            stop,
-                            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
-                                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow
-                        );
-                        if work {
+                        let stop = crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop);
+                        if stop == ConsumedOutputVerificationStop::WorkExhausted {
                             self.reader.work_budget.mark_exceeded();
                         }
-                        WorthQueryCurrentOutputDenial::new(
-                            if work {
-                                WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
-                            } else {
-                                WorthQueryCurrentOutputDenialKind::OutputUnavailable
-                            },
-                            Family::IDENTITY,
-                        )
+                        self.reader.retention_exhausted |= stop == ConsumedOutputVerificationStop::CapacityExhausted;
+                        verification_denial::from_stop(stop, Family::IDENTITY)
                     })?;
                     let evidence = ConsumedOutputEvidence::new(
+                        computation,
                         std::sync::Arc::clone(&candidate.settlement_identity),
-                        std::sync::Arc::clone(&candidate.observed_source_facts),
+                        facts.clone(),
                         std::sync::Arc::clone(&candidate.consumed_outputs),
                         candidate.verification_requirement,
                         witness,
@@ -269,17 +268,23 @@ where
                         .consumed_outputs
                         .entry(std::sync::Arc::clone(&candidate.settlement_identity))
                         .or_insert(evidence);
-                    current.push((candidate.correspondence, candidate.output_role));
+                    current.push(super::CertifiedOutputCorrespondence::new(
+                        computation,
+                        candidate.correspondence,
+                        candidate.output_role,
+                    ));
                 }
-                ConsumedOutputVerification::ChangedDirectFact(ordinal) => {
-                    if matches!(candidate.observed_source_facts.get(ordinal), Some(WorthQueryApplicationObservedFact::SourceEntity { entity_id }) if *entity_id == producer.entity_id())
+                candidate_verification::VerifiedCandidate::Changed(
+                    ConsumedOutputVerification::ChangedDirectFact(ordinal),
+                ) => {
+                    if candidate.observed_source_facts.for_comparison().is_some_and(|facts| matches!(facts.get(ordinal), Some(WorthQueryApplicationObservedFact::SourceEntity { entity_id }) if *entity_id == producer.entity_id()))
                     {
                         obsolete = true;
                     } else {
                         stale = true;
                     }
                 }
-                ConsumedOutputVerification::ChangedUpstream => stale = true,
+                candidate_verification::VerifiedCandidate::Changed(_) => stale = true,
             }
         }
         if current.is_empty() && obsolete {
@@ -297,7 +302,10 @@ where
         self.reader
             .current_output_families
             .insert(cache_key, current.clone());
-        Ok(current)
+        Ok(current
+            .iter()
+            .map(super::CertifiedOutputCorrespondence::pair)
+            .collect())
     }
 
     fn require_current_output_budget(

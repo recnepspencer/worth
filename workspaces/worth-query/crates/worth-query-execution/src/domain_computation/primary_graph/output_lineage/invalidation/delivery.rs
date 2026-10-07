@@ -7,7 +7,7 @@ use worth_relational::facade::mvcc::{
 };
 
 use crate::domain_computation::execution_runtime::source_invalidation::{
-    RetainedInvalidationCapacity, WorthQueryInvalidationResources,
+    RetainedInvalidationCapacity, WorthQueryInvalidationResources as InvalidationResources,
 };
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
@@ -117,7 +117,7 @@ pub(super) fn mark(
     observed: &MarkState,
     (keys, retained_key_bytes): (Option<Arc<[FactPostingKey]>>, u64),
     commit: CommitId,
-    (budget, resources): (CompanionPreflightBudget, &WorthQueryInvalidationResources),
+    (budget, resources): (CompanionPreflightBudget, &InvalidationResources),
     context: &mut PublicationCompanionPreflight<'_>,
 ) -> Result<MarkedDelivery, CompanionPreflightStop> {
     // One live clone at a time: a degraded delivery drops the marked clone
@@ -167,12 +167,13 @@ pub(super) fn mark(
 }
 
 /// The unmarked prior state publishes under a new discontinuity epoch. Its
-/// version copies no node; a refusal of the version itself is not degradable.
+/// version copies no node; if even this image cannot fit, publication evicts
+/// the index through the owner's pre-admitted empty image.
 fn discontinuity(
     observed: &MarkState,
     commit: CommitId,
     precision: NativeMarkingPrecision,
-    resources: &WorthQueryInvalidationResources,
+    resources: &InvalidationResources,
     context: &mut PublicationCompanionPreflight<'_>,
 ) -> Result<MarkedDelivery, CompanionPreflightStop> {
     let mut state = observed.clone();

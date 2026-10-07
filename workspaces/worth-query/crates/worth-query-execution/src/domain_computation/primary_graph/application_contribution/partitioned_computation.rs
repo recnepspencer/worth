@@ -9,16 +9,20 @@
 //! ceiling and reduces them over the canonical tree.
 //!
 //! When a producer runs the computation, the run leaves its state on the
-//! record its attempt published, and the producer's next run gathers and
-//! computes again only the partitions whose facts changed, under the same
-//! input value, membership and keys. Every other run recomputes every
-//! partition, for a cause the test observer is shown.
+//! record its attempt published, and the producer's next run under the same
+//! input value names and keys again only what changed: the membership when a
+//! fact it read moved, and an item when it is new, its value's digest
+//! changed or a fact its key read moved. It routes only those items again,
+//! and gathers and computes again only the partitions whose members or
+//! facts changed. Every other run recomputes every partition, for a cause
+//! the test observer is shown.
 
 mod compute;
 mod denial;
 mod gather_memory;
 mod incremental;
 mod installed;
+mod items;
 mod plan;
 mod reader;
 mod remaining_work;
@@ -34,13 +38,17 @@ pub use denial::{
 pub use incremental::WorthQueryPartitionedComputationFullCause;
 #[cfg(feature = "test-query-execution-observer")]
 pub use incremental::{
-    partitioned_computation_runs_on_this_thread_for_test, WorthQueryPartitionedComputationRun,
+    discarded_computation_retention_on_this_thread_for_test,
+    partitioned_computation_runs_on_this_thread_for_test,
+    published_partitioned_computations_on_this_thread_for_test,
+    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use incremental::{
-    Comparator, ComputationDeposit,
+    Comparator, CompletedComputationRetention, ComputationDeposit,
 };
 pub(in crate::domain_computation) use incremental::{
-    ComputationPrior, RetainedComputation, SealedComputationRun,
+    ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,
+    SealedComputationRun, Suppression,
 };
 pub(in crate::domain_computation::primary_graph) use installed::ComputationRetention;
 pub use installed::WorthQueryInstalledPartitionedComputation;
@@ -54,7 +62,8 @@ pub use reader::{
 
 use worth_execution::{CanonicalBits, ChargedBytes};
 use worth_query_declaration::facade::application_program::{
-    ApplicationComputationInput, ApplicationFeature, ApplicationManagedComputation,
+    ApplicationComputationInput, ApplicationComputationPartition, ApplicationFeature,
+    ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -98,8 +107,10 @@ where
     type Operation;
     /// One item of the input as `partitions` hands it to `partition_key` and
     /// `gather`: what the owner reads the item by. A producer's run keeps its
-    /// items for the next run, charged at their bytes.
-    type Item: Send + Sync + ChargedBytes + 'static;
+    /// items for the next run, charged at their bytes, and knows each by the
+    /// digest of its canonical encoding, as a partition key is known: an item
+    /// whose digest changed is a new item to the next run.
+    type Item: ApplicationComputationPartition + ChargedBytes;
     /// One partition's data, gathered on the owner thread for its kernel.
     type Gathered: Send + Sync + ChargedBytes;
     /// One partition's result, and the reduced result of them all. Its
@@ -174,3 +185,11 @@ impl<Reduced> WorthQueryDeterministicReducer<Reduced> {
 mod attribution_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use incremental::sealed_run_for_lineage_test;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation) use incremental::observe_discarded;
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation::primary_graph) use incremental::observe_published;

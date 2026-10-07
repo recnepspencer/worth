@@ -104,7 +104,12 @@ where
             .or(progress_update);
         match (approval.is_some(), approval_authentication) {
             (true, Some(authentication)) => {
-                if !authentication.matches_basis(program.output_currentness_facts.as_ref()) {
+                if !authentication.matches_basis(
+                    program
+                        .output_currentness_facts
+                        .as_ref()
+                        .map(|facts| facts.facts()),
+                ) {
                     return WorkflowProgressOutcome::AuthenticationDenied(
                         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::WrongOwner,
                     );

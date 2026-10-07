@@ -57,6 +57,7 @@ pub(in crate::domain_computation::primary_graph) enum DirtyReverification {
     HistoricalCurrent,
     AlreadyCurrent,
     ChangedOrdinal(usize),
+    ChangedComputation,
 }
 
 /// Minted only after native comparisons at the exact selected source root.
@@ -98,16 +99,6 @@ impl SourceInvalidationOwner {
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
         admission.ordered_read(aligned.settlement_count())?;
-        let ordinals = match aligned.currentness(identity) {
-            SettlementCurrentness::Clean => return Ok(DirtyReverification::AlreadyCurrent),
-            SettlementCurrentness::Dirty(ordinals) => ordinals.clone(),
-            SettlementCurrentness::PendingUpstream(_) => {
-                return Err(SettlementVerificationStop::PendingUpstream)
-            }
-            SettlementCurrentness::FullVerificationRequired(_) | SettlementCurrentness::Foreign => {
-                return Err(SettlementVerificationStop::Alignment)
-            }
-        };
         let live = image.root_id() == selected.root_id()
             && image.commit_id() == selected.commit_id()
             && image.position() == selected.position();
@@ -127,8 +118,21 @@ impl SourceInvalidationOwner {
             state
                 .settlements
                 .get(identity)
-                .expect("aligned currentness selected this exact row"),
+                .ok_or(SettlementVerificationStop::Alignment)?,
         );
+        if row.facts.for_comparison().is_none() {
+            return Ok(DirtyReverification::ChangedComputation);
+        }
+        let ordinals = match aligned.currentness(identity) {
+            SettlementCurrentness::Clean => return Ok(DirtyReverification::AlreadyCurrent),
+            SettlementCurrentness::Dirty(ordinals) => ordinals.clone(),
+            SettlementCurrentness::PendingUpstream(_) => {
+                return Err(SettlementVerificationStop::PendingUpstream)
+            }
+            SettlementCurrentness::FullVerificationRequired(_) | SettlementCurrentness::Foreign => {
+                return Err(SettlementVerificationStop::Alignment)
+            }
+        };
         for ordinal in ordinals {
             admission.work(1)?;
             let fact = row
@@ -187,14 +191,13 @@ impl SourceInvalidationOwner {
             state.settlements.len(),
         )?;
         state.settlements.insert(identity, Arc::new(replacement));
-        retention::admit_replacement(&mut state, before, &self.resources, admission)?;
-        admission.bytes(
-            index_capacity::arc_bytes::<BranchMarkRoot>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        let root = retention::admit_live_replacement(
+            image.payload(),
+            state,
+            before,
+            &self.resources,
+            admission,
         )?;
-        let mut root = (**image.payload()).clone();
-        root.current = Arc::new(state);
-        retention::admit_root(&mut root, None, &self.resources, admission)?;
         let prepared = self
             .prepare_root_replacement(cell, image, Arc::new(root), admission)
             .map_err(SettlementVerificationStop::from)?;

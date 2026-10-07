@@ -6,8 +6,7 @@ use std::{
 use worth_execution::{
     Bisection, CancellationSource, CancellationToken, ComponentPartitioner, ExecutionAuthority,
     ExecutionAuthorityConfig, ExecutionMap, LeaseRequest, MapKernelFailure, MapOutcome,
-    MapPartition, MapStop, PartitionItemId, PartitionUpdateDenial, SourceFactId, WeightedEdge,
-    WeightedItem,
+    MapPartition, MapStop, PartitionItemId, PartitionUpdateDenial, WeightedEdge, WeightedItem,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -17,10 +16,6 @@ use worth_foundational::{
 fn item(id: u64) -> PartitionItemId {
     PartitionItemId(id)
 }
-fn fact(id: u64) -> SourceFactId {
-    SourceFactId(id + 100)
-}
-
 static CHECKED_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 fn checked_test_guard() -> std::sync::MutexGuard<'static, ()> {
@@ -77,7 +72,7 @@ fn lease<'a>(
 fn component_chain(count: u64) -> ComponentPartitioner {
     let mut components = ComponentPartitioner::new();
     for id in 1..=count {
-        components.upsert_item(item(id), fact(id));
+        components.upsert_item(item(id));
     }
     for id in 1..count {
         components.add_edge(item(id), item(id + 1)).unwrap();
@@ -94,7 +89,6 @@ fn weighted_root(count: u64, max_leaf_weight: u64) -> Bisection {
         bisection
             .upsert_item(WeightedItem {
                 item: item(id),
-                source_fact: fact(id),
                 weight: 1,
             })
             .unwrap();
@@ -126,7 +120,7 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
     });
     assert!(matches!(outcome, MapOutcome::Stopped { .. }));
     assert_eq!(
-        components.lock().unwrap().route(item(4)).unwrap().partition,
+        components.lock().unwrap().route(item(4)).unwrap(),
         PartitionIdentity::new(1)
     );
 
@@ -161,12 +155,7 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         }
     ));
     assert_eq!(
-        components
-            .lock()
-            .unwrap()
-            .route(item(16))
-            .unwrap()
-            .partition,
+        components.lock().unwrap().route(item(16)).unwrap(),
         PartitionIdentity::new(1)
     );
 
@@ -188,7 +177,7 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
     });
     assert!(matches!(outcome, MapOutcome::Stopped { .. }));
     assert_eq!(
-        components.lock().unwrap().route(item(1)).unwrap().partition,
+        components.lock().unwrap().route(item(1)).unwrap(),
         PartitionIdentity::new(1)
     );
 
@@ -200,7 +189,6 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
             context,
             WeightedItem {
                 item: item(5),
-                source_fact: fact(5),
                 weight: 1,
             },
         );
@@ -233,12 +221,7 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
         MapOutcome::Stopped { reason, .. } => panic!("checked split stopped: {reason:?}"),
     }
     assert_eq!(
-        components
-            .lock()
-            .unwrap()
-            .route(item(16))
-            .unwrap()
-            .partition,
+        components.lock().unwrap().route(item(16)).unwrap(),
         PartitionIdentity::new(9)
     );
     assert_eq!(bisection.lock().unwrap().leaves().len(), 1);
@@ -250,7 +233,6 @@ fn checked_split_and_recut_denials_preserve_retained_topology() {
             context,
             WeightedItem {
                 item: item(5),
-                source_fact: fact(5),
                 weight: 1,
             },
         );
@@ -302,7 +284,6 @@ fn checked_local_recut_ignores_edges_inside_unrelated_sibling() {
     let outcome = map.run(Some(&lease), |_, context| {
         let next = WeightedItem {
             item: item(5),
-            source_fact: fact(5),
             weight: 1,
         };
         let plain_work = plain

@@ -1,5 +1,13 @@
 //! Contribution-owned application handler and invariant configuration.
 
+/// How a partitioned computation's run ran, for the test observer only.
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::{
+    discarded_computation_retention_on_this_thread_for_test,
+    published_partitioned_computations_on_this_thread_for_test,
+    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
+    WorthQueryPublishedComputationStateForTest,
+};
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
     WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContractCatalog,
@@ -27,11 +35,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
     WorthQueryReductionInputDenial, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
-};
-/// How a partitioned computation's run ran, for the test observer only.
-#[cfg(feature = "test-query-execution-observer")]
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
 };
 /// What a partitioned owner's results and denials declare to execution, the
 /// identity of a planned item, and execution's refusal before dispatch.

@@ -158,7 +158,7 @@ where
                 committed,
                 admission.publication_request(),
             )
-            .map_err(denial::redispatch_preparation)?;
+            .map_err(WorthQueryExternalDispatchPreparationDenial::redispatch_denial)?;
         Ok(WorthQueryPerformedExternalRedispatch::record(
             WorthQueryPerformedExternalRedispatchSeal::new(
                 WorthQueryExternalRedispatchMint::witness(),
@@ -224,8 +224,8 @@ where
                 InstalledTransportResumeOutcome::Performed => {
                     WorthQueryExternalDispatchPreparationDenial::AlreadyCompleted
                 }
-                InstalledTransportResumeOutcome::Pending(_) => {
-                    WorthQueryExternalDispatchPreparationDenial::CompletionPublicationPending
+                InstalledTransportResumeOutcome::Pending(reason) => {
+                    reason.dispatch_preparation_denial()
                 }
             });
         }

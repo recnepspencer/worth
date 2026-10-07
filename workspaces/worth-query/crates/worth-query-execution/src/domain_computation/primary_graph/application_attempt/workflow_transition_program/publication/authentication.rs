@@ -153,8 +153,12 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
             return false;
         };
         let expected = &self.descriptor;
-        self.matches_basis(program.output_currentness_facts.as_ref())
-            && program_revision == &expected.program_revision
+        self.matches_basis(
+            program
+                .output_currentness_facts
+                .as_ref()
+                .map(|facts| facts.facts()),
+        ) && program_revision == &expected.program_revision
             && transition_identity_bytes == &expected.transition_identity_bytes
             && transition_identity_locator == &expected.transition_identity_locator
             && assessment_identity_locator == &expected.assessment_identity_locator

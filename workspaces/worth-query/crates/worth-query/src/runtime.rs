@@ -143,7 +143,7 @@ mod mutation_surface;
 pub(crate) mod native_aspect_contracts;
 mod ordinary_inspection_execution;
 mod ordinary_runtime_posture;
-mod ordinary_workflow_authority;
+pub(crate) mod ordinary_workflow_authority;
 mod ordinary_workflow_branch_name;
 mod ordinary_workflow_execution;
 mod preview;

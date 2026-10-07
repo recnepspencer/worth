@@ -45,6 +45,13 @@ impl DecisionContextUse {
     }
 
     #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) const fn request_context_for_test(
+        self,
+    ) -> Self {
+        self.request_context()
+    }
+
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) const fn raw_reader_for_test(self) -> Self {
         self.opaque_reader()
     }

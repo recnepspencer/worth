@@ -1,5 +1,14 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
+pub(in crate::domain_computation) use invalidation::HeadCellRegistrationStop;
+mod source_facts;
+pub(in crate::domain_computation::primary_graph) use source_facts::{
+    ComparableSourceFacts, RetainedSourceFacts,
+};
+mod computation_source;
+pub(in crate::domain_computation::primary_graph) use computation_source::{
+    ComputationSourceEvidence, CurrentComputation,
+};
 mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
@@ -8,6 +17,8 @@ mod input_cutoff;
 mod input_reuse_key;
 pub(in crate::domain_computation::primary_graph) mod invalidation;
 mod native_output_witness;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) mod own_write_fixture;
 mod partition_index;
 mod prepared_slot;
 mod qualification;
@@ -54,7 +65,8 @@ pub(in crate::domain_computation::primary_graph) use native_output_witness::{
 pub(in crate::domain_computation::primary_graph) use prepared_slot::prepare as prepare_output_lineage_slot;
 pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedLineageRecoveryMetadata;
 pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedOutputLineageSlot;
-use recorded_output::{RecordedOutput, RecordedOutputMutable};
+pub(in crate::domain_computation::primary_graph) use recorded_output::RecordedOutput;
+use recorded_output::RecordedOutputMutable;
 pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;
 use resolution::latest_output_matching;
 pub(in crate::domain_computation::primary_graph) use settlement_identity::RecordedSettlementIdentity;
@@ -123,8 +135,7 @@ pub(super) struct WorthQueryExactRecordedOutput {
     pub(super) schema: ApplicationSchemaBindingIdentity,
     pub(super) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(super) observed_source_facts:
-        Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+    pub(super) observed_source_facts: RetainedSourceFacts,
     pub(super) resources:
         Option<super::application_contribution::WorthQueryProducerDemandResources>,
 }
@@ -158,8 +169,7 @@ pub(super) struct WorthQueryCurrentOutputCandidate {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     /// The role the producer of this correspondence outputs to its family.
     pub(super) output_role: String,
-    pub(super) observed_source_facts:
-        Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+    pub(super) observed_source_facts: RetainedSourceFacts,
     pub(super) native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
 }
 
@@ -214,7 +224,7 @@ impl WorthQueryApplicationOutputLineage {
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<PreparedInputReuseKey>,
         retained_capacity: retained_capacity::RetainedLineageCapacity,
-        computation: Option<retained_computation::RecordedComputation>,
+        computation: retained_computation::RecordedComputation,
     ) -> Arc<RecordedSettlementIdentity> {
         self.record_inner(
             computation,
@@ -231,7 +241,7 @@ impl WorthQueryApplicationOutputLineage {
 
     fn record_inner(
         &mut self,
-        computation: Option<retained_computation::RecordedComputation>,
+        computation: retained_computation::RecordedComputation,
         application: &WorthQueryPrimaryGraphCommittedApplication,
         consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
         prepared: Option<&PreparedOutputLineageSlot>,
@@ -333,7 +343,9 @@ impl WorthQueryApplicationOutputLineage {
                 Ok(facts) => (Some(facts), None),
                 Err(failed) => (None, Some(failed.reason.into())),
             };
+        let computation_source = ComputationSourceEvidence::from_completed(application);
         let recorded = RecordedOutput {
+            computation_source,
             performed_origin: None,
             _retained_capacity: retained_capacity,
             consumed_outputs,
@@ -344,12 +356,12 @@ impl WorthQueryApplicationOutputLineage {
                 .and_then(|slot| slot.native_output_witness.as_ref().map(Arc::clone))
                 .map(std::sync::OnceLock::from)
                 .unwrap_or_default(),
-            mutable: std::sync::Mutex::new(RecordedOutputMutable {
+            mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
                 verification_requirement,
-                observed_source_facts,
-                resources: prepared.and_then(|slot| slot.actual_resources),
+                (observed_source_facts).map(|facts| computation_source.retain_facts(facts)),
+                prepared.and_then(|slot| slot.actual_resources),
                 computation,
-            }),
+            )),
             settlement_identity: Arc::clone(&settlement_identity),
             correspondence: evidence.retain_output_correspondence(),
             source_identity: evidence.idempotency().source_identity().map(|identity| {

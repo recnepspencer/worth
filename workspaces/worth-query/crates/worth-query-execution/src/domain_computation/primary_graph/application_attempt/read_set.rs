@@ -71,12 +71,10 @@ pub struct WorthQueryApplicationReadAttempt<
     expected_facts: Option<BTreeSet<WorthQueryApplicationFactKey>>,
     /// What a partitioned computation read of the expected facts, and where
     /// it left its completed run when a producer ran it.
-    computation_reads: Option<(
-        ComputationFactAttribution,
-        Option<
-            crate::domain_computation::primary_graph::application_contribution::ComputationDeposit,
-        >,
-    )>,
+    computation_reads: (
+        Option<ComputationFactAttribution>,
+        crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention,
+    ),
     installed_read_scopes:
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
@@ -106,7 +104,10 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
+    #[cfg(test)]
     pub(super) computation_facts: Option<SealedComputationFacts>,
+    /// The ordinals in `facts`, ascending, of the facts an owner call read.
+    pub(super) computation_fact_ordinals: Box<[usize]>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
@@ -164,7 +165,8 @@ where
             entity_resolution: graph.retain_entity_resolution_context(),
             read_scope,
             expected_facts: None,
-            computation_reads: None,
+            computation_reads: (None, crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention::Absent(
+                crate::domain_computation::primary_graph::application_contribution::PriorAbsence::NotProduced)),
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,

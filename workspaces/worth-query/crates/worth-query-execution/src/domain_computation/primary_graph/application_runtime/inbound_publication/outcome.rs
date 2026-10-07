@@ -79,7 +79,7 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
     OriginalPublicationCommitMismatch,
     BranchCoordinationCapacityExhausted,
     ProductAdmission,
-    CompletionPreparation,
+    CompletionPreparation(crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial),
     TerminalIndexUnavailable,
     CorrelationAlreadyOwned,
 }

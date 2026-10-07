@@ -78,11 +78,7 @@ fn first_run_over_four(world: &AuthorizationWorld, installed: &Installed) -> Att
     let first = attempt(
         world,
         installed,
-        Some(ComputationPrior::new(
-            edition(),
-            Err(Cause::NoPriorRecord),
-            None,
-        )),
+        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
     );
     assert_eq!(first.gathered, [0, 1, 2, 3]);
     first

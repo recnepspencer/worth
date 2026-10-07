@@ -106,7 +106,7 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt) producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     pub(in crate::domain_computation::primary_graph::application_attempt) output_currentness_facts:
-        Option<Arc<[super::super::WorthQueryApplicationObservedFact]>>,
+        Option<super::super::OutputCurrentnessFacts>,
 }
 
 #[cfg(all(test, not(feature = "certification-invalidation-equivalence")))]

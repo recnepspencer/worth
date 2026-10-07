@@ -117,6 +117,9 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
     let selected_cell = &lineage.by_source[&source][&parent.lifecycle_incarnation()]
         [&parent.reference_generation().get()][0];
     let selected_identity = &selected_cell.get().unwrap().settlement_identity;
+    assert!(matches!(&selected_cell.get().unwrap().mutable.lock().unwrap().computation,
+        super::super::retained_computation::RecordedComputation::Absent(
+            crate::domain_computation::primary_graph::application_contribution::PriorAbsence::Restored)));
 
     let mut funded = admission(100_000);
     let selected = lineage

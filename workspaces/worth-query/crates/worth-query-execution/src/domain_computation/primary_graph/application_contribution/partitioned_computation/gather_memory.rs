@@ -79,3 +79,6 @@ impl GatheredMemory {
         self.held
     }
 }
+
+#[cfg(test)]
+mod tests;

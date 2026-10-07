@@ -207,15 +207,14 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
             let (_main_handle, main_root) = snapshot(runtime);
             let fork_identity = runtime.branch_identity(&fork).unwrap();
             let fork_basis = runtime.admit_branch_basis(&fork_identity).unwrap();
-            let fork_handle = runtime
+            let _fork_handle = runtime
                 .snapshots()
                 .snapshot_for_observation(&fork_basis.observation())
                 .unwrap();
-            let fork_root = runtime.read_truth().positioned_snapshot(&fork_handle).unwrap();
             let port = runtime.publication_companion_port();
             let pending = port.begin_required_registration().unwrap();
-            let main_cell = pending.mint_branch_cell(&main_root, Arc::new(0_u64)).unwrap();
-            let fork_cell = pending.mint_branch_cell(&fork_root, Arc::new(0_u64)).unwrap();
+            let main_cell = pending.with_branch_cell_at_head(runtime, &runtime.main_branch_identity(), Arc::new(0_u64), |cell| cell).unwrap();
+            let fork_cell = pending.with_branch_cell_at_head(runtime, &fork_identity, Arc::new(0_u64), |cell| cell).unwrap();
             let participant = Arc::new(TwoCellHints {
                 cells: BTreeMap::from([(main.clone(), main_cell), (fork.clone(), fork_cell)]),
                 member: Arc::clone(&member),

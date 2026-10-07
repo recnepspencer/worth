@@ -7,7 +7,6 @@ use crate::{
     backend::KernelContext,
     partition::{
         checked_scope::checked_edit, PartitionItemId, PartitionUpdateDenial, PartitionWork,
-        SourceFactId,
     },
 };
 
@@ -19,19 +18,18 @@ impl ComponentPartitioner {
         lease: &ExecutionResourceLease<'_>,
         context: &mut KernelContext<'_, '_>,
         item: PartitionItemId,
-        fact: SourceFactId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
         checked_edit(lease, context, |child| {
             let count = self
-                .facts
+                .routes
                 .len()
-                .checked_add(usize::from(!self.facts.contains_key(&item)))
+                .checked_add(usize::from(!self.routes.contains_key(&item)))
                 .ok_or(PartitionUpdateDenial::Admission(
                     LeaseDenial::ChargedBytesOverflow,
                 ))?;
             let bound = self.retained_bytes(count, self.edge_count)?;
             self.retained_charge.admit(lease, bound)?;
-            self.upsert_item_structural_checked(lease, child, item, fact)
+            self.upsert_item_structural_checked(lease, child, item)
         })
     }
 
@@ -56,7 +54,7 @@ impl ComponentPartitioner {
                     .ok_or(PartitionUpdateDenial::Admission(
                         LeaseDenial::ChargedBytesOverflow,
                     ))?;
-            let bound = self.retained_bytes(self.facts.len(), edges)?;
+            let bound = self.retained_bytes(self.routes.len(), edges)?;
             self.retained_charge.admit(lease, bound)?;
             self.add_edge_structural_checked(lease, child, a, b)
         })
@@ -70,10 +68,10 @@ impl ComponentPartitioner {
         b: PartitionItemId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
         checked_edit(lease, context, |child| {
-            let current = self.retained_bytes(self.facts.len(), self.edge_count)?;
+            let current = self.retained_bytes(self.routes.len(), self.edge_count)?;
             self.retained_charge.admit(lease, current)?;
             let work = self.remove_edge_structural_checked(lease, child, a, b)?;
-            let next = self.retained_bytes(self.facts.len(), self.edge_count)?;
+            let next = self.retained_bytes(self.routes.len(), self.edge_count)?;
             self.retained_charge
                 .admit(lease, next)
                 .expect("same-lineage shrink");
@@ -88,10 +86,10 @@ impl ComponentPartitioner {
         item: PartitionItemId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
         checked_edit(lease, context, |child| {
-            let current = self.retained_bytes(self.facts.len(), self.edge_count)?;
+            let current = self.retained_bytes(self.routes.len(), self.edge_count)?;
             self.retained_charge.admit(lease, current)?;
             let work = self.remove_item_structural_checked(lease, child, item)?;
-            let next = self.retained_bytes(self.facts.len(), self.edge_count)?;
+            let next = self.retained_bytes(self.routes.len(), self.edge_count)?;
             self.retained_charge
                 .admit(lease, next)
                 .expect("same-lineage shrink");

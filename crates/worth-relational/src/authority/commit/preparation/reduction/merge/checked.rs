@@ -1,8 +1,7 @@
 use std::{cell::RefCell, collections::BinaryHeap, mem::size_of};
 
 use worth_execution::{
-    ChargedBytes, ExecutionResourceLease, ExecutionScan, MapKernelContext, MapKernelFailure,
-    ScanDenial, ScanOutcome,
+    ChargedBytes, ExecutionResourceLease, MapKernelContext, MapKernelFailure, ScanOutcome,
 };
 use worth_foundational::PartitionIdentity;
 
@@ -90,25 +89,13 @@ where
             bytes.saturating_add(stream.owned_allocation_capacity_bytes(&item_bytes))
         }));
     let identity = PartitionIdentity::new(1);
-    let scan = ExecutionScan::try_from_ordered(
-        vec![identity],
-        vec![(
-            identity,
-            MergeInput {
-                streams: RefCell::new(Some(streams)),
-                owned_bytes,
-            },
-        )],
-    )
-    .map_err(|denial| {
-        PacketExecutionStop::Admission(match denial {
-            ScanDenial::IdentitiesNotCanonical => {
-                worth_execution::MapDenial::ExpectedIdentitiesNotCanonical
-            }
-            ScanDenial::CoverageMismatch => worth_execution::MapDenial::CoverageMismatch,
-            ScanDenial::MemoryOverflow => worth_execution::MapDenial::MemoryOverflow,
-        })
-    })?;
+    let scan = crate::execution::admit_ordered_scan(vec![(
+        identity,
+        MergeInput {
+            streams: RefCell::new(Some(streams)),
+            owned_bytes,
+        },
+    )])?;
     let ceiling = lease.policy().budget().charged_memory_bytes() / 4;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,

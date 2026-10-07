@@ -53,7 +53,9 @@ fn leased_opaque_custom_rule_is_denied_before_evaluation() {
         denial,
         crate::transactions::data::TransactionCommitError::Execution {
             denial: crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Admission,
+                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                    crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel
+                ),
                 ..
             },
             ..

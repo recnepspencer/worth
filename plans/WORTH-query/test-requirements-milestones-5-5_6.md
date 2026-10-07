@@ -119,40 +119,42 @@ parity-safe.
 
 ## Milestone 5.3 Named Certification Suites
 
-### 5.3. Frontier Planning And Parallel Admission Parity Test
+### 5.3. Frontier Planning And Serial Fallback Parity Test
 
 Purpose
 
-Prove that frontier-aware planning and deterministic parallel admission alter
-cost posture, not canonical query meaning.
+Prove that surviving frontier planning and explicit serial fallback preserve
+canonical query identity, exact basis, and baseline results.
 
 Scenario
 
-- plan and execute admitted bulk/live query families through:
-  - frontier-aware serial route
-  - frontier-aware parallel-admitted route
-  - typed serial fallback where parallel admission is denied
-- compare predicted breadth to realized breadth
+- lower ordered collection preflights and live plans, preserving their identities
+- lower and execute bounded materialization through explicit serial fallback
+- lower same-basis serial bundles and reject unsupported or mixed-basis inputs
+- retain explicit drift-required serial fallback report posture
 
 Must verify
 
-- serial and parallel admitted routes produce identical canonical query/result
-  meaning
-- planning emits explicit frontier and parallel-admission posture
-- serial fallback remains explicit rather than hidden executor behavior
-- breadth posture stays mechanically visible in counters
+- lowering preserves the validated query digest exactly
+- frontier and serial fallback artifacts preserve baseline result identity
+- fallback reports retain the exact reason and drift outcome
+- bundle basis identity, fixture-declared planned shape, and executor-reported
+  records examined have exact assertions
+- closeout metadata fields are nonempty, every status is Satisfied, and cited
+  row names belong to the required catalog
 
 Required verification output
 
 - `query_digest`
 - `plan_digest`
+- `basis_digest`
 - `result_digest`
 - `counter_snapshot`
 
 Pass condition
 
-Frontier-aware planning and deterministic parallel admission remain
-meaning-preserving and mechanically visible.
+The three distinct canonical rows (serial control, serial fallback, exact-basis
+serial bundle) and the three typed rejection rows pass their behavioral proofs.
 
 ## Milestone 5.4 Named Certification Suites
 

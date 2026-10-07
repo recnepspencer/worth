@@ -1,7 +1,5 @@
 //! Exact prior-output checks before a producer may omit its handler.
 
-use std::sync::Arc;
-
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop,
     runtime::{PositionedRelationalSnapshot, RelationalRuntime},
@@ -42,11 +40,12 @@ pub(in crate::domain_computation::primary_graph) fn cutoff_declines(
 /// A prior performed record and the exact native read basis checked for reuse.
 /// Only the output-lineage owner can consume this at publication.
 pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'selected> {
+    _computation: super::super::CurrentComputation,
     pub(super) candidate: RetainedInputCutoffCandidate,
     pub(super) selected: &'selected PositionedRelationalSnapshot,
     pub(super) fresh_key: Option<PreparedInputReuseKey>,
     /// The same alias-local facts whose completed prefix passed verification.
-    pub(super) verified_facts: Arc<[WorthQueryApplicationObservedFact]>,
+    pub(super) verified_facts: super::super::ComparableSourceFacts,
 }
 
 pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selected> {
@@ -61,6 +60,7 @@ pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selec
 pub(in crate::domain_computation::primary_graph) enum InputCutoffVerificationStop {
     Admission(CompanionPreflightStop),
     WorkExhausted,
+    CapacityExhausted,
     PendingUpstream,
     CurrentnessRaced,
     SelectedSourceUnavailable,
@@ -101,7 +101,9 @@ impl RetainedInputCutoffCandidate {
             currentness,
         )?;
         Ok(if let Some(verified_facts) = verified_facts {
+            let computation = verified_facts.computation();
             InputCutoffDecision::Reuse(VerifiedInputCutoff {
+                _computation: computation,
                 candidate: self,
                 selected,
                 fresh_key: Some(fresh_key),
@@ -126,7 +128,7 @@ impl RetainedInputCutoffCandidate {
         owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
         currentness: &mut InvalidationEditAdmission,
-    ) -> Result<Option<Arc<[WorthQueryApplicationObservedFact]>>, InputCutoffVerificationStop> {
+    ) -> Result<Option<super::super::ComparableSourceFacts>, InputCutoffVerificationStop> {
         admission.charge_external_work(1)?;
         let Some(prior_key) = self.prepared_input_key() else {
             return Ok(None);
@@ -222,6 +224,9 @@ impl RetainedInputCutoffCandidate {
             )
             | Err(ConsumedOutputVerificationStop::Unavailable) => {
                 return Ok(None);
+            }
+            Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+                return Err(InputCutoffVerificationStop::CapacityExhausted);
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
                 if let Some(matched) = &matched_predecessors {

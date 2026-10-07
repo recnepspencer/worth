@@ -1,4 +1,6 @@
 //! World publication from one installed transport's observed completion.
+use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
+use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
 use std::sync::Arc;
 
@@ -77,16 +79,18 @@ where
             Ok(lease) => lease,
             Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
         };
-        let candidate = match self
-            .primary_provider
-            .prepare_installed_transport_completion_candidate(
-                lease.relational_basis(),
-                owner,
-                evidence.dispatch(),
-                &binding,
-            ) {
+        let candidate = match completion_candidate(
+            Arc::clone(&evidence),
+            self.primary_provider
+                .prepare_installed_transport_completion_candidate(
+                    lease.relational_basis(),
+                    owner,
+                    evidence.dispatch(),
+                    &binding,
+                ),
+        ) {
             Ok(candidate) => candidate,
-            Err(_) => return Outcome::Denied(evidence, Denial::CompletionPreparation),
+            Err(outcome) => return outcome,
         };
         let publication = lease.publication_binding();
         let recovery = publication.recovery();
@@ -129,5 +133,32 @@ where
                 ))
             }
         }
+    }
+}
+
+// Both entry routes keep HEAD's preparation-refusal posture. The complete
+// refusal travels with the publication outcome rather than becoming a string.
+pub(in crate::domain_computation::primary_graph) fn completion_candidate(
+    evidence: Arc<InstalledTransportCompletion>,
+    result: Result<PreparedRelationalCommitCandidate, Preparation>,
+) -> Result<PreparedRelationalCommitCandidate, Outcome> {
+    match result {
+        Ok(candidate) => Ok(candidate),
+        Err(
+            denial @ (Preparation::ExecutionDenied { .. }
+            | Preparation::ExecutionControlStopped { .. }
+            | Preparation::OriginalOutboxNotAnEntity
+            | Preparation::ForeignOrStaleBasis
+            | Preparation::StagingUnavailable
+            | Preparation::ValidationUnavailable
+            | Preparation::PreparationUnavailable
+            | Preparation::SnapshotUnavailable
+            | Preparation::IndexPreparationUnavailable
+            | Preparation::InstalledBindingMismatch
+            | Preparation::DispatchOwnerMismatch),
+        ) => Err(Outcome::Denied(
+            evidence,
+            Denial::CompletionPreparation(denial),
+        )),
     }
 }

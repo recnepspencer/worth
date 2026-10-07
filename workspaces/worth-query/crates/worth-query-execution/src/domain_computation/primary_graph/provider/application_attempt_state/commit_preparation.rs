@@ -89,8 +89,9 @@ fn take_prepared_session(
         commit_failure("primary graph session has no exact commit-prepared application attempt")
     })?;
     let (attempt, candidate, work, completion) = prepared.into_parts();
+    let (source_facts, moved_by_own_effect) = attempt.observed_source_facts();
     let source_fact_rebase =
-        relational_commit::PreparedSourceFactRebase::admit(attempt.observed_source_facts())
+        relational_commit::PreparedSourceFactRebase::admit(source_facts, moved_by_own_effect)
             .map_err(|_| {
                 commit_failure("candidate source-fact rebase capacity exhausted before effects")
             })?;

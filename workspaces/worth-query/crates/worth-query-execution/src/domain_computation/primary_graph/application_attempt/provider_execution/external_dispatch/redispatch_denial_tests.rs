@@ -62,6 +62,8 @@ fn every_refusal() -> Vec<Redispatch> {
         | Redispatch::AttemptAdmissionDenied(_)
         | Redispatch::AlreadyCompleted
         | Redispatch::CompletionPublicationPending
+        | Redispatch::CompletionExecutionDenied { .. }
+        | Redispatch::CompletionExecutionControlStopped { .. }
         | Redispatch::TerminalIndexUnavailable
         | Redispatch::CanonicalDerivationDenied
         | Redispatch::TimeObservationDenied => denial,
@@ -76,6 +78,14 @@ fn every_refusal() -> Vec<Redispatch> {
         Redispatch::TransportNotInstalled,
         Redispatch::AlreadyCompleted,
         Redispatch::CompletionPublicationPending,
+        Redispatch::CompletionExecutionDenied {
+            stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+            kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionWorkerPanicked { partition_identity: Some(1) },
+        },
+        Redispatch::CompletionExecutionControlStopped {
+            stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+            kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        },
         Redispatch::TerminalIndexUnavailable,
         Redispatch::CanonicalDerivationDenied,
         Redispatch::TimeObservationDenied,

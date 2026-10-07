@@ -87,6 +87,8 @@ impl WorthQueryInvalidationResources {
         self.retention.retained_bytes()
     }
 
+    /// Reserve live custody within the hard ceiling. Predecessors remain
+    /// charged until their last holder actually releases them.
     pub(in crate::domain_computation) fn reserve_retained_capacity(
         &self,
         bytes: u64,

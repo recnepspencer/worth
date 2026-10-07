@@ -95,9 +95,11 @@ pub(super) fn prepare(
             &mut TouchBudget::Legacy,
         )
         .map(|(graph, _)| graph)
-        .map_err(|_| {
+        .map_err(|failure| {
             TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::ResourceExhausted,
+                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                    crate::execution::kernel_failure(failure),
+                ),
                 partition_identity: None,
             })
         }),

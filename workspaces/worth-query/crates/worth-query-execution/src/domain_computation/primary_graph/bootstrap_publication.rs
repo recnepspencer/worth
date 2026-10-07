@@ -5,7 +5,9 @@ use worth_query_declaration::facade::authentication::{
 };
 use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_relational::facade::identity::PartitionId;
-use worth_relational::facade::indexes::{DerivedIndexBuildRequest, DerivedIndexId};
+use worth_relational::facade::indexes::{
+    DerivedIndexBuildOutcome, DerivedIndexBuildRequest, DerivedIndexId,
+};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
     AspectFieldPatch, CreateIntent, CreatedEntityRef, EntityReference, EntitySpec, MutationIntent,
@@ -145,76 +147,8 @@ pub(super) fn map_bootstrap_staging_denial(
     )
 }
 
-pub(super) fn map_bootstrap_commit_denial(
-    error: worth_relational::facade::transactions::TransactionCommitError,
-) -> WorthQueryPrimaryGraphInstallationDenial {
-    use worth_relational::facade::mvcc::{
-        RelationalPublicationDeferred as Deferred, RelationalPublicationFailureKind as Failure,
-    };
-    use worth_relational::facade::transactions::{
-        CommitPreparationReason, TransactionCommitError as Error,
-    };
-    let kind = match &error {
-        Error::PublicationDeferred { deferred, .. } => match deferred {
-            Deferred::CompanionRegistrationPending
-            | Deferred::CompanionRebindRequired
-            | Deferred::CompanionPreflight(_) => {
-                WorthQueryPrimaryGraphInstallationDenialKind::RelationalDeferred(*deferred)
-            }
-            Deferred::PatchPositionReservationContended => {
-                WorthQueryPrimaryGraphInstallationDenialKind::PatchPositionReservationContended
-            }
-            Deferred::RetentionBackpressure => {
-                WorthQueryPrimaryGraphInstallationDenialKind::RetentionCapacityExhausted
-            }
-            Deferred::CandidateCapacityExhausted { maximum_candidates } => {
-                WorthQueryPrimaryGraphInstallationDenialKind::CandidateCapacityExhausted {
-                    maximum_candidates: *maximum_candidates,
-                }
-            }
-            Deferred::PublishedSnapshotCapacityExhausted { maximum_handles } => {
-                WorthQueryPrimaryGraphInstallationDenialKind::PublishedSnapshotCapacityExhausted {
-                    maximum_handles: *maximum_handles,
-                }
-            }
-            Deferred::CandidateLifetimeExpired { .. } => {
-                WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
-            }
-        },
-        Error::PublicationFailed { failure, .. } => match failure.kind() {
-            Failure::SnapshotIdentityExhausted => {
-                WorthQueryPrimaryGraphInstallationDenialKind::SnapshotIdentityExhausted
-            }
-            Failure::CandidateIdentityExhausted => {
-                WorthQueryPrimaryGraphInstallationDenialKind::CandidateIdentityExhausted
-            }
-            Failure::RetentionIdentityExhausted => {
-                WorthQueryPrimaryGraphInstallationDenialKind::RetentionIdentityExhausted
-            }
-            Failure::PreparedRootBudgetExhausted {
-                maximum_bytes,
-                required_bytes,
-            } => WorthQueryPrimaryGraphInstallationDenialKind::PreparedRootBudgetExhausted {
-                maximum_bytes: *maximum_bytes,
-                required_bytes: *required_bytes,
-            },
-            _ => WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
-        },
-        Error::Preparation { error, .. }
-            if error.reason() == CommitPreparationReason::ProposalIdentityOrdinalExhausted =>
-        {
-            WorthQueryPrimaryGraphInstallationDenialKind::ProposalIdentityExhausted
-        }
-        _ => WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
-    };
-    primary_graph_denial(
-        kind,
-        format!(
-            "Relational rejected the application principal bootstrap transaction: {}",
-            error.detail()
-        ),
-    )
-}
+mod commit_denial;
+pub(super) use commit_denial::map_bootstrap_commit_denial;
 
 fn append_typed_entity(
     batch: WorkerIntentBatch,
@@ -323,20 +257,59 @@ pub(super) fn build_identity_indexes(
                 branch_id: primary_relational_branch_id(),
                 index_ids: index_ids.to_vec(),
             });
-        if build.failed_indexes.is_empty() && build.generations.len() == index_ids.len() {
-            Ok(())
-        } else {
-            Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::IndexBuildRejected,
-                format!(
-                    "{} of {} identity indexes failed publication",
-                    build.failed_indexes.len(),
-                    index_ids.len()
-                ),
-            ))
-        }
+        identity_indexes_built(build, index_ids.len())
     })
 }
+
+fn identity_indexes_built(
+    build: DerivedIndexBuildOutcome,
+    requested_indexes: usize,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    // An execution refusal also marks indexes failed; preserve its cause before
+    // the generic index-publication rejection can consume that same outcome.
+    if let Some(denial) = build.execution_denial {
+        let translated = match denial.kind {
+            worth_relational::facade::indexes::DerivedIndexExecutionDenialKind::Cause(cause) => {
+                super::provider::relational_execution_denial::relational_execution_kind(
+                    cause,
+                    denial.partition_identity,
+                )
+            }
+        };
+        let kind = installation_execution_kind(translated);
+        return Err(primary_graph_denial(
+            kind,
+            format!("identity index execution refused: {denial:?}"),
+        ));
+    }
+    if build.failed_indexes.is_empty() && build.generations.len() == requested_indexes {
+        Ok(())
+    } else {
+        Err(primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::IndexBuildRejected,
+            format!(
+                "{} of {} identity indexes failed publication",
+                build.failed_indexes.len(),
+                requested_indexes
+            ),
+        ))
+    }
+}
+
+fn installation_execution_kind(
+    translated: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> WorthQueryPrimaryGraphInstallationDenialKind {
+    match translated {
+        Ok(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind },
+        Err(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped { kind },
+    }
+}
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) mod execution_refusals;
 
 fn primary_graph_denial(
     kind: WorthQueryPrimaryGraphInstallationDenialKind,
@@ -344,3 +317,5 @@ fn primary_graph_denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) mod commit_refusals;

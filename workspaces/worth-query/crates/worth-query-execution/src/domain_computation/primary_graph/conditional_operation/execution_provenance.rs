@@ -1,13 +1,23 @@
+use super::application_operation_reentry as reentry;
 use super::signal_decision_reentry::{
     WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
 };
+use crate::domain_computation::primary_graph as graph;
+use classification::WorthQueryConditionalExecutionCause as Cause;
+use graph::{
+    WorthQueryInvariantProjectionDenialKind as InvariantKind,
+    WorthQueryOperationAuthorizationDenialKind as AuthorizationKind,
+    WorthQueryPrincipalResolutionDenialKind as PrincipalKind,
+};
 
 mod classification;
+mod commit_cause;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use classification::signal_decision;
 pub use classification::{
     WorthQueryConditionalExecutionCause, WorthQueryConditionalExecutionTerminal,
     WorthQueryConditionalSignalDecision,
 };
+use commit_cause::application_commit_cause;
 
 /// Descriptive, non-authorizing lineage for one temporal wake processed by an
 /// observed clock reading.
@@ -96,96 +106,99 @@ fn cause(
         WorthQueryTemporalControlStop as Control, WorthQueryTemporalTerminalFailure as Terminal,
     };
     use super::signal_decision_reentry::WorthQueryOperationBackpressureCause as Backpressure;
+    use super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as Decision;
+    use graph::{
+        WorthQueryApplicationCommitDenialKind as CommitKind,
+        WorthQueryApplicationCommitDenialStage as Stage,
+    };
     match decision {
-        WorthQueryRetainedConditionalDecision::OperationProductStale(_, _) => {
-            Some(WorthQueryConditionalExecutionCause::ProductHeadChanged)
+        Decision::OperationExecutionControlRetryable(_, kind) => {
+            Some(Cause::ApplicationExecutionDenied {
+                stage: Stage::ProviderCommit,
+                cause: Err(*kind),
+            })
         }
-        WorthQueryRetainedConditionalDecision::OperationNoEffect(_, cause) => {
-            Some(WorthQueryConditionalExecutionCause::NoEffect(*cause))
+        Decision::OperationTerminalFailure(_, Terminal::ApplicationExecution { stage, cause }) => {
+            Some(Cause::ApplicationExecutionDenied {
+                stage: *stage,
+                cause: *cause,
+            })
         }
-        WorthQueryRetainedConditionalDecision::OperationBackpressured(_, cause) => match cause {
+        Decision::OperationCommitRetryable(_, kind) => Some(Cause::ApplicationCommitDenied(*kind)),
+        Decision::OperationSettlementExecutionDenied(_, _, kind) => {
+            Some(Cause::SettlementExecutionDenied(*kind))
+        }
+        Decision::OperationProductStale(_, _) => Some(Cause::ProductHeadChanged),
+        Decision::OperationNoEffect(_, cause) => Some(Cause::NoEffect(*cause)),
+        Decision::OperationBackpressured(_, cause) => match cause {
             Backpressure::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
-            } => Some(WorthQueryConditionalExecutionCause::ActiveSnapshotCapacityExhausted {
+            } => Some(Cause::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots: *maximum_active_snapshots,
             }),
-            Backpressure::RetentionCapacityExhausted => {
-                Some(WorthQueryConditionalExecutionCause::RetentionCapacityExhausted)
-            }
+            Backpressure::RetentionCapacityExhausted => Some(Cause::RetentionCapacityExhausted),
             Backpressure::ProviderCommit(kind) => provider_commit_cause(*kind),
         },
-        WorthQueryRetainedConditionalDecision::OperationControlStopped(_, Control::Cancelled) => {
-            Some(WorthQueryConditionalExecutionCause::Cancelled)
-        }
-        WorthQueryRetainedConditionalDecision::OperationControlStopped(_, Control::TimedOut) => {
-            Some(WorthQueryConditionalExecutionCause::TimedOut)
-        }
-        WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
+        Decision::OperationControlStopped(_, Control::Cancelled) => Some(Cause::Cancelled),
+        Decision::OperationControlStopped(_, Control::TimedOut) => Some(Cause::TimedOut),
+        Decision::OperationTerminalFailure(
             _,
-            Terminal::ApplicationCommit(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::RetentionIdentityExhausted,
-            ),
-        ) => Some(WorthQueryConditionalExecutionCause::RetentionIdentityExhausted),
-        WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, Terminal::Admission(failure))
+            Terminal::ApplicationCommit(CommitKind::RetentionIdentityExhausted),
+        ) => Some(Cause::RetentionIdentityExhausted),
+        Decision::OperationTerminalFailure(_, Terminal::Admission(failure))
             if admission_retention_identity_exhausted(*failure) =>
         {
-            Some(WorthQueryConditionalExecutionCause::RetentionIdentityExhausted)
+            Some(Cause::RetentionIdentityExhausted)
         }
-        WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
+        Decision::OperationTerminalFailure(
             _,
-            Terminal::ApplicationCommit(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::SnapshotIdentityExhausted,
-            ),
-        ) => Some(WorthQueryConditionalExecutionCause::SnapshotIdentityExhausted),
-        WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, Terminal::Admission(failure))
+            Terminal::ApplicationCommit(CommitKind::SnapshotIdentityExhausted),
+        ) => Some(Cause::SnapshotIdentityExhausted),
+        Decision::OperationTerminalFailure(_, Terminal::Admission(failure))
             if admission_snapshot_identity_exhausted(*failure) =>
         {
-            Some(WorthQueryConditionalExecutionCause::SnapshotIdentityExhausted)
+            Some(Cause::SnapshotIdentityExhausted)
         }
-        WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
+        Decision::OperationTerminalFailure(
             _,
-            Terminal::Admission(Admission::Principal(_)
+            Terminal::Admission(
+                Admission::Principal(_)
                 | Admission::Entity(_)
                 | Admission::Authorization(_)
                 | Admission::Projection(_)
-                | Admission::Invariant(_)),
-        )
-        | WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
-            _,
-            Terminal::ApplicationCommit(_),
-        ) => Some(WorthQueryConditionalExecutionCause::TerminalFailure),
-        _ => None,
+                | Admission::Invariant(_),
+            ),
+        ) => Some(Cause::TerminalFailure),
+        Decision::OperationTerminalFailure(_, Terminal::ApplicationCommit(kind)) => {
+            Some(application_commit_cause(*kind))
+        }
+        Decision::Eligible(_)
+        | Decision::Suppressed(_)
+        | Decision::Deferred(_)
+        | Decision::OperationRetryable(_, _)
+        | Decision::OperationIndeterminate(_, _)
+        | Decision::OperationProductUnpublished(_, _)
+        | Decision::OperationSettlementDeferred(_, _)
+        | Decision::OperationCommitted(_)
+        | Decision::OperationAlreadyCommitted(_)
+        | Decision::Failed(_) => None,
     }
 }
 
-fn provider_commit_cause(
-    kind: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind,
-) -> Option<WorthQueryConditionalExecutionCause> {
-    use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind as Kind;
+fn provider_commit_cause(kind: graph::WorthQueryApplicationCommitDeferredKind) -> Option<Cause> {
+    use graph::WorthQueryApplicationCommitDeferredKind as Kind;
     match kind {
-        Kind::RelationalDeferred(deferred) => Some(
-            WorthQueryConditionalExecutionCause::RelationalDeferred(deferred),
-        ),
-        Kind::RetentionCapacityExhausted => {
-            Some(WorthQueryConditionalExecutionCause::RetentionCapacityExhausted)
+        Kind::RelationalDeferred(deferred) => Some(Cause::RelationalDeferred(deferred)),
+        Kind::RetentionCapacityExhausted => Some(Cause::RetentionCapacityExhausted),
+        Kind::PatchPositionReservationContended => Some(Cause::PatchPositionReservationContended),
+        Kind::CandidateCapacityExhausted { maximum_candidates } => {
+            Some(Cause::CandidateCapacityExhausted { maximum_candidates })
         }
-        Kind::PatchPositionReservationContended => {
-            Some(WorthQueryConditionalExecutionCause::PatchPositionReservationContended)
+        Kind::PublishedSnapshotCapacityExhausted { maximum_handles } => {
+            Some(Cause::PublishedSnapshotCapacityExhausted { maximum_handles })
         }
-        Kind::CandidateCapacityExhausted { maximum_candidates } => Some(
-            WorthQueryConditionalExecutionCause::CandidateCapacityExhausted { maximum_candidates },
-        ),
-        Kind::PublishedSnapshotCapacityExhausted { maximum_handles } => Some(
-            WorthQueryConditionalExecutionCause::PublishedSnapshotCapacityExhausted {
-                maximum_handles,
-            },
-        ),
-        Kind::SourceCurrentnessRaced(stop) => Some(
-            WorthQueryConditionalExecutionCause::SourceCurrentnessRaced(stop),
-        ),
-        Kind::RequiredPrerequisitePending(kind) => {
-            Some(WorthQueryConditionalExecutionCause::RequiredPrerequisitePending(kind))
-        }
+        Kind::SourceCurrentnessRaced(stop) => Some(Cause::SourceCurrentnessRaced(stop)),
+        Kind::RequiredPrerequisitePending(kind) => Some(Cause::RequiredPrerequisitePending(kind)),
         Kind::CandidateLifetimeExpired { .. } => None,
     }
 }
@@ -193,64 +206,50 @@ fn provider_commit_cause(
 fn admission_retention_identity_exhausted(
     failure: super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
 ) -> bool {
-    use super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
+    use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
-        Admission::Principal(kind) => matches!(
-            kind,
-            crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::RetentionIdentityExhausted
-        ),
+        Admission::Principal(kind) => matches!(kind, PrincipalKind::RetentionIdentityExhausted),
         Admission::Entity(kind) => matches!(
             kind,
-            crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::RetentionIdentityExhausted
+            graph::WorthQueryEntityResolutionDenialKind::RetentionIdentityExhausted
         ),
-        Admission::Authorization(kind) => matches!(
-            kind,
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted
-        ),
+        Admission::Authorization(kind) => {
+            matches!(kind, AuthorizationKind::RetentionIdentityExhausted)
+        }
         Admission::Projection(kind) => matches!(
             kind,
-            crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind::Authorization(
-                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted
-            ) | crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
-                crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind::RetentionIdentityExhausted
+            graph::WorthQueryOperationProjectionDenialKind::Authorization(
+                AuthorizationKind::RetentionIdentityExhausted
+            ) | graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
+                InvariantKind::RetentionIdentityExhausted
             )
         ),
-        Admission::Invariant(kind) => matches!(
-            kind,
-            crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind::RetentionIdentityExhausted
-        ),
+        Admission::Invariant(kind) => matches!(kind, InvariantKind::RetentionIdentityExhausted),
     }
 }
 
 fn admission_snapshot_identity_exhausted(
     failure: super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure,
 ) -> bool {
-    use super::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
+    use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
-        Admission::Principal(kind) => matches!(
-            kind,
-            crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::SnapshotIdentityExhausted
-        ),
+        Admission::Principal(kind) => matches!(kind, PrincipalKind::SnapshotIdentityExhausted),
         Admission::Entity(kind) => matches!(
             kind,
-            crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::SnapshotIdentityExhausted
+            graph::WorthQueryEntityResolutionDenialKind::SnapshotIdentityExhausted
         ),
-        Admission::Authorization(kind) => matches!(
-            kind,
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
-        ),
+        Admission::Authorization(kind) => {
+            matches!(kind, AuthorizationKind::SnapshotIdentityExhausted)
+        }
         Admission::Projection(kind) => matches!(
             kind,
-            crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind::Authorization(
-                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
-            ) | crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
-                crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind::SnapshotIdentityExhausted
+            graph::WorthQueryOperationProjectionDenialKind::Authorization(
+                AuthorizationKind::SnapshotIdentityExhausted
+            ) | graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
+                InvariantKind::SnapshotIdentityExhausted
             )
         ),
-        Admission::Invariant(kind) => matches!(
-            kind,
-            crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind::SnapshotIdentityExhausted
-        ),
+        Admission::Invariant(kind) => matches!(kind, InvariantKind::SnapshotIdentityExhausted),
     }
 }
 
@@ -267,7 +266,9 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::Deferred(_) => {
             WorthQueryConditionalExecutionTerminal::DeferredRetained
         }
-        WorthQueryRetainedConditionalDecision::OperationRetryable(_, _) => {
+        WorthQueryRetainedConditionalDecision::OperationExecutionControlRetryable(_, _)
+        | WorthQueryRetainedConditionalDecision::OperationCommitRetryable(_, _)
+        | WorthQueryRetainedConditionalDecision::OperationRetryable(_, _) => {
             WorthQueryConditionalExecutionTerminal::Retryable
         }
         WorthQueryRetainedConditionalDecision::OperationBackpressured(_, _) => {
@@ -291,7 +292,8 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::OperationNoEffect(_, _) => {
             WorthQueryConditionalExecutionTerminal::NoEffect
         }
-        WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(_, _) => {
+        WorthQueryRetainedConditionalDecision::OperationSettlementExecutionDenied(_, _, _)
+        | WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(_, _) => {
             WorthQueryConditionalExecutionTerminal::DeferredRetained
         }
         WorthQueryRetainedConditionalDecision::OperationCommitted(_) => {

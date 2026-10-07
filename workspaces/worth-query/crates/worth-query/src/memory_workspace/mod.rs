@@ -340,51 +340,8 @@ impl std::fmt::Display for WorthQueryWorkspaceError {
 
 impl std::error::Error for WorthQueryWorkspaceError {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WorthQueryWorkspaceErrorKind {
-    Unclassified,
-    UnsupportedCollection,
-    UnsupportedWriteFamily,
-    EmptySchema,
-    BatchAtomicityUnsupported,
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    SnapshotIdentityExhausted,
-    TransactionOverlayCapacityExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
-    TransactionFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
-    SavepointCapacityExhausted {
-        maximum_savepoints: usize,
-    },
-    SavepointFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
-    SavepointIdentityExhausted,
-    TransactionMaterializationAuthorityRequired,
-    TransactionMaterializationModeMismatch,
-    CandidateCapacityExhausted {
-        maximum_candidates: usize,
-    },
-    PublishedSnapshotCapacityExhausted {
-        maximum_handles: usize,
-    },
-    CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
-    PatchPositionReservationContended,
-    ProposalIdentityExhausted,
-    RelationalBasisUnavailable,
-    InvalidationCompanionPending,
-    InvalidationCompanionCapacityExhausted,
-}
+mod error_kind;
+pub use error_kind::WorthQueryWorkspaceErrorKind;
 
 pub struct WorthQueryMemoryWorkspace {
     runtime: WorthQueryRelationalSourceOwner,

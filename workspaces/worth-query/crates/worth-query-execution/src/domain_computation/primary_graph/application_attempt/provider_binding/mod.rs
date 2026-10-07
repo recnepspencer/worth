@@ -38,7 +38,7 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
-    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
+    output_currentness_facts: Option<super::OutputCurrentnessFacts>,
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
@@ -110,7 +110,7 @@ pub(super) fn prepare_provider_attempt(
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
-    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
+    output_currentness_facts: Option<super::OutputCurrentnessFacts>,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         &facts,

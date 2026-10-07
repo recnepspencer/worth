@@ -34,7 +34,7 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
         let full = attempt(&world, &installed, None);
         assert!(matches!(
             full.runs.as_slice(),
-            [(Run::Full(Cause::NoPriorRecord), Some(_))]
+            [(Run::Full(Cause::NoProducerPrior), Some(_))]
         ));
         assert_eq!(
             next.outcome, full.outcome,
@@ -45,17 +45,20 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
 }
 
 #[test]
-fn a_moved_key_fact_rebuilds_the_partitioner() {
+fn a_moved_key_fact_keys_its_items_again_and_carries_their_unmoved_partitions() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::ItemKeys, sum);
     let first = first_run(&world, &installed);
+    let outcome = *first.outcome.as_ref().unwrap();
 
     let next = attempt(&world, &installed, Some(prior_of(first, true)));
-    assert!(matches!(
-        next.runs.as_slice(),
-        [(Run::Full(Cause::PartitionerRebuilt), Some(_))]
-    ));
-    assert_eq!(next.gathered, [0, 1]);
+    assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+    assert!(
+        next.gathered.is_empty(),
+        "every item keeps its partition, so no partition is gathered again"
+    );
+    assert_eq!(next.outcome.unwrap(), outcome);
+    assert!(next.sealed.unwrap().is_some(), "it retains its state");
 }
 
 #[test]
@@ -74,7 +77,7 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
         ),
         (
             ComputationPrior::new(InstalledProducerEdition::for_test([8; 32]), Ok(state), None),
-            Cause::NoPriorRecord,
+            Cause::OtherEdition,
         ),
         (
             ComputationPrior::new(edition(), Err(Cause::Evicted), None),

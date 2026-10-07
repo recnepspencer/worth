@@ -135,14 +135,6 @@ impl Bisection {
             .ok_or(PartitionUpdateDenial::Bisection(
                 BisectionDenial::WeightOverflow,
             ))?;
-        if previous.is_some_and(|value| value.weight == new_weight) {
-            context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
-            self.items.insert(item, next.unwrap());
-            return Ok(PartitionWork {
-                members_visited: 1,
-                ..PartitionWork::default()
-            });
-        }
         if self.tree.is_none() {
             let _reservation = lease
                 .reserve_retained_memory(256)

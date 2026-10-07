@@ -84,17 +84,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 );
                 Ok(Posture::AcceptedPending)
             }
-            WorthQueryInboundPublicationOutcome::Denied(
-                super::super::WorthQueryInboundPublicationDenial::CorrelationAlreadyOwned,
-            ) => {
+            WorthQueryInboundPublicationOutcome::Denied(denial) => {
                 self.inbound_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
                     .mark_publication_retryable(&accepted);
-                Err(WorthQueryInboundAdmissionDenial::CorrelationAlreadyOwned)
+                Err(denial.retry_denial())
             }
-            WorthQueryInboundPublicationOutcome::NoEffect
-            | WorthQueryInboundPublicationOutcome::Denied(_) => {
+            WorthQueryInboundPublicationOutcome::NoEffect => {
                 self.inbound_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())

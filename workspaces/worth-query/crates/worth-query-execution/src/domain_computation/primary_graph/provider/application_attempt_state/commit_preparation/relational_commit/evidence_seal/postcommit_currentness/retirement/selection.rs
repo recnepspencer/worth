@@ -81,7 +81,7 @@ fn sealed_rebase(
             exact(super::super::super::rebase_output(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                super::super::super::PreparedSourceFactRebase::admit(facts).unwrap(),
+                super::super::super::PreparedSourceFactRebase::admit(facts, [].into()).unwrap(),
                 correspondence,
                 changed,
                 true,

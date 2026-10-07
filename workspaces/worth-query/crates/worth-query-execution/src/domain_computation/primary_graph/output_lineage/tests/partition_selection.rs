@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::{
     any::TypeId,
     sync::{Arc, OnceLock},
@@ -120,6 +121,7 @@ fn unrelated_partition_selection(population: u64) {
         .or_default();
     let slot = records.len();
     let recorded = RecordedOutput {
+        computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
         performed_origin: None,
         _retained_capacity: None,
         consumed_outputs: Arc::from([]),
@@ -127,12 +129,7 @@ fn unrelated_partition_selection(population: u64) {
         completed_decision_reuse: None,
         prepared_input_reuse_key: None,
         native_output_witness: OnceLock::new(),
-        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable {
-            computation: None,
-            verification_requirement: None,
-            observed_source_facts: None,
-            resources: None,
-        }),
+        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable::new(None, None, None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
         settlement_identity: super::super::RecordedSettlementIdentity::retain(
             &source,
             ProductCoordinate {
@@ -303,10 +300,10 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         partition(0),
         None,
         [0x41; 32],
-        source_facts(),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
-    );
+        );
     lineage.register_fork(parent, &child);
     let (candidates, work) = lineage
         .retained_output_candidates(

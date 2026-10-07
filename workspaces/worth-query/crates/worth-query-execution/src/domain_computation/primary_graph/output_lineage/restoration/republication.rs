@@ -1,5 +1,6 @@
 //! The lineage row of a republished generated output.
 
+use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::any::TypeId;
 use std::sync::{Arc, OnceLock};
 
@@ -27,13 +28,14 @@ use crate::domain_computation::primary_graph::{
 /// it. Only the output witness is new: the re-created entities carry new
 /// revisions, sealed at the restoration commit.
 pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
+    computation_source: super::super::ComputationSourceEvidence,
     predecessor: Arc<RecordedSettlementIdentity>,
     facts: Arc<[Fact]>,
     retained_capacity: Option<RetainedLineageCapacity>,
     consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     completed_handler_facts: CompletedHandlerFactBoundary,
-    completed_decision_reuse: CompletedDecisionReuseProof,
-    prepared_input_reuse_key: PreparedInputReuseKey,
+    completed_decision_reuse: Option<CompletedDecisionReuseProof>,
+    prepared_input_reuse_key: Option<PreparedInputReuseKey>,
     witness: Arc<OnceLock<SealedNativeOutputWitness>>,
 }
 
@@ -42,7 +44,7 @@ pub(in crate::domain_computation::primary_graph) struct RepublishedRecord {
     pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
     /// The suspended record this row continues.
     pub(in crate::domain_computation::primary_graph) predecessor: Arc<RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts: Arc<[Fact]>,
+    pub(in crate::domain_computation::primary_graph) facts: super::super::RetainedSourceFacts,
     pub(in crate::domain_computation::primary_graph) consumed_outputs:
         Arc<[ConsumedOutputEvidence]>,
     pub(in crate::domain_computation::primary_graph) witness:
@@ -58,19 +60,22 @@ impl RepublishedOutput {
     /// record this republication continues. The row is a performed origin of
     /// its own: its witness covers the re-created entities.
     pub(super) fn continue_in(self, row: &mut RecordedOutput) {
+        row.computation_source = self.computation_source;
         row._retained_capacity = self.retained_capacity;
         row.consumed_outputs = self.consumed_outputs;
         row.completed_handler_facts = Some(self.completed_handler_facts);
-        row.completed_decision_reuse = Some(self.completed_decision_reuse);
-        row.prepared_input_reuse_key = Some(self.prepared_input_reuse_key);
+        row.completed_decision_reuse = self.completed_decision_reuse;
+        row.prepared_input_reuse_key = self.prepared_input_reuse_key;
         row.native_output_witness = OnceLock::from(self.witness);
         let mutable = row
             .mutable
             .get_mut()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         mutable.verification_requirement = None;
-        mutable.observed_source_facts = Some(self.facts);
-        mutable.computation = None;
+        mutable.replace_retained_facts(self.computation_source.retain_facts(self.facts));
+        mutable.computation = super::super::retained_computation::RecordedComputation::Absent(
+            PriorAbsence::Republished,
+        );
     }
 }
 
@@ -92,7 +97,7 @@ impl WorthQueryApplicationOutputLineage {
         suspended_generation: u64,
         source_partition_identity: [u8; 32],
         correspondence: &Arc<WorthQueryApplicationOutputCorrespondence>,
-        suspended_facts: &Arc<[Fact]>,
+        suspended_facts: &super::super::RetainedSourceFacts,
         witness: Arc<OnceLock<SealedNativeOutputWitness>>,
         admission: &mut InvalidationEditAdmission,
     ) -> Option<RepublishedOutput> {
@@ -107,10 +112,9 @@ impl WorthQueryApplicationOutputLineage {
             recorded.source_partition_identity == Some(source_partition_identity)
                 && Arc::ptr_eq(&recorded.correspondence, correspondence)
         })?;
-        if !suspended
-            .observed_source_facts()
-            .is_some_and(|facts| Arc::ptr_eq(&facts, suspended_facts))
-        {
+        if !suspended.observed_source_facts().is_some_and(|facts| {
+            Arc::ptr_eq(facts.postconditions(), suspended_facts.postconditions())
+        }) {
             return None;
         }
         let origin = match &suspended.performed_origin {
@@ -123,15 +127,19 @@ impl WorthQueryApplicationOutputLineage {
             return None;
         }
         let boundary = origin.completed_handler_facts.as_ref()?;
-        let decision = origin.completed_decision_reuse.as_ref()?;
-        let key = suspended.prepared_input_reuse_key.as_ref()?;
+        // Republication continues an exact performed read, even when managed
+        // execution declined whole-input reuse. It carries optional cutoff
+        // proofs unchanged; it never creates a missing proof or certifies
+        // staleness away.
+        let decision = origin.completed_decision_reuse.as_ref();
+        let key = suspended.prepared_input_reuse_key.as_ref();
         let (facts, retained_capacity) = if suspended.performed_origin.is_none() {
-            (Arc::clone(suspended_facts), None)
+            (Arc::clone(suspended_facts.postconditions()), None)
         } else {
             // A stable alias projects its origin's output into its facts. The
             // republished row seals its own witness instead.
             let (facts, capacity) = performed_fact_sequence(
-                suspended_facts,
+                suspended_facts.postconditions(),
                 boundary.handler_fact_count(),
                 origin.native_output_witness()?,
                 &self.retention,
@@ -143,13 +151,15 @@ impl WorthQueryApplicationOutputLineage {
             return None;
         }
         Some(RepublishedOutput {
+            computation_source: suspended.computation_source,
             predecessor: Arc::clone(&suspended.settlement_identity),
             facts,
             retained_capacity,
             consumed_outputs: Arc::clone(&origin.consumed_outputs),
             completed_handler_facts: boundary.continued_by_republication(),
-            completed_decision_reuse: decision.continued_by_republication(),
-            prepared_input_reuse_key: key.continued_by_republication(),
+            completed_decision_reuse: decision
+                .map(CompletedDecisionReuseProof::continued_by_republication),
+            prepared_input_reuse_key: key.map(PreparedInputReuseKey::continued_by_republication),
             witness,
         })
     }
@@ -171,10 +181,11 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
-        suspended_facts: Arc<[Fact]>,
+        suspended_facts: super::super::RetainedSourceFacts,
         resources: Option<WorthQueryProducerDemandResources>,
         republished: RepublishedOutput,
     ) -> Option<RepublishedRecord> {
+        let computation_source = republished.computation_source;
         let predecessor = Arc::clone(&republished.predecessor);
         let consumed_outputs = Arc::clone(&republished.consumed_outputs);
         let witness = Arc::clone(&republished.witness);
@@ -190,10 +201,11 @@ impl WorthQueryApplicationOutputLineage {
             source_partition_identity,
             producer_dependency_identity,
             idempotency_key_identity,
-            suspended_facts,
+            Arc::clone(suspended_facts.postconditions()),
             resources,
             None,
             &mut republished,
+            computation_source,
         )?;
         republished.is_none().then_some(RepublishedRecord {
             identity: restored.identity,

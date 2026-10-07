@@ -196,7 +196,7 @@ where
             &evidence_currentness,
             selected.node_path(),
         )?;
-        let evidence_currentness = std::sync::Arc::from(evidence_currentness);
+        let evidence_currentness: std::sync::Arc<[_]> = std::sync::Arc::from(evidence_currentness);
         let subject = self.admission.scope_entity_id();
         let admitted = admit_workflow_transition(
             self,
@@ -246,7 +246,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(evidence_currentness),
+            output_currentness_facts: Some(evidence_currentness.into()),
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,

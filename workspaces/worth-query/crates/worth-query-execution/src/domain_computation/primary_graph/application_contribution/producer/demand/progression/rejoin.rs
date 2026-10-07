@@ -43,7 +43,8 @@ where
             })?;
         demand.observed_source = source;
         demand.retained_program_basis = readmission.retained_program_basis.clone();
-        demand.producer_contacts_in_this_demand = 0;
+        // Rejoining does not initiate another producer execution; the
+        // executions this same admitted demand already initiated still count.
         // Dropping the stale interest releases the superseded row.
         demand.interest = Some(rejoined);
         Ok(())

@@ -56,7 +56,7 @@ macro_rules! change_root_input {
     }};
 }
 
-/// Writes the Y of `$key`, and answers whether the index had room for it.
+/// Writes the Y of `$key`; every legal source write must be performed.
 macro_rules! writes_y {
     ($request:expr, $application:expr, $key:expr, $y:expr, $idempotency:expr) => {{
         let selected = $request
@@ -73,10 +73,11 @@ macro_rules! writes_y {
             .expect_source(selected.observed_sources()[0].clone())
             .idempotency(&$idempotency)
             .execute_performed::<program::ChainProgram, program::ChainRoot>(&$application);
-        matches!(
-            changed,
-            Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(_))
-        )
+        match changed {
+            Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(_)) => (),
+            Err(stop) => panic!("a legal source write must commit: {stop:?}"),
+            Ok(_) => panic!("a legal source write was not performed"),
+        }
     }};
 }
 
@@ -168,8 +169,8 @@ fn an_unrelated_required_advance_progresses_the_dirty_required_set() {
     ];
     assert_eq!(
         contacts,
-        [0, 0, 0, 0],
-        "the refreshed chain needs no new producer contact"
+        [0, 1, 1, 1],
+        "the fresh demand initiated nothing; each open demand retains its one initial execution"
     );
     assert_eq!(
         query_entries(),
@@ -216,8 +217,8 @@ fn queued_required_work_stays_live_and_exact_across_cycles() {
         ];
         assert_eq!(
             contacts,
-            [0, 0, 0],
-            "cycle {cycle}: no new producer contact"
+            [1, 1, 1],
+            "cycle {cycle}: each admitted demand keeps its initial execution, with no additional contact"
         );
         assert_eq!(
             query_entries(),
@@ -289,8 +290,8 @@ fn a_queued_chain_no_advance_can_fund_never_starves_an_unrelated_caller() {
         let settled = settled_in_one_advance!(d, request, "the unrelated required demand");
         assert_eq!(
             settled.producer_contacts_in_this_demand(),
-            0,
-            "attempt {attempt}: the unrelated demand needs no producer contact"
+            1,
+            "attempt {attempt}: the unrelated open demand retains only its initial execution"
         );
     }
     assert!(

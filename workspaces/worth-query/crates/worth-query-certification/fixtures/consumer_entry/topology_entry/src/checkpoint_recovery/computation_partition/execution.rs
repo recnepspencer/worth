@@ -7,7 +7,7 @@ use worth_foundational::facade::PartitionIdentity;
 use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionStop, WorthQueryManagedComputationResourceDenial,
-    WorthQueryPartitionedComputationDenial,
+    WorthQueryMemoryLimitLevel, WorthQueryPartitionedComputationDenial,
 };
 
 use super::facts::{RegionEntry, RegionFault};
@@ -177,25 +177,32 @@ fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
 }
 
 #[test]
-fn partitions_whose_declared_bytes_do_not_sum_are_denied_and_the_next_demand_is_answered() {
-    // The computation declares the largest byte count there is. Every
-    // partition may hold that much, and two such capacities have no sum: the
-    // second gather is refused before it runs.
+fn partitions_whose_declared_bytes_pass_the_request_memory_are_denied_and_the_next_demand_is_answered(
+) {
+    // The computation declares the largest byte count there is, and a gather
+    // holds its declared bytes before it runs. No request's memory admits
+    // that: the first gather is refused by the request's policy, with one
+    // region or two, and the demand after a refusal is answered the same way.
     let two_regions = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
     let one_region = [entry(1, 1, 2.0), entry(2, 1, 3.0)];
     let sets: facts::Sets<'_> = &[("two-regions", &two_regions), ("one-region", &one_region)];
     with_totals::<UnboundedBytesOwner>(sets, |demand| {
-        let unsummable = || -> RegionOutcome {
-            Err(WorthQueryPartitionedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::CapacityOverflow,
-            ))
-        };
-        assert_eq!(demand("two-regions"), unsummable());
-        // One partition's capacity is a sum of its own, and the reduction's
-        // bound over that many bytes is not: execution refuses the run with
-        // that same cause.
-        assert_eq!(demand("one-region"), unsummable());
-        assert_eq!(demand("two-regions"), unsummable());
+        for set in ["two-regions", "one-region", "two-regions"] {
+            let outcome = demand(set);
+            assert!(
+                matches!(
+                    outcome,
+                    Err(WorthQueryPartitionedComputationDenial::Resource(
+                        WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                            requested: u64::MAX,
+                            level: WorthQueryMemoryLimitLevel::Policy,
+                            ..
+                        }
+                    ))
+                ),
+                "{set}: {outcome:?}"
+            );
+        }
     });
 }
 

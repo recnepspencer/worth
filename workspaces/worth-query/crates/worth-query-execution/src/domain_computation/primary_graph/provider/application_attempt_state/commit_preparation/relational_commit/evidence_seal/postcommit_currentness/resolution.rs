@@ -16,8 +16,9 @@ use super::{
 };
 
 /// A fact a source query read. It stays at the revision it was read at, so
-/// it is the one kind the committed effect can leave stale: every other fact
-/// is observed again at the committed snapshot.
+/// it is the one kind the walk asks the committed effect about: every other
+/// fact is observed again at the committed snapshot. A field an owner call
+/// read and the effect replaced is marked moved before the walk.
 pub(super) fn reads_source(fact: &Fact) -> bool {
     matches!(
         fact,

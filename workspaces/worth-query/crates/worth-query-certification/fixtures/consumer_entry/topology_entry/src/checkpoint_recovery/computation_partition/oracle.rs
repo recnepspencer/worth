@@ -7,11 +7,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use worth_query_host::facade::application_contribution::{
+    published_partitioned_computations_on_this_thread_for_test as published_states,
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
-    WorthQueryPartitionedComputationRun,
+    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationOutputDemandProgress,
@@ -19,7 +20,7 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_this_thread_for_test as runs_on_this_thread;
 
-use super::demand::{RegionTotalsDemandBinding, RegionTotalsHandler};
+use super::demand::RegionTotalsDemandBinding;
 use super::entry_edit::{EntryEdit, EntryEditBinding, EntryEditHandler};
 use super::facts::{self, Entry, EntryData, Graph, InputDenial, Reader, RegionEntry, Set};
 use super::output_producer::{
@@ -30,16 +31,27 @@ use super::region_output::{
 };
 use super::*;
 
+mod absence;
 mod counts;
+mod cutoff;
+mod handler_absence;
+mod installation;
+mod republication;
+mod restoration;
+mod seeded_absence;
+use installation::{
+    install, install_with_reuse, Application, OracleProgram, Request, EVEN_Y, ODD_Y, SCOPE,
+};
 mod differential;
+mod parallel_history_reuse;
 mod program;
 mod worker_axis;
 
 use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_RETAINED_BYTES, TOTALS_WORK};
 
-/// What one entry may cost the computation: its key's encoding and routing,
-/// its kernel and its share of the combines.
-const WORK_PER_ENTRY: usize = 256;
+/// What one entry may cost the computation: its digest, its key's encoding
+/// and routing, its kernel and its share of the combines.
+const WORK_PER_ENTRY: usize = 512;
 /// The input's digest.
 const WORK_BESIDE_ENTRIES: usize = 4_096;
 /// The width every other operation of the program fits, the host's default.
@@ -47,8 +59,10 @@ const WIDTH_BESIDE_DECISION: usize = 4_096;
 
 /// The totals of one region output, declared for the largest set its
 /// decision reads.
-struct OracleTotals;
-impl ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature> for OracleTotals {
+struct OracleTotals<const WORK: usize = TOTALS_WORK>;
+impl<const WORK: usize> ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>
+    for OracleTotals<WORK>
+{
     type Input = RegionEntries;
     type Output = RegionArtifact;
     type Partition = RegionKey;
@@ -58,7 +72,7 @@ impl ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature> f
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
     const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(TOTALS_WORK, TOTALS_RETAINED_BYTES);
+        ApplicationComputationResourceCeiling::new(WORK, TOTALS_RETAINED_BYTES);
 }
 
 static PLANS: AtomicUsize = AtomicUsize::new(0);
@@ -87,9 +101,13 @@ fn take_calls() -> OwnerCalls {
 /// Totals each region in entry order, then the regions. An even region also
 /// sums the weight its set lends it, so the weight is a fact every even
 /// region gathers.
-struct OracleOwner;
-impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, OracleTotals>
-    for OracleOwner
+struct OracleOwner<const MODE: u8 = 0>;
+impl<const WORK: usize, const MODE: u8>
+    WorthQueryPartitionedComputationOwner<
+        CheckpointSchema,
+        PlanarFinalOutputFeature,
+        OracleTotals<WORK>,
+    > for OracleOwner<MODE>
 {
     type Operation = TotalRegionOutput;
     type Item = Entry;
@@ -114,7 +132,13 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
         entry: &Entry,
     ) -> Result<RegionKey, InputDenial> {
         KEYS.fetch_add(1, Ordering::Relaxed);
-        Ok(RegionKey(facts::region(reader, entry)?))
+        let region = facts::region(reader, entry)?;
+        let memberships = if MODE == 1 {
+            u32::try_from(facts::membership_count(reader, entry)?).unwrap()
+        } else {
+            0
+        };
+        Ok(RegionKey(region + memberships))
     }
 
     fn gather(
@@ -158,6 +182,7 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
 /// charged, or its denial; how it ran; and the owner's calls it entered.
 #[derive(Debug)]
 struct OracleRun {
+    published: Vec<WorthQueryPublishedComputationStateForTest>,
     outcome: Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
     runs: Vec<WorthQueryPartitionedComputationRun>,
     calls: OwnerCalls,
@@ -171,124 +196,6 @@ fn room() -> MutexGuard<'static, Vec<OracleRun>> {
     ROOM.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// The topology plus the region output's producer and the owner of its
-/// totals.
-struct OracleContribution;
-impl ApplicationSchemaContribution<CheckpointSchema> for OracleContribution {
-    const IDENTITY: ApplicationSchemaContributionIdentity =
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
-            builder,
-        )
-    }
-}
-impl WorthQueryApplicationContribution<CheckpointSchema> for OracleContribution {
-    type Configuration = TopologyConfiguration;
-
-    fn contracts(
-        contracts: &mut WorthQueryApplicationContributionContracts<CheckpointSchema>,
-    ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        <TopologyContribution as WorthQueryApplicationContribution<CheckpointSchema>>::contracts(
-            contracts,
-        )?;
-        contracts.producer::<RegionOutputProducer<CheckpointSchema>>()?;
-        contracts.conditional::<RegionOutputReadiness<CheckpointSchema>>()?;
-        Ok(())
-    }
-
-    fn configure(
-        configuration: Self::Configuration,
-        setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
-    ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        let installed = setup
-            .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(OracleOwner)?;
-        let handler = RegionOutputHandler::running(move |reader, set| {
-            take_calls();
-            let outcome = (|| {
-                let computed = installed
-                    .prepare(reader, set)?
-                    .compute(reader.managed_computation_execution())?;
-                let charged_work = computed.charged_work();
-                Ok((computed.complete()?.to_bits(), charged_work))
-            })();
-            let runs = runs_on_this_thread().into_iter().map(|(run, _)| run);
-            room().push(OracleRun {
-                outcome,
-                runs: runs.collect(),
-                calls: take_calls(),
-            });
-        });
-        setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
-        setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(
-            RegionTotalsHandler::idle(),
-        )?;
-        setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
-        setup.producer::<RegionOutputProducer<CheckpointSchema>>(RegionOutputProvider)?;
-        setup.conditional::<RegionOutputReadiness<CheckpointSchema>>(())?;
-        TopologyContribution::configure_topology(configuration, setup)
-    }
-}
-
-struct OracleProgram;
-impl ApplicationProgramDefinition<CheckpointSchema> for OracleProgram {
-    type Contributions = (OracleContribution,);
-    type Outputs = ApplicationProgramOutputs<OracleRoot>;
-    type Rules = CheckpointRules;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("checkpoint-region-output-program");
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        demand_policy::feature_specs_with_final_output(
-            required_chain::output_feature_spec(),
-            demand_policy::final_output_feature::<RegionArtifact>()
-                .managed_computation::<OracleTotals>()
-                .conditional_operation::<TotalRegionOutput>()
-                .mutation::<EntryEditBinding<CheckpointSchema>>()
-                .finish(),
-        )
-    }
-}
-
-type Application =
-    application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, OracleProgram>;
-type Request<'application, 'principal, 'scope> =
-    WorthQueryApplicationRequest<'application, 'principal, 'scope, CheckpointSchema>;
-
-/// The scope whose output the producer keeps. Its ordinate names the set.
-const SCOPE: &str = "anchor-isolated";
-/// The scope's seeded ordinate, which names the even set, and the one that
-/// names the odd set.
-const EVEN_Y: u64 = 50;
-const ODD_Y: u64 = 51;
-
-/// Installs the default host, widened so its operations may be as wide as
-/// the largest set's decision.
-fn install(seed: impl FnOnce(&mut Graph)) -> Application {
-    let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
-    let host = support::candidates();
-    let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
-            host.maximum_items().max(width),
-            host.maximum_retained_representation_bytes().max(width),
-            host.maximum_validator_work().max(width),
-        )
-        .and_then(|candidates| candidates.with_maximum_operation_width(width))
-        .unwrap();
-    let invalidation = support::invalidation(128 * 1_024 * 1_024, 1_000_000, 128);
-    let limits = support::limits_with_room(32, 16, 64, invalidation, candidates);
-    support::install_program_with_limits::<OracleProgram>(
-        None,
-        Default::default(),
-        limits,
-        |graph| {
-            support::seed_cycle(graph);
-            seed(graph);
-        },
-    )
-}
-
 /// Seeds the entry numbered `number` as a member of each of `sets`.
 fn seed_entry(graph: &mut Graph, sets: &[&str], number: usize, entry: RegionEntry) {
     let key = format!("oracle-entry-{number}");
@@ -300,41 +207,52 @@ fn seed_entry(graph: &mut Graph, sets: &[&str], number: usize, entry: RegionEntr
 
 /// Demands the scope's output until it settles: the producer's contacts in
 /// the demand, and the runs its decisions made.
-fn demand(request: &Request<'_, '_, '_>, application: &Application) -> (usize, Vec<OracleRun>) {
+fn demand<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
+    request: &Request<'_, '_, '_>,
+    application: &Application<REUSE, WORK, RUNS, MODE>,
+) -> (usize, Vec<OracleRun>) {
     room().clear();
+    published_states();
     let mut demand = request
         .demand(RegionOutputDemand(SCOPE.to_owned()))
-        .start_dependent_in_program::<OracleProgram, RegionConnection>(application)
+        .start_dependent_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>, RegionConnection>(
+            application,
+        )
         .expect("the region output demand starts");
     let settled = (0..256)
         .find_map(|_| {
-            match demand
-                .advance(request)
-                .expect("the region output demand advances")
-            {
+            match demand.advance(request).unwrap_or_else(|denial| {
+                panic!(
+                    "the region output demand advances: {denial:?}; runs: {:?}",
+                    *room()
+                )
+            }) {
                 WorthQueryApplicationOutputDemandProgress::Pending => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             }
         })
         .expect("the region output demand settles");
     let contacts = settled.producer_contacts_in_this_demand();
-    (contacts, std::mem::take(&mut *room()))
+    let mut runs = std::mem::take(&mut *room());
+    if let Some(last) = runs.last_mut() {
+        last.published = published_states();
+    }
+    (contacts, runs)
 }
 
 /// Commits one entry edit.
-fn edit(request: &Request<'_, '_, '_>, application: &Application, edit: EntryEdit, command: u64) {
-    let observed = request
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .expect("the edit's source is readable");
+fn edit<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
+    request: &Request<'_, '_, '_>,
+    application: &Application<REUSE, WORK, RUNS, MODE>,
+    edit: EntryEdit,
+    command: u64,
+) {
     let made = format!("{edit:?}");
     let outcome = request
-        .mutate(edit)
-        .expect_source(observed.observed_sources()[0].clone())
+        .mutate(edit.commanded(command))
+        .without_source()
         .idempotency(&command)
-        .execute_in_program::<OracleProgram>(application);
+        .execute_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>>(application);
     assert!(
         matches!(
             &outcome,
@@ -345,7 +263,12 @@ fn edit(request: &Request<'_, '_, '_>, application: &Application, edit: EntryEdi
 }
 
 /// Moves the scope's ordinate to `y`, which names the set its output totals.
-fn adjust(request: &Request<'_, '_, '_>, application: &Application, y: u64, command: u64) {
+fn adjust<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
+    request: &Request<'_, '_, '_>,
+    application: &Application<REUSE, WORK, RUNS, MODE>,
+    y: u64,
+    command: u64,
+) {
     let observed = request
         .query(PlanarRead {
             body_key: SCOPE.to_owned(),
@@ -359,6 +282,31 @@ fn adjust(request: &Request<'_, '_, '_>, application: &Application, y: u64, comm
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&command)
-        .execute_performed::<OracleProgram, OracleRoot>(application)
+        .execute_performed::<OracleProgram<REUSE, WORK, RUNS, MODE>, OracleRoot>(application)
         .expect("the scope's ordinate moves");
+}
+
+fn at_demand_scope(mut edit: EntryEdit) -> EntryEdit {
+    edit.scope_key = SCOPE.to_owned();
+    edit
+}
+
+fn assert_published_state(kept: &[OracleRun], fresh: &[OracleRun]) {
+    let kept = kept.last().unwrap();
+    let fresh = fresh.last().unwrap();
+    assert_eq!(
+        kept.published.len(),
+        fresh.published.len(),
+        "published state count"
+    );
+    for (kept, fresh) in kept.published.iter().zip(&fresh.published) {
+        assert!(
+            kept.same_fields::<RegionKey, Entry, f64>(
+                fresh,
+                |a, b| a.0 == b.0,
+                Entry::same_binding_as
+            ),
+            "published retained fields differ: {kept:?}, {fresh:?}"
+        );
+    }
 }

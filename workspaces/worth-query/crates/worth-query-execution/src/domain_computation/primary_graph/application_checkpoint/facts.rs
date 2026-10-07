@@ -15,11 +15,10 @@ use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 mod indexed_selection;
 
-/// The wire version of producer facts. A checkpoint carries them at this
-/// version only for an output that consumed no other output: the restored
-/// row is verified against its own source facts and claims nothing upstream.
-/// Earlier versions made no such promise, and their payload is never read.
-pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 8;
+/// Producer facts promise no consumed outputs and no known own-write staleness.
+/// Version 8 exports did not exclude own-write-stale computations; neither
+/// their checkpoint format nor their fact payload is admitted as version 9.
+pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 9;
 pub(super) const MAXIMUM_FACT_BYTES: usize = 1024 * 1024;
 pub(super) const MAXIMUM_FACTS: usize = 4096;
 const MAXIMUM_TEXT: usize = 4096;

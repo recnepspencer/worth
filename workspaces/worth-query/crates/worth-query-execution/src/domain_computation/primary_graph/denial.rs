@@ -85,6 +85,14 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ProposalIdentityExhausted,
     /// Building an installed index was rejected.
     IndexBuildRejected,
+    /// The execution owner refused commit or index preparation; the cause and partition stay typed.
+    ExecutionDenied {
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    /// Commit or index preparation was canceled or exceeded its deadline before publication.
+    ExecutionControlStopped {
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
     /// Relational rejected the schema.
     RelationalSchemaRejected,
     /// The Relational runtime was already published.
@@ -93,6 +101,13 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     AuthorizationPolicyRejected,
     /// The Runtime Bridge rejected the installation.
     RuntimeBridgeRejected,
+    /// The invalidation window retains more positions than the World retains
+    /// commits. A position past the World's history can never be read, so its
+    /// retained marks would only hold capacity.
+    InvalidationWindowExceedsHistory {
+        retained_positions: usize,
+        retained_commits: usize,
+    },
     /// The schema declares conditional nodes, so the runtime must be published
     /// through conditional installation.
     ConditionalBindingsRequired,

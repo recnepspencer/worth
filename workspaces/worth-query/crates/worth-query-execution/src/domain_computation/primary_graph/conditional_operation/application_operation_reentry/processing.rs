@@ -1,3 +1,5 @@
+use super::super::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind as CommitKind;
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
@@ -118,7 +120,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
         super::super::temporal_reconstruction::WorthQueryReconstructedTemporalIntent<Clock, Input>,
     >,
     wakes: &mut [WorthQueryRetainedConditionalWake],
-    runtime_binding: &crate::domain_computation::primary_graph::conditional_operation::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity,
+    runtime_binding: &WorthQueryTemporalRuntimeBindingIdentity,
 ) -> WorthQueryTemporalReentryCounts
 where
     Schema: ApplicationSchema,
@@ -183,7 +185,20 @@ where
             WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(
                 evidence,
                 deferred,
+            )
+            | WorthQueryRetainedConditionalDecision::OperationSettlementExecutionDenied(
+                evidence,
+                deferred,
+                _,
             ) => match settlement_reentry::repair(runtime, deferred) {
+                WorthQuerySettlementReentry::ExecutionDenied(deferred, kind) => {
+                    wake.decision =
+                        WorthQueryRetainedConditionalDecision::OperationSettlementExecutionDenied(
+                            evidence, deferred, kind,
+                        );
+                    counts.indeterminate += 1;
+                    continue;
+                }
                 WorthQuerySettlementReentry::AlreadyCommitted => {
                     complete_wake(
                         bridge,
@@ -232,24 +247,22 @@ where
                     continue;
                 }
                 WorthQuerySettlementReentry::RetentionIdentityExhausted => {
-                    wake.decision =
-                        WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
-                            evidence,
-                            super::WorthQueryTemporalTerminalFailure::ApplicationCommit(
-                                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::RetentionIdentityExhausted,
-                            ),
-                        );
+                    wake.decision = WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
+                        evidence,
+                        super::WorthQueryTemporalTerminalFailure::ApplicationCommit(
+                            CommitKind::RetentionIdentityExhausted,
+                        ),
+                    );
                     counts.failed += 1;
                     continue;
                 }
                 WorthQuerySettlementReentry::SnapshotIdentityExhausted => {
-                    wake.decision =
-                        WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
-                            evidence,
-                            super::WorthQueryTemporalTerminalFailure::ApplicationCommit(
-                                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::SnapshotIdentityExhausted,
-                            ),
-                        );
+                    wake.decision = WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
+                        evidence,
+                        super::WorthQueryTemporalTerminalFailure::ApplicationCommit(
+                            CommitKind::SnapshotIdentityExhausted,
+                        ),
+                    );
                     counts.failed += 1;
                     continue;
                 }
@@ -257,12 +270,24 @@ where
             WorthQueryRetainedConditionalDecision::Eligible(evidence)
             | WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationNoEffect(evidence, _)
+            | WorthQueryRetainedConditionalDecision::OperationCommitRetryable(evidence, _)
+            | WorthQueryRetainedConditionalDecision::OperationExecutionControlRetryable(
+                evidence,
+                _,
+            )
             | WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationBackpressured(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _) => {
                 evidence
             }
-            other => {
+            other @ (WorthQueryRetainedConditionalDecision::Suppressed(_)
+            | WorthQueryRetainedConditionalDecision::Deferred(_)
+            | WorthQueryRetainedConditionalDecision::OperationControlStopped(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationCommitted(_)
+            | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
+            | WorthQueryRetainedConditionalDecision::Failed(_)) => {
                 wake.decision = other;
                 continue;
             }

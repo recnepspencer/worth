@@ -50,6 +50,10 @@ pub enum EffectExecutionDenialKind {
     RelationalStrategyAuthorityLoweringFailed,
     RelationalStrategyAuthorityValidationFailed,
     RelationalCommitFailed,
+    /// A pre-effect execution refusal retains the shared Query cause.
+    RelationalExecutionDenied(
+        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+    ),
     MergePreparationFailed,
     MergeExecutionFailed,
     /// A merge writes a unique value another live entity holds at the
@@ -119,6 +123,7 @@ impl EffectExecutionDenialKind {
                 "relational_strategy_authority_validation_failed"
             }
             Self::RelationalCommitFailed => "relational_commit_failed",
+            Self::RelationalExecutionDenied(_) => "relational_execution_denied",
             Self::MergePreparationFailed => "merge_preparation_failed",
             Self::MergeExecutionFailed => "merge_execution_failed",
             Self::UniqueValueTaken => "unique_value_taken",

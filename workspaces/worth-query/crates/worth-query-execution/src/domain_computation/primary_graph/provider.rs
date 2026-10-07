@@ -1,4 +1,5 @@
 mod aftermath_causality;
+pub(in crate::domain_computation::primary_graph) mod relational_execution_denial;
 pub(in crate::domain_computation) use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
@@ -24,7 +25,6 @@ mod history_retirement;
 mod idempotency;
 mod inbound_completion;
 mod inbound_cost;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::{
     WorthQueryCanonicalCompletionRow, WorthQueryInboundCompletionReadDenial,
@@ -35,7 +35,7 @@ pub(in crate::domain_computation) use inbound_terminal_index::{
 };
 mod installation;
 mod invariant_execution;
-mod invariant_execution_failure;
+pub(in crate::domain_computation::primary_graph) mod invariant_execution_failure;
 mod managed_application_recovery;
 mod mutation_work;
 pub use managed_application_recovery::{
@@ -305,3 +305,8 @@ impl WorthQueryPrimaryGraphProvider {
 }
 
 pub(super) struct WorthQueryPrimaryLogicalGraph;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use inbound_completion::{
+    completion_preparation_denial, completion_validation_denial,
+};

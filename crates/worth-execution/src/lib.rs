@@ -23,8 +23,8 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 mod tests;
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
-    KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId, PartitionRoute,
-    PartitionUpdateDenial, PartitionWork, SourceFactId, WeightedEdge, WeightedItem,
+    KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId,
+    PartitionUpdateDenial, PartitionWork, WeightedEdge, WeightedItem,
 };
 pub use pattern::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,
