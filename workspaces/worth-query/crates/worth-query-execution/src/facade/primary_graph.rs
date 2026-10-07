@@ -1,5 +1,10 @@
 //! Primary Graph application contracts.
 
+pub use crate::domain_computation::{
+    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
+    WorthQueryInvariantExecutionFailurePosture,
+};
+
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::inexact_native_deliveries_on_this_thread_for_test;
 #[cfg(feature = "test-query-execution-observer")]

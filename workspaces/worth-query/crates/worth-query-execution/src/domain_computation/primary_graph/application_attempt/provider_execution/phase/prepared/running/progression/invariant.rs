@@ -48,54 +48,12 @@ pub(super) fn progress_invariant_candidate<'run>(
         Ok(admission) => admission,
         Err(failure) => {
             inspection.discard();
-            if let Some(custom_invariant) = failure.custom_invariant_denial().cloned() {
-                return Err(WorthQueryProviderProgressionOutcome::Denied(
-                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::custom_invariant_denied(
-                        DenialStage::InvariantExecution,
-                        custom_invariant,
-                        failure.detail().to_owned(),
-                    ),
-                ));
-            }
-            return Err(match failure.kind() {
-                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::RetentionCapacityExhausted => {
-                        WorthQueryProviderProgressionOutcome::Denied(
-                            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
-                                DenialStage::InvariantExecution,
-                            ),
-                        )
-                    }
-                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::RetentionIdentityExhausted => {
-                        WorthQueryProviderProgressionOutcome::Denied(
-                            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::retention_identity_exhausted(
-                                DenialStage::InvariantExecution,
-                            ),
-                        )
-                    }
-                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProductBasisStale => {
-                        WorthQueryProviderProgressionOutcome::Denied(
-                            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::product_basis_stale(
-                                DenialStage::InvariantExecution,
-                            ),
-                        )
-                    }
-                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::CandidateValidatorWorkExceeded {
-                        maximum_work,
-                        required_work,
-                    } => WorthQueryProviderProgressionOutcome::Denied(
-                        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::candidate_validator_work_exceeded(
-                            DenialStage::InvariantExecution,
-                            maximum_work,
-                            required_work,
-                        ),
-                    ),
-                    _ => WorthQueryProviderProgressionOutcome::Denied(
-                        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                            DenialStage::InvariantExecution,
-                            failure.detail().to_owned(),
-                        ),
-                    ),
-                });
+            return Err(WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                    DenialStage::InvariantExecution,
+                    failure,
+                ),
+            ));
         }
     };
     let receipts = match locators.and_then(|locators| {

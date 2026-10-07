@@ -54,8 +54,15 @@ pub(super) fn map_transaction_staging_failure(
         Denial::SavepointIdentityExhausted => {
             WorthQueryInvariantExecutionDenialKind::SavepointIdentityExhausted
         }
-        Denial::MaterializationAuthorityRequired | Denial::MaterializationModeMismatch => {
-            WorthQueryInvariantExecutionDenialKind::ProviderRejected
+        Denial::MaterializationAuthorityRequired => {
+            return provider_failure(
+                "Relational invariant transaction requires materialization authority",
+            );
+        }
+        Denial::MaterializationModeMismatch => {
+            return provider_failure(
+                "Relational invariant transaction materialization mode does not match its intents",
+            );
         }
     };
     exhausted_failure(
@@ -201,6 +208,10 @@ fn provider_failure(detail: impl Into<std::sync::Arc<str>>) -> WorthQueryInvaria
 }
 
 #[cfg(test)]
+#[path = "invariant_execution_failure/staging_tests.rs"]
+mod staging_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{map_custom_invariant_failure, map_invariant_failure};
     use crate::domain_computation::WorthQueryCustomInvariantDenial;
@@ -229,6 +240,15 @@ mod tests {
             failure.custom_invariant_denial(),
             Some(&WorthQueryCustomInvariantDenial::Violation { identity })
         );
+        let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+            failure.clone(),
+        );
+        assert_eq!(
+            denial.custom_invariant_denial(),
+            failure.custom_invariant_denial()
+        );
+        assert_eq!(denial.invariant_execution_failure(), Some(&failure));
     }
 
     #[test]

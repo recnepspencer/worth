@@ -2,6 +2,7 @@
 pub mod product_workflow_support;
 
 mod mutation_attempt_report;
+mod transaction_staging;
 
 use product_workflow_support::adapters::ClockSource;
 use product_workflow_support::application::{example_limits, seed_graph};
@@ -27,7 +28,9 @@ use worth_query_host::facade::{
     },
     primary_graph::{
         HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
-        WorthQueryApplicationIdempotencyBinding, WorthQueryPrincipalResolutionMode,
+        WorthQueryApplicationIdempotencyBinding, WorthQueryInvariantExecutionDenialKind,
+        WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionFailurePosture,
+        WorthQueryPrincipalResolutionMode,
     },
     product::WorthQueryAdmittedChange,
 };
@@ -215,6 +218,24 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
         denial.kind(),
         WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
     );
+    // External hosts can name and match the complete invariant cause. This
+    // earlier program refusal must carry no invariant-owner evidence.
+    let invariant_failure: Option<&WorthQueryInvariantExecutionFailure> =
+        denial.invariant_execution_failure();
+    let capacity = invariant_failure.and_then(|failure| {
+        if failure.posture() != WorthQueryInvariantExecutionFailurePosture::Exhausted {
+            return None;
+        }
+        match failure.kind() {
+            WorthQueryInvariantExecutionDenialKind::TransactionOverlayCapacityExhausted {
+                maximum_bytes,
+                required_bytes,
+            } => Some((maximum_bytes, required_bytes)),
+            _ => None,
+        }
+    });
+    assert!(invariant_failure.is_none());
+    assert!(capacity.is_none());
     assert_eq!(
         read_input(&application, branch, &principal, &scope),
         predecessor,
