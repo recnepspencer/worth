@@ -36,7 +36,6 @@ pub use value_binding::{
 };
 
 pub(crate) use canonical_identity::derive_installed_schema_identity;
-#[cfg(test)]
 pub(crate) use canonical_identity::derive_installed_schema_identity_with_budget;
 pub(crate) use compilation::{
     compile_application_schema, ApplicationSchemaCompilationDenial,

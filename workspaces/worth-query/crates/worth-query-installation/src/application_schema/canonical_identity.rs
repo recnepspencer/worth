@@ -18,10 +18,10 @@ const INSTALLATION_BUDGET: CanonicalDigestWorkBudget =
 pub(crate) fn derive_installed_schema_identity(
     identity: &ApplicationSchemaIdentity,
 ) -> Result<(CanonicalDigestId, WorthQueryCanonicalWorkEvidence), CanonicalDigestDerivationDenial> {
-    derive_with_budget(identity, INSTALLATION_BUDGET)
+    derive_installed_schema_identity_with_budget(identity, INSTALLATION_BUDGET)
 }
 
-fn derive_with_budget(
+pub(crate) fn derive_installed_schema_identity_with_budget(
     identity: &ApplicationSchemaIdentity,
     budget: CanonicalDigestWorkBudget,
 ) -> Result<(CanonicalDigestId, WorthQueryCanonicalWorkEvidence), CanonicalDigestDerivationDenial> {
@@ -38,12 +38,4 @@ fn derive_with_budget(
         CanonicalDigestId::new(*derived.value().bytes()),
         WorthQueryCanonicalWorkEvidence::one_digest(derived.metadata().work()),
     ))
-}
-
-#[cfg(test)]
-pub(crate) fn derive_installed_schema_identity_with_budget(
-    identity: &ApplicationSchemaIdentity,
-    budget: CanonicalDigestWorkBudget,
-) -> Result<(CanonicalDigestId, WorthQueryCanonicalWorkEvidence), CanonicalDigestDerivationDenial> {
-    derive_with_budget(identity, budget)
 }
