@@ -37,16 +37,16 @@ impl<Schema, Operation, Input, Scope>
         >,
         WorthQueryApplicationAttemptDenial,
     > {
-        let expected = self.expected_facts.clone().ok_or_else(|| {
+        let expected = self.expected_facts.as_ref().ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
                 self.admission.operation(),
             )
         })?;
         for key in expected {
-            let (read_scope, fact) = self.observe_projected_fact(&key)?;
+            let (read_scope, fact) = self.observe_projected_fact(key)?;
             self.installed_read_scopes.insert(key.clone(), read_scope);
-            self.facts.insert(key, fact);
+            self.facts.insert(key.clone(), fact);
         }
         self.complete()
     }

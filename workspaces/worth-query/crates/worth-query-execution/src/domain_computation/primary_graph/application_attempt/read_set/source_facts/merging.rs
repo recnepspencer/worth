@@ -26,10 +26,10 @@ fn admitted_and_dependent_reads_merge_one_native_revision_with_complete_coverage
     let admitted = adjacency(5, 2, vec![second, first]);
     let dependent = adjacency(5, 64, vec![first]);
     let merged =
-        merge_source_facts(vec![admitted.clone()], vec![dependent.clone()], "test").unwrap();
+        merge_source_facts(vec![admitted.clone()], keyed([dependent.clone()]), "test").unwrap();
     assert_eq!(merged, vec![adjacency(5, 64, vec![first, second])]);
     assert_eq!(
-        merge_source_facts(vec![dependent], vec![admitted], "test").unwrap(),
+        merge_source_facts(vec![dependent], keyed([admitted]), "test").unwrap(),
         merged,
     );
 }
@@ -38,12 +38,65 @@ fn admitted_and_dependent_reads_merge_one_native_revision_with_complete_coverage
 fn admitted_and_dependent_reads_reject_different_native_revisions() {
     let error = merge_source_facts(
         vec![adjacency(5, 2, vec![])],
-        vec![adjacency(6, 64, vec![])],
+        keyed([adjacency(6, 64, vec![])]),
         "test",
     )
     .unwrap_err();
     assert_eq!(
         error.kind(),
         WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch
+    );
+}
+
+fn keyed(
+    facts: impl IntoIterator<Item = WorthQueryApplicationObservedFact>,
+) -> BTreeMap<WorthQueryApplicationFactStorageKey, WorthQueryApplicationObservedFact> {
+    facts
+        .into_iter()
+        .map(|fact| (fact.dependency_key(), fact))
+        .collect()
+}
+
+#[test]
+fn moving_dependent_source_map_allocates_only_the_final_fact_vector() {
+    let filter = concat!(module_path!(), "::isolated_source_map_transfer")
+        .split_once("::")
+        .unwrap()
+        .1;
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", filter, "--test-threads=1", "--nocapture"])
+        .env("WORTH_QUERY_SOURCE_MAP_TRANSFER_PROBE", "1")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "source-map allocation probe failed:\n{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+}
+
+#[test]
+fn isolated_source_map_transfer() {
+    if std::env::var_os("WORTH_QUERY_SOURCE_MAP_TRANSFER_PROBE").is_none() {
+        return;
+    }
+    // This pure storage handoff grants no graph observation authority. Prepare
+    // its keyed container before measuring; only final Vec backing is new.
+    let dependent = keyed(
+        (1..=128).map(|slot| WorthQueryApplicationObservedFact::SourceEntity {
+            entity_id: EntityId::new(PartitionId::main(), slot, 1),
+        }),
+    );
+    let count = dependent.len();
+    let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+    let merged = merge_source_facts(Vec::new(), dependent, "test").unwrap();
+    let allocated = region.change().bytes_allocated;
+    assert_eq!(merged.len(), count);
+    assert_eq!(
+        allocated,
+        merged.capacity() * std::mem::size_of::<WorthQueryApplicationObservedFact>(),
+        "the transferred map and dependency keys must not be reconstructed"
     );
 }

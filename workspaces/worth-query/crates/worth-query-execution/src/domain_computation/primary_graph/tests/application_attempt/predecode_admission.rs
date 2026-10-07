@@ -98,6 +98,75 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
 }
 
 #[test]
+fn ordinary_decision_field_decodes_without_a_carrier_copy() {
+    let filter = concat!(module_path!(), "::isolated_ordinary_field_decode")
+        .split_once("::")
+        .unwrap()
+        .1;
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", filter, "--test-threads=1", "--nocapture"])
+        .env("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE", "1")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "ordinary field allocation probe failed:\n{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+}
+
+#[test]
+fn isolated_ordinary_field_decode() {
+    if std::env::var_os("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE").is_none() {
+        return;
+    }
+    let small = installed_authorization_world_with_label("small");
+    let (_, fixed_allocation) = ordinary_field_allocation(&small);
+    let payload = "q".repeat(128 * 1024);
+    let large = installed_authorization_world_with_label(&payload);
+    let (actual, allocated) = ordinary_field_allocation(&large);
+    assert_eq!(actual, payload);
+    assert!(
+        allocated <= fixed_allocation + payload.len(),
+        "only the owned decoded String grows with the carrier: \
+         allocated {allocated}, fixed allocation {fixed_allocation}"
+    );
+}
+
+fn ordinary_field_allocation(world: &super::super::fixture::AuthorizationWorld) -> (String, usize) {
+    let request = live_scope();
+    let principal = authenticated_principal(world, &request);
+    let account = resolved_account(world, "open", &request);
+    let admission = admitted_operation(world, &principal, &account, &request);
+    let mut allocated = 0;
+    let completed = world
+        .invariant
+        .project_admitted_operation(&admission, |reader, scope| {
+            // Measure only this ordinary field call, not installation, authorization,
+            // completion or retained read-set capture. This is not a peak-byte proof.
+            let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+            let actual = reader
+                .decision_field(scope, AccountLabel::reference())
+                .unwrap()
+                .unwrap();
+            allocated = region.change().bytes_allocated;
+            actual
+        })
+        .unwrap();
+    assert_eq!(completed.work().field_reads(), 1);
+    let (actual, projection, _) = completed.into_parts();
+    let _reads = world
+        .application
+        .begin_projected_application_read_attempt(admission, projection)
+        .unwrap()
+        .complete_projected_dependencies()
+        .unwrap();
+    (actual, allocated)
+}
+
+#[test]
 fn undeclared_and_foreign_reads_deny_before_raw_callback() {
     let world = installed_authorization_world(true);
     let other = installed_authorization_world(true);

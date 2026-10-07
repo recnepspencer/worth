@@ -355,14 +355,15 @@ where
             .field_locator(field.entity(), field.aspect(), field.field())?
             .clone();
         self.work.record_field();
-        super::super::application_attempt::observe_field_value(
+        super::super::application_attempt::observe_field_value_borrowed(
             self.runtime,
             self.snapshot,
             identity.entity_id,
             identity.kind,
             &locator,
+            |raw| raw.and_then(|value| Field::Binding::decode(value).ok()),
         )
-        .and_then(|value| Field::Binding::decode(&value).ok())
+        .flatten()
     }
 
     pub(super) fn identity_is_local<Entity>(

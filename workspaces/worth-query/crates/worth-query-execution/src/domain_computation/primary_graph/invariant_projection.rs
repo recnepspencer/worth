@@ -289,13 +289,14 @@ where
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,
-        Vec<super::application_attempt::WorthQueryApplicationObservedFact>,
+        BTreeMap<
+            super::application_attempt::WorthQueryApplicationFactStorageKey,
+            super::application_attempt::WorthQueryApplicationObservedFact,
+        >,
         Vec<ConsumedOutputEvidence>,
     ) {
         let realized_scope = std::mem::take(&mut self.realized_scope);
-        let dependent_source_facts = std::mem::take(&mut self.dependent_source_facts)
-            .into_values()
-            .collect();
+        let dependent_source_facts = std::mem::take(&mut self.dependent_source_facts);
         let consumed_outputs = std::mem::take(&mut self.consumed_outputs)
             .into_values()
             .collect();
