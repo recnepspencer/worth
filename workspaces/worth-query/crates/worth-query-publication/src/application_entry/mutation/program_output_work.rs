@@ -27,7 +27,8 @@ impl ProgramOutputTraversalWork {
 
 /// Work spent settling program outputs: discovery queries and rows, gathered demands,
 /// producer and delivery contacts, invariant facts, units and executions, and derived
-/// publications.
+/// publications. Checkpoint readmission work and its charged scratch bound are
+/// carried from the admission owner separately from producer execution.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationProgramWork {
     discovery_queries: usize,
@@ -39,6 +40,8 @@ pub struct WorthQueryApplicationProgramWork {
     invariant_work_units: u64,
     invariant_executions: usize,
     derived_publications: usize,
+    checkpoint_readmission_work_units: u64,
+    checkpoint_readmission_peak_charged_preparation_bytes: u64,
 }
 
 impl WorthQueryApplicationProgramWork {
@@ -47,11 +50,15 @@ impl WorthQueryApplicationProgramWork {
         root: (
             Option<&'settlement WorthQueryApplicationCommitReceipt>,
             Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
+            u64,
+            u64,
         ),
         descendants: impl Iterator<
             Item = (
                 Option<&'settlement WorthQueryApplicationCommitReceipt>,
                 Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
+                u64,
+                u64,
             ),
         >,
     ) -> Self {
@@ -65,6 +72,8 @@ impl WorthQueryApplicationProgramWork {
             Item = (
                 Option<&'settlement WorthQueryApplicationCommitReceipt>,
                 Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
+                u64,
+                u64,
             ),
         >,
     ) -> Self {
@@ -74,7 +83,13 @@ impl WorthQueryApplicationProgramWork {
         let mut invariant_work_units = 0_u64;
         let mut invariant_executions = 0_usize;
         let mut derived_publications = 0_usize;
-        for (receipt, readiness) in settlements {
+        let mut checkpoint_readmission_work_units = 0_u64;
+        let mut checkpoint_readmission_peak_charged_preparation_bytes = 0_u64;
+        for (receipt, readiness, readmission_work, readmission_bytes) in settlements {
+            checkpoint_readmission_work_units =
+                checkpoint_readmission_work_units.saturating_add(readmission_work);
+            checkpoint_readmission_peak_charged_preparation_bytes =
+                checkpoint_readmission_peak_charged_preparation_bytes.max(readmission_bytes);
             if let Some(readiness) = readiness {
                 producer_contacts =
                     producer_contacts.saturating_add(readiness.producer_contact_count());
@@ -104,6 +119,8 @@ impl WorthQueryApplicationProgramWork {
             invariant_work_units,
             invariant_executions,
             derived_publications,
+            checkpoint_readmission_work_units,
+            checkpoint_readmission_peak_charged_preparation_bytes,
         }
     }
 
@@ -141,5 +158,16 @@ impl WorthQueryApplicationProgramWork {
 
     pub const fn derived_publication_count(self) -> usize {
         self.derived_publications
+    }
+
+    /// Sum of owner-charged checkpoint output comparisons for these demands.
+    pub const fn checkpoint_readmission_work_units(self) -> u64 {
+        self.checkpoint_readmission_work_units
+    }
+
+    /// Largest charged scratch bound for one checkpoint readmission. This is
+    /// not measured allocation, retained output storage, or resident memory.
+    pub const fn checkpoint_readmission_peak_charged_preparation_bytes(self) -> u64 {
+        self.checkpoint_readmission_peak_charged_preparation_bytes
     }
 }

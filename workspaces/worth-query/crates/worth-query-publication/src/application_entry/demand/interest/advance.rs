@@ -88,6 +88,9 @@ where
                     WorthQueryApplicationOutputDemandSettlement::new(
                         receipt,
                         self.admitted.observed_source().clone(),
+                        self.admitted.checkpoint_readmission_work_units(),
+                        self.admitted
+                            .checkpoint_readmission_charged_preparation_bytes(),
                     ),
                 ))
             }

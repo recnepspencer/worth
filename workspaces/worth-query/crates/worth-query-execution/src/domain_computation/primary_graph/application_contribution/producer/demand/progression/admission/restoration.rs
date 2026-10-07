@@ -19,6 +19,8 @@ where
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
+        let preparation_work_before = admission.charged_work();
+        let preparation_bytes_before = admission.charged_bytes();
         let checkpoint_source = source_epoch.checkpoint_identity();
         let Some(readmitted) = self
             .recovered_outputs
@@ -238,6 +240,8 @@ where
             },
             settlement,
             verified_at,
+            preparation_work_units: admission.charged_work() - preparation_work_before,
+            charged_preparation_bytes: admission.charged_bytes() - preparation_bytes_before,
         }))
     }
 
@@ -310,6 +314,8 @@ pub(super) struct ReadmittedOutput {
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >,
     verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
+    pub(super) preparation_work_units: u64,
+    pub(super) charged_preparation_bytes: u64,
 }
 
 fn restoration_resource_denial(

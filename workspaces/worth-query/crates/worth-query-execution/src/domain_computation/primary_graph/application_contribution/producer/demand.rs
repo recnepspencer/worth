@@ -169,6 +169,8 @@ where
     resources: Option<super::WorthQueryProducerDemandResources>,
     resources_validated: bool,
     producer_contacts_in_this_demand: usize,
+    checkpoint_readmission_work_units: u64,
+    checkpoint_readmission_charged_preparation_bytes: u64,
     // Whether an advance of this demand has settled. Until one does, a cached
     // Ready it joined at its start is still cache: see `caller_custody`.
     settled: bool,
@@ -200,6 +202,17 @@ where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
+    /// Charged owner work comparing this demand's checkpoint output before reuse.
+    pub const fn checkpoint_readmission_work_units(&self) -> u64 {
+        self.checkpoint_readmission_work_units
+    }
+
+    /// Largest admitted scratch bound among this demand's accepted checkpoint
+    /// readmissions. This is not measured allocation or resident memory.
+    pub const fn checkpoint_readmission_charged_preparation_bytes(&self) -> u64 {
+        self.checkpoint_readmission_charged_preparation_bytes
+    }
+
     fn currentness_work_limit(&self) -> std::num::NonZeroUsize {
         std::num::NonZeroUsize::new(self.limits.source_currentness_work())
             .expect("admitted output demand has nonzero source-currentness work")

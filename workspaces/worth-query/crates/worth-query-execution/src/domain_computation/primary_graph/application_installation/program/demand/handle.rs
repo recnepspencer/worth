@@ -14,6 +14,18 @@ where
         self.admitted.observed_source()
     }
 
+    /// Charged owner work comparing the admitted child's checkpoint output.
+    pub const fn checkpoint_readmission_work_units(&self) -> u64 {
+        self.admitted.checkpoint_readmission_work_units()
+    }
+
+    /// Largest admitted scratch bound among the child's accepted checkpoint
+    /// readmissions. This is not measured allocation or resident memory.
+    pub const fn checkpoint_readmission_charged_preparation_bytes(&self) -> u64 {
+        self.admitted
+            .checkpoint_readmission_charged_preparation_bytes()
+    }
+
     pub fn notifications(
         &self,
     ) -> Result<WorthQueryOutputDemandNotifications, WorthQueryOutputDemandDenial> {
