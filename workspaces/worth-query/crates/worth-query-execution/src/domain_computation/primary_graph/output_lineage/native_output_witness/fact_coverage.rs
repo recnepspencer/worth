@@ -27,7 +27,9 @@ impl SealedNativeOutputWitness {
         };
         for role in &self.roles {
             admission.charge_external_work(1)?;
-            if role.entity != Some(entity) {
+            if role.posture == WorthQueryApplicationOutputPosture::Retire
+                || role.entity != Some(entity)
+            {
                 continue;
             }
             let Some(aspect) = aspect else {

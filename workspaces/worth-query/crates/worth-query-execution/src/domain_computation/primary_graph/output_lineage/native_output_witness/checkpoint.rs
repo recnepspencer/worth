@@ -125,7 +125,7 @@ impl SealedNativeOutputWitness {
         )?;
         let mut roles = Vec::with_capacity(role_count);
         let mut aspects = Vec::with_capacity(aspect_count);
-        for (role, _, name, entity) in correspondence.native_witness_roles() {
+        for (role, posture, name, entity) in correspondence.native_witness_roles() {
             prepay_catalog(layout, name, admission)?;
             let kind = layout
                 .entity_kind(name)
@@ -148,6 +148,8 @@ impl SealedNativeOutputWitness {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
                 kind,
+                posture,
+                retirement: None,
                 entity: Some(entity),
                 first_aspect,
                 end_aspect: aspects.len(),

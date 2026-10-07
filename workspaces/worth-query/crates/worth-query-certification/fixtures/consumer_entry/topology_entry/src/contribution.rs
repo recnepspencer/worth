@@ -36,6 +36,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         contracts.producer::<InitialPlanarProducer<Schema>>()?;
         #[cfg(test)]
         super::checkpoint_recovery::required_chain::contracts(contracts)?;
+        #[cfg(test)]
+        super::checkpoint_recovery::mixed_retirement::contracts(contracts)?;
         contracts.producer::<super::PlanarFinalOutputProducer<Schema>>()?;
         contracts.producer::<super::PlanarFinalPreserveProducer<Schema>>()?;
         contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
@@ -98,6 +100,11 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         setup.conditional::<super::PlanarFinalOutputReadiness<Schema>>(())?;
         setup.conditional::<super::PlanarFinalPreserveReadiness<Schema>>(())?;
         setup.conditional::<super::AlternatePlanarReadiness<Schema>>(())?;
-        setup.handler::<super::VertexReplacementBinding<Schema>, _>(super::VertexReplacementHandler)
+        setup.handler::<super::VertexReplacementBinding<Schema>, _>(
+            super::VertexReplacementHandler,
+        )?;
+        #[cfg(test)]
+        super::checkpoint_recovery::mixed_retirement::configure(setup)?;
+        Ok(())
     }
 }

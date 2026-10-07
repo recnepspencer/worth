@@ -30,6 +30,7 @@ mod generated_restoration;
 mod input_cutoff;
 #[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
 mod late_cancellation;
+pub(crate) mod mixed_retirement;
 mod producer_domain_denial;
 pub(crate) mod required_chain;
 mod reuse_opt_out;
