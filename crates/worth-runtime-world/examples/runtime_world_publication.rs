@@ -89,6 +89,15 @@ fn publication_workflow() {
     let bridge_port = bridge.runtime_world_correspondence_port();
     let admitted_correspondence = bridge_port.admit_installed_basis(&installed).unwrap();
     let world = RuntimeWorldOwner::builder()
+        .with_execution_policy(worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                64 << 20,
+                8_000_000,
+            ),
+        ))
         .with_bridge_correspondence(bridge_port)
         .with_relational_services(relational_services.clone())
         .with_signal_services(signal_services.clone())

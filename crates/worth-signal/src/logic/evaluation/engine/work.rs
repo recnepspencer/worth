@@ -6,6 +6,11 @@ use crate::data::retained_storage::RetainedStoragePreparation;
 /// waiter policy. Neither posture creates execution or publication authority.
 pub(crate) enum EvaluationWork<'borrow, 'observer> {
     Ordinary,
+    /// Ordinary execution borrows both owners from its admitted request.
+    RequestPreparation {
+        work: &'borrow mut RetainedStoragePreparation<'observer>,
+        memory: &'borrow mut crate::data::request_preparation::SignalPreparationBudget,
+    },
     Conditional(&'borrow mut RetainedStoragePreparation<'observer>),
     /// Read-only request preparation lends the actual kernel safe point.
     /// This grants no retained node mutation or waiter publication capability.
@@ -21,9 +26,16 @@ impl EvaluationWork<'_, '_> {
             Self::RequestCheckpoint(checkpoint) => checkpoint(
                 visits.ok_or_else(|| SignalError::internal("request work bound overflow"))?,
             ),
-            Self::Conditional(work) => {
+            Self::Conditional(work) | Self::RequestPreparation { work, .. } => {
                 crate::data::conditional_execution::conditional_work::reserve(work, visits)
             }
+        }
+    }
+
+    pub(crate) fn claim_preparation_vec<T>(&mut self, capacity: usize) -> Result<(), SignalError> {
+        match self {
+            Self::RequestPreparation { memory, .. } => memory.claim_vec::<T>(capacity),
+            Self::Ordinary | Self::Conditional(_) | Self::RequestCheckpoint(_) => Ok(()),
         }
     }
 
@@ -37,7 +49,7 @@ impl EvaluationWork<'_, '_> {
             Self::RequestCheckpoint(_) => Err(SignalError::internal(
                 "request discovery checkpoint cannot prepare waiter publication",
             )),
-            Self::Conditional(work) => {
+            Self::Conditional(work) | Self::RequestPreparation { work, .. } => {
                 let maximum_attempt_visits = work.maximum_visits();
                 let mut limit = work.limit_additional_visits(maximum_waiter_visits);
                 let outer_limited = limit.outer_limited();

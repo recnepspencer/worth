@@ -165,7 +165,7 @@ fn an_invalidation_window_past_the_world_history_is_refused_at_installation() {
         .unwrap();
     // One rule bounds both windows: invalidation keeps no position the World
     // no longer keeps a commit for.
-    let (budgets, clock, defaults, _) = test_product_world_resources().into_parts();
+    let (budgets, clock, defaults, execution) = test_product_world_resources().into_parts();
     let commits = budgets.retained_composite_commits().get();
     let invalidation =
         WorthQueryInvalidationResources::install(WorthQueryInvalidationResourceInstallation {
@@ -173,7 +173,8 @@ fn an_invalidation_window_past_the_world_history_is_refused_at_installation() {
             ..defaults.installation()
         })
         .unwrap();
-    let resources = WorthQueryProductWorldResources::new(budgets, clock, invalidation);
+    let resources =
+        WorthQueryProductWorldResources::new(budgets, clock, invalidation, execution.policy);
     let denial = authority
         .prepare_primary_graph(&runtime, &schema, resources)
         .err()

@@ -192,7 +192,7 @@ fn checkpoint(
             u64::try_from(units)
                 .map_err(|_| SignalError::invalid_input("subscriber preparation work overflow"))?,
         )
-        .map_err(|_| SignalError::invalid_input("subscriber preparation work stopped"))?;
+        .map_err(SignalError::execution_checkpoint_stopped)?;
     }
     Ok(())
 }

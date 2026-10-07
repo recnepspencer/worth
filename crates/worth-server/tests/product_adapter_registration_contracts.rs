@@ -227,6 +227,16 @@ fn primary_graph_application(
     let binding = schema
         .principal_binding(SessionIdentityBinding::reference())
         .expect("test principal binding must install");
+    // This fixture policy bounds session-basis graph preparation and evaluation.
+    let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            64 * 1024 * 1024,
+            8_000_000,
+        ),
+    );
     let mut graph = authority
         .prepare_primary_graph(
             &runtime,
@@ -251,6 +261,7 @@ fn primary_graph_application(
                     ),
                 )
                 .expect("the Query invalidation installation is valid"),
+                execution_policy,
             )
             .expect("the server test Product World resources are valid"),
         )

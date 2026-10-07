@@ -74,7 +74,7 @@ pub(super) fn prepare_condition_outcome_if_blocked(
                 .saturating_mul(3)
                 .saturating_add(measurement.visits() as u64),
         )
-        .map_err(|_| SignalError::invalid_input("condition preparation stopped before cloning"))?;
+        .map_err(SignalError::execution_checkpoint_stopped)?;
         if let Some(budget) = preparation.as_deref_mut() {
             budget.claim(bytes.saturating_mul(3))?;
         }

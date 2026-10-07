@@ -15,13 +15,14 @@ use worth_relational::facade::transactions::{
 use worth_relational::facade::{identity::KindId, identity::PartitionId, symbols::ClientKey};
 use worth_runtime_bridge::facade::{
     BridgeCommittedPatchEnvelope, BridgeCommittedPatchItem, BridgeDeliveryReceipt, BridgeMappingId,
-    BridgeMappingRegistration, CoarseRoutingMode, CommittedPatchSource, InvalidationSink,
-    MappingSelector, RelationalBridgeSnapshotIdentityParts, RelationalBridgeSourceError,
-    RelationalCommittedPatchRequest, RuntimeBridge, RuntimeBridgeBuilder, SignalBridgeSinkError,
-    SignalInvalidationScope, SnapshotReadPacket, SnapshotReadPacketResult, SnapshotReadRecord,
-    SnapshotReadSource, TruthBranchIdentity, TruthPatchIdentity, TruthPatchScope,
-    TruthSnapshotIdentity, TruthSnapshotReader, TruthWritebackAuthority,
-    TruthWritebackAuthorityError, TruthWritebackReceipt, TruthWritebackRequest,
+    BridgeMappingRegistration, BridgeSnapshotReadError, CoarseRoutingMode, CommittedPatchSource,
+    ExecutionRequest, InvalidationSink, MappingSelector, RelationalBridgeSnapshotIdentityParts,
+    RelationalBridgeSourceError, RelationalCommittedPatchRequest, RuntimeBridge,
+    RuntimeBridgeBuilder, SignalBridgeSinkError, SignalInvalidationScope, SnapshotReadPacket,
+    SnapshotReadPacketResult, SnapshotReadRecord, SnapshotReadSource, TruthBranchIdentity,
+    TruthPatchIdentity, TruthPatchScope, TruthSnapshotIdentity, TruthSnapshotReader,
+    TruthWritebackAuthority, TruthWritebackAuthorityError, TruthWritebackReceipt,
+    TruthWritebackRequest,
 };
 
 use crate::aspect_field_authoring::{
@@ -339,8 +340,8 @@ impl TruthSnapshotReader for TestSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
-    ) -> Result<SnapshotReadPacketResult, worth_runtime_bridge::facade::BridgeSnapshotReadError>
-    {
+        _execution: ExecutionRequest<'_, '_>,
+    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         Ok(SnapshotReadPacketResult::new(
             self.identity.clone(),
             request
@@ -364,7 +365,7 @@ impl InvalidationSink for TestBridgeSink {
     fn deliver_invalidation(
         &self,
         delivery: worth_runtime_bridge::facade::BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

@@ -70,7 +70,7 @@ where
             },
             runtime_ctx,
             evaluator,
-            None,
+            worth_execution::ExecutionRequest::serial(&self.runtime.graph.bounded_serial_request()),
         )
     }
 
@@ -117,7 +117,9 @@ where
                 },
                 runtime_ctx,
                 evaluator,
-                None,
+                worth_execution::ExecutionRequest::serial(
+                    &self.runtime.graph.bounded_serial_request(),
+                ),
             )?;
         }
         self.runtime.graph.node_aspect_version(*node)
@@ -151,7 +153,9 @@ where
                 },
                 runtime_ctx,
                 evaluator,
-                None,
+                worth_execution::ExecutionRequest::serial(
+                    &self.runtime.graph.bounded_serial_request(),
+                ),
             )?;
         }
         self.targets

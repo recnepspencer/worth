@@ -62,7 +62,7 @@ impl InvalidationSink for RepresentativeBridgeSignalSink {
     fn deliver_invalidation(
         &self,
         _delivery: BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             0,

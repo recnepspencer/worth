@@ -165,7 +165,7 @@ fn completes(fixture: &Fixture, memory: u64) -> bool {
                     stop.reason(),
                     crate::facade::SignalExecutionStopReason::PreparationMemoryExhausted { .. }
                         | crate::facade::SignalExecutionStopReason::Admission(
-                            worth_execution::LeaseDenial::MemoryExhausted(_)
+                            crate::data::error::SignalLeaseDenial::MemoryExhausted(_)
                         )
                 ),
                 "unexpected resource stop: {stop:?}"

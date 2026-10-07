@@ -60,6 +60,7 @@ pub fn relational_execution_kind(
         ),
         Cause::ChargedBytesOverflow => resource(Resource::ChargedBytesOverflow, None),
         Cause::UnrelatedNestedLease => resource(Resource::NestedLeaseMisuse, None),
+        Cause::NoActiveExecutionScope => resource(Resource::NoActiveExecutionScope, None),
         Cause::EquivalenceContractUnavailable => {
             resource(Resource::EquivalenceContractUnavailable, None)
         }

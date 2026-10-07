@@ -14,6 +14,7 @@ fn resources() -> Vec<Resource> {
         Resource::CapacityOverflow,
         Resource::ChargedBytesOverflow,
         Resource::NestedLeaseMisuse,
+        Resource::NoActiveExecutionScope,
     ];
     for level in [Level::Policy, Level::Process, Level::Declared] {
         causes.push(Resource::MemoryLimit {

@@ -41,6 +41,10 @@ fn every_lease_cause_survives_both_domain_doors() {
             Cause::UnrelatedNestedLease,
         ),
         (
+            LeaseDenial::NoActiveExecutionScope,
+            Cause::NoActiveExecutionScope,
+        ),
+        (
             LeaseDenial::EquivalenceContractUnavailable,
             Cause::EquivalenceContractUnavailable,
         ),

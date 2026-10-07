@@ -1,0 +1,16 @@
+error[E0599]: no method named `build` found for struct `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, SignalConditionalDefinitionPublicationPort<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>` in the current scope
+  --> tests/ui/missing_execution_policy.rs:23:10
+   |
+16 | /     RuntimeWorldOwner::builder()
+17 | |         .with_bridge_correspondence(bridge)
+18 | |         .with_relational_services(relational)
+19 | |         .with_signal_services(signal)
+...  |
+22 | |         .with_clock(clock)
+23 | |         .build()
+   | |         -^^^^^ method not found in `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<(), (), (), (), ()>, SignalConditionalDefinitionPublicationPort<(), (), (), (), ()>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock>`
+   | |_________|
+   |
+   |
+   = note: the method was found for
+           - `RuntimeWorldOwnerBuilder<worth_runtime_world::facade::RuntimeWorldCorrespondencePort, worth_runtime_world::facade::RelationalOwnerServicePorts, worth_runtime_world::facade::SignalOwnerServicePorts<D, I, E, Ctx, T>, SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>, worth_runtime_world::facade::RuntimeWorldBudgets, worth_runtime_world::facade::RuntimeWorldClock, worth_foundational::execution::policy::ExecutionRequestPolicy>`

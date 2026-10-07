@@ -64,6 +64,7 @@ fn commit_preparation_keeps_every_execution_kind_typed() {
         Resource::PolicyMemoryLimit,
         Resource::WorkLimit,
         Resource::NestedLeaseMisuse,
+        Resource::NoActiveExecutionScope,
         Resource::EquivalenceContractUnavailable,
         Resource::MemoryLimit {
             requested: 31,

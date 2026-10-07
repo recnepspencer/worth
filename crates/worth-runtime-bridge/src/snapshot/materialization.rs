@@ -17,11 +17,12 @@ impl TruthViewObservationReader {
         self.snapshot.snapshot_identity()
     }
 
-    pub fn read_packet(
+    fn read_packet(
         &self,
         request: &crate::snapshot::SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::snapshot::SnapshotReadPacketResult, BridgeSnapshotReadError> {
-        self.snapshot.read_packet(request)
+        self.snapshot.read_packet(request, execution)
     }
 }
 
@@ -30,6 +31,7 @@ pub struct MaterializedTruthViewObservation {
     snapshot_token: BridgeSnapshotToken,
     materialization_path: crate::diagnostics::BridgeHistoricalMaterializationPath,
     snapshot_reader: TruthViewObservationReader,
+    execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
 }
 
 impl MaterializedTruthViewObservation {
@@ -38,13 +40,19 @@ impl MaterializedTruthViewObservation {
         snapshot_token: BridgeSnapshotToken,
         materialization_path: crate::diagnostics::BridgeHistoricalMaterializationPath,
         snapshot: AdmittedSnapshotContext<Box<dyn TruthSnapshotReader>>,
+        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
     ) -> Self {
         Self {
             planned,
             snapshot_token,
             materialization_path,
             snapshot_reader: TruthViewObservationReader::new(snapshot),
+            execution_policy,
         }
+    }
+
+    pub(crate) fn execution_policy(&self) -> crate::policy::BridgeExecutionPolicyBaseline {
+        self.execution_policy
     }
 
     pub fn planned(&self) -> &PlannedTruthViewPacket {
@@ -73,10 +81,11 @@ impl MaterializedTruthViewObservation {
 
     pub fn read_planned_packet(
         &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<ValidatedSnapshotReadPacketResult, BridgeSnapshotReadError> {
         let read_result = self
             .snapshot_reader
-            .read_packet(self.planned.read_packet())?;
+            .read_packet(self.planned.read_packet(), execution)?;
         if read_result.snapshot_identity() != self.snapshot_reader.snapshot_identity() {
             return Err(BridgeSnapshotReadError::snapshot_identity_mismatch(
                 read_result.snapshot_identity().as_str(),

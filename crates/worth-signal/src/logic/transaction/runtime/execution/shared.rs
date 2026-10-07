@@ -9,10 +9,8 @@ use crate::logic::evaluation::EvaluationRequestMode;
 use crate::logic::evaluation::IntoEvaluationOutput;
 use crate::logic::planner::precompute::callback::{LegacyPrecompute, SignalPrecompute};
 use crate::logic::planner::{
-    build_evaluation_session_with_policy_resolver, execute_evaluation_session_in_scope,
-    execute_evaluation_session_with_policy,
-    execute_prepared_plan_with_policy_and_temporal_lowering, EvaluationPlan, ExecutionReport,
-    PlanSummary, TemporalLoweringContext,
+    execute_evaluation_session_in_scope, execute_prepared_plan_with_policy_and_temporal_lowering,
+    EvaluationPlan, ExecutionReport, PlanSummary, TemporalLoweringContext,
 };
 use crate::logic::prepared::{ExecutionReadView, PreparedEvaluation};
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
@@ -115,7 +113,7 @@ pub(super) fn execute_targets_with_runtime_config<T, Ctx, F, O>(
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
     evaluator: &F,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SignalError>
 where
     T: Copy + Ord,
@@ -143,47 +141,57 @@ pub(super) fn execute_targets_with_prepared_runtime_config_detailed<T, P>(
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
     precompute: &P,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SessionExecutionError>
 where
     T: Copy + Ord,
     P: SignalPrecompute,
 {
-    if lease.is_some() {
-        return Err(SignalError::invalid_input(
-            "checked leased requests must enter the owning request scope",
-        )
-        .into());
-    }
-    let mut resolver = TierPolicyResolver::new(
-        config.node_meta(),
-        config.tier_policies(),
-        config.fallback_comparator(),
+    let mut plan_summary = PlanSummary::default();
+    graph.with_telemetry(|telemetry| telemetry.execution.last_execution_report = None);
+    let result = crate::logic::planner::run_signal_execution_request_scope(
+        lease,
+        |request_work, progress, preparation| {
+            let mut resolver = TierPolicyResolver::new(
+                config.node_meta(),
+                config.tier_policies(),
+                config.fallback_comparator(),
+            );
+            graph.with_scratch(ScratchLeaseKind::Evaluation, |graph, scratch| {
+                let session = crate::logic::planner::planning::build_evaluation_session_with_policy_resolver_and_work(
+                    graph,
+                    scratch.traversal_mut(),
+                    targets,
+                    request_mode,
+                    &mut resolver,
+                    Some(&mut *request_work),
+                    Some(&mut *preparation),
+                )?;
+                plan_summary = session.summary;
+                execute_evaluation_session_in_scope(
+                    graph,
+                    &session,
+                    precompute,
+                    &mut resolver,
+                    temporal_lowering.clone(),
+                    lease,
+                    request_work,
+                    progress,
+                    preparation,
+                )
+            })
+        },
     );
-    graph.with_scratch(ScratchLeaseKind::Evaluation, |graph, scratch| {
-        let scratch = scratch.traversal_mut();
-        let session = build_evaluation_session_with_policy_resolver(
-            graph,
-            scratch,
-            targets,
-            request_mode,
-            &mut resolver,
-        )?;
-        let result = execute_evaluation_session_with_policy(
-            graph,
-            &session,
-            precompute,
-            &mut resolver,
-            temporal_lowering,
-            lease,
-        );
-        match result {
-            Ok(report) => Ok(report),
-            Err(error) => Err(SessionExecutionError {
-                error,
-                plan_summary: session.summary,
-            }),
-        }
+    graph.with_telemetry(|telemetry| {
+        telemetry.execution.last_execution_report = match &result {
+            Ok(report) => report.execution.last().copied(),
+            Err(SignalError::ExecutionStopped(stop)) => Some(stop.execution()),
+            Err(_) => None,
+        };
+    });
+    result.map_err(|error| SessionExecutionError {
+        error,
+        plan_summary,
     })
 }
 
@@ -216,12 +224,24 @@ where
     }
     graph.with_scratch(ScratchLeaseKind::Evaluation, |graph, scratch| {
         let session = crate::logic::planner::planning::build_evaluation_session_with_policy_resolver_and_work(
-            graph, scratch.traversal_mut(), targets, request_mode,
-            &mut resolver, Some(&mut *request_work), Some(&mut *preparation),
+            graph,
+            scratch.traversal_mut(),
+            targets,
+            request_mode,
+            &mut resolver,
+            Some(&mut *request_work),
+            Some(&mut *preparation),
         )?;
         execute_evaluation_session_in_scope(
-            graph, &session, precompute, &mut resolver,
-            temporal_lowering, lease, request_work, disposition, preparation,
+            graph,
+            &session,
+            precompute,
+            &mut resolver,
+            temporal_lowering,
+            worth_execution::ExecutionRequest::leased(lease),
+            request_work,
+            disposition,
+            preparation,
         )
     })
 }
@@ -234,7 +254,7 @@ pub(super) fn execute_targets_with_runtime_config_detailed<T, Ctx, F, O>(
     targets: &[NodeId],
     request_mode: EvaluationRequestMode,
     evaluator: &F,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SessionExecutionError>
 where
     T: Copy + Ord,
@@ -242,38 +262,17 @@ where
     F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
     O: IntoEvaluationOutput,
 {
-    let mut resolver = TierPolicyResolver::new(
-        config.node_meta(),
-        config.tier_policies(),
-        config.fallback_comparator(),
-    );
-    graph.with_scratch(ScratchLeaseKind::Evaluation, |graph, scratch| {
-        let scratch = scratch.traversal_mut();
-        let session = build_evaluation_session_with_policy_resolver(
-            graph,
-            scratch,
-            targets,
-            request_mode,
-            &mut resolver,
-        )?;
-        let result = execute_evaluation_session_with_policy(
-            graph,
-            &session,
-            &LegacyPrecompute::new(|node, view: &ExecutionReadView<'_>| {
-                prepare_with_context(view.graph(), domain_ctx, node, evaluator)
-            }),
-            &mut resolver,
-            temporal_lowering,
-            lease,
-        );
-        match result {
-            Ok(report) => Ok(report),
-            Err(error) => Err(SessionExecutionError {
-                error,
-                plan_summary: session.summary,
-            }),
-        }
-    })
+    execute_targets_with_prepared_runtime_config_detailed(
+        graph,
+        config,
+        temporal_lowering,
+        targets,
+        request_mode,
+        &LegacyPrecompute::new(|node, view: &ExecutionReadView<'_>| {
+            prepare_with_context(view.graph(), domain_ctx, node, evaluator)
+        }),
+        lease,
+    )
 }
 
 pub(super) fn execute_plan_with_runtime_config<T, Ctx, F, O>(
@@ -283,7 +282,7 @@ pub(super) fn execute_plan_with_runtime_config<T, Ctx, F, O>(
     domain_ctx: &Ctx,
     plan: &EvaluationPlan,
     evaluator: &F,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SignalError>
 where
     T: Copy + Ord,

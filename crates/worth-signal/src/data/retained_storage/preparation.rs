@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RetainedStoragePreparationDenial {
+    ExecutionStopped(crate::data::error::SignalCheckpointDenial),
     WorkExhausted { maximum_visits: usize },
     ChargeOverflow,
     ChargeUnderflow,

@@ -25,7 +25,7 @@ impl InvalidationSink for AdmissionSink {
     fn deliver_invalidation(
         &self,
         delivery: worth_runtime_bridge::facade::BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),
@@ -148,6 +148,15 @@ pub(super) fn definition_world_with_bridge_budget(
     let signal_basis = bridge.admitted_signal_basis().clone();
     let correspondence_basis = bridge.admitted_runtime_world_correspondence_basis().clone();
     let owner = RuntimeWorldOwner::builder()
+        .with_execution_policy(worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                64 << 20,
+                8_000_000,
+            ),
+        ))
         .with_bridge_correspondence(bridge.runtime_world_correspondence_port())
         .with_relational_services(relational.owner_component_services())
         .with_signal_services(bridge.signal_owner_services())

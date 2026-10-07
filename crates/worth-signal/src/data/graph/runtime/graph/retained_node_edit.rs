@@ -1,6 +1,7 @@
 //! Atomic installation of cumulative retained node evaluation changes.
 mod reservation_admission;
 mod selected_epoch;
+mod selection_admission;
 use super::NodeArena;
 use crate::data::node::{NodeColdData, NodeHotData, NodeWarmData};
 use crate::data::persistent_paged_vector::PersistentPagedVector;
@@ -284,69 +285,6 @@ impl NodeArena {
             },
         ))
     }
-
-    fn validate_retained_node_selection(
-        &self,
-        indices: &[usize],
-        work: &mut Preparation,
-    ) -> Result<(), RetainedNodeEditDenial> {
-        if indices.is_empty() {
-            return Err(RetainedNodeEditDenial::EmptyNodeSelection);
-        }
-        // Cover order checks, lane validation, payload cloning, and draft installation
-        // loops before any allocation or caller edit. Nested storage visits are
-        // separately charged by the payload and persistent-container owners.
-        for _ in 0..4 {
-            work.reserve_visits(indices.len())
-                .map_err(RetainedNodeEditDenial::Accounting)?;
-        }
-        if indices.windows(2).any(|pair| pair[0] >= pair[1]) {
-            return Err(RetainedNodeEditDenial::UnorderedNodeIndices);
-        }
-        // Validation, copy admission, and the actual clone each read every
-        // selected lane. Admit their tree lookups before entering those loops.
-        let lookups = [
-            self.hot.lookup_steps(),
-            self.warm.lookup_steps(),
-            self.cold.lookup_steps(),
-        ]
-        .into_iter()
-        .try_fold(0usize, |sum, steps| sum.checked_add(steps))
-        .and_then(|steps| steps.checked_mul(3))
-        .and_then(|steps| steps.checked_mul(indices.len()))
-        .ok_or(RetainedNodeEditDenial::Accounting(
-            RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits: work.maximum_visits(),
-            },
-        ))?;
-        work.reserve_visits(lookups)
-            .map_err(RetainedNodeEditDenial::Accounting)?;
-        for &index in indices {
-            self.hot
-                .validate_staged_edit(index)
-                .map_err(RetainedNodeEditDenial::Lane)?;
-            self.warm
-                .validate_staged_edit(index)
-                .map_err(RetainedNodeEditDenial::Lane)?;
-            self.cold
-                .validate_staged_edit(index)
-                .map_err(RetainedNodeEditDenial::Lane)?;
-            self.hot[index]
-                .as_ref()
-                .ok_or(RetainedNodeEditDenial::MissingHotPayload)?;
-            work.reserve_visits(std::mem::size_of::<NodeHotData>() + 32)
-                .map_err(RetainedNodeEditDenial::Accounting)?;
-            let mut copies = crate::logic::evaluation::EvaluationWork::Conditional(work);
-            self.warm[index]
-                .admit_clone_work(&mut copies)
-                .map_err(map_clone_work_denial)?;
-            if let Some(cold) = &self.cold[index] {
-                cold.admit_clone_work(&mut copies)
-                    .map_err(map_clone_work_denial)?;
-            }
-        }
-        Ok(())
-    }
 }
 
 fn map_mutation_denial(denial: RetainedVectorMutationDenial) -> RetainedNodeEditDenial {
@@ -385,15 +323,4 @@ fn publication_peak_charge(
         peak = peak.max(current);
     }
     Ok(peak)
-}
-
-fn map_clone_work_denial(error: crate::data::error::SignalError) -> RetainedNodeEditDenial {
-    match error {
-        crate::data::error::SignalError::ConditionalEvaluationWorkExhausted { maximum_visits } => {
-            RetainedNodeEditDenial::Accounting(RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits,
-            })
-        }
-        _ => unreachable!("conditional payload clone admission returns only work exhaustion"),
-    }
 }

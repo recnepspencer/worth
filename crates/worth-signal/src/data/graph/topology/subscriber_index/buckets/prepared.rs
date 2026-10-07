@@ -70,7 +70,7 @@ impl SignalGraph {
         let mut key_count = 0_usize;
         for producer in producers.clone() {
             work.checkpoint(MAX_ASPECTS as u64)
-                .map_err(|_| SignalError::invalid_input("candidate slot work stopped"))?;
+                .map_err(SignalError::execution_checkpoint_stopped)?;
             let produces = self.get_contract(producer)?.semantics.produces;
             for index in 0..MAX_ASPECTS {
                 let aspect = Aspect::new(index as u8);
@@ -85,7 +85,7 @@ impl SignalGraph {
         let mut keys = Vec::with_capacity(key_count);
         for producer in producers {
             work.checkpoint(MAX_ASPECTS as u64)
-                .map_err(|_| SignalError::invalid_input("candidate slot work stopped"))?;
+                .map_err(SignalError::execution_checkpoint_stopped)?;
             let produces = self.get_contract(producer)?.semantics.produces;
             for index in 0..MAX_ASPECTS {
                 let aspect = Aspect::new(index as u8);
@@ -95,7 +95,7 @@ impl SignalGraph {
             }
         }
         work.checkpoint(keys.len() as u64)
-            .map_err(|_| SignalError::invalid_input("candidate slot ordering stopped"))?;
+            .map_err(SignalError::execution_checkpoint_stopped)?;
         keys.sort_unstable();
         keys.dedup();
         preparation.claim_vec::<MapPartition<CandidateTask, u8>>(keys.len())?;
@@ -146,10 +146,10 @@ impl SignalGraph {
                 deadline: None,
                 cancellation: worth_execution::CancellationToken::new(),
             })
-            .map_err(SignalError::ExecutionAdmissionDenied)?;
+            .map_err(SignalError::execution_admission_denied)?;
         let map = map
             .prepare_run(child)
-            .map_err(SignalError::ExecutionAdmissionDenied)?;
+            .map_err(SignalError::execution_admission_denied)?;
         Ok(PreparedCandidateEpoch {
             map,
             used: vec![false; keys.len()],
@@ -170,7 +170,7 @@ impl PreparedCandidateEpoch<'_> {
         for delta in deltas {
             for change in delta.changes.as_slice() {
                 work.checkpoint(keys.len().max(1).ilog2() as u64 + 2)
-                    .map_err(|_| SignalError::invalid_input("candidate delta lookup stopped"))?;
+                    .map_err(SignalError::execution_checkpoint_stopped)?;
                 let index = keys
                     .binary_search(&(delta.producer, change.aspect))
                     .map_err(|_| {
@@ -189,7 +189,7 @@ impl PreparedCandidateEpoch<'_> {
             let mut checkpoint = |units: usize| {
                 kernel
                     .checkpoint(units as u64)
-                    .map_err(|_| SignalError::invalid_input("candidate lookup work stopped"))
+                    .map_err(SignalError::execution_checkpoint_stopped)
             };
             let mut query = query_reverse_subscriptions_readonly(
                 index,

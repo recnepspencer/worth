@@ -371,8 +371,15 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     // invokes the production discard, with a real completed reduction tree.
     recording.membership(None, &typed.items, Arc::clone(&typed.digests));
     let request = live_scope();
-    let execution =
-        QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Unbounded, &request);
+    let execution = QueryRequestExecution::open(
+        RuntimeWorldExecutionPlacement::Serial(
+            crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+                std::num::NonZeroUsize::MIN,
+                1 << 30,
+            ),
+        ),
+        &request,
+    );
     let result = recording.complete(
         BTreeMap::new(),
         typed.tree.clone(),

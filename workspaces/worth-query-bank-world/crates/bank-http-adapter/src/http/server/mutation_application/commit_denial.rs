@@ -139,6 +139,7 @@ pub(super) fn execution_resource(
         | Resource::CapacityOverflow
         | Resource::ChargedBytesOverflow
         | Resource::NestedLeaseMisuse
+        | Resource::NoActiveExecutionScope
         | Resource::EquivalenceContractUnavailable => (
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,

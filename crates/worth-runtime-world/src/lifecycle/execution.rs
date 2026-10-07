@@ -1,7 +1,7 @@
 //! How a World's requests run. A host installs a request policy, and may
 //! install its process authority beside it; an authority alone has no
-//! request shape to lease, and a policy the authority can never lease would
-//! refuse every request, so the builder refuses both.
+//! request shape to lease. Typestate requires the policy; the builder refuses
+//! a policy the authority can never lease.
 
 use std::sync::Arc;
 
@@ -11,13 +11,9 @@ use worth_foundational::ExecutionRequestPolicy;
 use crate::identity::RuntimeWorldIdentityExhaustion;
 
 /// The installed form, held by the owner state.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) enum InstalledExecution {
-    /// No policy: requests run on the calling thread, bounded only by what
-    /// each computation declares.
-    #[default]
-    Unbounded,
-    /// Requests run on the calling thread within the policy's budget.
+    /// Requests run on the calling thread within the policy's memory limit.
     Serial(ExecutionRequestPolicy),
     /// Requests lease the policy's budget from the host's authority.
     Leased {
@@ -29,10 +25,7 @@ pub(crate) enum InstalledExecution {
 /// How this World's requests run, borrowed from its owner.
 #[derive(Clone, Copy, Debug)]
 pub enum RuntimeWorldExecutionPlacement<'owner> {
-    /// No policy: requests run on the calling thread, bounded only by what
-    /// each computation declares.
-    Unbounded,
-    /// Requests run on the calling thread within the policy's budget.
+    /// Requests run on the calling thread within the policy's memory limit.
     Serial(ExecutionRequestPolicy),
     /// Requests lease the policy's budget from the host's authority.
     Leased {
@@ -45,9 +38,6 @@ pub enum RuntimeWorldExecutionPlacement<'owner> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RuntimeWorldBuildDenial {
     IdentityExhaustion(RuntimeWorldIdentityExhaustion),
-    /// An authority was installed without the request policy that shapes
-    /// each lease.
-    ExecutionAuthorityWithoutPolicy,
     /// The policy asks for more workers than the authority admits.
     ExecutionPolicyWorkersExceedAuthority,
     /// The policy asks for more memory than the authority admits.
@@ -60,22 +50,25 @@ pub enum RuntimeWorldBuildDenial {
 impl InstalledExecution {
     pub(crate) fn try_new(
         authority: Option<Arc<ExecutionAuthority>>,
-        policy: Option<ExecutionRequestPolicy>,
+        policy: ExecutionRequestPolicy,
     ) -> Result<Self, RuntimeWorldBuildDenial> {
-        match (authority, policy) {
-            (None, None) => Ok(Self::Unbounded),
-            (None, Some(policy)) => Ok(Self::Serial(policy)),
-            (Some(authority), Some(policy)) => match authority.admits_policy(&policy) {
+        match authority {
+            None => Ok(Self::Serial(policy)),
+            Some(authority) => match authority.admits_policy(&policy) {
                 Ok(()) => Ok(Self::Leased { authority, policy }),
                 Err(denial) => Err(policy_denial(denial)),
             },
-            (Some(_), None) => Err(RuntimeWorldBuildDenial::ExecutionAuthorityWithoutPolicy),
+        }
+    }
+
+    pub(crate) fn request_policy(&self) -> ExecutionRequestPolicy {
+        match self {
+            Self::Serial(policy) | Self::Leased { policy, .. } => *policy,
         }
     }
 
     pub(crate) fn placement(&self) -> RuntimeWorldExecutionPlacement<'_> {
         match self {
-            Self::Unbounded => RuntimeWorldExecutionPlacement::Unbounded,
             Self::Serial(policy) => RuntimeWorldExecutionPlacement::Serial(*policy),
             Self::Leased { authority, policy } => RuntimeWorldExecutionPlacement::Leased {
                 authority,

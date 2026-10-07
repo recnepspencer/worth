@@ -138,6 +138,7 @@ impl BridgeSourceAdapter for ReorderingSourceAdapter {
     fn materialize_packets(
         &self,
         planned_packet_set: &PlannedSourceReadPacketSet,
+        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
     ) -> Result<MaterializedTruthViewPacketSet, crate::error::BridgeDeliveryError> {
         let observations = planned_packet_set
             .packets()
@@ -148,6 +149,7 @@ impl BridgeSourceAdapter for ReorderingSourceAdapter {
                 <StaticSourceAdapter as BridgeSourceAdapter>::materialize_packet(
                     &StaticSourceAdapter,
                     planned,
+                    execution_policy,
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;

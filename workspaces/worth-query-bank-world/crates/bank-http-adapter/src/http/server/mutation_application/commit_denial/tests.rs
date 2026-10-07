@@ -55,6 +55,11 @@ fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
             Operator,
         ),
         (
+            "NoActiveExecutionScope",
+            Resource::NoActiveExecutionScope,
+            Operator,
+        ),
+        (
             "EquivalenceContractUnavailable",
             Resource::EquivalenceContractUnavailable,
             Operator,

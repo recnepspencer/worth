@@ -78,7 +78,7 @@ where
             },
             runtime_ctx,
             evaluator,
-            None,
+            worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
         )?;
         apply_strategy_maintenance(&mut self.graph, strategy);
         Ok(report)

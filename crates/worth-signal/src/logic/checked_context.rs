@@ -41,7 +41,7 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
             .as_ref()
             .ok_or_else(|| SignalError::invalid_input("checked evaluation needs bounded inputs"))?;
         work.checkpoint(declaration.copy_work_bound() as u64)
-            .map_err(|_| SignalError::invalid_input("checked capture stopped before allocation"))?;
+            .map_err(SignalError::execution_checkpoint_stopped)?;
         Ok(Self {
             graph,
             node,
@@ -108,15 +108,12 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
         }
         // A conservative bound covers declaration search and capture insertion;
         // it is claimed before reading a version or growing the capture vector.
-        if self
+        if let Err(stop) = self
             .work
             .checkpoint(self.declaration.copy_work_bound() as u64 + 1)
-            .is_err()
         {
             self.rejected = true;
-            return Err(SignalError::invalid_input(
-                "checked observation exhausted its work",
-            ));
+            return Err(SignalError::execution_checkpoint_stopped(stop));
         }
         if !self.declaration.contains(source, aspect, scope) {
             self.rejected = true;
@@ -153,20 +150,18 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
             let mut measurement = RetainedStoragePreparation::new(usize::MAX);
             let mut checkpoint = |visits: usize| {
                 let units = u64::try_from(visits).map_err(|_| {
-                    RetainedStoragePreparationDenial::WorkExhausted {
-                        maximum_visits: usize::MAX,
-                    }
+                    RetainedStoragePreparationDenial::ExecutionStopped(
+                        worth_execution::MapKernelStop::WorkCounterOverflow.into(),
+                    )
                 })?;
-                self.work.checkpoint(units).map_err(|_| {
-                    RetainedStoragePreparationDenial::WorkExhausted {
-                        maximum_visits: usize::MAX,
-                    }
-                })
+                self.work
+                    .checkpoint(units)
+                    .map_err(|stop| RetainedStoragePreparationDenial::ExecutionStopped(stop.into()))
             };
             let mut observed = measurement.reborrow_with_checkpoint(&mut checkpoint);
             let actual = prepared
                 .checked_result_heap_charge(&mut observed)
-                .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
+                .map_err(SignalError::retained_storage_denied)?;
             if actual.bytes() > maximum {
                 return Err(SignalError::CheckedResultCapacityExceeded {
                     required: actual.bytes(),
@@ -181,3 +176,7 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
 fn rejected_read() -> SignalError {
     SignalError::invalid_input("checked evaluation observed an undeclared input")
 }
+
+#[cfg(test)]
+#[path = "checked_context_cancellation_tests.rs"]
+mod cancellation_tests;

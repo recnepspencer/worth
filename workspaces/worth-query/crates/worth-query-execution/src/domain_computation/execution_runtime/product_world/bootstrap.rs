@@ -61,12 +61,10 @@ impl WorthQueryProductRuntime {
             .with_signal_services(signal_services)
             .with_signal_definition_publication(definition_publication)
             .with_budgets(budgets)
-            .with_clock(RuntimeWorldClock::from_source(clock.clone()));
+            .with_clock(RuntimeWorldClock::from_source(clock.clone()))
+            .with_execution_policy(execution.policy);
         if let Some(authority) = execution.authority {
             builder = builder.with_execution_authority(authority);
-        }
-        if let Some(policy) = execution.policy {
-            builder = builder.with_execution_policy(policy);
         }
         let owner = builder
             .build()

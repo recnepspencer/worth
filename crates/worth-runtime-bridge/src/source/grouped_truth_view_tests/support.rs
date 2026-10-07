@@ -38,6 +38,7 @@ impl TruthSnapshotReader for FixtureReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, crate::snapshot::BridgeSnapshotReadError> {
         let records = request
             .reads()
@@ -231,6 +232,7 @@ fn row_set_from_packet(
         ),
         BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
         admitted,
+        crate::policy::BridgeExecutionPolicyBaseline::development(),
     );
     materialize_bridge_row_set(&observation).expect("row set")
 }

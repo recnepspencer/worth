@@ -60,15 +60,7 @@ fn builder() -> (RealReferenceFixture, Ready<(), (), (), (), ()>) {
 }
 
 #[test]
-fn a_world_runs_unbounded_without_a_policy_and_serial_with_one() {
-    let (_fixture, world) = builder();
-    let unbounded = world.build().unwrap();
-    assert!(matches!(
-        unbounded.execution_placement(),
-        RuntimeWorldExecutionPlacement::Unbounded
-    ));
-    assert!(unbounded.execution_authority().is_none());
-
+fn a_world_requires_a_policy_and_runs_serial_with_one() {
     let (_fixture, world) = builder();
     let serial = world.with_execution_policy(policy()).build().unwrap();
     assert!(matches!(
@@ -85,13 +77,6 @@ fn an_authority_needs_a_policy_and_a_world_leases_under_both() {
         charged_memory_bytes: 4096,
     };
     let authority = Arc::new(ExecutionAuthority::try_construct(config).unwrap());
-    let (_fixture, world) = builder();
-    assert!(matches!(
-        world
-            .with_execution_authority(Arc::clone(&authority))
-            .build(),
-        Err(RuntimeWorldBuildDenial::ExecutionAuthorityWithoutPolicy)
-    ));
     // A policy the authority can never lease is refused here, each cause on
     // its own, not by every request it would shape.
     for (refused, denial) in [

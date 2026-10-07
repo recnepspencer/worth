@@ -100,9 +100,10 @@ impl RunLimits {
             (Some(parent), Some(own)) => Some(parent.min(own)),
             (parent, own) => parent.or(own),
         };
-        if let Some(budget) = &request.memory {
-            self.serial_memory = Some(budget.clone());
-        }
+        self.serial_memory = Some(match self.serial_memory {
+            Some(parent) => request.memory.within_parent(&parent),
+            None => request.memory.clone(),
+        });
         self
     }
 

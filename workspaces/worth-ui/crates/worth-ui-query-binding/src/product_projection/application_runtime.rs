@@ -125,6 +125,7 @@ fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
             ),
         )
         .expect("the Query invalidation installation is valid"),
+        crate::query_runtime_resources::UI_EXECUTION_POLICY,
     )
     .expect("the UI product resources are statically valid");
     WorthQueryInMemoryApplicationLimits::new(

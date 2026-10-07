@@ -50,7 +50,7 @@ use worth_query_declaration::facade::application_schema::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationProgramInstallationDenial {
     subject: String,
-    support_denial: Option<WorthQueryProgramSupportDenial>,
+    support_denial: Option<Box<WorthQueryProgramSupportDenial>>,
 }
 
 impl WorthQueryApplicationProgramInstallationDenial {
@@ -65,7 +65,10 @@ impl WorthQueryApplicationProgramInstallationDenial {
     /// caller reading `None` learns that the refusal happened elsewhere rather
     /// than that the reason was lost.
     pub const fn support_denial(&self) -> Option<&WorthQueryProgramSupportDenial> {
-        self.support_denial.as_ref()
+        match &self.support_denial {
+            Some(denial) => Some(denial),
+            None => None,
+        }
     }
 }
 
@@ -97,7 +100,7 @@ impl From<WorthQueryProgramSupportDenial> for WorthQueryApplicationProgramInstal
     fn from(denial: WorthQueryProgramSupportDenial) -> Self {
         Self {
             subject: support_denial_subject(&denial),
-            support_denial: Some(denial),
+            support_denial: Some(Box::new(denial)),
         }
     }
 }

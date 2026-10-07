@@ -66,6 +66,16 @@ fn product_world_resources(
 ) -> worth_query_execution::facade::runtime::WorthQueryProductWorldResources {
     use worth_query_execution::facade::runtime as query_runtime;
 
+    // Bounds this fixture World's serial request memory and deterministic work.
+    let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            64 * 1024 * 1024,
+            8_000_000,
+        ),
+    );
     query_runtime::WorthQueryProductWorldResources::install(
         query_runtime::RuntimeWorldBudgetInstallation {
             branches: query_runtime::RuntimeWorldBranchBudgetInstallation {
@@ -103,6 +113,7 @@ fn product_world_resources(
             ),
         )
         .expect("the Query invalidation installation is valid"),
+        execution_policy,
     )
     .expect("the publication courtroom Product World resources are valid")
 }

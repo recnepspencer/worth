@@ -114,6 +114,7 @@ pub(crate) fn historical_evaluation_failure_digest(
 
 fn historical_failure_class_label(value: BridgeHistoricalEvaluationFailureClass) -> &'static str {
     match value {
+        BridgeHistoricalEvaluationFailureClass::ExecutionDenied(denial) => denial.label(),
         BridgeHistoricalEvaluationFailureClass::UnsupportedTruthViewSelector => {
             "unsupported-truth-view-selector"
         }

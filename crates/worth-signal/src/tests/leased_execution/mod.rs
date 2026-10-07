@@ -12,4 +12,5 @@ mod resource_stops;
 mod reversed_plan_order;
 mod scoped_consumer_capacity;
 mod scoped_result_capacity;
+mod serial_request;
 pub(crate) mod support;

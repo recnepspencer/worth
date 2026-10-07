@@ -76,52 +76,8 @@ impl BridgeDiagnosticsRetentionBudget {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BridgeExecutionPolicyBaseline {
-    execution_class: BridgeExecutionPolicyClass,
-    posture: BridgeRuntimePosture,
-}
-
-impl BridgeExecutionPolicyBaseline {
-    pub const fn new(
-        execution_class: BridgeExecutionPolicyClass,
-        posture: BridgeRuntimePosture,
-    ) -> Self {
-        Self {
-            execution_class,
-            posture,
-        }
-    }
-
-    pub const fn operational() -> Self {
-        Self::new(
-            BridgeExecutionPolicyClass::DeterministicCanonical,
-            BridgeRuntimePosture::Operational,
-        )
-    }
-
-    pub const fn development() -> Self {
-        Self::new(
-            BridgeExecutionPolicyClass::DeterministicCanonical,
-            BridgeRuntimePosture::Development,
-        )
-    }
-
-    pub const fn forensic() -> Self {
-        Self::new(
-            BridgeExecutionPolicyClass::DeterministicCanonical,
-            BridgeRuntimePosture::Forensic,
-        )
-    }
-
-    pub fn execution_class(&self) -> BridgeExecutionPolicyClass {
-        self.execution_class
-    }
-
-    pub fn posture(&self) -> BridgeRuntimePosture {
-        self.posture
-    }
-}
+mod execution;
+pub use execution::BridgeExecutionPolicyBaseline;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BridgeDiagnosticsPolicyBaseline {

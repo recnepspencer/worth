@@ -14,6 +14,7 @@ pub type BridgeHistoricalEvaluationFailureIdentity =
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeHistoricalEvaluationFailureClass {
+    ExecutionDenied(crate::error::BridgeExecutionDenial),
     UnsupportedTruthViewSelector,
     TruthViewUnavailable,
     RejectedBranchMismatch,

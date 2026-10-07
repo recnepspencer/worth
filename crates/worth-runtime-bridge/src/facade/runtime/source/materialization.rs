@@ -24,7 +24,7 @@ impl RuntimeBridge {
         })?;
 
         adapter
-            .materialize_packets(planned_packet_set)
+            .materialize_packets(planned_packet_set, self.policy().execution())
             .and_then(|materialized| {
                 self.validate_materialized_source_packet_set(planned_packet_set, &materialized)?;
                 Ok(materialized)
@@ -76,7 +76,7 @@ impl RuntimeBridge {
         })?;
         let planned = planned_packet_set.first().clone();
         adapter
-            .materialize_packet(planned.clone())
+            .materialize_packet(planned.clone(), self.policy().execution())
             .and_then(|materialized| {
                 self.validate_materialized_source_observation(&planned, materialized)
             })

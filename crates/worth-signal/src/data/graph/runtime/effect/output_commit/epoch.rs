@@ -21,42 +21,34 @@ use crate::data::retained_storage::{
 };
 use crate::logic::evaluation::PendingDependencySnapshot;
 use crate::logic::invalidation::causality::EpochCauseHead;
-use worth_execution::{ChargedBytes, ExecutionResourceLease, MapKernelContext};
+use worth_execution::{ChargedBytes, MapKernelContext};
 
 fn with_request_evaluation<R>(
-    request_work: Option<&mut MapKernelContext<'_, '_>>,
+    request: &mut MapKernelContext<'_, '_>,
     operation: impl FnOnce(&mut EvaluationWork<'_, '_>) -> Result<R, SignalError>,
 ) -> Result<R, SignalError> {
-    match request_work {
-        Some(request) => {
-            let mut checkpoint = |units: usize| {
-                let units = u64::try_from(units)
-                    .map_err(|_| SignalError::invalid_input("epoch work size overflow"))?;
-                request
-                    .checkpoint(units)
-                    .map_err(|_| SignalError::invalid_input("epoch preparation work stopped"))
-            };
-            operation(&mut EvaluationWork::RequestCheckpoint(&mut checkpoint))
-        }
-        None => operation(&mut EvaluationWork::Ordinary),
-    }
+    let mut checkpoint = |units: usize| {
+        let units = u64::try_from(units)
+            .map_err(|_| SignalError::invalid_input("epoch work size overflow"))?;
+        request
+            .checkpoint(units)
+            .map_err(SignalError::execution_checkpoint_stopped)
+    };
+    operation(&mut EvaluationWork::RequestCheckpoint(&mut checkpoint))
 }
 
 fn with_epoch_retained_work<R>(
     work: &mut Work<'_>,
-    request_work: Option<&mut MapKernelContext<'_, '_>>,
+    request: &mut MapKernelContext<'_, '_>,
     operation: impl FnOnce(&mut Work<'_>) -> Result<R, SignalError>,
 ) -> Result<R, SignalError> {
-    let Some(request) = request_work else {
-        return operation(work);
-    };
     let maximum_visits = work.maximum_visits();
     let mut checkpoint = |units: usize| {
         let units = u64::try_from(units)
             .map_err(|_| RetainedStoragePreparationDenial::WorkExhausted { maximum_visits })?;
         request
             .checkpoint(units)
-            .map_err(|_| RetainedStoragePreparationDenial::WorkExhausted { maximum_visits })
+            .map_err(|stop| RetainedStoragePreparationDenial::ExecutionStopped(stop.into()))
     };
     let mut observed = work.reborrow_with_checkpoint(&mut checkpoint);
     operation(&mut observed)
@@ -111,9 +103,8 @@ impl SignalGraph {
         packets: Vec<PreparedParallelApplyCommitPacket>,
         semantic_seeds: Vec<EpochSemanticSeed>,
         comparator: &mut impl ComparatorPolicyResolver,
-        lease: Option<&ExecutionResourceLease<'_>>,
         candidates: crate::data::graph::PreparedCandidateEpoch<'_>,
-        mut request_work: Option<&mut MapKernelContext<'_, '_>>,
+        request_work: &mut MapKernelContext<'_, '_>,
         mut preparation: Option<&mut SignalPreparationBudget>,
     ) -> Result<PreparedEpochPublication, SignalError> {
         if let Some(budget) = preparation.as_deref_mut() {
@@ -140,7 +131,7 @@ impl SignalGraph {
                 budget.claim(packet.additional_charged_bytes())?;
                 self.claim_epoch_output_head_shape(&packet.0, budget)?;
             }
-            let head = with_request_evaluation(request_work.as_deref_mut(), |work| {
+            let head = with_request_evaluation(&mut *request_work, |work| {
                 self.prepare_output_commit_head_at_ordinal(
                     packet.0,
                     comparator,
@@ -159,7 +150,7 @@ impl SignalGraph {
                 self.claim_epoch_delta_copy(
                     delta,
                     preparation.as_deref_mut(),
-                    request_work.as_deref_mut(),
+                    Some(&mut *request_work),
                 )?;
                 ordinal = ordinal
                     .checked_add(1)
@@ -174,52 +165,43 @@ impl SignalGraph {
                 delta_ordinal,
             });
             self.claim_epoch_snapshot_candidate_shape(&head.apply, preparation.as_deref_mut())?;
-            if let Some(snapshot) = with_request_evaluation(request_work.as_deref_mut(), |work| {
+            if let Some(snapshot) = with_request_evaluation(&mut *request_work, |work| {
                 self.prepare_effect_snapshot_candidate(&head.apply, work)
             })? {
                 snapshots.push(snapshot);
             }
             heads.push(head);
         }
-        let mut candidate_queries = candidates.run(
-            self,
-            &deltas,
-            request_work
-                .as_deref_mut()
-                .expect("checked epoch carries request work"),
-        )?;
+        let mut candidate_queries = candidates.run(self, &deltas, request_work)?;
         let admission = self.prepare_epoch_direct_output_causes(
             &deltas,
             comparator,
-            &mut EvaluationWork::Ordinary,
-            lease,
-            Some(&mut candidate_queries),
-            request_work.as_deref_mut(),
+            &mut candidate_queries,
+            request_work,
             preparation.as_deref_mut(),
         )?;
         // A graph epoch is not a selected-definition conditional attempt.
         // Its observed preparation shares the actual request work ceiling.
         // Ordinary execution retains its existing per-node serial contract.
         let mut retained_work = Work::new(usize::MAX);
-        let direct =
-            with_epoch_retained_work(&mut retained_work, request_work.as_deref_mut(), |work| {
-                self.prepare_epoch_direct_cause_publication(
-                    admission,
-                    &cause_heads,
-                    &topology,
-                    work,
-                    preparation.as_deref_mut(),
-                )
-            })?;
+        let direct = with_epoch_retained_work(&mut retained_work, &mut *request_work, |work| {
+            self.prepare_epoch_direct_cause_publication(
+                admission,
+                &cause_heads,
+                &topology,
+                work,
+                preparation.as_deref_mut(),
+            )
+        })?;
         let suppressed_downstream = direct.suppressed_downstream_count();
         let (direct_nodes, direct_stores) = direct.split_node_changes();
         let snapshot_store =
-            with_epoch_retained_work(&mut retained_work, request_work.as_deref_mut(), |work| {
+            with_epoch_retained_work(&mut retained_work, &mut *request_work, |work| {
                 self.prepare_epoch_snapshot_store(snapshots, preparation.as_deref_mut(), work)
             })?;
         let mut producers = Vec::with_capacity(heads.len());
         for (order, (head, semantic_seed)) in heads.into_iter().zip(semantic_seeds).enumerate() {
-            let write = with_request_evaluation(request_work.as_deref_mut(), |work| {
+            let write = with_request_evaluation(&mut *request_work, |work| {
                 self.prepare_effect_artifact_write(head.artifact_write, work)
             })?;
             let state = self.prepare_effect_node_state(&head.apply.effect, &write)?;
@@ -236,14 +218,14 @@ impl SignalGraph {
             }));
         }
         let cause_store =
-            with_epoch_retained_work(&mut retained_work, request_work.as_deref_mut(), |work| {
+            with_epoch_retained_work(&mut retained_work, &mut *request_work, |work| {
                 direct_stores.prepare_store(self, work, preparation.as_deref_mut())
             })?;
         let (topology_storage, topology_nodes, _topology_waiters) =
             topology.into_publication_parts();
         let ledger = self.arena.retained_node_ledger.clone();
         let mut diagnostics =
-            with_epoch_retained_work(&mut retained_work, request_work.as_deref_mut(), |work| {
+            with_epoch_retained_work(&mut retained_work, &mut *request_work, |work| {
                 self.diagnostics_state_mut().prepare_epoch_diagnostics(
                     work,
                     preparation.as_deref_mut(),

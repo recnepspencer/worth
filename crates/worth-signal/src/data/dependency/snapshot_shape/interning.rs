@@ -15,7 +15,9 @@ impl DependencySnapshotShapeStore {
             return Ok(PreparedShapeInsertion::existing(SnapshotShapeHandle::EMPTY));
         }
         match work {
-            EvaluationWork::Ordinary => self.rebuild_interner_if_needed(),
+            EvaluationWork::Ordinary | EvaluationWork::RequestPreparation { .. } => {
+                self.rebuild_interner_if_needed()
+            }
             EvaluationWork::Conditional(_) | EvaluationWork::RequestCheckpoint(_)
                 if !self.retained_interner_is_complete() =>
             {

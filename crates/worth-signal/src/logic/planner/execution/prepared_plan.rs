@@ -38,5 +38,13 @@ where
         fallback: crate::data::comparator::VersionComparatorPolicy::Exact,
         custom: &mut comparator,
     };
-    execute_prepared_plan_with_policy(graph, plan, domain_ctx, evaluator, &mut resolver, None)
+    let serial = graph.bounded_serial_request();
+    execute_prepared_plan_with_policy(
+        graph,
+        plan,
+        domain_ctx,
+        evaluator,
+        &mut resolver,
+        worth_execution::ExecutionRequest::serial(&serial),
+    )
 }

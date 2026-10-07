@@ -248,7 +248,12 @@ fn routed(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(&admission, |reader, root| {
-            let execution = QueryRequestExecution::unbounded_for_test(&request);
+            let execution = QueryRequestExecution::open(
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
+                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+                    std::num::NonZeroUsize::MIN, 1 << 30,
+                ),
+            ), &request);
             for _ in 0..runs {
                 if installed.prepare_through(reader, &execution, root).is_err() {
                     panic!("the owner's reads are declared reads of the operation");

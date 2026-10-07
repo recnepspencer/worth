@@ -49,6 +49,7 @@ pub type BridgeRouteError = BridgeTypedError<BridgeRouteErrorKind>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeDeliveryErrorKind {
+    ExecutionDenied(super::BridgeExecutionDenial),
     SourceContractMismatch,
     InvalidWideningAdmission,
     BulkDeliveryRejected,
@@ -59,8 +60,6 @@ pub enum BridgeDeliveryErrorKind {
     HistoricalSelectorMissingCommit,
     SnapshotAcquisitionFailure,
     SnapshotReadFailure,
-    ExecutionCancelled,
-    ExecutionDeadlineElapsed,
     SnapshotReadContractViolation,
     SnapshotIdentityMismatch,
     StructuralContractMismatch,

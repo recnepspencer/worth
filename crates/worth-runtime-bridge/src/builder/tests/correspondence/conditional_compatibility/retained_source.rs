@@ -55,6 +55,7 @@ impl TruthSnapshotReader for IdentityReader {
     fn read_packet(
         &self,
         packet: &crate::facade::SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::facade::SnapshotReadPacketResult, crate::facade::BridgeSnapshotReadError>
     {
         Ok(crate::facade::SnapshotReadPacketResult::new(
@@ -198,6 +199,7 @@ impl TruthSnapshotReader for CountedReader {
     fn read_packet(
         &self,
         _: &crate::facade::SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::facade::SnapshotReadPacketResult, crate::facade::BridgeSnapshotReadError>
     {
         unreachable!("Always execution retains a source without semantic condition reads")

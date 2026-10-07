@@ -5,6 +5,16 @@ pub(super) fn world_resources(
     metadata_bytes: u64,
     pins: u64,
 ) -> runtime::WorthQueryProductWorldResources {
+    // Bounds this fixture World's serial request memory and deterministic work.
+    let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            64 * 1024 * 1024,
+            8_000_000,
+        ),
+    );
     runtime::WorthQueryProductWorldResources::install(
         runtime::RuntimeWorldBudgetInstallation {
             branches: runtime::RuntimeWorldBranchBudgetInstallation {
@@ -42,6 +52,7 @@ pub(super) fn world_resources(
             ),
         )
         .expect("the Query invalidation installation is valid"),
+        execution_policy,
     )
     .expect("the document-retention World resources are valid")
 }

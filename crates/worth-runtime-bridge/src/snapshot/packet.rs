@@ -227,9 +227,9 @@ pub(crate) fn validate_snapshot_read_result_contract(
     packet: &SnapshotReadPacket,
     unvalidated_result: SnapshotReadPacketResult,
 ) -> Result<ValidatedSnapshotReadPacketResult, BridgeSnapshotReadError> {
-    let (snapshot_identity, records) = unvalidated_result.into_parts();
+    let (snapshot_identity, records, memory) = unvalidated_result.into_parts();
     let mut record_lookup = BTreeMap::new();
-    for record in records {
+    for record in records.iter() {
         let correlation_id = record.correlation_id().clone();
         if record_lookup
             .insert(correlation_id.clone(), record)
@@ -264,12 +264,13 @@ pub(crate) fn validate_snapshot_read_result_contract(
     Ok(ValidatedSnapshotReadPacketResult::validated(
         snapshot_identity,
         canonical_records,
+        memory,
     ))
 }
 
 fn validate_snapshot_read_record(
     read: &SnapshotReadRequest,
-    record: SnapshotReadRecord,
+    record: &SnapshotReadRecord,
 ) -> Result<ValidatedSnapshotReadRecord, BridgeSnapshotReadError> {
     read.target()
         .projection_contract()

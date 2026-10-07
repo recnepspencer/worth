@@ -54,7 +54,7 @@ impl SignalGraph {
                     u64::try_from(visits)
                         .map_err(|_| SignalError::invalid_input("delta copy work overflow"))?,
                 )
-                .map_err(|_| SignalError::invalid_input("delta copy work stopped"))?;
+                .map_err(SignalError::execution_checkpoint_stopped)?;
         }
         Ok(())
     }

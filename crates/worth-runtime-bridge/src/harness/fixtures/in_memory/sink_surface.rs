@@ -25,14 +25,14 @@ impl InvalidationSink for RecordingSignalBridgeSink {
     fn deliver_invalidation(
         &self,
         delivery: crate::routing::BridgeSignalInvalidationDelivery,
-        lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
+        lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         self.deliveries
             .write()
             .expect("bridge sink lock poisoned")
             .push(RecordedSignalDelivery {
                 delivery: delivery.clone(),
-                leased: lease.is_some(),
+                leased: lease.is_leased(),
             });
 
         Ok(BridgeDeliveryReceipt::new(

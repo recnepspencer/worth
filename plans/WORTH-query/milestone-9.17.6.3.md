@@ -2640,7 +2640,7 @@ The next phase may trust that partition-granular reuse is exact.
 - **7.3** Bridge, Signal and World accept the request lease, and each cause
   stays distinct to the crate's caller. A caller with no lease enters a
   bounded serial scope by construction; a nested scope draws from its
-  parent. Each host declares its own named policy.
+  parent. Each host declares its own named policy. *Completed.*
 - **7.4** Derived-view reconstruction runs as a leased map over unique roots in
   canonical order, and its worker pool is deleted. A worker receives a
   sealed prepared read; projection stays on the owner in entity order.

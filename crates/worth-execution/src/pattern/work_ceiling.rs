@@ -51,9 +51,8 @@ impl ExecutionWorkCeiling {
 
     /// Runs `computation` with no lease, on the calling thread. Every
     /// lease-free pattern inside observes the request's cancellation and
-    /// deadline. With a memory budget the scope and those patterns hold their
-    /// bytes on it, framework bytes at one worker, and refuse at its
-    /// boundary; without one, only the declared ceilings bound the run.
+    /// deadline. The scope and those patterns hold their bytes on the required
+    /// memory budget, framework bytes at one worker, and refuse at its boundary.
     pub fn run_serial<R>(
         self,
         request: &SerialRequest,

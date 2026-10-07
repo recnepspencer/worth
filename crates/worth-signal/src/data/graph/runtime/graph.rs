@@ -47,6 +47,7 @@ mod replacement_test_observation;
 mod retained_node_edit;
 mod retained_node_edit_compat;
 mod retained_node_mutation;
+mod serial_execution;
 pub(crate) use retained_node_edit::{
     OperationalNodePayload, PreparedRetainedNodeEdit, RetainedNodeEditOutcome,
     RetainedNodeEditPreparation, RetainedNodePayload, SelectedNodeDraft, SelectedNodeRole,

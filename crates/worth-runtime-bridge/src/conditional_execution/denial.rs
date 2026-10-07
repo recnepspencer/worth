@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeConditionalDenialKind {
+    ExecutionDenied(crate::error::BridgeExecutionDenial),
     ConditionalRetentionCapacity,
     ConditionalRetentionClosed,
     ConditionalRetentionQuarantined,

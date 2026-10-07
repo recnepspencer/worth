@@ -15,6 +15,7 @@ pub trait BridgeSourceAdapter: Send + Sync + 'static {
     fn materialize_packet(
         &self,
         planned: crate::snapshot::PlannedTruthViewPacket,
+        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
     ) -> Result<MaterializedTruthViewObservation, BridgeDeliveryError> {
         let snapshot_identity = planned
             .authority_basis()
@@ -68,18 +69,20 @@ pub trait BridgeSourceAdapter: Send + Sync + 'static {
             snapshot_token,
             source_materialization_path_for(&planned),
             admitted,
+            execution_policy,
         ))
     }
 
     fn materialize_packets(
         &self,
         planned_packet_set: &PlannedSourceReadPacketSet,
+        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
     ) -> Result<MaterializedTruthViewPacketSet, BridgeDeliveryError> {
         let observations = planned_packet_set
             .packets()
             .iter()
             .cloned()
-            .map(|planned| self.materialize_packet(planned))
+            .map(|planned| self.materialize_packet(planned, execution_policy))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(MaterializedTruthViewPacketSet::new(
             planned_packet_set.clone(),

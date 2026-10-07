@@ -52,15 +52,8 @@ impl TruthSnapshotReader for RelationalBridgeRetainedSnapshot {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
-        self.reader.read_packet(request)
-    }
-
-    fn read_packet_with_lease(
-        &self,
-        request: &SnapshotReadPacket,
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
-        self.reader.read_packet_with_lease(request, lease)
+        self.reader.read_packet(request, execution)
     }
 }

@@ -32,3 +32,5 @@ pub(crate) use prepared::{prepare_batch_resources, PreparedBatchResources};
 pub(crate) use scope::{
     run_scope, run_scope_holding, run_scope_with_charge, run_scope_within, ScopeHold, ScopeStop,
 };
+
+pub(crate) use meter::active_serial_memory;

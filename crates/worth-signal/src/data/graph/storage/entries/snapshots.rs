@@ -34,7 +34,8 @@ impl SignalGraph {
         work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<crate::data::dependency::SnapshotShapeHandle, SignalError> {
         match work {
-            crate::logic::evaluation::EvaluationWork::Ordinary => {
+            crate::logic::evaluation::EvaluationWork::Ordinary
+            | crate::logic::evaluation::EvaluationWork::RequestPreparation { .. } => {
                 Ok(self.dependency_snapshot_shape_handle(id))
             }
             crate::logic::evaluation::EvaluationWork::Conditional(_)

@@ -22,6 +22,7 @@ pub enum RelationalExecutionDenialCause {
     },
     ChargedBytesOverflow,
     UnrelatedNestedLease,
+    NoActiveExecutionScope,
     EquivalenceContractUnavailable,
     Cancelled,
     DeadlineElapsed,

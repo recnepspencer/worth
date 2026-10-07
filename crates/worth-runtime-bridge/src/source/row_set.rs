@@ -232,8 +232,11 @@ pub enum BridgeRowSetMaterializationError {
 pub fn materialize_bridge_row_set(
     observation: &MaterializedTruthViewObservation,
 ) -> Result<BridgeMaterializedRowSetArtifact, BridgeRowSetMaterializationError> {
+    let serial = observation
+        .execution_policy()
+        .serial_request(worth_execution::CancellationToken::new(), None);
     let result = observation
-        .read_planned_packet()
+        .read_planned_packet(worth_execution::ExecutionRequest::serial(&serial))
         .map_err(|error| BridgeRowSetMaterializationError::SnapshotReadContractFailure { error })?;
     let mut rows: BTreeMap<
         Arc<str>,

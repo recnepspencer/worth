@@ -1,4 +1,5 @@
 use super::*;
+use crate::facade::BridgeDeliveryErrorKind;
 
 #[test]
 fn runtime_materializes_structural_fingerprint_from_truth_view_read() {
@@ -58,4 +59,113 @@ fn runtime_materializes_structural_fingerprint_from_truth_view_read() {
     assert!(fingerprint
         .canonical_basis()
         .contains("equivalence-members=structural-equivalence-member-set|"));
+}
+
+struct RefusingSnapshotReader {
+    identity: TruthSnapshotIdentity,
+    resource: bool,
+}
+
+impl crate::snapshot::TruthSnapshotReader for RefusingSnapshotReader {
+    fn snapshot_identity(&self) -> TruthSnapshotIdentity {
+        self.identity.clone()
+    }
+
+    fn read_packet(
+        &self,
+        _: &SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::snapshot::SnapshotReadPacketResult, crate::snapshot::BridgeSnapshotReadError>
+    {
+        if !self.resource {
+            return Err(crate::snapshot::BridgeSnapshotReadError::new(
+                "domain read refusal",
+            ));
+        }
+        // This source's retained read cannot fit even the entire caller envelope.
+        execution
+            .in_scope(|lease| {
+                let denial = worth_execution::ExecutionMemoryReservation::reserve_in_scope(
+                    lease,
+                    execution.memory_limit() + 1,
+                )
+                .unwrap_err();
+                Err(crate::snapshot::BridgeSnapshotReadError::execution_denied(
+                    denial.into(),
+                ))
+            })
+            .map_err(crate::snapshot::BridgeSnapshotReadError::execution_scope_denied)?
+    }
+}
+
+struct RefusingSnapshotSource(bool);
+
+impl crate::adapter::SnapshotReadSource for RefusingSnapshotSource {
+    fn open_snapshot(
+        &self,
+        identity: &TruthSnapshotIdentity,
+    ) -> Result<
+        Box<dyn crate::snapshot::TruthSnapshotReader>,
+        crate::adapter::RelationalBridgeSourceError,
+    > {
+        Ok(Box::new(RefusingSnapshotReader {
+            identity: identity.clone(),
+            resource: self.0,
+        }))
+    }
+}
+
+#[test]
+fn structural_read_adapter_preserves_resource_and_domain_refusals() {
+    for resource in [true, false] {
+        let declaration = registered_structural(
+            "structural:analysis-snapshot",
+            StructuralFingerprintFamily::TopologyFingerprint,
+            StructuralTruthViewBasis::explicit_snapshot(BridgeTruthViewSelector::branch_snapshot(
+                crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
+                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+            )),
+        );
+        let runtime = crate::builder::RuntimeBridgeBuilder::new()
+            .with_policy(BridgeRuntimePolicy::default())
+            .with_committed_patch_source(StaticSource)
+            .with_snapshot_read_source(RefusingSnapshotSource(resource))
+            .with_source_adapter(StaticSourceAdapter)
+            .with_truth_branch_head_source(StaticSource)
+            .with_signal_sink(StaticSink)
+            .register_structural(declaration.clone())
+            .register_mapping(native_profile_mapping_registration())
+            .build()
+            .unwrap();
+        let contract = runtime.admit_structural_comparison(declaration).unwrap();
+        let error = runtime
+            .materialize_structural_fingerprint(
+                &contract,
+                SnapshotReadPacket::new(vec![crate::snapshot::SnapshotReadRequest::for_coarse(
+                    "entity-1",
+                    crate::snapshot::SnapshotReadContract::scalar(
+                        worth_foundational::facade::AspectKey::new("profile").unwrap(),
+                        worth_foundational::facade::ScalarAspectType::String,
+                    ),
+                )]),
+            )
+            .unwrap_err();
+        if resource {
+            assert!(
+                matches!(
+                    error.kind(),
+                    BridgeDeliveryErrorKind::ExecutionDenied(
+                        crate::error::BridgeExecutionDenial::MemoryExhausted(_),
+                    )
+                ),
+                "the public structural adapter must retain its resource cause: {error:?}"
+            );
+        } else {
+            assert_eq!(
+                error.kind(),
+                BridgeDeliveryErrorKind::SnapshotReadContractViolation
+            );
+            assert!(error.to_string().contains("domain read refusal"));
+        }
+    }
 }

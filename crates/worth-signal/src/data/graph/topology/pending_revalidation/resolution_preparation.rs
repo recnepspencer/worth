@@ -50,7 +50,7 @@ impl PendingRevalidationPreparationDenial {
                 RetainedStoragePreparationDenial::WorkExhausted { maximum_visits },
             ) => SignalError::WaiterResolutionWorkExhausted { maximum_visits },
             PendingRevalidationPreparationDenial::Storage(error) => {
-                SignalError::internal(format!("waiter resolution accounting failed: {error:?}"))
+                SignalError::retained_storage_denied(error)
             }
         }
     }

@@ -16,6 +16,7 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
         fn read_packet(
             &self,
             request: &SnapshotReadPacket,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::snapshot::SnapshotReadPacketResult,
             crate::snapshot::BridgeSnapshotReadError,

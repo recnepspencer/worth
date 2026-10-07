@@ -144,7 +144,9 @@ fn prepare_waiter_update(
         EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
             "request discovery checkpoint cannot prepare topology publication",
         )),
-        EvaluationWork::Conditional(work) => prepare(graph, work),
+        EvaluationWork::Conditional(work) | EvaluationWork::RequestPreparation { work, .. } => {
+            prepare(graph, work)
+        }
         EvaluationWork::Ordinary => prepare(graph, &mut Work::new(maximum_visits)),
     }
 }
@@ -186,7 +188,9 @@ fn prepare_node_update(
                 "request discovery checkpoint cannot prepare topology publication",
             ))
         }
-        EvaluationWork::Conditional(work) => prepare(work)?,
+        EvaluationWork::Conditional(work) | EvaluationWork::RequestPreparation { work, .. } => {
+            prepare(work)?
+        }
         EvaluationWork::Ordinary => prepare(&mut Work::new(maximum.maximum_attempt_visits))?,
     };
     match prepared {

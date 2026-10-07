@@ -174,8 +174,12 @@ where
         O: IntoEvaluationOutput,
     {
         let strategy = self.derive_evaluation_strategy();
-        let report =
-            self.execute_evaluation(ExecutionIntent::Dirty, runtime_ctx, evaluator, None)?;
+        let report = self.execute_evaluation(
+            ExecutionIntent::Dirty,
+            runtime_ctx,
+            evaluator,
+            worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
+        )?;
         apply_strategy_maintenance(&mut self.graph, strategy);
         Ok(report)
     }
@@ -185,7 +189,7 @@ where
         intent: ExecutionIntent<'_>,
         runtime_ctx: &Ctx,
         evaluator: &F,
-        lease: Option<&ExecutionResourceLease<'_>>,
+        lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<ExecutionReport, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,

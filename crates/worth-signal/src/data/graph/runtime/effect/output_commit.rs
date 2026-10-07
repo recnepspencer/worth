@@ -28,7 +28,6 @@ use crate::data::proof::invalidation::progression::{
 use crate::logic::evaluation::{
     AppliedEffectReport, EvaluationEffect, EvaluationVerdict, EvaluationWork, SuppressionReason,
 };
-use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 use super::{
     ApplyCommitPacket, DirectInvalidationPreparationReceipt, OutputCommitPublicationReceipt,
@@ -128,31 +127,7 @@ impl SignalGraph {
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         work: &mut EvaluationWork<'_, '_>,
     ) -> Result<Box<OutputCommitPacket>, SignalError> {
-        self.prepare_output_commit_packet_with_execution(
-            apply,
-            comparator_resolver,
-            work,
-            None,
-            None,
-        )
-    }
-
-    fn prepare_output_commit_packet_with_execution(
-        &mut self,
-        apply: ApplyCommitPacket,
-        comparator_resolver: &mut impl ComparatorPolicyResolver,
-        work: &mut EvaluationWork<'_, '_>,
-        lease: Option<&ExecutionResourceLease<'_>>,
-        request_work: Option<&mut MapKernelContext<'_, '_>>,
-    ) -> Result<Box<OutputCommitPacket>, SignalError> {
-        self.prepare_output_commit_packet_with_probe_and_execution(
-            apply,
-            comparator_resolver,
-            |_| Ok(()),
-            work,
-            lease,
-            request_work,
-        )
+        self.prepare_output_commit_packet_with_probe(apply, comparator_resolver, |_| Ok(()), work)
     }
 
     #[cfg_attr(not(test), allow(dead_code))]
@@ -160,27 +135,8 @@ impl SignalGraph {
         &mut self,
         apply: ApplyCommitPacket,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-        probe: impl FnMut(OutputCommitPreparationSeam) -> Result<(), SignalError>,
-        work: &mut EvaluationWork<'_, '_>,
-    ) -> Result<Box<OutputCommitPacket>, SignalError> {
-        self.prepare_output_commit_packet_with_probe_and_execution(
-            apply,
-            comparator_resolver,
-            probe,
-            work,
-            None,
-            None,
-        )
-    }
-
-    fn prepare_output_commit_packet_with_probe_and_execution(
-        &mut self,
-        apply: ApplyCommitPacket,
-        comparator_resolver: &mut impl ComparatorPolicyResolver,
         mut probe: impl FnMut(OutputCommitPreparationSeam) -> Result<(), SignalError>,
         work: &mut EvaluationWork<'_, '_>,
-        lease: Option<&ExecutionResourceLease<'_>>,
-        request_work: Option<&mut MapKernelContext<'_, '_>>,
     ) -> Result<Box<OutputCommitPacket>, SignalError> {
         let OutputCommitHead {
             apply,
@@ -188,12 +144,10 @@ impl SignalGraph {
             produced_delta,
         } = self.prepare_output_commit_head(apply, comparator_resolver, &mut probe, work)?;
         let direct_causes = match (produced_delta.as_ref(), &apply.effect.operational.verdict) {
-            (Some(delta), _) => Some(self.prepare_direct_output_causes_with_execution(
+            (Some(delta), _) => Some(self.prepare_direct_output_causes_from_work(
                 delta,
                 comparator_resolver,
                 work,
-                lease,
-                request_work,
             )?),
             (None, EvaluationVerdict::Deferred { .. }) => None,
             (None, _) => {

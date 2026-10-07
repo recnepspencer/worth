@@ -44,6 +44,7 @@ pub(crate) fn compile_financial_locality_world_with_policy(
         definition,
         handles,
         baseline_values,
+        baseline_preparation_report: None,
     };
     compiled.establish_causally_complete_baseline()?;
     compiled.seal_baseline()?;

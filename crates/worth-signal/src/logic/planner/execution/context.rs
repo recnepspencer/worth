@@ -4,7 +4,7 @@ use crate::data::handle::NodeId;
 use crate::diagnostics::summary::EvaluationPlanSummary;
 use crate::logic::planner::precompute::callback::SignalPrecompute;
 use crate::logic::planner::precompute::TemporalLoweringContext;
-use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_execution::MapKernelContext;
 
 use super::super::types::{ExecutionReport, PlanSummary, ResolvedSignalPlannerPolicy};
 use super::diagnostics::record_successful_execution;
@@ -21,10 +21,10 @@ where
     pub(crate) precompute: &'a P,
     pub(crate) comparator_resolver: &'a mut R,
     pub(crate) temporal_lowering: TemporalLoweringContext,
-    pub(crate) lease: Option<&'a ExecutionResourceLease<'lease>>,
+    pub(crate) lease: worth_execution::ExecutionRequest<'a, 'lease>,
     pub(crate) policy: ResolvedSignalPlannerPolicy,
-    pub(crate) request_work: Option<&'a mut MapKernelContext<'work, 'run>>,
-    pub(crate) preparation: Option<&'a mut SignalPreparationBudget>,
+    pub(crate) request_work: &'a mut MapKernelContext<'work, 'run>,
+    pub(crate) preparation: &'a mut SignalPreparationBudget,
     pub(crate) next_record_id: u64,
     pub(crate) next_segment_id: u64,
     pub(crate) reuse_origin_storage_claimed: bool,
@@ -48,10 +48,10 @@ where
         precompute: &'a P,
         comparator_resolver: &'a mut R,
         temporal_lowering: TemporalLoweringContext,
-        lease: Option<&'a ExecutionResourceLease<'lease>>,
+        lease: worth_execution::ExecutionRequest<'a, 'lease>,
         policy: ResolvedSignalPlannerPolicy,
-        request_work: Option<&'a mut MapKernelContext<'work, 'run>>,
-        preparation: Option<&'a mut SignalPreparationBudget>,
+        request_work: &'a mut MapKernelContext<'work, 'run>,
+        preparation: &'a mut SignalPreparationBudget,
     ) -> Self {
         let report =
             begin_execution_report(graph, summary, stage_count, maybe_stale_validation_tasks);

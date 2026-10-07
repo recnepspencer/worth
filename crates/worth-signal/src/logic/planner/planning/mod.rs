@@ -40,14 +40,21 @@ pub fn build_evaluation_plan_with_policy_resolver(
     request_mode: EvaluationRequestMode,
     resolver: &mut impl ComparatorPolicyResolver,
 ) -> Result<EvaluationPlan, SignalError> {
-    build_evaluation_plan_with_policy_resolver_and_work(
-        graph,
-        targets,
-        request_mode,
-        resolver,
-        None,
-        None,
+    let serial = graph.bounded_serial_request();
+    super::execution::run_signal_preparation_request(
+        worth_execution::ExecutionRequest::serial(&serial),
+        |work, _, preparation| {
+            build_evaluation_plan_with_policy_resolver_and_work(
+                graph,
+                targets,
+                request_mode,
+                resolver,
+                Some(work),
+                Some(preparation),
+            )
+        },
     )
+    .map(|(plan, _)| plan)
 }
 
 pub(crate) fn build_evaluation_plan_with_policy_resolver_and_work(
@@ -104,24 +111,6 @@ fn build_evaluation_cursor_with_work(
         stages,
         summary,
     })
-}
-
-pub(crate) fn build_evaluation_session_with_policy_resolver<'a>(
-    graph: &mut SignalGraph,
-    scratch: &'a mut TraversalScratch,
-    targets: &[NodeId],
-    request_mode: EvaluationRequestMode,
-    resolver: &mut impl ComparatorPolicyResolver,
-) -> Result<SessionScratch<'a>, SignalError> {
-    build_evaluation_session_with_policy_resolver_and_work(
-        graph,
-        scratch,
-        targets,
-        request_mode,
-        resolver,
-        None,
-        None,
-    )
 }
 
 pub(crate) fn build_evaluation_session_with_policy_resolver_and_work<'a>(

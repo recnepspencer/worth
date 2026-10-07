@@ -1,5 +1,5 @@
 use std::fmt;
-use worth_execution::{ChargedBytes, LeaseDenial};
+use worth_execution::ChargedBytes;
 
 use crate::data::graph::ScratchLeaseKind;
 use crate::data::handle::NodeId;
@@ -7,7 +7,9 @@ use crate::data::node::ContextRequirement;
 use crate::logic::transaction::{BranchMergeFailureEvidence, BranchMergeFailureKind};
 use crate::state::SignalBranchId;
 
+mod execution_denial;
 mod execution_stop;
+pub use execution_denial::{SignalCheckpointDenial, SignalLeaseDenial};
 pub use execution_stop::{
     SignalExecutionFailure, SignalExecutionStop, SignalExecutionStopReason,
     SignalPublicationDisposition, SignalPublicationProgress,
@@ -17,7 +19,12 @@ pub use execution_stop::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalError {
     ExecutionStopped(Box<SignalExecutionStop>),
-    ExecutionAdmissionDenied(LeaseDenial),
+    ExecutionPanicked,
+    RetainedStorageChargeOverflow,
+    RetainedStorageChargeUnderflow,
+    RetainedStorageHistoryUnavailable,
+    ExecutionAdmissionDenied(SignalLeaseDenial),
+    ExecutionCheckpointStopped(SignalCheckpointDenial),
     PreparationMemoryExhausted {
         required: Option<u64>,
         reserved: u64,
@@ -191,22 +198,40 @@ impl SignalError {
 impl fmt::Display for SignalError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ExecutionPanicked => write!(f, "Signal execution scope panicked"),
+            Self::RetainedStorageChargeOverflow => write!(f, "retained storage charge overflow"),
+            Self::RetainedStorageChargeUnderflow => write!(f, "retained storage charge underflow"),
+            Self::RetainedStorageHistoryUnavailable => write!(f, "retained storage history unavailable"),
             Self::ExecutionStopped(stop) => write!(f, "signal execution stopped: {stop}"),
-            Self::ExecutionAdmissionDenied(denial) => write!(f, "Signal execution admission denied: {denial:?}"),
-            Self::PreparationMemoryExhausted { required, reserved } => write!(f, "Signal preparation memory exhausted: required {required:?}, reserved {reserved}"),
-            Self::EvaluationStorageCapacityExhausted => write!(f, "evaluation storage capacity exhausted"),
+            Self::ExecutionAdmissionDenied(denial) => {
+                write!(f, "Signal execution admission denied: {denial:?}")
+            }
+            Self::ExecutionCheckpointStopped(stop) => {
+                write!(f, "Signal execution checkpoint stopped: {stop:?}")
+            }
+            Self::PreparationMemoryExhausted { required, reserved } => write!(
+                f,
+                "Signal preparation memory exhausted: required {required:?}, reserved {reserved}"
+            ),
+            Self::EvaluationStorageCapacityExhausted => {
+                write!(f, "evaluation storage capacity exhausted")
+            }
             Self::CheckedResultCapacityExceeded { required, declared } => write!(
                 f,
                 "checked result heap exceeds its declaration: required {required}, declared {declared}"
             ),
             Self::EvaluationStorageUnavailable => write!(f, "evaluation storage unavailable"),
-            Self::SnapshotIndexUnavailable => write!(f, "snapshot indexes are unavailable for retained evaluation"),
+            Self::SnapshotIndexUnavailable => write!(
+                f,
+                "snapshot indexes are unavailable for retained evaluation"
+            ),
             Self::ConditionalEvaluationWorkExhausted { maximum_visits } => write!(
                 f,
                 "conditional evaluation exhausted its {maximum_visits} work allowance"
             ),
             Self::UpstreamDependencyWorkExhausted { maximum_visits } => write!(
-                f, "upstream dependency traversal exhausted its {maximum_visits} edge visits"
+                f,
+                "upstream dependency traversal exhausted its {maximum_visits} edge visits"
             ),
             Self::WaiterResolutionWorkExhausted { maximum_visits } => write!(
                 f,
@@ -276,16 +301,12 @@ impl fmt::Display for SignalError {
                         BranchMergeFailureEvidence::ScopedDenial(evidence) => write!(
                             f,
                             "branch merge failed ({kind:?}): {message} [scope={:?}, denial={:?}, locus={:?}]",
-                            evidence.scope_family,
-                            evidence.denial_kind,
-                            evidence.denied_locus
+                            evidence.scope_family, evidence.denial_kind, evidence.denied_locus
                         ),
                         BranchMergeFailureEvidence::ScopedUnavailable(evidence) => write!(
                             f,
                             "branch merge failed ({kind:?}): {message} [scope={:?}, reason={:?}, outcome={:?}]",
-                            evidence.scope_family,
-                            evidence.reason,
-                            evidence.outcome_kind
+                            evidence.scope_family, evidence.reason, evidence.outcome_kind
                         ),
                     }
                 } else {
@@ -307,6 +328,10 @@ impl std::error::Error for SignalError {}
 impl ChargedBytes for SignalError {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
+            Self::ExecutionPanicked
+            | Self::RetainedStorageChargeOverflow
+            | Self::RetainedStorageChargeUnderflow
+            | Self::RetainedStorageHistoryUnavailable => 0,
             Self::ExecutionStopped(stop) => stop
                 .additional_charged_bytes()
                 .saturating_add(std::mem::size_of::<SignalExecutionStop>() as u64),
@@ -331,6 +356,7 @@ impl ChargedBytes for SignalError {
             }
             Self::PreparationMemoryExhausted { .. }
             | Self::ExecutionAdmissionDenied(_)
+            | Self::ExecutionCheckpointStopped(_)
             | Self::EvaluationStorageCapacityExhausted
             | Self::CheckedResultCapacityExceeded { .. }
             | Self::EvaluationStorageUnavailable

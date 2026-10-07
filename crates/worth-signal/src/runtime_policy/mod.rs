@@ -11,6 +11,8 @@ mod presets;
 mod request;
 mod resolved;
 mod retention;
+#[cfg(test)]
+mod serial_limits_tests;
 mod upstream_traversal;
 mod waiter_resolution;
 #[cfg(test)]

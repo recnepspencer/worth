@@ -33,9 +33,10 @@ impl SignalGraph {
             return Ok(None);
         }
         match allowance {
-            EvaluationWork::Conditional(work) => self
-                .prepare_reserved_output_nodes(storage, state, work)
-                .map(Some),
+            EvaluationWork::Conditional(work) | EvaluationWork::RequestPreparation { work, .. } => {
+                self.prepare_reserved_output_nodes(storage, state, work)
+                    .map(Some)
+            }
             EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
                 "request discovery checkpoint cannot prepare retained mutation",
             )),

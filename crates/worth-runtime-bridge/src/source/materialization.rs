@@ -115,6 +115,7 @@ mod tests {
         fn read_packet(
             &self,
             request: &SnapshotReadPacket,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<SnapshotReadPacketResult, crate::snapshot::BridgeSnapshotReadError> {
             Ok(SnapshotReadPacketResult::new(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
@@ -200,6 +201,7 @@ mod tests {
             ),
             BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
             admitted,
+            crate::policy::BridgeExecutionPolicyBaseline::development(),
         );
 
         let left = MaterializedTruthViewPacketSet::new(planned.clone(), vec![observation]);
@@ -218,6 +220,7 @@ mod tests {
             ),
             BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
             admitted,
+            crate::policy::BridgeExecutionPolicyBaseline::development(),
         );
         let right = MaterializedTruthViewPacketSet::new(planned, vec![observation]);
 

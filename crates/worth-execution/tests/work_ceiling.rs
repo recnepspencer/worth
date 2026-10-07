@@ -58,17 +58,21 @@ fn reduce(
     let ceiling = ExecutionWorkCeiling::new(ceiling);
     match lease {
         Some(lease) => ceiling.run(lease, computation),
-        None => ceiling.run_serial(&unbounded(), computation),
+        None => ceiling.run_serial(&funded_serial_request(), computation),
     }
     .expect("the computation ran")
 }
 
-fn unbounded() -> SerialRequest {
-    SerialRequest {
-        memory: None,
-        deadline: None,
-        cancellation: CancellationToken::new(),
-    }
+fn funded_serial_request() -> SerialRequest {
+    SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::from_policy(&ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, 10_000),
+        )),
+        CancellationToken::new(),
+        None,
+    )
 }
 
 fn exhausted_at(reduced: &Reduced) -> Option<u64> {
@@ -149,8 +153,9 @@ fn the_narrower_of_the_lease_and_the_declared_ceiling_binds() {
 #[test]
 fn a_panic_outside_every_pattern_is_typed_and_the_next_run_is_clean() {
     let panicked = catch_unwind(AssertUnwindSafe(|| {
-        ExecutionWorkCeiling::new(10)
-            .run_serial(&unbounded(), || -> u64 { panic!("outside a pattern") })
+        ExecutionWorkCeiling::new(10).run_serial(&funded_serial_request(), || -> u64 {
+            panic!("outside a pattern")
+        })
     }))
     .expect("the ceiling contains the panic");
     assert_eq!(panicked.unwrap_err(), WorkCeilingDenial::Panicked);
@@ -161,10 +166,7 @@ fn a_panic_outside_every_pattern_is_typed_and_the_next_run_is_clean() {
 #[test]
 fn a_serial_request_cancelled_mid_reduction_stops_at_a_combine() {
     let cancellation = CancellationSource::new();
-    let request = SerialRequest {
-        cancellation: cancellation.token(),
-        ..unbounded()
-    };
+    let request = funded_serial_request().with_cancellation(cancellation.token());
     let input = map(8);
     let combines = std::sync::atomic::AtomicU64::new(0);
     let (reduced, _) = ExecutionWorkCeiling::new(u64::MAX)
@@ -199,10 +201,7 @@ fn a_serial_request_cancelled_mid_reduction_stops_at_a_combine() {
 
 #[test]
 fn a_serial_request_past_its_deadline_refuses_before_the_computation() {
-    let request = SerialRequest {
-        deadline: Some(std::time::Instant::now()),
-        ..unbounded()
-    };
+    let request = funded_serial_request().with_deadline(Some(std::time::Instant::now()));
     let ran = ExecutionWorkCeiling::new(u64::MAX).run_serial(&request, || ());
     assert_eq!(
         ran.unwrap_err(),

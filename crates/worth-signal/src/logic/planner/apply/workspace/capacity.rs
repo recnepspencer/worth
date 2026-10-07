@@ -132,7 +132,7 @@ fn overflow() -> SignalError {
 }
 
 fn storage_capacity(
-    _: crate::data::retained_storage::RetainedStoragePreparationDenial,
+    denial: crate::data::retained_storage::RetainedStoragePreparationDenial,
 ) -> SignalError {
-    SignalError::EvaluationStorageCapacityExhausted
+    SignalError::retained_storage_denied(denial)
 }

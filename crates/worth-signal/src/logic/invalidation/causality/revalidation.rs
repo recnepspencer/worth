@@ -18,7 +18,7 @@ impl SignalGraph {
         if let Some(work) = work {
             // Inspect borrowed owner storage before any cloned cause/scope payload.
             work.checkpoint(1)
-                .map_err(|_| SignalError::invalid_input("invalidation input admission stopped"))?;
+                .map_err(SignalError::execution_checkpoint_stopped)?;
             let causes = self.pending_causes(node)?;
             let scopes = self.node_dirty_partition_scope_payload(node)?;
             let mut units = (causes.len() as u64)
@@ -45,9 +45,8 @@ impl SignalGraph {
             if let Some(pending) = self.node_pending_revalidation(node)? {
                 units = units.saturating_add(pending.unresolved_producers().len() as u64);
             }
-            work.checkpoint(units).map_err(|_| {
-                SignalError::invalid_input("invalidation input stopped before copying authority")
-            })?;
+            work.checkpoint(units)
+                .map_err(SignalError::execution_checkpoint_stopped)?;
             if let Some(budget) = preparation {
                 use crate::data::retained_storage::{
                     RetainedStorageCharge as Charge, RetainedStorageMeasurement,

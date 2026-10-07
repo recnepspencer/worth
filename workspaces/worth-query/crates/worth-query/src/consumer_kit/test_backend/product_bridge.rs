@@ -67,7 +67,7 @@ impl InvalidationSink for WorthQueryTestProductSignalSink {
     fn deliver_invalidation(
         &self,
         delivery: BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

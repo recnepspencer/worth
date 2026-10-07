@@ -59,8 +59,8 @@ where
         ctx.comparator_resolver,
         &ctx.temporal_lowering,
         &ctx.policy,
-        ctx.request_work.as_deref_mut(),
-        ctx.preparation.as_deref_mut(),
+        Some(&mut *ctx.request_work),
+        Some(&mut *ctx.preparation),
     )?;
     record_stage_precompute_report(
         &mut ctx.report,
@@ -85,7 +85,7 @@ where
     R: ComparatorPolicyResolver,
 {
     let apply_start = RuntimeInstant::now();
-    reserve_retained(&mut ctx.report.stages, 1, ctx.preparation.as_deref_mut())?;
+    reserve_retained(&mut ctx.report.stages, 1, Some(&mut *ctx.preparation))?;
     let mut stage_record = begin_stage_record(
         prepared_pass.precomputed.prepared.metadata().index(),
         prepared_pass.snapshot_nanos,
@@ -102,12 +102,12 @@ where
             .reports()
             .len()
             .saturating_add(2),
-        ctx.preparation.as_deref_mut(),
+        Some(&mut *ctx.preparation),
     )?;
     ctx.report
         .execution
         .extend(prepared_pass.precomputed.prepared.reports().iter().copied());
-    if let Some(preparation) = ctx.preparation.as_deref_mut() {
+    if let Some(preparation) = Some(&mut *ctx.preparation) {
         // Finalization retains one task record per stage task in the returned report.
         preparation.claim_retained_vec::<crate::logic::planner::TaskExecutionRecord>(
             prepared_pass.precomputed.prepared.metadata().tasks().len(),
@@ -120,7 +120,7 @@ where
         }
     }
     crate::data::request_preparation::claim_vec::<super::super::semantic::StageSemanticIdentity>(
-        ctx.preparation.as_deref_mut(),
+        Some(&mut *ctx.preparation),
         prepared_pass.precomputed.prepared.metadata().tasks().len(),
     )?;
     let stage_identities = reserve_stage_identities(
@@ -138,8 +138,8 @@ where
         &stage_identities,
         &mut ctx.report,
         &mut stage_record,
-        ctx.request_work.as_deref_mut(),
-        ctx.preparation.as_deref_mut(),
+        Some(&mut *ctx.request_work),
+        Some(&mut *ctx.preparation),
     )?;
     Ok(StageAppliedPass {
         stage_record,

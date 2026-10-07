@@ -16,7 +16,7 @@ use crate::logic::planner::types::{
     ConcurrentApplyReductionPlan, DisjointApplyGroup, LoweredTask, PlanSummary,
     ReductionOrderingContract, ReductionWorkClass,
 };
-use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_execution::MapKernelContext;
 
 use crate::logic::planner::apply::workspace::{
     ConcurrentApplyGroupInput, ConcurrentWorkerInput, GroupLocalApplyPacket, GroupLocalTaskCommit,
@@ -36,7 +36,7 @@ pub(super) fn build_group_packet(
         let units = u64::try_from(visits)
             .map_err(|_| SignalError::invalid_input("grouped apply work bound overflow"))?;
         work.checkpoint(units)
-            .map_err(|_| SignalError::invalid_input("grouped apply request work stopped"))
+            .map_err(SignalError::execution_checkpoint_stopped)
     };
     let mut evaluation_work =
         crate::logic::evaluation::EvaluationWork::RequestCheckpoint(&mut checkpoint);
@@ -91,9 +91,8 @@ pub(super) fn reduce_grouped_concurrent_packets(
     mut packets: Vec<GroupLocalApplyPacket>,
     reduction: ConcurrentApplyReductionPlan,
     comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
-    lease: Option<&ExecutionResourceLease<'_>>,
     candidates: crate::data::graph::PreparedCandidateEpoch<'_>,
-    mut request_work: Option<&mut MapKernelContext<'_, '_>>,
+    request_work: &mut MapKernelContext<'_, '_>,
     mut preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<StageScratch, SignalError> {
     debug_assert!(
@@ -150,10 +149,9 @@ pub(super) fn reduce_grouped_concurrent_packets(
         budget.claim_vec::<crate::data::graph::EpochSemanticSeed>(metadata.len())?;
         let mut measurement = RetainedStoragePreparation::new(usize::MAX);
         let mut checkpoint = |visits: usize| {
-            crate::logic::planner::precompute::work::checkpoint(request_work.as_deref_mut(), visits)
-                .map_err(|_| RetainedStoragePreparationDenial::WorkExhausted {
-                    maximum_visits: usize::MAX,
-                })
+            request_work
+                .checkpoint(visits as u64)
+                .map_err(|stop| RetainedStoragePreparationDenial::ExecutionStopped(stop.into()))
         };
         let mut observed = measurement.reborrow_with_checkpoint(&mut checkpoint);
         for (_, _, _, _, before_image, _, _, _, rewiring) in &metadata {
@@ -162,7 +160,7 @@ pub(super) fn reduce_grouped_concurrent_packets(
                 .and_then(|charge| {
                     charge.checked_add(rewiring.retained_heap_charge(&mut observed)?)
                 })
-                .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
+                .map_err(SignalError::retained_storage_denied)?;
             budget.claim(bytes.bytes())?;
         }
     }
@@ -184,7 +182,6 @@ pub(super) fn reduce_grouped_concurrent_packets(
             epoch_packets,
             semantic_seeds,
             comparator_resolver,
-            lease,
             candidates,
             request_work,
             preparation,

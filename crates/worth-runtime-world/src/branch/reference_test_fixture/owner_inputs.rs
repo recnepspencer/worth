@@ -130,6 +130,15 @@ impl RealReferenceFixture {
             self._correspondence_port.clone(),
             budgets,
             clock,
+            worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                worth_foundational::DeterminismContract::CanonicalBitwise,
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    1 << 20,
+                    10_000,
+                ),
+            ),
         )
     }
 

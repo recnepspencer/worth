@@ -23,7 +23,7 @@ pub(super) fn existing_edges_heap(
     current.iter().try_fold(0_u64, |bytes, edge| {
         let edge_bytes = edge
             .retained_heap_charge(work)
-            .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?
+            .map_err(SignalError::retained_storage_denied)?
             .bytes();
         bytes
             .checked_add(edge_bytes)

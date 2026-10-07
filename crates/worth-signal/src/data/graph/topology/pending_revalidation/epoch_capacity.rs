@@ -67,7 +67,7 @@ fn checkpoint(
     if let Some(request) = request {
         request
             .checkpoint(visits as u64)
-            .map_err(|_| SignalError::invalid_input("waiter closure work stopped"))?;
+            .map_err(SignalError::execution_checkpoint_stopped)?;
     }
     Ok(())
 }

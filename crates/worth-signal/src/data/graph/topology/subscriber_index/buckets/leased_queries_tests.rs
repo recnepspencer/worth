@@ -120,7 +120,6 @@ fn leased_hierarchy_candidates_match_current_edges_after_scope_replacement() {
                 let identity = PartitionIdentity::new(1);
                 let scan =
                     ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).unwrap();
-                let mut budget = SignalPreparationBudget::new(4 * 1024 * 1024);
                 let outcome = scan.run(
                     Some(&lease),
                     (),
@@ -129,13 +128,17 @@ fn leased_hierarchy_candidates_match_current_edges_after_scope_replacement() {
                     4 * 1024 * 1024,
                     4 * 1024 * 1024,
                     |_, _, work| {
+                        let mut budget = SignalPreparationBudget::for_request(4 * 1024 * 1024, Some(&lease))
+                            .map_err(MapKernelFailure::Domain)?;
+                        let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX);
+                        let mut checkpoint = |units: usize| work.checkpoint(units as u64)
+                            .map_err(|stop| crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(stop.into()));
+                        let mut observed = retained.reborrow_with_checkpoint(&mut checkpoint);
+                        let mut owned = EvaluationWork::RequestPreparation { work: &mut observed, memory: &mut budget };
                         let queries = graph
                             .collect_reverse_subscription_queries(
                                 &delta,
-                                &mut EvaluationWork::Ordinary,
-                                Some(&lease),
-                                Some(work),
-                                Some(&mut budget),
+                                &mut owned,
                             )
                             .map_err(MapKernelFailure::Domain)?;
                         Ok(((), queries))
@@ -148,7 +151,9 @@ fn leased_hierarchy_candidates_match_current_edges_after_scope_replacement() {
                     let ScanOutcome::Stopped { reason, .. } = outcome else {
                         unreachable!()
                     };
-                    panic!("leased candidate discovery stopped at depth={depth}, workers={workers}: {reason:?}");
+                    panic!(
+                        "leased candidate discovery stopped at depth={depth}, workers={workers}: {reason:?}"
+                    );
                 };
                 assert_eq!(
                     prefixes[0][0].candidates, expected,

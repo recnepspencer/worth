@@ -14,6 +14,7 @@ pub(super) fn read_condition_observations(
         crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     >,
     ledger: &std::sync::Arc<super::retention::BridgeRetentionLedger>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<super::observation_retention::BridgeRetainedObservations, BridgeConditionalDenial> {
     let condition = lowering.contract.condition();
     let Some(snapshot) = admit_observation_snapshot(condition, snapshot)? else {
@@ -26,12 +27,25 @@ pub(super) fn read_condition_observations(
         )
     })?;
     let packet = plan.packet(managed_source_record)?;
-    let result = snapshot.read_packet(&packet).map_err(|error| {
-        BridgeConditionalDenial::new(
-            BridgeConditionalDenialKind::SnapshotAdmission,
+    let result =
+        snapshot.read_packet(&packet, execution).map_err(|error| {
+            BridgeConditionalDenial::new(
+            match error.kind() {
+                crate::snapshot::BridgeSnapshotReadErrorKind::ExecutionDenied(denial) =>
+                    BridgeConditionalDenialKind::ExecutionDenied(denial),
+                crate::snapshot::BridgeSnapshotReadErrorKind::ExternalSnapshotReadFailure
+                | crate::snapshot::BridgeSnapshotReadErrorKind::SnapshotIdentityMismatch
+                | crate::snapshot::BridgeSnapshotReadErrorKind::DuplicateRecord
+                | crate::snapshot::BridgeSnapshotReadErrorKind::RecordCountMismatch
+                | crate::snapshot::BridgeSnapshotReadErrorKind::MissingRecord
+                | crate::snapshot::BridgeSnapshotReadErrorKind::ExtraRecord
+                | crate::snapshot::BridgeSnapshotReadErrorKind::ProjectionMaskRejected
+                | crate::snapshot::BridgeSnapshotReadErrorKind::AspectContractValidationDenied =>
+                    BridgeConditionalDenialKind::SnapshotAdmission,
+            },
             format!("conditional semantic observation failed: {error}"),
         )
-    })?;
+        })?;
     if result.snapshot_identity() != snapshot.snapshot_identity() {
         return Err(BridgeConditionalDenial::new(
             BridgeConditionalDenialKind::SnapshotMismatch,

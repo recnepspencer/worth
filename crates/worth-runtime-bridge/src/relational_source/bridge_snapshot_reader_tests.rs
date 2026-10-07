@@ -58,7 +58,10 @@ fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit
         ),
     ]);
     let result = reader
-        .read_packet(&packet)
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
         .expect("bridge snapshot packet should read from active binding");
 
     assert_eq!(result.snapshot_identity(), &active_snapshot_identity);
@@ -113,7 +116,10 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     ]);
     assert_eq!(
         reader
-            .read_packet(&packet)
+            .read_packet(
+                &packet,
+                worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request())
+            )
             .expect("observation packet should read")
             .records()
             .len(),
@@ -132,7 +138,14 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
         opened.observation_releases
     );
     assert_eq!(
-        second_reader.read_packet(&packet).unwrap().records()[0].scalar_aspect_value(),
+        second_reader
+            .read_packet(
+                &packet,
+                worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request())
+            )
+            .unwrap()
+            .records()[0]
+            .scalar_aspect_value(),
         Some(&AspectValue::String("managed".into()))
     );
     drop(reader);

@@ -110,7 +110,7 @@ fn trial(base: &SignalGraph, sources: &[NodeId], targets: &[NodeId], memory: u64
                 stop.reason(),
                 crate::data::error::SignalExecutionStopReason::PreparationMemoryExhausted { .. }
                     | crate::data::error::SignalExecutionStopReason::Admission(
-                        worth_execution::LeaseDenial::MemoryExhausted(_)
+                        crate::data::error::SignalLeaseDenial::MemoryExhausted(_)
                     )
             ) =>
         {

@@ -2,6 +2,7 @@ mod cancellation;
 mod equivalence;
 mod lease;
 mod memory;
+mod request;
 mod serial;
 
 pub use cancellation::{CancellationSource, CancellationToken};
@@ -16,4 +17,5 @@ pub use lease::{
 pub use memory::{
     ExecutionMemoryReservation, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,
 };
+pub use request::ExecutionRequest;
 pub use serial::SerialRequest;

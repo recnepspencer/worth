@@ -69,7 +69,7 @@ where
                     },
                     runtime_ctx,
                     evaluator,
-                    None,
+                    worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
                 )?;
                 scheduled = scheduled.saturating_add(report.task_count);
                 executed = executed.saturating_add(report.tasks_executed);
@@ -127,7 +127,7 @@ where
                 },
                 runtime_ctx,
                 evaluator,
-                None,
+                worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
             )?;
         }
         nodes

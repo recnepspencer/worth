@@ -1,3 +1,4 @@
+mod execution_policy;
 use std::sync::{atomic::AtomicUsize, Arc};
 
 use worth_query_consumer_values::PositiveLength;
@@ -307,6 +308,7 @@ pub(super) fn limits_with_room(
             },
             WorthQueryProductWorldClock::start(),
             invalidation,
+            execution_policy::CHECKPOINT_EXECUTION_POLICY,
         )
         .unwrap(),
         candidates,

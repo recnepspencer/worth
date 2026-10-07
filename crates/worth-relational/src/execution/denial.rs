@@ -33,6 +33,7 @@ pub(crate) fn lease_denial(denial: LeaseDenial) -> Cause {
         },
         LeaseDenial::ChargedBytesOverflow => Cause::ChargedBytesOverflow,
         LeaseDenial::UnrelatedNestedLease => Cause::UnrelatedNestedLease,
+        LeaseDenial::NoActiveExecutionScope => Cause::NoActiveExecutionScope,
         LeaseDenial::EquivalenceContractUnavailable => Cause::EquivalenceContractUnavailable,
     }
 }

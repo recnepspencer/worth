@@ -146,3 +146,63 @@ fn two_epochs_retain_a_slot_for_the_enclosing_physical_report() {
         .active_workers_high_watermark();
     assert!(enclosing_workers > 0 && enclosing_workers <= 4);
 }
+
+#[test]
+fn serial_execution_replaces_the_previous_leased_report_without_extra_telemetry() {
+    let mut graph = SignalGraph::new();
+    let observation = graph
+        .begin_observation_session(crate::facade::SignalObservationRequest::telemetry())
+        .unwrap();
+    let checked = graph
+        .node()
+        .with_contract(NodeContract::wildcard().with_bounded_inputs(BoundedSignalInputs::default()))
+        .build();
+    let lease = authority().request_lease(request(1, 1_000_000)).unwrap();
+    let success = graph
+        .evaluate_checked(
+            &[checked],
+            EvaluationRequestMode::Default,
+            &(),
+            &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
+            &lease,
+        )
+        .unwrap();
+    assert!(success.execution.last().is_some());
+    assert_eq!(
+        graph.observe().telemetry().execution.last_execution_report,
+        success.execution.last().copied(),
+    );
+    let serial = graph.node().build();
+    let plan = graph
+        .build_evaluation_plan(&[serial], EvaluationRequestMode::Default)
+        .unwrap();
+    let previous_serial_uses = graph
+        .observe()
+        .telemetry()
+        .execution
+        .serial_executor_usage_count;
+    let report = graph
+        .execute_prepared_plan(&plan, &(), &|_| Ok(AspectVersion::zero().with(VALUE, 2)))
+        .unwrap();
+    assert_eq!(report.tasks_executed, 1);
+    assert_eq!(report.execution.len(), 1);
+    assert_eq!(
+        report.execution[0].resolved_posture(),
+        worth_foundational::ExecutionPosture::Serial,
+    );
+    assert!(report.execution[0].charged_work() > 0);
+    assert_eq!(
+        graph.observe().telemetry().execution.last_execution_report,
+        Some(report.execution[0]),
+    );
+    assert_eq!(
+        graph
+            .observe()
+            .telemetry()
+            .execution
+            .serial_executor_usage_count,
+        previous_serial_uses,
+    );
+    assert_eq!(graph.node_aspect_version(serial).unwrap().get(VALUE), 2);
+    graph.finish_observation_session(&observation).unwrap();
+}

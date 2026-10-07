@@ -189,6 +189,7 @@ impl TruthSnapshotReader for TestSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        _execution: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, worth_runtime_bridge::facade::BridgeSnapshotReadError>
     {
         Ok(SnapshotReadPacketResult::new(
@@ -209,7 +210,7 @@ impl InvalidationSink for TestBridgeSink {
     fn deliver_invalidation(
         &self,
         delivery: worth_runtime_bridge::facade::BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

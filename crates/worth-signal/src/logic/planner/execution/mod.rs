@@ -1,5 +1,5 @@
 use crate::data::comparator::ComparatorPolicyResolver;
-use crate::data::error::{SignalError, SignalExecutionStop, SignalPublicationProgress};
+use crate::data::error::{SignalError, SignalPublicationProgress};
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
 use crate::logic::context::EvaluationContext;
@@ -10,10 +10,7 @@ use super::precompute::callback::{LegacyPrecompute, SignalPrecompute};
 use super::types::{EvaluationPlan, ExecutionReport, PlanSummary, SessionScratch};
 use super::TemporalLoweringContext;
 use crate::data::request_preparation::SignalPreparationBudget;
-use worth_execution::{
-    ExecutionResourceLease, ExecutionScan, MapKernelContext, MapKernelFailure, ScanOutcome,
-};
-use worth_foundational::PartitionIdentity;
+use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 mod context;
 pub(crate) mod diagnostics;
@@ -28,7 +25,9 @@ pub(crate) use epochs::{
 };
 pub use prepared_plan::execute_prepared_plan;
 use prepared_plan::prepare_with_context;
-pub(crate) use request_scope::run_signal_request_scope;
+pub(crate) use request_scope::{
+    run_signal_execution_request_scope, run_signal_preparation_request, run_signal_request_scope,
+};
 pub(crate) mod task_reporting;
 
 pub(crate) fn execute_prepared_plan_with_precompute<P: SignalPrecompute>(
@@ -37,7 +36,7 @@ pub(crate) fn execute_prepared_plan_with_precompute<P: SignalPrecompute>(
     precompute: &P,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: TemporalLoweringContext,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SignalError> {
     let profile = graph.diagnostics_profile();
     let (plan_summary, first_target) = summarize_recorded_plan(plan, profile);
@@ -85,7 +84,10 @@ pub(crate) fn execute_prepared_plan_in_scope<P: SignalPrecompute>(
         .flat_map(|stage| stage.tasks.iter())
         .filter(|task| matches!(task.reason, super::types::TaskReason::MaybeStaleValidation))
         .count() as u64;
-    let policy = super::types::ResolvedSignalPlannerPolicy::for_graph(graph, Some(lease));
+    let policy = super::types::ResolvedSignalPlannerPolicy::for_graph(
+        graph,
+        worth_execution::ExecutionRequest::leased(lease),
+    );
     run_stage_slices(
         graph,
         &plan.summary,
@@ -101,10 +103,10 @@ pub(crate) fn execute_prepared_plan_in_scope<P: SignalPrecompute>(
         first_target,
         comparator_resolver,
         temporal_lowering,
-        Some(lease),
+        worth_execution::ExecutionRequest::leased(lease),
         policy,
-        Some(request_work),
-        Some(preparation),
+        request_work,
+        preparation,
         progress,
     )
 }
@@ -115,7 +117,7 @@ pub fn execute_prepared_plan_with_policy<Ctx, F, O>(
     domain_ctx: &Ctx,
     evaluator: &F,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SignalError>
 where
     Ctx: Sync,
@@ -140,7 +142,7 @@ pub(crate) fn execute_prepared_plan_with_policy_and_temporal_lowering<Ctx, F, O>
     evaluator: &F,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: TemporalLoweringContext,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SignalError>
 where
     Ctx: Sync,
@@ -178,13 +180,18 @@ where
     )
 }
 
-pub(crate) fn execute_evaluation_session_with_policy<P: SignalPrecompute>(
+/// Execute a planned session inside a caller-owned request scan. The caller
+/// appends the scan's exact report after planning and publication settle.
+pub(crate) fn execute_evaluation_session_in_scope<P: SignalPrecompute>(
     graph: &mut SignalGraph,
     session: &SessionScratch<'_>,
     precompute: &P,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: TemporalLoweringContext,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
+    request_work: &mut MapKernelContext<'_, '_>,
+    progress: &mut SignalPublicationProgress,
+    preparation: &mut SignalPreparationBudget,
 ) -> Result<ExecutionReport, SignalError> {
     let profile = graph.diagnostics_profile();
     let (plan_summary, first_target) = summarize_recorded_session(session, profile);
@@ -193,7 +200,8 @@ pub(crate) fn execute_evaluation_session_with_policy<P: SignalPrecompute>(
         .iter()
         .filter(|task| matches!(task.reason, super::types::TaskReason::MaybeStaleValidation))
         .count() as u64;
-    let report = execute_plan_stage_slices_with_policy(
+    let policy = super::types::ResolvedSignalPlannerPolicy::for_graph(graph, lease);
+    run_stage_slices(
         graph,
         &session.summary,
         session.stages.len(),
@@ -209,50 +217,9 @@ pub(crate) fn execute_evaluation_session_with_policy<P: SignalPrecompute>(
         comparator_resolver,
         temporal_lowering,
         lease,
-    )?;
-    Ok(report)
-}
-
-/// Execute a planned session inside a caller-owned request scan. The caller
-/// appends the scan's exact report after planning and publication settle.
-pub(crate) fn execute_evaluation_session_in_scope<P: SignalPrecompute>(
-    graph: &mut SignalGraph,
-    session: &SessionScratch<'_>,
-    precompute: &P,
-    comparator_resolver: &mut impl ComparatorPolicyResolver,
-    temporal_lowering: TemporalLoweringContext,
-    lease: &ExecutionResourceLease<'_>,
-    request_work: &mut MapKernelContext<'_, '_>,
-    progress: &mut SignalPublicationProgress,
-    preparation: &mut SignalPreparationBudget,
-) -> Result<ExecutionReport, SignalError> {
-    let profile = graph.diagnostics_profile();
-    let (plan_summary, first_target) = summarize_recorded_session(session, profile);
-    let maybe_stale_validation_tasks = session
-        .tasks
-        .iter()
-        .filter(|task| matches!(task.reason, super::types::TaskReason::MaybeStaleValidation))
-        .count() as u64;
-    let policy = super::types::ResolvedSignalPlannerPolicy::for_graph(graph, Some(lease));
-    run_stage_slices(
-        graph,
-        &session.summary,
-        session.stages.len(),
-        maybe_stale_validation_tasks,
-        session.stages.iter().map(|stage| PlannedStageSlice {
-            index: stage.index,
-            task_offset: 0,
-            tasks: &session.tasks[stage.start..stage.end],
-        }),
-        precompute,
-        plan_summary,
-        first_target,
-        comparator_resolver,
-        temporal_lowering,
-        Some(lease),
         policy,
-        Some(request_work),
-        Some(preparation),
+        request_work,
+        preparation,
         progress,
     )
 }
@@ -268,108 +235,45 @@ fn execute_plan_stage_slices_with_policy<'a, P: SignalPrecompute>(
     first_target: Option<NodeId>,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: TemporalLoweringContext,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionReport, SignalError> {
     graph.with_telemetry(|telemetry| telemetry.execution.last_execution_report = None);
     let policy = super::types::ResolvedSignalPlannerPolicy::for_graph(graph, lease);
-    if let Some(lease) = lease {
-        let identity = PartitionIdentity::new(1);
-        let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).map_err(
-            |denial| SignalError::internal(format!("signal request admission failed: {denial:?}")),
-        )?;
-        let memory = lease.policy().budget().charged_memory_bytes();
-        let mut progress = SignalPublicationProgress::default();
-        let mut preparation = SignalPreparationBudget::new(memory / 8);
-        let mut complete = None;
-        let mut stages = Some(stages);
-        let mut plan_summary = Some(plan_summary);
-        let outcome = scan.run(
-            Some(lease),
-            (),
-            0,
-            0,
-            memory / 8,
-            memory / 8,
-            |_, _, request_work| {
-                request_work.checkpoint(0).map_err(MapKernelFailure::Stop)?;
-                preparation
-                    .claim_retained_vec::<worth_foundational::ExecutionReport>(1)
-                    .map_err(MapKernelFailure::Domain)?;
-                if !precompute.allows_bounded_inputs() {
-                    return Err(MapKernelFailure::Domain(SignalError::invalid_input(
-                        "leased Signal evaluation requires a checked bounded-input callback",
-                    )));
-                }
-                let mut report = run_stage_slices(
-                    graph,
-                    summary,
-                    stage_count,
-                    maybe_stale_validation_tasks,
-                    stages.take().expect("one Signal request scan step"),
-                    precompute,
-                    plan_summary.take().expect("one Signal request scan step"),
-                    first_target,
-                    comparator_resolver,
-                    temporal_lowering.clone(),
-                    Some(lease),
-                    policy,
-                    Some(request_work),
-                    Some(&mut preparation),
-                    &mut progress,
-                )
-                .map_err(MapKernelFailure::Domain)?;
-                if report.execution.len() == report.execution.capacity() {
-                    report.execution.reserve_exact(1);
-                }
-                complete = Some(report);
-                Ok(((), ()))
-            },
-        );
-        return match outcome {
-            ScanOutcome::Complete {
-                report: physical, ..
-            } => {
-                graph.with_telemetry(|telemetry| {
-                    telemetry.execution.last_execution_report = Some(physical)
-                });
-                let mut report = complete.expect("completed Signal scan has a report");
-                report.execution.push(physical);
-                Ok(report)
+    let mut stages = Some(stages);
+    let mut plan_summary = Some(plan_summary);
+    let result = request_scope::run_signal_execution_request_scope(
+        lease,
+        |request_work, progress, preparation| {
+            if lease.is_leased() && !precompute.allows_bounded_inputs() {
+                return Err(SignalError::invalid_input(
+                    "leased Signal evaluation requires a checked bounded-input callback",
+                ));
             }
-            ScanOutcome::Stopped {
-                reason,
-                boundary,
-                report,
-                ..
-            } => {
-                graph.with_telemetry(|telemetry| {
-                    telemetry.execution.last_execution_report = Some(report)
-                });
-                Err(SignalError::execution_stopped(SignalExecutionStop::new(
-                    reason.into(),
-                    boundary,
-                    progress,
-                    report,
-                )))
-            }
+            run_stage_slices(
+                graph,
+                summary,
+                stage_count,
+                maybe_stale_validation_tasks,
+                stages.take().expect("one request scan step"),
+                precompute,
+                plan_summary.take().expect("one request scan step"),
+                first_target,
+                comparator_resolver,
+                temporal_lowering.clone(),
+                lease,
+                policy,
+                request_work,
+                preparation,
+                progress,
+            )
+        },
+    );
+    graph.with_telemetry(|telemetry| {
+        telemetry.execution.last_execution_report = match &result {
+            Ok(report) => report.execution.last().copied(),
+            Err(SignalError::ExecutionStopped(stop)) => Some(stop.execution()),
+            Err(_) => None,
         };
-    }
-    let mut progress = SignalPublicationProgress::default();
-    run_stage_slices(
-        graph,
-        summary,
-        stage_count,
-        maybe_stale_validation_tasks,
-        stages,
-        precompute,
-        plan_summary,
-        first_target,
-        comparator_resolver,
-        temporal_lowering,
-        None,
-        policy,
-        None,
-        None,
-        &mut progress,
-    )
+    });
+    result
 }

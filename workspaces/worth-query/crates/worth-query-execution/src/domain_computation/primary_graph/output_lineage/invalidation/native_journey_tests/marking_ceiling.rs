@@ -41,13 +41,14 @@ pub(super) fn world_installing(
         WorthQueryInvalidationResourceInstallation,
     ) -> WorthQueryInvalidationResourceInstallation,
 ) -> AuthorizationWorld {
-    let (budgets, clock, defaults, _) = test_product_world_resources().into_parts();
+    let (budgets, clock, defaults, execution) = test_product_world_resources().into_parts();
     let invalidation =
         WorthQueryInvalidationResources::install(adjust(defaults.installation())).unwrap();
     installed_authorization_world_with_product_resources(WorthQueryProductWorldResources::new(
         budgets,
         clock,
         invalidation,
+        execution.policy,
     ))
 }
 

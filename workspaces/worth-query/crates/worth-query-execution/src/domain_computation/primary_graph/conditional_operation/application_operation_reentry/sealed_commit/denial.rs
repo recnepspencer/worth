@@ -72,6 +72,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::PolicyMemoryLimit
                             | Resource::WorkLimit
                             | Resource::NestedLeaseMisuse
+                            | Resource::NoActiveExecutionScope
                             | Resource::EquivalenceContractUnavailable,
                         ..
                     }
@@ -134,6 +135,7 @@ fn classify_kind(kind: Kind) -> Outcome {
             | Resource::ChargedBytesOverflow
             | Resource::CapacityOverflow
             | Resource::NestedLeaseMisuse
+            | Resource::NoActiveExecutionScope
             | Resource::ScratchCapacityExceeded => Outcome::RetryableCommitFailure(kind),
             // Unreachable at HEAD: Relational's remaining-work child retains the
             // parent's workers, memory and determinism and lowers its work limit.

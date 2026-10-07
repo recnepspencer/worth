@@ -22,7 +22,7 @@ fn owned_map_serial_taking_keeps_input_custody() {
         let custody_violations = AtomicUsize::new(0);
         let source = crate::CancellationSource::new();
         let request = SerialRequest {
-            memory: Some(budget.clone()),
+            memory: budget.clone(),
             cancellation: source.token(),
             deadline: None,
         };
@@ -94,7 +94,7 @@ fn expired_serial_request_preserves_callers_input_hold() {
         None,
     )));
     let request = SerialRequest {
-        memory: Some(budget.clone()),
+        memory: budget.clone(),
         deadline: Some(Instant::now() - Duration::from_secs(1)),
         cancellation: crate::CancellationSource::new().token(),
     };
@@ -136,7 +136,7 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
         let entered = AtomicUsize::new(0);
         let deadline = Instant::now() + Duration::from_millis(100);
         let request = SerialRequest {
-            memory: Some(budget.clone()),
+            memory: budget.clone(),
             deadline: Some(deadline),
             cancellation: crate::CancellationSource::new().token(),
         };

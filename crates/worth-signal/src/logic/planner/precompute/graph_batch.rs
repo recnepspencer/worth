@@ -13,7 +13,6 @@ use crate::data::proof::invalidation::progression::{
 };
 use crate::data::request_preparation::{self as preparation_budget, SignalPreparationBudget};
 use crate::logic::planner::EligibleTask;
-use worth_execution::ExecutionResourceLease;
 use worth_execution::MapKernelContext;
 
 mod resource_admission;
@@ -68,7 +67,7 @@ pub(crate) fn epoch_width<'a>(
     tasks: &'a [EligibleTask],
     task_offset: usize,
     checked: bool,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     comparator: &impl ComparatorPolicyResolver,
     mut preparation: Option<&mut SignalPreparationBudget>,
     mut work: Option<&mut MapKernelContext<'_, '_>>,

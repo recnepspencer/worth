@@ -16,6 +16,7 @@ fn runtime_canonicalizes_and_replays_structural_branch_comparison_record() {
         fn read_packet(
             &self,
             request: &SnapshotReadPacket,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::snapshot::SnapshotReadPacketResult,
             crate::snapshot::BridgeSnapshotReadError,

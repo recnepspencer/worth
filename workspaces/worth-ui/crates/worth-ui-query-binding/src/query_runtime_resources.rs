@@ -38,6 +38,16 @@ pub(crate) fn ui_product_world_resources() -> runtime::WorthQueryProductWorldRes
             ),
         )
         .expect("the Query invalidation installation is valid"),
+        UI_EXECUTION_POLICY,
     )
     .expect("the UI Product World resources are valid")
 }
+
+// Twice the 64 MiB preparation ceiling leaves framework memory headroom.
+// The 16 million work allowance bounds leases; serial requests bound memory only.
+pub(crate) const UI_EXECUTION_POLICY: runtime::ExecutionRequestPolicy =
+    runtime::ExecutionRequestPolicy::new(
+        runtime::ExecutionPosture::Serial,
+        runtime::DeterminismContract::CanonicalBitwise,
+        runtime::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 128 * 1024 * 1024, 16_000_000),
+    );

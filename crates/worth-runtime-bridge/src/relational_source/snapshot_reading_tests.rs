@@ -44,7 +44,12 @@ fn snapshot_reader_reads_published_entity_values_without_projection_surface() {
         scalar_string_contract("name"),
     )]);
 
-    let result = reader.read_packet(&packet).expect("published packet read");
+    let result = reader
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
+        .expect("published packet read");
 
     assert_eq!(result.snapshot_identity(), &snapshot_identity);
     assert_eq!(result.records().len(), 1);
@@ -79,7 +84,10 @@ fn snapshot_reader_reads_published_relation_field_aspects_from_authoritative_sta
     )]);
 
     let result = reader
-        .read_packet(&packet)
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
         .expect("published relation aspect packet read");
 
     assert_eq!(result.snapshot_identity(), &snapshot_identity);
@@ -114,7 +122,10 @@ fn snapshot_reader_rejects_undeclared_dotted_document_paths() {
     )]);
 
     let error = reader
-        .read_packet(&packet)
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
         .expect_err("flat aspect path should not satisfy dotted aspect path");
 
     assert!(
@@ -140,7 +151,10 @@ fn snapshot_reader_rejects_untyped_bridge_record_identity() {
     )]);
 
     let error = reader
-        .read_packet(&packet)
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
         .expect_err("relational snapshot reads require typed record identity parts");
 
     assert!(
@@ -164,7 +178,10 @@ fn snapshot_reader_reports_missing_record_as_authoritative_absence() {
     )]);
 
     let result = reader
-        .read_packet(&packet)
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
         .expect("absence is authoritative");
 
     assert_eq!(result.records().len(), 1);
@@ -206,3 +223,6 @@ fn aspect_key(value: &str) -> AspectKey {
 fn scalar_string_contract(aspect: &str) -> SnapshotReadContract {
     SnapshotReadContract::scalar(aspect_key(aspect), ScalarAspectType::String)
 }
+
+#[path = "snapshot_serial_memory_tests.rs"]
+mod serial_memory;

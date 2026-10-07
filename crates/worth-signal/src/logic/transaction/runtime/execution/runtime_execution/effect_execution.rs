@@ -44,6 +44,7 @@ where
         self.admit_temporal_wakes_for_plan(plan)?;
         self.promote_due_temporal_wakes_ready()?;
         let temporal_lowering = self.temporal_lowering_context_for_plan(plan);
+        let serial = self.graph.bounded_serial_request();
         let report = execute_plan_with_runtime_config(
             &mut self.graph,
             &self.config,
@@ -51,7 +52,7 @@ where
             runtime_ctx,
             plan,
             evaluator,
-            None,
+            worth_execution::ExecutionRequest::serial(&serial),
         )?;
         if self.graph.captures_observation_surface(
             crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
