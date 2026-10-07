@@ -136,6 +136,9 @@ pub(super) struct WorthQueryProducerLineageHead {
     pub(super) dependency_identity: Option<[u8; 32]>,
     pub(super) idempotency_key_identity: [u8; 32],
     pub(super) settlement: Arc<RecordedSettlementIdentity>,
+    /// A runtime performed origin permits execution-key replay. Checkpoint
+    /// origins carry prior identity, but do not retain the native receipt.
+    pub(super) may_replay_idempotency: bool,
     /// The head's record consumed upstream outputs. Only a row that posts its
     /// settlement holds the claims on them.
     pub(super) claims_upstream: bool,

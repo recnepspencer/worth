@@ -62,12 +62,21 @@ impl WorthQueryApplicationOutputLineage {
                 return Err(());
             }
             if let Some(recorded) = recorded {
+                let origin = recorded
+                    .performed_origin
+                    .as_ref()
+                    .and_then(|cell| cell.get())
+                    .unwrap_or(recorded);
                 return Ok((
                     Some(WorthQueryProducerLineageHead {
                         occurrence: coordinate.occurrence,
                         dependency_identity: recorded.producer_dependency_identity,
                         idempotency_key_identity: recorded.idempotency_key_identity,
                         settlement: Arc::clone(&recorded.settlement_identity),
+                        may_replay_idempotency: matches!(
+                            origin.source_identity,
+                            Some(RecordedSourceIdentity::Runtime(_))
+                        ),
                         claims_upstream: !recorded.consumed_outputs.is_empty(),
                     }),
                     work,

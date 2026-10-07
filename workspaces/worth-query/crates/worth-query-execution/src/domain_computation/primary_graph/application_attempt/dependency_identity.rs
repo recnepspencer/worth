@@ -80,11 +80,15 @@ impl<Schema, Operation, Input, Scope>
             .observation()
             .lifecycle_incarnation();
         if let Some(head) = head.as_ref().filter(|head| head.occurrence == occurrence) {
+            // Only a runtime performed origin permits execution-key replay;
+            // checkpoint prior identity does not retain its native receipt.
             // A head that consumed upstream outputs is replayed only while a
             // row posts it: that row holds its claims, and a replay publishes
             // none. A head that consumed none is replayed whenever its
             // dependencies still match, and its row posts it again.
-            let replays = !force_successor && head.dependency_identity == Some(dependency);
+            let replays = head.may_replay_idempotency
+                && !force_successor
+                && head.dependency_identity == Some(dependency);
             let unposted = (head.claims_upstream || !replays)
                 && !runtime
                     .output_demands

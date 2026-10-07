@@ -157,6 +157,45 @@ fn a_reclaimed_ready_keeps_its_native_prior_locator_across_checkpoint() {
             .value,
         length(3)
     );
+    drop(restored);
+    drop(demand);
+    drop(request);
+    drop(principal);
+    drop(scope);
+    let preserved_checkpoint = reopened.capture_application_checkpoint().unwrap();
+    drop(reopened);
+
+    let reopened_again =
+        support::install_program::<CheckpointProgram>(Some(preserved_checkpoint), profile);
+    let (scope, principal) = authenticate(&reopened_again);
+    let request = reopened_again.request(&principal, &scope);
+    let mut repeated = request
+        .demand(PlanarFinalOutputDemand::new("anchor-a"))
+        .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&reopened_again)
+        .unwrap();
+    let repeated_result = settle_final(&mut repeated, &request);
+    let repeated_preserve = repeated_result
+        .outputs_of::<FinalPlanarPreserveOutputs>()
+        .expect("a checkpoint of performed Preserve must select Preserve again");
+    assert_eq!(
+        repeated_preserve
+            .entity::<FinalPreservedAnchorOutput<CheckpointSchema>>()
+            .unwrap()
+            .entity_id(),
+        final_entity,
+        "repeated Preserve keeps the original native entity"
+    );
+    assert_eq!(
+        request
+            .query(PlanarOutputRead {
+                body_key: "final:anchor-a".into()
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        length(3)
+    );
 }
 
 fn settle_final<'application>(
