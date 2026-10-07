@@ -1,6 +1,8 @@
 //! The ordinary native writer must mark the installed Query actor before its
 //! new source head can be read. No World publication or Query feed is involved.
 
+#[path = "native_journey_tests/concurrent_first_writers.rs"]
+mod concurrent_first_writers;
 #[path = "native_journey_tests/current_registration.rs"]
 mod current_registration;
 #[path = "native_journey_tests/dirty_clearance_tests.rs"]

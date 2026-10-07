@@ -35,6 +35,8 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
             .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner)?;
         let handler = RegionOutputHandler::running(move |reader, set| {
             take_calls();
+            COMBINES.store(0, Ordering::Relaxed);
+            worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test();
             let outcome = (|| {
                 let computed = installed
                     .prepare(reader, set)?
@@ -57,6 +59,8 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
                 outcome,
                 runs: runs.collect(),
                 calls: take_calls(),
+                tree_runs: worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test(),
+                combines: COMBINES.swap(0, Ordering::Relaxed),
             });
             value
         });

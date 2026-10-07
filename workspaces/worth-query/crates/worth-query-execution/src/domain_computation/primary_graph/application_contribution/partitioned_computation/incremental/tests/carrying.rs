@@ -69,7 +69,7 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
     let total = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state;
     state.basis = state.basis.with_input_digest_for_test([0; 32]);
-    let state = Arc::new(state);
+    let state = super::custodied_state_for_test(state);
     let cases = [
         (
             ComputationPrior::new(edition(), Ok(Arc::clone(&state)), None),
@@ -117,9 +117,30 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
                 _ => None,
             })
             .expect("one gather reads the status");
-        // Fewer than 50 combines: the grown kernel leaves 50 and some of the
-        // declared work when it runs first, and does not fit after the other.
-        let grown = 4_096 + 150 - usize::try_from(charged).unwrap();
+        let state = &first.sealed.as_ref().unwrap().as_ref().unwrap().state;
+        let typed =
+            state
+                .typed
+                .downcast_ref::<super::super::retained::RetainedPartitions<
+                    Parity,
+                    <Owner as WorthQueryPartitionedComputationOwner<
+                        Schema,
+                        Feature,
+                        Computation,
+                    >>::Item,
+                    u64,
+                >>()
+                .unwrap();
+        let full_tree_work = worth_execution::ReductionPlan::try_from_sorted_unique(
+            typed.partitions.keys().copied().collect(),
+        )
+        .unwrap()
+        .checked_build_work()
+        .unwrap();
+        // Exceed the full-run charge by its entire tree work plus one. When
+        // the moved partition runs first, fewer than 100 units remain for the carried kernel.
+        let grown = 4_096 + 100 + usize::try_from(full_tree_work).unwrap() + 1
+            - usize::try_from(charged).unwrap();
         installed.owner.work.lock().unwrap()[usize::from(status == 0)] = grown;
 
         let next = attempt(&world, &installed, Some(prior_of(first, true)));

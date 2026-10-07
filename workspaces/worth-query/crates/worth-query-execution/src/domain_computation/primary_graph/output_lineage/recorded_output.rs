@@ -54,7 +54,7 @@ impl RecordedOutputMutable {
     ) -> Self {
         #[cfg(feature = "test-query-execution-observer")]
         match &computation {
-            super::retained_computation::RecordedComputation::Retained { state, .. } =>
+            super::retained_computation::RecordedComputation::Retained(state) =>
                 crate::domain_computation::primary_graph::application_contribution::observe_published(Some(Arc::clone(state)), None),
             super::retained_computation::RecordedComputation::Absent(reason) =>
                 crate::domain_computation::primary_graph::application_contribution::observe_published(None, Some(reason.full_cause())),

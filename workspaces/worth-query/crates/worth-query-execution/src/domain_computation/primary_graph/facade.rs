@@ -60,10 +60,13 @@ pub use super::application_checkpoint::{
 pub use super::application_contribution::{
     discarded_computation_retention_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
+    partitioned_computation_tree_work_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest, WorthQueryPartitionedComputationFullCause,
-    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
+    WorthQueryPublishedComputationStateForTest,
 };
 pub use super::application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,

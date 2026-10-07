@@ -34,8 +34,11 @@ pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
 pub use partitioned_computation::{
     discarded_computation_retention_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
+    partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
+    WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
     Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,

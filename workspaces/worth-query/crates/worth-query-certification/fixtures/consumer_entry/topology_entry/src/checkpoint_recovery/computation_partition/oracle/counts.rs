@@ -16,8 +16,8 @@ use super::*;
 const SIZES: [usize; 2] = [100, LARGEST_SET];
 /// The entry the edit changes.
 const EDITED: usize = 7;
-/// The region a new entry joins, beside the one entry already in it.
-const JOINED: u32 = 3;
+/// An absent region: creating its first entry inserts an actual tree leaf.
+const JOINED: u32 = 1_000_003;
 
 #[test]
 fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
@@ -80,6 +80,12 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
             },
             "size {size}: only the edited entry's partition is gathered and computed"
         );
+        tree_work::assert_counted(first);
+        let keys = tree_work::keys(size);
+        tree_work::assert_edited(
+            &next,
+            tree_work::update_bound(&keys, tree_work::identity(u32::try_from(EDITED).unwrap())),
+        );
         let total = f64::from(u32::try_from(size).unwrap()) + 1.5;
         assert_eq!(
             next.outcome.as_ref().map(|(bits, _)| *bits),
@@ -92,9 +98,9 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
             "size {size}: a reused run is charged what the full run was"
         );
 
-        // A new entry joins a region that holds one entry already, and is
-        // then deleted: each reads the membership again, and only the joined
-        // region's partition is gathered and computed.
+        // The first member of an absent region inserts a tree leaf; deleting
+        // its final member removes that leaf. Both read membership again,
+        // while deletion has no surviving region kernel to run.
         let number = u64::try_from(size).unwrap();
         let created = EntryEdit::create(&["even"], number, JOINED, 4.0_f64.to_bits(), 1);
         edit(&request, &application, created, 2);
@@ -114,17 +120,23 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
             Ok((total + 4.0).to_bits()),
             "size {size}: the total holds the new entry"
         );
+        let inserted = tree_work::identity(JOINED);
+        tree_work::assert_edited(&next, tree_work::insert_bound(&keys, inserted));
+        let mut with_inserted = keys.clone();
+        with_inserted.push(inserted);
+        with_inserted.sort();
         edit(&request, &application, EntryEdit::delete(number), 3);
         let next = reused(&request, &application, size, "the deleted entry");
+        tree_work::assert_edited(&next, tree_work::delete_bound(&with_inserted, inserted));
         assert_eq!(
             next.calls,
             OwnerCalls {
                 plans: 1,
                 keys: 0,
-                gathers: 1,
-                kernels: 1,
+                gathers: 0,
+                kernels: 0,
             },
-            "size {size}: nothing is keyed, and only the partition the entry left is gathered"
+            "size {size}: deleting the last member runs no kernel for the removed partition"
         );
         assert_eq!(
             next.outcome.as_ref().map(|(bits, _)| *bits),

@@ -1,6 +1,7 @@
 //! Certification observes published and discarded retention without execution authority.
-use super::retained::{RetainedComputation, RetainedPartitions};
+use super::retained::RetainedPartitions;
 use super::WorthQueryPartitionedComputationFullCause as Cause;
+use crate::domain_computation::primary_graph::output_lineage::CustodiedComputation;
 use std::sync::Arc;
 use worth_execution::{CanonicalBits, ChargedBytes};
 use worth_query_declaration::facade::application_operation::application_computation_item_digest;
@@ -8,7 +9,7 @@ use worth_query_declaration::facade::application_program::ApplicationComputation
 
 #[derive(Clone)]
 pub struct WorthQueryPublishedComputationStateForTest {
-    state: Option<Arc<RetainedComputation>>,
+    state: Option<Arc<CustodiedComputation>>,
     absence: Option<Cause>,
 }
 
@@ -26,7 +27,7 @@ thread_local! {
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_published(
-    state: Option<Arc<RetainedComputation>>,
+    state: Option<Arc<CustodiedComputation>>,
     absence: Option<Cause>,
 ) {
     // Decisions that ran nothing do not publish computation state.
@@ -139,6 +140,43 @@ impl WorthQueryPublishedComputationStateForTest {
             && a.tree.additional_charged_bytes() == b.tree.additional_charged_bytes()
             && a.charged_bytes() == b.charged_bytes()
             && left.facts.facts().eq(right.facts.facts())
+    }
+}
+
+impl WorthQueryPublishedComputationStateForTest {
+    /// A leaf value lives inline in its immutable tree node. Its address is
+    /// therefore a node identity, not a result-equality or call-count proxy.
+    #[doc(hidden)]
+    pub fn tree_node_sharing_with<
+        Key: 'static,
+        Item: 'static,
+        Reduced: Clone + ChargedBytes + CanonicalBits + 'static,
+    >(
+        &self,
+        other: &Self,
+    ) -> Vec<(worth_foundational::facade::PartitionIdentity, bool)> {
+        let left = self.state.as_ref().expect("a retained reference state");
+        let right = other.state.as_ref().expect("a retained successor state");
+        let a = left
+            .typed
+            .downcast_ref::<RetainedPartitions<Key, Item, Reduced>>()
+            .unwrap();
+        let b = right
+            .typed
+            .downcast_ref::<RetainedPartitions<Key, Item, Reduced>>()
+            .unwrap();
+        a.partitions
+            .keys()
+            .map(|identity| {
+                (
+                    *identity,
+                    a.tree
+                        .leaf(*identity)
+                        .zip(b.tree.leaf(*identity))
+                        .is_some_and(|(a, b)| std::ptr::eq(a, b)),
+                )
+            })
+            .collect()
     }
 }
 

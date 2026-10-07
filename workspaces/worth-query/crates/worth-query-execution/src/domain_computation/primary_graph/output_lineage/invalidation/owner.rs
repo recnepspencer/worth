@@ -92,14 +92,17 @@ impl SourceInvalidationOwner {
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
         )?;
         context.ordered_read(branches.cells.len())?;
-        if let Some(cell) = branches
-            .cells
-            .get(context.branch_id())
-            .and_then(CompanionBranchCellSlot::admitted)
-        {
-            return Ok(super::publication_cell::SelectedPublicationCell::Admitted(
-                cell,
-            ));
+        if let Some(slot) = branches.cells.get(context.branch_id()) {
+            if let Some(cell) = slot.admitted() {
+                return Ok(super::publication_cell::SelectedPublicationCell::Admitted(
+                    cell,
+                ));
+            }
+            if let Some(cell) = slot.pending_for_preflight(context)? {
+                return Ok(super::publication_cell::SelectedPublicationCell::Prepared(
+                    cell,
+                ));
+            }
         }
         let initial = self.vacant_root(&mut branches, context)?;
         let cell = context.mint_selected_branch_cell(initial)?;

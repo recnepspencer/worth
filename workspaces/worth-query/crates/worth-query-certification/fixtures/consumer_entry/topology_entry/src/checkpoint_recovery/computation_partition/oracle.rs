@@ -39,9 +39,11 @@ mod installation;
 mod republication;
 mod restoration;
 mod seeded_absence;
+mod tree_work;
 use installation::{
     install, install_with_reuse, Application, OracleProgram, Request, EVEN_Y, ODD_Y, SCOPE,
 };
+mod branch_sharing;
 mod differential;
 mod parallel_history_reuse;
 mod program;
@@ -74,6 +76,8 @@ impl<const WORK: usize> ApplicationManagedComputation<CheckpointSchema, PlanarFi
     const RESOURCES: ApplicationComputationResourceCeiling =
         ApplicationComputationResourceCeiling::new(WORK, TOTALS_RETAINED_BYTES);
 }
+
+static COMBINES: AtomicUsize = AtomicUsize::new(0);
 
 static PLANS: AtomicUsize = AtomicUsize::new(0);
 static KEYS: AtomicUsize = AtomicUsize::new(0);
@@ -170,7 +174,13 @@ impl<const WORK: usize, const MODE: u8>
     }
 
     fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {
-        WorthQueryDeterministicReducer::canonical(|| -0.0, |left, right| left + right)
+        WorthQueryDeterministicReducer::canonical(
+            || -0.0,
+            |left, right| {
+                COMBINES.fetch_add(1, Ordering::Relaxed);
+                left + right
+            },
+        )
     }
 
     fn complete(&self, reduced: f64) -> Result<f64, u32> {
@@ -186,6 +196,11 @@ struct OracleRun {
     outcome: Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
     runs: Vec<WorthQueryPartitionedComputationRun>,
     calls: OwnerCalls,
+    tree_runs: Vec<(
+        WorthQueryPartitionedComputationRun,
+        worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun,
+    )>,
+    combines: usize,
 }
 
 /// The runs of the current demand. The tests that fill it hold the

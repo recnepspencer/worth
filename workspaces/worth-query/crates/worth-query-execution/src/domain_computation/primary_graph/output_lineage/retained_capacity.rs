@@ -93,7 +93,10 @@ impl LineageRetentionLedger {
             bytes,
         })
     }
+}
 
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+impl LineageRetentionLedger {
     pub(super) fn retained_bytes(&self) -> u64 {
         self.state
             .lock()

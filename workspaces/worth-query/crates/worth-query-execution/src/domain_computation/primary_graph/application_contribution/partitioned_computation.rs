@@ -18,6 +18,9 @@
 //! the test observer is shown.
 
 mod compute;
+pub(super) use incremental::observe_full_tree;
+#[cfg(feature = "test-query-execution-observer")]
+mod certification_reuse;
 mod denial;
 mod gather_memory;
 mod incremental;
@@ -40,8 +43,11 @@ pub use incremental::WorthQueryPartitionedComputationFullCause;
 pub use incremental::{
     discarded_computation_retention_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
+    partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
+    WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use incremental::{
     Comparator, CompletedComputationRetention, ComputationDeposit,
