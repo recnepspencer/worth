@@ -1,5 +1,6 @@
 //! The lineage row of a republished generated output.
 
+use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::any::TypeId;
 use std::sync::{Arc, OnceLock};
 
@@ -33,8 +34,8 @@ pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
     retained_capacity: Option<RetainedLineageCapacity>,
     consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     completed_handler_facts: CompletedHandlerFactBoundary,
-    completed_decision_reuse: CompletedDecisionReuseProof,
-    prepared_input_reuse_key: PreparedInputReuseKey,
+    completed_decision_reuse: Option<CompletedDecisionReuseProof>,
+    prepared_input_reuse_key: Option<PreparedInputReuseKey>,
     witness: Arc<OnceLock<SealedNativeOutputWitness>>,
 }
 
@@ -63,8 +64,8 @@ impl RepublishedOutput {
         row._retained_capacity = self.retained_capacity;
         row.consumed_outputs = self.consumed_outputs;
         row.completed_handler_facts = Some(self.completed_handler_facts);
-        row.completed_decision_reuse = Some(self.completed_decision_reuse);
-        row.prepared_input_reuse_key = Some(self.prepared_input_reuse_key);
+        row.completed_decision_reuse = self.completed_decision_reuse;
+        row.prepared_input_reuse_key = self.prepared_input_reuse_key;
         row.native_output_witness = OnceLock::from(self.witness);
         let mutable = row
             .mutable
@@ -72,7 +73,9 @@ impl RepublishedOutput {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         mutable.verification_requirement = None;
         mutable.replace_retained_facts(self.computation_source.retain_facts(self.facts));
-        mutable.computation = None;
+        mutable.computation = super::super::retained_computation::RecordedComputation::Absent(
+            PriorAbsence::Republished,
+        );
     }
 }
 
@@ -124,8 +127,12 @@ impl WorthQueryApplicationOutputLineage {
             return None;
         }
         let boundary = origin.completed_handler_facts.as_ref()?;
-        let decision = origin.completed_decision_reuse.as_ref()?;
-        let key = suspended.prepared_input_reuse_key.as_ref()?;
+        // Republication continues an exact performed read, even when managed
+        // execution declined whole-input reuse. It carries optional cutoff
+        // proofs unchanged; it never creates a missing proof or certifies
+        // staleness away.
+        let decision = origin.completed_decision_reuse.as_ref();
+        let key = suspended.prepared_input_reuse_key.as_ref();
         let (facts, retained_capacity) = if suspended.performed_origin.is_none() {
             (Arc::clone(suspended_facts.postconditions()), None)
         } else {
@@ -150,8 +157,9 @@ impl WorthQueryApplicationOutputLineage {
             retained_capacity,
             consumed_outputs: Arc::clone(&origin.consumed_outputs),
             completed_handler_facts: boundary.continued_by_republication(),
-            completed_decision_reuse: decision.continued_by_republication(),
-            prepared_input_reuse_key: key.continued_by_republication(),
+            completed_decision_reuse: decision
+                .map(CompletedDecisionReuseProof::continued_by_republication),
+            prepared_input_reuse_key: key.map(PreparedInputReuseKey::continued_by_republication),
             witness,
         })
     }

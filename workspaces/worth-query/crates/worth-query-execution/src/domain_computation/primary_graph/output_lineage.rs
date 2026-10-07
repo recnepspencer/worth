@@ -224,7 +224,7 @@ impl WorthQueryApplicationOutputLineage {
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<PreparedInputReuseKey>,
         retained_capacity: retained_capacity::RetainedLineageCapacity,
-        computation: Option<retained_computation::RecordedComputation>,
+        computation: retained_computation::RecordedComputation,
     ) -> Arc<RecordedSettlementIdentity> {
         self.record_inner(
             computation,
@@ -241,7 +241,7 @@ impl WorthQueryApplicationOutputLineage {
 
     fn record_inner(
         &mut self,
-        computation: Option<retained_computation::RecordedComputation>,
+        computation: retained_computation::RecordedComputation,
         application: &WorthQueryPrimaryGraphCommittedApplication,
         consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
         prepared: Option<&PreparedOutputLineageSlot>,

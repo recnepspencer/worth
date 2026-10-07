@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::{
     any::TypeId,
     sync::{Arc, OnceLock},
@@ -128,7 +129,7 @@ fn unrelated_partition_selection(population: u64) {
         completed_decision_reuse: None,
         prepared_input_reuse_key: None,
         native_output_witness: OnceLock::new(),
-        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable::new(None, None, None, None)),
+        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable::new(None, None, None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
         settlement_identity: super::super::RecordedSettlementIdentity::retain(
             &source,
             ProductCoordinate {

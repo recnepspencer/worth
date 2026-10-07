@@ -17,12 +17,11 @@ const REGIONS: u32 = 4;
 /// The work of a heavy entry. One fits the declared work beside every other
 /// entry; a second does not, so the run stops at the work ceiling in the
 /// later of their regions.
-const HEAVY: u64 = TOTALS_WORK as u64 / 2 + 1;
 /// The sets an ordinate names, the even one first.
-pub(super) const SETS: [&str; 2] = ["even", "odd"];
+pub(in super::super) const SETS: [&str; 2] = ["even", "odd"];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum Kind {
+pub(in super::super) enum Kind {
     /// One entry's value, which only its partition gathers.
     Value,
     /// The weight of the input's set, which every even partition gathers.
@@ -56,6 +55,11 @@ pub(super) enum Kind {
     /// A second heavy entry, in a region the first does not lie in: the run
     /// stops at the work ceiling. The next edit is its `Relief`.
     Ceiling,
+    /// A value edit at each real runtime absence boundary.
+    Evict,
+    Unretained,
+    ObservationOverBudget,
+    Several,
     /// The second heavy entry deleted.
     Relief,
     /// The faulted entry's fault cleared.
@@ -64,7 +68,7 @@ pub(super) enum Kind {
 
 /// Every kind a round shuffles; `Relief` follows each `Ceiling`, and
 /// `Repair` each `Fault`.
-pub(super) const KINDS: [Kind; 15] = [
+pub(in super::super) const KINDS: [Kind; 19] = [
     Kind::Value,
     Kind::SharedWeight,
     Kind::ItemKey,
@@ -80,11 +84,15 @@ pub(super) const KINDS: [Kind; 15] = [
     Kind::DeleteThenCreate,
     Kind::Swap,
     Kind::Ceiling,
+    Kind::Evict,
+    Kind::Unretained,
+    Kind::ObservationOverBudget,
+    Kind::Several,
 ];
 
-pub(super) struct Lcg(pub(super) u64);
+pub(in super::super) struct Lcg(pub(in super::super) u64);
 impl Lcg {
-    pub(super) fn below(&mut self, bound: usize) -> usize {
+    pub(in super::super) fn below(&mut self, bound: usize) -> usize {
         self.0 = self
             .0
             .wrapping_mul(6_364_136_223_846_793_005)
@@ -114,6 +122,7 @@ impl Lcg {
 #[derive(Clone, Copy, PartialEq)]
 struct ModelEntry {
     region: u32,
+    incoming: bool,
     value: f64,
     work: u64,
     fault: bool,
@@ -121,25 +130,26 @@ struct ModelEntry {
 
 /// The facts both runtimes hold: the entry each number names, if any.
 #[derive(Clone, PartialEq)]
-pub(super) struct Model {
+pub(in super::super) struct Model {
     entries: Vec<Option<ModelEntry>>,
+    heavy: u64,
     weights: [f64; 2],
-    pub(super) odd: bool,
+    pub(in super::super) odd: bool,
     /// The heavy entry the last `Ceiling` made.
     ceiling: Option<usize>,
 }
 
 /// What a step changes: entry facts or entries, or the scope's ordinate.
-pub(super) enum Change {
+pub(in super::super) enum Change {
     Entry(EntryEdit),
     Ordinate(u64),
 }
 
-pub(super) struct Step {
+pub(in super::super) struct Step {
     /// The edits the step commits, in order.
-    pub(super) changes: Vec<Change>,
+    pub(in super::super) changes: Vec<Change>,
     /// The entry value the step's decision writes.
-    pub(super) own_write: Option<OwnWrite>,
+    pub(in super::super) own_write: Option<OwnWrite>,
 }
 
 fn number(entry: usize) -> u64 {
@@ -148,30 +158,119 @@ fn number(entry: usize) -> u64 {
 
 impl Model {
     /// The seeded entries, the first of them heavy.
-    pub(super) fn new(rng: &mut Lcg) -> Self {
-        let entries = (0..NUMBERS)
+    pub(in super::super) fn new(rng: &mut Lcg) -> Self {
+        Self::bounded(rng, ENTRIES, NUMBERS, TOTALS_WORK)
+    }
+
+    pub(in super::super) fn eviction(rng: &mut Lcg, work: usize) -> Self {
+        let mut model = Self::bounded(rng, 8, 16, work);
+        for entry in model.entries.iter_mut().flatten() {
+            entry.work = 1;
+            entry.incoming = false;
+        }
+        model.heavy = work as u64 + 1;
+        model
+    }
+
+    pub(in super::super) fn observation(rng: &mut Lcg, work: usize) -> Self {
+        let mut model = Self::bounded(rng, 1, 5, work);
+        model.entries[0].as_mut().unwrap().work = 1;
+        // A ceiling edit costs more than the declared budget on its own.
+        model.heavy = work as u64 + 1;
+        model
+    }
+
+    pub(in super::super) fn bounded(
+        rng: &mut Lcg,
+        count: usize,
+        numbers: usize,
+        work: usize,
+    ) -> Self {
+        let heavy = work as u64 / 2 + 1;
+        let entries = (0..numbers)
             .map(|place| {
-                (place < ENTRIES).then(|| ModelEntry {
+                (place < count).then(|| ModelEntry {
                     region: u32::try_from(place).unwrap() % REGIONS,
+                    incoming: place == 0,
                     value: rng.value(),
-                    work: if place == 0 { HEAVY } else { 1 },
+                    work: if place == 0 { heavy } else { 1 },
                     fault: false,
                 })
             })
             .collect();
         Self {
             entries,
+            heavy,
             weights: [rng.value(), rng.value()],
             odd: false,
             ceiling: None,
         }
     }
 
+    pub(in super::super) fn observation_ceiling(&mut self, exhausted: bool, work: usize) -> Step {
+        let number = self.held(false)[0];
+        let mut changes = Vec::new();
+        if exhausted {
+            for entry in self.held(false).into_iter().filter(|e| *e != number) {
+                changes.push(self.deleted(entry));
+            }
+            self.ceiling = Some(number);
+        }
+        let units = if exhausted { work as u64 + 1 } else { 1 };
+        let mut entry = self.entries[number].unwrap();
+        entry.work = units;
+        changes.push(self.deleted(number));
+        self.entries[number] = Some(entry);
+        let mut sets = SETS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        if entry.incoming {
+            sets.extend((0..LARGEST_SET).map(|i| format!("incoming-{i}")));
+        }
+        let names = sets.iter().map(String::as_str).collect::<Vec<_>>();
+        changes.push(Change::Entry(EntryEdit::create(
+            &names,
+            number as u64,
+            entry.region,
+            entry.value.to_bits(),
+            units,
+        )));
+        Step {
+            changes,
+            own_write: None,
+        }
+    }
+
+    pub(in super::super) fn wide_entry(&mut self) -> EntryEdit {
+        let number = self.held(true)[0];
+        let entry = self.entries[number].as_mut().unwrap();
+        entry.incoming = true;
+        let mut sets = SETS
+            .to_vec()
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        sets.extend((0..LARGEST_SET).map(|i| format!("incoming-{i}")));
+        let names = sets.iter().map(String::as_str).collect::<Vec<_>>();
+        EntryEdit::create(
+            &names,
+            number as u64,
+            entry.region,
+            entry.value.to_bits(),
+            entry.work,
+        )
+    }
+
+    pub(in super::super) fn heavy_number(&self) -> usize {
+        self.entries
+            .iter()
+            .position(|entry| entry.is_some_and(|entry| entry.incoming))
+            .unwrap()
+    }
+
     fn set(&self) -> &'static str {
         SETS[usize::from(self.odd)]
     }
 
-    pub(super) fn seed(&self, graph: &mut Graph) {
+    pub(in super::super) fn seed(&self, graph: &mut Graph) {
         for (set, weight) in SETS.into_iter().zip(self.weights) {
             facts::seed_set(graph, set, weight);
         }
@@ -197,7 +296,7 @@ impl Model {
     }
 
     fn free(&self) -> Vec<usize> {
-        (0..NUMBERS)
+        (0..self.entries.len())
             .filter(|&place| self.entries[place].is_none())
             .collect()
     }
@@ -211,12 +310,12 @@ impl Model {
     }
 
     /// Whether the entry `write` names already holds the value it writes.
-    pub(super) fn holds(&self, write: OwnWrite) -> bool {
+    pub(in super::super) fn holds(&self, write: OwnWrite) -> bool {
         let entry = self.entries[usize::try_from(write.number).unwrap()];
         entry.is_some_and(|entry| entry.value.to_bits() == write.bits)
     }
 
-    pub(super) fn written(&mut self, write: OwnWrite) {
+    pub(in super::super) fn written(&mut self, write: OwnWrite) {
         let entry = usize::try_from(write.number).unwrap();
         self.entries[entry].as_mut().unwrap().value = f64::from_bits(write.bits);
     }
@@ -230,6 +329,7 @@ impl Model {
     fn created(&mut self, entry: usize, region: u32, value: f64, work: u64) -> Change {
         self.entries[entry] = Some(ModelEntry {
             region,
+            incoming: false,
             value,
             work,
             fault: false,
@@ -244,123 +344,12 @@ impl Model {
     }
 
     /// Makes one edit of `kind` to the facts, and says how it is made.
-    pub(super) fn step(&mut self, kind: Kind, rng: &mut Lcg) -> Step {
-        let set = self.set();
-        let entry = rng.pick(&self.held(false));
-        let edit = move |fact, value| EntryEdit::new(set, number(entry), fact, value);
-        let mut own_write = None;
-        let changes = match kind {
-            Kind::Value | Kind::OwnWrite | Kind::BlindWrite => {
-                let value = rng.value();
-                self.entries[entry].as_mut().unwrap().value = value;
-                let read = match kind {
-                    Kind::OwnWrite => Some(OwnWriteRead::Observed),
-                    Kind::BlindWrite => Some(OwnWriteRead::Blind),
-                    _ => None,
-                };
-                let written = rng.pick(&self.held(false));
-                own_write = read.map(|read| OwnWrite {
-                    number: number(written),
-                    bits: rng.value().to_bits(),
-                    read,
-                });
-                vec![Change::Entry(edit(EntryFact::Value, value.to_bits()))]
-            }
-            Kind::NoOp => {
-                let value = self.entries[entry].unwrap().value;
-                vec![Change::Entry(edit(EntryFact::Value, value.to_bits()))]
-            }
-            Kind::SharedWeight => {
-                let weight = rng.value();
-                self.weights[usize::from(self.odd)] = weight;
-                let edit = EntryEdit::new(set, 0, EntryFact::Weight, weight.to_bits());
-                vec![Change::Entry(edit)]
-            }
-            Kind::ItemKey => {
-                let moved = u32::try_from(rng.below(3)).unwrap() + 1;
-                let region = (self.entries[entry].unwrap().region + moved) % REGIONS;
-                vec![self.moved(entry, region)]
-            }
-            Kind::Fault | Kind::Repair => {
-                let fault = kind == Kind::Fault;
-                let faulted = self.held(false).into_iter();
-                let mut faulted = faulted.filter(|&e| self.entries[e].unwrap().fault);
-                let entry = if fault {
-                    entry
-                } else {
-                    faulted.next().expect("a repair follows its fault")
-                };
-                self.entries[entry].as_mut().unwrap().fault = fault;
-                let code = RegionFault::code(fault.then_some(RegionFault::Refuse));
-                let edit = EntryEdit::new(set, number(entry), EntryFact::Fault, code);
-                vec![Change::Entry(edit)]
-            }
-            Kind::Input => {
-                self.odd = !self.odd;
-                vec![Change::Ordinate(if self.odd { ODD_Y } else { EVEN_Y })]
-            }
-            Kind::Create => {
-                let created = rng.pick(&self.free());
-                let region = rng.region();
-                vec![self.created(created, region, rng.value(), 1)]
-            }
-            Kind::Delete => vec![self.deleted(rng.pick(&self.held(true)))],
-            Kind::EmptyKey => {
-                let regions = self.regions().into_iter().collect::<Vec<_>>();
-                let emptied = rng.pick(&regions);
-                let others = regions.iter().copied().filter(|r| *r != emptied);
-                let into = others.collect::<Vec<_>>();
-                let into = if into.is_empty() {
-                    emptied + 1
-                } else {
-                    rng.pick(&into)
-                };
-                let held = self.held(false).into_iter();
-                let emptying = held.filter(|&e| self.entries[e].unwrap().region == emptied);
-                let emptying = emptying.collect::<Vec<_>>();
-                emptying.into_iter().map(|e| self.moved(e, into)).collect()
-            }
-            Kind::NewKey => {
-                let regions = self.regions();
-                let unused = (0..2 * REGIONS).filter(|r| !regions.contains(r));
-                let unused = unused.collect::<Vec<_>>();
-                let region = if unused.is_empty() {
-                    regions.last().unwrap() + 1
-                } else {
-                    rng.pick(&unused)
-                };
-                vec![self.moved(entry, region)]
-            }
-            Kind::DeleteThenCreate => {
-                let remade = rng.pick(&self.held(true));
-                let region = rng.region();
-                let deleted = self.deleted(remade);
-                vec![deleted, self.created(remade, region, rng.value(), 1)]
-            }
-            Kind::Swap => {
-                let held = self.held(false);
-                let other = held[(held.binary_search(&entry).unwrap() + 1) % held.len()];
-                self.entries.swap(entry, other);
-                vec![Change::Entry(EntryEdit::swap(number(entry), number(other)))]
-            }
-            Kind::Ceiling => {
-                let heavy = self.held(false).into_iter();
-                let heavy = heavy.filter(|&e| self.entries[e].unwrap().work == HEAVY);
-                let taken = heavy.map(|e| self.entries[e].unwrap().region);
-                let taken = taken.collect::<BTreeSet<_>>();
-                let free = (0..REGIONS)
-                    .filter(|r| !taken.contains(r))
-                    .collect::<Vec<_>>();
-                let region = if free.is_empty() { 0 } else { rng.pick(&free) };
-                let made = rng.pick(&self.free());
-                self.ceiling = Some(made);
-                vec![self.created(made, region, rng.value(), HEAVY)]
-            }
-            Kind::Relief => {
-                let made = self.ceiling.take().expect("a relief follows its ceiling");
-                vec![self.deleted(made)]
-            }
-        };
-        Step { changes, own_write }
+    pub(in super::super) fn len(&self) -> usize {
+        self.entries.iter().flatten().count()
+    }
+    pub(in super::super) fn first_number(&self) -> u64 {
+        number(self.held(false)[0])
     }
 }
+
+mod edit;

@@ -34,7 +34,7 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
         let full = attempt(&world, &installed, None);
         assert!(matches!(
             full.runs.as_slice(),
-            [(Run::Full(Cause::NoPriorRecord), Some(_))]
+            [(Run::Full(Cause::NoProducerPrior), Some(_))]
         ));
         assert_eq!(
             next.outcome, full.outcome,
@@ -77,7 +77,7 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
         ),
         (
             ComputationPrior::new(InstalledProducerEdition::for_test([8; 32]), Ok(state), None),
-            Cause::NoPriorRecord,
+            Cause::OtherEdition,
         ),
         (
             ComputationPrior::new(edition(), Err(Cause::Evicted), None),

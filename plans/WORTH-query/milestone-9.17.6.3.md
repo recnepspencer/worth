@@ -1109,8 +1109,8 @@ partition is skipped only if every fact its owner calls read last time, observed
 again at the new attempt's lease snapshot, has the same content as then. No row
 state decides it: marks and verification requirements are not consulted. A
 changed partition fact marks exactly the partitions that read it. A changed
-membership or key fact rebuilds the partitions; keeping a key fact's items is
-what lets a membership edit re-route only the touched items. *Limitation:* an
+membership or key fact re-routes only the touched items through the retained
+Keyed partitioner; the partitioner does not rebuild. *Limitation:* an
 attempt that runs more than one partitioned computation keeps no computation
 facts, because partition identities name the partitions of one computation
 only.
@@ -1118,8 +1118,10 @@ only.
 A producer's run leaves its state on the record its attempt published: the
 items, each partition's key and members, every owner call's charge and reach,
 each kernel's work, the reduction tree and the facts as sealed. Only a run that
-completed under an attempt that published retains. A restored or aliased record
-holds none, and a stable alias's origin is not followed. The next run of the
+completed under an attempt that published retains. A restored record carries
+`Restored`, and a cutoff alias carries `NotProduced`; the alias's origin is not
+followed. Managed computation access declines whole-input cutoff, so its
+performed record remains the next run's prior. The next run of the
 same producer is handed the state of the live record at its demand's address by
 value, so no whole-output input reuse is needed. Its basis is the owner's
 installation instance, the producer edition and the input value's canonical
@@ -1154,11 +1156,23 @@ propagation, so nothing above it recombines.
 Full recomputation is the fallback in these cases. Each is a typed cause shown
 to the test observer, and none is counted:
 
-- no prior record: a first run, a restored or aliased record, another edition,
-  computation or owner, or a run no producer runs;
-- the input value's digest changed;
-- a membership or key fact changed, and the partitioner rebuilds;
-- the ledger evicted the state.
+- `FirstRun`, `Restored`, `Republished`, `NotProduced`, `Unmeasured`, `Moved`
+  or `Stopped`: the record's named absence; `NotProduced` means no computation
+  ran, and `Stopped` means a run began but never completed;
+- `RetentionPolicy`, `SeveralComputations` or `CollisionSuppressed`: a run
+  computed, but policy, multiple invocations or a collision restart prevented
+  retention;
+- `Evicted`: the lineage ledger refused the retained-state reservation;
+- `InputChanged`, `OtherInstallation` or `OtherEdition`: the retained basis
+  differs;
+- `ObservationOverBudget`: comparing retained facts exceeds declared work;
+- `NoPriorHanded`: another computation in the handler already took the prior;
+- `NoProducerPrior`: an ordinary operation reader has no producer prior;
+- `Unretained`: the execution policy declines prior reuse;
+- `IdentityCollision`: incremental routing restarts in full without retention.
+
+Membership and key edits re-route touched items incrementally. They do not
+rebuild the partitioner or introduce a full-run cause.
 
 An outcome never depends on reuse: a handler sees the same result, charged work
 and denial either way, and the execution report of a run is the observer's.
@@ -1303,7 +1317,7 @@ executor and no second pool survives.
 | Deep leaf change among disjoint subtrees | Candidate work proportional to the path depth plus matching subscribers |
 | Scheduling overhead | O(partitions + reductions + conflict groups), excluding charged partitioner work |
 | Retained partition results and tree nodes | Charged as derived retained bytes, owned by Query |
-| Fallback to full verification, full recomputation or serial publication | Counted and reported with its cause |
+| Fallback to full verification, full recomputation or serial publication | Counted and reported with its cause; partitioned full recomputation is reported with its cause, not counted |
 | Serial platform | Same result, same charged work, reported serial posture |
 
 Outcomes are typed:
@@ -2553,17 +2567,29 @@ The next phase may trust that the touched graph alone decides what recomputes.
   - An expired equality chain fully compares its terminal's source facts and
     inherited registered output facts through the direct-row comparison
     primitive, then re-establishes it or reports Changed.
-- **6.9** Why a run has no prior is a typed cause, and an input cutoff hands the
-  retained state on.
-  - The record's computation slot is either retained state or one named
-    absence, carried from completion to publication. No site stores "none"
-    and computes the reason elsewhere. `Evicted` and `NoPriorRecord` are
-    split so that each name has one cause.
-  - An input-cutoff alias takes over the origin's retained state and its
-    charge, so an edit, a no-op and a second edit reuse at the third step.
+- **6.9** Why a run has no prior is a typed cause. *Completed.*
+  - The record's computation slot holds retained state or one named absence.
+    Recording, policy suppression, several invocations, collision restart and
+    a stopped run write their reasons where state is dropped. Completion and
+    publication carry the total result; neither infers a reason from an empty
+    slot. Each cause has one meaning, as listed in the Query section.
+    World recovery carries the original result, including a nondefault
+    absence. Republication continues exact performed records with opaque
+    readers or request-context use without inventing input-cutoff proofs.
+  - A born-stale demand refreshes and reports the lasting result of that
+    refresh. Its contact count includes every producer execution it initiated,
+    including executions before a rejoin or required-wave successor.
+  - Managed computation access prevents whole-input cutoff. An edit, an
+    input-preserving source change and a second edit keep the performed
+    record's prior and run incrementally; no alias transfers its custody.
     Stale evidence is never handed on as Current.
-  - A seeded differential between reuse on and reuse off enumerates every
-    input, including code and absence.
+  - Eviction, unretained execution, over-budget observation and several
+    invocations meet ordinary edits in seeded order. Each boundary compares
+    exact causes, owner calls, outcome, charged work, published retained fields
+    and the named partition at a work stop against a fresh computation.
+    Restore and republication run after seeded edit prefixes; full lifecycle
+    interleaving belongs to 6.12. Empty produced seals are unrepresentable;
+    recording and retained-byte measurement have their own absence proofs.
 - **6.10** Report the tree work that ran, apart from the charge.
   - Charged work stays the full-build count. Every exit of a tree update
     (completed, denied, interrupted, rebuilt) yields one report holding

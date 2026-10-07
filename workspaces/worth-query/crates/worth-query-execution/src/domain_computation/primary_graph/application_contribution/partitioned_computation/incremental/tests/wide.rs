@@ -133,15 +133,11 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     let first = attempt(
         &world,
         &installed,
-        Some(ComputationPrior::new(
-            edition(),
-            Err(Cause::NoPriorRecord),
-            None,
-        )),
+        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
     );
     assert!(matches!(
         first.runs.as_slice(),
-        [(Run::Full(Cause::NoPriorRecord), Some(_))]
+        [(Run::Full(Cause::FirstRun), Some(_))]
     ));
     let partitions = usize::try_from(PARTITIONS).unwrap();
     assert_eq!(first.gathered.len(), partitions);

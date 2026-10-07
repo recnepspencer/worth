@@ -19,7 +19,8 @@ use super::super::WorthQueryManagedComputationResourceDenial;
 use super::compute::{units, Denial, PreparedRun, WorthQueryPreparedPartitionedComputation};
 use super::gather_memory::GatheredMemory;
 use super::incremental::{
-    self, Begun, ComputationInstallation, FullRecording, WorthQueryPartitionedComputationFullCause,
+    self, Begun, ComputationInstallation, FullRecording, Suppression,
+    WorthQueryPartitionedComputationFullCause,
 };
 use super::items::{item_digests, planned_items, route_item};
 use super::plan::{GatheredComputationPartition, PlanShape};
@@ -141,8 +142,8 @@ where
         .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let begun = match self.retention {
             ComputationRetention::Unretained => Begun::Full {
-                basis: None,
-                cause: WorthQueryPartitionedComputationFullCause::NoPriorRecord,
+                basis: Err(Suppression::Policy),
+                cause: WorthQueryPartitionedComputationFullCause::Unretained,
             },
             ComputationRetention::ProducerOperation => {
                 let input_digest = input_digest::<Computation::Input, _>(
@@ -182,13 +183,13 @@ where
                 // reader is back at the run's start. The run is made in full
                 // with no record to reuse: the incremental run took it.
                 (
-                    None,
-                    WorthQueryPartitionedComputationFullCause::NoPriorRecord,
+                    Err(Suppression::Collision),
+                    WorthQueryPartitionedComputationFullCause::IdentityCollision,
                 )
             }
             Begun::Full { basis, cause } => (basis, cause),
         };
-        let mut recording = FullRecording::new(basis);
+        let mut recording = basis.map(FullRecording::new);
         let (plan, membership) = reader.measured(ComputationRead::Membership, |reader| {
             owner.partitions(&mut WorthQueryComputationReader::lend(reader), input)
         });
@@ -197,7 +198,7 @@ where
         if self.retention == ComputationRetention::ProducerOperation {
             let before = remaining_work;
             let digests = item_digests(&items, &mut remaining_work, declared_bytes)?;
-            if let Some(recording) = &mut recording {
+            if let Ok(recording) = &mut recording {
                 recording.membership(
                     membership.zip(remaining_work.spent_since(before)),
                     &items,
@@ -224,7 +225,7 @@ where
                 &mut remaining_work,
                 declared_bytes,
             )?;
-            if let Some(recording) = &mut recording {
+            if let Ok(recording) = &mut recording {
                 recording.item(*item, charge.zip(remaining_work.spent_since(before)));
             }
             keys.entry(partition).or_insert((key, key_bytes));
@@ -248,7 +249,7 @@ where
             let gathered = gathered.map_err(|denial| {
                 WorthQueryPartitionedComputationDenial::gathering(identity, denial)
             })?;
-            if let Some(recording) = &mut recording {
+            if let Ok(recording) = &mut recording {
                 recording.partition(identity, &key, key_bytes, charge);
             }
             let value = GatheredComputationPartition {
@@ -267,7 +268,7 @@ where
                 },
             );
         }
-        if let Some(recording) = &mut recording {
+        if let Ok(recording) = &mut recording {
             recording.routing(routing, routing_memory);
         }
         let map = ExecutionMap::from_keyless_partitions(partitions)

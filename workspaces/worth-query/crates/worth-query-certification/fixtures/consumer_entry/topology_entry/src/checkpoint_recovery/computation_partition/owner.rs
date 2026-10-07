@@ -166,6 +166,11 @@ fn room() -> MutexGuard<'static, RegionRoom> {
     ROOM.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
+#[cfg(feature = "test-query-execution-observer")]
+pub(super) fn take_outcomes() -> Vec<RegionOutcome> {
+    std::mem::take(&mut room().outcomes)
+}
+
 /// A kernel says it was entered.
 pub(super) fn enter_kernel() {
     room().kernels += 1;
@@ -220,10 +225,13 @@ where
 /// run ran is the observer's, never the handler's value.
 #[cfg(feature = "test-query-execution-observer")]
 fn observed_report() -> ExecutionReport {
-    match runs_on_this_thread().as_slice() {
-        [(WorthQueryPartitionedComputationRun::Full(_), Some(report))] => *report,
-        runs => panic!("one full run per decision, observed: {runs:?}"),
-    }
+    let runs = runs_on_this_thread();
+    assert_eq!(runs.len(), 1, "one run per decision");
+    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRun::Full(
+        worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause::Unretained));
+    runs[0]
+        .1
+        .expect("the unretained full run reports its execution work")
 }
 
 /// The region totals under their partitioned owner.

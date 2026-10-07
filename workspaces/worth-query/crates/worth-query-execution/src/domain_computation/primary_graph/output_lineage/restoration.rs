@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::any::TypeId;
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -197,7 +198,7 @@ impl WorthQueryApplicationOutputLineage {
                 Some(super::invalidation::FullVerificationReason::CheckpointRestore),
                 (Some(observed_source_facts)).map(|facts| computation_source.retain_facts(facts)),
                 resources,
-                None,
+                super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
             )),
             settlement_identity: super::RecordedSettlementIdentity::retain(
                 &source,
@@ -327,7 +328,7 @@ impl WorthQueryApplicationOutputLineage {
                 Some(super::invalidation::FullVerificationReason::CheckpointRestore),
                 None,
                 resources,
-                None,
+                super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
             )),
             settlement_identity: super::RecordedSettlementIdentity::retain(
                 &source,

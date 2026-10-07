@@ -9,8 +9,8 @@ use std::sync::{Mutex, PoisonError};
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
+    worth_query_operation_writes, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -51,7 +51,11 @@ worth_query_operation_reads!(TotalRegionOutput => [
     Body, BodyKey, Length, EntrySet, EntrySetKey, EntrySetWeight, EntrySetMember, SetEntry,
     EntryNumber, EntryRegion, EntryValueBits, EntryWork, EntryFault,
 ]);
-worth_query_operation_writes!(TotalRegionOutput => [Length, EntryValueBits]);
+worth_query_operation_writes!(TotalRegionOutput => [Length, EntryValueBits, BodyKey, PositionX, PositionY]);
+worth_query_operation_creates!(TotalRegionOutput => [Body]);
+worth_query_operation_links!(TotalRegionOutput => [PlanarSuccessor]);
+
+mod generated_ring;
 
 pub(super) struct RegionOutputBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -70,8 +74,9 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Region
 /// The scope's Length, which the candidate writes back unchanged, and the
 /// entry an armed decision writes with the bits it writes.
 pub(super) struct RegionOutputDecision<Schema> {
-    length: PositiveLength,
+    length: Option<PositiveLength>,
     own_write: Option<(WorthQueryInvariantMutationTarget<Schema, SetEntry>, u64)>,
+    generated_value: Option<u64>,
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
@@ -98,7 +103,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.region-output.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.region-output-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.region-output-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 2, 1024, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(3, 3, 0, 14, 8192, 4096);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -130,7 +135,10 @@ pub(super) type Decision<'borrow, 'reader, 'runtime, Schema> =
 
 /// What the handler runs over the input's set inside its decision.
 type Run<Schema> = Box<
-    dyn Fn(&mut Decision<'_, '_, '_, Schema>, &WorthQueryInvariantEntityIdentity<Schema, EntrySet>)
+    dyn Fn(
+            &mut Decision<'_, '_, '_, Schema>,
+            &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
+        ) -> Option<u64>
         + Send
         + Sync,
 >;
@@ -168,12 +176,16 @@ fn own_write() -> Option<OwnWrite> {
 
 /// Decides a region output: runs what it was installed with over the set
 /// its input names, and keeps the scope's output.
-pub(super) struct RegionOutputHandler<Schema: TopologySchemaBinding>(Option<Run<Schema>>);
+pub(super) struct RegionOutputHandler<Schema: TopologySchemaBinding>(
+    Option<Run<Schema>>,
+    bool,
+    bool,
+);
 
 impl<Schema: TopologySchemaBinding> RegionOutputHandler<Schema> {
     /// The handler of a program that runs no region output.
     pub(super) const fn idle() -> Self {
-        Self(None)
+        Self(None, false, false)
     }
 
     #[cfg(feature = "test-query-execution-observer")]
@@ -181,11 +193,26 @@ impl<Schema: TopologySchemaBinding> RegionOutputHandler<Schema> {
         run: impl Fn(
                 &mut Decision<'_, '_, '_, Schema>,
                 &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
-            ) + Send
+            ) -> Option<u64>
+            + Send
             + Sync
             + 'static,
     ) -> Self {
-        Self(Some(Box::new(run)))
+        Self(Some(Box::new(run)), false, false)
+    }
+}
+
+impl<Schema: TopologySchemaBinding> RegionOutputHandler<Schema> {
+    #[cfg(feature = "test-query-execution-observer")]
+    pub(super) fn preserving_payload(mut self) -> Self {
+        self.2 = true;
+        self
+    }
+
+    #[cfg(feature = "test-query-execution-observer")]
+    pub(super) fn with_generated_payload(mut self) -> Self {
+        self.1 = true;
+        self
     }
 }
 
@@ -199,13 +226,22 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionOutputBinding
     ) -> HandlerResult<RegionOutputDecision<Schema>, PlanarMutationDenial> {
         let decided = (|| {
             let scope = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            let Some(length) = reader.field(&scope, Length::reference())? else {
-                return Ok(None);
+            // A preserved artifact needs no prior-output input. Reading its
+            // own Length would instead build an irrelevant self-consumption chain.
+            let length = if self.2 {
+                None
+            } else {
+                let Some(length) = reader.field(&scope, Length::reference())? else {
+                    return Ok(None);
+                };
+                Some(length)
             };
-            if let Some(run) = &self.0 {
+            let generated_value = if let Some(run) = &self.0 {
                 let set = reader.resolve_entity(EntrySetKey::reference(), input.entries.clone())?;
-                run(reader, &set);
-            }
+                run(reader, &set)
+            } else {
+                None
+            };
             let own_write = match own_write() {
                 Some(write) => {
                     let entry = reader.resolve_entity(EntryNumber::reference(), write.number)?;
@@ -216,7 +252,11 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionOutputBinding
                 }
                 None => None,
             };
-            Ok(Some(RegionOutputDecision { length, own_write }))
+            Ok(Some(RegionOutputDecision {
+                length,
+                own_write,
+                generated_value,
+            }))
         })();
         match decided {
             Ok(Some(decision)) => HandlerResult::Completed(decision),
@@ -246,9 +286,19 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionOutputBinding
             writer
                 .preserve_output::<PlanarAnchorOutput<Schema>>(&scope)
                 .map_err(HandlerExecutionDenial::new)?;
-            writer
-                .write_field(&scope, Length::reference(), decision.length)
-                .map_err(HandlerExecutionDenial::new)?;
+            if let Some(length) = decision.length {
+                writer
+                    .write_field(&scope, Length::reference(), length)
+                    .map_err(HandlerExecutionDenial::new)?;
+            }
+            if let Some(value) = decision.generated_value.filter(|_| self.1) {
+                generated_ring::create(
+                    writer,
+                    &input.scope_key,
+                    value,
+                    decision.length.expect("generated payload reads its Length"),
+                )?;
+            }
             if let Some((target, bits)) = &decision.own_write {
                 let entry = writer
                     .projected_entity(target)
@@ -299,5 +349,10 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
         .operation_read_field(operation, EntryFault::reference())
         .operation_write(operation, Length::reference())
         .operation_write(operation, EntryValueBits::reference())
+        .operation_create(operation, Body::reference())
+        .operation_link(operation, PlanarSuccessor::reference())
+        .operation_write(operation, BodyKey::reference())
+        .operation_write(operation, PositionX::reference())
+        .operation_write(operation, PositionY::reference())
         .application_mutation_binding::<RegionOutputBinding<Schema>>()
 }

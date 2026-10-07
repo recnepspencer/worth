@@ -23,19 +23,14 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        if demand.admission_kind
-            == crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery
-        {
-            // A recovery names one publication and does not move. Its stop
-            // is its own: the row stays for the demands that follow it.
-            demand.interest.as_ref().ok_or_else(|| {
-                denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY)
-            })?;
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::Superseded,
-                Family::IDENTITY,
-            ));
-        }
+        // Recovery initially selects an exact publication. If its output is
+        // born stale, disclosure has established the current source and the
+        // demand must refresh under ordinary admission to find a lasting result.
+        let admission_kind = match demand.admission_kind {
+            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery =>
+                crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
+            kind => kind,
+        };
         let interest = demand
             .interest
             .as_ref()
@@ -51,7 +46,7 @@ where
             profile_kind,
             demand.limits,
             None,
-            demand.admission_kind,
+            admission_kind,
             None,
             predecessor,
             demand.retained_program_basis.clone(),

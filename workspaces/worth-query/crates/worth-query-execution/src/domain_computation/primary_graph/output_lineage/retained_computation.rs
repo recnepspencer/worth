@@ -21,8 +21,8 @@ use super::{
     WorthQueryApplicationOutputLineage,
 };
 use crate::domain_computation::primary_graph::application_contribution::{
-    ComputationPrior, InstalledProducerEdition, RetainedComputation, SealedComputationRun,
-    WorthQueryPartitionedComputationFullCause,
+    ComputationPrior, InstalledProducerEdition, PriorAbsence, RetainedComputation,
+    SealedComputationRun,
 };
 
 /// What a record holds of its computation's state.
@@ -31,8 +31,7 @@ pub(super) enum RecordedComputation {
         state: Arc<RetainedComputation>,
         capacity: RetainedLineageCapacity,
     },
-    /// The ledger refused the state's bytes.
-    Evicted,
+    Absent(PriorAbsence),
 }
 
 /// The exact record a producer's run took its prior state from.
@@ -60,14 +59,19 @@ impl PriorComputationRecord {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let holds = matches!(
             &row.computation,
-            Some(RecordedComputation::Retained { state, .. }) if Arc::ptr_eq(state, cloned_from)
+            RecordedComputation::Retained { state, .. } if Arc::ptr_eq(state, cloned_from)
         );
         if !holds {
             return None;
         }
-        match row.computation.take() {
-            Some(RecordedComputation::Retained { capacity, .. }) => Some(capacity),
-            _ => None,
+        match std::mem::replace(
+            &mut row.computation,
+            RecordedComputation::Absent(PriorAbsence::Moved),
+        ) {
+            RecordedComputation::Retained { capacity, .. } => Some(capacity),
+            RecordedComputation::Absent(_) => {
+                unreachable!("the pointer check established retained custody")
+            }
         }
     }
 }
@@ -108,7 +112,7 @@ impl WorthQueryApplicationOutputLineage {
         else {
             return Ok(ComputationPrior::new(
                 edition,
-                Err(WorthQueryPartitionedComputationFullCause::NoPriorRecord),
+                Err(PriorAbsence::FirstRun.full_cause()),
                 None,
             ));
         };
@@ -128,11 +132,8 @@ impl WorthQueryApplicationOutputLineage {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .computation
         {
-            Some(RecordedComputation::Retained { state, .. }) => Ok(Arc::clone(state)),
-            Some(RecordedComputation::Evicted) => {
-                Err(WorthQueryPartitionedComputationFullCause::Evicted)
-            }
-            None => Err(WorthQueryPartitionedComputationFullCause::NoPriorRecord),
+            RecordedComputation::Retained { state, .. } => Ok(Arc::clone(state)),
+            RecordedComputation::Absent(absence) => Err(absence.full_cause()),
         };
         Ok(ComputationPrior::new(
             edition,
@@ -165,7 +166,7 @@ impl WorthQueryApplicationOutputLineage {
         drop(cloned_from);
         let Some(bytes) = state.retained_bytes() else {
             drop(state);
-            return RecordedComputation::Evicted;
+            return RecordedComputation::Absent(PriorAbsence::Unmeasured);
         };
         let capacity = match moved {
             Some(mut capacity) => {
@@ -184,12 +185,15 @@ impl WorthQueryApplicationOutputLineage {
                 state: Arc::new(state),
                 capacity,
             },
-            Err(_) => {
+            Err(_refusal) => {
                 drop(state);
-                RecordedComputation::Evicted
+                RecordedComputation::Absent(PriorAbsence::Evicted)
             }
         };
         drop(tree_memory);
         recorded
     }
 }
+
+#[cfg(test)]
+mod tests;

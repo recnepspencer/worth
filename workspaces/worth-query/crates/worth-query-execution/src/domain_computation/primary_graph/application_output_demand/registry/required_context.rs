@@ -8,8 +8,8 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::{
     CarriedRequestInvalidationAdmission, InvalidationEditAdmission, SourceInvalidationOwner,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary, ComputationPrior, SealedComputationRun,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
+    SealedComputationRetention, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
 /// The live demand record selected for a producer operation. This is a
@@ -39,7 +39,7 @@ pub(in crate::domain_computation) struct RequiredOutputDemandContext {
     computation_prior: Option<ComputationPrior>,
     /// The run sealed with the handler's facts, for the record publication
     /// writes.
-    sealed_computation: Option<SealedComputationRun>,
+    sealed_computation: Option<SealedComputationRetention>,
 }
 
 /// Both parts are issued together before an installed producer can execute.
@@ -144,29 +144,32 @@ impl RequiredOutputDemandContext {
     /// The sealed run and the record its prior state came from.
     pub(in crate::domain_computation::primary_graph) fn take_sealed_computation(
         &mut self,
-    ) -> Option<(
-        SealedComputationRun,
+    ) -> (
+        SealedComputationRetention,
         Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
-    )> {
-        let sealed = self.sealed_computation.take()?;
-        Some((
+    ) {
+        let sealed = self
+            .sealed_computation
+            .take()
+            .expect("completed handler facts are recorded before publication takes the single-assignment retention result");
+        (
             sealed,
             self.computation_prior
                 .take()
                 .and_then(ComputationPrior::into_record),
-        ))
+        )
     }
 
     pub(in crate::domain_computation) fn record_completed_handler_facts(
         &mut self,
         boundary: CompletedHandlerFactBoundary,
-        computation: Option<SealedComputationRun>,
+        computation: SealedComputationRetention,
     ) {
         assert!(
             self.completed_handler_facts.is_none(),
             "one completed handler read"
         );
-        self.sealed_computation = computation;
+        self.sealed_computation = Some(computation);
         self.completed_decision_reuse = self.prepared_decision_reuse.take().and_then(|prepared| {
             boundary.seal_decision_reuse(prepared, self.decision_context_use.take()?)
         });

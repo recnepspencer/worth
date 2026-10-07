@@ -62,13 +62,7 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    let fresh = || {
-        Some(ComputationPrior::new(
-            edition(),
-            Err(Cause::NoPriorRecord),
-            None,
-        ))
-    };
+    let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
     *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (0, 10)), (2, (1, 20))]);
     let first = attempt(&world, &installed, fresh())
         .sealed
@@ -82,7 +76,10 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
     let full = attempt(&world, &installed, fresh());
     assert!(full.outcome.is_ok(), "a fresh build meets no collision");
     assert_eq!(next.outcome, full.outcome, "the run made again in full");
-    assert_eq!(next.runs, full.runs, "a full run with no record to reuse");
+    assert!(matches!(
+        next.runs.as_slice(),
+        [(Run::Full(Cause::IdentityCollision), Some(_))]
+    ));
     assert_eq!(next.gathered, full.gathered);
     assert_eq!(next.work, full.work, "the reader charged a fresh build");
 }
@@ -99,13 +96,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     );
     *installed.owner.key_only.lock().unwrap() = true;
     *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (0, 10))]);
-    let fresh = || {
-        Some(ComputationPrior::new(
-            edition(),
-            Err(Cause::NoPriorRecord),
-            None,
-        ))
-    };
+    let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
     let mut sealed = attempt(&world, &installed, fresh())
         .sealed
         .unwrap()

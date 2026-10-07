@@ -71,12 +71,10 @@ pub struct WorthQueryApplicationReadAttempt<
     expected_facts: Option<BTreeSet<WorthQueryApplicationFactKey>>,
     /// What a partitioned computation read of the expected facts, and where
     /// it left its completed run when a producer ran it.
-    computation_reads: Option<(
-        ComputationFactAttribution,
-        Option<
-            crate::domain_computation::primary_graph::application_contribution::ComputationDeposit,
-        >,
-    )>,
+    computation_reads: (
+        Option<ComputationFactAttribution>,
+        crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention,
+    ),
     installed_read_scopes:
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
@@ -167,7 +165,8 @@ where
             entity_resolution: graph.retain_entity_resolution_context(),
             read_scope,
             expected_facts: None,
-            computation_reads: None,
+            computation_reads: (None, crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention::Absent(
+                crate::domain_computation::primary_graph::application_contribution::PriorAbsence::NotProduced)),
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,

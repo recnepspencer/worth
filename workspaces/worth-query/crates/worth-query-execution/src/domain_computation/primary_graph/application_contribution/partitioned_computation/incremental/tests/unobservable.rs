@@ -81,7 +81,7 @@ fn more_retained_keys_than_the_declared_work_runs_in_full_uncompared() {
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(
         next.runs.as_slice(),
-        [(Run::Full(Cause::Evicted), Some(_))]
+        [(Run::Full(Cause::ObservationOverBudget), Some(_))]
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
     assert_eq!(
@@ -125,7 +125,7 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_declared_work_run_in_full() 
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(
         next.runs.as_slice(),
-        [(Run::Full(Cause::Evicted), Some(_))]
+        [(Run::Full(Cause::ObservationOverBudget), Some(_))]
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
     assert_eq!(

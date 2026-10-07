@@ -237,13 +237,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
             .map(|id| (id, (id % 3, 10 * id)))
             .collect::<BTreeMap<_, _>>();
         *installed.owner.entries.lock().unwrap() = entries.clone();
-        let fresh = || {
-            Some(ComputationPrior::new(
-                edition(),
-                Err(Cause::NoPriorRecord),
-                None,
-            ))
-        };
+        let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
         let mut last = attempt(&world, &installed, fresh())
             .sealed
             .unwrap()
@@ -287,4 +281,110 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
         }
     }
     assert_eq!(applied, EDITS.into_iter().collect(), "every edit ran");
+}
+
+#[test]
+fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
+    use super::super::prior_absence::PriorAbsence;
+    let world = installed_authorization_world(true);
+    let installed = WorthQueryInstalledPartitionedComputation::<_, _, Computation, _>::new(
+        Rerouted::default(),
+        ComputationRetention::ProducerOperation,
+    );
+    *installed.owner.entries.lock().unwrap() = (1..=6).map(|id| (id, (id % 3, 10 * id))).collect();
+    let full = attempt(
+        &world,
+        &installed,
+        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+    );
+    let expected = retained(full.sealed.as_ref().unwrap().as_ref().unwrap());
+    for (absence, cause) in [
+        (PriorAbsence::FirstRun, Cause::FirstRun),
+        (PriorAbsence::Restored, Cause::Restored),
+        (PriorAbsence::Republished, Cause::Republished),
+        (PriorAbsence::NotProduced, Cause::NotProduced),
+        (PriorAbsence::Unmeasured, Cause::Unmeasured),
+        (PriorAbsence::Moved, Cause::Moved),
+        (PriorAbsence::Evicted, Cause::Evicted),
+        (PriorAbsence::Stopped, Cause::Stopped),
+        (
+            PriorAbsence::Suppressed(super::super::Suppression::Policy),
+            Cause::RetentionPolicy,
+        ),
+        (
+            PriorAbsence::Suppressed(super::super::Suppression::Several),
+            Cause::SeveralComputations,
+        ),
+        (
+            PriorAbsence::Suppressed(super::super::Suppression::Collision),
+            Cause::CollisionSuppressed,
+        ),
+    ] {
+        installed.owner.keyed.lock().unwrap().clear();
+        let next = attempt(
+            &world,
+            &installed,
+            Some(ComputationPrior::new(
+                edition(),
+                Err(absence.full_cause()),
+                None,
+            )),
+        );
+        assert!(
+            matches!(next.runs.as_slice(), [(Run::Full(observed), Some(_))] if *observed == cause)
+        );
+        assert_eq!(
+            *installed.owner.keyed.lock().unwrap(),
+            (1..=6).collect::<Vec<_>>(),
+            "every key is routed afresh"
+        );
+        assert_eq!(
+            next.outcome, full.outcome,
+            "{cause:?}: outcome and charged work"
+        );
+        assert_eq!(
+            retained(next.sealed.as_ref().unwrap().as_ref().unwrap()),
+            expected,
+            "{cause:?}: full retained state"
+        );
+    }
+}
+
+#[test]
+fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
+    use super::super::{
+        recording::FullRecording, CompletedComputationRetention, PriorAbsence, RetainedBasisToken,
+    };
+    let world = installed_authorization_world(true);
+    let installed = installed(StatusRead::Gather(1), sum);
+    let first = first_run(&world, &installed);
+    let report = first.runs[0].1.unwrap();
+    let sealed = first.sealed.unwrap().unwrap();
+    let typed = sealed
+        .state
+        .typed
+        .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
+        .unwrap();
+    let mut recording =
+        FullRecording::<Parity, Number>::new(RetainedBasisToken(sealed.state.basis.clone()));
+    // A reader that could not measure the call supplies None here. This
+    // invokes the production discard, with a real completed reduction tree.
+    recording.membership(None, &typed.items, Arc::clone(&typed.digests));
+    let request = live_scope();
+    let execution =
+        QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Unbounded, &request);
+    let result = recording.complete(
+        BTreeMap::new(),
+        typed.tree.clone(),
+        execution
+            .reserve(typed.tree.additional_charged_bytes())
+            .unwrap(),
+        0,
+        Cause::FirstRun,
+        report,
+    );
+    assert!(matches!(
+        result,
+        CompletedComputationRetention::Absent(PriorAbsence::Unmeasured)
+    ));
 }

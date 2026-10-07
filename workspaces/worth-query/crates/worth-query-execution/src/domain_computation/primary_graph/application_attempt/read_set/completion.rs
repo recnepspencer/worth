@@ -80,30 +80,17 @@ impl<Schema, Operation, Input, Scope, Phase>
                     self.admission.operation(),
                 )
             })?;
-        let (computation_facts, retained) = match self.computation_reads {
-            Some((reads, deposit)) => {
-                let facts = SealedComputationFacts::at_seal(reads, &self.facts);
-                let completed = deposit.and_then(|deposit| {
-                    deposit
-                        .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner)
-                        .take()
-                });
-                // A partition carried from the last run is that run's result
-                // only if every fact it read is the fact this attempt sealed.
-                let retained = match completed {
-                    Some(completed) => completed.seal(facts.clone()).map_err(|()| {
-                        denial(
-                            WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                            self.admission.operation(),
-                        )
-                    })?,
-                    None => None,
-                };
-                (Some(facts), retained)
-            }
-            None => (None, None),
-        };
+        let (reads, completed) = self.computation_reads;
+        let computation_facts =
+            reads.map(|reads| SealedComputationFacts::at_seal(reads, &self.facts));
+        // Seal only validates carried reads. Absence was already written
+        // where the decision or computation dropped its state.
+        let retained = completed.seal(computation_facts.clone()).map_err(|()| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                self.admission.operation(),
+            )
+        })?;
         // `facts` keeps the decision facts in key order, ahead of the source
         // facts.
         let computation_fact_ordinals =

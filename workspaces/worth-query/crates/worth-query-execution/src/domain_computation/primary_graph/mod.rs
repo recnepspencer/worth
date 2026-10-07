@@ -6,7 +6,7 @@ mod application_branch;
 mod application_checkpoint;
 mod application_contribution;
 pub(in crate::domain_computation) use application_contribution::{
-    ComputationPrior, SealedComputationRun,
+    ComputationPrior, SealedComputationRetention,
 };
 pub(crate) mod application_discovery;
 mod application_entry;
@@ -142,3 +142,9 @@ pub(in crate::domain_computation) use provider::{
 pub(in crate::domain_computation) use schema_layout::{
     WorthQueryPrimaryGraphLayout, WorthQueryPrimaryPrincipalBindingLayout,
 };
+
+#[cfg(test)]
+pub(in crate::domain_computation) use application_contribution::SealedComputationRun;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation) use application_contribution::observe_discarded;

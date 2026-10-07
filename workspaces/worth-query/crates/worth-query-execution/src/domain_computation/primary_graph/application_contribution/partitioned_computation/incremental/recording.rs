@@ -14,7 +14,7 @@ use super::retained::{
     CompletedComputationRun, RetainedCall, RetainedPartition, RetainedPartitions,
     WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
 };
-use super::RetainedBasisToken;
+use super::{CompletedComputationRetention, PriorAbsence, RetainedBasisToken};
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
 /// The calls, charges and partitions of one full run, recorded as it runs.
@@ -30,15 +30,15 @@ pub(in super::super) struct FullRecording<Key, Item> {
 
 impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// Records a full run that retains under `basis`, when a producer runs it.
-    pub(in super::super) fn new(basis: Option<RetainedBasisToken>) -> Option<Self> {
-        basis.map(|basis| Self {
+    pub(in super::super) fn new(basis: RetainedBasisToken) -> Self {
+        Self {
             basis,
             membership: None,
             item_keys: BTreeMap::new(),
             routing: None,
             partitions: BTreeMap::new(),
             measured: true,
-        })
+        }
     }
 
     /// The membership's call and the declared work its items' digests
@@ -120,7 +120,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         reduction_work: u64,
         cause: WorthQueryPartitionedComputationFullCause,
         report: ExecutionReport,
-    ) -> CompletedComputationRun
+    ) -> CompletedComputationRetention
     where
         Item: Send + Sync + ChargedBytes + 'static,
         Reduced: Send + Sync + ChargedBytes + 'static,
@@ -153,7 +153,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             (Some((membership, items, digests)), Some(routing), Some(partitions))
                 if self.measured && accounted =>
             {
-                Some(RetainedPartitions {
+                RetainedPartitions {
                     items,
                     digests,
                     membership,
@@ -161,19 +161,19 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                     routing: Arc::new(routing),
                     partitions,
                     tree,
-                })
+                }
             }
-            _ => None,
+            _ => return CompletedComputationRetention::Absent(PriorAbsence::Unmeasured),
         };
-        let typed_bytes = typed.as_ref().and_then(RetainedPartitions::charged_bytes);
-        CompletedComputationRun {
+        let typed_bytes = typed.charged_bytes();
+        CompletedComputationRetention::Produced(CompletedComputationRun {
             basis: self.basis.0,
-            typed: typed.map(|typed| Arc::new(typed) as Arc<dyn std::any::Any + Send + Sync>),
+            typed: Arc::new(typed),
             typed_bytes,
             carried: None,
             tree_memory,
             routing_memory,
-        }
+        })
     }
 }
 

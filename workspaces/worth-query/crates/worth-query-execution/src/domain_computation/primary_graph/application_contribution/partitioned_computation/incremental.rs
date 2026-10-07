@@ -16,11 +16,31 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
+mod deposit;
 mod next_tree;
 mod observed;
 mod prepare;
+mod prior_absence;
+#[cfg(feature = "test-query-execution-observer")]
+mod published_state;
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation) use published_state::observe_discarded;
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation::primary_graph) use published_state::observe_published;
+#[cfg(feature = "test-query-execution-observer")]
+pub use published_state::{
+    discarded_computation_retention_on_this_thread_for_test,
+    published_partitioned_computations_on_this_thread_for_test,
+    WorthQueryPublishedComputationStateForTest,
+};
 mod recording;
 mod retained;
+mod sealing;
+pub(in crate::domain_computation::primary_graph) use deposit::ComputationDeposit;
+pub(in crate::domain_computation::primary_graph) use prior_absence::CompletedComputationRetention;
+pub(in crate::domain_computation) use prior_absence::{
+    PriorAbsence, SealedComputationRetention, Suppression,
+};
 mod tree_update;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -33,12 +53,10 @@ pub(super) use next_tree::{ComputedIncremental, PreparedIncremental};
 #[cfg(feature = "test-query-execution-observer")]
 pub use observed::partitioned_computation_runs_on_this_thread_for_test;
 pub(super) use recording::{observe_unretained, FullRecording};
+pub(in crate::domain_computation::primary_graph) use retained::ComputationInstallation;
 pub use retained::WorthQueryPartitionedComputationFullCause;
 #[cfg(any(test, feature = "test-query-execution-observer"))]
 pub use retained::WorthQueryPartitionedComputationRun;
-pub(in crate::domain_computation::primary_graph) use retained::{
-    ComputationDeposit, ComputationInstallation,
-};
 pub(in crate::domain_computation) use retained::{
     ComputationPrior, RetainedComputation, SealedComputationRun,
 };
@@ -75,7 +93,7 @@ pub(super) enum Begun<Key, Item, Reduced> {
     /// Every partition runs. `basis` is what the run retains under, when a
     /// producer runs it.
     Full {
-        basis: Option<RetainedBasisToken>,
+        basis: Result<RetainedBasisToken, Suppression>,
         cause: WorthQueryPartitionedComputationFullCause,
     },
     /// Only the marked partitions are gathered and computed.
@@ -122,15 +140,18 @@ where
     Item: Send + Sync + 'static,
     Reduced: Send + Sync + 'static,
 {
-    let Some(prior) = reader.take_computation_prior() else {
-        return Begun::Full {
-            basis: None,
-            cause: WorthQueryPartitionedComputationFullCause::NoPriorRecord,
-        };
+    let prior = match reader.take_computation_prior() {
+        Ok(prior) => prior,
+        Err(cause) => {
+            return Begun::Full {
+                basis: Err(Suppression::Policy),
+                cause,
+            }
+        }
     };
     let basis = RetainedBasis::new(installation.clone(), prior.edition, input_digest);
     let full = |basis, cause| Begun::Full {
-        basis: Some(RetainedBasisToken(basis)),
+        basis: Ok(RetainedBasisToken(basis)),
         cause,
     };
     let retained = match prior.retained {
@@ -145,18 +166,16 @@ where
         .observation_work_bound()
         .is_none_or(|work| work > remaining_work.remaining())
     {
-        return full(basis, WorthQueryPartitionedComputationFullCause::Evicted);
+        return full(
+            basis,
+            WorthQueryPartitionedComputationFullCause::ObservationOverBudget,
+        );
     }
     // The installation fixes the state's type, so its own owner's state
     // always downcasts.
-    let Ok(typed) =
-        Arc::clone(&retained.typed).downcast::<RetainedPartitions<Key, Item, Reduced>>()
-    else {
-        return full(
-            basis,
-            WorthQueryPartitionedComputationFullCause::NoPriorRecord,
-        );
-    };
+    let typed = Arc::clone(&retained.typed)
+        .downcast::<RetainedPartitions<Key, Item, Reduced>>()
+        .expect("the installation fixes the retained owner, item, key and result types");
     let mut run = IncrementalRun {
         basis,
         prior: TypedPrior {
@@ -216,4 +235,10 @@ fn enter<'key, Schema, Operation>(
     for key in keys {
         reader.enter_carried(&COMPARATOR, key.clone(), read);
     }
+}
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) fn sealed_run_for_lineage_test(
+) -> SealedComputationRun {
+    tests::sealed_run_for_lineage_test()
 }

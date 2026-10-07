@@ -173,7 +173,11 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         "the actual dirty upstream is re-evidenced inside this advance"
     );
     assert_eq!(before.selected_commit(), after.selected_commit());
-    assert_eq!(settled.producer_contacts_in_this_demand(), 0);
+    // The open demand retains the execution that produced `original`.
+    assert_eq!(
+        settled.producer_contacts_in_this_demand(),
+        original.producer_contacts_in_this_demand()
+    );
     assert_eq!(
         settled.posture(),
         WorthQueryOutputSettlementPosture::Performed

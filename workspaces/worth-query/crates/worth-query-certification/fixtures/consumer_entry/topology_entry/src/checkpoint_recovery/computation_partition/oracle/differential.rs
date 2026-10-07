@@ -13,7 +13,8 @@ use worth_query_host::facade::application_contribution::{
 use super::super::region_output::{arm_own_write, OwnWrite};
 use super::*;
 
-mod alphabet;
+pub(super) mod alphabet;
+pub(super) mod prefix;
 
 use alphabet::{Change, Kind, Lcg, Model, KINDS};
 
@@ -25,26 +26,33 @@ const SEED: u64 = 0x9176_3c0b_5eed_0001;
 /// commit whose own write replaced a value its computation gathered is born
 /// stale, so the demand runs the producer again over the written value; that
 /// run writes the value it read, and the demand settles.
-fn full_run(model: &Model, own_write: Option<OwnWrite>) -> Vec<OracleRun> {
-    let application = install(|graph| model.seed(graph));
+fn full_run(
+    model: &Model,
+    checkpoint: application_installation::WorthQueryApplicationCheckpoint,
+    own_write: Option<OwnWrite>,
+) -> Vec<OracleRun> {
+    let application = installation::install_configured::<false, TOTALS_WORK, 1>(
+        Some(checkpoint),
+        Default::default(),
+        |_| panic!("Native truth does not reseed"),
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    if model.odd {
-        adjust(&request, &application, ODD_Y, 1);
-    }
     arm_own_write(own_write);
     let (contacts, runs) = demand(&request, &application);
     arm_own_write(None);
     let moved = own_write.is_some_and(|write| !model.holds(write));
     let rerun = moved && runs.first().is_some_and(|run| run.outcome.is_ok());
+    // Contacts count producer executions initiated by this admitted demand:
+    // one initial execution, plus the refresh after a born-stale commit.
     assert_eq!(
         (contacts, runs.len()),
-        (1, 1 + usize::from(rerun)),
+        (1 + usize::from(rerun), 1 + usize::from(rerun)),
         "a fresh runtime runs the producer once, and again after its own write"
     );
     let mut first = runs[0].runs.iter();
     assert!(
-        first.all(|run| *run == Run::Full(FullCause::NoPriorRecord)),
+        first.all(|run| *run == Run::Full(FullCause::FirstRun)),
         "a fresh runtime has no record to reuse: {:?}",
         runs[0]
     );
@@ -73,6 +81,7 @@ fn expected(kind: Kind) -> Option<Run> {
 /// its decision writes, and what it ran.
 pub(super) struct Demanded<'model> {
     model: &'model Model,
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     kind: Option<Kind>,
     moved: bool,
     own_write: Option<OwnWrite>,
@@ -83,15 +92,21 @@ pub(super) struct Demanded<'model> {
 /// Runs the seeded sequence of edits through one runtime that keeps its
 /// output, and hands `each` every demand in order. The caller holds the
 /// checkpoint recovery guard.
-pub(super) fn sequence(mut each: impl FnMut(&str, Demanded<'_>)) {
+pub(super) fn sequence(capture_reference: bool, mut each: impl FnMut(&str, Demanded<'_>)) {
     let mut rng = Lcg(SEED);
     let mut model = Model::new(&mut rng);
     let application = install(|graph| model.seed(graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
+    let checkpoint = capture_reference.then(|| {
+        application
+            .capture_native_truth_checkpoint_for_test()
+            .unwrap()
+    });
     let (contacts, runs) = demand(&request, &application);
     let first = Demanded {
         model: &model,
+        checkpoint,
         kind: None,
         moved: true,
         own_write: None,
@@ -120,11 +135,17 @@ pub(super) fn sequence(mut each: impl FnMut(&str, Demanded<'_>)) {
                     Change::Ordinate(y) => adjust(&request, &application, y, command),
                 }
             }
+            let checkpoint = capture_reference.then(|| {
+                application
+                    .capture_native_truth_checkpoint_for_test()
+                    .unwrap()
+            });
             arm_own_write(step.own_write);
             let (contacts, runs) = demand(&request, &application);
             arm_own_write(None);
             let demanded = Demanded {
                 model: &model,
+                checkpoint,
                 kind: Some(kind),
                 moved: model != before,
                 own_write: step.own_write,
@@ -144,8 +165,17 @@ fn every_reused_run_equals_a_full_run_of_the_same_facts() {
     let _guard = checkpoint_recovery_test_guard();
     let mut last: Option<OracleRun> = None;
     let (mut incremental, mut full, mut ceilings) = (0_usize, 0_usize, 0_usize);
-    sequence(|at, mut demanded| {
-        let reference = full_run(demanded.model, demanded.own_write);
+    sequence(true, |at, mut demanded| {
+        let reference = full_run(
+            demanded.model,
+            demanded
+                .checkpoint
+                .expect("the full-run oracle requested precomputation Native truth"),
+            demanded.own_write,
+        );
+        if !demanded.runs.is_empty() {
+            assert_published_state(&demanded.runs, &reference);
+        }
         // A demand that runs nothing keeps the output of the last run, which
         // must equal a full run of the facts as they are now.
         if let (Some(last_run), true) = (last.as_ref(), demanded.runs.is_empty()) {

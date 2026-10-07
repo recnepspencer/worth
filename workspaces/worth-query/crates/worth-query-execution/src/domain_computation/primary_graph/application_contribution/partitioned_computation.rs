@@ -38,13 +38,17 @@ pub use denial::{
 pub use incremental::WorthQueryPartitionedComputationFullCause;
 #[cfg(feature = "test-query-execution-observer")]
 pub use incremental::{
-    partitioned_computation_runs_on_this_thread_for_test, WorthQueryPartitionedComputationRun,
+    discarded_computation_retention_on_this_thread_for_test,
+    partitioned_computation_runs_on_this_thread_for_test,
+    published_partitioned_computations_on_this_thread_for_test,
+    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use incremental::{
-    Comparator, ComputationDeposit,
+    Comparator, CompletedComputationRetention, ComputationDeposit,
 };
 pub(in crate::domain_computation) use incremental::{
-    ComputationPrior, RetainedComputation, SealedComputationRun,
+    ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,
+    SealedComputationRun, Suppression,
 };
 pub(in crate::domain_computation::primary_graph) use installed::ComputationRetention;
 pub use installed::WorthQueryInstalledPartitionedComputation;
@@ -181,3 +185,11 @@ impl<Reduced> WorthQueryDeterministicReducer<Reduced> {
 mod attribution_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use incremental::sealed_run_for_lineage_test;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation) use incremental::observe_discarded;
+#[cfg(feature = "test-query-execution-observer")]
+pub(in crate::domain_computation::primary_graph) use incremental::observe_published;

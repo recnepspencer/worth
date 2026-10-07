@@ -88,6 +88,7 @@ pub(super) struct EntryEdit {
     sets: Vec<String>,
     /// The command that makes the edit, which names the entry it creates.
     command: u64,
+    count: usize,
 }
 
 #[cfg(feature = "test-query-execution-observer")]
@@ -103,6 +104,7 @@ impl EntryEdit {
             work: 0,
             sets: Vec::new(),
             command: 0,
+            count: 1,
         }
     }
 
@@ -119,6 +121,11 @@ impl EntryEdit {
             sets: sets.iter().map(|set| (*set).to_owned()).collect(),
             ..Self::new("", entry, EntryFact::Create, value)
         }
+    }
+
+    pub(super) fn batch(self, count: usize) -> Self {
+        assert!((1..=super::region_output::LARGEST_SET).contains(&count));
+        Self { count, ..self }
     }
 
     pub(super) fn delete(entry: u64) -> Self {
@@ -140,7 +147,7 @@ worth_query_structured_value_binding!(pub(super) EntryEditInputBinding for Entry
 worth_query_operation!(pub(super) EditEntry for Schema: TopologySchemaBinding, input EntryEditInputBinding);
 worth_query_operation_reads!(EditEntry => [
     Body, BodyKey, EntrySet, EntrySetKey, EntrySetWeight, EntrySetMember, SetEntry, EntryNumber,
-    EntryRegion, EntryValueBits, EntryFault,
+    EntryRegion, EntryValueBits, EntryWork, EntryFault,
 ]);
 worth_query_operation_writes!(EditEntry => [
     EntrySetWeight, EntryNumber, EntryRegion, EntryValueBits, EntryWork, EntryFault,
@@ -172,8 +179,10 @@ pub(super) enum EditTarget<Schema> {
     Create(Vec<WorthQueryInvariantMutationTarget<Schema, EntrySet>>),
     /// The entry, and the sets it leaves.
     Delete(
-        WorthQueryInvariantMutationTarget<Schema, SetEntry>,
-        Vec<WorthQueryInvariantMutationTarget<Schema, EntrySet>>,
+        Vec<(
+            WorthQueryInvariantMutationTarget<Schema, SetEntry>,
+            Vec<WorthQueryInvariantMutationTarget<Schema, EntrySet>>,
+        )>,
     ),
     /// The entries that trade numbers, each with the number it takes.
     Swap([(WorthQueryInvariantMutationTarget<Schema, SetEntry>, u64); 2]),
@@ -198,15 +207,17 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Principal = Principal;
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
-    type SourceExpectation = ApplicationQueryMutationSource<PlanarQuery>;
+    // The edited Native facts are observed by decide; no unrelated output
+    // query is an authoritative source for an entry edit.
+    type SourceExpectation = NoApplicationMutationSource;
 
     const IDENTITY: &'static str = "worth.query.certification.entry-edit.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.entry-edit-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.entry-edit-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 1, 2, 2, 5, 0),
-            ApplicationCandidateResourceCeiling::bounded(1024, 4096),
+            ApplicationCandidateCardinalityCeiling::fixed(160, 160, 320, 320, 800, 0),
+            ApplicationCandidateResourceCeiling::bounded(1024 * 160 + 320 * 256, 4096),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -279,10 +290,33 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
 
     fn candidate_requirements(
         &self,
-        _: &EntryEdit,
-        _: &EditTarget<Schema>,
+        input: &EntryEdit,
+        target: &EditTarget<Schema>,
     ) -> ApplicationCandidateRequirements {
-        EntryEditBinding::<Schema>::CANDIDATES
+        let unlinks = match target {
+            EditTarget::Delete(entries) => entries.iter().map(|(_, sets)| sets.len()).sum(),
+            _ => 2,
+        };
+        if input.count == 1 && unlinks <= 2 && input.sets.len() <= 2 {
+            return ApplicationCandidateRequirements::fixed_shape(
+                ApplicationCandidateCardinalityCeiling::fixed(1, 1, 2, 2, 5, 0),
+                ApplicationCandidateResourceCeiling::bounded(1024, 4096),
+            );
+        }
+        ApplicationCandidateRequirements::fixed_shape(
+            ApplicationCandidateCardinalityCeiling::fixed(
+                input.count,
+                input.count,
+                input.count * input.sets.len().max(2),
+                unlinks,
+                input.count * 5,
+                0,
+            ),
+            ApplicationCandidateResourceCeiling::bounded(
+                1024 * input.count + (unlinks + input.count * input.sets.len()) * 256,
+                4096,
+            ),
+        )
     }
 
     fn build_candidate(
@@ -320,41 +354,5 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
     }
 }
 
-/// The edit's operation: it resolves the set or the entry it changes.
-pub(super) fn declare<Schema: TopologySchemaBinding>(
-    schema: ApplicationSchemaDeclarationBuilder<Schema>,
-) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let operation = EditEntry::reference::<Schema>();
-    schema
-        .operation(
-            operation
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_decision_fact_budget(operation, 32)
-        .operation_projection_work_budget(operation, 4_096)
-        .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_entity(operation, EntrySet::reference())
-        .operation_read_field(operation, EntrySetKey::reference())
-        .operation_read_field(operation, EntrySetWeight::reference())
-        .operation_read_relation(operation, EntrySetMember::reference())
-        .operation_read_entity(operation, SetEntry::reference())
-        .operation_read_field(operation, EntryNumber::reference())
-        .operation_read_field(operation, EntryRegion::reference())
-        .operation_read_field(operation, EntryValueBits::reference())
-        .operation_read_field(operation, EntryFault::reference())
-        .operation_write(operation, EntrySetWeight::reference())
-        .operation_write(operation, EntryNumber::reference())
-        .operation_write(operation, EntryRegion::reference())
-        .operation_write(operation, EntryValueBits::reference())
-        .operation_write(operation, EntryWork::reference())
-        .operation_write(operation, EntryFault::reference())
-        .operation_create(operation, SetEntry::reference())
-        .operation_delete(operation, SetEntry::reference())
-        .operation_link(operation, EntrySetMember::reference())
-        .operation_unlink(operation, EntrySetMember::reference())
-        .application_mutation_binding::<EntryEditBinding<Schema>>()
-}
+mod declaration;
+pub(super) use declaration::declare;

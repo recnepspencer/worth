@@ -51,6 +51,28 @@ impl WorthQueryApplicationOutputLineage {
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
+    /// Run a certification capacity event using real ledger custody. The
+    /// callback holds no Query lock, and its temporary reservation refunds
+    /// on return or unwind. This does not change installed resource limits.
+    #[doc(hidden)]
+    pub fn with_available_lineage_bytes_for_test<R>(
+        &self,
+        remaining: u64,
+        run: impl FnOnce() -> R,
+    ) -> Result<R, super::super::WorthQueryOutputDemandDenial> {
+        let held = self
+            .primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retention
+            .reserve_except_for_test(remaining)?;
+        let result = run();
+        drop(held);
+        Ok(result)
+    }
+
     /// The bytes this runtime's output lineage retains now: recorded outputs
     /// and the generation history that locates them.
     #[doc(hidden)]

@@ -93,7 +93,8 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
         else {
             panic!("B was progressed inside the alias advance");
         };
-        assert_eq!(consumer.producer_contacts_in_this_demand(), 0);
+        // B's open demand initiated its initial execution; this advance adds none.
+        assert_eq!(consumer.producer_contacts_in_this_demand(), 1);
         assert_eq!(
             consumer.posture(),
             WorthQueryOutputSettlementPosture::Performed

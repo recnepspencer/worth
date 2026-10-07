@@ -87,7 +87,7 @@ fn another_owner_with_the_same_types_runs_in_full() {
     let next = attempt(&world, &doubling, Some(prior_of(first, false)));
     assert!(matches!(
         next.runs.as_slice(),
-        [(Run::Full(Cause::NoPriorRecord), Some(_))]
+        [(Run::Full(Cause::OtherInstallation), Some(_))]
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
     assert_eq!(next.outcome.unwrap().0, total * 2, "its own total");
@@ -103,7 +103,7 @@ fn a_reinstalled_owner_runs_in_full() {
     let next = attempt(&world, &reinstalled, Some(prior_of(first, false)));
     assert!(matches!(
         next.runs.as_slice(),
-        [(Run::Full(Cause::NoPriorRecord), Some(_))]
+        [(Run::Full(Cause::OtherInstallation), Some(_))]
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
     assert_eq!(next.outcome.unwrap().0, total);

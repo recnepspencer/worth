@@ -42,7 +42,7 @@ pub(super) struct RecordedOutputMutable {
     pub(super) resources: Option<WorthQueryProducerDemandResources>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
-    pub(super) computation: Option<super::retained_computation::RecordedComputation>,
+    pub(super) computation: super::retained_computation::RecordedComputation,
 }
 
 impl RecordedOutputMutable {
@@ -50,8 +50,15 @@ impl RecordedOutputMutable {
         verification_requirement: Option<FullVerificationReason>,
         facts: Option<super::RetainedSourceFacts>,
         resources: Option<WorthQueryProducerDemandResources>,
-        computation: Option<super::retained_computation::RecordedComputation>,
+        computation: super::retained_computation::RecordedComputation,
     ) -> Self {
+        #[cfg(feature = "test-query-execution-observer")]
+        match &computation {
+            super::retained_computation::RecordedComputation::Retained { state, .. } =>
+                crate::domain_computation::primary_graph::application_contribution::observe_published(Some(Arc::clone(state)), None),
+            super::retained_computation::RecordedComputation::Absent(reason) =>
+                crate::domain_computation::primary_graph::application_contribution::observe_published(None, Some(reason.full_cause())),
+        }
         Self {
             verification_requirement,
             observed_source_facts: facts.map(|facts| Arc::clone(facts.postconditions())),
@@ -140,7 +147,9 @@ impl RecordedOutput {
         row.observed_source_facts = Some(facts);
         row.verification_requirement = Some(FullVerificationReason::CheckpointRestore);
         // A restored row's computation state is not the one its facts carry.
-        row.computation = None;
+        row.computation = super::retained_computation::RecordedComputation::Absent(
+            crate::domain_computation::primary_graph::application_contribution::PriorAbsence::Restored,
+        );
         row.resources = resources;
         if let Some(witness) = verified_witness {
             // An initialized original witness is immutable. Repeated exact

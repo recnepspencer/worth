@@ -24,20 +24,23 @@ pub(super) fn decide<Schema: TopologySchemaBinding>(
             Ok(EditTarget::Create(sets))
         }
         EntryFact::Delete => {
-            let entry = reader.resolve_entity(EntryNumber::reference(), input.entry)?;
-            // A delete retires an entity the decision observed.
-            reader
-                .reader()
-                .require_decision_entity(&entry, SetEntry::reference())
-                .map_err(HandlerExecutionDenial::new)?;
-            let places = reader
-                .relations_to(EntrySetMember::reference(), &entry)
-                .map_err(HandlerExecutionDenial::new)?;
-            let mut sets = Vec::with_capacity(places.len());
-            for place in places {
-                sets.push(reader.mutation_target(&place.into_from())?);
+            let mut entries = Vec::with_capacity(input.count);
+            for number in input.entry..input.entry + input.count as u64 {
+                let entry = reader.resolve_entity(EntryNumber::reference(), number)?;
+                reader
+                    .reader()
+                    .require_decision_entity(&entry, SetEntry::reference())
+                    .map_err(HandlerExecutionDenial::new)?;
+                let places = reader
+                    .relations_to(EntrySetMember::reference(), &entry)
+                    .map_err(HandlerExecutionDenial::new)?;
+                let mut sets = Vec::with_capacity(places.len());
+                for place in places {
+                    sets.push(reader.mutation_target(&place.into_from())?);
+                }
+                entries.push((reader.mutation_target(&entry)?, sets));
             }
-            Ok(EditTarget::Delete(reader.mutation_target(&entry)?, sets))
+            Ok(EditTarget::Delete(entries))
         }
         _ => {
             let mut traded = |number: u64, takes: u64| {
@@ -59,8 +62,17 @@ pub(super) fn build<Schema: TopologySchemaBinding>(
     writer: &mut CandidateWriter<'_, Schema, EntryEditBinding<Schema>>,
 ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
     let built = match target {
-        EditTarget::Create(sets) => create(input, &sets, writer),
-        EditTarget::Delete(entry, sets) => delete(&entry, &sets, writer),
+        EditTarget::Create(sets) => (0..input.count).try_for_each(|offset| {
+            let input = EntryEdit {
+                entry: input.entry + offset as u64,
+                other: input.other + offset as u64,
+                ..input.clone()
+            };
+            create(&input, &sets, writer)
+        }),
+        EditTarget::Delete(entries) => entries
+            .iter()
+            .try_for_each(|(entry, sets)| delete(entry, sets, writer)),
         EditTarget::Swap(traded) => traded.iter().try_for_each(|(entry, number)| {
             let entry = writer
                 .projected_entity(entry)
@@ -95,7 +107,7 @@ fn create<Schema: TopologySchemaBinding>(
         .map(|set| writer.projected_entity(set))
         .collect::<Result<Vec<_>, _>>()
         .map_err(HandlerExecutionDenial::new)?;
-    let name = format!("created-entry-{}", input.command);
+    let name = format!("created-entry-{}-{}", input.command, input.entry);
     let key = WorthQueryApplicationEntityKey::new(&name).map_err(HandlerExecutionDenial::new)?;
     let entry = writer
         .create_entity_in_context(&sets[0], SetEntry::reference(), key)

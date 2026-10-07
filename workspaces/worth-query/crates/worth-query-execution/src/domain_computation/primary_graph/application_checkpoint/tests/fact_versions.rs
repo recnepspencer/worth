@@ -104,7 +104,7 @@ fn facts_of_an_older_wire_version_are_never_read() {
 }
 
 #[test]
-fn a_version_eight_checkpoint_without_own_write_exclusion_is_refused() {
+fn a_current_layout_checkpoint_with_a_version_eight_header_is_refused() {
     let bytes = facts::encode(&[source_entity()]).unwrap();
     let checkpoint = checkpoint_from_body(body_with_facts(8, 8, &bytes));
     assert_eq!(

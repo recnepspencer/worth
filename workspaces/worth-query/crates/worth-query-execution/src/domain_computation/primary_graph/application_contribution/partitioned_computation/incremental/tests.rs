@@ -334,15 +334,11 @@ fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
     let first = attempt(
         world,
         installed,
-        Some(ComputationPrior::new(
-            edition(),
-            Err(Cause::NoPriorRecord),
-            None,
-        )),
+        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
     );
     assert!(matches!(
         first.runs.as_slice(),
-        [(Run::Full(Cause::NoPriorRecord), Some(_))]
+        [(Run::Full(Cause::FirstRun), Some(_))]
     ));
     assert_eq!(first.gathered, [0, 1]);
     first
@@ -358,3 +354,11 @@ mod reroute;
 mod tree_memory;
 mod unobservable;
 mod wide;
+
+pub(super) fn sealed_run_for_lineage_test() -> SealedComputationRun {
+    let world = installed_authorization_world(true);
+    first_run(&world, &installed(StatusRead::Gather(1), sum))
+        .sealed
+        .unwrap()
+        .unwrap()
+}

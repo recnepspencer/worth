@@ -72,6 +72,28 @@ impl LineageRetentionLedger {
 
 #[cfg(feature = "test-query-execution-observer")]
 impl LineageRetentionLedger {
+    /// Hold real ledger custody while leaving a declared amount available.
+    /// The maximum stays unchanged and the returned ticket refunds on Drop.
+    pub(super) fn reserve_except_for_test(
+        &self,
+        remaining: u64,
+    ) -> Result<RetainedLineageCapacity, WorthQueryOutputDemandDenial> {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let bytes = state
+            .maximum_bytes
+            .checked_sub(state.retained_bytes)
+            .and_then(|free| free.checked_sub(remaining))
+            .ok_or_else(denial)?;
+        state.retained_bytes += bytes;
+        Ok(RetainedLineageCapacity {
+            state: Arc::clone(&self.state),
+            bytes,
+        })
+    }
+
     pub(super) fn retained_bytes(&self) -> u64 {
         self.state
             .lock()

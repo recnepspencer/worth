@@ -231,6 +231,16 @@ pub(super) struct Entry {
     entity: WorthQueryInvariantEntityIdentity<CheckpointSchema, SetEntry>,
 }
 
+impl Entry {
+    /// Independent installations bind these same Native entities under
+    /// different projection authorities; compare the carried entity and kind.
+    pub(super) fn same_binding_as(&self, other: &Self) -> bool {
+        self.number == other.number
+            && self.entity.entity_id() == other.entity.entity_id()
+            && self.entity.entity_name() == other.entity.entity_name()
+    }
+}
+
 impl ApplicationComputationPartition for Entry {
     const IDENTITY: &'static str = "checkpoint-region-entry";
 }
@@ -342,4 +352,22 @@ where
             })
         })
         .collect()
+}
+
+/// The entry's complete incoming membership, used by the wide-key oracle.
+#[cfg(feature = "test-query-execution-observer")]
+pub(super) fn membership_count<Operation>(
+    reader: &mut Reader<'_, '_, '_, Operation>,
+    entry: &Entry,
+) -> Read<usize>
+where
+    EntrySetMember: OperationReads<Operation>,
+{
+    let mut co_memberships = 0;
+    for membership in reader.relations_to(EntrySetMember::reference(), &entry.entity)? {
+        co_memberships += reader
+            .relations_from(EntrySetMember::reference(), &membership.into_from())?
+            .len();
+    }
+    Ok(co_memberships)
 }

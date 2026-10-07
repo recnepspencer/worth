@@ -48,7 +48,11 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
             before_entries,
             "Clean advancement must not enter the source Query kernel"
         );
-        assert_eq!(settled.producer_contacts_in_this_demand(), 0);
+        // The same admitted demand still owns its initial execution.
+        assert_eq!(
+            settled.producer_contacts_in_this_demand(),
+            first.producer_contacts_in_this_demand()
+        );
         assert_eq!(
             settled
                 .outputs_of::<PlanarOutputs>()
@@ -91,7 +95,11 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
         changed.posture(),
         WorthQueryOutputSettlementPosture::Performed
     );
-    assert_eq!(changed.producer_contacts_in_this_demand(), 1);
+    // One initial execution plus one changed-input execution in this demand.
+    assert_eq!(
+        changed.producer_contacts_in_this_demand(),
+        first.producer_contacts_in_this_demand() + 1
+    );
     assert_eq!(
         changed
             .outputs_of::<PlanarOutputs>()

@@ -30,6 +30,7 @@ use super::retained::{
     RetainedPartitions, TypedPrior, WorthQueryPartitionedComputationRun,
 };
 use super::tree_update::{next_tree, same_bits};
+use super::{CompletedComputationRetention, PriorAbsence};
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
@@ -83,7 +84,7 @@ pub(in super::super) struct ComputedIncremental<Reduced> {
     pub(in super::super) reduced: Reduced,
     /// The kernels' and the combines' work, as a full run charges it.
     pub(in super::super) computed_work: u64,
-    pub(in super::super) completed: CompletedComputationRun,
+    pub(in super::super) completed: CompletedComputationRetention,
 }
 
 impl<Key, Item, Reduced, Gathered> PreparedIncremental<Key, Item, Reduced, Gathered>
@@ -353,24 +354,26 @@ where
                 partitions,
                 tree,
             });
-        let typed_bytes = typed.as_ref().and_then(RetainedPartitions::charged_bytes);
-        let typed = typed.map(|typed| Arc::new(typed) as Arc<dyn std::any::Any + Send + Sync>);
+
         observe(WorthQueryPartitionedComputationRun::Incremental, None);
         Ok(ComputedIncremental {
             reduced,
             computed_work,
-            completed: CompletedComputationRun {
-                basis,
-                typed,
-                typed_bytes,
-                carried: Some(CarriedCalls {
-                    prior: prior.state,
-                    membership: next.carried_membership,
-                    items: next.carried_items,
-                    partitions: carried,
+            completed: match typed {
+                None => CompletedComputationRetention::Absent(PriorAbsence::Unmeasured),
+                Some(typed) => CompletedComputationRetention::Produced(CompletedComputationRun {
+                    basis,
+                    typed_bytes: typed.charged_bytes(),
+                    typed: Arc::new(typed),
+                    carried: Some(CarriedCalls {
+                        prior: prior.state,
+                        membership: next.carried_membership,
+                        items: next.carried_items,
+                        partitions: carried,
+                    }),
+                    tree_memory: results_memory,
+                    routing_memory: next.routing_memory,
                 }),
-                tree_memory: results_memory,
-                routing_memory: next.routing_memory,
             },
         })
     }

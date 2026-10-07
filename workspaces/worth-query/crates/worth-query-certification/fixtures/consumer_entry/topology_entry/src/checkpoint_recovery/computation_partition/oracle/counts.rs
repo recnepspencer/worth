@@ -47,7 +47,7 @@ fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {
         };
         assert_eq!(
             first.runs,
-            [Run::Full(FullCause::NoPriorRecord)],
+            [Run::Full(FullCause::FirstRun)],
             "size {size}: {:?}",
             first.outcome
         );

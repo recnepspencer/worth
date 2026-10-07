@@ -167,7 +167,11 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     change_root!(request, application, "diamond-right", 54, 0x9176_3501_u64);
     crate::producer::reset_provider_contacts();
     let settled = settled_in_one_advance!(join, request, "the shared dependent");
-    assert_eq!(settled.producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        settled.producer_contacts_in_this_demand(),
+        2,
+        "initial execution plus 1 join refreshes"
+    );
     let both_roots = crate::producer::provider_contacts();
     assert_eq!(
         output_lengths!(request, ["diamond-left", "diamond-right"]),
@@ -184,8 +188,8 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
         let settled = settled_in_one_advance!(root, request, "a refreshed root");
         assert_eq!(
             settled.producer_contacts_in_this_demand(),
-            0,
-            "the {name} root was contacted once, inside the shared dependent's advance"
+            1,
+            "the {name} root retains its initial execution; the refresh belongs to the dependent"
         );
     }
     assert_eq!(
@@ -198,7 +202,11 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     change_root!(request, application, "diamond-left", 7, 0x9176_3502_u64);
     crate::producer::reset_provider_contacts();
     let settled = settled_in_one_advance!(join, request, "the shared dependent");
-    assert_eq!(settled.producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        settled.producer_contacts_in_this_demand(),
+        3,
+        "initial execution plus 2 join refreshes"
+    );
     // The shared planar provider counts each refresh contact the same way.
     let left_root = crate::producer::provider_contacts();
     assert!(left_root > 0);
@@ -215,8 +223,8 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     let settled = settled_in_one_advance!(right, request, "the clean right root");
     assert_eq!(
         settled.producer_contacts_in_this_demand(),
-        0,
-        "the unchanged right root stayed current"
+        1,
+        "the unchanged right root retains its initial execution"
     );
 
     // The left root returns to an earlier value, so the shared dependent's
@@ -224,7 +232,11 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     // still names the newer left output; one advance settles it again.
     change_root!(request, application, "diamond-left", 5, 0x9176_3503_u64);
     let settled = settled_in_one_advance!(join, request, "the shared dependent");
-    assert_eq!(settled.producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        settled.producer_contacts_in_this_demand(),
+        4,
+        "initial execution plus 3 join refreshes"
+    );
     assert_eq!(
         output_lengths!(request, ["diamond-left", "diamond-right"]),
         [6, 55],
@@ -238,8 +250,8 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     let settled = settled_in_one_advance!(left, request, "the returned left root");
     assert_eq!(
         settled.producer_contacts_in_this_demand(),
-        0,
-        "the left root was refreshed inside the shared dependent's advance"
+        1,
+        "the left root retains its initial execution; its refresh belonged to the dependent"
     );
     drop((left, right, join));
 }

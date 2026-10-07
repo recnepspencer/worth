@@ -9,7 +9,7 @@
 
 use std::any::Any;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
 use worth_foundational::facade::PartitionIdentity;
@@ -36,15 +36,44 @@ pub enum WorthQueryPartitionedComputationRun {
 /// Why a run recomputed every partition.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPartitionedComputationFullCause {
-    /// The selected record retained no state of this computation: a first
-    /// run, a restored or aliased record, another computation, owner or
-    /// producer edition, or a run that is no producer's.
-    NoPriorRecord,
+    /// No output record has been published at this address.
+    FirstRun,
+    /// Checkpoint restoration retained no computation state.
+    Restored,
+    /// Republication retained facts but no computation state.
+    Republished,
+    /// The decision ran no partitioned computation.
+    NotProduced,
+    /// The run's charge or retained byte sum could not be measured.
+    Unmeasured,
+    /// A successor took this record's computation reservation.
+    Moved,
+    /// The lineage ledger refused the computation reservation.
+    Evicted,
     /// The input value's canonical encoding differs.
     InputChanged,
-    /// The last run's state did not fit what may be retained, or held more
-    /// facts than this run's declared work may compare.
-    Evicted,
+    /// The installed owner differs, even when its types match.
+    OtherInstallation,
+    /// The installed producer edition differs.
+    OtherEdition,
+    /// The observation bound exceeds the run's declared work.
+    ObservationOverBudget,
+    /// A prior was already consumed by an earlier invocation in this handler.
+    NoPriorHanded,
+    /// This reader belongs to an operation outside a producer invocation.
+    NoProducerPrior,
+    /// Policy suppressed the completed computation's retention.
+    RetentionPolicy,
+    /// The handler ran several computations and has no single attribution.
+    SeveralComputations,
+    /// A collision restart computed without a reusable retention basis.
+    CollisionSuppressed,
+    /// The computation stopped before leaving completed state.
+    Stopped,
+    /// Execution policy chose not to retain this computation.
+    Unretained,
+    /// Incremental routing met a compact partition identity collision.
+    IdentityCollision,
 }
 
 /// One installation of a partitioned computation's owner, compared by
@@ -114,11 +143,12 @@ impl RetainedBasis {
         if self == prior {
             return None;
         }
-        let only_input = self.installation == prior.installation && self.edition == prior.edition;
-        Some(if only_input {
-            WorthQueryPartitionedComputationFullCause::InputChanged
+        Some(if self.installation != prior.installation {
+            WorthQueryPartitionedComputationFullCause::OtherInstallation
+        } else if self.edition != prior.edition {
+            WorthQueryPartitionedComputationFullCause::OtherEdition
         } else {
-            WorthQueryPartitionedComputationFullCause::NoPriorRecord
+            WorthQueryPartitionedComputationFullCause::InputChanged
         })
     }
 }
@@ -206,7 +236,7 @@ pub(in crate::domain_computation) struct RetainedComputation {
     pub(super) facts: SealedComputationFacts,
     /// What the state is charged on the lineage ledger, or `None` when the
     /// sum has no value.
-    bytes: Option<u64>,
+    pub(super) bytes: Option<u64>,
 }
 
 impl RetainedComputation {
@@ -232,8 +262,8 @@ pub(in crate::domain_computation) struct SealedComputationRun {
 /// Request memory a run's tree and its new routing hold from their build
 /// until the record that keeps them is charged.
 pub(in crate::domain_computation) struct RunTreeMemory {
-    _held: QueryMemoryReservation,
-    _routing: Option<QueryMemoryReservation>,
+    pub(super) _held: QueryMemoryReservation,
+    pub(super) _routing: Option<QueryMemoryReservation>,
 }
 
 /// The owner calls a run carried from `prior` without making them.
@@ -246,7 +276,7 @@ pub(super) struct CarriedCalls {
 
 impl CarriedCalls {
     /// Whether the run carried `read`.
-    fn carried(&self, read: ComputationRead) -> bool {
+    pub(super) fn carried(&self, read: ComputationRead) -> bool {
         match read {
             ComputationRead::Membership => self.membership,
             ComputationRead::ItemKey(item) => self.items.contains(&item),
@@ -258,8 +288,7 @@ impl CarriedCalls {
 /// What a completed run leaves for seal.
 pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun {
     pub(super) basis: RetainedBasis,
-    /// `None` when the run measured something it cannot carry again.
-    pub(super) typed: Option<Arc<dyn Any + Send + Sync>>,
+    pub(super) typed: Arc<dyn Any + Send + Sync>,
     /// The typed state's bytes, `None` when the sum overflows.
     pub(super) typed_bytes: Option<u64>,
     pub(super) carried: Option<CarriedCalls>,
@@ -269,10 +298,6 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     /// built none.
     pub(super) routing_memory: Option<QueryMemoryReservation>,
 }
-
-/// Where a completed run leaves itself for seal.
-pub(in crate::domain_computation::primary_graph) type ComputationDeposit =
-    Arc<Mutex<Option<CompletedComputationRun>>>;
 
 /// What a producer hands the partitioned computation its handler runs: the
 /// installed edition, the state the selected record retained, and that
@@ -306,47 +331,6 @@ impl ComputationPrior {
     }
 }
 
-impl CompletedComputationRun {
-    /// Seals the run over the facts seal observed. Every fact a carried call
-    /// read must be the fact the prior run read: the law that makes a carried
-    /// call's answer the answer a full run computes. A call the run did not
-    /// carry, such as a removed item's key, holds no fact. `Err` when one
-    /// moved, and `Ok(None)` when the run has nothing to retain.
-    pub(in crate::domain_computation::primary_graph) fn seal(
-        self,
-        facts: SealedComputationFacts,
-    ) -> Result<Option<SealedComputationRun>, ()> {
-        if let Some(carried) = &self.carried {
-            let unchanged = carried
-                .prior
-                .facts
-                .facts()
-                .filter(|(_, _, readers)| readers.reads().any(|read| carried.carried(read)))
-                .all(|(key, fact, _)| facts.fact(key) == Some(fact));
-            if !unchanged {
-                return Err(());
-            }
-        }
-        let bytes = self
-            .typed_bytes
-            .zip(facts.charged_bytes())
-            .and_then(|(typed, facts)| typed.checked_add(facts));
-        Ok(self.typed.map(|typed| SealedComputationRun {
-            state: RetainedComputation {
-                basis: self.basis,
-                typed,
-                facts,
-                bytes,
-            },
-            cloned_from: self.carried.map(|carried| carried.prior),
-            tree_memory: RunTreeMemory {
-                _held: self.tree_memory,
-                _routing: self.routing_memory,
-            },
-        }))
-    }
-}
-
 #[cfg(test)]
 thread_local! {
     static PRIOR_IN_TEST: std::cell::RefCell<Option<ComputationPrior>> =
@@ -376,5 +360,12 @@ impl SealedComputationRun {
 
     pub(super) fn kept_in_test() -> Option<Self> {
         SEALED_IN_TEST.with(|kept| kept.borrow_mut().take())
+    }
+}
+
+#[cfg(test)]
+impl RetainedComputation {
+    pub(in crate::domain_computation::primary_graph) fn overflow_bytes_for_test(&mut self) {
+        self.bytes = None;
     }
 }

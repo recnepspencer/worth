@@ -18,7 +18,7 @@ type Ran = (
 /// Each demand of the sequence: its producer contacts and its runs.
 fn demands() -> Vec<(usize, Vec<Ran>)> {
     let mut demands = Vec::new();
-    sequence(|_, demanded| {
+    sequence(false, |_, demanded| {
         let runs = demanded.runs.into_iter().map(|run| (run.outcome, run.runs));
         demands.push((demanded.contacts, runs.collect()));
     });

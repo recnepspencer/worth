@@ -1,6 +1,7 @@
 //! A restored generated output continues the performed record it republishes.
-//! A restored row that retained no performed proof stays Fresh until verified.
+//! Performed opaque-reader and request-context rows continue without cutoff proofs.
 
+use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::{
     any::TypeId,
     collections::BTreeMap,
@@ -37,6 +38,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+mod absence;
 mod records;
 mod rules;
 
@@ -219,7 +221,7 @@ impl Stage<'_> {
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
             computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
-            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| super::super::ComputationSourceEvidence::for_test(false).retain_facts(facts)), None, None)),
+            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| super::super::ComputationSourceEvidence::for_test(false).retain_facts(facts)), None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
             settlement_identity: RecordedSettlementIdentity::retain(
                 &self.source,
                 ProductCoordinate {

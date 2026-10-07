@@ -97,3 +97,16 @@ pub(super) fn continues_input(
         .same_prepared_input_as(&input_key(selection, input), |_| Ok::<_, ()>(()))
         .unwrap()
 }
+
+/// A real completed boundary refuses reuse when its context is untracked.
+pub(super) fn untracked(row: RecordedOutput, context: DecisionContextUse) -> RecordedOutput {
+    let boundary = CompletedHandlerFactBoundary::completed_for_test(1);
+    let completed = boundary.seal_decision_reuse(decision(DECISION_KEY), context);
+    assert!(completed.is_none());
+    RecordedOutput {
+        completed_handler_facts: Some(boundary),
+        completed_decision_reuse: completed,
+        prepared_input_reuse_key: None,
+        ..row
+    }
+}

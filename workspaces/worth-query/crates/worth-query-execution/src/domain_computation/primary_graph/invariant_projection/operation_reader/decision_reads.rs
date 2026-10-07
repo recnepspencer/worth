@@ -2,14 +2,13 @@
 //! partitioned computation read in which owner call.
 
 use std::collections::BTreeSet;
-use std::sync::{Arc, Mutex};
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationFactAttribution, ComputationRead, WorthQueryApplicationFactKey,
 };
 use crate::domain_computation::primary_graph::application_contribution::{
-    ComputationDeposit, ComputationPrior,
+    CompletedComputationRetention, ComputationDeposit, ComputationPrior, PriorAbsence, Suppression,
 };
 
 /// Every decision fact key of one projection.
@@ -30,6 +29,7 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     /// What the producer that runs the projection retained, for the first
     /// partitioned computation to take.
     prior: Option<ComputationPrior>,
+    prior_handed: bool,
     /// Where that computation leaves its completed run, when a producer runs
     /// the projection.
     deposit: Option<ComputationDeposit>,
@@ -60,7 +60,8 @@ impl DecisionReads {
     ) -> Self {
         Self {
             prior: Some(prior),
-            deposit: Some(Arc::new(Mutex::new(None))),
+            deposit: Some(ComputationDeposit::new()),
+            prior_handed: true,
             ..Self::default()
         }
     }
@@ -97,7 +98,10 @@ impl DecisionReads {
     ) -> Result<
         (
             BTreeSet<WorthQueryApplicationFactKey>,
-            Option<(ComputationFactAttribution, Option<ComputationDeposit>)>,
+            (
+                Option<ComputationFactAttribution>,
+                CompletedComputationRetention,
+            ),
         ),
         WorthQueryApplicationFactKey,
     > {
@@ -113,10 +117,28 @@ impl DecisionReads {
             return Err(failed);
         }
         handler.extend(computation.keys().cloned());
-        Ok((
-            handler,
-            matches!(runs, ComputationRuns::One).then_some((computation, deposit)),
-        ))
+        let result = match runs {
+            ComputationRuns::None => (
+                None,
+                CompletedComputationRetention::Absent(PriorAbsence::NotProduced),
+            ),
+            ComputationRuns::One => (
+                Some(computation),
+                deposit.expect("begin creates the run deposit").take(),
+            ),
+            ComputationRuns::Several => {
+                // Attribution identifies one computation only. Drop its state here
+                // with the precise reason, rather than pretending no run happened.
+                drop(deposit);
+                (
+                    None,
+                    CompletedComputationRetention::Absent(PriorAbsence::Suppressed(
+                        Suppression::Several,
+                    )),
+                )
+            }
+        };
+        Ok((handler, result))
     }
 }
 
@@ -125,6 +147,12 @@ impl<Schema, Operation>
 {
     /// A partitioned computation begins reading through this reader.
     pub(in crate::domain_computation::primary_graph) fn begin_computation_reads(&mut self) {
+        let deposit = self
+            .decision_facts
+            .deposit
+            .get_or_insert_with(ComputationDeposit::new);
+        // Preparing is a run, even if its work or later execution stops.
+        deposit.write(CompletedComputationRetention::Absent(PriorAbsence::Stopped));
         self.decision_facts.runs = match self.decision_facts.runs {
             ComputationRuns::None => ComputationRuns::One,
             ComputationRuns::One | ComputationRuns::Several => ComputationRuns::Several,
@@ -132,19 +160,33 @@ impl<Schema, Operation>
     }
 
     /// What the producer retained, taken by the first partitioned computation
-    /// to begin. `None` when no producer runs the projection.
+    /// to begin. Ordinary mutation readers are reachable here: the installed
+    /// producer operation can also be invoked without a producer admission.
+    /// Ordinary readers get NoProducerPrior. Once a producer prior was taken,
+    /// later invocations get NoPriorHanded.
     pub(in crate::domain_computation::primary_graph) fn take_computation_prior(
         &mut self,
-    ) -> Option<ComputationPrior> {
-        self.decision_facts.prior.take()
+    ) -> Result<ComputationPrior, crate::domain_computation::primary_graph::application_contribution::WorthQueryPartitionedComputationFullCause>{
+        use crate::domain_computation::primary_graph::application_contribution::WorthQueryPartitionedComputationFullCause as Cause;
+        self.decision_facts
+            .prior
+            .take()
+            .ok_or(if self.decision_facts.prior_handed {
+                Cause::NoPriorHanded
+            } else {
+                Cause::NoProducerPrior
+            })
     }
 
     /// Where a completed run is left for seal, when a producer runs the
     /// projection.
     pub(in crate::domain_computation::primary_graph) fn computation_deposit(
         &self,
-    ) -> Option<ComputationDeposit> {
-        self.decision_facts.deposit.clone()
+    ) -> ComputationDeposit {
+        self.decision_facts
+            .deposit
+            .clone()
+            .expect("prepare begins computation reads and creates the deposit before accessing it")
     }
 
     /// Runs one owner call, recording every fact key it reads as that call's.
