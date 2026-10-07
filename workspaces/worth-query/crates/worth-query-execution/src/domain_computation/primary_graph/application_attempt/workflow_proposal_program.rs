@@ -110,7 +110,7 @@ where
                 installed.resources().history_reconstruction_budget(),
                 super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
-        })?;
+        })??;
         let Some(live_membership) = observed.live_membership else {
             return Err(denial("workflow proposal instance is already settled"));
         };
@@ -139,7 +139,7 @@ where
                         maximum_transitions,
                         &compiled,
                     )
-                })?;
+                })??;
                 self.recover_proposal_replay(
                     &layout,
                     &compiled,
@@ -308,7 +308,7 @@ where
                     transition.entity,
                     &proposal,
                 )
-            });
+            })?;
             if let Ok(proposal_facts) = proposal_facts {
                 let replace = latest_occurrence
                     .map(|prior| selected.occurrence() > prior)

@@ -276,13 +276,14 @@ where
         .bind_current_truth_head(&super::super::application_branch::primary_relational_branch_id())
         .map_err(|denial| {
             let kind = match denial {
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
+                crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceDenial::Handle(denial) => return denial.into(),
+                crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceDenial::Basis(worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted) => {
                     WorthQueryPrimaryGraphInstallationDenialKind::RetentionCapacityExhausted
                 }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
+                crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceDenial::Basis(worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted) => {
                     WorthQueryPrimaryGraphInstallationDenialKind::RetentionIdentityExhausted
                 }
-                worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
+                crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceDenial::Basis(worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted) => {
                     WorthQueryPrimaryGraphInstallationDenialKind::SnapshotIdentityExhausted
                 }
                 _ => WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
@@ -293,7 +294,7 @@ where
         runtime
             .branch_identity(&super::super::application_branch::primary_relational_branch_id())
             .expect("the published primary application branch remains owner registered")
-    });
+    })?;
     let bridge = super::super::managed_bridge::install_application_bridge(
         installed_schema,
         &bridge_layout,

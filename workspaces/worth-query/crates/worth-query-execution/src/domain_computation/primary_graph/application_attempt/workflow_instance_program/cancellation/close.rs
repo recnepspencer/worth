@@ -164,6 +164,6 @@ where
                 performed,
                 facts,
             })
-        })
+        })?
     }
 }

@@ -43,7 +43,12 @@ impl WorthQueryApplicationProductBranchCleanup {
         }
     }
 
-    pub fn pending_work(&self) -> Vec<WorthQueryProductBranchOwnerCleanupWork> {
+    pub fn pending_work(
+        &self,
+    ) -> Result<
+        Vec<WorthQueryProductBranchOwnerCleanupWork>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         self.product.pending_work()
     }
 

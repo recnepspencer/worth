@@ -27,13 +27,15 @@ fn a_refresh_that_must_switch_producers_preserves_the_live_output() {
         )
         .unwrap()
         .relational_record_identity_parts();
-    application.publish_native_field_write_for_test(
-        branch,
-        record,
-        Length::reference::<CheckpointSchema>(),
-        length(44),
-        &scope,
-    );
+    application
+        .publish_native_field_write_for_test(
+            branch,
+            record,
+            Length::reference::<CheckpointSchema>(),
+            length(44),
+            &scope,
+        )
+        .expect("the native-writer fixture requires an open application owner");
 
     assert_eq!(redemanded(&request, &application), (Posture::Performed, 1));
     assert_eq!(super::ring(&request), ring);

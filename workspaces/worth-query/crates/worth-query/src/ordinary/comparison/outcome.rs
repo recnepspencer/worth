@@ -96,6 +96,7 @@ pub enum WorthQueryComparisonNextAction {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryComparisonStopSource {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     LeftBasisAdmission,
     RightBasisAdmission,
     InvalidBasisPair,

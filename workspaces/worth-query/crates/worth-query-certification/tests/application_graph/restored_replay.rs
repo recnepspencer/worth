@@ -79,6 +79,7 @@ fn assert_the_key_resolves_by_its_durable_record(
             .granular_invalidation_installation()
             .retain_primary_graph_integration_handle()
             .with_runtime(|runtime| runtime.history().latest_patch_stream_position())
+            .expect("the restored fixture requires an open application owner")
     };
     let restored_head = ledger();
     for _ in 0..3 {

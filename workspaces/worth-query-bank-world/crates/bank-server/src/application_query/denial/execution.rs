@@ -20,6 +20,7 @@ pub enum BankApplicationPreviewSessionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProductSelectionDenialKind {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     ObservationStatePoisoned,
     OwnerUnavailable,
     ForeignOwner,
@@ -133,6 +134,7 @@ pub(super) const fn product_selection(
 ) -> BankProductSelectionDenialKind {
     use BankProductSelectionDenialKind as Bank;
     match kind {
+        QueryProductSelection::Handle(handle) => Bank::Handle(handle),
         QueryProductSelection::ObservationStatePoisoned => Bank::ObservationStatePoisoned,
         QueryProductSelection::OwnerUnavailable => Bank::OwnerUnavailable,
         QueryProductSelection::ForeignOwner => Bank::ForeignOwner,

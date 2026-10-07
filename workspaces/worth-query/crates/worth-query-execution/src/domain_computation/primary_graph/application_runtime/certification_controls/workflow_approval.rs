@@ -25,7 +25,11 @@ where
         &self,
         instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
         approval: EntityId,
-    ) -> Result<(), TransactionCommitError> {
+    ) -> Result<
+        Result<(), TransactionCommitError>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.primary_provider.graph.with_runtime(|_| ())?;
         let selected = self
             .on_branch(instance.branch())
             .select()
@@ -70,7 +74,11 @@ where
         &self,
         instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
         approval: EntityId,
-    ) -> Result<(), TransactionCommitError> {
+    ) -> Result<
+        Result<(), TransactionCommitError>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.primary_provider.graph.with_runtime(|_| ())?;
         let selected = self
             .on_branch(instance.branch())
             .select()

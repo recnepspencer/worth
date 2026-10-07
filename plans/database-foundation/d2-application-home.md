@@ -454,7 +454,10 @@ minutes is split by target and filter first. The old constructors live from D.2.
 - *An ordinal reused across reopen.* Ordinals are written into authoritative state: the
   product-branch ordinal names Relational branches, so it is recovered at open from live and
   retired names (checkpointed from D.2.1), exhausts as `IdentityExhausted` rather than wrapping,
-  and has the delete-highest-then-reopen test. D.2.9 audits every other counter for the same (the
+  and has the delete-highest-then-reopen test. A fork that reuses the Relational branch and forks
+  only Signal takes an ordinal that leaves no Relational name; that is safe only while reopen
+  rebuilds the root World and no Signal branch survives, so the slice that makes Signal branches
+  durable adds their names to the recovery. D.2.9 audits every other counter for the same (the
   mutation partition first); any that reaches authoritative state is recovered the same way in
   that slice, the rest are Absent rows.
 - *`at(path)` doing real work.* Refused before any filesystem call; the test asserts the path does

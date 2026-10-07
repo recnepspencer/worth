@@ -25,7 +25,7 @@ pub(super) fn commit_record(
 ) {
     let record = record_for(identity);
     let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(|runtime| {
+    let (binding, commit, runtime_id) = provider.graph.with_open_runtime_mut(|runtime| {
         let mut transaction: BranchBoundRelationalTransaction = {
     let transaction_validation_input = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())

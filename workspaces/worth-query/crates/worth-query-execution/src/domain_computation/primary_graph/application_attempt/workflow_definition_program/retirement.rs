@@ -72,7 +72,7 @@ where
         let layout = self.lease.layout.workflow().clone();
         let observed = self.lease.handle().with_runtime(|runtime| {
             observe_retirement::<Spec>(runtime, self.lease.snapshot(), &layout, &published)
-        })?;
+        })??;
         if self.facts.len().saturating_add(observed.facts.len())
             > self
                 .admission

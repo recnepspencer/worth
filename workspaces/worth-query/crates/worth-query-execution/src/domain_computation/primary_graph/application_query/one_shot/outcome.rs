@@ -294,6 +294,13 @@ where
             _marker: PhantomData,
         });
     let basis_release = plan.basis.release();
+    if let super::super::resource_lifecycle::WorthQueryApplicationBasisReleaseOutcome::Handle(
+        handle,
+    ) = basis_release.outcome()
+    {
+        return Err(denial(WorthQueryApplicationOneShotDenialKind::Authorization(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Handle(handle)), plan.query.name(), plan.query.name()));
+    }
     // A producer's exact selected wave may retain the authentic native
     // resources. The receipt separately reports physical release; completing
     // this read requires surrendering its own complete local custody.

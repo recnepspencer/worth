@@ -6,6 +6,7 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     in_memory_rostered_program_from_checkpoint_with_transition,
     in_memory_rostered_program_with_authorization_time_source, program,
     WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
+    WorthQueryApplicationCloseDenial, WorthQueryApplicationCloseRefusal,
     WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial, WorthQueryApplicationOpenRefusal,
     WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
     WorthQueryApplicationPreviewSession, WorthQueryApplicationProfile,

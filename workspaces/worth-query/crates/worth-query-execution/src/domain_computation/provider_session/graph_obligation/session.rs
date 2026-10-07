@@ -356,9 +356,21 @@ impl WorthQueryManagedGraphWorkSession {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryManagedGraphReadDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     MutationSession,
     ForeignBasis,
     ForeignGraph,
     ForeignReadProof,
     TerminalReleaseMismatch,
+}
+
+impl WorthQueryManagedGraphReadDenial {
+    pub(in crate::domain_computation) fn handle_denial(
+        self,
+    ) -> Option<crate::facade::primary_graph::WorthQueryHandleDenial> {
+        match self {
+            Self::Handle(handle) => Some(handle),
+            _ => None,
+        }
+    }
 }

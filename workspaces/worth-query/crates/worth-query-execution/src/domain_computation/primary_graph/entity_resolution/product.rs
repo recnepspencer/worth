@@ -330,7 +330,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             installed
                 .at_snapshot(relational, self.application_basis().snapshot_handle(), mode)
                 .map(|truth| truth.resolve_with_work(entity, aspect, field, encoded))
-        })?;
+        })??;
         if let Some(admission) = admission {
             let actual_work = key_bytes
                 .checked_mul(2 + u64::try_from(examined).unwrap_or(u64::MAX))

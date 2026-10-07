@@ -52,7 +52,7 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()));
+        .with_open_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()));
     drop(product_b);
     let last = basis_b.release();
     assert!(last.released());
@@ -62,7 +62,7 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()));
+        .with_open_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()));
 }
 
 #[test]
@@ -180,7 +180,7 @@ fn shared_basis_drop_releases_the_final_native_owner() {
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()));
+        .with_open_runtime(|runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()));
 }
 
 #[test]
@@ -259,5 +259,9 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     );
     assert!(release.custody_released());
     assert!(!release.released());
-    assert!(shared.selected().application_basis().is_live());
+    assert!(shared
+        .selected()
+        .application_basis()
+        .is_live()
+        .expect("fixture retains an open basis"));
 }

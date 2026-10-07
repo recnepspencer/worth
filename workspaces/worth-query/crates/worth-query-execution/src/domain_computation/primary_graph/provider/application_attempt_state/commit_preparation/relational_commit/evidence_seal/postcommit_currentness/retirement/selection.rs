@@ -77,7 +77,7 @@ fn sealed_rebase(
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             exact(super::super::super::rebase_output(
                 runtime,
                 selected.application_basis().snapshot_handle(),

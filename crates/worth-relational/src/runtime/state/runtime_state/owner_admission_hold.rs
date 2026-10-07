@@ -33,6 +33,11 @@ pub type RelationalRuntimeAdmissionHoldOutcome<'owner> =
     TransitionOutcome<RelationalRuntimeAdmissionHold<'owner>, RelationalRuntimeAdmissionHoldDenial>;
 
 impl RelationalRuntime {
+    /// Whether this owner has permanently sealed admission.
+    pub fn owner_is_sealed(&self) -> bool {
+        matches!(self.tenure, RelationalRuntimeTenure::Sealed(_))
+    }
+
     /// Hold admission without waiting for existing work. A refusal releases
     /// any temporary hold before returning and leaves settlement custody intact.
     /// Immediately after release, a woken waiter may be retrying admission; a

@@ -21,10 +21,11 @@ impl WorthQueryWorkspace {
                 product,
                 worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
             );
-        self.runtime
-            .installed_product
-            .managed_run_admission(&self.runtime.execution_runtime)
-            .admit_direct(operation, attempt, request)
+        let admission = match self.runtime.installed_product.managed_run_admission(&self.runtime.execution_runtime) {
+            Ok(admission) => admission,
+            Err(denial) => return Err(worth_query_execution::facade::runtime::WorthQueryManagedDirectRunAdmissionFailure::from_handle(denial, attempt)),
+        };
+        admission.admit_direct(operation, attempt, request)
     }
 
     pub(crate) fn admit_managed_workflow_run(
@@ -41,10 +42,11 @@ impl WorthQueryWorkspace {
                 product,
                 worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
             );
-        self.runtime
-            .installed_product
-            .managed_run_admission(&self.runtime.execution_runtime)
-            .admit_workflow(operation, attempt, request)
+        let admission = match self.runtime.installed_product.managed_run_admission(&self.runtime.execution_runtime) {
+            Ok(admission) => admission,
+            Err(denial) => return Err(worth_query_execution::facade::runtime::WorthQueryManagedWorkflowRunAdmissionFailure::from_handle(denial, attempt)),
+        };
+        admission.admit_workflow(operation, attempt, request)
     }
 
     pub fn observe_operating_world(

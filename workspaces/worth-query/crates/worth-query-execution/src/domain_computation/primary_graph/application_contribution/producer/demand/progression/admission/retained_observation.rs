@@ -208,7 +208,7 @@ where
                     }
                     Err(ConsumedOutputVerificationStop::Unavailable) => Err(unavailable()),
                 }
-            })?;
+            })??;
             if verified {
                 current = Some(output);
                 break;

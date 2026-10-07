@@ -1,6 +1,7 @@
 /// Why an entity could not be resolved from its identity field.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryEntityResolutionDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// Resolution was cancelled.
     Cancelled,
     /// Resolution reached its deadline.
@@ -26,9 +27,13 @@ pub enum WorthQueryEntityResolutionDenialKind {
     /// A complete selection needs a nonzero finite candidate limit.
     InvalidCandidateLimit,
     /// The complete equality result exceeds the caller's candidate limit.
-    CandidateLimitExceeded { maximum: usize },
+    CandidateLimitExceeded {
+        maximum: usize,
+    },
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain a basis.
@@ -80,3 +85,14 @@ impl std::fmt::Display for WorthQueryEntityResolutionDenial {
 }
 
 impl std::error::Error for WorthQueryEntityResolutionDenial {}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryEntityResolutionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryEntityResolutionDenialKind::Handle(denial),
+            "application handle",
+        )
+    }
+}

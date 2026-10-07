@@ -209,7 +209,7 @@ impl WorthQueryRuntime {
             _ => return Ok(()),
         };
         let upstreams = retained_upstream_inputs_for_declaration(self, &declaration)?;
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity()?;
         let refresh_identity = WorthQueryCommitIdentity::preview(
             WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::WriteReceiptCommitIdentity,

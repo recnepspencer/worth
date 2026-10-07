@@ -53,7 +53,7 @@ pub(super) fn revoke_account_ownership(world: &AuthorizationWorld, account: Enti
         .expect("account ownership is installed")
         .kind;
     let selected = world.selected_product();
-    let relation = graph.integration_handle().with_runtime_mut(|runtime| {
+    let relation = graph.integration_handle().with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let relation = runtime
             .read_truth()

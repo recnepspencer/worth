@@ -71,6 +71,7 @@ pub enum WorthQueryHistoricalNextAction {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryHistoricalStopSource {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     HistoryUnavailable,
     StaleContext,
     ContextAdmission,

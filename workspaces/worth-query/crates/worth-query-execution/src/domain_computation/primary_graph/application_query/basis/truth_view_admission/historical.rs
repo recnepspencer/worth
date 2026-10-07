@@ -82,7 +82,7 @@ where
                     .graph
                     .with_runtime(|runtime| {
                         runtime.readmit_retained_branch_basis(&descriptor, retention.lease())
-                    })
+                    })?
                     .map_err(super::super::map_basis_denial)?;
                 let selected_commit = self.primary_provider.graph.with_runtime(|runtime| {
                     runtime
@@ -90,7 +90,7 @@ where
                         .branch_head_for_observation(&basis.observation())
                         .ok()
                         .flatten()
-                });
+                })?;
                 if selected_commit.as_ref() != Some(&commit) {
                     return Err(denial(
                         WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,

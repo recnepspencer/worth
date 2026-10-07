@@ -9,6 +9,7 @@ use super::super::{
 };
 
 pub(super) enum WorthQueryLiveProjectionFinalizationDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     BasisRelease,
     ResultShape,
     Projection(WorthQueryApplicationProjectionDenialKind),
@@ -52,6 +53,12 @@ where
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
     let basis_release = plan.basis.release();
+    if let super::super::resource_lifecycle::WorthQueryApplicationBasisReleaseOutcome::Handle(
+        handle,
+    ) = basis_release.outcome()
+    {
+        return Err(WorthQueryLiveProjectionFinalizationDenial::Handle(handle));
+    }
     let released = basis_release.released();
     if !released {
         return Err(WorthQueryLiveProjectionFinalizationDenial::BasisRelease);

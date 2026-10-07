@@ -55,7 +55,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
             target_operation,
             &mut facts,
         )
-    })?;
+    })??;
     if facts.len() > maximum_facts {
         return Err(WorthQueryApplicationAttemptDenial::new(
             WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,

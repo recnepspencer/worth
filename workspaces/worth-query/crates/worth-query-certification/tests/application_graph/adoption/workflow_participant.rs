@@ -60,7 +60,8 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
 
     let (published_under, carried) = application
         .runtime()
-        .workflow_definition_revisions_for_test(&definition);
+        .workflow_definition_revisions_for_test(&definition)
+        .expect("the workflow fixture requires an open application owner");
     assert!(published_under.is_some() && carried.is_none());
     publish_adoption(prepare_second_program_adoption(
         &application,
@@ -69,7 +70,8 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
     ));
     let (still_published_under, carried) = application
         .runtime()
-        .workflow_definition_revisions_for_test(&definition);
+        .workflow_definition_revisions_for_test(&definition)
+        .expect("the workflow fixture requires an open application owner");
     assert_eq!(
         still_published_under, published_under,
         "carriage never rewrites publication provenance",

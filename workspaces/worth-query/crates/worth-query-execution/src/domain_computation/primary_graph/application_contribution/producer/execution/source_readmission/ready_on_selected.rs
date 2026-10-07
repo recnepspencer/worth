@@ -162,7 +162,7 @@ where
                             positioned,
                             admission,
                         )
-                    })
+                    })?
                     .map_err(|stop| ready::ready_currentness_denial(Binding::IDENTITY, stop))?;
                 sealed
                     .validate_request(admission)
@@ -221,7 +221,7 @@ where
                                             sealed.snapshot_handle(),
                                             admission,
                                         )
-                                    })
+                                    })?
                                     .map_err(|stop| ready::ready_currentness_denial(
                                         Binding::IDENTITY,
                                         CurrentAcceptedStop::Closure(stop),

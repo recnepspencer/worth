@@ -364,7 +364,7 @@ where
                     resolution_denial(kind, binding)
                 }
             })
-        })?;
+        })??;
         admit_resolution_request(scope, binding, external.is_expired())?;
         WorthQueryAuthenticatedPrincipal::mint_admitted(external, evidence, |work, bytes| {
             admission.admit_read_scratch(bytes)?;

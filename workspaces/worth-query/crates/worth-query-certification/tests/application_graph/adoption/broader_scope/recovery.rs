@@ -47,7 +47,9 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } if *branch == b
@@ -63,7 +65,9 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
         .unpublished_custody()
         .is_some_and(|unpublished| unpublished.relational_requires_settlement()));
 
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     let failure = host
         .runtime()
         .request(&principal, &scope)
@@ -158,7 +162,9 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     assert!(matches!(
         adoption.advance().unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } if *branch == b

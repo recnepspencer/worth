@@ -15,7 +15,7 @@ fn retained_world_unpublished_completion_settles_and_publishes_without_recreatin
     let before_relational = owner_commits(&world);
     let before_product = product_commit(&world);
     let request = super::super::fixture::live_scope();
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     let receipt = world
         .application
         .receive_inbound_occurrence(&world.verifier, &envelope, &request)
@@ -53,7 +53,7 @@ fn revoked_source_preserves_accepted_world_recovery_without_new_consumption() {
     let record = dispatch.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xa2; 32], record.payload(), false);
     let request = super::super::fixture::live_scope();
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     assert_eq!(
         world
             .application
@@ -99,7 +99,7 @@ fn owner_maintenance_finishes_accepted_recovery_after_signed_envelope_expires() 
     let record = dispatch.dispatch_outbox().unwrap();
     let envelope = signed_envelope_for_seconds(record, [0xa3; 32], record.payload(), false, 1);
     let request = super::super::fixture::live_scope();
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     assert_eq!(
         world
             .application

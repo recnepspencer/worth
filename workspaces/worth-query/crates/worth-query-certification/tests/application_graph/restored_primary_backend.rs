@@ -130,6 +130,7 @@ fn ledger_position(
     installation
         .retain_primary_graph_integration_handle()
         .with_runtime(|runtime| runtime.history().latest_patch_stream_position())
+        .expect("the restored fixture requires an open application owner")
 }
 
 fn identity_insert(ordinal: usize) -> WorthQueryWriteCommand {

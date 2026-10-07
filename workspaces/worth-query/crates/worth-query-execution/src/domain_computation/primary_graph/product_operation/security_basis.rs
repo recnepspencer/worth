@@ -116,13 +116,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         runtime,
                         observation.basis().relational_basis(),
                     )
-                })
+                })?
                 .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
         }
         let relational = observation.basis().relational_basis();
-        if let Some(query_basis) =
-            query_basis.filter(|basis| basis.can_reuse_security_snapshot_at(observation))
-        {
+        let reusable = match query_basis {
+            Some(basis) if basis.can_reuse_security_snapshot_at(observation)? => Some(basis),
+            _ => None,
+        };
+        if let Some(query_basis) = reusable {
             let (_, interpretation) = self
                 .retain_selected_program_interpretation(relational)?
                 .into_parts();

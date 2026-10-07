@@ -64,8 +64,10 @@ impl PublishedStableLineage {
     }
     pub(in crate::domain_computation::primary_graph) fn checkpoint_source_facts(
         &self,
-    ) -> Option<Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>>
-    {
+    ) -> Result<
+        Option<Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>>,
+        worth_relational::facade::durability::DurabilityError,
+    > {
         self.recorded().checkpoint_source_facts()
     }
     pub(in crate::domain_computation::primary_graph) fn observation(

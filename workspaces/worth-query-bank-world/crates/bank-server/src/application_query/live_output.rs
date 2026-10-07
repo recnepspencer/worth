@@ -32,6 +32,7 @@ pub enum BankApplicationLiveCauseDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationLiveCloseOutcome {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     Completed,
     Unavailable,
 }
@@ -101,6 +102,7 @@ impl BankApplicationLiveCauseDenial {
 impl BankApplicationLiveCloseOutcome {
     pub(crate) fn from_query(outcome: WorthQueryApplicationLiveCloseOutcome) -> Self {
         match outcome {
+            WorthQueryApplicationLiveCloseOutcome::Handle(handle) => Self::Handle(handle),
             WorthQueryApplicationLiveCloseOutcome::Completed(_) => Self::Completed,
             WorthQueryApplicationLiveCloseOutcome::Unavailable => Self::Unavailable,
         }

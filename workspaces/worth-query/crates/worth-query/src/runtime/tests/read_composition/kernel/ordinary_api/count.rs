@@ -240,12 +240,14 @@ impl WorthQueryRuntimeSourceAdapter for CountCollectionSourceAdapter {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        if self.declared_targets.contains(target) {
-            self.rows.clone()
-        } else {
-            Vec::new()
-        }
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok({
+            if self.declared_targets.contains(target) {
+                self.rows.clone()
+            } else {
+                Vec::new()
+            }
+        })
     }
 
     fn drain_live_patches_for_target(

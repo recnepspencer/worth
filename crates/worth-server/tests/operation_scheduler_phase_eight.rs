@@ -156,6 +156,7 @@ fn mutation_scheduler_reports_exact_lane_and_conflict_counters() {
         .query_handoff()
         .workspace()
         .snapshot_identity()
+        .expect("the seed workspace is open")
         .terminal_projection_for_reporting()
         .to_string();
     let executed = server

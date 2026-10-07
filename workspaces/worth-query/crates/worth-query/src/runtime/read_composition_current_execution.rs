@@ -110,7 +110,7 @@ fn admit_current_read_execution(
     runtime: &WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryCurrentReadExecutionAdmission, WorthQueryReadDenial> {
-    let snapshot_identity = runtime.current_snapshot_identity();
+    let snapshot_identity = runtime.current_snapshot_identity()?;
     let identity = crate::basis::ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,

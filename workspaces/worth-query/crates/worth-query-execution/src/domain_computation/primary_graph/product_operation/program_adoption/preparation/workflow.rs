@@ -46,7 +46,7 @@ pub(super) fn inventory<Schema: ApplicationSchema>(
         let branch = super::selection::branch_view(runtime, selected.product().relational_basis())?;
         inventory_workflows(branch, &request)
             .map_err(|denial| workflow_read_denial(denial, maximum_work_units, 0))
-    })
+    })?
 }
 
 /// Admits the caller's workflow choices against the fresh inventory. An empty

@@ -146,7 +146,9 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
         .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     let unpublished = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
         _ => panic!("the injected durability loss must retain adoption custody"),
@@ -219,7 +221,9 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
         .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     let recovery = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
             unpublished.into_recovery()

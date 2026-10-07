@@ -84,7 +84,7 @@ fn replace_grantor_with_custodian(
         .kind;
     let handle = graph.integration_handle();
     let selected = world.selected_product();
-    let grantor = handle.with_runtime_mut(|runtime| {
+    let grantor = handle.with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         runtime
             .read_truth()

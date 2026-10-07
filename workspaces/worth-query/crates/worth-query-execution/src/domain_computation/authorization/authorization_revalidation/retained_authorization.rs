@@ -69,7 +69,7 @@ where
                 self.authorization.bridge(),
             );
             current
-        })
+        })?
     }
 
     fn validate_retained_capability(
@@ -102,7 +102,7 @@ where
                 self.readmit_retained_capability_support(capability.supporting(), runtime, snapshot)
             });
             result
-        })
+        })?
     }
 
     fn validate_retained_capability_observation(

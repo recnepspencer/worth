@@ -45,7 +45,7 @@ fn retained_re_registration_marks_existing_consumers_pending() {
         coordinate,
         0,
     );
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         write_field(runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let before_facts: Arc<[_]> =

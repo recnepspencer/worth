@@ -39,18 +39,20 @@ impl WorthQueryRuntimeSourceAdapter for PermissivePolicyRowSourceAdapter {
     fn live_entities_for_target(
         &self,
         _target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        vec![WorthQueryEntity::from_native_field_values(
-            crate::memory_workspace::admit_authored_entity_label("user"),
-            BTreeMap::from([
-                (native_field_path("identity", "id"), string_value("user")),
-                (
-                    native_field_path("profile", "display_name"),
-                    string_value("Ada"),
-                ),
-                (native_field_path("profile", "handle"), string_value("@ada")),
-            ]),
-        )]
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok({
+            vec![WorthQueryEntity::from_native_field_values(
+                crate::memory_workspace::admit_authored_entity_label("user"),
+                BTreeMap::from([
+                    (native_field_path("identity", "id"), string_value("user")),
+                    (
+                        native_field_path("profile", "display_name"),
+                        string_value("Ada"),
+                    ),
+                    (native_field_path("profile", "handle"), string_value("@ada")),
+                ]),
+            )]
+        })
     }
 
     fn drain_live_patches_for_target(

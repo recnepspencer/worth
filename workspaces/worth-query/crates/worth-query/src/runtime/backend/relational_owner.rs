@@ -14,9 +14,12 @@ pub(super) enum WorthQueryBackendRelationalOwner {
 }
 
 impl WorthQueryBackendRelationalOwner {
-    pub(super) fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
+    pub(super) fn with_runtime<T>(
+        &self,
+        read: impl FnOnce(&RelationalRuntime) -> T,
+    ) -> Result<T, worth_query_execution::facade::primary_graph::WorthQueryHandleDenial> {
         match self {
-            Self::Unpublished(runtime) => read(runtime),
+            Self::Unpublished(runtime) => Ok(read(runtime)),
             Self::ProductSource(owner) => owner.with_runtime(read),
             Self::PrimaryGraph(owner) => owner.with_runtime(read),
         }
@@ -28,7 +31,7 @@ impl WorthQueryBackendRelationalOwner {
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
         match self {
             Self::Unpublished(runtime) => Ok(mutate(runtime)),
-            Self::ProductSource(owner) => Ok(owner.with_runtime_mut(mutate)),
+            Self::ProductSource(owner) => Ok(owner.with_runtime_mut(mutate)?),
             Self::PrimaryGraph(owner) => owner.execute_mutation(mutate),
         }
     }
@@ -44,12 +47,12 @@ impl WorthQueryBackendRelationalOwner {
             Self::PrimaryGraph(owner) => {
                 return owner
                     .prepare_product_source()
-                    .map_err(super::WorthQueryProductSourceDenial::Basis)
+                    .map_err(super::WorthQueryProductSourceDenial::from)
             }
         };
-        let branch = owner.with_runtime(|runtime| runtime.main_branch_identity());
+        let branch = owner.with_runtime(|runtime| runtime.main_branch_identity())?;
         owner
             .prepare_product_source(&branch)
-            .map_err(super::WorthQueryProductSourceDenial::Basis)
+            .map_err(super::WorthQueryProductSourceDenial::from)
     }
 }

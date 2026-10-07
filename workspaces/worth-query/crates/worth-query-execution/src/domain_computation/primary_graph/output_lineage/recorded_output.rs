@@ -70,11 +70,19 @@ impl RecordedOutput {
     /// Fresh and consumes its upstreams again, never a stale reuse.
     pub(super) fn checkpoint_source_facts(
         &self,
-    ) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
-        self.consumed_outputs
-            .is_empty()
-            .then(|| self.observed_source_facts())
-            .flatten()
+    ) -> Result<
+        Option<Arc<[WorthQueryApplicationObservedFact]>>,
+        worth_relational::facade::durability::DurabilityError,
+    > {
+        if !self.consumed_outputs.is_empty() {
+            return Ok(None);
+        }
+        let mutable = match self.mutable.try_lock() {
+            Ok(mutable) => mutable,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(worth_relational::facade::durability::DurabilityError::new(worth_relational::facade::durability::RecoveryFailureClass::CheckpointPublicationInFlight, "Query output fact publication is in flight")),
+        };
+        Ok(mutable.observed_source_facts.clone())
     }
 
     pub(super) fn resources(&self) -> Option<WorthQueryProducerDemandResources> {

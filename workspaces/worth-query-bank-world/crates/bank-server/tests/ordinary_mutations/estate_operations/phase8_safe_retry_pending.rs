@@ -122,7 +122,8 @@ fn safe_retry_names_an_unavailable_terminal_index_until_maintenance_settles_it()
         .fixture
         .world
         .runtime
-        .fail_next_durable_append_for_test();
+        .fail_next_durable_append_for_test()
+        .expect("the Bank fixture requires an open application owner");
     let handle = refused_retry(
         &world,
         handle,

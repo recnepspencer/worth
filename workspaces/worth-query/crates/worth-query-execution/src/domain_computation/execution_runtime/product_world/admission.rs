@@ -8,6 +8,7 @@ impl WorthQueryProductRuntime {
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.gate.with_runtime(|_| ())?;
         if occurrence.owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
         }
@@ -43,8 +44,13 @@ impl WorthQueryProductRuntime {
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
         let bridge_source = self
-            .source
-            .retain_branch_basis_for_bridge(observation.basis().relational_basis())
+            .gate
+            .with_runtime(|runtime| {
+                self.source.retain_branch_basis_for_bridge_in_runtime(
+                    runtime,
+                    observation.basis().relational_basis(),
+                )
+            })?
             .map_err(|_| WorthQueryProductBranchAdmissionDenial::BridgeSourceUnavailable)?;
         Ok(WorthQueryProductBranchLease::new(
             super::WorthQueryProductPublicationBinding::new(
@@ -67,6 +73,7 @@ impl WorthQueryProductRuntime {
             worth_runtime_world::facade::ProductBranchObservation,
         ) -> Result<Output, WorthQueryProductBranchAdmissionDenial>,
     ) -> Result<Output, WorthQueryProductBranchAdmissionDenial> {
+        self.gate.with_runtime(|_| ())?;
         if identity.owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
         }

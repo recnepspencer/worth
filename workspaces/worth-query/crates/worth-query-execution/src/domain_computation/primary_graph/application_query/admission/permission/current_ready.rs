@@ -70,6 +70,7 @@ where
                 admission,
             )
             .map_err(|stop| match stop {
+                SelectedPermissionSecurityStop::Handle(handle) => handle.into(),
                 SelectedPermissionSecurityStop::Admission(stop) => resource_denial(stop),
                 SelectedPermissionSecurityStop::AccountingOverflow => work_denial(),
                 SelectedPermissionSecurityStop::World => denial(

@@ -30,6 +30,7 @@ pub enum BankGraphReadPlanReviewDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationQueryAdmissionDenialKind {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     InstalledQuery(BankApplicationQueryInstallationDenialKind),
     ForeignPrincipal,
     ForeignScope,
@@ -73,6 +74,7 @@ pub enum BankApplicationQueryAdmissionDenialKind {
 pub(super) const fn admission(kind: Query) -> BankApplicationQueryAdmissionDenialKind {
     use BankApplicationQueryAdmissionDenialKind as Bank;
     match kind {
+        Query::Handle(handle) => Bank::Handle(handle),
         Query::InstalledQuery(kind) => Bank::InstalledQuery(query_installation(kind)),
         Query::ForeignPrincipal => Bank::ForeignPrincipal,
         Query::ForeignScope => Bank::ForeignScope,

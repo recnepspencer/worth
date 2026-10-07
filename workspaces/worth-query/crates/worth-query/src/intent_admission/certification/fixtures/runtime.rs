@@ -1,3 +1,6 @@
+mod snapshot_identity;
+use snapshot_identity::CertificationSnapshotIdentity;
+
 use super::bridge::certification_bridge_from_source;
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
 use crate::facade::foundation::{
@@ -113,14 +116,6 @@ fn certification_product_root(
     (source, bridge)
 }
 
-struct CertificationSnapshotIdentity;
-
-impl WorthQueryRuntimeSnapshotIdentityAdapter for CertificationSnapshotIdentity {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        certification_snapshot_identity("certification-runtime-current-snapshot")
-    }
-}
-
 pub(super) fn certification_support_profile() -> WorthQueryRuntimeSupportProfile {
     WorthQueryRuntimeSupportProfile::bridge_backed(
         "certification-subscription-activation",
@@ -224,8 +219,8 @@ impl WorthQueryRuntimeSourceAdapter for CertificationSourceAdapter {
     fn live_entities_for_target(
         &self,
         _target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        Vec::new()
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok(Vec::new())
     }
 
     fn drain_live_patches_for_target(

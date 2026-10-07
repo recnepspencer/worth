@@ -25,8 +25,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         .application
         .granular_invalidation_installation()
         .retain_primary_graph_integration_handle();
-    let commits_before =
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count());
+    let commits_before = super::courtroom_support::immutable_commit_count(&integration);
     integration
         .execute_mutation_with_index_refresh(|runtime| {
             runtime.fail_next_durable_append_for_test();
@@ -54,7 +53,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         primary_graph::WorthQueryConditionalExecutionTerminal::ProductUnpublished
     );
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        super::courtroom_support::immutable_commit_count(&integration),
         commits_before + 1
     );
     let page = world
@@ -116,7 +115,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         "settlement cannot fabricate a product occurrence"
     );
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        super::courtroom_support::immutable_commit_count(&integration),
         commits_before + 1
     );
     let cleanup = world
@@ -171,8 +170,7 @@ pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
         .application
         .granular_invalidation_installation()
         .retain_primary_graph_integration_handle();
-    let commits_before =
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count());
+    let commits_before = super::courtroom_support::immutable_commit_count(&integration);
     world.application.fail_next_post_commit_snapshot_for_test();
 
     let committed = observe(&world);
@@ -189,7 +187,7 @@ pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
     let current_commit = current.product().selected_commit().clone();
     drop(current);
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        super::courtroom_support::immutable_commit_count(&integration),
         commits_before + 1
     );
     assert_authoritative_value(
@@ -221,7 +219,7 @@ pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
         &current_commit
     );
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        super::courtroom_support::immutable_commit_count(&integration),
         commits_before + 1
     );
 }

@@ -1,3 +1,5 @@
+use super::WorthQueryHandleDenial;
+
 use std::sync::{Arc, Mutex};
 
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -25,6 +27,8 @@ pub struct WorthQueryRelationalSourceOwner {
     pub(in crate::domain_computation) invalidation_owner:
         Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     canonical_subscription: RelationalBridgeCanonicalSubscription,
+    #[cfg(test)]
+    pub(super) fail_next_closing_capture: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl WorthQueryRelationalSourceOwner {
@@ -59,6 +63,8 @@ impl WorthQueryRelationalSourceOwner {
             bridge_head: Arc::new(Mutex::new(None)),
             invalidation_owner,
             canonical_subscription: subscription,
+            #[cfg(test)]
+            fail_next_closing_capture: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         })
     }
 
@@ -73,37 +79,73 @@ impl WorthQueryRelationalSourceOwner {
             .mint_cell_at_head(&self.canonical_subscription, head, admission)
     }
 
-    pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
+    pub fn with_runtime<T>(
+        &self,
+        read: impl FnOnce(&RelationalRuntime) -> T,
+    ) -> Result<T, WorthQueryHandleDenial> {
         let runtime = self
             .runtime
             .lock()
-            .expect("Relational source owner is available");
-        read(&runtime)
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if runtime.owner_is_sealed() {
+            return Err(WorthQueryHandleDenial::Closed);
+        }
+        Ok(read(&runtime))
     }
 
-    pub fn with_runtime_mut<T>(&self, mutate: impl FnOnce(&mut RelationalRuntime) -> T) -> T {
+    pub fn with_runtime_mut<T>(
+        &self,
+        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
+    ) -> Result<T, WorthQueryHandleDenial> {
         let mut runtime = self
             .runtime
             .lock()
-            .expect("Relational source owner is available");
-        mutate(&mut runtime)
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if runtime.owner_is_sealed() {
+            return Err(WorthQueryHandleDenial::Closed);
+        }
+        Ok(mutate(&mut runtime))
     }
 
     pub(crate) fn with_runtime_mut_unwind_isolated<T>(
         &self,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
-    ) -> T {
+    ) -> Result<T, WorthQueryHandleDenial> {
         let mut runtime = self
             .runtime
             .lock()
-            .expect("Relational source owner is available");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if runtime.owner_is_sealed() {
+            return Err(WorthQueryHandleDenial::Closed);
+        }
         let outcome =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(&mut runtime)));
         drop(runtime);
         match outcome {
-            Ok(value) => value,
+            Ok(value) => Ok(value),
             Err(payload) => std::panic::resume_unwind(payload),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_open_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
+        self.with_runtime(read)
+            .expect("the fixture requires its application owner to remain open")
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_open_runtime_mut<T>(
+        &self,
+        read: impl FnOnce(&mut RelationalRuntime) -> T,
+    ) -> T {
+        self.with_runtime_mut(read)
+            .expect("the fixture requires its application owner to remain open")
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation) fn fail_closing_capture_for_test(&self) {
+        self.fail_next_closing_capture
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn bridge_source(&self) -> RuntimeBridgeRelationalSource {

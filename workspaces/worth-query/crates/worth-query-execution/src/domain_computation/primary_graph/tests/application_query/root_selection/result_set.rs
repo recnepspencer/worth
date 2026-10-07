@@ -35,7 +35,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .unwrap()
         .kind;
     let selected = world.selected_product();
-    let (relations, primary_target) = graph.integration_handle().with_runtime(|runtime| {
+    let (relations, primary_target) = graph.integration_handle().with_open_runtime(|runtime| {
         let primary_target = runtime
             .read_truth()
             .visible_relations_of_kind(
@@ -124,7 +124,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         )),
     );
     let current = world.selected_product();
-    assert!(!graph.integration_handle().with_runtime(|runtime| {
+    assert!(!graph.integration_handle().with_open_runtime(|runtime| {
         fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0

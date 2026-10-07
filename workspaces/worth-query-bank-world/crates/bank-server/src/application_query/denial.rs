@@ -49,6 +49,7 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     SourceQueryInstallation(BankApplicationQueryInstallationDenialKind),
     SourcePrincipal(WorthQueryPrincipalResolutionDenialKind),
     SourceScope(BankEntityResolutionDenialKind),
@@ -253,6 +254,7 @@ impl BankApplicationQueryDenial {
         use WorthQueryOutputDemandDenialKind as Query;
 
         let kind = match denial.kind() {
+            Query::Handle(handle) => Bank::Handle(handle),
             Query::SourceQueryInstallation(kind) => {
                 Bank::SourceQueryInstallation(query_installation(kind))
             }

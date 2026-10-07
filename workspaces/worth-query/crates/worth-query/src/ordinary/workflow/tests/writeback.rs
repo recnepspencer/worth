@@ -70,8 +70,13 @@ fn ordinary_and_explicit_writeback_paths_preserve_identical_evidence() {
     let explicit_workspace = stateful_bridge_task_runtime()
         .workspace("explicit-writeback-parity")
         .expect("explicit workspace should open");
-    let (explicit_receipt, explicit_diagnostics) =
-        explicit_writeback(&declaration, explicit_workspace.snapshot_identity(), true);
+    let (explicit_receipt, explicit_diagnostics) = explicit_writeback(
+        &declaration,
+        explicit_workspace
+            .snapshot_identity()
+            .expect("the fixture owner remains open"),
+        true,
+    );
 
     let mut ordinary_workspace = stateful_bridge_task_runtime()
         .workspace("ordinary-writeback-parity")

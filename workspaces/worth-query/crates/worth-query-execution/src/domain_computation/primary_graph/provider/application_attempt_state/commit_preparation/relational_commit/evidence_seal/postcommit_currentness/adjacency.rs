@@ -133,7 +133,7 @@ mod tests {
             to: principal.entity_id(),
             matching_relations: Vec::new(),
         };
-        graph.integration_handle().with_runtime(|runtime| {
+        graph.integration_handle().with_open_runtime(|runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
             let mut zero_work = admission(0);
             assert!(matches!(

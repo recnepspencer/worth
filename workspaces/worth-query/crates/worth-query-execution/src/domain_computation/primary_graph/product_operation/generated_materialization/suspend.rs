@@ -168,7 +168,7 @@ where
                     product.relational_basis(),
                     &generated_entities,
                 )
-        });
+        })?;
         let prepared = prepared.map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
         let (candidate, completion) = prepared.into_parts();
         let prepared = product

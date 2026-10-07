@@ -40,6 +40,7 @@ pub enum WorthQueryWorkflowDefinitionDiscovery {
 /// Why a branch's workflow definitions could not be discovered.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowDefinitionDiscoveryDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The identity names a lineage another workflow spec published. Naming
     /// the spec that published it is the only way to discover it.
     ForeignLineage,
@@ -98,7 +99,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 }
                 None => Err(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable),
             }
-        })
+        })?
     }
 }
 
@@ -176,4 +177,12 @@ fn select_lineage(
 
 fn text(value: &str) -> AspectValue {
     AspectValue::String(InternedString::Raw(value.to_owned()))
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryWorkflowDefinitionDiscoveryDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
+    }
 }

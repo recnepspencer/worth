@@ -162,7 +162,7 @@ fn reads(world: &AuthorizationWorld, key: &str) -> (EntityId, KindId, Vec<Fact>)
         .unwrap()
         .kind;
     let (aspect_revision, field_revision, adjacency_revision, relations) =
-        graph.integration_handle().with_runtime(|runtime| {
+        graph.integration_handle().with_open_runtime(|runtime| {
             let view = runtime
                 .read_truth()
                 .project_snapshot(selected.application_basis().snapshot_handle())
@@ -269,7 +269,7 @@ fn rebase_current(
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
@@ -287,7 +287,7 @@ fn normal_rebase(world: &AuthorizationWorld, facts: Vec<Fact>) -> std::sync::Arc
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             exact(super::super::rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
@@ -326,7 +326,7 @@ fn selection(world: &AuthorizationWorld, facts: &[Fact]) -> bool {
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             matches!(
                 compare_retained_output_dependencies(
                     runtime,

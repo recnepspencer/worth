@@ -4,6 +4,7 @@ use crate::domain_computation::WorthQueryDirectExecutionResourceAttempt;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedDirectRunAdmissionFailureKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     QueryAuthority,
     ProductBasisMismatch,
     RelationalBasis,
@@ -23,6 +24,18 @@ pub struct WorthQueryManagedDirectRunAdmissionFailure {
 }
 
 impl WorthQueryManagedDirectRunAdmissionFailure {
+    #[doc(hidden)]
+    pub fn from_handle(
+        denial: crate::facade::primary_graph::WorthQueryHandleDenial,
+        resource_attempt: WorthQueryDirectExecutionResourceAttempt,
+    ) -> Self {
+        Self::new(
+            WorthQueryManagedDirectRunAdmissionFailureKind::Handle(denial),
+            denial.to_string(),
+            resource_attempt,
+        )
+    }
+
     pub(super) fn new(
         kind: WorthQueryManagedDirectRunAdmissionFailureKind,
         detail: impl Into<Arc<str>>,

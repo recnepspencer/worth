@@ -172,7 +172,10 @@ where
     admit_request(request, plan.query.name())?;
     validate_basis_lifetime(&plan.controls, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    if !plan.basis.is_live() {
+    if !plan.basis.is_live().map_err(|handle| denial(
+        WorthQueryApplicationOneShotDenialKind::Authorization(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Handle(handle)),
+        plan.query.name(), plan.query.name()))? {
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::BasisUnavailable,
             plan.query.name(),

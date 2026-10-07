@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 /// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The admission's current authority no longer holds, or inspecting the key was
     /// not authorized, for the named reason. The authorization denial has the
     /// contributing causes.
@@ -17,7 +18,9 @@ pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
     /// to resolve against.
     ForeignAdmission,
     /// The provider holds its maximum number of active snapshots.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The provider has no retention capacity for the read.
     RetentionCapacityExhausted,
     /// The provider has run out of retention identities.
@@ -106,6 +109,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
 
     pub(super) fn from_provider(denial: Provider) -> Self {
         let kind = match denial {
+            Provider::Handle(denial) => return denial.into(),
             Provider::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             } => WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted {
@@ -153,3 +157,14 @@ impl std::fmt::Display for WorthQueryApplicationIdempotencyResolutionDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationIdempotencyResolutionDenial {}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryApplicationIdempotencyResolutionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self {
+            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Handle(denial),
+            authorization: None,
+        }
+    }
+}

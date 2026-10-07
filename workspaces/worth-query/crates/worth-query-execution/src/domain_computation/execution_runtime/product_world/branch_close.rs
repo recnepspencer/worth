@@ -10,6 +10,7 @@ use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchAdmissionDeni
 
 #[derive(Debug)]
 pub enum WorthQueryProductBranchCloseDenial {
+    Handle(super::WorthQueryHandleDenial),
     Selection(WorthQueryProductBranchAdmissionDenial),
     OwnerUnavailable,
     UnknownBranch,
@@ -109,9 +110,7 @@ impl WorthQueryProductRuntime {
             }
         }
         .map_err(|_| WorthQueryProductBranchCloseDenial::CleanupCapacityExhausted)?;
-        let report = self
-            .retire_product_branch(&observed)
-            .map_err(map_retirement_denial)?;
+        let report = self.retire_product_branch(&observed)?;
         drop(observed);
         Ok(WorthQueryPendingProductBranchClose {
             runtime: self.clone(),
@@ -122,7 +121,7 @@ impl WorthQueryProductRuntime {
     }
 }
 
-fn map_retirement_denial(
+pub(super) fn map_retirement_denial(
     denial: RuntimeWorldServiceDenial<RuntimeWorldBranchRetirementDenial>,
 ) -> WorthQueryProductBranchCloseDenial {
     match denial {

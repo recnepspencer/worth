@@ -213,9 +213,9 @@ fn retained_read_defers_component_cleanup_and_preserves_retry_authority() {
     );
 
     drop(failure);
-    assert_eq!(world.application.branches().pending_cleanup().len(), 1);
+    assert_eq!(world.open_pending_cleanup().len(), 1);
     drop(retained);
-    let mut pending = world.application.branches().pending_cleanup();
+    let mut pending = world.open_pending_cleanup();
     assert_eq!(pending.len(), 1);
     let cleanup = pending.remove(0);
     let cleanup = cleanup
@@ -239,7 +239,7 @@ fn retained_read_defers_component_cleanup_and_preserves_retry_authority() {
         world.application.owned_signal_active_node_count_for_test(),
         signal_nodes_before
     );
-    assert!(world.application.branches().pending_cleanup().is_empty());
+    assert!(world.open_pending_cleanup().is_empty());
 
     let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
     let published = selected_survivor
@@ -348,5 +348,5 @@ fn reuse_only_descendant_reclaims_its_history_before_parent_component_cleanup() 
         .close()
         .expect("the parent must no longer be retained by the closed child");
     assert_eq!(parent_close.retired_component_count(), 1);
-    assert!(world.application.branches().pending_cleanup().is_empty());
+    assert!(world.open_pending_cleanup().is_empty());
 }

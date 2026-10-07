@@ -91,3 +91,11 @@ pub(super) fn wake_evidence<Clock>(
         receipt.indeterminate_operation_count(),
     )
 }
+
+pub(super) fn immutable_commit_count(
+    handle: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
+) -> usize {
+    handle
+        .with_runtime(|runtime| runtime.history().immutable_commit_count())
+        .expect("the courtroom fixture requires an open application owner")
+}

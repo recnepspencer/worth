@@ -90,6 +90,10 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             application_provider,
             source_program_resolver,
         } = self;
+        runtime
+            .gate
+            .with_runtime(|_| ())
+            .map_err(|denial| WorthQueryProductBranchCreateError::SourceAdmission(denial.into()))?;
         let application_commit_lane = application_provider
             .map(|provider| {
                 provider.application_branch_commit_lane_for_occurrence(source.occurrence())
@@ -105,16 +109,16 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         let ordinal = runtime
             .reserve_public_branch_ordinal()
             .ok_or(WorthQueryProductBranchCreateError::IdentityExhausted)?;
-        let product_name = format!("query-product-{ordinal}");
+        let product_name = super::product_branch_name(ordinal);
         let relational = match relational {
             WorthQueryProductBranchComponentPosture::ReuseExact => {
                 RelationalBranchCreationPlan::ReuseExact
             }
             WorthQueryProductBranchComponentPosture::Fork => {
                 RelationalBranchCreationPlan::ForkExact {
-                    target: worth_relational::facade::history::BranchId(format!(
-                        "{product_name}-relational"
-                    )),
+                    target: worth_relational::facade::history::BranchId(
+                        super::relational_product_branch_name(ordinal),
+                    ),
                 }
             }
         };

@@ -89,7 +89,7 @@ where
                 bound.contract.definition(),
                 &expected_predecessor,
             )
-        })?;
+        })??;
         if self.facts.len().saturating_add(lineage.facts.len())
             > self
                 .admission

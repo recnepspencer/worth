@@ -80,19 +80,24 @@ impl WorthQueryRuntimeSourceAdapter for PublicSourceAdapter {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        let state = self.state.borrow();
-        let Some(collection) = state.live_views.get(target) else {
-            return Vec::new();
-        };
-        let Some(rows) = state.rows_by_collection.get(collection.as_str()) else {
-            return Vec::new();
-        };
-        rows.iter()
-            .map(|(identity, external_row)| {
-                WorthQueryEntity::from_native_field_values(identity.clone(), external_row.clone())
-            })
-            .collect()
+    ) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
+        Ok({
+            let state = self.state.borrow();
+            let Some(collection) = state.live_views.get(target) else {
+                return Ok(Vec::new());
+            };
+            let Some(rows) = state.rows_by_collection.get(collection.as_str()) else {
+                return Ok(Vec::new());
+            };
+            rows.iter()
+                .map(|(identity, external_row)| {
+                    WorthQueryEntity::from_native_field_values(
+                        identity.clone(),
+                        external_row.clone(),
+                    )
+                })
+                .collect()
+        })
     }
 
     fn drain_live_patches_for_target(
@@ -284,14 +289,21 @@ impl PublicSnapshotIdentityAdapter {
 }
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for PublicSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        let state = self.state.borrow();
-        match state.current_snapshot_parts {
-            Some((snapshot, version)) => public_snapshot_from_parts(
-                RelationalBridgeSnapshotIdentityParts::new(snapshot, version),
-            ),
-            None => public_snapshot_identity(state.next_snapshot_token as u64),
-        }
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        Ok({
+            let state = self.state.borrow();
+            match state.current_snapshot_parts {
+                Some((snapshot, version)) => public_snapshot_from_parts(
+                    RelationalBridgeSnapshotIdentityParts::new(snapshot, version),
+                ),
+                None => public_snapshot_identity(state.next_snapshot_token as u64),
+            }
+        })
     }
 }
 

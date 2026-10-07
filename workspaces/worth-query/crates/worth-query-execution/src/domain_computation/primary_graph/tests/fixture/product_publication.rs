@@ -28,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_
     drop(performed.consume());
     let graph = application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         let observation = published_basis.observation();
         let head = observation
             .commit_receipt()
@@ -76,7 +76,7 @@ fn prepare_relational_mutation_with_before<
     let (_, product, application_basis) = selected.into_parts();
     let graph = application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
-    let candidate = handle.with_runtime_mut(|runtime| {
+    let candidate = handle.with_open_runtime_mut(|runtime| {
         let mut transaction = runtime
             .begin_branch_transaction(
                 product.relational_basis(),

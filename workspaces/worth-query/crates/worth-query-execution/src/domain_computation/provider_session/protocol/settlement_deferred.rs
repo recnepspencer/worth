@@ -138,3 +138,11 @@ impl From<WorthQueryProviderSessionFailure> for WorthQueryProviderSessionCommitS
         Self::Denied(failure)
     }
 }
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryProviderSessionCommitStop
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Denied(denial.into())
+    }
+}

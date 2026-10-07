@@ -95,7 +95,7 @@ where
                     subject.related,
                     remaining,
                 )
-            })?;
+            })??;
             facts.extend(subject.facts);
             facts.extend(observed.facts);
             if observed.applicable {
@@ -139,7 +139,7 @@ where
                     evidence_locator,
                     maximum_facts,
                 )
-            })?;
+            })??;
             facts.append(&mut retained_facts);
             let maximum_facts = self
                 .admission

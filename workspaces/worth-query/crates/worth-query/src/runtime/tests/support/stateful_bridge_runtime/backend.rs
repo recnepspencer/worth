@@ -7,6 +7,7 @@ use super::projection_paths::{
 };
 use super::verification::{probe_existing_truth, verify_existing_truth_assertion};
 use super::writes::{execute_write, external_row_text_at_path};
+use super::OpenFixtureSource;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use crate::declarative_live::DeclarativeLiveViewShape;
@@ -42,7 +43,7 @@ impl WorthQueryMergeSnapshotOwner for StatefulBridgeRuntimeBackend {
         self.state
             .borrow()
             .relational_source
-            .with_runtime_mut(|runtime| runtime.snapshots().release_snapshot(snapshot))
+            .with_open_runtime_mut(|runtime| runtime.snapshots().release_snapshot(snapshot))
             .expect("merge fixture closes its exact published snapshot once");
     }
 }
@@ -59,22 +60,27 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
         crate::runtime::WorthQueryProductSourceDenial,
     > {
         let source = self.state.borrow().relational_source.clone();
-        let branch = source.with_runtime(|runtime| runtime.main_branch_identity());
+        let branch = source.with_open_runtime(|runtime| runtime.main_branch_identity());
         source
             .prepare_product_source(&branch)
-            .map_err(crate::runtime::WorthQueryProductSourceDenial::Basis)
+            .map_err(crate::runtime::WorthQueryProductSourceDenial::from)
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         let state = self.state.borrow();
-        WorthQuerySnapshotIdentity::preview(
+        Ok(WorthQuerySnapshotIdentity::preview(
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
                 .field_usize(
                     WorthQueryEvidenceTag::new("stateful_bridge_snapshot_sequence"),
                     state.next_snapshot_token,
                 )
                 .seal(),
-        )
+        ))
     }
 
     fn admit_live_view_declaration(
@@ -176,7 +182,9 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
     ) -> Result<WorthQueryVerifiedExistingTruthAssertion, WorthQueryExistingTruthAssertionDenial>
     {
         let state = self.state.borrow();
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self
+            .current_snapshot_identity()
+            .expect("the stateful fixture requires an open owner");
         verify_existing_truth_assertion(&state, binding, aspects, snapshot_identity)
     }
 
@@ -254,28 +262,30 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        let state = self.state.borrow();
-        let Some(collection) = state.live_views.get(target) else {
-            return Vec::new();
-        };
-        let Some(rows) = state.rows_by_collection.get(collection.as_str()) else {
-            return Vec::new();
-        };
-        rows.iter()
-            .map(|(identity, external_row)| {
-                WorthQueryEntity::from_native_field_values(
-                    state
-                        .identity_by_storage_key
-                        .get(identity)
-                        .cloned()
-                        .unwrap_or_else(|| {
-                            crate::memory_workspace::admit_authored_entity_label(identity)
-                        }),
-                    external_row.clone(),
-                )
-            })
-            .collect()
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok({
+            let state = self.state.borrow();
+            let Some(collection) = state.live_views.get(target) else {
+                return Ok(Vec::new());
+            };
+            let Some(rows) = state.rows_by_collection.get(collection.as_str()) else {
+                return Ok(Vec::new());
+            };
+            rows.iter()
+                .map(|(identity, external_row)| {
+                    WorthQueryEntity::from_native_field_values(
+                        state
+                            .identity_by_storage_key
+                            .get(identity)
+                            .cloned()
+                            .unwrap_or_else(|| {
+                                crate::memory_workspace::admit_authored_entity_label(identity)
+                            }),
+                        external_row.clone(),
+                    )
+                })
+                .collect()
+        })
     }
 
     fn drain_live_patches_for_target(

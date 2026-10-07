@@ -97,7 +97,7 @@ fn guarded_operation_custody_retains_world_issued_unpublished_recovery() {
     let transition = [79; 32];
     let binding = idempotency(80, 81).bind_guarded_workflow_effect(&transition);
 
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = world
         .application
         .compare_and_commit_application(program, binding)

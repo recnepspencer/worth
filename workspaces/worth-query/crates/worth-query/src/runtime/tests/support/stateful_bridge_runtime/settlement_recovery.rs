@@ -1,4 +1,5 @@
 use super::backend::StatefulBridgeRuntimeBackend;
+use super::OpenFixtureSource;
 
 impl crate::runtime::WorthQuerySettlementRecoveryBackend for StatefulBridgeRuntimeBackend {
     fn repair_deferred_branch_merge_settlement(
@@ -11,7 +12,7 @@ impl crate::runtime::WorthQuerySettlementRecoveryBackend for StatefulBridgeRunti
         self.state
             .borrow()
             .relational_source
-            .with_runtime_mut(|runtime| {
+            .with_open_runtime_mut(|runtime| {
                 runtime.repair_deferred_publication_settlement(deferred.settlement())
             })
             .map_err(Into::into)
@@ -27,7 +28,9 @@ impl crate::runtime::WorthQuerySettlementRecoveryBackend for StatefulBridgeRunti
         self.state
             .borrow()
             .relational_source
-            .with_runtime_mut(|runtime| runtime.repair_pending_publication_settlement(commit_id))
+            .with_open_runtime_mut(|runtime| {
+                runtime.repair_pending_publication_settlement(commit_id)
+            })
             .map_err(Into::into)
     }
 }

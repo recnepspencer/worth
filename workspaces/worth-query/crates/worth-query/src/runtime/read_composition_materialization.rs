@@ -45,7 +45,19 @@ pub(in crate::runtime) fn materialize_read_rows(
     let target = WorthQueryLiveArtifactTarget::from_view_name(view_name.clone());
     let request = read_graph.declarative_request().clone();
     ensure_materialized_read_view(runtime, &target, &view_name, read_graph)?;
-    let source_rows = runtime.backend.live_entities_for_target(&target);
+    let source_rows =
+        runtime
+            .backend
+            .live_entities_for_target(&target)
+            .map_err(|error| match error.kind() {
+                crate::memory_workspace::WorthQueryWorkspaceErrorKind::Handle(denial) => {
+                    denial.into()
+                }
+                _ => WorthQueryReadDenial::new(
+                    WorthQueryReadDenialKind::ExecutionDenied,
+                    error.to_string(),
+                ),
+            })?;
     let records_examined_count = source_rows.len();
     let maintenance_source_rows =
         select_source_rows_for_read_graph(read_graph, &request, &source_rows);

@@ -150,7 +150,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                                 true,
                             )
                         },
-                    )))
+                    )?))
                 }
             }
         }
@@ -300,7 +300,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                         Some(receipt_identity),
                         true,
                     )
-                }))
+                })?)
             }
         })
     }

@@ -60,7 +60,14 @@ impl<Schema>
     /// World history metadata bytes, unique World component pins and
     /// Relational retired branch roots awaiting reclamation.
     #[doc(hidden)]
-    pub fn history_retained_for_test(&self) -> (usize, usize, usize, usize) {
+    pub fn history_retained_for_test(
+        &self,
+    ) -> Result<(usize, usize, usize, usize), crate::facade::primary_graph::WorthQueryHandleDenial>
+    {
+        let retired_roots = self
+            .primary_provider
+            .graph
+            .with_runtime(|runtime| runtime.retired_branch_root_count())?;
         let world = self.product_runtime.owner.inspection_port();
         let history = world
             .history_snapshot()
@@ -68,14 +75,12 @@ impl<Schema>
         let retention = world
             .retention_snapshot()
             .expect("an installed product World is available");
-        (
+        Ok((
             history.installed_commits(),
             history.metadata().total_occupancy(),
             retention.unique_pins(),
-            self.primary_provider
-                .graph
-                .with_runtime(|runtime| runtime.retired_branch_root_count()),
-        )
+            retired_roots,
+        ))
     }
 
     /// Completed evidence entries inside the idempotency window and the bytes

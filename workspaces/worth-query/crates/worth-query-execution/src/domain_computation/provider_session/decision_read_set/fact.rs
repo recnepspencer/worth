@@ -321,6 +321,7 @@ pub trait WorthQueryDecisionFactProvider: Send + Sync + 'static {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDecisionReadSetDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     InvalidRequest,
     UndeclaredFamily,
     FamilyKindMismatch,
@@ -358,5 +359,16 @@ impl WorthQueryDecisionReadSetFailure {
 
     pub fn detail(&self) -> &str {
         &self.detail
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryDecisionReadSetFailure
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryDecisionReadSetDenialKind::Handle(denial),
+            "application handle",
+        )
     }
 }

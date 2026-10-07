@@ -22,6 +22,7 @@ pub(in crate::domain_computation::primary_graph) use read::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryInboundCompletionPreparationDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     OriginalOutboxNotAnEntity,
     ForeignOrStaleBasis,
     StagingUnavailable,
@@ -167,7 +168,7 @@ impl WorthQueryPrimaryGraphProvider {
             })();
             crate::relational_snapshot_release::release_query_snapshot(runtime, &before);
             result
-        })
+        })?
     }
 }
 
@@ -177,4 +178,12 @@ fn string(value: impl Into<String>) -> AspectValue {
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryInboundCompletionPreparationDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
+    }
 }

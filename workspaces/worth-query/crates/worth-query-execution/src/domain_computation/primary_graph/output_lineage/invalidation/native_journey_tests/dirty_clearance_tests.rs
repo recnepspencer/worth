@@ -65,7 +65,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(account),
         output_binding: TypeId::of::<RelationAbsenceOutput>(),
     }, coordinate, 0);
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         write_field(runtime, account, label.clone(), "prime");
         let (basis_handle, basis) = snapshot(runtime);
         assert!(runtime

@@ -41,7 +41,7 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
         .expect("exact publication delta refresh succeeds")
         .expect("mutation succeeds");
 
-    handle.with_runtime(|runtime| {
+    handle.with_open_runtime(|runtime| {
         for committed in [&feature_commit, &main_commit] {
             for index_id in &index_ids {
                 assert!(
@@ -77,7 +77,7 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
         })
         .expect("bounded reconstruction succeeds")
         .expect("both commits succeed");
-    handle.with_runtime(|runtime| {
+    handle.with_open_runtime(|runtime| {
         for commit in &commits {
             for index_id in &index_ids {
                 assert!(runtime
@@ -101,7 +101,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
         .primary_graph()
         .expect("published graph");
     let handle = graph.integration_handle();
-    handle.source_owner.with_runtime_mut(|runtime| {
+    handle.source_owner.with_open_runtime_mut(|runtime| {
         let identity = runtime.main_branch_identity();
         let (_, before_basis) = runtime.observe_branch(&identity).unwrap();
         let before = runtime

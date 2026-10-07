@@ -13,6 +13,10 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         &mut self,
         runtime: &WorthQueryProductRuntime,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        runtime
+            .gate
+            .with_runtime(|_| ())
+            .map_err(WorthQueryProductBranchOwnerCleanupDenial::Handle)?;
         let Some(history) = self.history.as_mut() else {
             return Ok(());
         };

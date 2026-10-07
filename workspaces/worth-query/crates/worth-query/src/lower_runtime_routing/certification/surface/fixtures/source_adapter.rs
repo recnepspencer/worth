@@ -25,8 +25,8 @@ impl WorthQueryRuntimeSourceAdapter for RepresentativeSourceAdapter {
     fn live_entities_for_target(
         &self,
         _target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        Vec::new()
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok(Vec::new())
     }
 
     fn drain_live_patches_for_target(

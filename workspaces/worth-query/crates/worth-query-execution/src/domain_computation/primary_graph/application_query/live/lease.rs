@@ -135,6 +135,9 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        if let Err(handle) = self.runtime.primary_provider.graph.with_runtime(|_| ()) {
+            return self.handle_denial_outcome(handle);
+        }
         if let Some(outcome) = self.observe_interruption(request) {
             return outcome;
         }
@@ -271,19 +274,26 @@ where
                 .budget_check()
                 .max_inline_result_bytes(),
         );
-        let (raw, authorization_work, read_proof) =
-            match execute_authorized_read(self.runtime, &plan, |runtime, graph, plan| {
+        let (raw, authorization_work, read_proof) = match execute_authorized_read(
+            self.runtime,
+            &plan,
+            |runtime, graph, plan| {
                 read_live_target(runtime, graph, plan, target_identity, result_buffer)
-            }) {
-                Ok(raw) => raw,
-                Err(denial) => {
-                    let released = plan.basis.release().released();
-                    if !released {
-                        return WorthQueryApplicationLiveOutcome::Unavailable;
+            },
+        ) {
+            Ok(raw) => raw,
+            Err(denial) => {
+                let release = plan.basis.release();
+                if let super::super::resource_lifecycle::WorthQueryApplicationBasisReleaseOutcome::Handle(handle) = release.outcome() {
+                        return self.handle_denial_outcome(handle);
                     }
-                    return self.handle_read_denial(denial);
+                let released = release.released();
+                if !released {
+                    return WorthQueryApplicationLiveOutcome::Unavailable;
                 }
-            };
+                return self.handle_read_denial(denial);
+            }
+        };
         match finalize_live_projection(plan, raw, authorization_work, read_proof) {
             Ok((result, receipt, governance)) => {
                 self.governance = governance;
@@ -295,6 +305,9 @@ where
                     result,
                     receipt,
                 ))
+            }
+            Err(WorthQueryLiveProjectionFinalizationDenial::Handle(handle)) => {
+                self.handle_denial_outcome(handle)
             }
             Err(WorthQueryLiveProjectionFinalizationDenial::BasisRelease) => {
                 WorthQueryApplicationLiveOutcome::Unavailable
@@ -340,6 +353,9 @@ where
     }
 
     pub fn close(mut self) -> WorthQueryApplicationLiveCloseOutcome {
+        if let Err(handle) = self.runtime.primary_provider.graph.with_runtime(|_| ()) {
+            return WorthQueryApplicationLiveCloseOutcome::Handle(handle);
+        }
         if self.terminate(BridgeExecutionBasisTerminalDisposition::Completed) {
             self.read_completion.take().map_or(
                 WorthQueryApplicationLiveCloseOutcome::Unavailable,

@@ -161,7 +161,9 @@ fn cycle_chain_at_small_retention(
                 evidence_entries,
                 evidence_bytes,
             ),
-            application.history_retained_for_test(),
+            application
+                .history_retained_for_test()
+                .expect("the retention fixture requires an open application owner"),
         );
     }
     drop((a, b, c, d));

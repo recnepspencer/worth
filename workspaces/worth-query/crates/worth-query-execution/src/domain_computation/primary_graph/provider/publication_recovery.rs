@@ -46,7 +46,7 @@ impl WorthQueryPrimaryGraphProvider {
             self.resume_pending_application_publication(runtime, product.incarnation())
                 .map_err(settlement_publication_denial)?;
             Ok(repaired)
-        })?;
+        })??;
         match self.resolve_completed_application_idempotency(product, idempotency) {
             Some(WorthQueryProviderIdempotencyResolution::Equivalent(_)) => Ok(repaired),
             None | Some(WorthQueryProviderIdempotencyResolution::Absent) => {

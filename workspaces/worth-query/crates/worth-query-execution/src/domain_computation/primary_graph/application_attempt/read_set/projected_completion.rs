@@ -93,7 +93,7 @@ impl<Schema, Operation, Input, Scope>
                             )
                         })
                         .unwrap_or(false)
-                });
+                })?;
                 if !exists {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
@@ -130,7 +130,7 @@ impl<Schema, Operation, Input, Scope>
                             kind,
                             locator,
                         )
-                    })
+                    })?
                     .ok_or_else(|| {
                         denial(
                             WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
@@ -179,7 +179,7 @@ impl<Schema, Operation, Input, Scope>
                         *from,
                         *to,
                     )
-                })?;
+                })??;
                 Ok((
                     read_scope,
                     WorthQueryApplicationObservedFact::Relation {
@@ -211,7 +211,7 @@ impl<Schema, Operation, Input, Scope>
                         *direction,
                         *maximum_work_units,
                     )
-                });
+                })?;
                 let relations = relations.ok_or_else(|| {
                     denial(
                         WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,

@@ -226,16 +226,23 @@ impl WorthQueryApplicationBasisLease {
         &self.core().graph
     }
 
-    pub fn is_live(&self) -> bool {
-        self.core().basis.is_some()
-            && self.core().snapshot.as_ref().is_some_and(|snapshot| {
-                self.core().graph.with_runtime(|runtime| {
+    pub fn is_live(&self) -> Result<bool, crate::facade::primary_graph::WorthQueryHandleDenial> {
+        self.core().graph.with_runtime(|runtime| {
+            self.core().basis.is_some()
+                && self.core().snapshot.as_ref().is_some_and(|snapshot| {
                     runtime.read_truth().project_snapshot(snapshot).is_some()
                 })
-            })
+        })
     }
 
     pub fn release(self) -> WorthQueryApplicationBasisReleaseReceipt {
+        if let Err(denial) = self.core().graph.with_runtime(|_| ()) {
+            let identity = self.identity.clone();
+            return WorthQueryApplicationBasisReleaseReceipt {
+                identity,
+                outcome: WorthQueryApplicationBasisReleaseOutcome::Handle(denial),
+            };
+        }
         let Self { identity, custody } = self;
         let outcome = match custody {
             BasisCustody::Exclusive(core) => core.release(&identity),
@@ -266,41 +273,54 @@ impl BasisLeaseCore {
         mut self,
         identity: &WorthQueryApplicationBasisIdentity,
     ) -> WorthQueryApplicationBasisReleaseOutcome {
-        let released = self.release_snapshot();
-        let retention = self
-            .retention
-            .take()
-            .expect("active Query basis owns Native retention");
-        let receipt = self
-            .graph
-            .with_runtime(|runtime| runtime.release_component_basis(retention))
-            .unwrap_or_else(|denial| {
-                panic!(
-                    "Query retained a lease its Native owner rejected: {:?}",
-                    denial.denial()
-                )
+        let graph = self.graph.clone();
+        let outcome = graph.with_runtime_mut(|runtime| {
+            let released = self.snapshot.take().is_some_and(|snapshot| {
+                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+                true
             });
-        assert_eq!(
-            receipt.descriptor(),
-            identity.descriptor(),
-            "Query releases its exact admitted Native basis"
-        );
-        self.basis.take();
-        self.release_observation();
-        WorthQueryApplicationBasisReleaseOutcome::NativeResourcesReleased {
-            snapshot_released: released,
-            relational_retention: receipt.outcome(),
+            let retention = self
+                .retention
+                .take()
+                .expect("active Query basis owns Native retention");
+            let receipt = runtime
+                .release_component_basis(retention)
+                .unwrap_or_else(|denial| {
+                    panic!(
+                        "Query retained a lease its Native owner rejected: {:?}",
+                        denial.denial()
+                    )
+                });
+            assert_eq!(
+                receipt.descriptor(),
+                identity.descriptor(),
+                "Query releases its exact admitted Native basis"
+            );
+            WorthQueryApplicationBasisReleaseOutcome::NativeResourcesReleased {
+                snapshot_released: released,
+                relational_retention: receipt.outcome(),
+            }
+        });
+        match outcome {
+            Ok(outcome) => {
+                self.basis.take();
+                self.release_observation();
+                outcome
+            }
+            Err(denial) => WorthQueryApplicationBasisReleaseOutcome::Handle(denial),
         }
     }
 
-    fn release_snapshot(&mut self) -> bool {
+    fn release_snapshot(
+        &mut self,
+    ) -> Result<bool, crate::facade::primary_graph::WorthQueryHandleDenial> {
         let Some(snapshot) = self.snapshot.take() else {
-            return false;
+            return Ok(false);
         };
         self.graph.with_runtime_mut(|runtime| {
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        });
-        true
+            true
+        })
     }
 
     fn release_observation(&self) {
@@ -311,7 +331,7 @@ impl BasisLeaseCore {
 impl Drop for BasisLeaseCore {
     fn drop(&mut self) {
         if self.basis.take().is_some() {
-            self.release_snapshot();
+            let _ = self.release_snapshot();
             self.retention.take();
             self.release_observation();
         }

@@ -184,6 +184,16 @@ where
                 evidence,
                 deferred,
             ) => match settlement_reentry::repair(runtime, deferred) {
+                WorthQuerySettlementReentry::Handle(denial) => {
+                    wake.decision = WorthQueryRetainedConditionalDecision::OperationTerminalFailure(
+                        evidence,
+                        super::WorthQueryTemporalTerminalFailure::ApplicationCommit(
+                            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::Handle(denial),
+                        ),
+                    );
+                    counts.failed += 1;
+                    continue;
+                }
                 WorthQuerySettlementReentry::AlreadyCommitted => {
                     complete_wake(
                         bridge,

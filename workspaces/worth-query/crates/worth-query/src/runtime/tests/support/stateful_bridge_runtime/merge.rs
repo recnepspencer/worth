@@ -1,3 +1,4 @@
+use super::OpenFixtureSource;
 use worth_relational::facade::transactions::MergeExecutionOutcome;
 
 use super::super::*;
@@ -8,9 +9,12 @@ pub(super) fn capture_merge_authority(
     target_branch: &crate::runtime::WorthQueryAdmittedBranchName,
     source_branch: &crate::runtime::WorthQueryAdmittedBranchName,
 ) -> Result<WorthQueryBackendMergeAuthority, WorthQueryWorkspaceError> {
-    state.borrow().relational_source.with_runtime(|runtime| {
-        WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
-    })
+    state
+        .borrow()
+        .relational_source
+        .with_open_runtime(|runtime| {
+            WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
+        })
 }
 
 pub(super) fn validate_merge_authority(
@@ -20,7 +24,7 @@ pub(super) fn validate_merge_authority(
     state
         .borrow()
         .relational_source
-        .with_runtime(|runtime| authority.validate_against(runtime))
+        .with_open_runtime(|runtime| authority.validate_against(runtime))
 }
 
 pub(super) fn execute_merge(
@@ -40,7 +44,7 @@ pub(super) fn execute_merge(
     state
         .borrow()
         .relational_source
-        .with_runtime_mut(|runtime| {
+        .with_open_runtime_mut(|runtime| {
             crate::effect_lifecycle::execute_lowered_merge(runtime, declaration)
         })
 }

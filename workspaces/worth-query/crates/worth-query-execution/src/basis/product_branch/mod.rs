@@ -3,7 +3,11 @@ mod creation;
 mod creation_recovery;
 mod denial;
 mod lifecycle;
+mod name;
 mod observation;
+pub(crate) use name::{
+    product_branch_name, product_branch_ordinal, relational_product_branch_name,
+};
 mod read_identity;
 mod selection;
 

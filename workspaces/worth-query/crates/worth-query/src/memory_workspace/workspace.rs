@@ -199,7 +199,7 @@ impl WorthQueryMemoryWorkspace {
                     ))
                 },
             ))
-        })
+        })?
     }
 
     pub(crate) fn entity(
@@ -225,10 +225,15 @@ impl WorthQueryMemoryWorkspace {
                         native_field_values,
                     ))
                 }))
-        })
+        })?
     }
 
-    pub fn snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    pub fn snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         self.runtime
             .with_runtime(super::runtime_identity::snapshot_identity_from_runtime)
     }
@@ -250,7 +255,7 @@ impl WorthQueryMemoryWorkspace {
                 )
                 .ok_or_else(|| WorthQueryWorkspaceError::new("entity not found"))?;
             Ok(())
-        })
+        })?
     }
 
     fn current_main_basis(

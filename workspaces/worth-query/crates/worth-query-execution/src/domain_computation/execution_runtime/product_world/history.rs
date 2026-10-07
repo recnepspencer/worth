@@ -13,6 +13,7 @@ impl WorthQueryProductRuntime {
         &self,
         current: &WorthQueryProductBranchLease,
     ) -> Result<WorthQueryProductObservationLease, WorthQueryProductBranchAdmissionDenial> {
+        self.gate.with_runtime(|_| ())?;
         if current.relational_basis().materialization_is_complete() {
             return Ok(current.read_lease());
         }
@@ -43,6 +44,7 @@ impl WorthQueryProductRuntime {
         branch: WorthQueryProductBranch,
         maximum: NonZeroUsize,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
+        self.gate.with_runtime(|_| ())?;
         if branch.occurrence().owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
         }
@@ -60,6 +62,7 @@ impl WorthQueryProductRuntime {
         previous: &ProductBranchHistoryTraversal,
         maximum: NonZeroUsize,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
+        self.gate.with_runtime(|_| ())?;
         if previous.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
         }
@@ -77,6 +80,7 @@ impl WorthQueryProductRuntime {
         history: &ProductBranchHistoryTraversal,
         index: usize,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.gate.with_runtime(|_| ())?;
         if history.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
         }

@@ -31,10 +31,7 @@ where
 {
     pub fn capture_application_checkpoint(
         &self,
-    ) -> Result<
-        WorthQueryApplicationCheckpoint,
-        worth_relational::facade::durability::DurabilityError,
-    > {
+    ) -> Result<WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointCaptureDenial> {
         self.capture_application_checkpoint_with_sections()
             .map(|(checkpoint, _)| checkpoint)
     }
@@ -48,62 +45,84 @@ where
             WorthQueryApplicationCheckpoint,
             WorthQueryApplicationCheckpointSectionBytes,
         ),
+        WorthQueryApplicationCheckpointCaptureDenial,
+    > {
+        self.primary_provider
+            .graph
+            .with_runtime(|runtime| {
+                let checkpoint = runtime.durability_authority().native_checkpoint()?;
+                self.assemble_application_checkpoint(checkpoint)
+            })
+            .map_err(WorthQueryApplicationCheckpointCaptureDenial::Handle)?
+            .map_err(WorthQueryApplicationCheckpointCaptureDenial::Capture)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn assemble_application_checkpoint(
+        &self,
+        checkpoint: worth_relational::facade::durability::RelationalNativeCheckpoint,
+    ) -> Result<
+        (
+            WorthQueryApplicationCheckpoint,
+            WorthQueryApplicationCheckpointSectionBytes,
+        ),
         worth_relational::facade::durability::DurabilityError,
     > {
-        self.primary_provider.graph.with_runtime(|runtime| {
-            runtime
-                .durability_authority()
-                .native_checkpoint()
-                .map(|checkpoint| {
-                    let mut accepted = self.output_demands.accepted_checkpoint_records();
-                    let mut admission = self
-                        .primary_provider
-                        .graph
-                        .source_owner
-                        .invalidation_owner
-                        .edit_admission();
-                    let lineage = self
-                        .primary_provider
-                        .graph
-                        .output_lineage
-                        .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner);
-                    for (identity, source) in &mut accepted {
-                        let Some(source) = source else {
-                            continue;
-                        };
-                        // A mismatch or unsupported fact kind leaves no reusable
-                        // payload. Neither the query footprint nor the digest can
-                        // reconstruct a producer's original decision reads.
-                        identity.producer_facts = match source {
-                            AcceptedCheckpointFactSource::Committed(receipt) => lineage
-                                .checkpoint_facts_for_receipt(receipt)
-                                .and_then(|(facts, witness)| {
-                                    output_facts::encode(&facts, witness, &mut admission)
-                                }),
-                            AcceptedCheckpointFactSource::Stable(stable) => stable
-                                .checkpoint_source_facts()
-                                .and_then(|facts| facts::encode(&facts)),
-                        };
-                        identity.producer_fact_wire_version = if identity.producer_facts.is_some() {
-                            facts::WIRE_VERSION
-                        } else {
-                            0
-                        };
-                    }
-                    drop(lineage);
-                    let accepted_outputs = merge_accepted_outputs(
-                        accepted.into_iter().map(|(identity, _)| identity).collect(),
-                        self.recovered_outputs
-                            .iter()
-                            .map(|accepted| accepted.checkpoint.clone()),
-                    );
-                    WorthQueryApplicationCheckpoint::encode(
-                        checkpoint,
-                        self.publication(),
-                        &accepted_outputs,
-                    )
-                })
-        })
+        let mut accepted = self.output_demands.accepted_checkpoint_records()?;
+        let mut admission = self
+            .primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .edit_admission();
+        let lineage = match self.primary_provider.graph.output_lineage.try_lock() {
+            Ok(lineage) => lineage,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(worth_relational::facade::durability::DurabilityError::new(
+                worth_relational::facade::durability::RecoveryFailureClass::CheckpointPublicationInFlight,
+                "Query lineage publication is in flight",
+            )),
+        };
+        for (identity, source) in &mut accepted {
+            let Some(source) = source else {
+                continue;
+            };
+            // A mismatch or unsupported fact kind leaves no reusable
+            // payload. Neither the query footprint nor the digest can
+            // reconstruct a producer's original decision reads.
+            identity.producer_facts = match source {
+                AcceptedCheckpointFactSource::Committed(receipt) => lineage
+                    .checkpoint_facts_for_receipt(receipt)?
+                    .and_then(|(facts, witness)| {
+                        output_facts::encode(&facts, witness, &mut admission)
+                    }),
+                AcceptedCheckpointFactSource::Stable(stable) => stable
+                    .checkpoint_source_facts()?
+                    .and_then(|facts| facts::encode(&facts)),
+            };
+            identity.producer_fact_wire_version = if identity.producer_facts.is_some() {
+                facts::WIRE_VERSION
+            } else {
+                0
+            };
+        }
+        drop(lineage);
+        let accepted_outputs = merge_accepted_outputs(
+            accepted.into_iter().map(|(identity, _)| identity).collect(),
+            self.recovered_outputs
+                .iter()
+                .map(|accepted| accepted.checkpoint.clone()),
+        );
+        Ok(WorthQueryApplicationCheckpoint::encode(
+            checkpoint,
+            self.publication(),
+            &accepted_outputs,
+        ))
     }
+}
+
+/// Refusal to capture through a retained application handle.
+#[derive(Debug)]
+pub enum WorthQueryApplicationCheckpointCaptureDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
+    Capture(worth_relational::facade::durability::DurabilityError),
 }

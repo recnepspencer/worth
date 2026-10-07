@@ -29,7 +29,7 @@ pub(super) fn lower_runtime_live_subscription_request(
         request.clone(),
         schema_view,
         backend
-            .current_snapshot_identity()
+            .current_snapshot_identity()?
             .admit_runtime_backend_authority(),
         grouped_baseline_members_or_error(backend, view_name, request)?,
     )
@@ -50,7 +50,7 @@ pub(super) fn lower_runtime_live_subscription_read_binding(
         read_graph.validated().clone(),
         read_graph.execution_plan().clone(),
         backend
-            .current_snapshot_identity()
+            .current_snapshot_identity()?
             .admit_runtime_backend_authority(),
         grouped_baseline_members_or_error(backend, view_name, request)?,
     )

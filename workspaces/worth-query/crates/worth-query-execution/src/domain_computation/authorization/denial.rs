@@ -11,6 +11,7 @@ use crate::domain_computation::application_outcome_identity::WorthQueryApplicati
 /// any effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationAuthorizationDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The authorization check was cancelled.
     Cancelled,
     /// The authorization check reached its deadline.
@@ -102,7 +103,9 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     /// The runtime ran out of admission identities.
     AdmissionIdentityExhausted,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain the authorization basis.
@@ -331,4 +334,15 @@ pub(super) fn product_security_basis_denial(
         WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
         subject,
     )
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryOperationAuthorizationDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryOperationAuthorizationDenialKind::Handle(denial),
+            "application handle",
+        )
+    }
 }

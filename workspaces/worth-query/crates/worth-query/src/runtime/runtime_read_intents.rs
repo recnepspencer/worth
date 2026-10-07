@@ -227,7 +227,7 @@ impl WorthQueryRuntime {
         Product: WorthQueryReadExecutionProduct,
     {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Read)?;
-        let snapshot_identity = self.current_snapshot_identity().evidence_identity();
+        let snapshot_identity = self.current_snapshot_identity()?.evidence_identity();
         let ephemeral_graph_index_receipt =
             provision_graph_indexes_for_read_binding(&binding, snapshot_identity.as_str())?;
         let mut executed_read = execute(self, &binding)?;

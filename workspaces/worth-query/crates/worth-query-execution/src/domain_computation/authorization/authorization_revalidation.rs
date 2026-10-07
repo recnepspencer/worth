@@ -68,7 +68,7 @@ where
                 self.authorization.bridge(),
             );
             current
-        })
+        })?
     }
 
     pub(in crate::domain_computation) fn authorize_retained_idempotency<
@@ -247,7 +247,7 @@ where
                 self.authorization.bridge(),
             );
             current
-        })
+        })?
     }
 
     fn readmit_capability_commit_basis(
@@ -302,6 +302,6 @@ where
                 self.readmit_capability_commit_support(capability.supporting(), runtime, snapshot)
             });
             result
-        })
+        })?
     }
 }

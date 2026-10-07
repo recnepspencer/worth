@@ -54,7 +54,7 @@ fn with_unmanaged_publications(
         )
     };
     let live_rows = |identities: &[&Identity]| {
-        handle.with_runtime_mut(|runtime| {
+        handle.with_open_runtime_mut(|runtime| {
             let (basis_handle, basis) = snapshot(runtime);
             let cell = owner
                 .cell_for_read(&basis, &mut owner.edit_admission())

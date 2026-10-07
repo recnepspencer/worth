@@ -177,6 +177,7 @@ pub enum WorthQueryGeneratedOutputSuspensionDenial {
 
 /// Why suspending a generated output did not complete.
 pub enum WorthQueryGeneratedOutputSuspensionFailure {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The output did not qualify for suspension. Nothing changed.
     Qualification(WorthQueryGeneratedOutputSuspensionDenial),
     /// The product's program activation could not admit a publication. Nothing
@@ -195,6 +196,7 @@ pub enum WorthQueryGeneratedOutputSuspensionFailure {
 impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Handle(denial) => formatter.debug_tuple("Handle").field(denial).finish(),
             Self::Qualification(denial) => formatter
                 .debug_tuple("Qualification")
                 .field(denial)
@@ -206,5 +208,13 @@ impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
             Self::PublicationNoEffect => formatter.write_str("PublicationNoEffect"),
             Self::ProductUnpublished(_) => formatter.write_str("ProductUnpublished"),
         }
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryGeneratedOutputSuspensionFailure
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

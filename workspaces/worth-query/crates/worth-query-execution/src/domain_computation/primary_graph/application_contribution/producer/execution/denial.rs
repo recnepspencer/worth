@@ -158,3 +158,9 @@ pub(super) fn denial(
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial> for ProducerExecutionStop {
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::ExecutionStopped(denial.into())
+    }
+}

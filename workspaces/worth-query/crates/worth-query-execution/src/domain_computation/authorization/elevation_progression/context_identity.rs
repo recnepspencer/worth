@@ -35,7 +35,7 @@ pub(super) fn resolve_elevation_identity<Schema, Capability, Operation, Input>(
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
     value: &AspectValue,
-) -> Option<EntityId>
+) -> Result<Option<EntityId>, crate::facade::primary_graph::WorthQueryHandleDenial>
 where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
@@ -44,7 +44,7 @@ where
         .with_exact_observation(runtime, |observation| {
             observation.resolve_elevation_identity(capability_identity, installed, value.clone())
         })
-        .and_then(Result::ok)
+        .map(|result| result.and_then(Result::ok))
 }
 
 pub(super) fn resolve_review_identity<Schema, Capability, Operation, Input>(
@@ -53,7 +53,7 @@ pub(super) fn resolve_review_identity<Schema, Capability, Operation, Input>(
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
     value: &AspectValue,
-) -> Option<EntityId>
+) -> Result<Option<EntityId>, crate::facade::primary_graph::WorthQueryHandleDenial>
 where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
@@ -62,5 +62,5 @@ where
         .with_exact_observation(runtime, |observation| {
             observation.resolve_review_identity(capability_identity, installed, value.clone())
         })
-        .and_then(Result::ok)
+        .map(|result| result.and_then(Result::ok))
 }

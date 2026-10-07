@@ -69,7 +69,7 @@ pub(super) fn has_exact_reviewer(world: &World, reviewer: EntityId) -> bool {
         .unwrap()
         .kind;
     let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    graph.integration_handle().with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         runtime
             .read_truth()
@@ -108,7 +108,7 @@ pub(super) fn has_exact_approver(world: &World, approver: EntityId) -> bool {
         .unwrap()
         .kind;
     let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    graph.integration_handle().with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         runtime
             .read_truth()
@@ -156,11 +156,13 @@ where
     let selected = runtime
         .select_product_branch(runtime.product_runtime().default_branch())
         .expect("the selected product branch remains admitted");
-    graph.integration_handle().with_runtime_mut(|relational| {
-        let snapshot = selected.application_basis().snapshot_handle();
-        crate::domain_computation::primary_graph::application_attempt::observe_field_value(
-            relational, snapshot, entity, kind, locator,
-        )
-        .unwrap()
-    })
+    graph
+        .integration_handle()
+        .with_open_runtime_mut(|relational| {
+            let snapshot = selected.application_basis().snapshot_handle();
+            crate::domain_computation::primary_graph::application_attempt::observe_field_value(
+                relational, snapshot, entity, kind, locator,
+            )
+            .unwrap()
+        })
 }

@@ -226,7 +226,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     )));
     let kind = first.adjacencies[0].relation_kind;
     let selected = world.selected_product();
-    let (relation_id, target) = graph.integration_handle().with_runtime(|runtime| {
+    let (relation_id, target) = graph.integration_handle().with_open_runtime(|runtime| {
         runtime
             .read_truth()
             .visible_relations_of_kind(
@@ -271,7 +271,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     };
     let current = world.selected_product();
     assert!(
-        !graph.integration_handle().with_runtime(|runtime| {
+        !graph.integration_handle().with_open_runtime(|runtime| {
             fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
                 .unwrap()
                 .0

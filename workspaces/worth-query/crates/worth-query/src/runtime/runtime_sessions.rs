@@ -53,7 +53,7 @@ impl WorthQueryRuntime {
             self,
             options,
             basis_admission,
-        ))
+        )?)
     }
 
     pub(crate) fn capture_branch_comparison_basis(
@@ -68,7 +68,7 @@ impl WorthQueryRuntime {
         );
         Ok(WorthQueryRuntimeBranchComparisonBasis::new(
             admission,
-            self.current_snapshot_identity(),
+            self.current_snapshot_identity()?,
         ))
     }
 
@@ -134,7 +134,7 @@ impl WorthQueryRuntime {
             self,
             options.effect_policy(),
             basis_admission,
-        ))
+        )?)
     }
 
     pub(in crate::runtime) fn open_preview_with_admitted_basis<'a>(
@@ -150,7 +150,7 @@ impl WorthQueryRuntime {
             self,
             effect_policy,
             basis_admission,
-        ))
+        )?)
     }
 
     pub fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {

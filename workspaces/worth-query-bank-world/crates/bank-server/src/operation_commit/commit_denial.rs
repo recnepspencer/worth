@@ -7,6 +7,7 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     ProviderRejected,
     CustomInvariantDenied,
     CandidateValidatorWorkExceeded {
@@ -77,6 +78,7 @@ pub(crate) const fn denial_kind(
 ) -> BankCommitDenialKind {
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
+        Query::Handle(handle) => BankCommitDenialKind::Handle(handle),
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
         Query::CustomInvariantDenied => BankCommitDenialKind::CustomInvariantDenied,
         Query::CandidateValidatorWorkExceeded {

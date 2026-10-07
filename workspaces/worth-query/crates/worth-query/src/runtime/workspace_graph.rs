@@ -19,6 +19,7 @@ impl WorthQueryWorkspace {
         match self.runtime.write_graph_batch(commands, breadth, program) {
             Err(WorthQueryRuntimeError::ExistingTruthAssertionDenied(denial)) => {
                 let kind = match denial.kind() {
+                    WorthQueryExistingTruthAssertionDenialKind::Handle(handle) => return Err(handle.into()),
                     WorthQueryExistingTruthAssertionDenialKind::BackendVerificationUnsupported => {
                         WorthQueryGraphCompositionDenialKind::ExistingTargetBackendVerificationUnsupported
                     }

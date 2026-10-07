@@ -42,10 +42,10 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCo
 pub(super) fn seal(
     provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     committed: &mut WorthQueryCommittedApplicationSession,
-) -> (
+) -> Result<(
     WorthQueryPrimaryGraphCommitEvidence,
     Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
-){
+), crate::facade::primary_graph::WorthQueryHandleDenial>{
     let prepared_touched_records = committed.take_prepared_touched_records();
     let touched_records = prepared_touched_records.fill(&committed.committed().changed_records);
     let mutation_work =
@@ -80,7 +80,7 @@ pub(super) fn seal(
             committed.attempt().indexed_rebase_work_budget(),
             source_fact_admission.as_mut(),
         )
-    });
+    })?;
     #[cfg(feature = "test-primary-graph-faults")]
     let observed_source_facts = if producer_output && provider.take_unsealed_producer_settlement() {
         observed_source_facts.held_for_verification()
@@ -99,7 +99,7 @@ pub(super) fn seal(
         observed_source_facts,
         committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     };
-    (evidence, source_fact_admission)
+    Ok((evidence, source_fact_admission))
 }
 
 impl WorthQueryMutationWorkCommitSeal {

@@ -22,6 +22,12 @@ impl WorthQueryReadOnlyPreviewRequest {
             ));
         }
         match workspace.ordinary_authority_drift(&self.context.authority) {
+            WorthQueryOrdinaryAuthorityDrift::Handle(denial) => {
+                return WorthQueryPreviewJourneyOutcome::Stopped(WorthQueryWorkflowStop::runtime(
+                    denial.into(),
+                    counters,
+                ));
+            }
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return WorthQueryPreviewJourneyOutcome::Stopped(WorthQueryWorkflowStop::denied(
                     WorthQueryWorkflowStopSource::ForeignAuthority,

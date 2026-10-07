@@ -90,7 +90,8 @@ fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
         | ScopeKind::EqualityIndexUnavailable
         | ScopeKind::ActiveSnapshotCapacityExhausted { .. }
         | ScopeKind::RetentionCapacityExhausted => Retryable,
-        ScopeKind::PrimaryGraphNotInstalled
+        ScopeKind::Handle(_)
+        | ScopeKind::PrimaryGraphNotInstalled
         | ScopeKind::FieldNotInstalled
         | ScopeKind::ValueEncodingRejected
         | ScopeKind::UnknownEntity

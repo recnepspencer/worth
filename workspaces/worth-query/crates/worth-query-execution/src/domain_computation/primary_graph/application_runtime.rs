@@ -30,9 +30,10 @@ mod inbound_occurrence;
 pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
 mod inbound_publication;
 pub use certification_cost::{
-    WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
-    WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
-    WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
+    WorthQueryCertificationApplicationWork, WorthQueryCertificationCostDenial,
+    WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt,
+    WorthQueryCertificationCostScope, WorthQueryCertificationWorldHistory,
+    WorthQueryCertificationWorldRetention,
 };
 pub(in crate::domain_computation) use inbound_occurrence::WorthQueryInstalledTransportCompletionBinding;
 pub use inbound_occurrence::{
@@ -336,7 +337,10 @@ where
     #[doc(hidden)]
     pub fn custom_invariant_candidate_input_counters(
         &self,
-    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
+    ) -> Result<
+        worth_relational::facade::runtime::RelationalCandidateInputCounters,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         self.primary_provider
             .graph
             .with_runtime(|runtime| runtime.custom_invariant_candidate_input_counters())

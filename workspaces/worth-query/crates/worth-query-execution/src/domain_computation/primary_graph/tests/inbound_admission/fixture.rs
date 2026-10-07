@@ -41,6 +41,7 @@ pub(super) struct InboundWorld {
 }
 #[cfg(feature = "test-world-operation-control")]
 mod cost;
+mod faults;
 mod wide;
 pub(super) fn installed_world() -> InboundWorld {
     let declaration = InboundTestSchema::declaration().unwrap();

@@ -53,7 +53,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
     let earlier = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let later = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let unwatched = unwatched_accounts(graph.layout(), CREATED, "undeclared-change");
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         write_field(runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let facts: Arc<[_]> =

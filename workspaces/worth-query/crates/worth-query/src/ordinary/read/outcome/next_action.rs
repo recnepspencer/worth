@@ -111,6 +111,7 @@ pub(super) fn classify_context_next_action(
 
 fn next_action_for_read_denial(kind: &WorthQueryReadDenialKind) -> WorthQueryReadNextAction {
     match kind {
+        WorthQueryReadDenialKind::Handle(_) => WorthQueryReadNextAction::InspectOperationalFailure,
         WorthQueryReadDenialKind::BasisResolutionDenied
         | WorthQueryReadDenialKind::BasisPreflightDenied => {
             WorthQueryReadNextAction::SupplyFreshBasis

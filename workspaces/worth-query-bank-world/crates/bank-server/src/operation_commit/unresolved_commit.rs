@@ -17,6 +17,7 @@ pub enum BankCommitRecoveryKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProviderFailureKind {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     ForeignOperationAttempt,
     ForeignExecutionBasis,
     ForeignGraphAuthority,
@@ -123,6 +124,7 @@ const fn provider_failure_kind(
 ) -> BankProviderFailureKind {
     use WorthQueryProviderSessionDenialKind as Query;
     match kind {
+        Query::Handle(handle) => BankProviderFailureKind::Handle(handle),
         Query::ForeignOperationAttempt => BankProviderFailureKind::ForeignOperationAttempt,
         Query::ForeignExecutionBasis => BankProviderFailureKind::ForeignExecutionBasis,
         Query::ForeignGraphAuthority => BankProviderFailureKind::ForeignGraphAuthority,

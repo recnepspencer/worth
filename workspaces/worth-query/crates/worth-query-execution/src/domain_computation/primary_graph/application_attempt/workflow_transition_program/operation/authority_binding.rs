@@ -39,7 +39,7 @@ impl<Schema, Operation, Input, Scope>
                 .facts()
                 .iter()
                 .all(|fact| fact.remains_equal_in(runtime, self.read_set.lease.snapshot()))
-        });
+        })?;
         if !current {
             return Err(mismatch("workflow operation authority"));
         }

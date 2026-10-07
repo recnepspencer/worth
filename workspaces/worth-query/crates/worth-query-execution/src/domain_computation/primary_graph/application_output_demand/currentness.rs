@@ -61,7 +61,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 self.require_current_read(relational, &read, &mut remaining_work)?;
             }
             Ok(())
-        })
+        })?
     }
 
     /// Checks a set of retained producer receipts against this exact product
@@ -100,7 +100,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 self.require_current_read(relational, &read, &mut remaining_work)?;
             }
             Ok(())
-        })
+        })?
     }
 
     /// Compares the output witness and every source fact at this observation.

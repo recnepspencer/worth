@@ -73,6 +73,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
         .application
         .branches()
         .recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .expect("the fixture keeps its owner open")
         .expect("creation recovery remains discoverable after caller custody is dropped");
     let [creation_row] = creation_page.rows() else {
         panic!("the creation facade must rediscover the exact World recovery record")
@@ -102,7 +103,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
 
     let graph = world.application.runtime.primary_graph().unwrap();
     let integration = graph.integration_handle();
-    let active_transaction = integration.with_runtime(|runtime| {
+    let active_transaction = integration.with_open_runtime(|runtime| {
         let identity = runtime
             .branch_identity(&worth_relational::facade::history::BranchId(
                 "query-product-1-relational".to_owned(),
@@ -129,9 +130,9 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
         WorthQueryProductBranchOwnerCleanupDenial::RelationalOperationsStillActive
     );
     drop(failure);
-    assert_eq!(world.application.branches().pending_cleanup().len(), 1);
+    assert_eq!(world.open_pending_cleanup().len(), 1);
     drop(active_transaction);
-    let mut pending = world.application.branches().pending_cleanup();
+    let mut pending = world.open_pending_cleanup();
     assert_eq!(pending.len(), 1);
     let cleanup = pending.remove(0);
     let released = cleanup
@@ -139,7 +140,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
         .expect("the dropped handle must be rediscovered with exact owner authority");
     assert_eq!(released.retired_component_count(), 1);
     assert!(released.is_complete());
-    assert!(world.application.branches().pending_cleanup().is_empty());
+    assert!(world.open_pending_cleanup().is_empty());
     let page = world
         .application
         .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
@@ -232,18 +233,19 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
             .product_runtime()
             .product_branches()
             .pending_cleanup()
+            .expect("the fixture keeps its product owner open")
             .is_empty(),
         "the outer lifecycle must not claim application retirement custody"
     );
 
-    let mut pending = world.application.branches().pending_cleanup();
+    let mut pending = world.open_pending_cleanup();
     assert_eq!(pending.len(), 1);
     let receipt = pending
         .remove(0)
         .retry()
         .expect("the preallocated installed entry survives the unwind");
     assert_eq!(receipt.retired_component_count(), 1);
-    assert!(world.application.branches().pending_cleanup().is_empty());
+    assert!(world.open_pending_cleanup().is_empty());
 }
 
 #[test]
@@ -271,12 +273,12 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
         .product_runtime
         .replace_owner_cleanup_after_component_progress_hook(None);
 
-    let mut pending = world.application.branches().pending_cleanup();
+    let mut pending = world.open_pending_cleanup();
     assert_eq!(pending.len(), 1);
     let receipt = pending
         .remove(0)
         .retry()
         .expect("retry must continue after the component already retired");
     assert_eq!(receipt.retired_component_count(), 2);
-    assert!(world.application.branches().pending_cleanup().is_empty());
+    assert!(world.open_pending_cleanup().is_empty());
 }

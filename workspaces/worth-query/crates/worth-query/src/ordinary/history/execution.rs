@@ -33,8 +33,19 @@ impl WorthQueryHistoricalRequest {
             );
         }
         let counters = counters.admit_path();
+        let snapshot = match workspace.snapshot_identity() {
+            Ok(snapshot) => snapshot,
+            Err(denial) => {
+                return stopped(
+                    WorthQueryHistoricalStopSource::Handle(denial),
+                    WorthQueryHistoricalNextAction::ResolveAuthority,
+                    denial.to_string(),
+                    counters,
+                )
+            }
+        };
         if self.context.workspace_name() != workspace.name()
-            || !self.context.admits_snapshot(&workspace.snapshot_identity())
+            || !self.context.admits_snapshot(&snapshot)
         {
             return stopped(
                 WorthQueryHistoricalStopSource::StaleContext,

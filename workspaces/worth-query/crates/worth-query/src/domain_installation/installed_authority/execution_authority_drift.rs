@@ -11,6 +11,7 @@ use super::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledDomainExecutionDriftKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     DomainNotInstalled,
     ForeignRuntime,
     StaleInstallation,
@@ -20,6 +21,7 @@ pub enum WorthQueryInstalledDomainExecutionDriftKind {
 impl WorthQueryInstalledDomainExecutionDriftKind {
     const fn as_str(self) -> &'static str {
         match self {
+            Self::Handle(_) => "handle-denied",
             Self::DomainNotInstalled => "domain-not-installed",
             Self::ForeignRuntime => "foreign-runtime",
             Self::StaleInstallation => "stale-installation",
@@ -87,6 +89,17 @@ pub struct WorthQueryInstalledDomainExecutionDrift {
 }
 
 impl WorthQueryInstalledDomainExecutionDrift {
+    pub(crate) fn closed(
+        witness: &WorthQueryInstalledDomainAuthorityWitness,
+        denial: worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    ) -> Self {
+        Self::new(
+            witness,
+            None,
+            WorthQueryInstalledDomainExecutionDriftKind::Handle(denial),
+            WorthQueryInstalledDomainExecutionNextAction::UseOwningRuntime,
+        )
+    }
     pub(crate) fn validate<D: 'static>(
         witness: &WorthQueryInstalledDomainAuthorityWitness,
         workspace: &WorthQueryWorkspace,

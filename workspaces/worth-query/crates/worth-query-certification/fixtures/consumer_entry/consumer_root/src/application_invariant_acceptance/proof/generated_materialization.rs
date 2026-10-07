@@ -118,7 +118,9 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         )) => {}
         _ => panic!("an unrelated observed source must not suspend this output"),
     }
-    application.fail_next_durable_append_for_test();
+    application
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     let recovery = match application
         .on_branch(branch)
         .select()
@@ -178,7 +180,9 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
     let suspended = incomplete_manifest_rejection(application, suspended, &vertices);
     let suspended = claim_denials_preserve_session(application, suspended, &vertices);
     let completed = complete(application, suspended, &vertices);
-    application.fail_next_durable_append_for_test();
+    application
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     let recovery = match application.restore_generated_output(completed, scope) {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputRestorationFailure::ProductUnpublished(unpublished)) => {
             unpublished.into_recovery()

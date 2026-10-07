@@ -2,6 +2,7 @@ use super::WorthQueryWorkflowRunCounters;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowStartDenialKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     RuntimeAuthority(crate::domain_installation::WorthQueryDomainHandleDenialKind),
     WorkflowNotDeclared,
     StageExecutorMissing,

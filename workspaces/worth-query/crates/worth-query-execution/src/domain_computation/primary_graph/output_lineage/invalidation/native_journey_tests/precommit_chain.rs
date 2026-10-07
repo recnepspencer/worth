@@ -87,7 +87,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         0,
     );
     publish_field(&world, entity, label.clone(), "prime");
-    let (before_handle, before, a_facts) = handle.with_runtime(|runtime| {
+    let (before_handle, before, a_facts) = handle.with_open_runtime(|runtime| {
         let (selected, basis) = snapshot(runtime);
         let facts: Arc<[_]> = Arc::from([field_fact(runtime, &selected, entity, status.clone())]);
         (selected, basis, facts)
@@ -126,10 +126,10 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     // World publication advances both the native and product selected roots.
     // The unrelated field leaves the actual consumed source fact current.
     publish_field(&world, entity, label, "unrelated-label");
-    let (unrelated_handle, unrelated) = handle.with_runtime(snapshot);
+    let (unrelated_handle, unrelated) = handle.with_open_runtime(snapshot);
     let mut work = 1_000_000;
     assert_eq!(
-        handle.with_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
+        handle.with_open_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
             std::slice::from_ref(&b_evidence),
             owner,
             runtime,
@@ -144,7 +144,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     // and scratch. A fresh allowance per closure would incorrectly pass the
     // second call under either one-short budget.
     let verify_unrelated = |admission: &mut InvalidationEditAdmission| {
-        handle.with_runtime(|runtime| {
+        handle.with_open_runtime(|runtime| {
             ConsumedOutputEvidence::verify_many_with_admission(
                 std::slice::from_ref(&b_evidence),
                 owner,
@@ -195,10 +195,10 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     // C has already consumed B. Changing A leaves B pending at the new
     // product-selected source, before C's provider commit can prepare effects.
     publish_field(&world, entity, status, "closed");
-    let (after_handle, after) = handle.with_runtime(snapshot);
+    let (after_handle, after) = handle.with_open_runtime(snapshot);
     let mut work = 1_000_000;
     assert_eq!(
-        handle.with_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
+        handle.with_open_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
             std::slice::from_ref(&b_evidence),
             owner,
             runtime,
@@ -238,7 +238,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     ));
     let mut work = 1_000_000;
     assert_eq!(
-        handle.with_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
+        handle.with_open_runtime(|runtime| ConsumedOutputEvidence::verify_many_at(
             std::slice::from_ref(&b_evidence),
             owner,
             runtime,
@@ -248,7 +248,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         )),
         Ok(ConsumedOutputVerification::ChangedUpstream),
     );
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         for selected in [before_handle, unrelated_handle, after_handle] {
             runtime.snapshots().release_snapshot(&selected).unwrap();
         }
@@ -316,7 +316,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     };
     let stale = admitted_program("must-not-publish").with_consumed_output_for_test(b_evidence);
     let product_before = world.selected_product().product().observation().clone();
-    let (head_before_handle, head_before) = handle.with_runtime(snapshot);
+    let (head_before_handle, head_before) = handle.with_open_runtime(snapshot);
     let denied = world.application.compare_and_commit_application(
         stale,
         WorthQueryApplicationIdempotencyBinding::new([211; 32], [212; 32]),
@@ -331,7 +331,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         denial.kind(),
         denial.stage(),
     );
-    let (head_after_handle, head_after) = handle.with_runtime(snapshot);
+    let (head_after_handle, head_after) = handle.with_open_runtime(snapshot);
     assert_eq!(
         head_after, head_before,
         "the denied C commit cannot move native truth"
@@ -341,7 +341,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         &product_before,
         "the denied C commit cannot move Product truth"
     );
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         runtime
             .snapshots()
             .release_snapshot(&head_before_handle)

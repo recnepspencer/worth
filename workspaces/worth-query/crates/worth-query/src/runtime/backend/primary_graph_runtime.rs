@@ -39,11 +39,11 @@ impl WorthQueryPrimaryGraphBackendHandle {
         &self,
     ) -> Result<
         worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
-        worth_relational::facade::branch::RelationalBranchBasisDenial,
+        worth_query_execution::facade::integration::WorthQueryRelationalSourceDenial,
     > {
         let branch = self
             .integration
-            .with_runtime(|runtime| runtime.main_branch_identity());
+            .with_runtime(|runtime| runtime.main_branch_identity())?;
         self.integration.prepare_product_source(&branch)
     }
     pub(in crate::runtime) fn new(integration: WorthQueryPrimaryGraphIntegrationHandle) -> Self {
@@ -53,7 +53,7 @@ impl WorthQueryPrimaryGraphBackendHandle {
     pub(in crate::runtime) fn with_runtime<T>(
         &self,
         read: impl FnOnce(&RelationalRuntime) -> T,
-    ) -> T {
+    ) -> Result<T, worth_query_execution::facade::primary_graph::WorthQueryHandleDenial> {
         self.integration.with_runtime(read)
     }
 

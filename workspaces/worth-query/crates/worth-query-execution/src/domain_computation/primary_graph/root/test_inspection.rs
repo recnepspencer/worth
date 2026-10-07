@@ -9,7 +9,7 @@ impl WorthQueryPrimaryGraph {
             self.layout.provider_dispatch_outbox().entity_kind,
             self.layout.provider_aftermath_causality().entity_kind,
         ];
-        self.source_owner.with_runtime(|runtime| {
+        self.source_owner.with_open_runtime(|runtime| {
             kinds.map(|kind| {
                 runtime
                     .config()
@@ -33,7 +33,7 @@ impl WorthQueryPrimaryGraph {
         aspect: &str,
     ) -> Option<worth_relational::facade::schema::DeclaredAspectContractBinding> {
         let kind = self.layout.entity_kind(entity)?;
-        self.source_owner.with_runtime(|runtime| {
+        self.source_owner.with_open_runtime(|runtime| {
             runtime
                 .config()
                 .schema
@@ -46,5 +46,20 @@ impl WorthQueryPrimaryGraph {
                 .find(|declared| declared.contract.key().as_str() == aspect)
                 .cloned()
         })
+    }
+}
+
+impl super::WorthQueryPrimaryGraphIntegrationHandle {
+    pub(crate) fn with_open_runtime<T>(
+        &self,
+        read: impl FnOnce(&worth_relational::facade::runtime::RelationalRuntime) -> T,
+    ) -> T {
+        self.source_owner.with_open_runtime(read)
+    }
+    pub(crate) fn with_open_runtime_mut<T>(
+        &self,
+        read: impl FnOnce(&mut worth_relational::facade::runtime::RelationalRuntime) -> T,
+    ) -> T {
+        self.source_owner.with_open_runtime_mut(read)
     }
 }

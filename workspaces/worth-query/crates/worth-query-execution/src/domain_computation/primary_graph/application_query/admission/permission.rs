@@ -264,7 +264,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             requirement,
                             admission,
                         )
-                    })
+                    })?
                     .map_err(|stop| match stop {
                         AdmittedQueryAuthorizationStop::Authorization(authorization) => {
                             WorthQueryApplicationQueryAdmissionDenial::from_authorization(

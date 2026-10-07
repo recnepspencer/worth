@@ -55,18 +55,22 @@ impl WorthQueryPrimaryGraphSourceProjection for FinancialSourceProjection {
         &self,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
-    ) -> Vec<foundation::WorthQueryEntity> {
-        let mut rows = project_financial_record(graph, self.record, self.derive_risk_from_curve)
+    ) -> Result<Vec<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
+        let mut rows = project_financial_record(graph, self.record, self.derive_risk_from_curve)?
             .into_iter()
             .collect::<Vec<_>>();
-        rows.extend(self.secondary_record.and_then(|record| {
-            project_financial_record(graph, record, self.derive_risk_from_curve)
-        }));
+        if let Some(record) = self.secondary_record {
+            rows.extend(project_financial_record(
+                graph,
+                record,
+                self.derive_risk_from_curve,
+            )?);
+        }
         rows.extend(unrelated_portfolio_rows(
             self.record,
             self.unrelated_portfolio_rows,
         ));
-        rows
+        Ok(rows)
     }
 
     fn project_granular_scope(
@@ -168,13 +172,13 @@ fn project_financial_record(
     graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
     derive_risk_from_curve: bool,
-) -> Option<foundation::WorthQueryEntity> {
-    graph.with_runtime(|runtime| {
+) -> Result<Option<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
+    Ok(graph.with_runtime(|runtime| {
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).ok()?;
         let observation = basis.observation();
         project_financial_observation_record(runtime, &observation, record, derive_risk_from_curve)
-    })
+    })?)
 }
 
 fn project_financial_record_at_basis(

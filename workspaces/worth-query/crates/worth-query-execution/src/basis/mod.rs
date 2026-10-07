@@ -13,3 +13,7 @@ pub use product_branch::{
     WorthQueryProductBranchReadIdentity, WorthQueryProductBranchRecoveryDenial,
     WorthQueryProductBranches, WorthQueryProductObservationLease,
 };
+
+pub(crate) use product_branch::product_branch_ordinal;
+#[cfg(test)]
+pub(crate) use product_branch::relational_product_branch_name;

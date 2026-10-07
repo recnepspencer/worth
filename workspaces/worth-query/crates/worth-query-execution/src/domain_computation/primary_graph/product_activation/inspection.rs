@@ -30,6 +30,7 @@ impl WorthQuerySelectedProgramInspection {
 /// Why the program carried by a selected product could not be inspected.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQuerySelectedProgramInspectionDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The runtime has no installed program support.
     ProgramSupportUnavailable,
     /// No program activation is published.
@@ -78,7 +79,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
                         }
                         record.aspect_field_value(aspect, &field).cloned()
                     })
-            })
+            })?
             .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable)?;
     let entry = support
         .rostered_for_rendering(&rendering)
@@ -158,5 +159,13 @@ impl WorthQueryRetainedSelectedProgramInspection {
         Option<super::super::program_occurrence::WorthQueryProgramSupportInterpretation>,
     ) {
         (self.inspection, self.interpretation)
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQuerySelectedProgramInspectionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

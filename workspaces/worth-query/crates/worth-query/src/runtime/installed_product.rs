@@ -105,7 +105,10 @@ impl WorthQueryInstalledProduct {
     pub(super) fn managed_run_admission<'runtime>(
         &'runtime self,
         query: &'runtime worth_query_execution::facade::runtime::WorthQueryExecutionRuntime,
-    ) -> worth_query_execution::facade::runtime::WorthQueryManagedRunAdmission<'runtime> {
+    ) -> Result<
+        worth_query_execution::facade::runtime::WorthQueryManagedRunAdmission<'runtime>,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         self.world
             .integration_managed_run_admission(query, &self.managed_execution_bridge)
     }

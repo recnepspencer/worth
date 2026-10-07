@@ -38,21 +38,27 @@ pub fn assert_healed_observation_refreshes_live_projection() {
         )
         .expect("the unrelated row must remain exactly resolvable")
         .relational_record_identity_parts();
-    world.application.publish_native_field_write_for_test(
-        branch,
-        world.intent_record_identity(),
-        IntentGateField::reference(),
-        "ready".to_string(),
-        &request_scope(),
-    );
-    for value in 1..=UNRELATED_COMMITS {
-        world.application.publish_native_field_write_for_test(
+    world
+        .application
+        .publish_native_field_write_for_test(
             branch,
-            unrelated,
-            UnrelatedValueField::reference(),
-            value,
+            world.intent_record_identity(),
+            IntentGateField::reference(),
+            "ready".to_string(),
             &request_scope(),
-        );
+        )
+        .expect("the native-writer fixture requires an open application owner");
+    for value in 1..=UNRELATED_COMMITS {
+        world
+            .application
+            .publish_native_field_write_for_test(
+                branch,
+                unrelated,
+                UnrelatedValueField::reference(),
+                value,
+                &request_scope(),
+            )
+            .expect("the native-writer fixture requires an open application owner");
     }
 
     let mut healed = observe(&mut world);

@@ -15,8 +15,11 @@ pub(super) fn journal_replay_surface_evidence() -> WorthQueryJournalReplaySurfac
         second.journal_position(),
     )
     .expect("committed segment identity should build");
-    let request = WorthQueryJournalReplayRequest::new(segment)
-        .with_basis_snapshot(workspace.snapshot_identity());
+    let request = WorthQueryJournalReplayRequest::new(segment).with_basis_snapshot(
+        workspace
+            .snapshot_identity()
+            .expect("the fixture owner remains open"),
+    );
     let outcome = workspace
         .replay_journal_segment(request)
         .expect("journal replay should succeed");

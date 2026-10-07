@@ -10,6 +10,7 @@ use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 pub(in crate::domain_computation::primary_graph) enum SelectedPermissionSecurityStop {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     Admission(CompanionPreflightStop),
     World,
     AccountingOverflow,
@@ -95,7 +96,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .is_none_or(|guard| guard == expected);
         if expected.owner_identity() != self.product_runtime.owner.owner_identity()
             || !guard_matches
-            || !query_basis.can_reuse_security_snapshot_at(expected)
+            || !query_basis
+                .can_reuse_security_snapshot_at(expected)
+                .map_err(SelectedPermissionSecurityStop::Handle)?
         {
             return Ok(None);
         }

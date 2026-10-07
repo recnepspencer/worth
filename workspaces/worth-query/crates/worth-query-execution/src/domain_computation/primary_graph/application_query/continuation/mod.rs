@@ -92,7 +92,10 @@ where
         }
         validate_execution_lifetimes(self, &plan.controls, plan.principal)
             .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
-        validate_live_basis(plan.basis.is_live())
+        validate_live_basis(plan.basis.is_live().map_err(|handle| denial(
+            WorthQueryApplicationContinuationDenialKind::Authorization(
+                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Handle(handle)),
+            plan.query.name()))?)
             .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
         refresh_governed_authorization(self, &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;

@@ -44,7 +44,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
         value: Value,
         request: &WorthQueryRequestScope,
-    ) where
+    ) -> Result<(), crate::facade::primary_graph::WorthQueryHandleDenial>
+    where
         Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
@@ -54,6 +55,7 @@ where
             record.local_slot(),
             record.generation(),
         );
+        self.primary_provider.graph.with_runtime(|_| ())?;
         let selected = self
             .on_branch(branch)
             .select()
@@ -87,7 +89,7 @@ where
             runtime
                 .prepare_branch_transaction(transaction)
                 .expect("the native field write prepares a Relational candidate")
-        });
+        })?;
         let outcome = product
             .publication_binding()
             .prepare_relational_candidate(candidate, request, false)
@@ -114,6 +116,7 @@ where
                 Some(application_basis.snapshot_handle()),
             )
             .expect("the native publication refreshes its exact indexes");
-        });
+        })?;
+        Ok(())
     }
 }

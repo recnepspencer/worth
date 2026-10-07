@@ -98,7 +98,7 @@ where
                     published.branch(),
                     compiled.lineage(),
                 )
-            })
+            })?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::WorkflowLineageUnavailable,
@@ -130,7 +130,7 @@ where
                 WorthQueryApplicationAdjacencyDirection::Incoming,
                 maximum_instances.saturating_mul(2).saturating_add(1),
             )
-        });
+        })?;
         let declared_deadline = self.lease.handle().with_runtime(|runtime| {
             super::workflow_deadline::definition_deadline(
                 runtime,
@@ -139,7 +139,7 @@ where
                 compiled.definition(),
                 &mut compile_facts,
             )
-        })?;
+        })??;
         // Every live instance pins its revision. A full lineage refuses a new
         // start once the commit knows it is no retry of a recorded one. A
         // lineage holding more than it can read, as a lowered ceiling can

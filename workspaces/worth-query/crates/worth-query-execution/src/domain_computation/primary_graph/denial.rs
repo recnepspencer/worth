@@ -7,6 +7,7 @@
 /// conditional bindings, and managed computation owners.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// A binding or input belongs to a different runtime.
     ForeignRuntime,
     /// The application's contributions differ from the installed contribution
@@ -57,7 +58,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
         required_loci: usize,
     },
     /// The savepoint limit was reached.
-    SavepointCapacityExhausted { maximum_savepoints: usize },
+    SavepointCapacityExhausted {
+        maximum_savepoints: usize,
+    },
     /// A savepoint footprint would exceed its locus limit.
     SavepointFootprintCapacityExhausted {
         maximum_loci: usize,
@@ -66,9 +69,13 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// The runtime ran out of savepoint identities.
     SavepointIdentityExhausted,
     /// The provider's candidate limit was reached.
-    CandidateCapacityExhausted { maximum_candidates: usize },
+    CandidateCapacityExhausted {
+        maximum_candidates: usize,
+    },
     /// The provider's published-snapshot limit was reached.
-    PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    PublishedSnapshotCapacityExhausted {
+        maximum_handles: usize,
+    },
     /// The runtime ran out of candidate identities.
     CandidateIdentityExhausted,
     /// The prepared root would exceed its byte budget.
@@ -213,3 +220,14 @@ impl std::fmt::Display for WorthQueryPrimaryGraphInstallationDenial {
 }
 
 impl std::error::Error for WorthQueryPrimaryGraphInstallationDenial {}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryPrimaryGraphInstallationDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::Handle(denial),
+            "application handle",
+        )
+    }
+}

@@ -11,14 +11,21 @@ impl WorthQueryOutputDemandRegistry {
     /// facts; a restored record already carries its authenticated payload.
     pub(in crate::domain_computation::primary_graph) fn accepted_checkpoint_records(
         &self,
-    ) -> Vec<(
-        WorthQueryAcceptedOutputCheckpointIdentity,
-        Option<AcceptedCheckpointFactSource>,
-    )> {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+    ) -> Result<
+        Vec<(
+            WorthQueryAcceptedOutputCheckpointIdentity,
+            Option<AcceptedCheckpointFactSource>,
+        )>,
+        worth_relational::facade::durability::DurabilityError,
+    > {
+        let state = match self.state.try_lock() {
+            Ok(state) => state,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(worth_relational::facade::durability::DurabilityError::new(
+                worth_relational::facade::durability::RecoveryFailureClass::CheckpointPublicationInFlight,
+                "Query accepted-output publication is in flight",
+            )),
+        };
         let mut accepted = state
             .records
             .iter()
@@ -85,7 +92,7 @@ impl WorthQueryOutputDemandRegistry {
             })
             .collect::<Vec<_>>();
         accepted.sort_by(|left, right| left.0.canonical_cmp(&right.0));
-        accepted
+        Ok(accepted)
     }
 
     #[cfg(test)]
@@ -93,6 +100,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
     ) -> Vec<WorthQueryAcceptedOutputCheckpointIdentity> {
         self.accepted_checkpoint_records()
+            .expect("the fixture checkpoint has no publication in flight")
             .into_iter()
             .map(|(identity, _)| identity)
             .collect()

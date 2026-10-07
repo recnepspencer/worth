@@ -89,7 +89,7 @@ where
                 source_transition,
                 &mut facts,
             )
-        })?;
+        })??;
         let source_identity = progress
             .latest_transition_identity(source.entity())
             .ok_or_else(|| mismatch(selected.node_path()))?;
@@ -107,7 +107,7 @@ where
                 source_input_type,
                 source.path(),
             )
-        })?;
+        })??;
         facts.append(&mut input_facts);
         let mut approval_sources = compiled.approval_authority_sources(selected.node());
         let approval = approval_sources
@@ -129,7 +129,7 @@ where
                 approval_transition,
                 &mut facts,
             )
-        })?;
+        })??;
         if settlement.outcome()
             != worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Approved
         {
@@ -147,7 +147,7 @@ where
                 layout,
                 instance.entity_id(),
             )
-        })?;
+        })??;
         facts.push(custody);
         let remaining = self
             .admission

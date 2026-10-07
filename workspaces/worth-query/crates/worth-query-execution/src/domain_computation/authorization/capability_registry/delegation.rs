@@ -125,7 +125,7 @@ impl WorthQueryCapabilityDelegationBindings {
             activation: delegation
                 .activation()
                 .map(|activation| {
-                    Ok(WorthQueryCapabilityDelegationActivationBindings {
+                    Ok::<_, WorthQueryOperationAuthorizationDenial>(WorthQueryCapabilityDelegationActivationBindings {
                         operation: activation.operation().operation().to_string(),
                         operation_type: activation.operation().operation_type().to_string(),
                         input_type: activation.operation().input_type().to_string(),

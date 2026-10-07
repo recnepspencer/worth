@@ -20,13 +20,15 @@ macro_rules! native_write {
             )
             .unwrap()
             .relational_record_identity_parts();
-        $application.publish_native_field_write_for_test(
-            branch,
-            record,
-            $field::reference::<CheckpointSchema>(),
-            length($value),
-            &$scope,
-        );
+        $application
+            .publish_native_field_write_for_test(
+                branch,
+                record,
+                $field::reference::<CheckpointSchema>(),
+                length($value),
+                &$scope,
+            )
+            .expect("the native-writer fixture requires an open application owner");
     }};
 }
 

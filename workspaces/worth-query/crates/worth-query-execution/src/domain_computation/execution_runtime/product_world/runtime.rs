@@ -23,6 +23,7 @@ pub(crate) struct WorthQueryProductRootIdentity {
 #[derive(Clone)]
 pub struct WorthQueryProductRuntime {
     pub(crate) owner: Arc<RuntimeWorldOwner<(), (), (), (), ()>>,
+    pub(crate) gate: super::WorthQueryRelationalSourceOwner,
     pub(crate) source: RuntimeBridgeRelationalSource,
     pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
     pub(crate) clock: WorthQueryProductWorldClock,
@@ -46,13 +47,19 @@ impl WorthQueryProductRuntime {
         &'runtime self,
         query: &'runtime crate::domain_computation::WorthQueryExecutionRuntime,
         bridge: &'runtime worth_runtime_bridge::facade::RuntimeBridge,
-    ) -> crate::domain_computation::WorthQueryManagedRunAdmission<'runtime> {
-        query.managed_run_admission(bridge, &self.source)
+    ) -> Result<
+        crate::domain_computation::WorthQueryManagedRunAdmission<'runtime>,
+        super::WorthQueryHandleDenial,
+    > {
+        self.gate
+            .with_runtime(|_| query.managed_run_admission(bridge, &self.source))
     }
 
     pub(crate) fn from_parts(
         owner: RuntimeWorldOwner<(), (), (), (), ()>,
         source: RuntimeBridgeRelationalSource,
+        gate: super::WorthQueryRelationalSourceOwner,
+        next_ordinal: u64,
         activations: WorthQueryProductActivationRegistry,
         clock: WorthQueryProductWorldClock,
         relational_lifecycle: RelationalBranchLifecyclePort,
@@ -70,6 +77,7 @@ impl WorthQueryProductRuntime {
         Self {
             owner: Arc::new(owner),
             source,
+            gate,
             activations: Arc::new(activations),
             clock,
             relational_lifecycle,
@@ -79,7 +87,7 @@ impl WorthQueryProductRuntime {
             #[cfg(test)]
             default_branch,
             default_occurrence,
-            next_public_branch_ordinal: Arc::new(std::sync::atomic::AtomicU64::new(1)),
+            next_public_branch_ordinal: Arc::new(std::sync::atomic::AtomicU64::new(next_ordinal)),
             root_identity: Arc::new(WorthQueryProductRootIdentity { _private: () }),
             recovered_root_authority,
         }

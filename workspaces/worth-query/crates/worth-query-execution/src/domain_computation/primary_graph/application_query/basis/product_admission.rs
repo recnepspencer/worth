@@ -27,7 +27,7 @@ pub(super) fn admit<Schema>(
                 runtime,
                 selected.selected_product().relational_basis(),
             )
-        })
+        })?
         .map_err(map_index_currency_denial)?;
     Ok(selected)
 }
@@ -47,7 +47,7 @@ pub(super) fn admit_selected_permission_basis<Schema>(
             "product World owner",
         ));
     }
-    if !application_basis.is_live() {
+    if !application_basis.is_live()? {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
             "retained product snapshot",
@@ -84,6 +84,7 @@ fn map_product_admission_denial(
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     use crate::basis::WorthQueryProductBranchAdmissionDenial as Product;
     let kind = match denial {
+        Product::Handle(denial) => WorthQueryApplicationQueryAdmissionDenialKind::Handle(denial),
         Product::ForeignOwner => WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
         Product::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,

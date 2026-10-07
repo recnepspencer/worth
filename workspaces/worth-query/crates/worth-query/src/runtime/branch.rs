@@ -48,16 +48,16 @@ impl<'a> WorthQueryBranchSession<'a> {
         runtime: &'a mut WorthQueryRuntime,
         options: WorthQueryBranchOptions,
         basis_admission: WorthQueryBranchBasisAdmission,
-    ) -> Self {
-        let basis_snapshot_identity = runtime.current_snapshot_identity();
-        Self {
+    ) -> Result<Self, WorthQueryRuntimeError> {
+        let basis_snapshot_identity = runtime.current_snapshot_identity()?;
+        Ok(Self {
             label,
             runtime,
             effect_policy: options.effect_policy(),
             basis_admission,
             basis_snapshot_identity,
             intent_receipts: Vec::new(),
-        }
+        })
     }
 
     pub fn label(&self) -> &str {

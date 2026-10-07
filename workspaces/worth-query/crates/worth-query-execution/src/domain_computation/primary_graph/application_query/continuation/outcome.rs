@@ -178,6 +178,13 @@ fn release_continuation_page_basis<
     let request = plan.controls.request_scope().clone();
     let authentication_valid_until = plan.principal.valid_until();
     let basis_release = plan.basis.release();
+    if let super::super::resource_lifecycle::WorthQueryApplicationBasisReleaseOutcome::Handle(
+        handle,
+    ) = basis_release.outcome()
+    {
+        return Err(denial(WorthQueryApplicationContinuationDenialKind::Authorization(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Handle(handle)), subject));
+    }
     if !basis_release.released() {
         return Err(denial(
             WorthQueryApplicationContinuationDenialKind::BasisReleaseFailed,

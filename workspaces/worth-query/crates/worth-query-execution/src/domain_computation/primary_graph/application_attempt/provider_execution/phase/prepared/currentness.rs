@@ -71,6 +71,7 @@ fn acquire_current_lease(
     )
     .map_err(|denial| {
         WorthQueryApplicationCommitOutcome::Denied(match denial {
+            crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::Handle(denial) => denial.into(),
             Denial::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             } => WorthQueryApplicationCommitDenial::active_snapshot_capacity_exhausted(

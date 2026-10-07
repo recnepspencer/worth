@@ -101,7 +101,7 @@ where
                 installed.resources().history_reconstruction_budget(),
                 super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
-        })?;
+        })??;
         let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
             &mut observed.replays,
         ));
@@ -156,7 +156,7 @@ where
                     maximum_transitions,
                     &compiled,
                 )
-            })?;
+            })??;
             observed.transitions.iter().find(|transition| {
                 transition.settlement.node() == approval_node
                     && transition.settlement.occurrence() == required.occurrence()
@@ -179,7 +179,7 @@ where
                     settled,
                     &mut settlement_facts,
                 )
-            })?;
+            })??;
             facts.append(&mut settlement_facts);
             let (selected_path, selected_identity, probe_identity) = if older_settlement {
                 // Current back-edge counters cannot reconstruct an earlier

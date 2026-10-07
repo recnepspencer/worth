@@ -35,7 +35,7 @@ pub trait WorthQueryRuntimeSourceAdapter {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity>;
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError>;
 
     /// Reads only the admitted semantic granule from the source of truth.
     ///

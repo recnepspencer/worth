@@ -262,7 +262,7 @@ where
         requested.capability_identity(),
         installed,
         requested.elevation_identity(),
-    )
+    )?
     .ok_or_else(|| approval_rejected(installed.contract().name()))?;
     let review = resolve_review_identity(
         runtime,
@@ -270,7 +270,7 @@ where
         requested.capability_identity(),
         installed,
         requested.review_identity(),
-    )
+    )?
     .ok_or_else(|| approval_rejected(installed.contract().name()))?;
     if resolved_elevation == elevation {
         Ok((elevation, review))

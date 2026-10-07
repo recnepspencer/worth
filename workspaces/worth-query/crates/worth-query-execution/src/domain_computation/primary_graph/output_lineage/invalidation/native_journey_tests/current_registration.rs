@@ -44,8 +44,8 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(|runtime| write_field(runtime, entity, label, "prime"));
-    let (before_handle, before, facts) = handle.with_runtime(|runtime| {
+    handle.with_open_runtime_mut(|runtime| write_field(runtime, entity, label, "prime"));
+    let (before_handle, before, facts) = handle.with_open_runtime(|runtime| {
         let (snapshot, basis) = snapshot(runtime);
         let facts: Arc<[_]> = Arc::from([field_fact(runtime, &snapshot, entity, status.clone())]);
         (snapshot, basis, facts)
@@ -79,8 +79,8 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Clean
     ));
 
-    handle.with_runtime_mut(|runtime| write_field(runtime, entity, status, "closed"));
-    let (after_handle, after) = handle.with_runtime(snapshot);
+    handle.with_open_runtime_mut(|runtime| write_field(runtime, entity, status, "closed"));
+    let (after_handle, after) = handle.with_open_runtime(snapshot);
     let next = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let stopped = owner.prepare_current_settlement(
         registration(Arc::clone(&next)),
@@ -125,7 +125,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),
         _ => panic!("a registration stale at its own read basis starts dirty"),
     }
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

@@ -83,7 +83,7 @@ where
                 installed.resources().history_reconstruction_budget(),
                 super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
             )
-        })?;
+        })??;
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
@@ -108,7 +108,7 @@ where
                         maximum_transitions,
                         &compiled,
                     )
-                })?;
+                })??;
                 if observed.transitions.is_empty() {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
@@ -146,7 +146,7 @@ where
                             selected.identity(),
                             selected.occurrence(),
                         )
-                    })?;
+                    })??;
                 observed.facts.append(&mut settlement_facts);
                 facts.append(&mut observed.facts);
                 let replays = publication::PreparedWorkflowTransitionReplays::retained(

@@ -20,11 +20,13 @@ pub struct WorthQueryOpenAdoptionWriter<'installation, Schema> {
 impl<'installation, Schema: ApplicationSchema> WorthQueryOpenAdoptionWriter<'installation, Schema> {
     #[cfg(feature = "test-durability-faults")]
     #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
+    pub fn fail_next_durable_append_for_test(
+        &self,
+    ) -> Result<(), crate::facade::primary_graph::WorthQueryHandleDenial> {
         self.graph
             .graph
             .integration_handle()
-            .with_runtime(|runtime| runtime.fail_next_durable_append_for_test());
+            .with_runtime(|runtime| runtime.fail_next_durable_append_for_test())
     }
 
     pub(super) fn new(

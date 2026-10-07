@@ -68,7 +68,7 @@ impl WorthQueryRuntime {
         binding: WorthQueryUnifiedInspectionExecutionBinding,
     ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         let inspection = self.inspect_from_generic_seed(binding.seed())?;
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity()?;
         let receipt = WorthQueryUnifiedInspectionReceipt::from_inspection(
             binding.seed().request_label().clone(),
             &inspection,

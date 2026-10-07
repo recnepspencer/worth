@@ -24,7 +24,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
     };
     let baseline = commit_count();
     let alice_program = link_program(

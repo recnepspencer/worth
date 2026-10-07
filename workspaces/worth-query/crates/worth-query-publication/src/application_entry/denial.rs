@@ -101,6 +101,7 @@ impl std::error::Error for WorthQueryApplicationRequestQueryDenial {}
 /// The kind of a `WorthQueryApplicationRequestMutationDenial`, without its detail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationRequestMutationDenialKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     BindingInstallation,
     CapabilityInstallation,
     ProductSelection,
@@ -254,6 +255,7 @@ const fn idempotency_kind(
     use WorthQueryApplicationIdempotencyResolutionDenialKind as Resolution;
     use WorthQueryApplicationRequestMutationDenialKind as Request;
     match kind {
+        Resolution::Handle(denial) => Request::Handle(denial),
         Resolution::Authorization(kind) => Request::Authorization(kind),
         Resolution::ForeignAdmission => Request::IdempotencyForeignAdmission,
         Resolution::ActiveSnapshotCapacityExhausted { .. }

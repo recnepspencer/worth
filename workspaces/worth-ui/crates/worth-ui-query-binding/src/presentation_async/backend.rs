@@ -131,8 +131,8 @@ impl runtime::WorthQueryRuntimeSourceAdapter for PresentationSource {
     fn live_entities_for_target(
         &self,
         _target: &runtime::WorthQueryLiveArtifactTarget,
-    ) -> Vec<foundation::WorthQueryEntity> {
-        Vec::new()
+    ) -> Result<Vec<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
+        Ok(Vec::new())
     }
     fn drain_live_patches_for_target(
         &mut self,
@@ -152,8 +152,10 @@ struct PresentationWriteDenial;
 
 struct PresentationSnapshot;
 impl runtime::WorthQueryRuntimeSnapshotIdentityAdapter for PresentationSnapshot {
-    fn current_snapshot_identity(&self) -> foundation::WorthQuerySnapshotIdentity {
-        foundation::WorthQuerySnapshotIdentity::empty_relational_state()
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<foundation::WorthQuerySnapshotIdentity, runtime::WorthQueryHandleDenial> {
+        Ok(foundation::WorthQuerySnapshotIdentity::empty_relational_state())
     }
 }
 

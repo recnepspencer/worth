@@ -48,7 +48,12 @@ impl WorthQueryWorkspace {
         &self.name
     }
 
-    pub fn snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    pub fn snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         self.runtime.current_snapshot_identity()
     }
 

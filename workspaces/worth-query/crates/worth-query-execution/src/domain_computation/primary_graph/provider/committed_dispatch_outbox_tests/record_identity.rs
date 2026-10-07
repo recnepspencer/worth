@@ -5,7 +5,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
     let world = installed_authorization_world(true);
     let provider = &world.application.primary_provider;
     let record = record_for(5);
-    provider.graph.with_runtime_mut(|runtime| {
+    provider.graph.with_open_runtime_mut(|runtime| {
         let (intent, pending) =
             crate::domain_computation::application_aftermath::bind_dispatch_outbox_create_intent(
                 Some(provider.graph.layout.provider_dispatch_outbox()),
@@ -85,7 +85,7 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
     let first = record_for(61);
     let second = record_for(62);
     let (first_binding, second_binding, commit, runtime_id) =
-        provider.graph.with_runtime_mut(|runtime| {
+        provider.graph.with_open_runtime_mut(|runtime| {
             let intent = |record: &WorthQueryDispatchOutboxRecord| {
                 dispatch_outbox_create_intent(
                     Some(provider.graph.layout.provider_dispatch_outbox()),

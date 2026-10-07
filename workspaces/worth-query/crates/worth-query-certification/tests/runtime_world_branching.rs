@@ -59,10 +59,10 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
     const MAXIMUM_ACTIVE_SNAPSHOTS: usize = 3;
     let world =
         CourtroomWorld::publish_with_active_snapshot_limit("ready", MAXIMUM_ACTIVE_SNAPSHOTS);
-    let (_, before) = world.application.relational_snapshot_state_for_test();
+    let (_, before) = world.open_snapshot_state();
     let branch = world.application.current_world();
     let selected = world.application.on_branch(branch).select().unwrap();
-    let already_active = world.application.relational_snapshot_state_for_test().0;
+    let already_active = world.open_snapshot_state().0;
     let pinned = (already_active..MAXIMUM_ACTIVE_SNAPSHOTS)
         .map(|_| {
             world
@@ -73,10 +73,7 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
         })
         .collect::<Vec<_>>();
     let retained_after_failed_admission = pinned.len();
-    assert_eq!(
-        world.application.relational_snapshot_state_for_test().0,
-        MAXIMUM_ACTIVE_SNAPSHOTS
-    );
+    assert_eq!(world.open_snapshot_state().0, MAXIMUM_ACTIVE_SNAPSHOTS);
 
     let denial = match selected.conditional_clock(&world.clock) {
         Ok(_) => panic!("capacity exhaustion must deny public product admission"),
@@ -92,12 +89,12 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
     );
     assert_eq!(world.contacts.snapshot(), (0, 0, 0, 0));
     assert_eq!(
-        world.application.relational_snapshot_state_for_test().0,
+        world.open_snapshot_state().0,
         retained_after_failed_admission,
         "failed selected-product admission must release its own retained truth"
     );
     drop(pinned);
-    let (active, after) = world.application.relational_snapshot_state_for_test();
+    let (active, after) = world.open_snapshot_state();
     assert_eq!(active, 0);
     assert_eq!(after, before);
     let retry = world.conditional_clock().observe();
@@ -105,7 +102,7 @@ fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
         retry,
         primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(_)
     ));
-    assert_eq!(world.application.relational_snapshot_state_for_test().0, 0);
+    assert_eq!(world.open_snapshot_state().0, 0);
 }
 
 #[test]

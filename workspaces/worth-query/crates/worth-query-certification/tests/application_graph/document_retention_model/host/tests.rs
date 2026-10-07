@@ -133,3 +133,6 @@ fn the_ordinary_lane_refuses_a_workflow_control_binding() {
         "the kernel records control steps, so the ordinary lane names that: {settlement:?}"
     );
 }
+
+#[path = "workflow_home.rs"]
+mod workflow_home;

@@ -6,6 +6,7 @@ use super::WorthQueryPrimaryGraphIntegrationHandle;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphIndexRefreshDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     MissingCommittedMutation,
     IndexBuildRejected,
 }
@@ -165,7 +166,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
                     .expect("captured index maintenance snapshot releases exactly once");
             }
             refresh
-        })
+        })?
     }
 }
 
@@ -196,5 +197,20 @@ fn index_build_rejected(
         committed_branch_id: Some(committed.branch_id.clone()),
         requested_index_count,
         failed_index_count,
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryPrimaryGraphIndexRefreshDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self {
+            kind: WorthQueryPrimaryGraphIndexRefreshDenialKind::Handle(denial),
+            previous_commit_id: None,
+            committed_mutation_id: None,
+            committed_branch_id: None,
+            requested_index_count: 0,
+            failed_index_count: 0,
+        }
     }
 }

@@ -6,6 +6,7 @@ use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryPrincipalResolutionDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The primary graph is not installed.
     PrimaryGraphNotInstalled,
     /// The principal binding is not installed.
@@ -45,7 +46,9 @@ pub enum WorthQueryPrincipalResolutionDenialKind {
     /// The principal proof no longer matches current state; resolve again.
     StalePrincipalProof,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain a basis.
@@ -170,5 +173,16 @@ mod tests {
             denial.kind(),
             WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended
         );
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryPrincipalResolutionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryPrincipalResolutionDenialKind::Handle(denial),
+            "application handle",
+        )
     }
 }

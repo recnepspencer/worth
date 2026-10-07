@@ -85,7 +85,7 @@ where
                 },
                 installed_binding,
             )
-        })?;
+        })??;
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
         Ok(WorthQueryAuthenticatedPrincipal::mint(external, evidence))
     }
@@ -130,7 +130,7 @@ where
                 &layout,
                 &expected_identity,
             )
-        })?;
+        })??;
         admit_resolution_request(scope, principal.binding(), principal.is_expired())
     }
 }

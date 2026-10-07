@@ -209,6 +209,7 @@ fn execute_exact_completion(
     let expected_attempt = admitted.provider_session_attempt_identity().to_owned();
     let expected_snapshot = workspace
         .snapshot_identity()
+        .expect("the fixture requires an open workspace")
         .evidence_identity()
         .terminal_projection_for_reporting()
         .to_owned();

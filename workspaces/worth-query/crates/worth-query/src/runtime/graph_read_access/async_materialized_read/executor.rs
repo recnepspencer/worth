@@ -23,7 +23,7 @@ impl<'a> WorthQueryGraphReadMaterializationRuntime<'a> {
         Ok(WorthQueryGraphReadMaterializationAdmittedJob {
             snapshot_identity: self
                 .runtime
-                .current_snapshot_identity()
+                .current_snapshot_identity()?
                 .evidence_identity()
                 .as_str()
                 .to_string(),

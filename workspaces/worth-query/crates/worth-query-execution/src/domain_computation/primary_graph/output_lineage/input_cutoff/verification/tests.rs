@@ -47,7 +47,7 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             let basis = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
                 .unwrap();

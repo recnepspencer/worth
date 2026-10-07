@@ -82,7 +82,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         .is_err());
     assert!(substitute_lease.release());
 
-    let foreign_branch_snapshot = lease.handle().with_runtime_mut(|runtime| {
+    let foreign_branch_snapshot = lease.handle().with_open_runtime_mut(|runtime| {
         let foreign =
             worth_relational::facade::history::BranchId("foreign-affinity-branch".to_owned());
         let (_, fork_basis) = runtime
@@ -105,7 +105,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
         lease.product(),
     )
     .is_err());
-    assert!(lease.handle().with_runtime_mut(|runtime| {
+    assert!(lease.handle().with_open_runtime_mut(|runtime| {
         runtime
             .snapshots()
             .release_snapshot(&foreign_branch_snapshot)

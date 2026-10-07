@@ -369,6 +369,10 @@ where
             .map_err(|denial| open_read_denial(denial, subject))?;
     let governance = plan.take_governance();
     let basis_release = plan.basis.release();
+    if let super::super::super::resource_lifecycle::WorthQueryApplicationBasisReleaseOutcome::Handle(handle) = basis_release.outcome() {
+        return Err(open_denial(WorthQueryApplicationLiveOpenDenialKind::AuthorizationDenied(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Handle(handle)), subject));
+    }
     if !basis_release.released() {
         return Err(open_denial(
             WorthQueryApplicationLiveOpenDenialKind::BasisReleaseFailed,

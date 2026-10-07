@@ -11,6 +11,7 @@ use crate::runtime::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryReadDenialKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     InvalidRoot,
     BuiltInOperatorDenied,
     RelationshipProofAdmissionDenied,
@@ -28,6 +29,7 @@ pub enum WorthQueryReadDenialKind {
 impl WorthQueryReadDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::Handle(_) => "handle_denied",
             Self::InvalidRoot => "invalid_root",
             Self::BuiltInOperatorDenied => "built_in_operator_denied",
             Self::RelationshipProofAdmissionDenied => "relationship_proof_admission_denied",
@@ -320,3 +322,11 @@ impl std::fmt::Display for WorthQueryReadDenial {
 }
 
 impl std::error::Error for WorthQueryReadDenial {}
+
+impl From<worth_query_execution::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryReadDenial
+{
+    fn from(denial: worth_query_execution::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(WorthQueryReadDenialKind::Handle(denial), denial.to_string())
+    }
+}

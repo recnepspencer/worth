@@ -126,46 +126,47 @@ fn staged(test: impl FnOnce(Stage<'_>)) {
         )
         .unwrap(),
     );
-    let (performed_witness, restored_witness, read_basis) = handle.with_runtime_mut(|runtime| {
-        let basis = runtime
-            .admit_branch_basis(&runtime.main_branch_identity())
-            .unwrap();
-        let snapshot = runtime
-            .snapshots()
-            .snapshot_for_observation(&basis.observation())
-            .unwrap();
-        let truth = runtime.read_truth();
-        let mut native = vec![Fact::Entity {
-            entity_id: output,
-            kind: truth
-                .exact_snapshot_live_entity_kind(&snapshot, output)
-                .unwrap(),
-        }];
-        for aspect in layout.native_output_aspects("Account") {
-            native.push(Fact::SourceAspectRevision {
+    let (performed_witness, restored_witness, read_basis) =
+        handle.with_open_runtime_mut(|runtime| {
+            let basis = runtime
+                .admit_branch_basis(&runtime.main_branch_identity())
+                .unwrap();
+            let snapshot = runtime
+                .snapshots()
+                .snapshot_for_observation(&basis.observation())
+                .unwrap();
+            let truth = runtime.read_truth();
+            let mut native = vec![Fact::Entity {
                 entity_id: output,
-                aspect: aspect.clone(),
-                native_revision: truth
-                    .exact_snapshot_entity_aspect_version(&snapshot, output, aspect)
+                kind: truth
+                    .exact_snapshot_live_entity_kind(&snapshot, output)
                     .unwrap(),
-            });
-        }
-        let seal = || {
-            SealedNativeOutputWitness::from_checkpoint_facts(
-                &correspondence,
-                layout,
-                &native,
-                owner,
-                &mut owner.edit_admission(),
-            )
-            .unwrap()
-            .expect("the installed output's native facts seal a witness")
-        };
-        let read_basis = truth.positioned_snapshot(&snapshot).unwrap();
-        let sealed = (seal(), seal(), read_basis);
-        runtime.snapshots().release_snapshot(&snapshot).unwrap();
-        sealed
-    });
+            }];
+            for aspect in layout.native_output_aspects("Account") {
+                native.push(Fact::SourceAspectRevision {
+                    entity_id: output,
+                    aspect: aspect.clone(),
+                    native_revision: truth
+                        .exact_snapshot_entity_aspect_version(&snapshot, output, aspect)
+                        .unwrap(),
+                });
+            }
+            let seal = || {
+                SealedNativeOutputWitness::from_checkpoint_facts(
+                    &correspondence,
+                    layout,
+                    &native,
+                    owner,
+                    &mut owner.edit_admission(),
+                )
+                .unwrap()
+                .expect("the installed output's native facts seal a witness")
+            };
+            let read_basis = truth.positioned_snapshot(&snapshot).unwrap();
+            let sealed = (seal(), seal(), read_basis);
+            runtime.snapshots().release_snapshot(&snapshot).unwrap();
+            sealed
+        });
     let source = SemanticSource {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),

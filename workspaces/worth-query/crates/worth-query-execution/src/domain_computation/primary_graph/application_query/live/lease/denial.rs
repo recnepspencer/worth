@@ -50,10 +50,16 @@ where
         denial: WorthQueryApplicationQueryAdmissionDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         match denial.kind() {
+            WorthQueryApplicationQueryAdmissionDenialKind::Handle(handle) => {
+                self.handle_denial_outcome(handle)
+            }
             WorthQueryApplicationQueryAdmissionDenialKind::Cancelled => self.cancelled_outcome(),
             WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded => {
                 self.deadline_exceeded_outcome()
             }
+            WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
+                WorthQueryOperationAuthorizationDenialKind::Handle(handle),
+            ) => self.handle_denial_outcome(handle),
             WorthQueryApplicationQueryAdmissionDenialKind::Authorization(_) => {
                 let authorization = denial.into_authorization_denial().unwrap_or_else(|| {
                     WorthQueryOperationAuthorizationDenial::inconsistent(self.query.name())
@@ -129,8 +135,28 @@ where
         &mut self,
         denial: WorthQueryOperationAuthorizationDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        if let WorthQueryOperationAuthorizationDenialKind::Handle(handle)
+        | WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(
+            crate::basis::WorthQueryProductBranchAdmissionDenial::Handle(handle),
+        ) = denial.kind()
+        {
+            return self.handle_denial_outcome(handle);
+        }
         self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::AuthorizationDenied(
             Box::new(denial),
+        ))
+    }
+
+    pub(super) fn handle_denial_outcome(
+        &mut self,
+        handle: crate::facade::primary_graph::WorthQueryHandleDenial,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled);
+        WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(
+            WorthQueryOperationAuthorizationDenial::new(
+                WorthQueryOperationAuthorizationDenialKind::Handle(handle),
+                self.query.name(),
+            ),
         ))
     }
 

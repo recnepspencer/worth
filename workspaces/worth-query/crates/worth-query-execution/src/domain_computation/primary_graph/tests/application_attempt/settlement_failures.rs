@@ -14,11 +14,11 @@ fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
     };
     let baseline = commits();
     let program = admitted_program(&world, &principal, &account, &request, "recovered");
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = world
         .application
         .compare_and_commit_application(program, idempotency(191, 191))
@@ -81,7 +81,7 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
     };
     let baseline = commits();
     let program = admitted_program(
@@ -91,7 +91,7 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
         &request,
         "performed-before-durable-fault",
     );
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     let outcome = world
         .application
         .compare_and_commit_application(program, idempotency(91, 91));
@@ -207,7 +207,7 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
     };
     let baseline = commits();
     let program = admitted_program(
@@ -231,7 +231,7 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
         &request,
         "drop-then-idempotent-retry",
     );
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     let outcome = world
         .application
         .compare_and_commit_application(program, idempotency(96, 96));

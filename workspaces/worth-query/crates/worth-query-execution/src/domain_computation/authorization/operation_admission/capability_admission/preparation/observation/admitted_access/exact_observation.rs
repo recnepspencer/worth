@@ -49,7 +49,7 @@ pub(super) fn with_exact_observation<Schema, Capability, Operation, Input, Outpu
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     observe: impl FnOnce(&WorthQueryExactCapabilityObservation<'_, Schema>) -> Output,
-) -> Option<Output>
+) -> Result<Option<Output>, crate::facade::primary_graph::WorthQueryHandleDenial>
 where
     Schema: ApplicationSchema,
     Input: worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
@@ -57,35 +57,39 @@ where
         Capability,
     >,
 {
-    let graph = runtime.runtime.primary_graph()?;
-    if runtime.runtime.authority_identity() != access.runtime_authority
-        || runtime.installed_schema.binding_identity() != access.binding_identity
-        || graph.binding_identity() != &access.binding_identity
-    {
-        return None;
-    }
-    let installed = runtime
-        .authorization
-        .capability_plan_by_identity(&access.authorization.installed_capability_identity())?;
-    if installed.capability_authority_identity().as_ref()
-        != access.authorization.capability_authority_identity()
-    {
-        return None;
-    }
-    let snapshot = access.graph_work.mutation_snapshot()?;
-    let handle = access.graph_work.mutation_handle()?;
-    let resolution = graph.retain_entity_resolution_context();
-    Some(handle.with_runtime(|relational| {
-        observe(&WorthQueryExactCapabilityObservation {
-            runtime,
-            relational,
-            snapshot,
-            resolution,
-            layout: graph.layout(),
-            session: access.graph_work.identity(),
-            principal: access.principal_entity_id,
-        })
-    }))
+    let observe_open =
+        || -> Option<Result<Output, crate::facade::primary_graph::WorthQueryHandleDenial>> {
+            let graph = runtime.runtime.primary_graph()?;
+            if runtime.runtime.authority_identity() != access.runtime_authority
+                || runtime.installed_schema.binding_identity() != access.binding_identity
+                || graph.binding_identity() != &access.binding_identity
+            {
+                return None;
+            }
+            let installed = runtime.authorization.capability_plan_by_identity(
+                &access.authorization.installed_capability_identity(),
+            )?;
+            if installed.capability_authority_identity().as_ref()
+                != access.authorization.capability_authority_identity()
+            {
+                return None;
+            }
+            let snapshot = access.graph_work.mutation_snapshot()?;
+            let handle = access.graph_work.mutation_handle()?;
+            let resolution = graph.retain_entity_resolution_context();
+            Some(handle.with_runtime(|relational| {
+                observe(&WorthQueryExactCapabilityObservation {
+                    runtime,
+                    relational,
+                    snapshot,
+                    resolution,
+                    layout: graph.layout(),
+                    session: access.graph_work.identity(),
+                    principal: access.principal_entity_id,
+                })
+            }))
+        };
+    observe_open().transpose()
 }
 
 impl<Schema> WorthQueryExactCapabilityObservation<'_, Schema>

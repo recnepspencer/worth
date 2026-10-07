@@ -22,6 +22,7 @@ use crate::runtime::{
 
 use super::bootstrap::BridgeBackedRuntimeBootstrap;
 
+mod construction;
 mod relational_execution;
 mod settlement_recovery;
 
@@ -42,38 +43,6 @@ pub struct WorthQueryBridgeBackedRuntimeBackend {
         Option<Box<dyn super::WorthQueryRuntimeDeclarationInitializationAdapter>>,
     intent_authority: Option<Box<dyn super::WorthQueryIntentAuthorityAdapter>>,
     support_profile: WorthQueryRuntimeSupportProfile,
-}
-
-impl WorthQueryBridgeBackedRuntimeBackend {
-    #[cfg(test)]
-    pub(crate) fn from_parts(
-        parts: super::WorthQueryRuntimeBackendParts,
-    ) -> Result<Self, WorthQueryRuntimeError> {
-        Ok(Self::from_validated_bootstrap(
-            parts.lower_bridge_backed_bootstrap()?,
-        ))
-    }
-
-    pub(in crate::runtime) fn from_validated_bootstrap(
-        bootstrap: BridgeBackedRuntimeBootstrap,
-    ) -> Self {
-        Self {
-            relational_runtime: bootstrap.relational_runtime,
-            runtime_bridge: bootstrap.runtime_bridge,
-            schema_adapter: bootstrap.schema_adapter,
-            source_adapter: bootstrap.source_adapter,
-            snapshot_identity: bootstrap.snapshot_identity,
-            existing_truth_verification: bootstrap.existing_truth_verification,
-            write_authority: bootstrap.write_authority,
-            signal_sink: bootstrap.signal_sink,
-            subscription_activation: bootstrap.subscription_activation,
-            preview_basis: bootstrap.preview_basis,
-            inspector_evidence: bootstrap.inspector_evidence,
-            declaration_initialization: bootstrap.declaration_initialization,
-            intent_authority: bootstrap.intent_authority,
-            support_profile: bootstrap.support_profile,
-        }
-    }
 }
 
 impl super::WorthQueryMergeSnapshotOwner for WorthQueryBridgeBackedRuntimeBackend {
@@ -140,11 +109,19 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
         self.attach_published_graph_runtime(runtime)
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        match self.snapshot_identity.as_ref() {
-            Some(adapter) => adapter.current_snapshot_identity(),
-            None => super::unavailable_snapshot_identity(),
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        if let Some(owner) = &self.relational_runtime {
+            owner.with_runtime(|_| ())?;
         }
+        Ok(match self.snapshot_identity.as_ref() {
+            Some(adapter) => adapter.current_snapshot_identity()?,
+            None => super::unavailable_snapshot_identity(),
+        })
     }
 
     fn declare_live_view(
@@ -212,7 +189,16 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
         WorthQueryVerifiedExistingTruthAssertion::from_snapshot_identity(
             binding,
             aspects,
-            &self.current_snapshot_identity(),
+            &self.current_snapshot_identity().map_err(|denial| {
+                WorthQueryExistingTruthAssertionDenial::new(
+                    binding,
+                    crate::runtime::WorthQueryExistingTruthAssertionDenialKind::Handle(denial),
+                    None,
+                    None,
+                    None,
+                    denial.to_string(),
+                )
+            })?,
         )
         .map_err(|error| {
             WorthQueryExistingTruthAssertionDenial::new(
@@ -311,7 +297,7 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
         self.source_adapter.live_entities_for_target(target)
     }
 

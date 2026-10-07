@@ -77,6 +77,7 @@ where
                     None,
                 )
                 .map_err(|denial| match denial {
+                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::Handle(denial) => WorthQueryRedoDenial::from(denial),
                     crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,
                     } => WorthQueryRedoDenial::active_snapshot_capacity_exhausted(
@@ -98,7 +99,7 @@ where
                 .map_or(WorthQueryPriorRedoObservation::Absent, |_| {
                     WorthQueryPriorRedoObservation::Committed
                 });
-            Ok((current_head, prior_redo))
+            Ok::<_, WorthQueryRedoDenial>((current_head, prior_redo))
         })?;
         admit_redo_against_product(
             recovery,

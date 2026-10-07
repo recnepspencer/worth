@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryApplicationQueryAdmissionDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The query is not installed as requested.
     InstalledQuery(WorthQueryApplicationQueryInstallationDenialKind),
     /// The principal belongs to a different runtime.
@@ -54,7 +55,9 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     /// The runtime support the read needs is unavailable.
     RuntimeSupportUnavailable,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain the basis.
@@ -165,3 +168,14 @@ impl std::fmt::Display for WorthQueryApplicationQueryAdmissionDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationQueryAdmissionDenial {}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryApplicationQueryAdmissionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryApplicationQueryAdmissionDenialKind::Handle(denial),
+            "application handle",
+        )
+    }
+}

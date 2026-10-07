@@ -108,9 +108,10 @@ pub mod installed {
 pub mod integration {
     pub use crate::domain_computation::execution_runtime::product_world::{
         WorthQueryProductRelationalInstallation, WorthQueryProductRuntime,
-        WorthQueryProductRuntimeInstallationDenial, WorthQueryProductSharedRoot,
-        WorthQueryProductWorldClock, WorthQueryProductWorldResources,
-        WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
+        WorthQueryProductRuntimeInstallationDenial, WorthQueryProductRuntimeInstallationDenialKind,
+        WorthQueryProductSharedRoot, WorthQueryProductWorldClock, WorthQueryProductWorldResources,
+        WorthQueryRelationalSourceDenial, WorthQueryRelationalSourceInstallationDenial,
+        WorthQueryRelationalSourceOwner,
     };
     pub use crate::domain_computation::execution_runtime::{
         WorthQueryInvalidationResourceDenial, WorthQueryInvalidationResourceInstallation,

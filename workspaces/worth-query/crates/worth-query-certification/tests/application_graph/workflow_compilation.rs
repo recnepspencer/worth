@@ -36,16 +36,19 @@ fn native_membership_mutation_is_denied_without_poisoning_warm_compilation() {
     let mutation = application
         .runtime()
         .attempt_workflow_definition_membership_cycle_for_test(definition.definition())
+        .expect("the workflow fixture requires an open application owner")
         .expect_err("published membership must be immutable through the native writer");
     assert_fact_custody_denial(mutation);
     let field_mutation = application
         .runtime()
         .attempt_workflow_node_field_update_for_test(definition.definition())
+        .expect("the workflow fixture requires an open application owner")
         .expect_err("published node meaning must be immutable through the native writer");
     assert_fact_custody_denial(field_mutation);
     let attachment = application
         .runtime()
         .attempt_workflow_existing_node_attachment_for_test(definition.definition())
+        .expect("the workflow fixture requires an open application owner")
         .expect_err("a new definition must not attach an existing published node");
     assert_membership_cardinality_denial(attachment);
 

@@ -125,7 +125,7 @@ impl WorthQueryRuntime {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Read)?;
         let target =
             WorthQueryLiveArtifactTarget::from_subscription_installation(binding.installation());
-        let source_rows = self.backend.live_entities_for_target(&target);
+        let source_rows = self.backend.live_entities_for_target(&target)?;
         self.finish_live_read_execution(binding, target, source_rows, None)
     }
 
@@ -177,7 +177,7 @@ impl WorthQueryRuntime {
                     "the admitted granular source basis is not a relational snapshot identity",
                 ))
             })?,
-            None => self.current_snapshot_identity(),
+            None => self.current_snapshot_identity()?,
         };
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let materialized_fact_posture = self.materialized_fact_posture_for_live_read(

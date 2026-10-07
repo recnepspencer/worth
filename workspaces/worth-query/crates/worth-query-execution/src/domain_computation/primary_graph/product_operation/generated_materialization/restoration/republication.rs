@@ -29,7 +29,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         observation: &ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         producer: ProducerQualification,
-    ) {
+    ) -> Result<
+        (),
+        (
+            crate::facade::primary_graph::WorthQueryHandleDenial,
+            Arc<WorthQueryApplicationOutputCorrespondence>,
+            ProducerQualification,
+        ),
+    > {
         let graph = &self.primary_provider.graph;
         let owner = &graph.source_owner.invalidation_owner;
         let mut admission = owner.edit_admission();
@@ -50,6 +57,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             crate::relational_snapshot_release::release_query_snapshot(runtime, &committed);
             witness.zip(read_basis)
         });
+        let sealed = match sealed {
+            Ok(sealed) => sealed,
+            Err(denial) => return Err((denial, correspondence, producer)),
+        };
         let mut lineage = graph
             .output_lineage
             .lock()
@@ -86,7 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 producer.resources,
                 None,
             );
-            return;
+            return Ok(());
         };
         let Some(record) = lineage.record_republished_restoration(
             producer.output_binding_type,
@@ -103,7 +114,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             producer.resources,
             republished,
         ) else {
-            return;
+            return Ok(());
         };
         drop(lineage);
         let Some(witness) = record.witness.get() else {
@@ -117,7 +128,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     &record.identity,
                     FullVerificationReason::NativeRevisionUnavailable,
                 );
-            return;
+            return Ok(());
         };
         // The World effect is already authoritative. A row that could not be
         // registered keeps its typed full-verification requirement.
@@ -137,5 +148,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .expect("application output lineage lock is available")
                 .require_settlement_verification(&record.identity, reason);
         }
+        Ok(())
     }
 }

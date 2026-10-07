@@ -64,7 +64,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 work,
             )?;
             Ok((basis, identity, entities))
-        })
+        })?
         .map_err(WorthQueryApplicationOpenDenial::Graph)?;
     let mut writer = WorthQueryOpenAdoptionWriter::new(graph, adoption.resources);
     (adoption.author)(&mut writer, installed).map_err(WorthQueryApplicationOpenDenial::Graph)?;
@@ -129,7 +129,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
             Ok(runtime
                 .durability_recovery()
                 .commit_checkpoint_transition(recovered, candidate))
-        })
+        })?
         .map_err(WorthQueryApplicationOpenDenial::Graph)?;
     match successor {
         Ok(acknowledged) => Ok(acknowledged.into_parts().1),
@@ -194,7 +194,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
             ));
         }
         runtime.durability_authority().native_checkpoint()
-    }) {
+    })? {
         Ok(native) => WorthQueryApplicationCheckpoint::encode(native, &publication, &[]).0,
         Err(error) => {
             let cause = format!("acknowledged target checkpoint capture stopped: {error:?}");

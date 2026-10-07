@@ -99,19 +99,26 @@ struct TranscriptSchemaAdapter;
 struct TranscriptSnapshotIdentity;
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for TranscriptSnapshotIdentity {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        WorthQuerySnapshotIdentity::preview(
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("transcript_snapshot_authority"),
-                    "runtime-api-stabilization",
-                )
-                .field_usize(
-                    WorthQueryEvidenceTag::new("transcript_snapshot_sequence"),
-                    1,
-                )
-                .seal(),
-        )
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        Ok({
+            WorthQuerySnapshotIdentity::preview(
+                WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+                    .field_shape(
+                        WorthQueryEvidenceTag::new("transcript_snapshot_authority"),
+                        "runtime-api-stabilization",
+                    )
+                    .field_usize(
+                        WorthQueryEvidenceTag::new("transcript_snapshot_sequence"),
+                        1,
+                    )
+                    .seal(),
+            )
+        })
     }
 }
 
@@ -154,8 +161,8 @@ impl WorthQueryRuntimeSourceAdapter for TranscriptSourceAdapter {
     fn live_entities_for_target(
         &self,
         _target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        Vec::new()
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok(Vec::new())
     }
 
     fn drain_live_patches_for_target(

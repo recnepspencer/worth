@@ -154,7 +154,12 @@ fn execute(
             coverage.cleanups += 1;
         }
         Action::VerifyCleanup => {
-            assert!(world.application.branches().pending_cleanup().is_empty());
+            assert!(world
+                .application
+                .branches()
+                .pending_cleanup()
+                .expect("the branching fixture requires an open application owner")
+                .is_empty());
             assert_eq!(
                 world.application.owned_signal_active_node_count_for_test(),
                 baseline.signal_nodes,

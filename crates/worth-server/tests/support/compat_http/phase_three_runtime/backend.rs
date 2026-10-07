@@ -19,10 +19,10 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
     > {
         let branch = self
             .product_source
-            .with_runtime(|runtime| runtime.main_branch_identity());
+            .with_runtime(|runtime| runtime.main_branch_identity())?;
         self.product_source
             .prepare_product_source(&branch)
-            .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
+            .map_err(Into::into)
     }
 
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
@@ -96,8 +96,8 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
     fn live_entities_for_target(
         &self,
         _target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        Vec::new()
+    ) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
+        Ok(Vec::new())
     }
 
     fn drain_live_patches_for_target(
@@ -114,8 +114,11 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
         Vec::new()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<WorthQuerySnapshotIdentity, worth_query::facade::runtime::WorthQueryHandleDenial>
+    {
+        Ok(WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
                 RelationalBridgeSnapshotIdentityParts::new(
                     self.snapshot_version.load(Ordering::Relaxed) as u64,
@@ -123,7 +126,7 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
                 ),
             ),
         )
-        .expect("relational snapshot projection must retain its typed payload")
+        .expect("relational snapshot projection must retain its typed payload"))
     }
 
     fn install_live_subscription(

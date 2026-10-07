@@ -115,7 +115,7 @@ where
                 deny_ended(runtime, snapshot, &layout, instance.entity_id())?;
             }
             Ok::<_, WorthQueryApplicationAttemptDenial>(recorded)
-        })?;
+        })??;
         let ClosedWorkflowInstance {
             effects,
             performed,

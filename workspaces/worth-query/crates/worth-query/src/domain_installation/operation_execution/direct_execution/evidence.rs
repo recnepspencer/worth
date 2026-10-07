@@ -80,6 +80,7 @@ impl WorthQueryDerivedPublicationReceipt {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryBoundExecutionDenialKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     RuntimeAuthority(crate::domain_installation::WorthQueryDomainHandleDenialKind),
     InputContract,
     WorkflowEvidenceRequired,

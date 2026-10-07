@@ -92,6 +92,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_regis
     denial: super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     match denial {
+        super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial::Handle(denial) => denial.into(),
         super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial::Basis(
             denial,
         ) => map_basis_denial(denial),

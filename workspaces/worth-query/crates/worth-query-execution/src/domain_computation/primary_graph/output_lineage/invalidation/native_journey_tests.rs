@@ -231,7 +231,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
     );
     let late =
         RecordedSettlementIdentity::retain(&source(TypeId::of::<LateOutput>()), coordinate, 0);
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         // Ensure the real companion has a selected cell even if fixture
         // installation happened before its subscription became active.
         write_field(runtime, entity, label.clone(), "prime");

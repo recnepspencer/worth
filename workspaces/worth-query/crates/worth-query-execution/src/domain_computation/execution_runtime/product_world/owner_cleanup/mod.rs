@@ -49,6 +49,7 @@ pub enum WorthQueryProductBranchOwnerCleanupWork {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchOwnerCleanupDenial {
+    Handle(super::WorthQueryHandleDenial),
     CleanupUnavailable,
     CleanupBusy,
     WorldHistoryUnavailable,
@@ -99,13 +100,21 @@ impl WorthQueryProductBranchOwnerCleanup {
         Self { runtime, identity }
     }
 
-    pub fn pending_work(&self) -> Vec<WorthQueryProductBranchOwnerCleanupWork> {
-        self.runtime.owner_cleanup.pending_work(self.identity)
+    pub fn pending_work(
+        &self,
+    ) -> Result<Vec<WorthQueryProductBranchOwnerCleanupWork>, super::WorthQueryHandleDenial> {
+        self.runtime
+            .gate
+            .with_runtime(|_| self.runtime.owner_cleanup.pending_work(self.identity))
     }
 
     pub(in crate::domain_computation) fn release_retired_history(
         &self,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        self.runtime
+            .gate
+            .with_runtime(|_| ())
+            .map_err(WorthQueryProductBranchOwnerCleanupDenial::Handle)?;
         self.runtime
             .owner_cleanup
             .release_history(self.identity, &self.runtime)
@@ -131,6 +140,12 @@ impl WorthQueryProductBranchOwnerCleanup {
         WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryProductBranchOwnerCleanupFailure,
     > {
+        if let Err(denial) = self.runtime.gate.with_runtime(|_| ()) {
+            return Err(WorthQueryProductBranchOwnerCleanupFailure {
+                denial: WorthQueryProductBranchOwnerCleanupDenial::Handle(denial),
+                cleanup: self,
+            });
+        }
         let registry = self.runtime.owner_cleanup.clone();
         match registry.retry(self.identity, &self.runtime) {
             Ok(receipt) => Ok(receipt),

@@ -64,7 +64,7 @@ impl WorthQueryPrimaryGraphProvider {
                 }
             }
             Ok(found)
-        })
+        })?
     }
 }
 

@@ -235,6 +235,7 @@ where
                 maximum_active_snapshots,
             ),
         )),
+        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Handle(denial))) => Some(WorthQueryProviderProgressionOutcome::Denied(denial.into())),
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)) => {
             Some(progression_denied(DenialStage::Idempotency))
         }

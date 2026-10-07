@@ -82,7 +82,12 @@ pub(super) fn commit(
     .map_err(|denial| {
         snapshot_admission_failure(
             WorthQueryProviderSessionProtocolStage::Commit,
-            denial.into(),
+            match denial {
+                crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::Handle(denial) => crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::Handle(denial),
+                crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::ForeignRuntime => crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::BranchObservationUnavailable,
+                crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::ActiveSnapshotCapacityExhausted { maximum_active_snapshots } => crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted { maximum_active_snapshots },
+                crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted => crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted,
+            },
             "application publication could not retain its exact pre-commit basis",
         )
     })
@@ -105,7 +110,7 @@ pub(super) fn commit(
         .map_err(native_output_witness_stop)?;
     let mut candidate = provider
         .graph
-        .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
+        .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))?
         .map_err(transaction_commit_stop)?;
     let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(
         provider,
@@ -135,10 +140,10 @@ pub(super) fn commit(
                 before.as_snapshot(),
                 ordinary_index_budget,
             )
-        })
+        })?
         .map_err(index_preparation_stop)?;
     let managed_views =
-        managed_views::prepare(provider, &product, before.as_snapshot(), &candidate);
+        managed_views::prepare(provider, &product, before.as_snapshot(), &candidate)?;
     #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(

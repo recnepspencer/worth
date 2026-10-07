@@ -153,6 +153,7 @@ pub mod runtime {
     pub use super::exports_runtime_core::*;
     pub use super::exports_runtime_phase_nine::*;
     pub use super::exports_runtime_products::*;
+    pub use worth_query_execution::facade::primary_graph::WorthQueryHandleDenial;
 }
 
 /// Ordinary product-world selection, creation, and operation progression.

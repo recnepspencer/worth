@@ -102,7 +102,7 @@ where
                 .observe_branch(&identity)
                 .map(|(_, basis)| basis)
                 .map_err(super::admission_denial::from_branch_basis_denial)
-        })?;
+        })??;
         self.project_with_work_budget(
             WorthQueryInvariantProjectionWorkBudget::unbounded(),
             basis,
@@ -144,7 +144,7 @@ where
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())
                 .map_err(super::admission_denial::from_snapshot_admission_denial)
-        })?;
+        })??;
         let projected = self.graph.with_runtime_mut(|runtime| {
             catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
@@ -178,7 +178,7 @@ where
                     reader.work_budget.exceeded(),
                 )
             }))
-        });
+        })?;
         let (output, work, realized_scope, consumed_outputs, dependent_source_facts, exceeded) =
             match projected {
                 Ok(completed) => completed,
@@ -187,14 +187,14 @@ where
                         crate::relational_snapshot_release::release_query_snapshot(
                             runtime, &snapshot,
                         );
-                    });
+                    })?;
                     resume_unwind(payload)
                 }
             };
         if exceeded {
             self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            });
+            })?;
             return Err(WorthQueryInvariantProjectionDenial::work_budget_exceeded());
         }
         Ok(WorthQueryCompletedInvariantProjection {

@@ -16,7 +16,11 @@ where
     pub fn workflow_definition_revisions_for_test(
         &self,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
-    ) -> (Option<AspectValue>, Option<AspectValue>) {
+    ) -> Result<
+        (Option<AspectValue>, Option<AspectValue>),
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.primary_provider.graph.with_runtime(|_| ())?;
         let selected = self
             .on_branch(definition.branch())
             .select()

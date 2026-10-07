@@ -57,7 +57,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
     };
     let baseline = commit_count();
     let first = retained_status_program(

@@ -31,6 +31,7 @@ impl std::fmt::Display for WorthQueryExistingTruthAssertionMode {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum WorthQueryExistingTruthAssertionDenialKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     BackendVerificationUnsupported,
     ClearAssertionUnsupported,
     MissingAssertedAspect,
@@ -40,6 +41,7 @@ pub enum WorthQueryExistingTruthAssertionDenialKind {
 impl WorthQueryExistingTruthAssertionDenialKind {
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::Handle(_) => "handle_denied",
             Self::BackendVerificationUnsupported => "backend_verification_unsupported",
             Self::ClearAssertionUnsupported => "clear_assertion_unsupported",
             Self::MissingAssertedAspect => "missing_asserted_aspect",

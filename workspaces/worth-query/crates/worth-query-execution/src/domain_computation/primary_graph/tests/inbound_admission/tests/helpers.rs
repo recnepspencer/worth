@@ -7,7 +7,7 @@ pub(crate) fn owner_commits(world: &InboundWorld) -> usize {
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| runtime.history().immutable_commit_count())
+        .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
 }
 
 pub(crate) fn product_commit(
@@ -39,7 +39,7 @@ pub(crate) fn completion_records(world: &InboundWorld) -> usize {
         .application
         .primary_provider
         .graph
-        .with_runtime_mut(|runtime| {
+        .with_open_runtime_mut(|runtime| {
             let snapshot =
                 super::super::super::super::exact_basis_access::open_exact_basis_snapshot(
                     runtime,

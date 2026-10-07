@@ -85,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
                 )?;
                 Ok(facts)
             })
-        })?;
+        })??;
         let compiled = reused
             .binding
             .bind(
@@ -108,7 +108,7 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
             maximum_connections,
             posture,
         )
-    })?;
+    })??;
     let (semantic_candidate, binding) =
         separate_compiled_definition(cold).map_err(binding_denial)?;
     let semantic = handle

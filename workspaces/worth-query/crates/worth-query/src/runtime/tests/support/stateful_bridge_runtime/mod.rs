@@ -27,7 +27,7 @@ impl StatefulBridgeMergeProbe {
         self.state
             .borrow()
             .relational_source
-            .with_runtime_mut(|runtime| {
+            .with_open_runtime_mut(|runtime| {
                 let snapshot = crate::harness::fixtures::effect_authorities::exact_branch_snapshot(
                     runtime, "main",
                 );
@@ -226,4 +226,33 @@ pub(in crate::runtime::tests) fn graph_test_support_profile() -> WorthQueryRunti
         true,
         None,
     )
+}
+
+trait OpenFixtureSource {
+    fn with_open_runtime<T>(
+        &self,
+        read: impl FnOnce(&worth_relational::facade::runtime::RelationalRuntime) -> T,
+    ) -> T;
+    fn with_open_runtime_mut<T>(
+        &self,
+        read: impl FnOnce(&mut worth_relational::facade::runtime::RelationalRuntime) -> T,
+    ) -> T;
+}
+impl OpenFixtureSource
+    for worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner
+{
+    fn with_open_runtime<T>(
+        &self,
+        read: impl FnOnce(&worth_relational::facade::runtime::RelationalRuntime) -> T,
+    ) -> T {
+        self.with_runtime(read)
+            .expect("the stateful fixture requires an open owner")
+    }
+    fn with_open_runtime_mut<T>(
+        &self,
+        read: impl FnOnce(&mut worth_relational::facade::runtime::RelationalRuntime) -> T,
+    ) -> T {
+        self.with_runtime_mut(read)
+            .expect("the stateful fixture requires an open owner")
+    }
 }

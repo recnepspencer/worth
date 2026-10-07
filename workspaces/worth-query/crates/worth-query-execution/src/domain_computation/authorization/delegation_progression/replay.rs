@@ -76,7 +76,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         let Some(Ok(resolved)) = access.with_exact_observation(self, |observation| {
             observation.resolve_delegation_replay_target(target, &proposed)
-        }) else {
+        })?
+        else {
             return Ok(None);
         };
         let Ok(prepared) = super::binding::bind_activation(

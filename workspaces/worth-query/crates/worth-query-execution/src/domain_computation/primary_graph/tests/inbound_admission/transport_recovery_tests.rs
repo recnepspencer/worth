@@ -54,7 +54,7 @@ fn completed_transport_recovery_publishes_without_a_second_physical_attempt() {
         .record_installed_transport_completion(evidence, in_flight)
         .unwrap();
     let request = super::super::fixture::live_scope();
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     assert_eq!(
         world
             .application
@@ -127,7 +127,7 @@ fn host_maintenance_recovers_unpublished_transport_after_request_is_gone() {
             in_flight,
         )
         .unwrap();
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     {
         let original_request = super::super::fixture::live_scope();
         assert_eq!(
@@ -281,7 +281,7 @@ fn transport_publication_and_recovery_obey_shared_operation_capacity() {
         )
     );
     drop(held);
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     assert_eq!(
         world
             .application

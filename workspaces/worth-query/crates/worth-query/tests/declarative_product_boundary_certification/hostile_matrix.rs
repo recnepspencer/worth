@@ -92,7 +92,7 @@ fn cross_basis_denies_before_execution() {
     let outcome = declare(fixture::identity_detail)
         .unwrap()
         .retained_snapshot()
-        .using(at(&left))
+        .using(at(&left).expect("the fixture requires an open workspace"))
         .run(&mut right);
     let stop = outcome.stop().expect("foreign basis must stop");
     assert_eq!(stop.source(), WorthQueryHistoricalStopSource::StaleContext);
@@ -108,7 +108,7 @@ fn cross_basis_denies_before_execution() {
 fn stale_context_denies_before_execution() {
     use worth_query::facade::history::{at, declare, WorthQueryHistoricalStopSource};
     let mut workspace = fixture::workspace("hostile-stale-context");
-    let context = at(&workspace);
+    let context = at(&workspace).expect("the fixture requires an open workspace");
     fixture::write_task(&mut workspace, "basis-advance");
     let outcome = declare(fixture::identity_detail)
         .unwrap()

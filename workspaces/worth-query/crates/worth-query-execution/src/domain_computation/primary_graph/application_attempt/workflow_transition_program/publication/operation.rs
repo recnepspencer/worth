@@ -332,7 +332,7 @@ impl WorkflowOperationAuthority {
                 self.settlement_basis.instance(),
             )?;
             Err(mismatch())
-        })
+        })?
     }
 
     pub(in crate::domain_computation::primary_graph) fn facts(

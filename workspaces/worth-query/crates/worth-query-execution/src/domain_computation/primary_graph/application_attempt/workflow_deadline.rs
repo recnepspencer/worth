@@ -100,7 +100,7 @@ impl<Schema, Operation, Input, Scope, Phase>
         let mut facts = Vec::with_capacity(1);
         let deadline = self.lease.handle().with_runtime(|runtime| {
             instance_deadline(runtime, snapshot, layout, instance, &mut facts)
-        })?;
+        })??;
         self.facts.extend(facts);
         if let Some(deadline) = deadline {
             ensure_before(clock, deadline)?;

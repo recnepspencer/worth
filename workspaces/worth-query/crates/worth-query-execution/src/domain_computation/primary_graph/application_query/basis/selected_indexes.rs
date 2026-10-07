@@ -83,7 +83,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
     graph
         .with_runtime(|runtime| {
             ensure_selected_field_indexes_admitted(runtime, basis, [root, target], admission)
-        })
+        })?
         .map_err(|stop| match stop {
             SelectedFieldIndexAdmissionStop::Admission(
                 CompanionPreflightStop::PreparationMemoryExhausted { .. }

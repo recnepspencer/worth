@@ -79,7 +79,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         .application
         .primary_provider
         .graph
-        .with_runtime_mut(|runtime| {
+        .with_open_runtime_mut(|runtime| {
             world
                 .application
                 .primary_provider

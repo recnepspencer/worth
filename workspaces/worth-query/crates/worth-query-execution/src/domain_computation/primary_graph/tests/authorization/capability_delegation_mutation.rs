@@ -143,7 +143,7 @@ pub(super) fn relation_source(
 ) -> EntityId {
     let graph = world.application.runtime.primary_graph().unwrap();
     let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    graph.integration_handle().with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let source = runtime
             .read_truth()
@@ -219,7 +219,7 @@ fn current_relation(
 ) -> RelationId {
     let graph = world.application.runtime.primary_graph().unwrap();
     let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    graph.integration_handle().with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let relation = runtime
             .read_truth()

@@ -48,6 +48,19 @@ pub struct CourtroomWorld {
 
 #[allow(dead_code)] // Test targets use different constructors from the shared world fixture.
 impl CourtroomWorld {
+    pub fn open_pending_cleanup(
+        &self,
+    ) -> Vec<worth_query_host::facade::product::WorthQueryApplicationProductBranchCleanup> {
+        self.application
+            .branches()
+            .pending_cleanup()
+            .expect("the courtroom fixture requires an open application owner")
+    }
+    pub fn open_snapshot_state(&self) -> (usize, impl Eq + std::fmt::Debug) {
+        self.application
+            .relational_snapshot_state_for_test()
+            .expect("the courtroom fixture requires an open application owner")
+    }
     pub fn reinstall_conditional_runtime(
         &mut self,
     ) -> Result<

@@ -52,21 +52,27 @@ impl WorthQueryCapturedBranchComparisonBasis {
         self.runtime_basis.admission()
     }
 
-    pub(crate) fn matches(&self, workspace: &WorthQueryWorkspace) -> bool {
-        self.workspace_name == workspace.name()
+    pub(crate) fn matches(
+        &self,
+        workspace: &WorthQueryWorkspace,
+    ) -> Result<bool, worth_query_execution::facade::primary_graph::WorthQueryHandleDenial> {
+        let snapshot = workspace.snapshot_identity()?;
+        Ok(self.workspace_name == workspace.name()
             && self
                 .runtime_basis
                 .snapshot()
-                .is_same_current_identity_as(&workspace.snapshot_identity())
+                .is_same_current_identity_as(&snapshot))
     }
 }
 
 impl WorthQueryCapturedComparisonBasis {
-    fn capture(workspace: &WorthQueryWorkspace) -> Self {
-        Self {
+    fn capture(
+        workspace: &WorthQueryWorkspace,
+    ) -> Result<Self, worth_query_execution::facade::primary_graph::WorthQueryHandleDenial> {
+        Ok(Self {
             workspace_name: workspace.name().to_string(),
-            snapshot: workspace.snapshot_identity(),
-        }
+            snapshot: workspace.snapshot_identity()?,
+        })
     }
 
     pub(crate) fn workspace_name(&self) -> &str {
@@ -77,11 +83,13 @@ impl WorthQueryCapturedComparisonBasis {
         &self.snapshot
     }
 
-    pub(crate) fn matches(&self, workspace: &WorthQueryWorkspace) -> bool {
-        self.workspace_name == workspace.name()
-            && self
-                .snapshot
-                .is_same_current_identity_as(&workspace.snapshot_identity())
+    pub(crate) fn matches(
+        &self,
+        workspace: &WorthQueryWorkspace,
+    ) -> Result<bool, worth_query_execution::facade::primary_graph::WorthQueryHandleDenial> {
+        let snapshot = workspace.snapshot_identity()?;
+        Ok(self.workspace_name == workspace.name()
+            && self.snapshot.is_same_current_identity_as(&snapshot))
     }
 }
 
@@ -118,13 +126,18 @@ impl WorthQueryComparisonContext {
 }
 
 /// Pair the runtime's current truth with its exact retained historical view.
-pub fn current_and_retained(workspace: &WorthQueryWorkspace) -> WorthQueryComparisonContext {
-    WorthQueryComparisonContext {
+pub fn current_and_retained(
+    workspace: &WorthQueryWorkspace,
+) -> Result<
+    WorthQueryComparisonContext,
+    worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+> {
+    Ok(WorthQueryComparisonContext {
         authority: WorthQueryComparisonPairAuthority::CurrentAndRetained {
-            current: WorthQueryCapturedComparisonBasis::capture(workspace),
-            retained: at(workspace),
+            current: WorthQueryCapturedComparisonBasis::capture(workspace)?,
+            retained: at(workspace)?,
         },
-    }
+    })
 }
 
 /// Structurally bind two independently owned workspace/branch bases.
@@ -149,7 +162,17 @@ pub fn between(
     let left =
         WorthQueryCapturedBranchComparisonBasis::capture(left, left_label).map_err(|error| {
             WorthQueryComparisonStop::new(
-                WorthQueryComparisonStopSource::LeftBasisAdmission,
+                match &error {
+                    crate::runtime::WorthQueryRuntimeError::Workspace(error) => {
+                        match error.kind() {
+                            crate::memory_workspace::WorthQueryWorkspaceErrorKind::Handle(
+                                denial,
+                            ) => WorthQueryComparisonStopSource::Handle(denial),
+                            _ => WorthQueryComparisonStopSource::LeftBasisAdmission,
+                        }
+                    }
+                    _ => WorthQueryComparisonStopSource::LeftBasisAdmission,
+                },
                 WorthQueryComparisonNextAction::ResolveAuthority,
                 format!("left branch basis admission failed: {error:?}"),
                 counters.clone(),
@@ -158,7 +181,17 @@ pub fn between(
     let right =
         WorthQueryCapturedBranchComparisonBasis::capture(right, right_label).map_err(|error| {
             WorthQueryComparisonStop::new(
-                WorthQueryComparisonStopSource::RightBasisAdmission,
+                match &error {
+                    crate::runtime::WorthQueryRuntimeError::Workspace(error) => {
+                        match error.kind() {
+                            crate::memory_workspace::WorthQueryWorkspaceErrorKind::Handle(
+                                denial,
+                            ) => WorthQueryComparisonStopSource::Handle(denial),
+                            _ => WorthQueryComparisonStopSource::RightBasisAdmission,
+                        }
+                    }
+                    _ => WorthQueryComparisonStopSource::RightBasisAdmission,
+                },
                 WorthQueryComparisonNextAction::ResolveAuthority,
                 format!("right branch basis admission failed: {error:?}"),
                 counters.clone(),

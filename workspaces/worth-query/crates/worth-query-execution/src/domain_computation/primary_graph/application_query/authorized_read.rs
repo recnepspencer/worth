@@ -148,6 +148,7 @@ fn execute_read_with_security<Schema, Context, Output, Stop>(
 >
 where
     Schema: ApplicationSchema,
+    Stop: From<crate::facade::primary_graph::WorthQueryHandleDenial>,
 {
     let security = match index_posture {
         WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
@@ -187,12 +188,19 @@ pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(
         crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
     ),
     Stop,
-> {
+>
+where
+    Stop: From<crate::facade::primary_graph::WorthQueryHandleDenial>,
+{
     let (read_outcome, proof) = graph_work
         .execute_query_read(basis.identity(), |runtime, layout| {
             perform(runtime, layout, security_snapshot, context)
         })
-        .map_err(|_| session_denial())?;
+        .map_err(|denial| {
+            denial
+                .handle_denial()
+                .map_or_else(&session_denial, Stop::from)
+        })?;
     Ok((read_outcome?, proof))
 }
 
@@ -304,4 +312,13 @@ where
     application
         .refresh_capability_authorization_for_graph_work(authorization, graph_work)
         .map_err(WorthQueryAuthorizedApplicationReadDenial::Authorization)
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryAuthorizedApplicationReadDenial
+{
+    fn from(handle: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Handle(handle), "application query read"))
+    }
 }

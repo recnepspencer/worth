@@ -20,7 +20,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
     };
     let baseline = commit_count();
     let first = admitted_program(&world, &principal, &accounts[0], &request, replacements[0]);
@@ -177,7 +177,7 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_open_runtime(|runtime| runtime.history().immutable_commit_count())
     };
     let baseline = commit_count();
 

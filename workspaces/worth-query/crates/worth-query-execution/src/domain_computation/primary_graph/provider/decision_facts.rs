@@ -45,7 +45,7 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
         };
         let fresh = self
             .graph
-            .with_runtime_mut(|runtime| fact_basis.remains_equal_in(runtime))
+            .with_runtime_mut(|runtime| fact_basis.remains_equal_in(runtime))?
             .map_err(snapshot_read_set_failure)?;
         admission.observe_current_version(if fresh {
             evidence.physical_version_evidence().to_owned()

@@ -5,7 +5,9 @@ mod bootstrap;
 mod branch_close;
 mod clock;
 mod creation;
+mod handle_denial;
 mod history;
+pub use handle_denial::WorthQueryHandleDenial;
 mod installation_denial;
 mod owned_async;
 mod owner_cleanup;
@@ -17,7 +19,10 @@ mod resources;
 mod retirement;
 mod runtime;
 mod shared_root;
+mod source_denial;
 mod source_head;
+pub use source_denial::WorthQueryRelationalSourceDenial;
+mod source_close;
 mod source_installation;
 mod source_owner;
 
@@ -25,7 +30,9 @@ pub(crate) use branch_close::WorthQueryProductBranchCloseScope;
 pub use branch_close::{WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt};
 pub use clock::WorthQueryProductWorldClock;
 pub use creation::WorthQueryProductBranchCreationDenial;
-pub use installation_denial::WorthQueryProductRuntimeInstallationDenial;
+pub use installation_denial::{
+    WorthQueryProductRuntimeInstallationDenial, WorthQueryProductRuntimeInstallationDenialKind,
+};
 pub(crate) use owner_cleanup::WorthQueryRetiredProductOccurrence;
 pub use owner_cleanup::{
     WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupDenial,

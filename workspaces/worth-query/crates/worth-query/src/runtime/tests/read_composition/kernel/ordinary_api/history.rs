@@ -18,7 +18,7 @@ fn retained_history_preserves_current_result_meaning_on_the_same_truth_basis() {
     let mut workspace = read_runtime()
         .workspace("ordinary-retained-history-parity")
         .expect("workspace should open");
-    let historical_context = at(&workspace);
+    let historical_context = at(&workspace).expect("the fixture requires an open workspace");
 
     let current = current_declaration
         .using(current())
@@ -57,7 +57,7 @@ fn unavailable_replay_stops_before_context_planning_or_runtime_contact() {
     let mut workspace = read_runtime()
         .workspace("ordinary-history-replay-unavailable")
         .expect("workspace should open");
-    let context = at(&workspace);
+    let context = at(&workspace).expect("the fixture requires an open workspace");
     let stop = declaration
         .using(context)
         .run(&mut workspace)
@@ -89,7 +89,7 @@ fn stale_retained_context_stops_before_planning_or_runtime_contact() {
     let mut workspace = stateful_bridge_task_runtime()
         .workspace("ordinary-history-stale")
         .expect("workspace should open");
-    let context = at(&workspace);
+    let context = at(&workspace).expect("the fixture requires an open workspace");
     workspace
         .write(insert_command(
             "Task",

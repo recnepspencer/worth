@@ -17,6 +17,7 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 /// handed back to continue again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputRestorationRecoveryStage {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The unpublished product state could not be inspected.
     Inspection,
     /// Owner settlement of the unpublished effects did not finish.
@@ -44,6 +45,9 @@ pub struct WorthQueryGeneratedOutputRestorationRecovery {
 }
 
 pub(super) enum RecoveryState {
+    PublishedLineage {
+        settlement: PublishedRestorationSettlement,
+    },
     Unpublished {
         unpublished: super::WorthQueryUnpublishedGeneratedOutputRestoration,
     },
@@ -78,9 +82,9 @@ impl RecoveryState {
             Self::World { retry, .. }
             | Self::HandoffWorld { retry, .. }
             | Self::HandoffCleanup { retry, .. } => retry,
-            Self::PublishedWorld { settlement, .. } | Self::PublishedCleanup { settlement, .. } => {
-                &settlement.retry
-            }
+            Self::PublishedLineage { settlement }
+            | Self::PublishedWorld { settlement, .. }
+            | Self::PublishedCleanup { settlement, .. } => &settlement.retry,
         }
     }
 }
@@ -108,7 +112,8 @@ impl WorthQueryGeneratedOutputRestorationRecovery {
             RecoveryState::World { retry, .. }
             | RecoveryState::HandoffWorld { retry, .. }
             | RecoveryState::HandoffCleanup { retry, .. } => retry.branch,
-            RecoveryState::PublishedWorld { settlement, .. }
+            RecoveryState::PublishedLineage { settlement }
+            | RecoveryState::PublishedWorld { settlement, .. }
             | RecoveryState::PublishedCleanup { settlement, .. } => settlement.retry.branch,
         }
     }
@@ -146,7 +151,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 recovery.state,
             ));
         }
+        if let Err(denial) = self.primary_provider.graph.with_runtime(|_| ()) {
+            return Err(failure(
+                WorthQueryGeneratedOutputRestorationRecoveryStage::Handle(denial),
+                recovery.state,
+            ));
+        }
         match recovery.state {
+            RecoveryState::PublishedLineage { settlement } => settlement.finish(self),
             RecoveryState::Unpublished { unpublished } => {
                 let (product, retry) = unpublished.into_parts();
                 let needs_settlement = product.relational_requires_settlement();
@@ -201,7 +213,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 cleanup,
                 settlement,
             } => match cleanup.retry() {
-                Ok(_) => Ok(settlement.finish(self)),
+                Ok(_) => settlement.finish(self),
                 Err(failed) => Err(failure(
                     WorthQueryGeneratedOutputRestorationRecoveryStage::OwnerCleanup,
                     RecoveryState::PublishedCleanup {

@@ -150,10 +150,16 @@ impl WorthQueryRuntime {
             .collect()
     }
 
-    pub fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        self.backend
-            .current_snapshot_identity()
-            .admit_runtime_backend_authority()
+    pub fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        Ok(self
+            .backend
+            .current_snapshot_identity()?
+            .admit_runtime_backend_authority())
     }
 
     pub fn install_program(

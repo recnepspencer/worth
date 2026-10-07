@@ -13,6 +13,7 @@ use crate::domain_computation::application_aftermath::ExternalEffectCorrelationI
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryInboundCompletionReadDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     AmbiguousCorrelation,
     Malformed,
     CommitUnavailable,
@@ -257,5 +258,13 @@ mod provenance_tests {
             decode_provenance_fields(&values),
             Err(WorthQueryInboundCompletionReadDenial::Malformed)
         );
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryInboundCompletionReadDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

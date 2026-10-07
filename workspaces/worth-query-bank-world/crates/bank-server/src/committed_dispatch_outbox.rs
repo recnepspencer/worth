@@ -64,6 +64,7 @@ impl BankCommittedDispatchOutboxObservation {
 /// exact version is gone ask the caller for different next steps.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommittedDispatchOutboxReadDenial {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     ForeignRuntime,
     Missing,
     /// More than one committed effect claims the correlation.
@@ -107,6 +108,7 @@ impl BankIdentityRuntime {
 impl From<QueryDenial> for BankCommittedDispatchOutboxReadDenial {
     fn from(denial: QueryDenial) -> Self {
         match denial {
+            QueryDenial::Handle(handle) => Self::Handle(handle),
             QueryDenial::ForeignRuntime => Self::ForeignRuntime,
             QueryDenial::Missing => Self::Missing,
             QueryDenial::AmbiguousCorrelation => Self::AmbiguousCorrelation,

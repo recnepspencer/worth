@@ -1,3 +1,6 @@
+mod correspondence;
+use correspondence::{lineage_correspondence, structural_correspondence};
+
 use super::context::WorthQueryComparisonPairAuthority;
 use super::diff::assemble_query_shaped_row_changes;
 use super::{
@@ -50,7 +53,22 @@ impl WorthQueryComparisonExecution for &mut WorthQueryWorkspace {
             return invalid_execution_resource();
         };
         let counters = WorthQueryComparisonJourneyCounters::validate_pair();
-        if !current.matches(self) || !retained.admits_snapshot(&self.snapshot_identity()) {
+        let matches = current.matches(self).and_then(|matches| {
+            self.snapshot_identity()
+                .map(|snapshot| matches && retained.admits_snapshot(&snapshot))
+        });
+        let matches = match matches {
+            Ok(matches) => matches,
+            Err(denial) => {
+                return stopped(
+                    WorthQueryComparisonStopSource::Handle(denial),
+                    WorthQueryComparisonNextAction::ResolveAuthority,
+                    denial.to_string(),
+                    counters,
+                )
+            }
+        };
+        if !matches {
             return stale_pair(counters);
         }
 
@@ -117,7 +135,21 @@ impl WorthQueryComparisonExecution for (&mut WorthQueryWorkspace, &mut WorthQuer
             return invalid_execution_resource();
         };
         let counters = WorthQueryComparisonJourneyCounters::validate_pair();
-        if !left.matches(left_workspace) || !right.matches(right_workspace) {
+        let matches = left
+            .matches(left_workspace)
+            .and_then(|left| right.matches(right_workspace).map(|right| left && right));
+        let matches = match matches {
+            Ok(matches) => matches,
+            Err(denial) => {
+                return stopped(
+                    WorthQueryComparisonStopSource::Handle(denial),
+                    WorthQueryComparisonNextAction::ResolveAuthority,
+                    denial.to_string(),
+                    counters,
+                )
+            }
+        };
+        if !matches {
             return stale_pair(counters);
         }
 
@@ -243,109 +275,6 @@ fn complete_diff(
         change,
         counters,
     ))
-}
-
-fn structural_correspondence(
-    left: WorthQueryReadResult,
-    right: WorthQueryReadResult,
-    candidate_budget: usize,
-    pair: WorthQueryComparisonBasisPairEvidence,
-    counters: WorthQueryComparisonJourneyCounters,
-) -> WorthQueryComparisonOutcome {
-    let [subject] = left.rows() else {
-        return stopped(
-            WorthQueryComparisonStopSource::CorrespondenceDenied,
-            WorthQueryComparisonNextAction::NarrowCandidates,
-            "structural correspondence requires exactly one subject row on the left basis",
-            counters,
-        );
-    };
-    let subject_identity = subject.identity().clone();
-    let mut candidates = right
-        .rows()
-        .iter()
-        .map(|row| row.identity().evidence_identity().as_str().to_string())
-        .collect::<Vec<_>>();
-    candidates.sort();
-    candidates.dedup();
-    resolve_correspondence(
-        CorrespondenceEvaluationRequest::structural_only(
-            candidates,
-            StructuralCandidateDiscoveryPlan::IndexBackedBounded,
-            candidate_budget,
-            StructuralCandidateOrderingContract::StableFingerprintOrder,
-        ),
-        subject_identity,
-        pair,
-        counters.resolve_correspondence(),
-    )
-}
-
-fn lineage_correspondence(
-    left: WorthQueryReadResult,
-    right: WorthQueryReadResult,
-    pair: WorthQueryComparisonBasisPairEvidence,
-    counters: WorthQueryComparisonJourneyCounters,
-) -> WorthQueryComparisonOutcome {
-    let ([left_row], [right_row]) = (left.rows(), right.rows()) else {
-        return stopped(
-            WorthQueryComparisonStopSource::CorrespondenceDenied,
-            WorthQueryComparisonNextAction::NarrowCandidates,
-            "authoritative lineage comparison requires exactly one row on each basis",
-            counters,
-        );
-    };
-    resolve_correspondence(
-        CorrespondenceEvaluationRequest::lineage_only(
-            left_row.identity().evidence_identity().as_str(),
-            right_row.identity().evidence_identity().as_str(),
-            StructuralCandidateDiscoveryPlan::IndexBackedBounded,
-            1,
-        ),
-        left_row.identity().clone(),
-        pair,
-        counters.resolve_correspondence(),
-    )
-}
-
-fn resolve_correspondence(
-    request: CorrespondenceEvaluationRequest,
-    subject: crate::memory_workspace::WorthQueryEntityIdentity,
-    pair: WorthQueryComparisonBasisPairEvidence,
-    counters: WorthQueryComparisonJourneyCounters,
-) -> WorthQueryComparisonOutcome {
-    match resolve_correspondence_evidence(request) {
-        Ok(correspondence) if correspondence.outcome().as_denied().is_none() => {
-            let posture = if correspondence.outcome().as_lineage_continuity().is_some() {
-                WorthQueryComparisonCorrespondencePosture::AuthoritativeContinuity
-            } else {
-                WorthQueryComparisonCorrespondencePosture::Advisory
-            };
-            WorthQueryComparisonOutcome::Correspondence(WorthQueryComparisonCorrespondence::new(
-                subject,
-                correspondence,
-                posture,
-                pair,
-                counters,
-            ))
-        }
-        Ok(correspondence) => stopped(
-            WorthQueryComparisonStopSource::CorrespondenceDenied,
-            WorthQueryComparisonNextAction::NarrowCandidates,
-            correspondence
-                .outcome()
-                .as_denied()
-                .map(|denial| denial.reason())
-                .unwrap_or("correspondence was denied"),
-            counters,
-        ),
-        Err(error) => stopped(
-            WorthQueryComparisonStopSource::CorrespondenceDenied,
-            WorthQueryComparisonNextAction::ResolveAuthority,
-            format!("correspondence resolution failed: {error:?}"),
-            counters,
-        ),
-    }
 }
 
 fn invalid_execution_resource() -> WorthQueryComparisonOutcome {

@@ -164,7 +164,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                         None,
                         true,
                     )
-                }))
+                })?)
             }
         })
     }

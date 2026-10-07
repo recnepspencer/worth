@@ -79,6 +79,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         .lock()
         .unwrap()
         .checkpoint_facts_for_receipt(&receipt)
+        .expect("the fixture has no lineage publication in flight")
         .map(|(facts, _)| facts)
         .unwrap();
     let subject = receipt
@@ -121,16 +122,19 @@ fn selection(
     let selected = application
         .select_product_branch(application.product_runtime().default_branch())
         .unwrap();
-    application.primary_provider.graph.with_runtime(|runtime| {
-        compare_retained_output_dependencies(
-            runtime,
-            selected.application_basis().snapshot_handle(),
-            true,
-            Some(facts),
-            &mut 32,
-        )
-        .unwrap()
-    })
+    application
+        .primary_provider
+        .graph
+        .with_open_runtime(|runtime| {
+            compare_retained_output_dependencies(
+                runtime,
+                selected.application_basis().snapshot_handle(),
+                true,
+                Some(facts),
+                &mut 32,
+            )
+            .unwrap()
+        })
 }
 
 fn change_status(

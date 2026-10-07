@@ -33,6 +33,7 @@ use super::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryOrdinaryWritebackFailureStage {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     Authority,
     Basis,
     Intent,
@@ -141,7 +142,14 @@ impl WorthQueryRuntime {
                 "ordinary writeback requires a writeback authority context",
             ));
         }
-        if self.ordinary_authority_drift(&authority) != WorthQueryOrdinaryAuthorityDrift::Current {
+        let drift = self.ordinary_authority_drift(&authority);
+        if let WorthQueryOrdinaryAuthorityDrift::Handle(denial) = drift {
+            return Err(WorthQueryOrdinaryWritebackExecutionError::new(
+                WorthQueryOrdinaryWritebackFailureStage::Handle(denial),
+                denial.to_string(),
+            ));
+        }
+        if drift != WorthQueryOrdinaryAuthorityDrift::Current {
             return Err(WorthQueryOrdinaryWritebackExecutionError::new(
                 WorthQueryOrdinaryWritebackFailureStage::Authority,
                 "ordinary writeback authority is no longer current",

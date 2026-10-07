@@ -12,8 +12,10 @@ mod recovery;
 mod republication;
 mod settlement;
 
-pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;
 use failure::{preparation_failure_cause, restoration_failure};
+pub use failure::{
+    WorthQueryGeneratedOutputRestorationFailure, WorthQueryGeneratedOutputRestorationFailureCause,
+};
 pub use invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial;
 
 pub use no_effect::{
@@ -51,35 +53,6 @@ impl WorthQueryRestoredGeneratedOutput {
 
     pub fn commit(&self) -> &WorthQueryGeneratedOutputRestorationReceipt {
         &self.commit
-    }
-}
-
-/// Why restoring a generated output did not complete.
-pub enum WorthQueryGeneratedOutputRestorationFailure {
-    /// Nothing was published. The suspended output is handed back so it can be
-    /// reconstructed again; the cause says why.
-    Rejected {
-        suspended: WorthQuerySuspendedGeneratedOutput,
-        cause: WorthQueryGeneratedOutputRestorationFailureCause,
-    },
-    /// Some owners moved, but the product head did not. Continue the recovery
-    /// this carries.
-    ProductUnpublished(WorthQueryUnpublishedGeneratedOutputRestoration),
-}
-
-impl WorthQueryGeneratedOutputRestorationFailure {
-    pub fn cause(&self) -> Option<&WorthQueryGeneratedOutputRestorationFailureCause> {
-        match self {
-            Self::Rejected { cause, .. } => Some(cause),
-            Self::ProductUnpublished(_) => None,
-        }
-    }
-
-    pub fn into_suspended(self) -> Result<WorthQuerySuspendedGeneratedOutput, Self> {
-        match self {
-            Self::Rejected { suspended, .. } => Ok(suspended),
-            unpublished @ Self::ProductUnpublished(_) => Err(unpublished),
-        }
     }
 }
 
@@ -185,17 +158,36 @@ where
             correspondence,
             producer,
         } = suspended;
+        let mut custody = Some(custody);
         let prepared = self.primary_provider.graph.with_runtime(|runtime| {
             runtime
                 .owner_component_services()
                 .materialization_port()
                 .prepare_generated_rematerialization(
                     publication.observation().basis().relational_basis(),
-                    custody,
+                    custody
+                        .take()
+                        .expect("restoration retains its custody until admitted"),
                     entities,
                     relations,
                 )
         });
+        let prepared = match prepared {
+            Ok(prepared) => prepared,
+            Err(denial) => {
+                return Err(restoration_failure(
+                    WorthQuerySuspendedGeneratedOutput {
+                        publication,
+                        branch,
+                        custody: custody
+                            .expect("refused admission leaves restoration custody untouched"),
+                        correspondence,
+                        producer,
+                    },
+                    WorthQueryGeneratedOutputRestorationFailureCause::Handle(denial),
+                ))
+            }
+        };
         let prepared = match prepared {
             Ok(prepared) => prepared,
             Err(failure) => {
@@ -287,13 +279,21 @@ where
                 let restored = completion
                     .complete(commit)
                     .expect("World returns the exact prepared relational restoration result");
-                self.record_restored_generated_output(&observation, correspondence, producer);
-                Ok(WorthQueryRestoredGeneratedOutput {
+                let recording =
+                    self.record_restored_generated_output(&observation, correspondence, producer);
+                let restored = WorthQueryRestoredGeneratedOutput {
                     branch,
                     commit: WorthQueryGeneratedOutputRestorationReceipt::new(
                         restored.commit.clone(),
                     ),
-                })
+                };
+                if let Err((denial, _, _)) = recording {
+                    return Err(WorthQueryGeneratedOutputRestorationFailure::Handle {
+                        denial,
+                        restored,
+                    });
+                }
+                Ok(restored)
             }
             RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(restoration_failure(
                 suspended_from_completion(

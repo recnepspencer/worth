@@ -25,11 +25,13 @@ fn native_writer_cannot_revise_a_published_approval_or_delete_its_evidence() {
     let error = application
         .runtime()
         .attempt_workflow_approval_field_update_for_test(&instance, approval)
+        .expect("the workflow fixture requires an open application owner")
         .expect_err("a native writer cannot revise an issued decision");
     assert_fact_custody_denial(error);
     let error = application
         .runtime()
         .attempt_workflow_approval_evidence_delete_for_test(&instance, approval)
+        .expect("the workflow fixture requires an open application owner")
         .expect_err("a native writer cannot delete issued approval evidence");
     assert_fact_custody_denial(error);
 }

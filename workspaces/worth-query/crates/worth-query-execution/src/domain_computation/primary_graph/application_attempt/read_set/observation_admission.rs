@@ -86,7 +86,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                         super::super::super::WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .and_then(|truth| truth.validate_entity_freshness(identity))
-            })
+            })?
             .map_err(|_| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::StaleEntityIdentity,

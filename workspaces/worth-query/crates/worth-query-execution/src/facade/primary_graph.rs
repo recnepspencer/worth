@@ -1,5 +1,7 @@
 //! Primary Graph application contracts.
 
+pub use crate::domain_computation::execution_runtime::product_world::WorthQueryHandleDenial;
+
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::inexact_native_deliveries_on_this_thread_for_test;
 #[cfg(feature = "test-query-execution-observer")]
@@ -249,3 +251,11 @@ pub use worth_runtime_world::facade::{
     RuntimeWorldServiceDenial, RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCloseDenial, WorthQueryApplicationCloseRefusal,
+};
+
+pub use crate::domain_computation::primary_graph::WorthQueryApplicationCheckpointCaptureDenial;
+
+pub use crate::domain_computation::primary_graph::WorthQueryCertificationCostDenial;

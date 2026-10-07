@@ -37,7 +37,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         let (old_handle, old_basis) = snapshot(runtime);
         use crate::domain_computation::primary_graph::invariant_projection::{
             ConsumedOutputEvidence, ConsumedOutputVerification,

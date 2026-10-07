@@ -147,9 +147,16 @@ pub(crate) fn execute_compatibility_mutation_request(
             ));
         }
     };
-    let observed_basis_digest = bound_workspace
-        .snapshot_identity()
-        .terminal_projection_for_reporting();
+    let observed_basis_digest = match bound_workspace.snapshot_identity() {
+        Ok(snapshot_identity) => snapshot_identity.terminal_projection_for_reporting(),
+        Err(denial) => {
+            return TransitionOutcome::Denied(WorthServerQueryHandoffDenial::new(
+                WorthServerQueryHandoffDenialCode::WorkspaceBindingFailed,
+                diagnostics_profile,
+                format!("workspace snapshot identity: {denial}"),
+            ));
+        }
+    };
     let readiness = WorthServerOperationReadinessFacade::with_operation_registry(
         facade.operation_registry.clone(),
     );

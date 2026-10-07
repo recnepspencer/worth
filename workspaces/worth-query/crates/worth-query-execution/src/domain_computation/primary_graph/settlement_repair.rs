@@ -3,13 +3,16 @@
 /// The commit was already performed; recovery only completes its settlement.
 #[derive(Debug)]
 pub enum WorthQueryApplicationSettlementRecoveryError {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// Relational could not make the settlement durable.
     Durability(worth_relational::facade::publication::DeferredPublicationSettlementError),
     /// The settlement does not match its performed publication, or publication
     /// could not resume.
     Publication(&'static str),
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.
@@ -41,5 +44,13 @@ where
             deferred.product_affinity(),
             deferred.idempotency_binding(),
         )
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryApplicationSettlementRecoveryError
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

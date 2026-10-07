@@ -198,3 +198,19 @@ fn repeated_successful_holds_and_releases_never_deny_concurrent_admitters() {
     }
     runtime.try_hold_admission().unwrap().seal();
 }
+
+#[test]
+fn owner_seal_read_changes_only_at_seal() {
+    let mut runtime = crate::tests::support::runtime_with_test_schema();
+    assert!(!runtime.owner_is_sealed());
+    drop(runtime.try_hold_admission().unwrap());
+    assert!(
+        !runtime.owner_is_sealed(),
+        "releasing a hold keeps admission open"
+    );
+    runtime.try_hold_admission().unwrap().seal();
+    assert!(
+        runtime.owner_is_sealed(),
+        "sealing revokes the owner in place"
+    );
+}

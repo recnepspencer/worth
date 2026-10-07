@@ -46,11 +46,11 @@ impl WorthQueryPrimaryGraphSourceProjection for IntentSourceProjection {
         &self,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
-    ) -> Vec<foundation::WorthQueryEntity> {
+    ) -> Result<Vec<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
         self.observations
             .full_target_reads
             .fetch_add(1, Ordering::SeqCst);
-        project_record(graph, self.record).into_iter().collect()
+        Ok(project_record(graph, self.record)?.into_iter().collect())
     }
 
     fn project_granular_scope(
@@ -93,13 +93,13 @@ impl WorthQueryPrimaryGraphSourceProjection for IntentSourceProjection {
 fn project_record(
     graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
-) -> Option<foundation::WorthQueryEntity> {
-    graph.with_runtime(|runtime| {
+) -> Result<Option<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
+    Ok(graph.with_runtime(|runtime| {
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).ok()?;
         let observation = basis.observation();
         project_observation_record(runtime, &observation, record)
-    })
+    })?)
 }
 
 fn project_record_at_basis(

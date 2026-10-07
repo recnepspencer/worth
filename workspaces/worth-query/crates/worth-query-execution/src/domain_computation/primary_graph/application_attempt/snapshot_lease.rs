@@ -12,6 +12,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationSnapshotLeaseDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     ForeignRuntime,
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     SnapshotIdentityExhausted,
@@ -77,8 +78,8 @@ impl WorthQueryApplicationSnapshotLease {
                         WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted
                     }
                 })?;
-            Ok(snapshot)
-        })?;
+            Ok::<_, WorthQueryApplicationSnapshotLeaseDenial>(snapshot)
+        })??;
         Ok(Self {
             custody: Some(SnapshotCustody::Owned { handle, snapshot }),
             product,
@@ -192,7 +193,7 @@ impl Drop for WorthQueryApplicationSnapshotLease {
 fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRelease {
     match custody {
         SnapshotCustody::Owned { handle, snapshot } => {
-            handle.with_runtime_mut(|runtime| {
+            let _ = handle.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             });
             WorthQueryApplicationSnapshotRelease::NativeSnapshotReleased
@@ -200,5 +201,13 @@ fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRel
         SnapshotCustody::Shared(basis) => {
             WorthQueryApplicationSnapshotRelease::SharedBasisRelease(basis.release().outcome())
         }
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryApplicationSnapshotLeaseDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

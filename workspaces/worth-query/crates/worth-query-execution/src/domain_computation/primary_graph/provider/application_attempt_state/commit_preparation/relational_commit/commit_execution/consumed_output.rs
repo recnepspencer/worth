@@ -65,7 +65,7 @@ pub(super) fn verify(
                 return Err(PrecommitOutputStop::Changed);
             }
             Ok::<(), PrecommitOutputStop>(())
-        })
+        })?
         .map_err(|stop| match stop {
             PrecommitOutputStop::Verification(
                 ConsumedOutputVerificationStop::RetryCurrentness(cause),

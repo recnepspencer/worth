@@ -13,6 +13,7 @@ impl WorthQueryOutputDemandDenialKind {
                     Terminal
                 }
             }
+            Self::Handle(_) => Terminal,
             Self::SchedulingDeferred => Retryable,
             Self::SourcePrincipal(_)
             | Self::SourceScope(_)

@@ -1,12 +1,15 @@
 /// Why an invariant projection could not take its snapshot or finish.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The main branch basis could not be observed.
     BasisUnavailable,
     /// The basis or snapshot belongs to a different runtime.
     ForeignBasis,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain a basis.
@@ -99,4 +102,12 @@ pub(super) fn from_snapshot_admission_denial(
         }
     };
     WorthQueryInvariantProjectionDenial::from_kind(kind)
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryInvariantProjectionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::from_kind(WorthQueryInvariantProjectionDenialKind::Handle(denial))
+    }
 }

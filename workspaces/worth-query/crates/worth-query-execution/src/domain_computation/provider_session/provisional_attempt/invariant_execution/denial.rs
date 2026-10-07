@@ -26,6 +26,7 @@ pub enum WorthQueryCustomInvariantDenial {
 /// amount the attempt needed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantExecutionDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// No installed invariant requirement exists for the requested slot.
     InvariantNotInstalled,
     /// The requirement's executor role is not the role of the provider running
@@ -205,5 +206,16 @@ impl WorthQueryInvariantExecutionFailure {
     /// `CustomInvariantDenied`.
     pub fn custom_invariant_denial(&self) -> Option<&WorthQueryCustomInvariantDenial> {
         self.custom_invariant.as_ref()
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryInvariantExecutionFailure
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryInvariantExecutionDenialKind::Handle(denial),
+            "application handle",
+        )
     }
 }

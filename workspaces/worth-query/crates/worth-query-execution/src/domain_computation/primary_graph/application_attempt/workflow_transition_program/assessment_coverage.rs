@@ -113,7 +113,7 @@ pub(super) fn observe_subject_cached(
                 source_transition,
                 maximum_facts,
             )
-        })?;
+        })??;
         let (coverages, coverage_facts) = handle.with_runtime(|runtime| {
             observe_workflow_proposal_coverages(
                 runtime,
@@ -122,7 +122,7 @@ pub(super) fn observe_subject_cached(
                 proposal,
                 maximum_facts.saturating_sub(proposal_facts.len()),
             )
-        })?;
+        })??;
         proposal_facts.extend(coverage_facts);
         enforce_budget(proposal_facts.len(), maximum_facts)?;
         entry.insert(ObservedProposalCoverage {
@@ -262,12 +262,12 @@ pub(super) fn observe_native_dependencies(
             maximum_facts,
             &mut facts,
         )
-    })?;
+    })??;
     let current = handle.with_runtime(|runtime| {
         dependencies
             .iter()
             .all(|fact| fact.remains_equal_in(runtime, snapshot))
-    });
+    })?;
     Ok((dependencies, facts, current))
 }
 

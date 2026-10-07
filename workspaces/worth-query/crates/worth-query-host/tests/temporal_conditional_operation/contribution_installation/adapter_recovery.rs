@@ -18,7 +18,9 @@ fn open_adoption_deferred_settlement_holds_the_home_in_repair_without_rerunning_
         |writer, _| {
             calls += 1;
             writer.bind_entity(record("repaired-record", 89))?;
-            writer.fail_next_durable_append_for_test();
+            writer
+                .fail_next_durable_append_for_test()
+                .expect("the fixture requires an open application owner");
             Ok(())
         },
     )
@@ -29,7 +31,9 @@ fn open_adoption_deferred_settlement_holds_the_home_in_repair_without_rerunning_
         RefusedHome::InRepair(pending) => pending,
         other => panic!("expected exact native repair custody, got {other:?}"),
     };
-    pending.fail_next_durable_append_for_test();
+    pending
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     let pending = pending
         .repair()
         .expect_err("a refused repair retains the same capsule");

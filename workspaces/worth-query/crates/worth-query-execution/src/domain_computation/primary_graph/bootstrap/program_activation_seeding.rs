@@ -93,7 +93,7 @@ pub(super) fn commit_initial_program_activation(
         identity.ok_or_else(|| {
             activation_denial("Relational bound no identity to the program activation record")
         })
-    })?;
+    })??;
     seed.cell.publish(identity).map_err(|published| {
         activation_denial(format!(
             "program activation was already published as {}:{}:{}",

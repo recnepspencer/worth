@@ -19,7 +19,7 @@ fn current_and_retained_diff_is_unchanged_on_the_same_truth_basis() {
     let mut workspace = read_runtime()
         .workspace("ordinary-comparison-diff")
         .expect("workspace should open");
-    let context = current_and_retained(&workspace);
+    let context = current_and_retained(&workspace).expect("the fixture requires an open workspace");
     let outcome = declaration.using(context).run(&mut workspace);
     let completion = outcome.completed().expect("comparison should complete");
 
@@ -179,7 +179,7 @@ fn structural_correspondence_denies_multiple_left_subjects_without_partial_evide
         .expect("workspace should open");
     write_task(&mut workspace, "first-subject");
     write_task(&mut workspace, "second-subject");
-    let context = current_and_retained(&workspace);
+    let context = current_and_retained(&workspace).expect("the fixture requires an open workspace");
     let outcome = declaration.using(context).run(&mut workspace);
 
     assert!(outcome.completed().is_none());
@@ -211,7 +211,7 @@ fn exact_single_row_identity_can_prove_lineage_without_raw_consumer_ids() {
         .workspace("ordinary-comparison-lineage")
         .expect("workspace should open");
     write_task(&mut workspace, "only");
-    let context = current_and_retained(&workspace);
+    let context = current_and_retained(&workspace).expect("the fixture requires an open workspace");
     let outcome = declaration.using(context).run(&mut workspace);
     let correspondence = outcome.correspondence().expect("lineage should resolve");
 
@@ -234,7 +234,7 @@ fn stale_structural_pair_denies_before_either_query_executes() {
     let mut workspace = stateful_bridge_task_runtime()
         .workspace("ordinary-comparison-stale")
         .expect("workspace should open");
-    let context = current_and_retained(&workspace);
+    let context = current_and_retained(&workspace).expect("the fixture requires an open workspace");
     write_task(&mut workspace, "changed");
     let outcome = declaration.using(context).run(&mut workspace);
     let stop = outcome.stop().expect("stale pair must stop");

@@ -342,6 +342,7 @@ impl std::error::Error for WorthQueryWorkspaceError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorthQueryWorkspaceErrorKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     Unclassified,
     UnsupportedCollection,
     UnsupportedWriteFamily,
@@ -395,3 +396,5 @@ pub struct WorthQueryMemoryWorkspace {
         crate::runtime::native_aspect_contracts::WorthQueryNativeAspectContractRegistry,
     next_client_key: u64,
 }
+
+mod handle_denial;

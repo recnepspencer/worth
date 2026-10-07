@@ -70,7 +70,17 @@ impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
                 )
             },
         )?;
-        let basis_identity = workspace.snapshot_identity().evidence_identity();
+        let basis_identity = workspace
+            .snapshot_identity()
+            .map_err(|denial| {
+                WorthQueryInstalledDomainCapabilityStop::new(
+                    self.witness.clone(),
+                    WorthQueryInstalledDomainCapabilityKind::LiveOpen,
+                    declaration_identity.clone(),
+                    WorthQueryInstalledDomainExecutionDrift::closed(&self.witness, denial),
+                )
+            })?
+            .evidence_identity();
         Ok(match self.request.open(workspace) {
             WorthQueryLiveOpenOutcome::Opened(completion) => {
                 let context_receipt_digest = completion.context_receipt().digest().to_string();

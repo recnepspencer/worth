@@ -117,8 +117,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         &self,
         after: Option<&RuntimeWorldRecoveryCursor>,
         maximum: NonZeroUsize,
-    ) -> Result<RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>>
-    {
+    ) -> Result<
+        Result<RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         self.branches.recovery_page(after, maximum)
     }
 
@@ -132,7 +134,16 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
 
     /// Discovers every Query-owned cleanup obligation and releases only the
     /// application-retirement occurrences held by the primary provider.
-    pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
+    pub fn pending_cleanup(
+        &self,
+    ) -> Result<
+        Vec<WorthQueryApplicationProductBranchCleanup>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.application
+            .primary_provider
+            .graph
+            .with_runtime(|_| ())?;
         for occurrence in self
             .application
             .product_runtime
@@ -149,7 +160,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                 );
         }
         let conditional = self.application.bridge.conditional_operations();
-        self.application
+        Ok(self
+            .application
             .product_runtime
             .pending_owner_cleanup()
             .into_iter()
@@ -159,6 +171,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                     std::sync::Arc::clone(&conditional),
                 )
             })
-            .collect()
+            .collect())
     }
 }

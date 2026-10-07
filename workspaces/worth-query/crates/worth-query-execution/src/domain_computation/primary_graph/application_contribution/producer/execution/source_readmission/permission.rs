@@ -214,7 +214,7 @@ where
                         requirement,
                         admission,
                     )
-                })
+                })?
                 .map_err(|stop| match stop {
                     AdmittedQueryAuthorizationStop::Authorization(error) => {
                         request_admission_denied(Binding::IDENTITY, error)

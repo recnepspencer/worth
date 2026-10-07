@@ -7,15 +7,20 @@ impl WorthQueryProductRuntime {
         declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
-        worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+        Result<
+            worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+            worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+        >,
+        super::WorthQueryHandleDenial,
     > {
-        self.owner.admit_owned_async_request(
-            bridge,
-            declaration,
-            selected.observation(),
-            selected.bridge_source_observation(),
-        )
+        self.gate.with_runtime(|_| {
+            self.owner.admit_owned_async_request(
+                bridge,
+                declaration,
+                selected.observation(),
+                selected.bridge_source_observation(),
+            )
+        })
     }
 
     pub fn revalidate_owned_async_request(
@@ -24,14 +29,19 @@ impl WorthQueryProductRuntime {
         request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
-        worth_runtime_world::facade::RuntimeWorldOwnedAsyncRevalidationDenial,
+        Result<
+            worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
+            worth_runtime_world::facade::RuntimeWorldOwnedAsyncRevalidationDenial,
+        >,
+        super::WorthQueryHandleDenial,
     > {
-        self.owner.revalidate_owned_async_request(
-            bridge,
-            request,
-            selected.observation(),
-            selected.bridge_source_observation(),
-        )
+        self.gate.with_runtime(|_| {
+            self.owner.revalidate_owned_async_request(
+                bridge,
+                request,
+                selected.observation(),
+                selected.bridge_source_observation(),
+            )
+        })
     }
 }

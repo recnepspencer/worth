@@ -82,7 +82,8 @@ impl WorthQueryOutcomeNavigation for history::WorthQueryHistoricalOutcome {
         match self {
             Self::Completed(_) => WorthQueryOutcomePosture::Completed,
             Self::Stopped(stop) => match stop.source() {
-                history::WorthQueryHistoricalStopSource::HistoryUnavailable
+                history::WorthQueryHistoricalStopSource::Handle(_)
+                | history::WorthQueryHistoricalStopSource::HistoryUnavailable
                 | history::WorthQueryHistoricalStopSource::Runtime => {
                     WorthQueryOutcomePosture::Unavailable
                 }
@@ -110,7 +111,8 @@ impl WorthQueryOutcomeNavigation for comparison::WorthQueryComparisonOutcome {
                 }
             },
             Self::Stopped(stop) => match stop.source() {
-                comparison::WorthQueryComparisonStopSource::LeftExecution
+                comparison::WorthQueryComparisonStopSource::Handle(_)
+                | comparison::WorthQueryComparisonStopSource::LeftExecution
                 | comparison::WorthQueryComparisonStopSource::RightExecution => {
                     WorthQueryOutcomePosture::Unavailable
                 }
@@ -169,7 +171,8 @@ impl WorthQueryOutcomeNavigation for workflow::WorthQueryWritebackOutcome {
         match self {
             Self::Completed(_) => WorthQueryOutcomePosture::Completed,
             Self::Stopped(stop) => match stop.source() {
-                workflow::WorthQueryWritebackStopSource::InspectionUnavailable
+                workflow::WorthQueryWritebackStopSource::Handle(_)
+                | workflow::WorthQueryWritebackStopSource::InspectionUnavailable
                 | workflow::WorthQueryWritebackStopSource::BridgeExecution => {
                     WorthQueryOutcomePosture::Unavailable
                 }

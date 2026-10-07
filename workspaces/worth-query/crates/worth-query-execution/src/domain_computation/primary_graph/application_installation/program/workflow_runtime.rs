@@ -97,6 +97,34 @@ where
         )
     }
 
+    pub fn close(
+        self,
+    ) -> Result<
+        crate::domain_computation::primary_graph::ApplicationHome,
+        crate::domain_computation::primary_graph::WorthQueryApplicationCloseRefusal<Self>,
+    >
+    where
+        Schema: 'static,
+    {
+        let Self {
+            runtime,
+            workflow,
+            authentication,
+            supported,
+        } = self;
+        runtime.close().map_err(|refusal| {
+            crate::domain_computation::primary_graph::WorthQueryApplicationCloseRefusal {
+                runtime: Self {
+                    runtime: refusal.runtime,
+                    workflow,
+                    authentication,
+                    supported,
+                },
+                denial: refusal.denial,
+            }
+        })
+    }
+
     pub fn into_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.runtime
     }

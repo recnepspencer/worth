@@ -26,7 +26,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
         .layout
         .entity_kind(ActivityIdentity::reference().entity())
         .unwrap();
-    let relations = graph.integration_handle().with_runtime(|runtime| {
+    let relations = graph.integration_handle().with_open_runtime(|runtime| {
         crate::domain_computation::primary_graph::application_attempt::observe_adjacency(
             runtime,
             selected.application_basis().snapshot_handle(),
@@ -136,7 +136,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
     let probe = |fact: &Fact, maximum_work| {
         let selected = world.selected_product();
         let graph = world.application.runtime.primary_graph().unwrap();
-        graph.integration_handle().with_runtime(|runtime| {
+        graph.integration_handle().with_open_runtime(|runtime| {
             fact.source_currentness_in(
                 runtime,
                 selected.application_basis().snapshot_handle(),

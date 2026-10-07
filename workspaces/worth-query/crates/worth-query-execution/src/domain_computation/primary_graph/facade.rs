@@ -321,3 +321,11 @@ pub use crate::domain_computation::{
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
     WorthQueryProductUnpublishedRecovery,
 };
+
+pub use crate::domain_computation::primary_graph::application_home::{
+    WorthQueryApplicationCloseDenial, WorthQueryApplicationCloseRefusal,
+};
+
+pub use crate::domain_computation::primary_graph::application_checkpoint::WorthQueryApplicationCheckpointCaptureDenial;
+
+pub use crate::domain_computation::primary_graph::application_runtime::WorthQueryCertificationCostDenial;

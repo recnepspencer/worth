@@ -84,7 +84,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                     identity.entity_kind(),
                     &graph_layout,
                 )
-            })
+            })?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
@@ -156,7 +156,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                 from.entity_id(),
                 to.entity_id(),
             )
-        })?;
+        })??;
         if matching_relations.len() > 1 {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::AmbiguousRelation,

@@ -170,6 +170,10 @@ fn map_selected_read_stop(
         | SelectedAuthorizedReadStop::Currentness(
             SelectedAuthorizationCurrentnessStop::Admission(stop),
         ) => return WorthQueryAdmittedOneShotStop::Admission(stop),
+        SelectedAuthorizedReadStop::Security(
+            crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::Handle(handle),
+        ) => WorthQueryApplicationOneShotDenialKind::Authorization(
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Handle(handle)),
         SelectedAuthorizedReadStop::WorkUnavailable => {
             return WorthQueryAdmittedOneShotStop::WorkUnavailable;
         }

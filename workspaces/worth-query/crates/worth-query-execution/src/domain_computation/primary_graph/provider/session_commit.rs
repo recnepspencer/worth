@@ -51,6 +51,7 @@ pub(super) fn snapshot_admission_failure(
     detail: &'static str,
 ) -> WorthQueryProviderSessionFailure {
     let kind = match denial {
+        crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::Handle(denial) => return denial.into(),
         crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => crate::domain_computation::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {

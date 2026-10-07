@@ -11,25 +11,27 @@ impl WorthQueryRelationalSourceOwner {
     pub fn current_truth_snapshot(
         &self,
         branch: &TruthBranchIdentity,
-    ) -> Option<TruthSnapshotIdentity> {
-        self.bridge_head
-            .lock()
-            .expect("Bridge head custody is available")
-            .as_ref()
-            .filter(|head| head.branch_identity() == branch)
-            .map(|head| head.snapshot_identity().clone())
+    ) -> Result<Option<TruthSnapshotIdentity>, super::WorthQueryHandleDenial> {
+        self.with_runtime(|_| {
+            self.bridge_head
+                .lock()
+                .expect("Bridge head custody is available")
+                .as_ref()
+                .filter(|head| head.branch_identity() == branch)
+                .map(|head| head.snapshot_identity().clone())
+        })
     }
 
     pub fn bind_current_truth_head(
         &self,
         branch: &BranchId,
-    ) -> Result<TruthSnapshotIdentity, RelationalBranchBasisDenial> {
+    ) -> Result<TruthSnapshotIdentity, super::WorthQueryRelationalSourceDenial> {
         let basis = self.with_runtime(|runtime| {
             let identity = runtime
                 .branch_identity(branch)
                 .map_err(|_| RelationalBranchBasisDenial::UnknownBranch(branch.clone()))?;
             runtime.observe_branch(&identity).map(|(_, basis)| basis)
-        })?;
+        })??;
         let head = self.source.bind_branch_head_basis_for_bridge(&basis)?;
         let snapshot = head.snapshot_identity().clone();
         *self

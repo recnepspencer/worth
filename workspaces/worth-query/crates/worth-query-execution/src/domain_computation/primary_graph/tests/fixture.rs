@@ -11,6 +11,10 @@ mod authorization_time;
 mod authorization_world_installation;
 #[path = "fixture/commit_snapshot_closeout.rs"]
 mod commit_snapshot_closeout;
+#[path = "fixture/owner_cleanup.rs"]
+mod owner_cleanup;
+#[path = "fixture/owner_faults.rs"]
+mod owner_faults;
 pub(in crate::domain_computation::primary_graph) use commit_snapshot_closeout::release_test_commit_snapshot;
 #[path = "fixture/installed_layout.rs"]
 mod installed_layout;

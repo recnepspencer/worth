@@ -18,9 +18,14 @@ fn in_memory_workspace_exposes_bounded_creation_recovery_and_cleanup_discovery()
     let page = workspace
         .branches()
         .recovery_page(None, NonZeroUsize::new(1).unwrap())
+        .expect("the standalone fixture owner stays open")
         .expect("the outer workspace must expose bounded World recovery discovery");
     assert!(page.rows().is_empty());
-    assert!(workspace.branches().pending_cleanup().is_empty());
+    assert!(workspace
+        .branches()
+        .pending_cleanup()
+        .expect("the standalone fixture owner stays open")
+        .is_empty());
 }
 
 #[test]

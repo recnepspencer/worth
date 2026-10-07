@@ -242,7 +242,7 @@ fn rebase_result_at_current(
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
@@ -270,7 +270,7 @@ fn output_selection(
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             compare_retained_output_dependencies(
                 runtime,
                 selected.application_basis().snapshot_handle(),
@@ -293,7 +293,7 @@ fn currentness(
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             fact.source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 1)
         })
 }

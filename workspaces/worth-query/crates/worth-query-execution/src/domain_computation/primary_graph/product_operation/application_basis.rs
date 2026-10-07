@@ -31,6 +31,7 @@ fn map_registration_denial(
     use worth_relational::facade::branch::RelationalBranchBasisDenial as Basis;
     use worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial as Snapshot;
     match denial {
+        Registration::Handle(denial) => denial.into(),
         Registration::Basis(Basis::RetentionCapacityExhausted) => {
             WorthQueryProductBranchAdmissionDenial::RetentionCapacityExhausted
         }

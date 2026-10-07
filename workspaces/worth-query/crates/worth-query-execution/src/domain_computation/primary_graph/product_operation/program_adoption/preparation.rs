@@ -47,6 +47,7 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
 /// Why a branch adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionPreparationDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The runtime has no installed program support.
     ProgramSupportUnavailable,
     /// No program activation is published.
@@ -102,10 +103,14 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
         slot: usize,
     },
     /// A validation scope names an entity type the schema does not declare.
-    UnknownEntityScope { entity: String },
+    UnknownEntityScope {
+        entity: String,
+    },
     /// A validation scope names a relation; adoption revalidates only entity
     /// scopes.
-    RelationScopeUnsupported { relation: String },
+    RelationScopeUnsupported {
+        relation: String,
+    },
     /// Selecting what to revalidate would exceed the work limit. The fields
     /// give the limit and the work consumed.
     SelectionLimitExceeded {
@@ -282,5 +287,13 @@ mod tests {
         for (owner, expected) in cases {
             assert_eq!(PublicDenial::from(owner), expected);
         }
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryBranchAdoptionPreparationDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

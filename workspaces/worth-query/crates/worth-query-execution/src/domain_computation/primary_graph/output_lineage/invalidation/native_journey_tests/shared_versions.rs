@@ -72,7 +72,7 @@ fn versions_sharing_a_row_reserve_it_once_and_release_it_with_the_last() {
         own + inherited >= whole
     };
 
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         // Each delivery touches the label, which the row never reads: its
         // version copies no index node.
         let mut flip = false;

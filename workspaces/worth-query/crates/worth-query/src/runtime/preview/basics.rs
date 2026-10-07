@@ -121,14 +121,14 @@ impl<'a> WorthQueryPreviewSession<'a> {
                 }
                 WorthQueryProgramEffect::Write(command) => {
                     self.admit_preview_write_intent()?;
-                    let receipt = self.stage_command(command);
+                    let receipt = self.stage_command(command)?;
                     trace.record_write_receipt(receipt.commit_identity().clone());
                     write_receipts.push(receipt);
                 }
                 WorthQueryProgramEffect::WriteTemplate(template) => {
                     self.admit_preview_write_intent()?;
                     let command = template.bind(&bound_inputs)?;
-                    let receipt = self.stage_command(command);
+                    let receipt = self.stage_command(command)?;
                     trace.record_write_receipt(receipt.commit_identity().clone());
                     write_receipts.push(receipt);
                 }
@@ -145,7 +145,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         .unwrap_or_else(|| {
                             WorthQueryLiveArtifactTarget::from_view_name(view_name.clone())
                         });
-                    let rows = self.runtime.backend.live_entities_for_target(&target);
+                    let rows = self.runtime.backend.live_entities_for_target(&target)?;
                     outputs.push(WorthQueryOperationOutput::from_live_read_entities(
                         format!("preview-live:{view_name}"),
                         rows,

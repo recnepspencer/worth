@@ -51,7 +51,7 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
         0,
     );
 
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         write_field(runtime, entity, label, "prime");
         let (before_handle, before) = snapshot(runtime);
         let before_fact = field_fact(runtime, &before_handle, entity, status.clone());

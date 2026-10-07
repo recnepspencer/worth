@@ -37,10 +37,10 @@ pub(super) fn prepare(
     product: &WorthQueryProductPublicationBinding,
     before: &SnapshotHandle,
     candidate: &PreparedRelationalCommitCandidate,
-) -> Option<PreparedViewPublication> {
+) -> Result<Option<PreparedViewPublication>, crate::facade::primary_graph::WorthQueryHandleDenial> {
     let registry = provider.graph.managed_derived_views();
     if !registry.has_live_views() {
-        return None;
+        return Ok(None);
     }
     let observation = product.observation();
     let relational = observation.basis().relational_basis();
@@ -59,7 +59,7 @@ pub(super) fn prepare(
                 max_aspect_scopes: MAXIMUM_ASPECT_SCOPES,
             },
         )
-    });
+    })?;
     let admissible = summary.ok().filter(|summary| {
         summary.runtime_instance_id == before.runtime_instance_id()
             && summary.runtime_instance_id == descriptor.runtime_instance_id()
@@ -83,10 +83,10 @@ pub(super) fn prepare(
             summary.after_commit_id,
         )
     });
-    Some(PreparedViewPublication {
+    Ok(Some(PreparedViewPublication {
         plan,
         expected_after,
-    })
+    }))
 }
 
 impl PreparedViewPublication {

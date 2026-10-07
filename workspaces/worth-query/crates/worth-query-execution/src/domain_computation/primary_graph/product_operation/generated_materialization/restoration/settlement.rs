@@ -17,27 +17,43 @@ impl PublishedRestorationSettlement {
     pub(super) fn finish<Schema: ApplicationSchema>(
         self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ) -> super::WorthQueryRestoredGeneratedOutput {
+    ) -> Result<
+        super::WorthQueryRestoredGeneratedOutput,
+        WorthQueryGeneratedOutputRestorationRecoveryFailure,
+    > {
         let Self {
             observation,
             commit,
-            retry,
+            mut retry,
         } = self;
+        if let Err((denial, correspondence, producer)) = runtime.record_restored_generated_output(
+            &observation,
+            retry.correspondence,
+            retry.producer,
+        ) {
+            retry.correspondence = correspondence;
+            retry.producer = producer;
+            return Err(failure(
+                WorthQueryGeneratedOutputRestorationRecoveryStage::Handle(denial),
+                RecoveryState::PublishedLineage {
+                    settlement: Self {
+                        observation,
+                        commit,
+                        retry,
+                    },
+                },
+            ));
+        }
         let restored = retry
             .completion
             .complete(commit)
             .expect("World returns the exact prepared relational restoration result");
-        runtime.record_restored_generated_output(
-            &observation,
-            retry.correspondence,
-            retry.producer,
-        );
-        super::WorthQueryRestoredGeneratedOutput {
+        Ok(super::WorthQueryRestoredGeneratedOutput {
             branch: retry.branch,
             commit: super::WorthQueryGeneratedOutputRestorationReceipt::new(
                 restored.commit.clone(),
             ),
-        }
+        })
     }
 }
 
@@ -95,7 +111,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
         match self.release_product_publication_recovery(recovery, 0) {
-            Ok(_) => Ok(settlement.finish(self)),
+            Ok(_) => settlement.finish(self),
             Err(
                 crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(
                     failed,

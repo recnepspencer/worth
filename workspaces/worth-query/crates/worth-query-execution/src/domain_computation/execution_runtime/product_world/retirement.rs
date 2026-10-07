@@ -1,6 +1,4 @@
-use worth_runtime_world::facade::{
-    ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial, RuntimeWorldServiceDenial,
-};
+use worth_runtime_world::facade::ProductBranchRetirementReport;
 
 use super::WorthQueryProductRuntime;
 use crate::basis::WorthQueryProductBranchLease;
@@ -11,18 +9,20 @@ impl WorthQueryProductRuntime {
     pub(crate) fn retire_product_branch(
         &self,
         observed: &WorthQueryProductBranchLease,
-    ) -> Result<
-        ProductBranchRetirementReport,
-        RuntimeWorldServiceDenial<RuntimeWorldBranchRetirementDenial>,
-    > {
-        let report = self
-            .owner
-            .branch_port()
-            .retire_product_branch(observed.observation())?;
-        self.activations.release(
-            observed.branch_identity(),
-            observed.observation().lifecycle_incarnation(),
-        );
-        Ok(report)
+    ) -> Result<ProductBranchRetirementReport, super::WorthQueryProductBranchCloseDenial> {
+        self.gate
+            .with_runtime(|_| {
+                let report = self
+                    .owner
+                    .branch_port()
+                    .retire_product_branch(observed.observation())
+                    .map_err(super::branch_close::map_retirement_denial)?;
+                self.activations.release(
+                    observed.branch_identity(),
+                    observed.observation().lifecycle_incarnation(),
+                );
+                Ok(report)
+            })
+            .map_err(super::WorthQueryProductBranchCloseDenial::Handle)?
     }
 }

@@ -86,6 +86,7 @@ pub struct WorthQueryApplicationBasisReleaseReceipt {
 /// while another admitted Query owner retains the same resources.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationBasisReleaseOutcome {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     NativeResourcesReleased {
         snapshot_released: bool,
         relational_retention: RelationalBranchRetentionTerminalOutcome,
@@ -147,7 +148,7 @@ impl WorthQueryApplicationBasisReleaseOutcome {
                 relational_retention,
                 ..
             } => Some(relational_retention),
-            Self::SharedCustodyRetained => None,
+            Self::SharedCustodyRetained | Self::Handle(_) => None,
         }
     }
 }
@@ -162,6 +163,7 @@ pub struct WorthQueryApplicationBasisObservation {
 }
 
 pub(crate) enum WorthQueryApplicationBasisRegistrationDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     Basis(worth_relational::facade::branch::RelationalBranchBasisDenial),
     Snapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
 }
@@ -186,15 +188,15 @@ impl WorthQueryApplicationBasisRegistry {
                     runtime,
                     &basis,
                 )
-            })
+            })?
             .map_err(WorthQueryApplicationBasisRegistrationDenial::Snapshot)?;
-        let retention = graph.with_runtime(|runtime| runtime.retain_component_basis(&basis));
+        let retention = graph.with_runtime(|runtime| runtime.retain_component_basis(&basis))?;
         let retention = match retention {
             Ok(retention) => retention,
             Err(denial) => {
                 graph.with_runtime_mut(|runtime| {
                     crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-                });
+                })?;
                 return Err(WorthQueryApplicationBasisRegistrationDenial::Basis(denial));
             }
         };
@@ -240,5 +242,13 @@ impl WorthQueryApplicationBasisObservation {
 
     pub const fn acquisitions(self) -> usize {
         self.acquisitions
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryApplicationBasisRegistrationDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

@@ -1,6 +1,6 @@
 use std::collections::{hash_map::Entry, BTreeMap, HashMap};
 
-use worth_query::facade::runtime::WorthQueryRuntimeError;
+use worth_query::facade::runtime::{WorthQueryHandleDenial, WorthQueryRuntimeError};
 
 use crate::{WorthServerQueryOperation, WorthServerResponseFacade, WorthServerResponseInput};
 
@@ -59,15 +59,30 @@ fn execute_group(group: OrderedLaneExecution) -> GroupExecution {
             continue;
         }
 
-        if is_stale_for_current_basis(&execution.slot, latest_lane_basis_digest.as_deref()) {
-            let observed_basis_digest = latest_lane_basis_digest
-                .clone()
-                .unwrap_or_else(|| current_basis_digest(&execution.slot));
-            let expected_basis_digest = execution
-                .slot
-                .slot_basis_digest()
-                .expect("stale mutation evaluation requires a caller basis digest")
-                .to_string();
+        let stale_basis = match stale_basis(&execution.slot, latest_lane_basis_digest.as_deref()) {
+            Ok(stale_basis) => stale_basis,
+            Err(denial) => {
+                counters.increment_isolated_failure_count();
+                failed_slot_ordinal = Some(execution.slot.ordinal());
+                outcomes.push(
+                    WorthServerScheduledOperationOutcome::failed_without_counters(
+                        execution.slot,
+                        WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure {
+                            runtime_failure:
+                                WorthServerSchedulerRuntimeFailure::from_mutation_runtime_error(
+                                    denial.into(),
+                                ),
+                        },
+                    ),
+                );
+                continue;
+            }
+        };
+        if let Some(StaleBasis {
+            expected_basis_digest,
+            observed_basis_digest,
+        }) = stale_basis
+        {
             counters.increment_stale_basis_stop_count();
             failed_slot_ordinal = Some(execution.slot.ordinal());
             outcomes.push(
@@ -207,37 +222,40 @@ fn increment_completion_counter(
     }
 }
 
-fn is_stale_for_current_basis(
-    slot: &WorthServerOperationExecutionSlot,
-    latest_lane_basis_digest: Option<&str>,
-) -> bool {
-    let Some(precondition) = slot.precondition_posture().compatibility_mutation() else {
-        let Some(requested_basis_digest) = slot.slot_basis_digest() else {
-            return false;
-        };
-        return match latest_lane_basis_digest {
-            Some(latest_lane_basis_digest) => latest_lane_basis_digest != requested_basis_digest,
-            None => current_basis_digest(slot) != requested_basis_digest,
-        };
-    };
-    let Some(requested_basis_digest) = precondition
-        .requested_basis_digest()
-        .or_else(|| slot.slot_basis_digest())
-    else {
-        return false;
-    };
-    match latest_lane_basis_digest {
-        Some(latest_lane_basis_digest) => latest_lane_basis_digest != requested_basis_digest,
-        None => current_basis_digest(slot) != requested_basis_digest,
-    }
+/// The basis a mutation asked for and the one its lane now stands on, when
+/// they differ.
+struct StaleBasis {
+    expected_basis_digest: String,
+    observed_basis_digest: String,
 }
 
-fn current_basis_digest(slot: &WorthServerOperationExecutionSlot) -> String {
-    slot.handoff()
-        .workspace()
-        .snapshot_identity()
-        .terminal_projection_for_reporting()
-        .to_string()
+fn stale_basis(
+    slot: &WorthServerOperationExecutionSlot,
+    latest_lane_basis_digest: Option<&str>,
+) -> Result<Option<StaleBasis>, WorthQueryHandleDenial> {
+    let requested_basis_digest = match slot.precondition_posture().compatibility_mutation() {
+        Some(precondition) => precondition
+            .requested_basis_digest()
+            .or_else(|| slot.slot_basis_digest()),
+        None => slot.slot_basis_digest(),
+    };
+    let Some(requested_basis_digest) = requested_basis_digest else {
+        return Ok(None);
+    };
+    let observed_basis_digest = match latest_lane_basis_digest {
+        Some(latest_lane_basis_digest) => latest_lane_basis_digest.to_string(),
+        None => slot
+            .handoff()
+            .workspace()
+            .snapshot_identity()?
+            .terminal_projection_for_reporting(),
+    };
+    Ok(
+        (observed_basis_digest != requested_basis_digest).then(|| StaleBasis {
+            expected_basis_digest: requested_basis_digest.to_string(),
+            observed_basis_digest,
+        }),
+    )
 }
 
 struct PreparedGroups {

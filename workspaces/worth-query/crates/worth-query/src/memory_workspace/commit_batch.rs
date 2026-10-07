@@ -26,7 +26,7 @@ impl WorthQueryMemoryWorkspace {
             let snapshot = super::runtime_identity::snapshot_identity_from_runtime(runtime);
             super::commit_snapshot_closeout::release_commit_snapshot(runtime, &result.snapshot);
             Ok((result, snapshot))
-        })
+        })?
     }
 
     pub(crate) fn relational_source_owner(

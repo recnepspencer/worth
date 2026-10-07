@@ -130,7 +130,12 @@ fn run() {
             .expect("released branch resources must close");
         assert!(closed.is_complete());
     }
-    assert!(application.runtime.branches().pending_cleanup().is_empty());
+    assert!(application
+        .runtime
+        .branches()
+        .pending_cleanup()
+        .expect("the branching fixture requires an open application owner")
+        .is_empty());
     println!("created, advanced, inspected, and closed all product postures through the application entry");
 }
 

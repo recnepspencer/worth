@@ -19,7 +19,7 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
     for fact in &facts {
         let fresh = lease
             .handle()
-            .with_runtime(|runtime| fact.remains_equal_in(runtime, lease.snapshot()));
+            .with_runtime(|runtime| fact.remains_equal_in(runtime, lease.snapshot()))?;
         if !fresh {
             let kind = if matches!(fact, WorthQueryApplicationObservedFact::SourceEntity { .. }) {
                 WorthQueryApplicationAttemptDenialKind::SourceRetired

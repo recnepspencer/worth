@@ -199,7 +199,7 @@ where
                     )
                 });
             result
-        })?;
+        })??;
         Ok(observed)
     }
 
@@ -329,7 +329,7 @@ where
                 Some(supporting.decision()),
             );
             result
-        })
+        })?
     }
 
     pub(super) fn installed_capability_plan(

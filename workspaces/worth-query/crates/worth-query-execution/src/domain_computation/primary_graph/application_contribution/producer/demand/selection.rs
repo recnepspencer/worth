@@ -275,7 +275,7 @@ where
                     current.push((live, facts_current));
                 }
                 Ok::<_, WorthQueryOutputDemandDenial>(current)
-            })?;
+            })??;
             let mut retained_output = false;
             for ((candidate, _), (live, facts_current)) in live_candidates.into_iter().zip(current)
             {

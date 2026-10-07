@@ -293,7 +293,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                     .and_then(|truth| {
                         truth.resolve(field.entity(), field.aspect(), field.field(), value)
                     })
-            })
+            })?
             .map_err(|_| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,

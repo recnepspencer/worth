@@ -44,7 +44,7 @@ pub(super) fn observe(
             proposal_transition,
             maximum_facts,
         )
-    })?;
+    })??;
     if proposal.is_some_and(|proposal| {
         proposal_entity != proposal.entity_id() || proposal_identity != proposal.identity()
     }) {
@@ -69,7 +69,7 @@ pub(super) fn observe(
             join_transition,
             &mut facts,
         )
-    })?;
+    })??;
     if join_transition.settlement().outcome()
         != worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::EvidenceSatisfied
     {
@@ -111,7 +111,7 @@ pub(super) fn observe(
                 subject.related,
                 remaining,
             )
-        })?;
+        })??;
         facts.extend(subject.facts);
         facts.extend(observed.facts);
         if observed.applicable {
@@ -144,7 +144,7 @@ pub(super) fn observe(
                 locator,
                 remaining,
             )
-        })?;
+        })??;
         facts.append(&mut retained_facts);
         let remaining = maximum_facts.saturating_sub(facts.len());
         let coverage_state = super::super::assessment_coverage::observe(

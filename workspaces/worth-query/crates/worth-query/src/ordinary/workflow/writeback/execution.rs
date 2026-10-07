@@ -12,6 +12,13 @@ impl WorthQueryWritebackRequest {
     pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryWritebackOutcome {
         let counters = WorthQueryWorkflowCounters::context_checked();
         match workspace.ordinary_authority_drift(&self.context.authority) {
+            WorthQueryOrdinaryAuthorityDrift::Handle(denial) => {
+                return WorthQueryWritebackOutcome::Stopped(WorthQueryWritebackStop::denied(
+                    WorthQueryWritebackStopSource::Handle(denial),
+                    denial.to_string(),
+                    counters,
+                ));
+            }
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return WorthQueryWritebackOutcome::Stopped(WorthQueryWritebackStop::denied(
                     WorthQueryWritebackStopSource::ForeignAuthority,

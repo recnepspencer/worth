@@ -13,16 +13,16 @@ impl<'a> WorthQueryPreviewSession<'a> {
     pub(super) fn stage_command(
         &mut self,
         command: WorthQueryWriteCommand,
-    ) -> WorthQueryWriteReceipt {
+    ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let receipt = WorthQueryWriteReceipt::preview(
             &self.label,
             self.pending_commands.len() + 1,
             &command,
-            self.runtime.current_snapshot_identity(),
+            self.runtime.current_snapshot_identity()?,
         );
         self.pending_commands.push(command);
         self.route_preview_execution(&receipt);
-        receipt
+        Ok(receipt)
     }
 
     pub fn preview_execution_evidence(&self) -> &[WorthQueryPreviewExecutionEvidence] {

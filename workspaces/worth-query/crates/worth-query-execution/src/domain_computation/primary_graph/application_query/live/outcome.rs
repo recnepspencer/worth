@@ -159,6 +159,7 @@ pub enum WorthQueryApplicationLiveCauseDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[must_use]
 pub enum WorthQueryApplicationLiveCloseOutcome {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The subscription ended cleanly with its read-completion evidence.
     Completed(crate::domain_computation::provider_session::WorthQueryGraphReadCompletion),
     /// The subscription had already ended or could not end cleanly.

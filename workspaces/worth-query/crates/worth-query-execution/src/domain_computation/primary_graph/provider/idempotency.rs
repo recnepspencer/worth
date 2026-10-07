@@ -37,6 +37,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
 {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
@@ -197,7 +198,7 @@ impl WorthQueryPrimaryGraphProvider {
                 self.repair_equivalent_publication_settlement(runtime, committed)?;
             }
             Ok(resolution)
-        })
+        })?
     }
 
     pub(in crate::domain_computation::primary_graph) fn resolve_application_idempotency(
@@ -281,3 +282,11 @@ fn idempotency_snapshot_denial(
 #[cfg(test)]
 #[path = "idempotency/denial_mapping_tests.rs"]
 mod denial_mapping_tests;
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryProviderIdempotencyResolutionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
+    }
+}

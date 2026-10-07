@@ -334,7 +334,7 @@ pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_mat
         &request,
         "bounded-unpublished-material",
     );
-    world.application.fail_next_durable_append_for_test();
+    world.fail_next_durable_append();
     let outcome = world
         .application
         .compare_and_commit_application(program, binding);

@@ -12,6 +12,7 @@
 /// and approvals.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAttemptDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     ForeignApplication,
     ProjectionAdmissionMismatch,
     CurrentAuthorityDenied,
@@ -234,3 +235,14 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationAttemptDenial {}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryApplicationAttemptDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryApplicationAttemptDenialKind::Handle(denial),
+            "application handle",
+        )
+    }
+}

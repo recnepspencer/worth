@@ -152,20 +152,28 @@ where
             idempotency,
         );
         let projected = match outcome.landed() {
-            Ok((receipt, replayed)) => self.primary_provider.graph.with_runtime(|runtime| {
-                project(
-                    runtime,
-                    receipt,
-                    transition_identity,
-                    transition_identity_locator,
-                    node_path,
-                    terminal,
-                    assessment,
-                    approval,
-                    operation_receipt_identity,
-                    replayed,
-                )
-            }),
+            Ok((receipt, replayed)) => self
+                .primary_provider
+                .graph
+                .with_runtime(|runtime| {
+                    project(
+                        runtime,
+                        receipt,
+                        transition_identity,
+                        transition_identity_locator,
+                        node_path,
+                        terminal,
+                        assessment,
+                        approval,
+                        operation_receipt_identity,
+                        replayed,
+                    )
+                })
+                .unwrap_or_else(|denial| {
+                    WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
+                        denial.into(),
+                    ))
+                }),
             Err(uncommitted) => WorkflowProgressOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =

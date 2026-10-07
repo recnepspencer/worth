@@ -166,7 +166,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                     Ok((role.entity, actual))
                 }).collect::<Result<BTreeMap<_, _>, _>>()
-        }) {
+        }).unwrap_or_else(|denial| Err(super::WorthQueryGeneratedOutputReconstructionDenial::Handle(denial))) {
             Ok(retained) => retained,
             Err(denial) => return Err(reconstruction_failure(suspended, denial)),
         };

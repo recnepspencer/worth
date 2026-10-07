@@ -126,7 +126,7 @@ where
                     requirements: operation.contracts().ability_requirements(),
                 },
             )
-        })?;
+        })??;
         Ok(WorthQueryObservedConventionalOperation {
             session_identity,
             principal_currentness,

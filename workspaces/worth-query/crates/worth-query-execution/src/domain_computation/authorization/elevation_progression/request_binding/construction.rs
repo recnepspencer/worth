@@ -58,7 +58,7 @@ where
                 proposed,
                 &interval.issued,
             )
-        })
+        })?
         .ok_or_else(|| projection_denial(access.operation()))??;
     let lifecycle = &elevation.lifecycle;
     Ok(WorthQueryElevationRequestBinding {

@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) enum WorthQuerySettlementReentry {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     AlreadyCommitted,
     Indeterminate(String),
     Deferred(WorthQueryApplicationSettlementDeferred),
@@ -21,6 +22,9 @@ where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
     match runtime.recover_deferred_application_settlement(&deferred) {
+        Err(WorthQueryApplicationSettlementRecoveryError::Handle(denial)) => {
+            WorthQuerySettlementReentry::Handle(denial)
+        }
         Ok(_) => WorthQuerySettlementReentry::AlreadyCommitted,
         Err(WorthQueryApplicationSettlementRecoveryError::IdempotencyAbsent) => {
             WorthQuerySettlementReentry::Indeterminate(

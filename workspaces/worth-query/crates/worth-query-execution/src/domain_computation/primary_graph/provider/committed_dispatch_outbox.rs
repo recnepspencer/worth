@@ -53,6 +53,7 @@ struct WorthQueryCommittedDispatchOutboxOwnerObservation {
 /// Why Query could not establish an authoritative committed outbox row.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCommittedDispatchOutboxReadDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     ForeignRuntime,
     Missing,
     AmbiguousCorrelation,
@@ -230,7 +231,7 @@ impl WorthQueryPrimaryGraphProvider {
                 retained_basis: &retained_basis,
             }
             .resolve()
-        })
+        })?
     }
 }
 
@@ -376,3 +377,11 @@ mod restoration_tests;
 #[cfg(test)]
 #[path = "committed_dispatch_outbox/corruption_tests.rs"]
 mod corruption_tests;
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryCommittedDispatchOutboxReadDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
+    }
+}

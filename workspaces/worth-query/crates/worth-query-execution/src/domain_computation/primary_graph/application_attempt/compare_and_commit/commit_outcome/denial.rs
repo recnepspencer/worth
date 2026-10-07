@@ -14,6 +14,7 @@ mod workflow;
 /// as presented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The owner refused the attempt at the denial's stage; `detail()` may say why.
     ProviderRejected,
     /// An installed custom invariant refused the candidate; see
@@ -395,3 +396,5 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 }
+
+mod handle;

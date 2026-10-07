@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryAftermath
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryAftermathCausalityReadDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
@@ -97,7 +98,7 @@ impl WorthQueryPrimaryGraphProvider {
             .resolve();
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             resolution.map_err(Into::into)
-        })
+        })?
     }
 
     /// Reads the co-committed relation through an already open snapshot of
@@ -304,5 +305,13 @@ fn as_u64(value: &AspectValue) -> Option<u64> {
     match value {
         AspectValue::UInt64(value) => Some(*value),
         _ => None,
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryAftermathCausalityReadDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

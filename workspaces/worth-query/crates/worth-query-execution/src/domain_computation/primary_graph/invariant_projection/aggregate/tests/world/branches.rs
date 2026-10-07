@@ -37,7 +37,7 @@ impl AggregateWorld {
     ) -> Result<(i64, u64), WorthQueryInvariantAggregateDenialKind> {
         let observed = Cell::new(None);
         let identity = self.relational_identity(branch);
-        let (_, basis) = self.authority.graph.with_runtime_mut(|runtime| {
+        let (_, basis) = self.authority.graph.with_open_runtime_mut(|runtime| {
             runtime
                 .observe_branch(&identity)
                 .expect("the branch head observes")
@@ -104,7 +104,7 @@ impl AggregateWorld {
         intent: MutationIntent,
     ) {
         let identity = self.relational_identity(branch);
-        self.authority.graph.with_runtime_mut(|runtime| {
+        self.authority.graph.with_open_runtime_mut(|runtime| {
             let admitted = runtime
                 .admit_branch_basis(&identity)
                 .expect("the branch binding admits");
@@ -142,7 +142,7 @@ impl AggregateWorld {
             .descriptor()
             .branch_id()
             .clone();
-        self.authority.graph.with_runtime(|runtime| {
+        self.authority.graph.with_open_runtime(|runtime| {
             runtime
                 .branch_identity(&branch_id)
                 .expect("the branch's relational identity is installed")

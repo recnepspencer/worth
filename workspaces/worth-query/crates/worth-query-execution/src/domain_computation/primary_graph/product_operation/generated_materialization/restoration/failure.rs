@@ -5,13 +5,15 @@ use worth_relational::facade::{
 
 use super::{
     WorthQueryGeneratedOutputInvariantAdmissionDenial,
-    WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryGeneratedOutputRestorationFailure,
+    WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryRestoredGeneratedOutput,
+    WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 use crate::domain_computation::primary_graph::WorthQuerySuspendedGeneratedOutput;
 
 /// Why a restoration was rejected. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryGeneratedOutputRestorationFailureCause {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The suspended output belongs to another runtime or product.
     ForeignRuntime,
     /// The restoration named a different producer than the one that produced
@@ -65,4 +67,38 @@ pub(super) fn restoration_failure(
     cause: WorthQueryGeneratedOutputRestorationFailureCause,
 ) -> WorthQueryGeneratedOutputRestorationFailure {
     WorthQueryGeneratedOutputRestorationFailure::Rejected { suspended, cause }
+}
+
+/// Why restoring a generated output did not complete.
+pub enum WorthQueryGeneratedOutputRestorationFailure {
+    /// Publication completed, but the sealed owner refused lineage admission.
+    Handle {
+        denial: crate::facade::primary_graph::WorthQueryHandleDenial,
+        restored: WorthQueryRestoredGeneratedOutput,
+    },
+    /// Nothing was published. The suspended output is handed back so it can be
+    /// reconstructed again; the cause says why.
+    Rejected {
+        suspended: WorthQuerySuspendedGeneratedOutput,
+        cause: WorthQueryGeneratedOutputRestorationFailureCause,
+    },
+    /// Some owners moved, but the product head did not. Continue the recovery
+    /// this carries.
+    ProductUnpublished(WorthQueryUnpublishedGeneratedOutputRestoration),
+}
+
+impl WorthQueryGeneratedOutputRestorationFailure {
+    pub fn cause(&self) -> Option<&WorthQueryGeneratedOutputRestorationFailureCause> {
+        match self {
+            Self::Rejected { cause, .. } => Some(cause),
+            Self::ProductUnpublished(_) | Self::Handle { .. } => None,
+        }
+    }
+
+    pub fn into_suspended(self) -> Result<WorthQuerySuspendedGeneratedOutput, Self> {
+        match self {
+            Self::Rejected { suspended, .. } => Ok(suspended),
+            unpublished @ (Self::ProductUnpublished(_) | Self::Handle { .. }) => Err(unpublished),
+        }
+    }
 }

@@ -18,6 +18,7 @@ pub enum WorthQueryProviderSessionProtocolStage {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     ForeignOperationAttempt,
     ForeignExecutionBasis,
     ForeignGraphAuthority,
@@ -116,5 +117,18 @@ impl WorthQueryProviderSessionFailure {
     ) -> Self {
         self.recovery_posture = posture;
         self
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryProviderSessionFailure
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::new(
+            WorthQueryProviderSessionDenialKind::Handle(denial),
+            WorthQueryProviderSessionProtocolStage::Commit,
+            "application handle",
+            WorthQueryProviderSessionProtocolCounters::default(),
+        )
     }
 }

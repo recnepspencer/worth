@@ -9,6 +9,7 @@ use crate::basis::WorthQueryProductBranchLease;
 
 #[derive(Debug)]
 pub enum WorthQueryProductBranchCreationDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     CoordinationCapacityExhausted,
     CoordinationUnavailable,
     ProgramSupportUnavailable,
@@ -25,31 +26,43 @@ impl WorthQueryProductRuntime {
         intent: ProductBranchCreationIntent,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> Result<RuntimeWorldBranchCreationOutcome, WorthQueryProductBranchCreationDenial> {
-        if source.observation().owner_identity() != self.owner.owner_identity() {
-            return Err(WorthQueryProductBranchCreationDenial::World(
-                RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner),
-            ));
-        }
-        let reservation = self
-            .activations
-            .reserve_for_source_program(source_program)
-            .map_err(|denial| match denial {
-                WorthQueryProductActivationDenial::CapacityExhausted => {
-                    WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted
-                }
-                WorthQueryProductActivationDenial::ProgramSupportUnavailable => {
-                    WorthQueryProductBranchCreationDenial::ProgramSupportUnavailable
-                }
-                _ => WorthQueryProductBranchCreationDenial::CoordinationUnavailable,
-            })?;
-        let outcome = self
-            .owner
-            .branch_port()
-            .create_product_branch(source.observation().clone(), intent, cancellation)
-            .map_err(WorthQueryProductBranchCreationDenial::World)?;
-        if let RuntimeWorldBranchCreationOutcome::Performed(observation) = &outcome {
-            reservation.commit(observation);
-        }
-        Ok(outcome)
+        self.gate.with_runtime(|_| {
+            if source.observation().owner_identity() != self.owner.owner_identity() {
+                return Err(WorthQueryProductBranchCreationDenial::World(
+                    RuntimeWorldServiceDenial::Denied(
+                        RuntimeWorldBranchAdmissionDenial::ForeignOwner,
+                    ),
+                ));
+            }
+            let reservation = self
+                .activations
+                .reserve_for_source_program(source_program)
+                .map_err(|denial| match denial {
+                    WorthQueryProductActivationDenial::CapacityExhausted => {
+                        WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted
+                    }
+                    WorthQueryProductActivationDenial::ProgramSupportUnavailable => {
+                        WorthQueryProductBranchCreationDenial::ProgramSupportUnavailable
+                    }
+                    _ => WorthQueryProductBranchCreationDenial::CoordinationUnavailable,
+                })?;
+            let outcome = self
+                .owner
+                .branch_port()
+                .create_product_branch(source.observation().clone(), intent, cancellation)
+                .map_err(WorthQueryProductBranchCreationDenial::World)?;
+            if let RuntimeWorldBranchCreationOutcome::Performed(observation) = &outcome {
+                reservation.commit(observation);
+            }
+            Ok(outcome)
+        })?
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryProductBranchCreationDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

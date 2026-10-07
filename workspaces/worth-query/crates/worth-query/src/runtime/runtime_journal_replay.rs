@@ -9,7 +9,7 @@ impl WorthQueryRuntime {
         self.journal_replay
             .replay(
                 request,
-                &self.current_snapshot_identity(),
+                &self.current_snapshot_identity()?,
                 journal_replay::published_artifact_replay_digest(
                     &self.published_artifact_diagnostics(),
                 ),

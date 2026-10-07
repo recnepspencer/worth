@@ -24,7 +24,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| {
+            .with_open_runtime(|runtime| {
                 runtime
                     .storage_access()
                     .storage_stats()
@@ -107,7 +107,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| {
+            .with_open_runtime(|runtime| {
                 runtime
                     .storage_access()
                     .storage_stats()
@@ -161,19 +161,20 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         .descriptor()
         .clone();
     let relational_branch = relational_head_before.branch_id().clone();
-    let publication_cost_scope = world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| {
-            let identity = runtime
-                .branch_identity(&relational_branch)
-                .expect("the sibling's exact Relational branch remains installed");
-            worth_relational::facade::inspection::RelationalMvccCostScope::capture(
-                runtime,
-                vec![identity],
-            )
-        });
+    let publication_cost_scope =
+        world
+            .application
+            .primary_provider
+            .graph
+            .with_open_runtime(|runtime| {
+                let identity = runtime
+                    .branch_identity(&relational_branch)
+                    .expect("the sibling's exact Relational branch remains installed");
+                worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+                    runtime,
+                    vec![identity],
+                )
+            });
     let provider_publications_before = world
         .application
         .primary_provider
@@ -239,7 +240,7 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             runtime
                 .observe_mvcc_counters(&publication_cost_scope)
                 .expect("the exact sibling cost scope remains observable")

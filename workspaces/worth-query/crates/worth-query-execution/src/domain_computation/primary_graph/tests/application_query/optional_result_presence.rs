@@ -101,7 +101,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
 fn current(world: &AuthorizationWorld, fact: &WorthQueryApplicationObservedFact) -> bool {
     let selected = world.selected_product();
     let graph = world.application.runtime.primary_graph().unwrap();
-    graph.integration_handle().with_runtime(|runtime| {
+    graph.integration_handle().with_open_runtime(|runtime| {
         fact.source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0

@@ -45,7 +45,15 @@ pub(super) fn evaluate_fresh_lifecycle_conditionals<
     identity_family: &'static str,
 ) -> Result<WorthQueryLifecycleConditionalCoreReady, WorthQueryLifecycleConditionalCoreStop> {
     let attempt = NEXT_PROJECTION_LIFECYCLE_ATTEMPT.fetch_add(1, Ordering::Relaxed);
-    let snapshot = workspace.snapshot_identity();
+    let snapshot =
+        workspace
+            .snapshot_identity()
+            .map_err(|denial| WorthQueryLifecycleConditionalCoreStop {
+                class: WorthQueryLifecycleConditionalStopClass::Denied,
+                kind: WorthQueryProjectionPromotionDenialKind::Handle(denial),
+                detail: denial.to_string(),
+                counters: counters.clone(),
+            })?;
     let operational_identity =
         lifecycle_identity(source, workspace, &snapshot, attempt, identity_family);
     let resource_name = format!("worth-query-installed-projection-{operational_identity}");

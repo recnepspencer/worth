@@ -102,3 +102,9 @@ impl OpenFailure {
         }
     }
 }
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial> for OpenFailure {
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        super::WorthQueryApplicationOpenDenial::Graph(denial.into()).into()
+    }
+}

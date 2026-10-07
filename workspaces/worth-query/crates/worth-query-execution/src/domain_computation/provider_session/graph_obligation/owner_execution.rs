@@ -38,12 +38,13 @@ impl WorthQueryGraphReadOwnerPort {
         }
         Ok(self
             .source
-            .with_runtime_mut(|runtime| read(runtime, &self.layout)))
+            .with_runtime_mut(|runtime| read(runtime, &self.layout))?)
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum WorthQueryGraphReadOwnerPortDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     ForeignGraph,
 }
 
@@ -65,5 +66,13 @@ impl WorthQuerySessionGraphReadProof {
             plan,
             basis,
         }
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryGraphReadOwnerPortDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

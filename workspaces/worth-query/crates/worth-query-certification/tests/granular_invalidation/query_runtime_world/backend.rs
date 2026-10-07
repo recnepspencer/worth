@@ -30,15 +30,21 @@ impl PrimarySnapshotAdapter {
 }
 
 impl runtime::WorthQueryRuntimeSnapshotIdentityAdapter for PrimarySnapshotAdapter {
-    fn current_snapshot_identity(&self) -> foundation::WorthQuerySnapshotIdentity {
-        let branch =
-            worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id("main");
-        let snapshot = self
-            .0
-            .current_truth_snapshot(&branch)
-            .expect("the published primary graph must retain its exact main Bridge head");
-        foundation::WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(snapshot)
-            .expect("the primary Bridge head is a valid Query snapshot")
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<foundation::WorthQuerySnapshotIdentity, runtime::WorthQueryHandleDenial> {
+        Ok({
+            let branch =
+                worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
+                    "main",
+                );
+            let snapshot = self
+                .0
+                .current_truth_snapshot(&branch)?
+                .expect("the published fixture retains its exact Bridge head");
+            foundation::WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(snapshot)
+                .expect("the primary Bridge head is a valid Query snapshot")
+        })
     }
 }
 

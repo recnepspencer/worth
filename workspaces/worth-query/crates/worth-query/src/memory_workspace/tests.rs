@@ -84,7 +84,9 @@ fn empty_runtime_snapshot_is_current_but_public_empty_projection_is_not() {
     let workspace =
         WorthQueryMemoryWorkspace::collection("Task", [aspect("identity.id", "identity.id")])
             .expect("memory workspace should build");
-    let current = workspace.snapshot_identity();
+    let current = workspace
+        .snapshot_identity()
+        .expect("the fixture owner remains open");
     let copied_projection = WorthQuerySnapshotIdentity::empty_relational_state();
 
     assert!(current.is_same_current_identity_as(&current.clone()));

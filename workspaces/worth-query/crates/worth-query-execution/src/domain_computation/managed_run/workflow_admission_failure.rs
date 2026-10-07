@@ -4,6 +4,7 @@ use crate::domain_computation::WorthQueryWorkflowExecutionResourceAttempt;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedWorkflowRunAdmissionFailureKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     QueryAuthority,
     ProductBasisMismatch,
     RelationalBasis,
@@ -23,6 +24,18 @@ pub struct WorthQueryManagedWorkflowRunAdmissionFailure {
 }
 
 impl WorthQueryManagedWorkflowRunAdmissionFailure {
+    #[doc(hidden)]
+    pub fn from_handle(
+        denial: crate::facade::primary_graph::WorthQueryHandleDenial,
+        resource_attempt: WorthQueryWorkflowExecutionResourceAttempt,
+    ) -> Self {
+        Self::new(
+            WorthQueryManagedWorkflowRunAdmissionFailureKind::Handle(denial),
+            denial.to_string(),
+            resource_attempt,
+        )
+    }
+
     pub(super) fn new(
         kind: WorthQueryManagedWorkflowRunAdmissionFailureKind,
         detail: impl Into<Arc<str>>,

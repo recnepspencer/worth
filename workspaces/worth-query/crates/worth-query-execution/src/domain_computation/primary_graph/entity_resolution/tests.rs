@@ -19,7 +19,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
     let second_graph = second.application.runtime.primary_graph().unwrap();
     let installed = first_graph.retain_entity_resolution_context();
     let first_product = first.selected_product();
-    let first_version = first_graph.integration_handle().with_runtime_mut(|_| {
+    let first_version = first_graph.integration_handle().with_open_runtime_mut(|_| {
         first_product
             .application_basis()
             .snapshot_handle()
@@ -29,7 +29,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
     let second_product = second.selected_product();
     second_graph
         .integration_handle()
-        .with_runtime_mut(|runtime| {
+        .with_open_runtime_mut(|runtime| {
             let snapshot = second_product.application_basis().snapshot_handle();
             assert_eq!(snapshot.version_id(), first_version);
             let denial = match installed.at_snapshot(
@@ -71,7 +71,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
         .and_then(|field| field.equality_index_id)
         .unwrap();
 
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    graph.integration_handle().with_open_runtime_mut(|runtime| {
         let head = runtime
             .history()
             .historical_latest_commit()
@@ -107,7 +107,7 @@ fn installed_context_derives_binding_layout_and_index_from_its_graph() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let installed = graph.retain_entity_resolution_context();
     let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    graph.integration_handle().with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let truth = installed
             .at_snapshot(runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)

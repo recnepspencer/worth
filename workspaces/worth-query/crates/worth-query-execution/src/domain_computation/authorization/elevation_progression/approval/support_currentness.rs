@@ -47,7 +47,7 @@ where
     access
         .with_exact_observation(runtime, |observation| {
             observation.observe_current_elevation_support(installed, requested.supporting())
-        })
+        })?
         .ok_or_else(|| stale_support(installed.contract().name()))?
         .map_err(|denial| support_observation_denial(installed.contract().name(), denial))
 }

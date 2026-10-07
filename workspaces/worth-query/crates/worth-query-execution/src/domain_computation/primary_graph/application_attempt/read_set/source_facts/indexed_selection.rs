@@ -176,7 +176,7 @@ fn currentness(world: &AuthorizationWorld, fact: &Fact) -> (bool, usize) {
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| {
+        .with_open_runtime(|runtime| {
             fact.source_currentness_in(runtime, selected.application_basis().snapshot_handle(), 3)
                 .unwrap()
         })

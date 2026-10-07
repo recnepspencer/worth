@@ -88,6 +88,7 @@ impl WorthQueryInstalledOwnedAsyncDeclaration {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOwnedAsyncRuntimeDenial {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     ForeignRuntime,
     SuccessorRuntime,
     ProductSelectionMismatch,
@@ -174,7 +175,7 @@ impl WorthQueryRuntime {
             .map_err(|_| WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch)?;
         product
             .world
-            .admit_owned_async_request(&product.conditional, &declaration.lowered, selected)
+            .admit_owned_async_request(&product.conditional, &declaration.lowered, selected)?
             .map_err(|denial| match denial {
                 worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
                 | worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRequestAdmissionDenial::RelationalSourceMismatch => {
@@ -246,5 +247,13 @@ impl WorthQueryRuntime {
                 installed_async_declarations: self.installed_owned_async_declarations.len(),
                 active_signal_nodes,
             })
+    }
+}
+
+impl From<worth_query_execution::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryOwnedAsyncRuntimeDenial
+{
+    fn from(denial: worth_query_execution::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

@@ -63,7 +63,7 @@ fn grammar_history_journey_executes() {
         WorthQueryHistoricalStop,
     };
     let mut workspace = fixture::workspace("grammar-history");
-    let context = at(&workspace);
+    let context = at(&workspace).expect("the fixture requires an open workspace");
     let outcome: WorthQueryHistoricalOutcome = declare(fixture::identity_detail)
         .expect("history should declare")
         .retained_snapshot()

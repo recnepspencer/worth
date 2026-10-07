@@ -245,7 +245,7 @@ impl WorthQueryRuntime {
     pub(in crate::runtime) fn mint_shared_read_context(
         &self,
     ) -> Result<WorthQuerySharedReadContext, WorthQueryRuntimeError> {
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity()?;
         if !self.shared_read_pins.has_current_generation() {
             self.capture_shared_read_generation_for_current_snapshot(snapshot_identity);
         }

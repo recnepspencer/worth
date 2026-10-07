@@ -83,6 +83,7 @@ where
                 maximum_active_snapshots,
             ),
         )),
+        Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Handle(denial))) => Some(WorthQueryApplicationCommitOutcome::Denied(denial.into())),
         Ok(Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)) => {
             Some(denied(DenialStage::Idempotency))
         }

@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) fn recorded_program_activation(
                 ))
             })?;
         scan_activation(&branch, &layout, usize::MAX).map(|(recorded, _)| recorded)
-    })
+    })?
 }
 
 /// Reads the activation on the caller's exact branch view, with native scan accounting.

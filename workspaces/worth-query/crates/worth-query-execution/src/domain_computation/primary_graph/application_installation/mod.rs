@@ -42,3 +42,7 @@ pub use program::{
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
     WorthQueryWorkflowVocabulary,
 };
+
+pub use crate::domain_computation::primary_graph::application_home::{
+    WorthQueryApplicationCloseDenial, WorthQueryApplicationCloseRefusal,
+};

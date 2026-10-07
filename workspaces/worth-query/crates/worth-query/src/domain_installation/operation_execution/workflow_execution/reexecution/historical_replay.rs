@@ -148,10 +148,20 @@ where
             ),
         );
     }
+    let snapshot = match workspace.snapshot_identity() {
+        Ok(snapshot) => snapshot,
+        Err(denial) => {
+            return TransitionOutcome::Denied(
+                super::certification_replay::WorthQueryCertificationReplayStop::Admission(
+                    WorthQueryCertificationReplayAdmissionDenial::Handle(denial),
+                ),
+            )
+        }
+    };
     if admission.historical_workspace_name != workspace.name()
         || !admission
             .historical_snapshot_identity
-            .is_same_current_identity_as(&workspace.snapshot_identity())
+            .is_same_current_identity_as(&snapshot)
     {
         return TransitionOutcome::Denied(
             super::certification_replay::WorthQueryCertificationReplayStop::Admission(

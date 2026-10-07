@@ -40,7 +40,7 @@ fn history_transcript_executes_using_only_history_capability_vocabulary() {
     let mut workspace = runtime
         .workspace("public-history-dx")
         .expect("workspace should open");
-    let context = at(&workspace);
+    let context = at(&workspace).expect("the fixture requires an open workspace");
     let outcome = declaration.using(context).run(&mut workspace);
 
     assert!(outcome.completed().is_some());

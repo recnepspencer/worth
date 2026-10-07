@@ -15,10 +15,12 @@ impl BankIdentityRuntime {
 
     /// Fails the next durable append of the installed owner, once.
     #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
+    pub fn fail_next_durable_append_for_test(
+        &self,
+    ) -> Result<(), worth_query_host::facade::primary_graph::WorthQueryHandleDenial> {
         self.application_program()
             .runtime()
-            .fail_next_durable_append_for_test();
+            .fail_next_durable_append_for_test()
     }
 
     /// Delays the next output-readiness delivery, once.

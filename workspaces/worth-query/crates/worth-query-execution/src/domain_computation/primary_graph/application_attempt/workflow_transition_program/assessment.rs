@@ -232,7 +232,7 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
         currentness_facts
             .iter()
             .all(|fact| fact.remains_equal_in(runtime, read_set.lease.snapshot()))
-    });
+    })?;
     if current {
         Ok(())
     } else {

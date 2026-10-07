@@ -52,7 +52,7 @@ impl WorthQueryRuntime {
             .map_err(|_| WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch)?;
         product
             .world
-            .revalidate_owned_async_request(&product.conditional, request, selected)
+            .revalidate_owned_async_request(&product.conditional, request, selected)?
             .map_err(|denial| match denial {
                 worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRevalidationDenial::ForeignOwner
                 | worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRevalidationDenial::RelationalSourceMismatch => {

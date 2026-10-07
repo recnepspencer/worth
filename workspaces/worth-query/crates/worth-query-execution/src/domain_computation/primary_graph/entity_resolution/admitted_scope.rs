@@ -102,7 +102,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         entity_denial(Kind::ForeignResolutionTruth, field)
                     }
                 })
-        })?;
+        })??;
         if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
             return Err(entity_denial(Kind::AmbiguousEntity, field));
         }

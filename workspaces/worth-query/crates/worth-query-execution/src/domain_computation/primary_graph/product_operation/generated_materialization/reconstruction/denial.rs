@@ -5,6 +5,7 @@ use super::super::WorthQuerySuspendedGeneratedOutput;
 /// Why a reconstruction step was refused. The refused step changed nothing.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputReconstructionDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The suspended output belongs to another runtime.
     ForeignRuntime,
     /// The suspended output was produced by a different producer.

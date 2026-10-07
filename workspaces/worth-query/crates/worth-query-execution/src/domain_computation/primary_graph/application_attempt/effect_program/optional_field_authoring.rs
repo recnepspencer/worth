@@ -187,7 +187,7 @@ fn promote_ordinary_writes(
                         format!("{:?}", locator.field_path()),
                     )
                 })?;
-            Ok((
+            Ok::<_, WorthQueryApplicationAttemptDenial>((
                 locator.clone(),
                 WorthQueryApplicationOptionalFieldWrite {
                     contract,

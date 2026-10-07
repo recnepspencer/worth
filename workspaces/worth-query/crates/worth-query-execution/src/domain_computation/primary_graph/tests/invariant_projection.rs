@@ -11,14 +11,21 @@ use std::time::Duration;
 fn installed_invariant_projection_reads_one_pinned_typed_graph_snapshot() {
     let world = installed_authorization_world(true);
     let snapshot = world.invariant.snapshot().expect("invariant snapshot");
-    let accounts = snapshot.entities(Account::reference());
-    let principals = snapshot.entities(Principal::reference());
-    let owners = snapshot.relations(AccountOwner::reference());
+    let accounts = snapshot
+        .entities(Account::reference())
+        .expect("the fixture snapshot remains open");
+    let principals = snapshot
+        .entities(Principal::reference())
+        .expect("the fixture snapshot remains open");
+    let owners = snapshot
+        .relations(AccountOwner::reference())
+        .expect("the fixture snapshot remains open");
     let mut statuses = accounts
         .iter()
         .map(|account| {
             snapshot
                 .field(account, AccountStatus::reference())
+                .expect("the fixture snapshot remains open")
                 .expect("installed account status must project")
         })
         .collect::<Vec<String>>();
@@ -40,13 +47,19 @@ fn independently_installed_graphs_mint_distinct_projection_identities() {
     let second = installed_authorization_world(true);
     let first_snapshot = first.invariant.snapshot().expect("first snapshot");
     let second_snapshot = second.invariant.snapshot().expect("second snapshot");
-    let first_account = first_snapshot.entities(Account::reference()).remove(0);
-    let second_account = second_snapshot.entities(Account::reference()).remove(0);
+    let first_account = first_snapshot
+        .entities(Account::reference())
+        .expect("the fixture snapshot remains open")
+        .remove(0);
+    let second_account = second_snapshot
+        .entities(Account::reference())
+        .expect("the fixture snapshot remains open")
+        .remove(0);
 
     assert_ne!(first_account, second_account);
     assert_eq!(
         second_snapshot.field(&first_account, AccountStatus::reference()),
-        None,
+        Ok(None),
         "a foreign projection identity must not be reinterpreted in this graph"
     );
 }

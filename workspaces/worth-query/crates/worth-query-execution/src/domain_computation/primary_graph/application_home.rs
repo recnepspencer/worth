@@ -4,9 +4,16 @@
 //! phase, so a failed open never loses it. It is deliberately not `Clone`: two
 //! runtimes opened from one image would be two diverging histories of one home.
 
+mod close;
+mod close_refusal;
 mod deferral;
+pub use close_refusal::{WorthQueryApplicationCloseDenial, WorthQueryApplicationCloseRefusal};
 #[cfg(feature = "test-durability-faults")]
 mod durability_seam;
+#[cfg(test)]
+mod lifecycle_fixture;
+#[cfg(test)]
+mod lifecycle_tests;
 #[cfg(test)]
 mod tests;
 

@@ -59,6 +59,7 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     OwnerUnavailable,
     ForeignRecovery,
     Missing,
@@ -115,6 +116,10 @@ impl WorthQueryProductBranchCreationRecovery {
         WorthQueryProductBranchCreationRecoveryInspection,
         WorthQueryProductBranchRecoveryDenial,
     > {
+        self.runtime
+            .gate
+            .with_runtime(|_| ())
+            .map_err(WorthQueryProductBranchRecoveryDenial::Handle)?;
         if let Some(effects) = self.effects.as_ref() {
             return Ok(inspection(effects));
         }
@@ -131,6 +136,16 @@ impl WorthQueryProductBranchCreationRecovery {
         WorthQueryProductBranchCreationRecoveryRelease,
         WorthQueryProductBranchCreationRecoveryReleaseFailure,
     > {
+        if let Err(denial) = self.runtime.gate.with_runtime(|_| ()) {
+            return Err(
+                WorthQueryProductBranchCreationRecoveryReleaseFailure::Recovery(
+                    WorthQueryProductBranchCreationRecoveryFailure {
+                        denial: WorthQueryProductBranchRecoveryDenial::Handle(denial),
+                        recovery: self,
+                    },
+                ),
+            );
+        }
         let cleanup_reservation = match self.runtime.reserve_owner_cleanup_for_creation() {
             Ok(reservation) => reservation,
             Err(_) => {

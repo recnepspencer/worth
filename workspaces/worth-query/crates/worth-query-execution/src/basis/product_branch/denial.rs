@@ -7,6 +7,7 @@
 /// rejected (choose another branch).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchAdmissionDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The runtime's branch-observation state is unusable after an internal failure.
     ObservationStatePoisoned,
     /// The owner of the product branch is not available right now.
@@ -40,7 +41,9 @@ pub enum WorthQueryProductBranchAdmissionDenial {
     /// A Relational snapshot for the branch could not be admitted.
     RelationalSnapshotUnavailable,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// No capacity remains to retain another basis.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.
@@ -86,5 +89,13 @@ impl From<crate::domain_computation::execution_runtime::product_world::activatio
         _denial: crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationDenial,
     ) -> Self {
         Self::ProductActivationUnavailable
+    }
+}
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryProductBranchAdmissionDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

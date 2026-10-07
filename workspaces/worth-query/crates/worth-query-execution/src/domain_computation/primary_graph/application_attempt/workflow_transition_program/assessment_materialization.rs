@@ -83,7 +83,7 @@ where
                 subject.related,
                 remaining,
             )
-        })?;
+        })??;
         let applicability_dependencies = applicability
             .facts
             .iter()
@@ -131,7 +131,7 @@ where
                     evidence_locator,
                     maximum_facts,
                 )
-            })?;
+            })??;
             facts.append(&mut retained_facts);
             let maximum_facts = self
                 .admission

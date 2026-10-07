@@ -213,7 +213,7 @@ where
                 definition_deadline(runtime, snapshot, &layout, resumed.definition(), &mut facts)?,
             );
             Ok::<_, WorthQueryApplicationAttemptDenial>((observed, inherited, deadlines, allowance))
-        });
+        })?;
         let mut source_deadline = None;
         let effects = match observed {
             // A source this request already migrated emits nothing. Its false
@@ -226,7 +226,7 @@ where
             {
                 let successor = handle.with_runtime(|runtime| {
                     successor_identity(runtime, snapshot, &layout, source.entity_id())
-                });
+                })?;
                 if successor.as_deref() != Some(instance_identity.as_str()) {
                     return Err(ended);
                 }

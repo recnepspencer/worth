@@ -86,7 +86,9 @@ fn journal_segment_replay_returns_receipts_schedule_and_artifact_digest() {
 fn journal_replay_stale_basis_denial_is_typed_and_leaves_replay_available() {
     let mut workspace = replay_workspace("tasks.journal-replay.stale-basis");
     let first = submit_task(&mut workspace, "task-1", "First");
-    let stale_basis = workspace.snapshot_identity();
+    let stale_basis = workspace
+        .snapshot_identity()
+        .expect("the fixture owner remains open");
     submit_task(&mut workspace, "task-2", "Second");
     let segment = WorthQueryJournalSegmentIdentity::between(
         first.journal_position(),

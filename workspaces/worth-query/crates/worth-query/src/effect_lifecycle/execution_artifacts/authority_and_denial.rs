@@ -8,6 +8,7 @@ use super::super::lowering::LoweredEffectExecutionPlan;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EffectExecutionDenialKind {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     AuthorityOverrideRejected,
     MissingRelationalAuthority,
     MissingBridgeAuthority,
@@ -57,6 +58,7 @@ pub enum EffectExecutionDenialKind {
 impl EffectExecutionDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::Handle(_) => "handle_denied",
             Self::AuthorityOverrideRejected => "authority_override_rejected",
             Self::MissingRelationalAuthority => "missing_relational_authority",
             Self::MissingBridgeAuthority => "missing_bridge_authority",

@@ -152,8 +152,9 @@ where
 
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn active_snapshot_count(&self) -> usize {
-        self.graph
-            .with_runtime_mut(|runtime| runtime.retention().inspect_plan().active_snapshot_count)
+        self.graph.with_open_runtime_mut(|runtime| {
+            runtime.retention().inspect_plan().active_snapshot_count
+        })
     }
 
     pub fn snapshot(
@@ -171,8 +172,8 @@ where
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())
                 .map_err(admission_denial::from_snapshot_admission_denial)?;
-            Ok((basis, snapshot))
-        })?;
+            Ok::<_, WorthQueryInvariantProjectionDenial>((basis, snapshot))
+        })??;
         Ok(WorthQueryApplicationInvariantProjectionSnapshot {
             graph: self.graph.clone(),
             layout: Arc::clone(&self.layout),
@@ -201,22 +202,26 @@ where
         &self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Option<Value>
+    ) -> Result<Option<Value>, crate::facade::primary_graph::WorthQueryHandleDenial>
     where
         Field: DeclaredApplicationFieldValue<Value = Value>,
         Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        self.graph.with_runtime(|_| ())?;
         if identity.authority_identity != self.authority_identity
             || identity.entity.as_ref() != field.entity()
         {
-            return None;
+            return Ok(None);
         }
-        let locator = self
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())?
-            .clone();
+        let Some(locator) =
+            self.layout
+                .field_locator(field.entity(), field.aspect(), field.field())
+        else {
+            return Ok(None);
+        };
+        let locator = locator.clone();
         self.graph
             .with_runtime(|runtime| {
                 super::application_attempt::observe_field_value(
@@ -227,7 +232,7 @@ where
                     &locator,
                 )
             })
-            .and_then(|value| Field::Binding::decode(&value).ok())
+            .map(|value| value.and_then(|value| Field::Binding::decode(&value).ok()))
     }
 
     pub(in crate::domain_computation::primary_graph) fn belongs_to(
@@ -337,7 +342,7 @@ impl<Schema, Entity> Ord for WorthQueryInvariantEntityIdentity<Schema, Entity> {
 impl<Schema> Drop for WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     fn drop(&mut self) {
         if let Some(snapshot) = self.snapshot.take() {
-            self.graph.with_runtime_mut(|runtime| {
+            let _ = self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             });
         }

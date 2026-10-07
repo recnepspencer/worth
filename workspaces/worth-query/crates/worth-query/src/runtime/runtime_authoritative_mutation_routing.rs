@@ -225,10 +225,11 @@ impl WorthQueryRuntime {
         let retained_live_rows = retained_live_view_targets
             .into_iter()
             .map(|target| {
-                let rows = self.backend.live_entities_for_target(&target);
-                (target, rows)
+                let rows = self.backend.live_entities_for_target(&target)?;
+                Ok((target, rows))
             })
-            .collect::<BTreeMap<_, _>>();
+            .collect::<Result<BTreeMap<_, _>, crate::memory_workspace::WorthQueryWorkspaceError>>(
+            )?;
         let computed_result = route_derived_view_patches(
             &mut self.derived_views,
             &self.derived_dependency_index,

@@ -349,7 +349,7 @@ where
         observe: impl FnOnce(
             &exact_observation::WorthQueryExactCapabilityObservation<'_, Schema>,
         ) -> Output,
-    ) -> Option<Output>
+    ) -> Result<Option<Output>, crate::facade::primary_graph::WorthQueryHandleDenial>
     where
         Schema: ApplicationSchema,
     {

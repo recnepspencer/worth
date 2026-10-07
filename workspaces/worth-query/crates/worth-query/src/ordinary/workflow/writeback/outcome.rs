@@ -11,6 +11,7 @@ use super::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWritebackStopSource {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     ForeignAuthority,
     StaleAuthority,
     InspectionUnavailable,
@@ -50,6 +51,9 @@ impl WorthQueryWritebackStop {
 
     pub fn next_action(&self) -> WorthQueryWritebackNextAction {
         match self.source {
+            WorthQueryWritebackStopSource::Handle(_) => {
+                WorthQueryWritebackNextAction::InspectDenial
+            }
             WorthQueryWritebackStopSource::ForeignAuthority => {
                 WorthQueryWritebackNextAction::ProvideAuthority
             }
@@ -93,6 +97,9 @@ fn source_for_stage(
     stage: WorthQueryOrdinaryWritebackFailureStage,
 ) -> WorthQueryWritebackStopSource {
     match stage {
+        WorthQueryOrdinaryWritebackFailureStage::Handle(denial) => {
+            WorthQueryWritebackStopSource::Handle(denial)
+        }
         WorthQueryOrdinaryWritebackFailureStage::Authority => {
             WorthQueryWritebackStopSource::StaleAuthority
         }

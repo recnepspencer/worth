@@ -70,7 +70,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
     let other =
         RecordedSettlementIdentity::retain(&source(TypeId::of::<OtherUpstream>()), coordinate, 0);
 
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         write_field(runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let old_a_fact = field_fact(runtime, &before_handle, entity, status.clone());

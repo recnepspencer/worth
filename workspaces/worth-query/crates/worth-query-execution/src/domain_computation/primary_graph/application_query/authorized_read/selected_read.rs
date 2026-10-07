@@ -144,3 +144,9 @@ where
     )?;
     Ok((raw, authorization_work, proof, reservation))
 }
+
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial> for SelectedAuthorizedReadStop<'_> {
+    fn from(handle: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Security(SelectedPermissionSecurityStop::Handle(handle))
+    }
+}

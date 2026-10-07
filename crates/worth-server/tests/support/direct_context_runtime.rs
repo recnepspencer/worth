@@ -117,10 +117,10 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
     > {
         let branch = self
             .product_source
-            .with_runtime(|runtime| runtime.main_branch_identity());
+            .with_runtime(|runtime| runtime.main_branch_identity())?;
         self.product_source
             .prepare_product_source(&branch)
-            .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
+            .map_err(Into::into)
     }
 
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
@@ -180,12 +180,13 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        if self
-            .declared_live_views
-            .contains(target.terminal_view_name_projection())
-        {
-            vec![WorthQueryEntity::from_native_field_values(
+    ) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
+        Ok(
+            if self
+                .declared_live_views
+                .contains(target.terminal_view_name_projection())
+            {
+                vec![WorthQueryEntity::from_native_field_values(
                     worth_query::facade::foundation::WorthQueryEntityIdentity::admit_authored_entity_token(
                         worth_query::facade::foundation::QueryExternalIdentityToken::new(
                             std::sync::Arc::from("user-1"),
@@ -202,9 +203,10 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
                         ),
                     ]),
                 )]
-        } else {
-            Vec::new()
-        }
+            } else {
+                Vec::new()
+            },
+        )
     }
 
     fn drain_live_patches_for_target(
@@ -221,13 +223,16 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
         Vec::new()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<WorthQuerySnapshotIdentity, worth_query::facade::runtime::WorthQueryHandleDenial>
+    {
+        Ok(WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
                 RelationalBridgeSnapshotIdentityParts::new(1, 1),
             ),
         )
-        .expect("relational snapshot projection must retain its typed payload")
+        .expect("relational snapshot projection must retain its typed payload"))
     }
 
     fn install_live_subscription(

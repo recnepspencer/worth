@@ -15,11 +15,18 @@ impl WorthQueryPrecommitSnapshot {
     pub(super) fn acquire(
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         basis: &AdmittedRelationalBranchBasis,
-    ) -> Result<Self, RelationalSnapshotAdmissionDenial> {
+    ) -> Result<
+        Self,
+        crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial,
+    > {
         let snapshot = graph.with_runtime_mut(|runtime| {
             crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, basis,
             )
+        })?.map_err(|denial| match denial {
+            RelationalSnapshotAdmissionDenial::ForeignRuntime { .. } => crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::ForeignRuntime,
+            RelationalSnapshotAdmissionDenial::ActiveSnapshotCapacityExhausted { maximum_active_snapshots } => crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::ActiveSnapshotCapacityExhausted { maximum_active_snapshots },
+            RelationalSnapshotAdmissionDenial::SnapshotIdentityExhausted => crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted,
         })?;
         Ok(Self {
             graph,
@@ -43,7 +50,7 @@ impl WorthQueryPrecommitSnapshot {
 impl Drop for WorthQueryPrecommitSnapshot {
     fn drop(&mut self) {
         if let Some(snapshot) = self.snapshot.take() {
-            self.graph.with_runtime_mut(|runtime| {
+            let _ = self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             });
         }
@@ -64,7 +71,9 @@ mod tests {
         let product = selected.product().publication_binding();
         let graph = world.application.primary_provider.graph.clone();
         let count = || {
-            graph.with_runtime(|runtime| runtime.retention().inspect_plan().active_snapshot_count)
+            graph.with_open_runtime(|runtime| {
+                runtime.retention().inspect_plan().active_snapshot_count
+            })
         };
         let baseline = count();
         let peer = WorthQueryPrecommitSnapshot::acquire(

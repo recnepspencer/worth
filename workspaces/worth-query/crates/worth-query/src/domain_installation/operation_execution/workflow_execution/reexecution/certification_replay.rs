@@ -116,6 +116,7 @@ pub struct WorthQueryCertificationReplayCounters {
 /// Why a certification replay was refused before re-execution. Nothing ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCertificationReplayAdmissionDenial {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     /// The operation was not installed as certification-replayable.
     ReplayNotInstalled,
     /// The bound operation is not the operation that produced the trace.

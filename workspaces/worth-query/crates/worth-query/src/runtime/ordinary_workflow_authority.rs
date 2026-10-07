@@ -21,6 +21,7 @@ pub(crate) enum WorthQueryOrdinaryAuthorityFamily {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryOrdinaryAuthorityDrift {
+    Handle(worth_query_execution::facade::primary_graph::WorthQueryHandleDenial),
     Current,
     ForeignOwner,
     StaleSnapshot,
@@ -139,7 +140,7 @@ impl WorthQueryRuntime {
             None,
             None,
             None,
-        ))
+        )?)
     }
 
     pub(crate) fn admit_ordinary_rich_inspection(&self) -> Result<(), WorthQueryRuntimeError> {
@@ -156,7 +157,7 @@ impl WorthQueryRuntime {
             None,
             None,
             None,
-        ))
+        )?)
     }
 
     pub(crate) fn capture_ordinary_merge_authority(
@@ -173,7 +174,7 @@ impl WorthQueryRuntime {
             None,
             None,
             Some(merge_authority),
-        ))
+        )?)
     }
 
     pub(crate) fn capture_ordinary_preview_authority(
@@ -202,18 +203,22 @@ impl WorthQueryRuntime {
                 ));
             }
         };
-        Ok(self.ordinary_authority_admission(family, Some(label), Some(preview_basis), None))
+        Ok(self.ordinary_authority_admission(family, Some(label), Some(preview_basis), None)?)
     }
 
     pub(crate) fn ordinary_authority_drift(
         &self,
         admission: &WorthQueryOrdinaryAuthorityAdmission,
     ) -> WorthQueryOrdinaryAuthorityDrift {
+        let current = match self.current_snapshot_identity() {
+            Ok(current) => current,
+            Err(denial) => return WorthQueryOrdinaryAuthorityDrift::Handle(denial),
+        };
         if admission.runtime_identity != self.authority_identity {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner
         } else if !admission
             .snapshot_identity
-            .is_same_current_identity_as(&self.current_snapshot_identity())
+            .is_same_current_identity_as(&current)
         {
             WorthQueryOrdinaryAuthorityDrift::StaleSnapshot
         } else {
@@ -289,11 +294,14 @@ impl WorthQueryRuntime {
         session_label: Option<WorthQuerySessionLabel>,
         preview_basis: Option<WorthQueryPreviewBasisAdmission>,
         merge_authority: Option<WorthQueryBackendMergeAuthority>,
-    ) -> WorthQueryOrdinaryAuthorityAdmission {
-        let snapshot_identity = merge_authority
-            .as_ref()
-            .map(|authority| authority.target_snapshot_identity().clone())
-            .unwrap_or_else(|| self.current_snapshot_identity());
+    ) -> Result<
+        WorthQueryOrdinaryAuthorityAdmission,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        let snapshot_identity = match &merge_authority {
+            Some(authority) => authority.target_snapshot_identity().clone(),
+            None => self.current_snapshot_identity()?,
+        };
         let mut identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
                 .field_shape(
@@ -327,7 +335,7 @@ impl WorthQueryRuntime {
                 authority.authority_identity(),
             );
         }
-        WorthQueryOrdinaryAuthorityAdmission {
+        Ok(WorthQueryOrdinaryAuthorityAdmission {
             family,
             runtime_identity: self.authority_identity,
             snapshot_identity,
@@ -335,7 +343,7 @@ impl WorthQueryRuntime {
             preview_basis,
             merge_authority,
             admission_identity: identity.seal(),
-        }
+        })
     }
 }
 

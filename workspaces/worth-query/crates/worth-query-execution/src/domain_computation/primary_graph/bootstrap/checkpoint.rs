@@ -52,7 +52,7 @@ impl DecodedApplicationCheckpoint {
             runtime
                 .replay()
                 .canonical_commit_envelope(self.bootstrap_commit_id)
-        });
+        })?;
         let envelope = envelope.ok_or_else(|| {
             WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
                 "checkpoint omitted its claimed bootstrap commit",
@@ -202,7 +202,7 @@ fn verify_bootstrap_indexes(
             }
         }
         Ok(())
-    })
+    })?
 }
 
 impl WorthQueryExecutionInstallationAuthority {

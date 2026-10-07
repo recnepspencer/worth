@@ -93,7 +93,7 @@ fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let batch = unwatched_accounts(graph.layout(), CEILING, "marking-ceiling");
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         let committed = write_batch(runtime, batch);
         release_test_commit_snapshot(runtime, &committed);
         let (after_handle, after) = snapshot(runtime);
@@ -151,7 +151,7 @@ fn matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify() {
     let readers: Vec<_> = (0..(CEILING / 4) as usize)
         .map(|slot| RecordedSettlementIdentity::retain(&source, coordinate, slot))
         .collect();
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         write_field(runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let facts: Arc<[_]> =

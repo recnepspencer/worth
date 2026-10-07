@@ -6,6 +6,7 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationAttemptDenialKind {
+    Handle(worth_query_host::facade::primary_graph::WorthQueryHandleDenial),
     ForeignApplication,
     ProjectionAdmissionMismatch,
     CurrentAuthorityDenied,
@@ -118,6 +119,9 @@ const fn application_attempt_kind(
 ) -> BankApplicationAttemptDenialKind {
     use WorthQueryApplicationAttemptDenialKind as Query;
     match kind {
+        WorthQueryApplicationAttemptDenialKind::Handle(handle) => {
+            BankApplicationAttemptDenialKind::Handle(handle)
+        }
         Query::ForeignApplication => BankApplicationAttemptDenialKind::ForeignApplication,
         Query::ProjectionAdmissionMismatch => {
             BankApplicationAttemptDenialKind::ProjectionAdmissionMismatch

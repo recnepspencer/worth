@@ -225,7 +225,7 @@ where
             revalidation,
             observed,
         })
-    })
+    })?
 }
 
 fn validate_principal_freshness<Schema, Principal, Identity, Capability, Operation, Input>(

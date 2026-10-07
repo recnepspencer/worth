@@ -2,6 +2,7 @@ mod adapter_contracts;
 mod bootstrap;
 mod bridge_backed;
 mod contracts;
+mod entity_lookup;
 mod inspection_execution;
 mod intent_authority;
 mod merge_authority;
@@ -29,10 +30,11 @@ pub use adapter_contracts::{
 };
 pub use bridge_backed::WorthQueryBridgeBackedRuntimeBackend;
 pub use contracts::{
-    WorthQueryBackendEntityLookup, WorthQueryRuntimeBackend,
-    WorthQueryRuntimeExistingTruthVerificationAdapter, WorthQueryRuntimeSchemaAdapter,
-    WorthQueryRuntimeSnapshotIdentityAdapter, WorthQueryRuntimeWriteAuthorityAdapter,
+    WorthQueryRuntimeBackend, WorthQueryRuntimeExistingTruthVerificationAdapter,
+    WorthQueryRuntimeSchemaAdapter, WorthQueryRuntimeSnapshotIdentityAdapter,
+    WorthQueryRuntimeWriteAuthorityAdapter,
 };
+pub use entity_lookup::WorthQueryBackendEntityLookup;
 pub use inspection_execution::{
     WorthQueryBackendInspectionError, WorthQueryBackendInspectionErrorKind,
 };

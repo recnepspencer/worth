@@ -227,7 +227,9 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
         .prepare(64)
         .expect("migration adoption prepares");
 
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test()
+        .expect("the fixture requires an open application owner");
     let unpublished = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
         _ => panic!("the injected durable append failure must retain custody"),

@@ -17,6 +17,7 @@ mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;
 pub(super) mod disclosure;
+mod handle_denial;
 mod progression;
 pub(in crate::domain_computation::primary_graph) use progression::{
     MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
@@ -41,6 +42,7 @@ use required_provenance::DemandProgressionProvenance;
 /// again can succeed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
     /// The original source query binding is no longer installed as admitted.
     SourceQueryInstallation(
         worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind,

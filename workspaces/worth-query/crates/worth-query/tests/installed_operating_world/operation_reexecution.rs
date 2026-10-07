@@ -186,7 +186,8 @@ fn certification_replay_localizes_realized_conditional_path_drift() {
 #[test]
 fn historical_replay_resolves_owner_evidence_for_the_exact_basis_pair() {
     let mut workspace = workflow_workspace("historical-certification-replay").unwrap();
-    let historical_context = worth_query::facade::history::at(&workspace);
+    let historical_context = worth_query::facade::history::at(&workspace)
+        .expect("the fixture requires an open workspace");
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -235,7 +236,8 @@ fn historical_replay_resolves_owner_evidence_for_the_exact_basis_pair() {
 #[test]
 fn historical_replay_refuses_to_simulate_an_unowned_reconstruction_path() {
     let mut workspace = workflow_workspace("historical-reconstruction-denial").unwrap();
-    let historical_context = worth_query::facade::history::at(&workspace);
+    let historical_context = worth_query::facade::history::at(&workspace)
+        .expect("the fixture requires an open workspace");
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -267,7 +269,8 @@ fn historical_replay_refuses_to_simulate_an_unowned_reconstruction_path() {
 #[test]
 fn historical_replay_denies_when_the_retained_execution_substrate_has_drifted() {
     let mut workspace = workflow_workspace("historical-replay-drift").unwrap();
-    let historical_context = worth_query::facade::history::at(&workspace);
+    let historical_context = worth_query::facade::history::at(&workspace)
+        .expect("the fixture requires an open workspace");
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

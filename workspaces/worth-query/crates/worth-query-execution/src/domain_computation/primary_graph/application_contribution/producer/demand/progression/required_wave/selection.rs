@@ -71,7 +71,7 @@ where
                     admission.charge_external_work(work)?;
                     admission.admit_read_scratch(bytes)
                 })
-        })
+        })?
         .map_err(position_denial)?;
     runtime.output_demands.observe_selected_discontinuity(
         product,

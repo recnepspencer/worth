@@ -104,7 +104,7 @@ where
                 &wave.positioned,
                 admission,
             )
-        });
+        })?;
         match pending {
             Ok(Some(_)) => {}
             Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),

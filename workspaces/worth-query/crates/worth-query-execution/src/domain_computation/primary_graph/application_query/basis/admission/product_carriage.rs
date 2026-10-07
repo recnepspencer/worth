@@ -21,7 +21,7 @@ fn primary_product_selection_composes_one_exact_application_snapshot() {
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| runtime
+        .with_open_runtime(|runtime| runtime
             .read_truth()
             .project_snapshot(selected.application_basis().snapshot_handle())
             .is_some()));

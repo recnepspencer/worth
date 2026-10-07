@@ -101,7 +101,9 @@ fn execute_read_family_in_basis_context_materializes_runtime_rows_for_bound_hist
         .workspace("runtime.read-composition.family-bound-historical-basis-context")
         .expect("read-backed runtime should open a workspace");
     let family = identity_read_family(&mut workspace, "bound-historical-context-family");
-    let snapshot_identity = workspace.snapshot_identity();
+    let snapshot_identity = workspace
+        .snapshot_identity()
+        .expect("the fixture owner remains open");
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context =
         retained_historical_context_for_family(&family, snapshot_evidence_identity.as_str());

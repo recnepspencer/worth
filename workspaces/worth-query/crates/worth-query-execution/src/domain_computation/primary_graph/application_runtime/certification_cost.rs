@@ -105,7 +105,7 @@ pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
     fn observe_certification_cost(
         &self,
         scope: &WorthQueryCertificationCostScope,
-    ) -> Result<WorthQueryCertificationCostObservation, RelationalBranchSharingInspectionDenial>;
+    ) -> Result<WorthQueryCertificationCostObservation, WorthQueryCertificationCostDenial>;
 }
 
 impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
@@ -125,7 +125,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
         drop(lease);
         let relational = self.primary_provider.graph.with_runtime(|runtime| {
             RelationalMvccCostScope::capture(runtime, vec![relational_identity])
-        });
+        })?;
         Ok(WorthQueryCertificationCostScope {
             relational,
             application_work: self.primary_provider.application_attempt_work(),
@@ -138,12 +138,12 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
     fn observe_certification_cost(
         &self,
         scope: &WorthQueryCertificationCostScope,
-    ) -> Result<WorthQueryCertificationCostObservation, RelationalBranchSharingInspectionDenial>
-    {
+    ) -> Result<WorthQueryCertificationCostObservation, WorthQueryCertificationCostDenial> {
         let relational = self
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.observe_mvcc_cost(&scope.relational))?;
+            .with_runtime(|runtime| runtime.observe_mvcc_cost(&scope.relational))?
+            .map_err(WorthQueryCertificationCostDenial::Relational)?;
         let application_work = WorthQueryCertificationApplicationWork::from(
             self.primary_provider
                 .application_attempt_work()
@@ -272,5 +272,19 @@ impl From<WorthQueryApplicationAttemptWorkSnapshot> for WorthQueryCertificationA
             managed_cleanups: value.managed_cleanups,
             external_dispatch_admissions: value.external_dispatch_admissions,
         }
+    }
+}
+
+/// Refusal to observe certification costs through the installed owner.
+#[derive(Debug)]
+pub enum WorthQueryCertificationCostDenial {
+    Handle(crate::facade::primary_graph::WorthQueryHandleDenial),
+    Relational(RelationalBranchSharingInspectionDenial),
+}
+impl From<crate::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryCertificationCostDenial
+{
+    fn from(denial: crate::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Handle(denial)
     }
 }

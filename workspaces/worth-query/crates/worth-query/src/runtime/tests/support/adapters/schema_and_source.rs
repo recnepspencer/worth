@@ -107,8 +107,8 @@ impl WorthQueryRuntimeSourceAdapter for TestSourceAdapter {
     fn live_entities_for_target(
         &self,
         _target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        Vec::new()
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok(Vec::new())
     }
 
     fn drain_live_patches_for_target(
@@ -206,7 +206,7 @@ impl WorthQueryRuntimeSourceAdapter for CountingSourceAdapter {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
         self.inner.live_entities_for_target(target)
     }
 
@@ -229,16 +229,23 @@ impl WorthQueryRuntimeSourceAdapter for CountingSourceAdapter {
 pub(in crate::runtime::tests) struct TestSnapshotIdentityAdapter;
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for TestSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        WorthQuerySnapshotIdentity::preview(
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("test_snapshot_authority"),
-                    "stable",
-                )
-                .field_usize(WorthQueryEvidenceTag::new("test_snapshot_sequence"), 1)
-                .seal(),
-        )
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        Ok({
+            WorthQuerySnapshotIdentity::preview(
+                WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+                    .field_shape(
+                        WorthQueryEvidenceTag::new("test_snapshot_authority"),
+                        "stable",
+                    )
+                    .field_usize(WorthQueryEvidenceTag::new("test_snapshot_sequence"), 1)
+                    .seal(),
+            )
+        })
     }
 }
 
@@ -248,16 +255,23 @@ pub(in crate::runtime::tests) struct DriftingSnapshotIdentityAdapter {
 }
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for DriftingSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        let snapshot_sequence = self.snapshot_sequence.get().saturating_add(1);
-        self.snapshot_sequence.set(snapshot_sequence);
-        WorthQuerySnapshotIdentity::preview(
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-                .field_usize(
-                    WorthQueryEvidenceTag::new("drifting_snapshot_sequence"),
-                    snapshot_sequence as usize,
-                )
-                .seal(),
-        )
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        Ok({
+            let snapshot_sequence = self.snapshot_sequence.get().saturating_add(1);
+            self.snapshot_sequence.set(snapshot_sequence);
+            WorthQuerySnapshotIdentity::preview(
+                WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+                    .field_usize(
+                        WorthQueryEvidenceTag::new("drifting_snapshot_sequence"),
+                        snapshot_sequence as usize,
+                    )
+                    .seal(),
+            )
+        })
     }
 }

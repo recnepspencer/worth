@@ -18,7 +18,7 @@ pub trait WorthQueryPrimaryGraphSourceProjection: 'static {
         &self,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity>;
+    ) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError>;
 
     fn project_granular_scope(
         &self,
@@ -83,7 +83,8 @@ where
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        self.graph.with_runtime(|_| ())?;
         self.projection.project_live_target(&self.graph, target)
     }
 
@@ -93,6 +94,7 @@ where
         scope: &crate::live::WorthQueryMaintenanceScope,
         basis: &crate::runtime::WorthQueryGranularSourceReadBasis,
     ) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
+        self.graph.with_runtime(|_| ())?;
         let rows = self
             .projection
             .project_granular_scope(&self.graph, target, scope, basis)?;

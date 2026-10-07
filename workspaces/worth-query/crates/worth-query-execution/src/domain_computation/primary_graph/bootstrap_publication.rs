@@ -53,7 +53,7 @@ pub(super) fn commit_bootstrap_rows(
         let commit_id = committed.commit.commit_id;
         crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
         Ok(commit_id)
-    })
+    })?
 }
 
 pub(super) fn map_bootstrap_basis_denial(
@@ -344,7 +344,7 @@ pub(super) fn build_identity_indexes(
                 ),
             ))
         }
-    })
+    })?
 }
 
 fn primary_graph_denial(

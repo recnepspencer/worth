@@ -123,7 +123,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .map_err(map_authorization_denial)
                 })
             }
-        })?;
+        })??;
         let work = WorthQueryApplicationAuthorizationWorkEvidence::from_dependencies(&policy);
         let work = work.with_admission_security_product_resolution();
         let authorization = if policy.is_empty() {

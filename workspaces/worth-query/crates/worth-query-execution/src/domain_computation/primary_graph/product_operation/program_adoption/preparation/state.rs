@@ -113,7 +113,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         let selection =
             selection::select(&view, &graph.layout, &requirements, maximum_selection_work)?;
         if source == *target {
-            return Ok((selection, None));
+            return Ok::<_, WorthQueryBranchAdoptionPreparationDenial>((selection, None));
         }
         let workflow_request = WorkflowAdoptionInventoryRequest {
             layout: graph.layout.workflow(),
@@ -128,7 +128,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             workflow_read_denial(denial, maximum_selection_work, selection.work_units)
         })?;
         Ok((selection, Some(inventory)))
-    })?;
+    })??;
     let selected_entity_count = selection.entities.len();
     let workflow_intents = match workflow_inventory.as_ref() {
         Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref())?
@@ -183,7 +183,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         runtime
             .prepare_branch_transaction(transaction)
             .map_err(map_relational_preparation_denial)
-    })?;
+    })??;
     let successor_observation_requested = false;
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected
@@ -239,6 +239,7 @@ pub(super) fn requirements<Schema: ApplicationSchema>(
     let source = *selected
         .inspect_selected_program()
         .map_err(|denial| match denial {
+            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::Handle(denial) => denial.into(),
             crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable => {
                 WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable
             }

@@ -203,7 +203,7 @@ where
                 current,
                 relational.read_truth().positioned_snapshot(snapshot).ok(),
             )
-        });
+        })?;
         if !current.map_err(restoration_resource_denial)? {
             return Ok(None);
         }

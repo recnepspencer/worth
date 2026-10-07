@@ -83,7 +83,7 @@ pub(super) fn persist_as_the_retired_code_did(world: &IdentityWorld) -> DerivedI
         .provider_inbound_completion()
         .correlation
         .clone();
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    graph.integration_handle().with_open_runtime_mut(|runtime| {
         let head = main_head(runtime);
         let retired = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -109,7 +109,7 @@ pub(super) fn assert_retired_index_is_inert(world: &IdentityWorld, retired: Deri
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     assert!(!handle.primary_index_ids.contains(&retired));
-    handle.with_runtime(|runtime| {
+    handle.with_open_runtime(|runtime| {
         let lookup = runtime.index_access().definition_lookup_snapshot();
         assert_eq!(
             lookup.candidate_count_for_name(RETIRED_CORRELATION_INDEX),
@@ -162,7 +162,7 @@ pub(super) fn with_runtime<T>(
     read: impl FnOnce(&RelationalRuntime) -> T,
 ) -> T {
     let graph = world.application.runtime.primary_graph().unwrap();
-    graph.integration_handle().with_runtime(read)
+    graph.integration_handle().with_open_runtime(read)
 }
 
 pub(super) fn main_head(runtime: &RelationalRuntime) -> RelationalCommitReceipt {

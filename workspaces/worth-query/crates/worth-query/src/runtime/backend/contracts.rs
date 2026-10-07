@@ -1,3 +1,4 @@
+use super::WorthQueryBackendEntityLookup;
 use super::{
     LiveViewDeclarationAdmissionBoundaryReceipt, LiveViewDeclarationAdmissionReceipt,
     SubscriptionActivationReceipt, WriteAuthorityExecutionReceipt,
@@ -87,8 +88,13 @@ pub trait WorthQueryRuntimeBackend:
         ))
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        super::unavailable_snapshot_identity()
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        Ok(super::unavailable_snapshot_identity())
     }
 
     fn admit_live_view_declaration(
@@ -223,7 +229,7 @@ pub trait WorthQueryRuntimeBackend:
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity>;
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError>;
 
     fn live_entities_for_granular_scope(
         &self,
@@ -295,13 +301,6 @@ pub trait WorthQueryRuntimeBackend:
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum WorthQueryBackendEntityLookup {
-    Found(WorthQueryEntity),
-    Absent,
-    Unsupported,
-}
-
 pub trait WorthQueryRuntimeSchemaAdapter {
     fn build_live_view_declaration_admission_receipt(
         &self,
@@ -329,7 +328,12 @@ pub trait WorthQueryRuntimeSchemaAdapter {
 }
 
 pub trait WorthQueryRuntimeSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity;
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    >;
 }
 
 pub trait WorthQueryRuntimeExistingTruthVerificationAdapter {

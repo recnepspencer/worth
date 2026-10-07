@@ -25,9 +25,13 @@ where
     pub fn entities<Entity>(
         &self,
         entity: ApplicationEntityRef<Schema, Entity>,
-    ) -> Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>> {
+    ) -> Result<
+        Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.graph.with_runtime(|_| ())?;
         let Some(kind) = self.layout.entity_kind(entity.name()) else {
-            return Vec::new();
+            return Ok(Vec::new());
         };
         let records = self.graph.with_runtime(|runtime| {
             runtime
@@ -36,8 +40,8 @@ where
                 .and_then(|view| view.bounded_entities_of_kind(kind, usize::MAX).ok())
                 .map(|read| read.into_records())
                 .unwrap_or_default()
-        });
-        records
+        })?;
+        Ok(records
             .into_iter()
             .filter(|record| record.lifecycle == RecordLifecycleState::Live)
             .map(|record| WorthQueryInvariantEntityIdentity {
@@ -47,15 +51,19 @@ where
                 authority_identity: self.authority_identity,
                 _marker: PhantomData,
             })
-            .collect()
+            .collect())
     }
 
     pub fn relations<Relation, From, To>(
         &self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
-    ) -> Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>> {
+    ) -> Result<
+        Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.graph.with_runtime(|_| ())?;
         let Some(layout) = self.layout.relation(relation.name()).cloned() else {
-            return Vec::new();
+            return Ok(Vec::new());
         };
         let records = self.graph.with_runtime(|runtime| {
             runtime
@@ -64,8 +72,8 @@ where
                 .and_then(|view| view.bounded_relations_of_kind(layout.kind, usize::MAX).ok())
                 .map(|read| read.into_records())
                 .unwrap_or_default()
-        });
-        records
+        })?;
+        Ok(records
             .into_iter()
             .filter(|record| record.lifecycle == RecordLifecycleState::Live)
             .map(|record| WorthQueryInvariantRelation {
@@ -86,6 +94,6 @@ where
                 },
                 _relation: PhantomData,
             })
-            .collect()
+            .collect())
     }
 }

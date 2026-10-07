@@ -134,7 +134,7 @@ where
                 selected.application_basis().snapshot_handle(),
                 admission,
             )
-        })
+        })?
         .map_err(cutoff_basis_denial)?;
     let decision = handle
         .with_runtime(|relational| {
@@ -148,7 +148,7 @@ where
                 admission,
                 currentness,
             )
-        })
+        })?
         .map_err(cutoff_denial)?;
     let verified = match decision {
         InputCutoffDecision::Fresh { key, context } => {

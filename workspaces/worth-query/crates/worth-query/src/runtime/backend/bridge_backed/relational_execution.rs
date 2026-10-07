@@ -149,7 +149,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
         })?;
         owner.with_runtime(|runtime| {
             WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
-        })
+        })?
     }
 
     pub(super) fn validate_backend_merge_authority(
@@ -161,7 +161,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
                 "bridge-backed runtime has no configured relational merge authority",
             )
         })?;
-        owner.with_runtime(|runtime| authority.validate_against(runtime))
+        owner.with_runtime(|runtime| authority.validate_against(runtime))?
     }
 
     pub(super) fn execute_backend_merge(
@@ -198,7 +198,8 @@ impl WorthQueryBridgeBackedRuntimeBackend {
         &mut self,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
-        self.relational_runtime
+        let released = self
+            .relational_runtime
             .as_mut()
             .expect("a backend that executed a merge retains its relational runtime")
             .execute_mutation(|runtime| {
@@ -207,15 +208,18 @@ impl WorthQueryBridgeBackedRuntimeBackend {
                     .release_snapshot(snapshot)
                     .expect("ordinary merge closes its exact relational snapshot once");
                 Ok::<_, std::convert::Infallible>(())
-            })
-            .expect("snapshot closeout does not invalidate primary-graph indexes")
-            .expect("snapshot closeout is infallible");
+            });
+        match released {
+            Err(denial) if matches!(denial.kind(), worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenialKind::Handle(_)) => (),
+            outcome => { outcome.expect("snapshot closeout does not invalidate primary-graph indexes").expect("snapshot closeout is infallible"); }
+        }
     }
 }
 
 fn primary_graph_refresh_workspace_error(
     denial: worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenial,
 ) -> WorthQueryWorkspaceError {
+    if let worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenialKind::Handle(denial) = denial.kind() { return denial.into(); }
     WorthQueryWorkspaceError::new(format!(
         "authoritative graph mutation advanced but primary identity indexes could not be refreshed; retry is indeterminate: {denial}"
     ))
@@ -224,6 +228,7 @@ fn primary_graph_refresh_workspace_error(
 fn primary_graph_refresh_runtime_error(
     denial: worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenial,
 ) -> WorthQueryRuntimeError {
+    if let worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenialKind::Handle(denial) = denial.kind() { return denial.into(); }
     WorthQueryRuntimeError::InvariantRegistration {
         stage: "primary_graph_index_refresh_after_commit",
         message: format!(
@@ -235,6 +240,7 @@ fn primary_graph_refresh_runtime_error(
 fn primary_graph_refresh_merge_error(
     denial: worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenial,
 ) -> crate::effect_lifecycle::RelationalEffectExecutionFailure {
+    if let worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenialKind::Handle(handle) = denial.kind() { return (crate::effect_lifecycle::EffectExecutionDenialKind::Handle(handle), handle.to_string()).into(); }
     (
         crate::effect_lifecycle::EffectExecutionDenialKind::MergeExecutionFailed,
         format!(

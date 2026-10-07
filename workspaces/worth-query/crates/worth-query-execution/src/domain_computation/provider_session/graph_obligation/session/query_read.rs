@@ -36,7 +36,14 @@ impl WorthQueryManagedGraphWorkSession {
         }
         let output = port
             .execute(&self.binding, read)
-            .map_err(|_| WorthQueryManagedGraphReadDenial::ForeignGraph)?;
+            .map_err(|denial| match denial {
+                super::super::owner_execution::WorthQueryGraphReadOwnerPortDenial::Handle(
+                    handle,
+                ) => WorthQueryManagedGraphReadDenial::Handle(handle),
+                super::super::owner_execution::WorthQueryGraphReadOwnerPortDenial::ForeignGraph => {
+                    WorthQueryManagedGraphReadDenial::ForeignGraph
+                }
+            })?;
         Ok((
             output,
             WorthQuerySessionGraphReadProof::new(

@@ -351,7 +351,10 @@ fn current_context_for_family(
     use crate::facade::policy::{admit_query_basis_context, QueryContextBindingSource};
 
     let basis = resolve_runtime_current_snapshot_basis(
-        workspace.snapshot_identity().evidence_identity(),
+        workspace
+            .snapshot_identity()
+            .expect("the fixture owner remains open")
+            .evidence_identity(),
         family.read_graph().schema_basis_authority(),
     )
     .expect("snapshot basis should resolve");

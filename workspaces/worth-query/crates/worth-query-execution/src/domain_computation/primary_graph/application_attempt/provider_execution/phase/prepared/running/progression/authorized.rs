@@ -189,6 +189,10 @@ where
                 ),
             )
         }
+        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Handle(denial)) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(denial.into())
+        },
         Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable) => {
             candidate.discard();
             progression_denied(DenialStage::Idempotency)

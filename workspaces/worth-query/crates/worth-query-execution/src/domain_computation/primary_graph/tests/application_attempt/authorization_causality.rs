@@ -109,7 +109,7 @@ fn revoke_account_ownership(
         .expect("account ownership is installed")
         .kind;
     let selected = world.selected_product();
-    let relation = graph.with_runtime_mut(|runtime| {
+    let relation = graph.with_open_runtime_mut(|runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         runtime
             .read_truth()

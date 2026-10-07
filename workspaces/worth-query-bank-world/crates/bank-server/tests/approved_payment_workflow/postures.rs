@@ -181,7 +181,8 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .fixture
         .world
         .runtime
-        .fail_next_durable_append_for_test();
+        .fail_next_durable_append_for_test()
+        .expect("the Bank fixture requires an open application owner");
     let partial = match ready.perform() {
         BankApprovedPaymentApplyOutcome::Commit(
             WorthQueryApplicationUncommitted::ProductUnpublished(partial),

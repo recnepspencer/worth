@@ -16,7 +16,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<(), crate::domain_computation::WorthQueryProviderSessionFailure> {
         self.graph.with_runtime_mut_unwind_isolated(|runtime| {
             self.resume_pending_application_publication(runtime, occurrence)
-        })
+        })?
     }
 
     pub(crate) fn release_product_occurrence_retention(

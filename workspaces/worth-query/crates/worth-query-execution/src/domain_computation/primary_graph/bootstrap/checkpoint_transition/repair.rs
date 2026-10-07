@@ -23,6 +23,7 @@ pub struct WorthQueryOpenAdoptionRecovery {
     publication: WorthQueryPrimaryGraphPublication,
     settlement: Option<Settlement>,
     detail: String,
+    handle_denial: Option<crate::facade::primary_graph::WorthQueryHandleDenial>,
 }
 
 impl std::fmt::Debug for WorthQueryOpenAdoptionRecovery {
@@ -44,15 +45,18 @@ impl WorthQueryOpenAdoptionRecovery {
             graph,
             publication,
             settlement: Some(Settlement::Acknowledged(authority)),
+            handle_denial: None,
             detail,
         }
     }
 
     #[cfg(feature = "test-durability-faults")]
     #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
+    pub fn fail_next_durable_append_for_test(
+        &self,
+    ) -> Result<(), crate::facade::primary_graph::WorthQueryHandleDenial> {
         self.graph
-            .with_runtime(|runtime| runtime.fail_next_durable_append_for_test());
+            .with_runtime(|runtime| runtime.fail_next_durable_append_for_test())
     }
 
     pub(super) fn new(
@@ -65,8 +69,13 @@ impl WorthQueryOpenAdoptionRecovery {
             graph,
             publication,
             settlement: Some(Settlement::Deferred(deferred)),
+            handle_denial: None,
             detail,
         }
+    }
+
+    pub fn handle_denial(&self) -> Option<crate::facade::primary_graph::WorthQueryHandleDenial> {
+        self.handle_denial
     }
 
     pub fn detail(&self) -> &str {
@@ -80,11 +89,24 @@ impl WorthQueryOpenAdoptionRecovery {
             .expect("repair capsule always carries its phase")
         {
             Settlement::Deferred(deferred) => {
-                match self.graph.with_runtime_mut(|runtime| {
-                    runtime
-                        .durability_recovery()
-                        .repair_checkpoint_transition(deferred)
-                }) {
+                let mut deferred = Some(deferred);
+                let repaired = self.graph.with_runtime_mut(|runtime| {
+                    runtime.durability_recovery().repair_checkpoint_transition(
+                        deferred
+                            .take()
+                            .expect("repair owns its deferred transition"),
+                    )
+                });
+                let repaired = match repaired {
+                    Ok(repaired) => repaired,
+                    Err(denial) => {
+                        self.handle_denial = Some(denial);
+                        self.detail = denial.to_string();
+                        self.settlement = deferred.map(Settlement::Deferred);
+                        return Err(self);
+                    }
+                };
+                match repaired {
                     Ok(acknowledged) => {
                         self.settlement =
                             Some(Settlement::Acknowledged(acknowledged.into_parts().1))
@@ -104,10 +126,16 @@ impl WorthQueryOpenAdoptionRecovery {
             .graph
             .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
         {
-            Ok(native) => Ok(ApplicationHome::holding(
+            Ok(Ok(native)) => Ok(ApplicationHome::holding(
                 WorthQueryApplicationCheckpoint::encode(native, &self.publication, &[]).0,
             )),
-            Err(error) => {
+            Err(denial) => {
+                self.handle_denial = Some(denial);
+                self.detail = denial.to_string();
+                Err(self)
+            }
+            Ok(Err(error)) => {
+                self.handle_denial = None;
                 self.detail = format!("{error:?}");
                 Err(self)
             }

@@ -51,7 +51,9 @@ pub(crate) fn representative_execute_read_family_row() -> RepresentativeArtifact
 pub(crate) fn representative_execute_read_family_in_basis_context_row() -> RepresentativeArtifacts {
     let mut workspace = certification_workspace("lower-runtime-execute-read-family-basis");
     let family = certification_read_family(&mut workspace, "lower-runtime-basis-family");
-    let snapshot_identity = workspace.snapshot_identity();
+    let snapshot_identity = workspace
+        .snapshot_identity()
+        .expect("the representative fixture requires an open workspace");
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context = branch_context_for_family(
         &family,
@@ -85,7 +87,9 @@ pub(crate) fn representative_runtime_current_read_graph_row() -> RepresentativeA
 pub(crate) fn representative_runtime_basis_context_read_graph_row() -> RepresentativeArtifacts {
     let mut workspace = certification_workspace("lower-runtime-runtime-basis-read");
     let family = certification_read_family(&mut workspace, "lower-runtime-runtime-basis-family");
-    let snapshot_identity = workspace.snapshot_identity();
+    let snapshot_identity = workspace
+        .snapshot_identity()
+        .expect("the representative fixture requires an open workspace");
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context = branch_context_for_family(
         &family,

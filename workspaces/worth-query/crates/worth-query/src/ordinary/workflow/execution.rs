@@ -18,6 +18,12 @@ impl WorthQueryWorkflowRequest {
         }
         debug_assert_eq!(family, WorthQueryWorkflowFamily::PreviewPromotion);
         match workspace.ordinary_authority_drift(&self.context.authority) {
+            WorthQueryOrdinaryAuthorityDrift::Handle(denial) => {
+                return WorthQueryWorkflowOutcome::Stopped(WorthQueryWorkflowStop::runtime(
+                    denial.into(),
+                    counters,
+                ));
+            }
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return WorthQueryWorkflowOutcome::Stopped(WorthQueryWorkflowStop::denied(
                     WorthQueryWorkflowStopSource::ForeignAuthority,

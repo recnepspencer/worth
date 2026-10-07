@@ -146,7 +146,7 @@ pub(in crate::runtime) fn execute_runtime_basis_context_read_graph(
             read_graph,
             &query_context_basis_digest_identity(context.basis_digest()),
         ));
-    let receipt_snapshot_identity = runtime.current_snapshot_identity();
+    let receipt_snapshot_identity = runtime.current_snapshot_identity()?;
     let (rows, maintenance_source_rows) =
         if context_allows_runtime_materialization(&receipt_snapshot_identity, context) {
             let (rows, support_rows, _) = materialize_read_rows(runtime, read_graph)?.into_parts();

@@ -141,17 +141,22 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
         crate::runtime::WorthQueryProductSourceDenial,
     > {
         let source = self.workspace.relational_source_owner();
-        let branch = source.with_runtime(|runtime| runtime.main_branch_identity());
+        let branch = source.with_runtime(|runtime| runtime.main_branch_identity())?;
         source
             .prepare_product_source(&branch)
-            .map_err(crate::runtime::WorthQueryProductSourceDenial::Basis)
+            .map_err(crate::runtime::WorthQueryProductSourceDenial::from)
     }
 
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         self.support_profile.clone()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::primary_graph::WorthQueryHandleDenial,
+    > {
         self.workspace.snapshot_identity()
     }
 
@@ -221,14 +226,13 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
     fn live_entities_for_target(
         &self,
         target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        if self.view_targets_collection(target) {
-            return self
-                .workspace
-                .entities()
-                .expect("test backend workspace truth remains readable");
-        }
-        Vec::new()
+    ) -> Result<Vec<WorthQueryEntity>, crate::memory_workspace::WorthQueryWorkspaceError> {
+        Ok({
+            if self.view_targets_collection(target) {
+                return self.workspace.entities();
+            }
+            Vec::new()
+        })
     }
 
     fn collection_entity(

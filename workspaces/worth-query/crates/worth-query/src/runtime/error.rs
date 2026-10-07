@@ -346,3 +346,11 @@ impl From<WorthQueryProgramError> for WorthQueryRuntimeError {
         Self::Program(value)
     }
 }
+
+impl From<worth_query_execution::facade::primary_graph::WorthQueryHandleDenial>
+    for WorthQueryRuntimeError
+{
+    fn from(denial: worth_query_execution::facade::primary_graph::WorthQueryHandleDenial) -> Self {
+        Self::Workspace(denial.into())
+    }
+}

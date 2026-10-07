@@ -34,7 +34,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
-    let (before_handle, before, retained_fact) = handle.with_runtime(|runtime| {
+    let (before_handle, before, retained_fact) = handle.with_open_runtime(|runtime| {
         let (snapshot, basis) = snapshot(runtime);
         let fact = field_fact(runtime, &snapshot, entity, status.clone());
         let facts: Arc<[_]> = Arc::from([fact]);
@@ -95,8 +95,8 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         &identity,
         FullVerificationReason::NativeRevisionUnavailable,
     );
-    handle.with_runtime_mut(|runtime| write_field(runtime, entity, status, "closed"));
-    let (after_handle, after) = handle.with_runtime(snapshot);
+    handle.with_open_runtime_mut(|runtime| write_field(runtime, entity, status, "closed"));
+    let (after_handle, after) = handle.with_open_runtime(snapshot);
     assert!(matches!(
         owner.currentness(&after, &identity, &mut owner.edit_admission()),
         Ok(SourceSettlementCurrentness::Clean)
@@ -121,7 +121,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         Some(FullVerificationReason::NativeRevisionUnavailable)
     );
     let mut admission = owner.read_admission(1_000_000);
-    let result = handle.with_runtime(|runtime| {
+    let result = handle.with_open_runtime(|runtime| {
         ConsumedOutputEvidence::verify_candidate_with_admission(
             &candidate.settlement_identity,
             &candidate.observed_source_facts,
@@ -136,7 +136,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         )
     });
     assert_eq!(result, Ok(ConsumedOutputVerification::ChangedDirectFact(0)));
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

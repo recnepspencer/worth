@@ -46,12 +46,16 @@ impl WorthQueryProductBranches<'_> {
         &self,
         after: Option<&RuntimeWorldRecoveryCursor>,
         maximum: NonZeroUsize,
-    ) -> Result<RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>>
-    {
-        self.runtime
-            .owner
-            .inspection_port()
-            .recovery_page(after, maximum)
+    ) -> Result<
+        Result<RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.runtime.gate.with_runtime(|_| {
+            self.runtime
+                .owner
+                .inspection_port()
+                .recovery_page(after, maximum)
+        })
     }
 
     pub fn readmit_recovery(
@@ -59,6 +63,10 @@ impl WorthQueryProductBranches<'_> {
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchRecoveryDenial>
     {
+        self.runtime
+            .gate
+            .with_runtime(|_| ())
+            .map_err(WorthQueryProductBranchRecoveryDenial::Handle)?;
         let recovery = self.runtime.owner.recovery_port();
         let effects = recovery
             .inspect_effects(handle)
@@ -75,7 +83,14 @@ impl WorthQueryProductBranches<'_> {
 
     /// Rediscovers outer creation and retirement cleanup only. Application
     /// retirement remains behind its primary-provider lifecycle surface.
-    pub fn pending_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
-        self.runtime.pending_workspace_owner_cleanup()
+    pub fn pending_cleanup(
+        &self,
+    ) -> Result<
+        Vec<WorthQueryProductBranchOwnerCleanup>,
+        crate::facade::primary_graph::WorthQueryHandleDenial,
+    > {
+        self.runtime
+            .gate
+            .with_runtime(|_| self.runtime.pending_workspace_owner_cleanup())
     }
 }

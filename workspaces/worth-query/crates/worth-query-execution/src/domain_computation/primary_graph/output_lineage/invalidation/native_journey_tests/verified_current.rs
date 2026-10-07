@@ -47,7 +47,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         .unwrap()
         .clone();
 
-    handle.with_runtime_mut(|runtime| {
+    handle.with_open_runtime_mut(|runtime| {
         write_field(runtime, entity, label, "prime");
         let (snapshot, basis) = snapshot(runtime);
         let facts: Arc<[_]> = Arc::from([field_fact(runtime, &snapshot, entity, status)]);

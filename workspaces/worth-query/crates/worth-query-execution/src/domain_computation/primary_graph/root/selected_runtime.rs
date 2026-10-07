@@ -9,14 +9,14 @@ impl WorthQueryPrimaryGraph {
     pub(in crate::domain_computation::primary_graph) fn with_runtime<T>(
         &self,
         read: impl FnOnce(&RelationalRuntime) -> T,
-    ) -> T {
+    ) -> Result<T, crate::facade::primary_graph::WorthQueryHandleDenial> {
         self.source_owner.with_runtime(read)
     }
 
     pub(in crate::domain_computation::primary_graph) fn with_runtime_mut<T>(
         &self,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
-    ) -> T {
+    ) -> Result<T, crate::facade::primary_graph::WorthQueryHandleDenial> {
         self.source_owner.with_runtime_mut(mutate)
     }
 }

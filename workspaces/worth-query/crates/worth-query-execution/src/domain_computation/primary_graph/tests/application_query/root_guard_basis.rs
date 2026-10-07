@@ -122,7 +122,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         ),
         native_revision: None,
     };
-    let unavailable_currentness = graph.integration_handle().with_runtime(|runtime| {
+    let unavailable_currentness = graph.integration_handle().with_open_runtime(|runtime| {
         unavailable.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
     });
     assert!(matches!(
@@ -130,7 +130,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Unavailable)
     ), "an unavailable restored field revision must preserve its typed verification failure");
     assert!(
-        !graph.integration_handle().with_runtime(|runtime| {
+        !graph.integration_handle().with_open_runtime(|runtime| {
             fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
                 .unwrap()
                 .0
@@ -154,7 +154,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     change_account_status(&world, account.entity_id(), "open");
     let reopened = world.selected_product();
     assert!(
-        !graph.integration_handle().with_runtime(|runtime| {
+        !graph.integration_handle().with_open_runtime(|runtime| {
             absent_fact
                 .source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
                 .unwrap()
@@ -243,7 +243,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     change_account_status(&world, account.entity_id(), "closed");
     let current = world.selected_product();
     let graph = world.application.runtime.primary_graph().unwrap();
-    assert!(!graph.integration_handle().with_runtime(|runtime| {
+    assert!(!graph.integration_handle().with_open_runtime(|runtime| {
         fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0
@@ -263,7 +263,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     );
     change_account_status(&world, account.entity_id(), "open");
     let reopened = world.selected_product();
-    assert!(!graph.integration_handle().with_runtime(|runtime| {
+    assert!(!graph.integration_handle().with_open_runtime(|runtime| {
         fact.source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
             .unwrap()
             .0

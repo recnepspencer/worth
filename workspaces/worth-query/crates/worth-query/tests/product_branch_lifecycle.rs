@@ -50,10 +50,20 @@ fn outer_workspace_close_releases_exact_branch_and_reuses_world_capacity() {
         WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryStillRetained
     );
     drop(failure);
-    assert_eq!(workspace.branches().pending_cleanup().len(), 1);
+    assert_eq!(
+        workspace
+            .branches()
+            .pending_cleanup()
+            .expect("the standalone fixture owner stays open")
+            .len(),
+        1
+    );
     drop(retained);
 
-    let mut pending = workspace.branches().pending_cleanup();
+    let mut pending = workspace
+        .branches()
+        .pending_cleanup()
+        .expect("the standalone fixture owner stays open");
     let closed = pending
         .pop()
         .expect("outer retirement cleanup remains discoverable")
@@ -61,7 +71,11 @@ fn outer_workspace_close_releases_exact_branch_and_reuses_world_capacity() {
         .expect("releasing the read permits exact history and owner cleanup");
     assert!(closed.is_complete());
     assert_eq!(closed.retired_component_count(), 1);
-    assert!(workspace.branches().pending_cleanup().is_empty());
+    assert!(workspace
+        .branches()
+        .pending_cleanup()
+        .expect("the standalone fixture owner stays open")
+        .is_empty());
     assert!(workspace.observe_operating_world(branch).is_err());
 
     let replacement = workspace

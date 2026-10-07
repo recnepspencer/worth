@@ -123,10 +123,10 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
     > {
         let branch = self
             .product_source
-            .with_runtime(|runtime| runtime.main_branch_identity());
+            .with_runtime(|runtime| runtime.main_branch_identity())?;
         self.product_source
             .prepare_product_source(&branch)
-            .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
+            .map_err(Into::into)
     }
 
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
@@ -179,8 +179,8 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
     fn live_entities_for_target(
         &self,
         _target: &WorthQueryLiveArtifactTarget,
-    ) -> Vec<WorthQueryEntity> {
-        (0..self.row_count)
+    ) -> Result<Vec<WorthQueryEntity>, WorthQueryWorkspaceError> {
+        Ok((0..self.row_count)
             .map(|index| {
                 let payload = "x".repeat(self.payload_width);
                 WorthQueryEntity::from_native_field_values(
@@ -201,7 +201,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
                     ]),
                 )
             })
-            .collect()
+            .collect())
     }
 
     fn drain_live_patches_for_target(
@@ -218,13 +218,16 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
         Vec::new()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
+    fn current_snapshot_identity(
+        &self,
+    ) -> Result<WorthQuerySnapshotIdentity, worth_query::facade::runtime::WorthQueryHandleDenial>
+    {
+        Ok(WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
                 RelationalBridgeSnapshotIdentityParts::new(1, 1),
             ),
         )
-        .expect("relational snapshot projection must retain its typed payload")
+        .expect("relational snapshot projection must retain its typed payload"))
     }
 
     fn install_live_subscription(
