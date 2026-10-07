@@ -32,14 +32,7 @@ fn killed_recovery_process_reopens_after_each_named_c8_seam() {
         0xC8_18_11,
         RECOVERY_SEAM_OPERATION_COUNT,
     );
-    for (index, stage) in RECOVERY_SEAMS
-        .iter()
-        .copied()
-        .enumerate()
-        .filter(|(_, stage)| !is_cleanup_stage(*stage))
-    {
-        seam::run(&publication_world, index, stage);
-    }
+    run_seams(&publication_world, |stage| !is_cleanup_stage(stage));
 
     let cleanup_world = ProcessWorld::start_cleanup_world_with_operation_count(
         0xC8_08_21,
@@ -47,14 +40,7 @@ fn killed_recovery_process_reopens_after_each_named_c8_seam() {
         RECOVERY_SEAM_OPERATION_COUNT,
     );
     cleanup_world::require_raw_candidate(&cleanup_world);
-    for (index, stage) in RECOVERY_SEAMS
-        .iter()
-        .copied()
-        .enumerate()
-        .filter(|(_, stage)| is_cleanup_stage(*stage))
-    {
-        seam::run(&cleanup_world, index, stage);
-    }
+    run_seams(&cleanup_world, is_cleanup_stage);
 }
 
 #[test]
@@ -74,6 +60,21 @@ fn cancelled_recovery_process_reports_a_blocked_post_effect_outcome() {
     );
     cleanup_world::require_raw_candidate(&cleanup_world);
     interruption::run_cleanup(&cleanup_world, RECOVERY_SEAMS.len());
+}
+
+fn run_seams(world: &ProcessWorld, include: impl Fn(PhysicalRecoveryYieldpointStage) -> bool) {
+    let scenarios = RECOVERY_SEAMS
+        .iter()
+        .copied()
+        .enumerate()
+        .filter(|(_, stage)| include(*stage))
+        .collect::<Vec<_>>();
+    super::super::scenario_execution::run_independent_scenarios(
+        &scenarios,
+        |_, &(index, stage)| {
+            seam::run(world, index, stage);
+        },
+    );
 }
 
 fn is_cleanup_stage(stage: PhysicalRecoveryYieldpointStage) -> bool {

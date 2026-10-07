@@ -22,7 +22,7 @@ pub(super) fn help_requested(arguments: &[String]) -> bool {
 }
 
 pub(super) fn usage() -> String {
-    "usage: store-test-runner <owner -p PACKAGE|smoke|ui|ci --partition LANE> \
+    "usage: store-test-runner <owner -p PACKAGE|smoke|ui|focus --group GROUP|ci --partition LANE> \
      [--shard-index N --shard-count N] \
      [--list] [--target-root PATH]"
         .into()

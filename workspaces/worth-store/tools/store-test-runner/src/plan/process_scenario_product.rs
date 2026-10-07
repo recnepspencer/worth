@@ -8,12 +8,16 @@ pub(super) fn process_scenario(workspace_root: &Path) -> Vec<TestExecutionUnit> 
         workspace_root,
         vec![
             "run".into(),
+            "--manifest-path".into(),
+            "Cargo.toml".into(),
             "--locked".into(),
             "-q".into(),
             "-p".into(),
             "store-test-runner".into(),
             "--bin".into(),
             "store_process_scenario".into(),
+            "--".into(),
+            "--ci".into(),
         ],
     )]
 }

@@ -23,6 +23,8 @@ mod entries;
 mod moved_media;
 #[path = "limit_sweep/named.rs"]
 mod named;
+#[path = "limit_sweep/persisted_world.rs"]
+mod persisted_world;
 #[path = "limit_sweep/worlds.rs"]
 mod worlds;
 
@@ -211,11 +213,13 @@ fn assert_limits_are_reported_as_limits<W: Killed>(
     need: Need,
     stage: &str,
 ) {
+    let original = killed();
+    let copy = || persisted_world::copy_killed_media(original.root());
     let mut failures = Vec::new();
-    let entries = entry_need(&killed, need, &mut failures);
-    let manifest = byte_need(killed().root(), Swept::ManifestBytes, &mut failures);
-    let bytes = byte_need(killed().root(), Swept::ObservationBytes, &mut failures);
-    let staging = byte_need(killed().root(), Swept::StagingBytes, &mut failures);
+    let entries = entry_need(&copy, need, &mut failures);
+    let manifest = byte_need(copy().root(), Swept::ManifestBytes, &mut failures);
+    let bytes = byte_need(copy().root(), Swept::ObservationBytes, &mut failures);
+    let staging = byte_need(copy().root(), Swept::StagingBytes, &mut failures);
     assert!(
         failures.is_empty(),
         "{stage}: {} blocks under {entries:?} entries, {manifest:?} manifest bytes, \

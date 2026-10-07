@@ -24,7 +24,18 @@ fn run(arguments: Arguments, workspace_root: &Path) -> Result<(), String> {
 
 #[doc(hidden)]
 pub fn run_process_scenario_from_environment() -> Result<(), String> {
-    phase_eight_process_suite::run(&workspace_root(), None)
+    let arguments = std::env::args().skip(1).collect::<Vec<_>>();
+    use phase_eight_process_suite::ProcessSuiteProfile;
+    let (group, profile) = match arguments.as_slice() {
+        [] => (None, ProcessSuiteProfile::Iteration),
+        [option] if option == "--ci" => (None, ProcessSuiteProfile::Ci),
+        [option, name] if option == "--group" => (
+            Some(name.parse::<product::FocusGroup>()?),
+            ProcessSuiteProfile::Iteration,
+        ),
+        _ => return Err("usage: store_process_scenario [--ci|--group GROUP]".into()),
+    };
+    phase_eight_process_suite::run(&workspace_root(), None, group, profile)
 }
 
 fn run_planned_product(arguments: Arguments, workspace_root: &Path) -> Result<(), String> {

@@ -187,9 +187,10 @@ fn assert_oversized_candidate_is_damage_before_its_read(world: &ProcessWorld, ge
     assert_eq!(raw_media_snapshot(&root), original_media);
 }
 
+// Planning is cancelled before execution: these probes can use the same
+// genuine killed root. The denied plan still checks that every byte is unchanged.
 fn assert_exact_limits(world: &ProcessWorld, exact_peak: u64, exact_observation: u64) {
-    let exact_root = world.parent_path().join("candidate-memory-exact");
-    copy_directory(&world.writer.root, &exact_root);
+    let exact_root = &world.writer.root;
     let exact = plan_with_limits(
         &exact_root,
         successor_limits_with_observation(exact_peak, exact_observation),
@@ -199,8 +200,7 @@ fn assert_exact_limits(world: &ProcessWorld, exact_peak: u64, exact_observation:
     assert_eq!(exact.plan_cost().observation_bytes(), exact_observation);
     let _ = exact.cancel_before_execution();
 
-    let denied_root = world.parent_path().join("candidate-memory-one-over");
-    copy_directory(&world.writer.root, &denied_root);
+    let denied_root = &world.writer.root;
     let media_before = raw_media_snapshot(&denied_root);
     let blocked = match plan_with_memory(&denied_root, exact_peak - 1) {
         Ok(_) => panic!("one byte below the candidate-inclusive peak must be denied"),
@@ -236,8 +236,7 @@ fn assert_exact_limits(world: &ProcessWorld, exact_peak: u64, exact_observation:
 }
 
 fn assert_exact_observation_limit(world: &ProcessWorld, exact_observation: u64) {
-    let root = world.parent_path().join("candidate-observation-one-over");
-    copy_directory(&world.writer.root, &root);
+    let root = &world.writer.root;
     let blocked = match plan_with_limits(
         &root,
         successor_limits_with_observation(64 * 1024 * 1024, exact_observation - 1),

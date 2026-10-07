@@ -108,13 +108,20 @@ debug = "line-tables-only"
 incremental = true
 
 # Third-party dependencies (sha2 above all) run optimized in dev and test builds.
-# Workspace crates stay unoptimized, so incremental rebuilds are unchanged, and
-# overflow checks still come from [build] rustflags.
+# Physical Store's real fixture construction and recovery scans need light
+# optimization for bounded iteration. Other workspace crates stay unoptimized;
+# debug assertions stay enabled and overflow checks come from [build] rustflags.
 [profile.dev.package."*"]
 opt-level = 2
 
 [profile.test.package."*"]
 opt-level = 2
+
+[profile.dev.package.worth-store]
+opt-level = 1
+
+[profile.test.package.worth-store]
+opt-level = 1
 
 [profile.ci-test]
 inherits = "test"

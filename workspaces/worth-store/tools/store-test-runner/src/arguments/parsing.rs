@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::product::{CiTestLane, TestProduct};
+use crate::product::{CiTestLane, FocusGroup, TestProduct};
 
 use super::Arguments;
 
@@ -15,6 +15,7 @@ struct ParsedArguments {
     command: String,
     package: Option<String>,
     partition: Option<CiTestLane>,
+    group: Option<FocusGroup>,
     shard_index: Option<usize>,
     shard_count: Option<usize>,
     list: bool,
@@ -29,6 +30,7 @@ impl ParsedArguments {
             command,
             package: None,
             partition: None,
+            group: None,
             shard_index: None,
             shard_count: None,
             list: false,
@@ -47,6 +49,7 @@ impl ParsedArguments {
     ) -> Result<(), String> {
         match option.as_str() {
             "-p" | "--package" => self.package = Some(value(arguments, &option)?),
+            "--group" => self.group = Some(value(arguments, &option)?.parse::<FocusGroup>()?),
             "--partition" => {
                 self.partition = Some(value(arguments, &option)?.parse::<CiTestLane>()?)
             }
@@ -66,6 +69,11 @@ impl ParsedArguments {
                     .package
                     .clone()
                     .ok_or_else(|| "owner requires -p <package>".to_owned())?,
+            }),
+            "focus" => Ok(TestProduct::Focus {
+                group: self
+                    .group
+                    .ok_or_else(|| "focus requires --group <group>".to_owned())?,
             }),
             "smoke" => Ok(TestProduct::Smoke),
             "ui" => Ok(TestProduct::Ui),
@@ -89,6 +97,9 @@ impl ParsedArguments {
                 || self.shard_count.is_some())
         {
             return Err("partition and shard arguments are valid only for ci".into());
+        }
+        if !matches!(product, TestProduct::Focus { .. }) && self.group.is_some() {
+            return Err("--group is valid only for focus".into());
         }
         Ok(())
     }

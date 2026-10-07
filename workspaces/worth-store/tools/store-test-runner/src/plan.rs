@@ -4,6 +4,8 @@ use std::path::Path;
 use crate::product::{CiTestLane, TestProduct};
 
 mod execution_unit;
+mod focus_product;
+mod focus_selection;
 mod integration_product;
 mod offline_observer_build;
 mod owner_product;
@@ -13,6 +15,8 @@ mod structural_product;
 
 use execution_unit::apply_ci_profiles;
 pub(crate) use execution_unit::TestExecutionUnit;
+use focus_product::focus;
+pub(crate) use focus_selection::FocusSelection;
 use integration_product::{formal, scenario, ui};
 use owner_product::{owner, owner_ci};
 use process_scenario_product::process_scenario;
@@ -29,6 +33,7 @@ impl TestPlan {
     pub(crate) fn build(product: &TestProduct, workspace_root: &Path) -> Result<Self, String> {
         let mut units = match product {
             TestProduct::Owner { package } => owner(package, workspace_root),
+            TestProduct::Focus { group } => focus(*group, workspace_root),
             TestProduct::Smoke => smoke(workspace_root),
             TestProduct::Ui => ui(None, workspace_root),
             TestProduct::Ci {

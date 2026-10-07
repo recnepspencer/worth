@@ -142,7 +142,7 @@ fn killed_checkpoint_writer_reopens_and_observes_each_persisted_effect_frontier(
     let seeds = scenario_seeds();
     let mut schedules = std::collections::BTreeSet::new();
     let mut perturbations = std::collections::BTreeSet::new();
-    for (index, (scenario, seed)) in SCENARIOS.into_iter().zip(seeds).enumerate() {
+    for seed in seeds {
         assert!(
             schedules.insert(seed.schedule),
             "duplicate checkpoint schedule seed"
@@ -151,10 +151,13 @@ fn killed_checkpoint_writer_reopens_and_observes_each_persisted_effect_frontier(
             perturbations.insert(seed.perturbation),
             "duplicate checkpoint perturbation seed"
         );
-        case::run_checkpoint_case(index, scenario, seed.schedule, seed.perturbation);
     }
     assert_eq!(schedules.len(), SCENARIO_COUNT);
     assert_eq!(perturbations.len(), SCENARIO_COUNT);
+    let scenarios = SCENARIOS.into_iter().zip(seeds).collect::<Vec<_>>();
+    super::scenario_execution::run_independent_scenarios(&scenarios, |index, (scenario, seed)| {
+        case::run_checkpoint_case(index, *scenario, seed.schedule, seed.perturbation);
+    });
 }
 
 #[test]

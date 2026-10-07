@@ -1,6 +1,9 @@
 use std::fmt;
 use std::str::FromStr;
 
+mod focus_group;
+pub(crate) use focus_group::FocusGroup;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) enum CiTestLane {
     OwnerUnit,
@@ -55,6 +58,9 @@ pub(crate) enum TestProduct {
     },
     Smoke,
     Ui,
+    Focus {
+        group: FocusGroup,
+    },
     Ci {
         lane: CiTestLane,
         shard: Option<(usize, usize)>,
@@ -67,6 +73,7 @@ impl TestProduct {
             Self::Owner { package } => format!("owner:{package}"),
             Self::Smoke => "smoke".into(),
             Self::Ui => "ui".into(),
+            Self::Focus { group } => format!("focus:{}", group.as_str()),
             Self::Ci { lane, shard } => match shard {
                 Some((index, count)) => format!("ci:{lane}:{index}/{count}"),
                 None => format!("ci:{lane}"),

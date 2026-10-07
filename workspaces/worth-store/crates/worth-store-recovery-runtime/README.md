@@ -99,7 +99,10 @@ leases and rebuilds retained-storage charges.
 
 The direct process suite builds the writer, recoverer, and offline observer as
 separate executables, kills the writer or recoverer at production yieldpoints,
-and compares the resulting bytes from the independent observer. It runs
-serially because it is a process scenario lane; it does not maintain a
-cross-test lock, evidence ledger, source fingerprint inventory, or recursive
-unit-test tree for its parent-oracle helpers.
+and compares the resulting bytes from the independent observer. Its focused
+groups reuse the existing integration executable. The full process lane builds
+the three executables once and runs groups sequentially; independent crash
+scenarios within a group run at most four isolated worlds at a time. There is
+no cross-test lock or shared mutable fixture. See the
+[test runner's focus commands](../../tools/store-test-runner/README.md#focused-recovery-iteration)
+for entry recovery, crash seams, successor admission, and observer iteration.

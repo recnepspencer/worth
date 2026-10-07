@@ -39,14 +39,18 @@ fn run_stages(
     index: usize,
     include: impl Fn(PhysicalRecoveryYieldpointStage) -> bool,
 ) {
-    for (offset, stage) in super::RECOVERY_SEAMS
+    let scenarios = super::RECOVERY_SEAMS
         .iter()
         .copied()
         .enumerate()
         .filter(|(_, stage)| include(*stage))
-    {
-        run_cancelled(world, index + offset, stage);
-    }
+        .collect::<Vec<_>>();
+    super::super::super::scenario_execution::run_independent_scenarios(
+        &scenarios,
+        |_, &(offset, stage)| {
+            run_cancelled(world, index + offset, stage);
+        },
+    );
 }
 
 fn run_cancelled(world: &ProcessWorld, index: usize, stage: PhysicalRecoveryYieldpointStage) {
@@ -147,14 +151,18 @@ fn run_deadlines(
     index: usize,
     include: impl Fn(PhysicalRecoveryYieldpointStage) -> bool,
 ) {
-    for (offset, stage) in super::RECOVERY_SEAMS
+    let scenarios = super::RECOVERY_SEAMS
         .iter()
         .copied()
         .enumerate()
         .filter(|(_, stage)| include(*stage))
-    {
-        run_deadline(world, index + offset, stage);
-    }
+        .collect::<Vec<_>>();
+    super::super::super::scenario_execution::run_independent_scenarios(
+        &scenarios,
+        |_, &(offset, stage)| {
+            run_deadline(world, index + offset, stage);
+        },
+    );
 }
 
 fn run_deadline(world: &ProcessWorld, index: usize, stage: PhysicalRecoveryYieldpointStage) {

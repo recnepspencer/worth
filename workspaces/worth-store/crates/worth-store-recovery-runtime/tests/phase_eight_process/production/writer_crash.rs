@@ -56,16 +56,24 @@ const MUTATION_CRASH_SCENARIOS: [(&str, u64, u64); 7] = [
 
 #[test]
 fn killed_writer_recovers_after_each_mutation_effect_boundary() {
-    for (stage, schedule_seed, perturbation_seed) in MUTATION_CRASH_SCENARIOS {
-        assert_ne!(schedule_seed, perturbation_seed);
-        let world = ProcessWorld::start_mutation_crash(
-            stage,
-            MutationCrashWorkload::ExtentWriteback,
-            schedule_seed,
-            perturbation_seed,
-        );
-        let dead_observer = world.observe(&format!("{stage}-dead"));
-        world
+    super::super::scenario_execution::run_independent_scenarios(
+        &MUTATION_CRASH_SCENARIOS,
+        |_, &(stage, schedule_seed, perturbation_seed)| {
+            run_mutation_crash(stage, schedule_seed, perturbation_seed);
+        },
+    );
+}
+
+fn run_mutation_crash(stage: &'static str, schedule_seed: u64, perturbation_seed: u64) {
+    assert_ne!(schedule_seed, perturbation_seed);
+    let world = ProcessWorld::start_mutation_crash(
+        stage,
+        MutationCrashWorkload::ExtentWriteback,
+        schedule_seed,
+        perturbation_seed,
+    );
+    let dead_observer = world.observe(&format!("{stage}-dead"));
+    world
             .writer
             .history
             .compare_report(&dead_observer.report)
@@ -75,69 +83,68 @@ fn killed_writer_recovers_after_each_mutation_effect_boundary() {
                 )
             });
 
-        let candidate_generation = world
-            .writer
-            .history
-            .current_root_generation()
-            .expect("writer leaves a selected current root")
-            + 1;
-        let candidate_before = (stage == "during-root-publication")
-            .then(|| candidate_topology(&world.writer.root, candidate_generation));
-        let runtime = world.recover_root_with_profile(
+    let candidate_generation = world
+        .writer
+        .history
+        .current_root_generation()
+        .expect("writer leaves a selected current root")
+        + 1;
+    let candidate_before = (stage == "during-root-publication")
+        .then(|| candidate_topology(&world.writer.root, candidate_generation));
+    let runtime = world.recover_root_with_profile(
+        &world.writer.root,
+        &format!("{stage}-recovery"),
+        "c8-phase8-fate-coverage-v1",
+    );
+    let observer = world.observe(&format!("{stage}-reopened"));
+    let history = world.parent_history_after_recovery(&world.writer.root);
+    super::harness::compare_runtime_and_observer_with_budget(
+        &runtime,
+        &observer,
+        &history,
+        4 * 1024 * 1024,
+    );
+
+    assert_ne!(world.writer.process_id, dead_observer.process_id);
+    assert_ne!(world.writer.process_id, runtime.process_id);
+    assert_ne!(runtime.process_id, observer.process_id);
+    if stage == "during-root-publication" {
+        assert_eq!(
+            candidate_before.as_ref().unwrap(),
+            &candidate_topology(&world.writer.root, candidate_generation),
+            "first recovery must publish the writer's exact immutable candidate bytes"
+        );
+        let second = world.recover_root_with_profile(
             &world.writer.root,
-            &format!("{stage}-recovery"),
+            &format!("{stage}-second-recovery"),
             "c8-phase8-fate-coverage-v1",
         );
-        let observer = world.observe(&format!("{stage}-reopened"));
-        let history = world.parent_history_after_recovery(&world.writer.root);
+        let second_observer = world.observe(&format!("{stage}-second-reopened"));
+        let second_history = world.parent_history_after_recovery(&world.writer.root);
         super::harness::compare_runtime_and_observer_with_budget(
-            &runtime,
-            &observer,
-            &history,
+            &second,
+            &second_observer,
+            &second_history,
             4 * 1024 * 1024,
         );
-
-        assert_ne!(world.writer.process_id, dead_observer.process_id);
-        assert_ne!(world.writer.process_id, runtime.process_id);
-        assert_ne!(runtime.process_id, observer.process_id);
-        if stage == "during-root-publication" {
-            assert_eq!(
-                candidate_before.as_ref().unwrap(),
-                &candidate_topology(&world.writer.root, candidate_generation),
-                "first recovery must publish the writer's exact immutable candidate bytes"
-            );
-            let second = world.recover_root_with_profile(
-                &world.writer.root,
-                &format!("{stage}-second-recovery"),
-                "c8-phase8-fate-coverage-v1",
-            );
-            let second_observer = world.observe(&format!("{stage}-second-reopened"));
-            let second_history = world.parent_history_after_recovery(&world.writer.root);
-            super::harness::compare_runtime_and_observer_with_budget(
-                &second,
-                &second_observer,
-                &second_history,
-                4 * 1024 * 1024,
-            );
-            assert_eq!(
-                candidate_before.as_ref().unwrap(),
-                &candidate_topology(&world.writer.root, candidate_generation),
-                "fresh reopen must preserve the adopted candidate topology byte-for-byte"
-            );
-            let process_ids = BTreeSet::from([
-                world.writer.process_id,
-                dead_observer.process_id,
-                runtime.process_id,
-                observer.process_id,
-                second.process_id,
-                second_observer.process_id,
-            ]);
-            assert_eq!(
-                process_ids.len(),
-                6,
-                "every critical role must be a fresh process"
-            );
-        }
+        assert_eq!(
+            candidate_before.as_ref().unwrap(),
+            &candidate_topology(&world.writer.root, candidate_generation),
+            "fresh reopen must preserve the adopted candidate topology byte-for-byte"
+        );
+        let process_ids = BTreeSet::from([
+            world.writer.process_id,
+            dead_observer.process_id,
+            runtime.process_id,
+            observer.process_id,
+            second.process_id,
+            second_observer.process_id,
+        ]);
+        assert_eq!(
+            process_ids.len(),
+            6,
+            "every critical role must be a fresh process"
+        );
     }
 }
 

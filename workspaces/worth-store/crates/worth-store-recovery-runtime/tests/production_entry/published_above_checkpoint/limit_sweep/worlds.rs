@@ -1,5 +1,5 @@
 //! The worlds the sweep takes as their kill or their last close left them.
-//! Each is built afresh for every swept limit: a recovery changes it.
+//! Each producer runs once; independent media copies isolate successful sweeps.
 
 use super::*;
 use worth_store_test_support::TemporaryDirectory;

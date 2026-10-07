@@ -60,6 +60,9 @@ fn every_nextest_product_fails_when_its_selection_is_empty() {
             package: "worth-store".into(),
         },
         TestProduct::Smoke,
+        TestProduct::Focus {
+            group: crate::product::FocusGroup::EntryCustody,
+        },
         TestProduct::Ui,
         TestProduct::Ci {
             lane: CiTestLane::Scenario,
@@ -94,6 +97,9 @@ fn fresh_process_recovery_keeps_its_direct_phase_eight_dispatcher() {
     let process = ci_plan(CiTestLane::ProcessScenario, None);
 
     assert_eq!(process.units().len(), 1);
+    assert!(process.units()[0]
+        .arguments()
+        .ends_with(&["--".into(), "--ci".into()]));
     assert!(process.units()[0]
         .arguments()
         .iter()
@@ -163,4 +169,45 @@ fn workspace_root() -> &'static Path {
         .parent()
         .and_then(Path::parent)
         .unwrap()
+}
+
+#[test]
+fn entry_focus_scopes_cargo_and_separates_custody_from_capacity() {
+    let plan = TestPlan::build(
+        &TestProduct::Focus {
+            group: crate::product::FocusGroup::EntryCustody,
+        },
+        workspace_root(),
+    )
+    .unwrap();
+    let arguments = nextest(&plan).arguments();
+    assert!(arguments
+        .windows(2)
+        .any(|pair| pair == ["-p", "worth-store-recovery-runtime"]));
+    assert!(arguments
+        .windows(2)
+        .any(|pair| pair == ["--test", "production_entry"]));
+    assert!(!arguments.iter().any(|argument| argument == "--workspace"));
+    let filter = &arguments[arguments
+        .iter()
+        .position(|argument| argument == "--filterset")
+        .unwrap()
+        + 1];
+    assert!(filter.contains("test(certified_release_serving::) - test(certified_release_serving::release_capacity_budget::)"));
+}
+
+#[test]
+fn process_focus_passes_its_selection_to_the_binary_owner() {
+    let plan = TestPlan::build(
+        &TestProduct::Focus {
+            group: crate::product::FocusGroup::PhaseCheckpoint,
+        },
+        workspace_root(),
+    )
+    .unwrap();
+    let arguments = plan.units()[0].arguments();
+    assert!(arguments
+        .windows(2)
+        .any(|pair| pair == ["--bin", "store_process_scenario"]));
+    assert!(arguments.ends_with(&["--".into(), "--group".into(), "phase-checkpoint".into()]));
 }

@@ -100,3 +100,34 @@ fn help_is_only_a_top_level_request() {
     assert!(help_requested(&["--help".into()]));
     assert!(!help_requested(&["smoke".into(), "--help".into()]));
 }
+
+#[test]
+fn focus_requires_a_known_group_and_rejects_unrelated_options() {
+    use crate::product::FocusGroup;
+    let parsed =
+        Arguments::parse(["focus", "--group", "entry-custody"].map(str::to_owned)).unwrap();
+    assert_eq!(
+        parsed.product,
+        TestProduct::Focus {
+            group: FocusGroup::EntryCustody
+        }
+    );
+    assert_eq!(
+        Arguments::parse(["focus".into()]),
+        Err("focus requires --group <group>".into())
+    );
+    for arguments in [
+        vec!["focus", "--group", "unknown"],
+        vec!["focus", "--group", "entry-custody", "-p", "worth-store"],
+        vec![
+            "focus",
+            "--group",
+            "entry-custody",
+            "--partition",
+            "scenario",
+        ],
+        vec!["smoke", "--group", "entry-custody"],
+    ] {
+        assert!(Arguments::parse(arguments.into_iter().map(str::to_owned)).is_err());
+    }
+}

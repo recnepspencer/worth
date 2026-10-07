@@ -2,8 +2,13 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
+use crate::plan::FocusSelection;
+use crate::product::FocusGroup;
+
 #[path = "phase_eight_process_suite/child.rs"]
 mod child;
+mod profile;
+pub(crate) use profile::ProcessSuiteProfile;
 
 const WRITER_ENV: &str = "WORTH_STORE_PHASE8_WRITER";
 const OBSERVER_ENV: &str = "WORTH_STORE_PHASE8_OBSERVER";
@@ -21,35 +26,56 @@ struct ProcessBinaries {
     recovery: PathBuf,
 }
 
-pub(super) fn run(workspace: &Path, target_root: Option<&Path>) -> Result<(), String> {
-    let binaries = ProcessBinaries::build(workspace, target_root)?;
-    let mut command = cargo(workspace);
-    command.args([
-        "test",
-        "-p",
-        "worth-store-recovery-runtime",
-        "--test",
-        "phase_eight_process",
-        "--features",
-        "certification-test-authority",
-    ]);
-    command
-        .env("CARGO_TARGET_DIR", &binaries.target)
-        .env(WRITER_ENV, &binaries.writer)
-        .env(OBSERVER_ENV, &binaries.observer)
-        .env(RECOVERY_ENV, &binaries.recovery);
-    successful(
-        child::run_within(&mut command, Duration::from_secs(60 * 60))?,
-        "Phase 8 process suite",
-    )
+const PROCESS_GROUPS: &[FocusGroup] = &[
+    FocusGroup::PhaseOracle,
+    FocusGroup::PhaseCheckpoint,
+    FocusGroup::PhaseAgreement,
+    FocusGroup::PhaseRecovery,
+    FocusGroup::PhaseMutation,
+    FocusGroup::PhaseSuccessor,
+];
+
+pub(super) fn run(
+    workspace: &Path,
+    target_root: Option<&Path>,
+    group: Option<FocusGroup>,
+    profile: ProcessSuiteProfile,
+) -> Result<(), String> {
+    let groups = match group.as_ref() {
+        Some(group) if PROCESS_GROUPS.contains(group) => std::slice::from_ref(group),
+        Some(group) => return Err(format!("{} is not a Phase 8 process group", group.as_str())),
+        None => PROCESS_GROUPS,
+    };
+    let binaries = ProcessBinaries::build(workspace, target_root, profile)?;
+    for group in groups {
+        let mut command = cargo(workspace);
+        command
+            .args(profile.nextest_arguments(FocusSelection::for_group(*group).nextest_arguments()));
+        command
+            .arg("--target-dir")
+            .arg(&binaries.target)
+            .env(WRITER_ENV, &binaries.writer)
+            .env(OBSERVER_ENV, &binaries.observer)
+            .env(RECOVERY_ENV, &binaries.recovery);
+        successful(
+            child::run_within(&mut command, Duration::from_secs(60 * 60))?,
+            group.as_str(),
+        )?;
+    }
+    Ok(())
 }
 
 impl ProcessBinaries {
-    fn build(workspace: &Path, target_root: Option<&Path>) -> Result<Self, String> {
+    fn build(
+        workspace: &Path,
+        target_root: Option<&Path>,
+        profile: ProcessSuiteProfile,
+    ) -> Result<Self, String> {
         let target = cargo_target(workspace, target_root);
         build(
             workspace,
             &target,
+            profile,
             "worth-store",
             "physical_store_c8_writer",
             Some(WRITER_FEATURES),
@@ -57,6 +83,7 @@ impl ProcessBinaries {
         build(
             workspace,
             &target,
+            profile,
             "worth-store-offline-verifier",
             "physical_store_offline_observer",
             None,
@@ -64,14 +91,15 @@ impl ProcessBinaries {
         build(
             workspace,
             &target,
+            profile,
             "worth-store-recovery-runtime",
             "physical_store_recover",
             Some(RECOVERY_FEATURES),
         )?;
         Ok(Self {
-            writer: executable(&target, "physical_store_c8_writer")?,
-            observer: executable(&target, "physical_store_offline_observer")?,
-            recovery: executable(&target, "physical_store_recover")?,
+            writer: executable(&target, profile, "physical_store_c8_writer")?,
+            observer: executable(&target, profile, "physical_store_offline_observer")?,
+            recovery: executable(&target, profile, "physical_store_recover")?,
             target,
         })
     }
@@ -94,15 +122,19 @@ fn cargo_target(workspace: &Path, target_root: Option<&Path>) -> PathBuf {
 fn build(
     workspace: &Path,
     target: &Path,
+    profile: ProcessSuiteProfile,
     package: &str,
     binary: &str,
     feature: Option<&str>,
 ) -> Result<(), String> {
     let mut command = cargo(workspace);
-    command.env("CARGO_TARGET_DIR", target).args([
-        "build",
+    command.arg("build").arg("--target-dir").arg(target).args([
+        "--manifest-path",
+        "Cargo.toml",
         "--locked",
         "--no-default-features",
+        "--profile",
+        profile.cargo_profile(),
         "-p",
         package,
         "--bin",
@@ -123,9 +155,13 @@ fn cargo(workspace: &Path) -> Command {
     command
 }
 
-fn executable(target: &Path, binary: &str) -> Result<PathBuf, String> {
+fn executable(
+    target: &Path,
+    profile: ProcessSuiteProfile,
+    binary: &str,
+) -> Result<PathBuf, String> {
     let path = target
-        .join("debug")
+        .join(profile.directory())
         .join(format!("{binary}{}", std::env::consts::EXE_SUFFIX));
     path.is_file()
         .then_some(path)

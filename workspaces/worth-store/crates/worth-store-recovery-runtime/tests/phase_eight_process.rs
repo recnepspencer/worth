@@ -8,6 +8,8 @@ mod comparison;
 mod history;
 #[path = "phase_eight_process/production.rs"]
 mod production;
+#[path = "phase_eight_process/scenario_execution.rs"]
+mod scenario_execution;
 #[path = "phase_eight_process/support_binaries.rs"]
 mod support_binaries;
 #[path = "phase_eight_process/terminal_profiles.rs"]
