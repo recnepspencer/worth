@@ -17,6 +17,7 @@ pub use computation::{
     WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
     WorthQueryPreparedManagedComputation,
 };
+pub(in crate::domain_computation::primary_graph) use conditional::PendingConditionalRegistry;
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
     WorthQueryApplicationConditionalProducerAccess,
@@ -28,8 +29,9 @@ pub use contracts::{
 };
 pub(in crate::domain_computation::primary_graph) use producer::{
     install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
-    PendingOutputReadiness, TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
-    WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
+    PendingOutputReadiness, PendingProducerRegistry, TypedPendingOutputReadiness,
+    WorthQueryInstalledOutputProducerRoutes, WorthQueryInstalledOutputReadinessRoutes,
+    WorthQueryProducerCommitAuthority,
 };
 pub use producer::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemand,

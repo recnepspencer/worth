@@ -9,7 +9,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
 };
 use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program, WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial,
+    in_memory_rostered_program, WorthQueryApplicationLimits, WorthQueryApplicationOpenRefusal,
     WorthQueryApplicationProfile, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime,
 };
@@ -195,7 +195,7 @@ pub fn publish_on_first_resource_program() -> DocumentRetentionRuntime<ResourceR
 
 /// Attempts a host that rosters P0 alone against the two-rule catalog.
 pub fn publish_first_program_alone(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenRefusal> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new(),
@@ -204,7 +204,7 @@ pub fn publish_first_program_alone(
 
 /// Attempts a host that rosters a program declaring an uninstalled rule.
 pub fn publish_with_foreign_rule_rostered(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenRefusal> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new()
@@ -219,7 +219,7 @@ pub fn publish_with_foreign_rule_rostered(
 pub fn publish<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenDenial>
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenRefusal>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,
@@ -238,7 +238,7 @@ fn publish_with_limits<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
     limits: WorthQueryApplicationLimits,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenDenial>
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenRefusal>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,

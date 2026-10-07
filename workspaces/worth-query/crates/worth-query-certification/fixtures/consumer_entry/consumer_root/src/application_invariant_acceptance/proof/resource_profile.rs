@@ -18,7 +18,7 @@ pub(super) fn candidate_bytes_beyond_host_limit_are_denied(
     let Err(denial) = installation::install_with_candidate_bytes(foreign, 8191) else {
         panic!("8192 declared candidate bytes must exceed the 8191-byte host")
     };
-    let WorthQueryApplicationOpenDenial::Contributions(denial) = denial else {
+    let WorthQueryApplicationOpenDenial::Contributions(denial) = denial.denial else {
         panic!("the producer's graph work must deny the installation: {denial:?}")
     };
     assert_eq!(

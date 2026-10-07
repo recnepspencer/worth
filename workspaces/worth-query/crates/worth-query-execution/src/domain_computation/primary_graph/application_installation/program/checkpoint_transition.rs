@@ -4,7 +4,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     application_installation::{
-        WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial, WorthQueryOpenAdoption,
+        WorthQueryApplicationLimits, WorthQueryApplicationOpenRefusal, WorthQueryOpenAdoption,
         WorthQueryOpenAdoptionPredecessor, WorthQueryOpenAdoptionResources,
         WorthQueryOpenAdoptionWriter,
     },
@@ -28,8 +28,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 /// relation-scoped rules until their migration owners supply complete support.
 ///
 /// Retained until every caller declares the adoption on [`program`](super::program).
-/// This form returns only the denial, so a caller that needs the refused home
-/// (the successor, or the repair capsule) opens through the builder.
+/// A refusal retains the unchanged home, successor home, or repair capsule.
 pub fn in_memory_rostered_program_from_checkpoint_with_transition<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
@@ -43,7 +42,7 @@ pub fn in_memory_rostered_program_from_checkpoint_with_transition<Schema, Progra
         &mut WorthQueryOpenAdoptionWriter<'_, Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenRefusal>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -55,5 +54,4 @@ where
         .roster(roster)
         .adopt_on_open(WorthQueryOpenAdoption::new(predecessor, resources, author))
         .open(ApplicationHome::holding(checkpoint))
-        .map_err(|refusal| refusal.denial)
 }

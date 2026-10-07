@@ -43,11 +43,17 @@ fn program_open<'open>() -> application_installation::WorthQueryProgramOpen<
 
 #[test]
 fn a_program_home_starts_once_and_resumes_without_reseeding() {
+    let mut seed_calls = 0;
     let started = program_open()
-        .initial_state(seed)
+        .initial_state(|graph, installed| {
+            seed_calls += 1;
+            seed(graph, installed)
+        })
         .open(ApplicationHome::memory())
         .expect("an empty home starts with the declared initial state");
     assert_eq!(started.opening(), &Opening::Started);
+    assert_eq!(seed_calls, 1, "the empty-home hook must run exactly once");
+    assert_seed_record(&started);
     let image = started.capture_application_checkpoint().unwrap();
     drop(started);
     let mut reseeded = false;
@@ -64,6 +70,7 @@ fn a_program_home_starts_once_and_resumes_without_reseeding() {
             installed: *validated_program().revision()
         }
     );
+    assert_seed_record(&resumed);
     drop(resumed);
     assert!(!reseeded, "a resumed home must skip the initial state");
 }
@@ -151,4 +158,32 @@ fn a_path_home_is_refused_with_its_deferral_and_nothing_is_created() {
     assert!(matches!(refusal.denial, Denial::Home(found) if found == absent));
     assert!(matches!(refusal.home, RefusedHome::Unchanged(_)));
     assert!(!path.exists(), "a refused path home must create nothing");
+}
+
+fn assert_seed_record(application: &super::checkpoint_transition::Target) {
+    let selected = application
+        .on_branch(application.current_world())
+        .select()
+        .unwrap();
+    let _intent = selected
+        .resolve_entity(
+            IntentIdentityField::reference(),
+            "intent-1".to_string(),
+            &request_scope(),
+            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .expect("the first seed's intent must remain visible");
+    // The accessor must work on the graph installed by this open.
+    let authority = application
+        .runtime()
+        .retain_invariant_projection_authority();
+    let projection = authority
+        .project(|reader| {
+            let entity = reader
+                .resolve_entity(IntentIdentityField::reference(), "intent-1".to_string())
+                .unwrap();
+            reader.field(&entity, IntentGateField::reference())
+        })
+        .unwrap();
+    assert_eq!(projection.into_parts().0, Some("home-opening".to_string()));
 }

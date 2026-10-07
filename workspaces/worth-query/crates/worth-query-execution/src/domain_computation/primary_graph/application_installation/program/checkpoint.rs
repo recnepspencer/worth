@@ -14,7 +14,7 @@ use super::{
     WorthQueryProgramApplicationRuntime,
 };
 use crate::domain_computation::primary_graph::application_installation::{
-    WorthQueryApplicationLimits, WorthQueryApplicationOpenDenial,
+    WorthQueryApplicationLimits, WorthQueryApplicationOpenRefusal,
 };
 
 /// Restores a program runtime from one Query-issued committed-world checkpoint.
@@ -31,7 +31,7 @@ pub fn in_memory_program_from_checkpoint<Schema, Program>(
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryApplicationLimits,
     checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenRefusal>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -60,7 +60,7 @@ pub fn in_memory_rostered_program_from_checkpoint<Schema, Program>(
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     limits: WorthQueryApplicationLimits,
     checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenDenial>
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryApplicationOpenRefusal>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -71,5 +71,4 @@ where
     super::program(program, declaration, configuration, limits)
         .roster(roster)
         .open(ApplicationHome::holding(checkpoint))
-        .map_err(|refusal| refusal.denial)
 }

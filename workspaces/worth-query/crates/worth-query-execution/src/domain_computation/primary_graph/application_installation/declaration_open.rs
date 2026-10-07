@@ -115,7 +115,7 @@ pub fn in_memory<Schema>(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationOpenDenial>
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationOpenRefusal>
 where
     Schema: ApplicationSchemaComposition,
     Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
@@ -123,5 +123,4 @@ where
     self::declaration(declaration, configuration, limits)
         .initial_state(initial_state)
         .open(ApplicationHome::memory())
-        .map_err(|refusal| refusal.denial)
 }

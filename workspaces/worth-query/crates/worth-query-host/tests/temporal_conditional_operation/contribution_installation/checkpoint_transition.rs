@@ -1,13 +1,12 @@
 //! Real native predecessor -> adopted home -> ordinary target reopen journey.
 use super::*;
 use application_installation::{
-    ApplicationHome, WorthQueryApplicationOpenDenial as Denial,
-    WorthQueryApplicationOpenRefusal as Refusal, WorthQueryHomeOpening as Opening,
+    ApplicationHome, WorthQueryApplicationOpenRefusal as Refusal, WorthQueryHomeOpening as Opening,
     WorthQueryOpenAdoption as Adoption, WorthQueryOpenAdoptionPredecessor as Predecessor,
     WorthQueryOpenAdoptionResources as Resources, WorthQueryRefusedHome as RefusedHome,
 };
 
-type Target = application_installation::WorthQueryProgramApplicationRuntime<
+pub(super) type Target = application_installation::WorthQueryProgramApplicationRuntime<
     TemporalHostSchema,
     TemporalInstallationProgram,
 >;
@@ -47,7 +46,7 @@ pub(super) fn home_of(
     ApplicationHome::memory_from_image_bytes_for_durability_test(checkpoint.bytes().to_vec())
 }
 
-fn source() -> (
+pub(super) fn source() -> (
     application_installation::WorthQueryApplicationCheckpoint,
     Predecessor,
 ) {
@@ -77,7 +76,7 @@ fn source() -> (
     )
 }
 
-fn reopen(home: ApplicationHome) -> Result<Target, Refusal> {
+pub(super) fn reopen(home: ApplicationHome) -> Result<Target, Refusal> {
     application_installation::program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
@@ -107,7 +106,7 @@ fn adopt(
     .open(home)
 }
 
-fn record(
+pub(super) fn record(
     key: impl Into<String>,
     value: u64,
 ) -> primary_graph::WorthQueryApplicationEntitySeed<TemporalHostSchema, UnrelatedRecord> {
@@ -120,7 +119,7 @@ fn record(
 
 /// Resolves the adopted row through target World authority; a reopen alone
 /// would not prove that typed effects survived native publication.
-fn assert_record_resolves(application: &Target, value: u64) {
+pub(super) fn assert_record_resolves(application: &Target, value: u64) {
     let selected = application
         .on_branch(application.current_world())
         .select()
@@ -180,34 +179,57 @@ fn open_adoption_publishes_typed_effects_and_resumes_under_target_roster() {
 }
 
 #[test]
-fn open_adoption_predecessor_mismatch_and_selection_bound_deny_before_authoring() {
+fn an_unmatched_rostered_image_resumes_without_adoption_preflight() {
+    let (source, _) = source();
+    let legacy = ApplicationProgramAuthoring::<TemporalHostSchema, LegacyTemporalProgram>::begin()
+        .validated_program()
+        .unwrap();
+    let recorded = *legacy.revision();
+    let mut called = false;
+    let resumed = application_installation::program(
+        validated_program(),
+        TemporalHostSchema::declaration().unwrap(),
+        configuration(),
+        checkpoint::checkpoint_limits(),
+    )
+    .roster(application_installation::WorthQueryApplicationProgramRoster::new().support(legacy))
+    .adopt_on_open(Adoption::new(
+        Predecessor::new(&"0".repeat(64)).unwrap(),
+        Resources::bounded(1, 1, 1).unwrap(),
+        |_, _| {
+            called = true;
+            Ok(())
+        },
+    ))
+    .open(home_of(&source))
+    .expect("an unmatched rostered image resumes without adoption preflight");
+    assert_eq!(
+        resumed.opening(),
+        &Opening::Resumed {
+            installed: recorded
+        }
+    );
+    assert!(!called);
+}
+
+#[test]
+fn open_adoption_selection_bound_denies_before_authoring() {
     let (source, predecessor) = source();
-    for (predecessor, resources) in [
-        (
-            Predecessor::new(&"0".repeat(64)).unwrap(),
-            Resources::bounded(512, 32, 4096).unwrap(),
-        ),
-        (predecessor, Resources::bounded(1, 32, 4096).unwrap()),
-    ] {
-        let mut called = false;
-        let refusal = adopt(
-            home_of(&source),
-            configuration(),
-            predecessor,
-            resources,
-            |_, _| {
-                called = true;
-                Ok(())
-            },
-        )
-        .err()
-        .expect("source and scope preflight must refuse the open");
-        assert!(matches!(refusal.home, RefusedHome::Unchanged(_)));
-        assert!(
-            !called,
-            "source and scope preflight must precede typed authoring"
-        );
-    }
+    let mut called = false;
+    let refusal = adopt(
+        home_of(&source),
+        configuration(),
+        predecessor,
+        Resources::bounded(1, 32, 4096).unwrap(),
+        |_, _| {
+            called = true;
+            Ok(())
+        },
+    )
+    .err()
+    .expect("source scope preflight must refuse the open");
+    assert!(matches!(refusal.home, RefusedHome::Unchanged(_)));
+    assert!(!called, "scope preflight must precede typed authoring");
 }
 
 #[test]
@@ -247,67 +269,25 @@ fn open_adoption_bounds_retained_key_capacity_even_for_a_short_key() {
     assert!(format!("{:?}", refusal.denial).contains("authoring resources exceeded"));
 }
 
-#[test]
-fn open_adoption_deferred_settlement_holds_the_home_in_repair_without_rerunning_authoring() {
-    let (source, predecessor) = source();
-    let mut calls = 0;
-    let refusal = adopt(
-        home_of(&source),
-        configuration(),
+pub(super) fn adopt_through_adapter(
+    source: application_installation::WorthQueryApplicationCheckpoint,
+    configuration: (TemporalContributionConfiguration,),
+    predecessor: Predecessor,
+    resources: Resources,
+    author: impl FnOnce(
+        &mut application_installation::WorthQueryOpenAdoptionWriter<'_, TemporalHostSchema>,
+        &domain::WorthQueryInstalledApplicationSchema<TemporalHostSchema>,
+    ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial>,
+) -> Result<Target, Refusal> {
+    application_installation::in_memory_rostered_program_from_checkpoint_with_transition(
+        validated_program(),
+        application_installation::WorthQueryApplicationProgramRoster::new(),
+        TemporalHostSchema::declaration().unwrap(),
+        configuration,
+        checkpoint::checkpoint_limits(),
+        source,
         predecessor,
-        Resources::bounded(512, 32, 4096).unwrap(),
-        |writer, _| {
-            calls += 1;
-            writer.bind_entity(record("repaired-record", 89))?;
-            writer.fail_next_durable_append_for_test();
-            Ok(())
-        },
+        resources,
+        author,
     )
-    .err()
-    .expect("performed but unacknowledged adoption must expose no World");
-    assert!(matches!(refusal.denial, Denial::AdoptionDeferred(_)));
-    let pending = match refusal.home {
-        RefusedHome::InRepair(pending) => pending,
-        other => panic!("expected exact native repair custody, got {other:?}"),
-    };
-    pending.fail_next_durable_append_for_test();
-    let pending = pending
-        .repair()
-        .expect_err("a refused repair retains the same capsule");
-    let home = pending
-        .repair()
-        .expect("native repair acknowledges the existing performed adoption");
-    let reopened = reopen(home).expect("only the repaired home may create a World");
-    assert_eq!(
-        reopened.opening(),
-        &Opening::Resumed {
-            installed: *validated_program().revision()
-        }
-    );
-    assert_record_resolves(&reopened, 89);
-    assert_eq!(calls, 1, "repair must not rerun typed adoption authoring");
-}
-
-#[test]
-fn open_adoption_returns_the_successor_home_after_a_later_installation_denial() {
-    let (source, predecessor) = source();
-    let (mut incomplete,) = configuration();
-    incomplete.install_route = false;
-    let refusal = adopt(
-        home_of(&source),
-        (incomplete,),
-        predecessor,
-        Resources::bounded(512, 32, 4096).unwrap(),
-        |writer, _| writer.bind_entity(record("acknowledged-record", 101)),
-    )
-    .err()
-    .expect("incomplete conditional routes must refuse the open after native acknowledgment");
-    assert!(matches!(refusal.denial, Denial::ConditionalPublication(_)));
-    let home = match refusal.home {
-        RefusedHome::Successor(home) => home,
-        other => panic!("acknowledged adoption effects must return the successor home: {other:?}"),
-    };
-    let reopened =
-        reopen(home).expect("a corrected configuration resumes the actual acknowledged successor");
-    assert_record_resolves(&reopened, 101);
 }

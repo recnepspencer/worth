@@ -235,7 +235,8 @@ fn checkpoint_bytes_are_denied(corrupted_bytes: Vec<u8>) {
         Err(denial) => denial,
         Ok(_) => panic!("corrupt checkpoint bytes cannot publish an application"),
     };
-    let application_installation::WorthQueryApplicationOpenDenial::Graph(denial) = denial else {
+    let application_installation::WorthQueryApplicationOpenDenial::Graph(denial) = denial.denial
+    else {
         panic!("corrupt checkpoint must be denied during graph recovery: {denial:?}")
     };
     assert_eq!(

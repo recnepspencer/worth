@@ -170,16 +170,23 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     cell: &WorthQueryProgramActivationCell,
     adoption: WorthQueryOpenAdoption<'_, Schema>,
 ) -> Result<WorthQueryApplicationCheckpoint, OpenFailure> {
+    #[cfg(feature = "test-durability-faults")]
+    let stop_capture = adoption.stop_capture;
     let successor = prepare_transition(graph, installed, support, cell, adoption)?;
     let publication = graph
         .recovered_publication
         .clone()
         .expect("transition holds its original native bootstrap publication");
-    let image = match graph
-        .graph
-        .integration_handle()
-        .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
-    {
+    let image = match graph.graph.integration_handle().with_runtime(|runtime| {
+        #[cfg(feature = "test-durability-faults")]
+        if stop_capture {
+            return Err(worth_relational::facade::durability::DurabilityError::new(
+                worth_relational::facade::durability::RecoveryFailureClass::DurableIoFailure,
+                "test-injected successor checkpoint capture stop",
+            ));
+        }
+        runtime.durability_authority().native_checkpoint()
+    }) {
         Ok(native) => WorthQueryApplicationCheckpoint::encode(native, &publication, &[]).0,
         Err(error) => {
             let cause = format!("acknowledged target checkpoint capture stopped: {error:?}");

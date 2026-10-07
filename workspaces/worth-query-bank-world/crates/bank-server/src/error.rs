@@ -3,7 +3,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 use worth_query_host::facade::admission::authentication_event::WorthQueryAuthenticationEventDenial;
 use worth_query_host::facade::application_installation::{
-    WorthQueryApplicationOpenDenial, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryApplicationOpenRefusal, WorthQueryWorkflowRuntimeBindingDenial,
 };
 use worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial;
 use worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial;
@@ -34,7 +34,7 @@ impl std::error::Error for BankWorldSeedDenial {}
 #[derive(Debug)]
 pub enum BankIdentityRuntimeBuildError {
     ApplicationProgramValidation(ApplicationProgramValidationDenial),
-    ApplicationInstallation(Box<WorthQueryApplicationOpenDenial>),
+    ApplicationInstallation(Box<WorthQueryApplicationOpenRefusal>),
     SchemaDeclaration(ApplicationSchemaDeclarationDenial),
     PrincipalKey(WorthQueryApplicationPrincipalKeyDenial),
     PackageValidation(WorthQueryPortablePackageValidationDenial),

@@ -3,7 +3,7 @@
 
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program_from_checkpoint, WorthQueryApplicationCheckpoint,
-    WorthQueryApplicationOpenDenial, WorthQueryApplicationProgramRoster,
+    WorthQueryApplicationOpenRefusal, WorthQueryApplicationProgramRoster,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -18,7 +18,7 @@ use super::{host_limits, DocumentRetentionRuntime};
 pub fn restore_on_first_program(
     checkpoint: WorthQueryApplicationCheckpoint,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationOpenRefusal> {
     restore(validated_first_program(), checkpoint, roster)
 }
 
@@ -26,7 +26,7 @@ pub fn restore<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     checkpoint: WorthQueryApplicationCheckpoint,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenDenial>
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationOpenRefusal>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,

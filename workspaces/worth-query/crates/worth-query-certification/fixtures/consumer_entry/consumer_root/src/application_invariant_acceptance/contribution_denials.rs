@@ -297,14 +297,17 @@ fn assert_contribution_denial<Schema>(
             Schema,
             DenialProgram<Schema>,
         >,
-        WorthQueryApplicationOpenDenial,
+        application_installation::WorthQueryApplicationOpenRefusal,
     >,
     expected: WorthQueryPrimaryGraphInstallationDenialKind,
 ) where
     Schema: ApplicationSchemaComposition,
 {
     match result {
-        Err(WorthQueryApplicationOpenDenial::Contributions(denial)) => {
+        Err(application_installation::WorthQueryApplicationOpenRefusal {
+            denial: WorthQueryApplicationOpenDenial::Contributions(denial),
+            ..
+        }) => {
             assert_eq!(denial.kind(), expected, "{denial:?}")
         }
         Err(other) => panic!("expected contribution denial {expected:?}, got {other:?}"),

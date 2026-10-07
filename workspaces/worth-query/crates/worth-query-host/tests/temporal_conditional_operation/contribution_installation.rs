@@ -335,49 +335,6 @@ pub(super) fn publishes_delivers_and_executes() {
     assert_eq!(installed.contacts.snapshot(), (1, 1, 1, 1));
 }
 
-pub(super) fn zero_route_installation_is_denied() {
-    let contacts = ContactCounters::default();
-    let (installation_predicate, _) = Predicate::controlled(contacts.clone());
-    let (definition_predicate, _) = Predicate::controlled(contacts.clone());
-    let (clock_source, clock_control) = ClockSource::due();
-    let result = application_installation::in_memory_program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        (TemporalContributionConfiguration {
-            installation_predicate,
-            definition_predicate: Arc::new(definition_predicate),
-            clock_source,
-            clock_control,
-            contacts,
-            install_route: false,
-        },),
-        WorthQueryApplicationLimits::new(
-            product_world_resources(1_024),
-            runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
-                .unwrap(),
-            runtime::WorthQueryApplicationQueryResourceProfile::bounded(
-                5_120,
-                2_048,
-                usize::MAX,
-                128,
-            )
-            .unwrap(),
-            primary_graph::SignalConditionalEvaluationBudget::development(),
-        ),
-        |_, _| Ok(()),
-    );
-    match result {
-        Err(application_installation::WorthQueryApplicationOpenDenial::ConditionalPublication(
-            denial,
-        )) => assert_eq!(
-            denial.kind(),
-            primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::IncompleteBindingInventory,
-        ),
-        Err(other) => panic!("expected incomplete conditional route denial, got {other:?}"),
-        Ok(_) => panic!("a zero-route conditional installation published an application"),
-    }
-}
-
 #[path = "contribution_installation/source_change.rs"]
 mod source_change;
 use source_change::change_input;
@@ -393,3 +350,14 @@ pub(super) use checkpoint::{
     application_checkpoint_denies_corrupt_incompatible_and_forged_bytes,
     application_checkpoint_restores_fresh_editable_authority,
 };
+
+#[path = "contribution_installation/route_denial.rs"]
+mod route_denial;
+pub(super) use route_denial::zero_route_installation_is_denied;
+#[path = "contribution_installation/adapter_recovery.rs"]
+mod adapter_recovery;
+#[path = "contribution_installation/adoption_start.rs"]
+mod adoption_start;
+
+#[path = "contribution_installation/runtime_authority.rs"]
+mod runtime_authority;

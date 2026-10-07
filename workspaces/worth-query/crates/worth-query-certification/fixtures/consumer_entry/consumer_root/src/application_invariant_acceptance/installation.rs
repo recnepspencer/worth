@@ -64,7 +64,10 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         },
     );
     let denial = match result {
-        Err(installation::WorthQueryApplicationOpenDenial::Program(denial)) => denial,
+        Err(installation::WorthQueryApplicationOpenRefusal {
+            denial: installation::WorthQueryApplicationOpenDenial::Program(denial),
+            ..
+        }) => denial,
         Err(other) => panic!("expected omitted-rule denial, received {other}"),
         Ok(_) => panic!("a program that omits an installed rule was accepted"),
     };
@@ -110,7 +113,10 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         },
     );
     let denial = match result {
-        Err(installation::WorthQueryApplicationOpenDenial::Program(denial)) => denial,
+        Err(installation::WorthQueryApplicationOpenRefusal {
+            denial: installation::WorthQueryApplicationOpenDenial::Program(denial),
+            ..
+        }) => denial,
         Err(other) => panic!("expected omitted-binding denial, received {other}"),
         Ok(_) => panic!("a program that omits a required installed binding was accepted"),
     };
@@ -243,7 +249,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
 pub(super) fn install_with_candidate_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
-) -> Result<ConsumerWorld, installation::WorthQueryApplicationOpenDenial> {
+) -> Result<ConsumerWorld, installation::WorthQueryApplicationOpenRefusal> {
     install_with_resource_bytes(foreign, candidate_bytes, 4096)
 }
 
@@ -259,7 +265,7 @@ fn install_with_resource_bytes(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     candidate_bytes: u64,
     query_bytes: usize,
-) -> Result<ConsumerWorld, installation::WorthQueryApplicationOpenDenial> {
+) -> Result<ConsumerWorld, installation::WorthQueryApplicationOpenRefusal> {
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));

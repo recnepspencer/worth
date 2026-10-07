@@ -73,13 +73,16 @@ impl WorthQueryOpenAdoptionResources {
 }
 
 /// One adoption declared for open. It runs only when the home's image names
-/// `predecessor`; an empty home or a rostered image never runs it.
+/// `predecessor`, even when that revision is rostered. An empty home skips
+/// adoption; an unmatched rostered image resumes.
 ///
 /// It stays separate from live branch adoption: the predecessor is a
 /// descriptive rendering and the step runs before any World exists.
 pub struct WorthQueryOpenAdoption<'open, Schema> {
     pub(in crate::domain_computation::primary_graph) predecessor: WorthQueryOpenAdoptionPredecessor,
     pub(in crate::domain_computation::primary_graph) resources: WorthQueryOpenAdoptionResources,
+    #[cfg(feature = "test-durability-faults")]
+    stop_capture: bool,
     pub(in crate::domain_computation::primary_graph) author: Box<
         dyn FnOnce(
                 &mut WorthQueryOpenAdoptionWriter<'_, Schema>,
@@ -103,7 +106,17 @@ impl<'open, Schema> WorthQueryOpenAdoption<'open, Schema> {
             predecessor,
             resources,
             author: Box::new(author),
+            #[cfg(feature = "test-durability-faults")]
+            stop_capture: false,
         }
+    }
+
+    /// Stops the successor capture after native acknowledgment to exercise repair custody.
+    #[cfg(feature = "test-durability-faults")]
+    #[doc(hidden)]
+    pub fn fail_next_checkpoint_capture_for_test(mut self) -> Self {
+        self.stop_capture = true;
+        self
     }
 
     /// Whether a recorded activation rendering names this adoption's predecessor.

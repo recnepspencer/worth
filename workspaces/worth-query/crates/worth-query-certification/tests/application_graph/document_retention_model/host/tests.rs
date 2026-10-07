@@ -1,5 +1,8 @@
 use super::*;
 use declaration::application_operation::ApplicationMutationBinding;
+use worth_query_host::facade::application_installation::{
+    WorthQueryApplicationOpenDenial, WorthQueryApplicationOpenRefusal,
+};
 
 use super::super::retention_entry::DOCUMENT_IDENTITY;
 use super::super::schema::{Document, DocumentRetentionSchema};
@@ -21,7 +24,10 @@ fn guarded_binding_cannot_install_without_a_program_owner() {
         );
     assert!(matches!(
         result,
-        Err(WorthQueryApplicationOpenDenial::WorkflowAuthorityRequiresProgram)
+        Err(WorthQueryApplicationOpenRefusal {
+            denial: WorthQueryApplicationOpenDenial::WorkflowAuthorityRequiresProgram,
+            ..
+        })
     ));
 }
 
@@ -83,7 +89,10 @@ fn a_workflow_control_binding_refuses_a_handler() {
         },
     );
     match result {
-        Err(WorthQueryApplicationOpenDenial::InitialState(denial)) => assert_eq!(
+        Err(WorthQueryApplicationOpenRefusal {
+            denial: WorthQueryApplicationOpenDenial::InitialState(denial),
+            ..
+        }) => assert_eq!(
             denial.kind(),
             primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::WorkflowControlHandler
         ),
