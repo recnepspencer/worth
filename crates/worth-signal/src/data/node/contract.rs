@@ -84,6 +84,14 @@ impl Default for NodeProjectionContract {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NodeExecutionContract {
     #[serde(default)]
+    pub bounded_inputs: Option<super::BoundedSignalInputs>,
+    /// Maximum additional heap in a checked evaluation's result, trace, and
+    /// keyed output. Dependency capture has its own declared bound.
+    /// `None` retains adaptive result admission; `Some(0)` admits only inline
+    /// or otherwise heap-free checked results.
+    #[serde(default)]
+    pub max_checked_result_heap_bytes: Option<u64>,
+    #[serde(default)]
     pub equivalence: EquivalenceContract,
     #[serde(default)]
     pub path_class: PathClass,
@@ -96,6 +104,8 @@ pub struct NodeExecutionContract {
 impl NodeExecutionContract {
     pub fn operational() -> Self {
         Self {
+            bounded_inputs: None,
+            max_checked_result_heap_bytes: None,
             equivalence: EquivalenceContract::default(),
             path_class: PathClass::Operational,
             maintenance_mode: MaintenanceMode::DensityAdaptive,
@@ -169,6 +179,16 @@ impl NodeContract {
 
     pub fn with_produces(mut self, produces: impl Into<AspectMask>) -> Self {
         self.semantics.produces = produces.into();
+        self
+    }
+
+    pub fn with_bounded_inputs(mut self, inputs: super::BoundedSignalInputs) -> Self {
+        self.execution.bounded_inputs = Some(inputs);
+        self
+    }
+
+    pub fn with_max_checked_result_heap_bytes(mut self, maximum: u64) -> Self {
+        self.execution.max_checked_result_heap_bytes = Some(maximum);
         self
     }
 
@@ -344,5 +364,27 @@ impl NodeContract {
 impl Default for NodeContract {
     fn default() -> Self {
         Self::wildcard()
+    }
+}
+
+#[cfg(test)]
+mod checked_result_declaration_tests {
+    use super::NodeContract;
+
+    #[test]
+    fn optional_checked_result_limit_preserves_legacy_json_and_explicit_zero() {
+        let mut old = serde_json::to_value(NodeContract::wildcard()).unwrap();
+        old.get_mut("execution")
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .remove("max_checked_result_heap_bytes");
+        let restored: NodeContract = serde_json::from_value(old).unwrap();
+        assert_eq!(restored.execution.max_checked_result_heap_bytes, None);
+
+        let zero = NodeContract::wildcard().with_max_checked_result_heap_bytes(0);
+        let round_trip: NodeContract =
+            serde_json::from_value(serde_json::to_value(&zero).unwrap()).unwrap();
+        assert_eq!(round_trip.execution.max_checked_result_heap_bytes, Some(0));
     }
 }

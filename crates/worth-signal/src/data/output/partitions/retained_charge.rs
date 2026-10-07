@@ -3,8 +3,12 @@ use crate::data::retained_storage::{
     RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
 };
 
-use super::{CanonicalChangedRegions, ChangedRegion, PartitionSubscription, PartitionToken};
-use super::{DetailTokenId, PartitionInterner, PartitionTokenId};
+use super::{
+    CanonicalChangedRegions, ChangedRegion, InternedScopePath, PartitionSubscription,
+    PartitionToken,
+};
+use super::{PartitionInterner, PartitionTokenId};
+use crate::data::output::ScopePath;
 
 impl RetainedStorageMeasurement for PartitionTokenId {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
@@ -13,10 +17,9 @@ impl RetainedStorageMeasurement for PartitionTokenId {
         Ok(Charge::ZERO)
     }
 }
-impl RetainedStorageMeasurement for DetailTokenId {
+impl RetainedStorageMeasurement for InternedScopePath {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
-        let Self(_) = self;
         Ok(Charge::ZERO)
     }
 }
@@ -24,16 +27,12 @@ impl RetainedStorageMeasurement for PartitionInterner {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         let Self {
-            partitions,
-            details,
-            partition_lookup,
-            detail_lookup,
+            segments,
+            segment_lookup,
         } = self;
         Charge::ZERO
-            .checked_add(partitions.retained_heap_charge(work)?)?
-            .checked_add(details.retained_heap_charge(work)?)?
-            .checked_add(partition_lookup.retained_heap_charge(work)?)?
-            .checked_add(detail_lookup.retained_heap_charge(work)?)
+            .checked_add(segments.retained_heap_charge(work)?)?
+            .checked_add(segment_lookup.retained_heap_charge(work)?)
     }
 }
 
@@ -43,27 +42,23 @@ impl RetainedStorageMeasurement for PartitionToken {
     }
 }
 
+impl RetainedStorageMeasurement for ScopePath {
+    fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
+        self.storage().retained_heap_charge(work)
+    }
+}
+
 impl RetainedStorageMeasurement for PartitionSubscription {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
-        let Self {
-            partition,
-            detail,
-            match_mode: _,
-        } = self;
-        Charge::ZERO
-            .checked_add(partition.retained_heap_charge(work)?)?
-            .checked_add(detail.retained_heap_charge(work)?)
+        self.path().retained_heap_charge(work)
     }
 }
 
 impl RetainedStorageMeasurement for ChangedRegion {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
-        let Self { partition, detail } = self;
-        partition
-            .retained_heap_charge(work)?
-            .checked_add(detail.retained_heap_charge(work)?)
+        self.path().retained_heap_charge(work)
     }
 }
 
@@ -83,15 +78,11 @@ impl RetainedStorageForkPreparation for PartitionInterner {
     ) -> Result<RetainedStorageForkCharge, Denial> {
         work.visit()?;
         let Self {
-            partitions,
-            details,
-            partition_lookup,
-            detail_lookup,
+            segments,
+            segment_lookup,
         } = self;
         RetainedStorageForkCharge::unchanged(Charge::ZERO)
-            .checked_add(partitions.prepare_fork_charge(work)?)?
-            .checked_add(details.prepare_fork_charge(work)?)?
-            .checked_add(partition_lookup.prepare_fork_charge(work)?)?
-            .checked_add(detail_lookup.prepare_fork_charge(work)?)
+            .checked_add(segments.prepare_fork_charge(work)?)?
+            .checked_add(segment_lookup.prepare_fork_charge(work)?)
     }
 }

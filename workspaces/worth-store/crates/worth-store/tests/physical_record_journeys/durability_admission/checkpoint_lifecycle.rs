@@ -220,7 +220,7 @@ fn indeterminate_candidate_creation_requires_inspection_when_cleanup_cannot_be_p
     assert!(
         matches!(
             outcome,
-            PhysicalCheckpointOutcome::Indeterminate(indeterminate)
+            PhysicalCheckpointOutcome::Indeterminate(ref indeterminate)
                 if indeterminate.failure()
                     == worth_store::physical_runtime::PhysicalCheckpointCaptureFailureKind::CandidateContinuationFailed
         ),

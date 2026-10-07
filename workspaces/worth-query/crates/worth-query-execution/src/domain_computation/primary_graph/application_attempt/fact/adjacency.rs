@@ -55,6 +55,25 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
 ) -> Result<Vec<WorthQueryApplicationObservedRelation>, AdjacencyObservationDenial> {
+    observe_adjacency_with_work(
+        runtime,
+        snapshot,
+        relation_kind,
+        anchor,
+        direction,
+        maximum_work_units,
+    )
+    .map(|(relations, _)| relations)
+}
+
+pub(super) fn observe_adjacency_with_work(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    relation_kind: KindId,
+    anchor: EntityId,
+    direction: WorthQueryApplicationAdjacencyDirection,
+    maximum_work_units: usize,
+) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     let view = runtime
         .read_truth()
         .project_snapshot(snapshot)
@@ -74,7 +93,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
         }
     }
     .map_err(|_| AdjacencyObservationDenial::WorkBudgetExceeded)?;
-    Ok(read
+    let work_units = read.work_units();
+    let relations = read
         .into_records()
         .into_iter()
         .map(|record| WorthQueryApplicationObservedRelation {
@@ -82,5 +102,6 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
             from: record.source,
             to: record.target,
         })
-        .collect())
+        .collect();
+    Ok((relations, work_units))
 }

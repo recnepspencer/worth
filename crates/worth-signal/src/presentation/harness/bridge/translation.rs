@@ -6,8 +6,9 @@ use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::node::{EvaluationCondition, NodeState};
 use crate::diagnostics::profile::DiagnosticsTier;
-use crate::logic::planner::{EvaluationPlan, StageExecutor};
+use crate::logic::planner::EvaluationPlan;
 use crate::runtime_policy::SignalRuntimePolicy;
+use worth_foundational::ExecutionPosture;
 
 use super::SignalHarnessBridge;
 
@@ -44,28 +45,11 @@ impl SignalHarnessBridge {
         SignalRuntimePolicy::for_tier(Self::diagnostics_profile(level))
     }
 
-    pub(super) fn executor(mode: ExecutionMode) -> Result<StageExecutor, SignalError> {
+    pub(super) fn posture(mode: ExecutionMode) -> ExecutionPosture {
         match mode {
-            ExecutionMode::RuntimeDefault | ExecutionMode::Serial => Ok(StageExecutor::Serial),
-            ExecutionMode::StagedParallel => {
-                #[cfg(feature = "parallel")]
-                {
-                    Ok(StageExecutor::staged_parallel_precompute(2))
-                }
-                #[cfg(not(feature = "parallel"))]
-                {
-                    Err(super::error_mapping::staged_parallel_unavailable())
-                }
-            }
-            ExecutionMode::FullParallel => {
-                #[cfg(feature = "parallel")]
-                {
-                    Ok(StageExecutor::full_parallel(2))
-                }
-                #[cfg(not(feature = "parallel"))]
-                {
-                    Err(super::error_mapping::full_parallel_unavailable())
-                }
+            ExecutionMode::RuntimeDefault | ExecutionMode::Serial => ExecutionPosture::Serial,
+            ExecutionMode::StagedParallel | ExecutionMode::FullParallel => {
+                ExecutionPosture::Automatic
             }
         }
     }

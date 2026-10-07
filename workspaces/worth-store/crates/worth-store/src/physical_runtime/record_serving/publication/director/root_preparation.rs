@@ -103,7 +103,11 @@ impl RecordPublicationDirector {
                 })
             }
         };
-        let transition = match self.root_owner.begin(identity, current_root.clone()) {
+        let transition = match self.root_owner.begin_settled_group(
+            planning.member_identities(),
+            identity,
+            current_root.clone(),
+        ) {
             Ok(transition) => transition,
             Err(cause) => {
                 return Err(RootPublicationPreparationFailure::TransitionDenied { planning, cause })

@@ -159,25 +159,25 @@ fn selector_b_k_l_s_p_t_u_matrix_is_exact_for_both_roles() {
         );
 
         let mut unsupported_envelope_format = selector_bytes(kind, store, format);
-        unsupported_envelope_format[10..12].copy_from_slice(&2_u16.to_le_bytes());
+        unsupported_envelope_format[10..12].copy_from_slice(&3_u16.to_le_bytes());
         reseal_durable_frame(&mut unsupported_envelope_format);
         assert_unsupported(
             kind,
             &unsupported_envelope_format,
             scope,
             PhysicalIntegrityVersionAxis::PhysicalFormat,
-            2,
+            3,
         );
 
         let mut unsupported_embedded_format = selector_bytes(kind, store, format);
-        unsupported_embedded_format[89..91].copy_from_slice(&2_u16.to_le_bytes());
+        unsupported_embedded_format[89..91].copy_from_slice(&3_u16.to_le_bytes());
         reseal_durable_frame(&mut unsupported_embedded_format);
         assert_unsupported(
             kind,
             &unsupported_embedded_format,
             scope,
             PhysicalIntegrityVersionAxis::PhysicalFormat,
-            2,
+            3,
         );
     }
 }

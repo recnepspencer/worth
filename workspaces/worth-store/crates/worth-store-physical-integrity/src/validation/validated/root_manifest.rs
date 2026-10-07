@@ -1,7 +1,8 @@
 use worth_store_physical_format::{
-    DurablePhysicalRootManifest, FreeSpaceBlockReference, ManifestBlockReference,
-    PersistedRecordIdentity, PhysicalRecordFormatDeclaration, SegmentGenerationCell,
-    SegmentManifestBlockReference,
+    durable_root_manifest_frame_digest, DerivedFamilyRootDirectoryBinding,
+    DurablePhysicalRootManifest, FreeSpaceBlockReference, IndexedThroughBlobPublication,
+    ManifestBlockReference, PersistedRecordIdentity, PhysicalRecordFormatDeclaration,
+    ReleaseCustodyHeadBlockReferenceV1, SegmentGenerationCell, SegmentManifestBlockReference,
 };
 
 use super::super::{
@@ -22,6 +23,12 @@ pub struct IntegrityValidatedRootManifest<'media> {
     routing_root: Option<ManifestBlockReference>,
     segment_root: Option<SegmentManifestBlockReference>,
     free_space_root: Option<FreeSpaceBlockReference>,
+    release_custody_head_root: Option<ReleaseCustodyHeadBlockReferenceV1>,
+    next_release_custody_head_block: u64,
+    latest_blob_publication: Option<IndexedThroughBlobPublication>,
+    latest_blob_quarantine: Option<PersistedRecordIdentity>,
+    tier_epoch_anchor: Option<[u8; 32]>,
+    derived_family_directory: Option<DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
     requires_maintenance_protocol: bool,
@@ -64,6 +71,12 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
             routing_root: manifest.routing_root(),
             segment_root: manifest.segment_root(),
             free_space_root: manifest.free_space_root(),
+            release_custody_head_root: manifest.release_custody_head_root(),
+            next_release_custody_head_block: manifest.next_release_custody_head_block(),
+            latest_blob_publication: manifest.latest_blob_publication(),
+            latest_blob_quarantine: manifest.latest_blob_quarantine(),
+            tier_epoch_anchor: manifest.tier_epoch_anchor(),
+            derived_family_directory: manifest.derived_family_directory(),
             last_inline_record: manifest.last_inline_record(),
             last_inline_segment: manifest.last_inline_segment(),
             requires_maintenance_protocol: manifest.requires_maintenance_protocol(),
@@ -123,6 +136,28 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
         self.free_space_root
     }
 
+    pub const fn release_custody_head_root(&self) -> Option<ReleaseCustodyHeadBlockReferenceV1> {
+        self.release_custody_head_root
+    }
+
+    pub const fn next_release_custody_head_block(&self) -> u64 {
+        self.next_release_custody_head_block
+    }
+
+    pub const fn derived_family_directory(&self) -> Option<DerivedFamilyRootDirectoryBinding> {
+        self.derived_family_directory
+    }
+
+    pub const fn latest_blob_publication(&self) -> Option<IndexedThroughBlobPublication> {
+        self.latest_blob_publication
+    }
+    pub const fn latest_blob_quarantine(&self) -> Option<PersistedRecordIdentity> {
+        self.latest_blob_quarantine
+    }
+    pub const fn tier_epoch_anchor(&self) -> Option<[u8; 32]> {
+        self.tier_epoch_anchor
+    }
+
     pub const fn last_inline_record(&self) -> Option<PersistedRecordIdentity> {
         self.last_inline_record
     }
@@ -141,5 +176,10 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
 
     pub fn matches_input(&self, input: UntrustedPhysicalArtifact<'media>) -> bool {
         self.inspected.same_incarnation(input)
+    }
+
+    /// Exact complete frame identity of this independently admitted source root.
+    pub fn frame_sha256(&self) -> [u8; 32] {
+        durable_root_manifest_frame_digest(self.inspected.bytes())
     }
 }

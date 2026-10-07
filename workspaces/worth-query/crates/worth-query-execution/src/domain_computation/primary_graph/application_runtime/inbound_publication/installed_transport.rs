@@ -97,7 +97,7 @@ impl PerformedInstalledTransportCompletion {
         }
     }
 
-    pub(super) fn settle_after_conditional_handoff(&self, handoff: impl FnOnce()) -> bool {
+    pub(super) fn settle_fresh_delivery(&self) -> bool {
         let _handoff = self
             .delivery_handoff
             .lock()
@@ -105,8 +105,7 @@ impl PerformedInstalledTransportCompletion {
         if self.delivery_settled.load(Ordering::Acquire) {
             return true;
         }
-        handoff();
-        if !self.publication.settle_fresh_delivery_after_owner_handoff() {
+        if !self.publication.discharge_fresh_delivery() {
             return false;
         }
         self.delivery_settled.store(true, Ordering::Release);
@@ -168,6 +167,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicat
     ForeignRelationalRuntime,
     ForeignProductWorld,
     OriginalPublicationCommitMismatch,
+    BranchCoordinationCapacityExhausted,
     BindingUnavailable,
     PublicationPermit,
     TerminalIndexUnavailable,

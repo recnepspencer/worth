@@ -98,7 +98,13 @@ pub(super) fn matches(
         && selector.store_identity() == command.store
         && selector.root_generation() == command.published_generation
         && root.generation() == command.published_generation
-        && root.tree_identity() == command.checkpoint_stream.source().root().tree_identity()
+        && root.tree_identity()
+            == command
+                .checkpoint_stream
+                .facts()
+                .source()
+                .root()
+                .tree_identity()
         && binding.artifact_segment == command.artifact.segment().get()
         && binding.artifact_generation == command.artifact.generation().get()
         && binding.byte_count == command.byte_count

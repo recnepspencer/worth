@@ -101,7 +101,10 @@ pub enum SnapshotRestoreCoarseReason {
 }
 
 impl SignalSnapshotMeta {
-    pub const SCHEMA_VERSION: u32 = 2;
+    /// Schema 2 remains readable only when checked result limits are absent.
+    /// Schema 3 records those limits without changing the snapshot body type.
+    pub const SCHEMA_VERSION: u32 = 3;
+    pub const MIN_READABLE_SCHEMA_VERSION: u32 = 2;
 
     pub fn new(
         snapshot_id: SignalSnapshotId,

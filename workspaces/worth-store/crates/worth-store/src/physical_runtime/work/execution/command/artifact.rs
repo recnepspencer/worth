@@ -9,6 +9,19 @@ use super::types::{
 };
 
 impl PhysicalExecutorCommand {
+    pub(in crate::physical_runtime) fn retirement_candidate_retry(
+        work: ResourceAdmittedPhysicalWork,
+        payload: impl Into<Box<[u8]>>,
+        scope: crate::physical_runtime::record_serving::RetirementCandidateRetryScope,
+    ) -> Result<Self, PhysicalExecutorCommandDenial> {
+        require_family(&work, PhysicalWorkOperationFamily::ArtifactPublication)?;
+        let mut command = PhysicalWriteExecutorCommand::new(work, payload)?;
+        if !scope.admits(command.coordinate, &command.payload) {
+            return Err(PhysicalExecutorCommandDenial::PayloadLengthMismatch);
+        }
+        command.retirement_retry = Some(scope);
+        Ok(Self::NewArtifact(command))
+    }
     pub fn metadata(
         work: ResourceAdmittedPhysicalWork,
     ) -> Result<Self, PhysicalExecutorCommandDenial> {
@@ -135,6 +148,7 @@ impl PhysicalWriteExecutorCommand {
         let payload_digest = Sha256::digest(&payload).into();
         Ok(Self {
             work,
+            retirement_retry: None,
             coordinate,
             payload,
             payload_digest,

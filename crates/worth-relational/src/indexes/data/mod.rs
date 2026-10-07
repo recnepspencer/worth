@@ -3,8 +3,10 @@ mod entry_map;
 pub use entry_map::{DerivedIndexEntryMap, DerivedIndexRows};
 mod maintenance;
 pub use maintenance::{
-    DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
-    DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceWork,
+    DerivedIndexMaintenanceAdmissionStop, DerivedIndexMaintenanceBudget,
+    DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind,
+    DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceWork,
+    SelectedIndexGenerationAdmissionStop,
 };
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
@@ -16,9 +18,9 @@ mod relation_join;
 pub use generation_selection_counters::DerivedIndexSelectionCounters;
 
 pub use bounded_entity_field_lookup::{
-    BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,
-    BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
-    MAX_BOUNDED_INDEX_CANDIDATES,
+    BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenial,
+    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
+    BoundedEntityFieldLookupRequest, BoundedIndexParityMode, MAX_BOUNDED_INDEX_CANDIDATES,
 };
 pub use bounded_related_entity_ordered_lookup::{
     BoundedRelatedEntityOrderedLookupDenial, BoundedRelatedEntityOrderedLookupDenialKind,
@@ -180,4 +182,45 @@ pub struct DerivedIndexBuildOutcome {
     pub failed_indexes: Vec<DerivedIndexId>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub basis_denial: Option<crate::branch::RelationalBranchBasisDenial>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub execution_denial: Option<DerivedIndexExecutionDenial>,
+}
+
+impl DerivedIndexDefinition {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        let kind_bytes = match &self.kind {
+            DerivedIndexKind::EntityField { field_locator }
+            | DerivedIndexKind::RelationField { field_locator } => {
+                field_locator.owned_allocation_capacity_bytes() as u64
+            }
+            DerivedIndexKind::RelatedEntityOrdering { ordering, .. } => (ordering.capacity()
+                as u64)
+                .saturating_mul(std::mem::size_of::<RelatedEntityOrderingField>() as u64)
+                .saturating_add(
+                    ordering
+                        .iter()
+                        .map(|field| field.locator().owned_allocation_capacity_bytes() as u64)
+                        .sum::<u64>(),
+                ),
+            DerivedIndexKind::RelationJoin(_) => 0,
+        };
+        (self.name.capacity() as u64).saturating_add(kind_bytes)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DerivedIndexExecutionDenialKind {
+    Admission,
+    ResourceExhausted,
+    Cancelled,
+    DeadlineElapsed,
+    WorkExhausted,
+    ResultCapacityExceeded,
+    WorkerFailed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DerivedIndexExecutionDenial {
+    pub kind: DerivedIndexExecutionDenialKind,
+    pub partition_identity: Option<u64>,
 }

@@ -30,7 +30,7 @@ pub(super) fn attach_rejection(
         TransactionCommitError::Preparation { error, .. } => {
             commit_log.record_rejection(phase, Some(error.code()), None, error.detail());
         }
-        TransactionCommitError::Interrupted { .. } => {
+        TransactionCommitError::Interrupted { .. } | TransactionCommitError::Execution { .. } => {
             commit_log.record_rejection(phase, None, None, error.detail());
         }
         TransactionCommitError::PublicationDenied { .. }

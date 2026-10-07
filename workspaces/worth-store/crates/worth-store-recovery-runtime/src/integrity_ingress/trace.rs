@@ -8,6 +8,46 @@ pub(crate) struct RecoveryIntegrityIngressTrace {
 }
 
 impl RecoveryIntegrityIngressTrace {
+    pub(crate) fn next_observation_capacity(&self, additional: usize) -> Option<usize> {
+        let needed = self.observations.len().checked_add(additional)?;
+        if needed <= self.observations.capacity() {
+            Some(self.observations.capacity())
+        } else {
+            Some(
+                needed
+                    .max(self.observations.capacity().checked_mul(2)?)
+                    .max(4),
+            )
+        }
+    }
+
+    pub(crate) fn observation_reservation_bytes(&self, additional: usize) -> Option<u64> {
+        let capacity = self.next_observation_capacity(additional)?;
+        if capacity == self.observations.capacity() {
+            return Some(0);
+        }
+        u64::try_from(capacity)
+            .ok()?
+            .checked_mul(std::mem::size_of::<RecoveryIntegrityIngressObservation>() as u64)
+    }
+
+    pub(crate) fn try_reserve_observation_capacity(
+        &mut self,
+        capacity: usize,
+    ) -> Result<(), std::collections::TryReserveError> {
+        if capacity > self.observations.capacity() {
+            self.observations
+                .try_reserve_exact(capacity - self.observations.len())?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.observations.capacity())
+            .ok()?
+            .checked_mul(std::mem::size_of::<RecoveryIntegrityIngressObservation>() as u64)
+    }
+
     pub(crate) const fn new() -> Self {
         Self {
             counters: RecoveryIntegrityIngressCounters::new(),

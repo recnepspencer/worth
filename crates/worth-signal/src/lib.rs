@@ -157,4 +157,4 @@ pub mod facade;
 pub mod branch_bases_guide;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

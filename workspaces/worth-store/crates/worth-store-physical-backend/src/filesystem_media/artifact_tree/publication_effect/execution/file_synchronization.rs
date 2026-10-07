@@ -86,7 +86,7 @@ impl ArtifactTreeMedia<'_> {
                 ArtifactTreeFailure::io(ArtifactTreeFailureKind::DeniedBeforeEffect, &error),
             );
         }
-        match file.sync_all() {
+        match crate::filesystem_media::os_synchronization::synchronize_state(&file) {
             Ok(()) if attempt.effect_observation_is_indeterminate() => {
                 attempt.indeterminate(0);
                 self.indeterminate(effect, operation, None)

@@ -94,13 +94,13 @@ fn page_b_k_l_s_t_u_matrix_is_exact_at_16_32_and_64_kib() {
         );
 
         let mut unsupported_record_version = clean_page(page_size, identity);
-        unsupported_record_version[10..12].copy_from_slice(&2_u16.to_le_bytes());
+        unsupported_record_version[10..12].copy_from_slice(&3_u16.to_le_bytes());
         reseal(&mut unsupported_record_version);
         assert_unsupported(
             &unsupported_record_version,
             scope,
             PhysicalIntegrityVersionAxis::PhysicalFormat,
-            2,
+            3,
         );
     }
 }

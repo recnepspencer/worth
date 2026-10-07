@@ -9,7 +9,7 @@ use super::super::super::request::PreparedRelationIntegrityScope;
 use super::super::common::{canonicalize_violations, relation_violation};
 
 pub(in crate::validation::engine::evaluator) fn evaluate_cardinality_maximum_contract(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMaximumContract,
 ) -> Vec<InvariantViolation> {
@@ -24,13 +24,19 @@ pub(in crate::validation::engine::evaluator) fn evaluate_cardinality_maximum_con
     context.metrics().count_relation_contracts_evaluated(1);
     let mut violations = Vec::new();
     collect_source_maximum_violations(context, class, contract, scope, &mut violations);
+    if !context.checkpoint(0) {
+        return Vec::new();
+    }
     collect_target_maximum_violations(context, class, contract, scope, &mut violations);
+    if !context.checkpoint(0) {
+        return Vec::new();
+    }
     collect_pair_maximum_violations(context, class, contract, scope, &mut violations);
     canonicalize_violations(violations)
 }
 
 fn collect_source_maximum_violations(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMaximumContract,
     scope: &PreparedRelationIntegrityScope,
@@ -40,9 +46,15 @@ fn collect_source_maximum_violations(
         return;
     };
     for (key, count) in &scope.source_counts {
+        if !context.checkpoint(1) {
+            return;
+        }
         context.metrics().count_relation_cardinality_checks(1);
         if (*count as u64) <= limit {
             continue;
+        }
+        if !context.claim_result(4096) {
+            return;
         }
         violations.push(relation_violation(
             class,
@@ -64,7 +76,7 @@ fn collect_source_maximum_violations(
 }
 
 fn collect_target_maximum_violations(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMaximumContract,
     scope: &PreparedRelationIntegrityScope,
@@ -74,9 +86,15 @@ fn collect_target_maximum_violations(
         return;
     };
     for (key, count) in &scope.target_counts {
+        if !context.checkpoint(1) {
+            return;
+        }
         context.metrics().count_relation_cardinality_checks(1);
         if (*count as u64) <= limit {
             continue;
+        }
+        if !context.claim_result(4096) {
+            return;
         }
         violations.push(relation_violation(
             class,
@@ -98,7 +116,7 @@ fn collect_target_maximum_violations(
 }
 
 fn collect_pair_maximum_violations(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     contract: &LoweredCardinalityMaximumContract,
     scope: &PreparedRelationIntegrityScope,
@@ -108,9 +126,15 @@ fn collect_pair_maximum_violations(
         return;
     };
     for (key, count) in &scope.directed_pair_counts {
+        if !context.checkpoint(1) {
+            return;
+        }
         context.metrics().count_relation_cardinality_checks(1);
         if (*count as u64) <= limit {
             continue;
+        }
+        if !context.claim_result(4096) {
+            return;
         }
         violations.push(relation_violation(
             class,

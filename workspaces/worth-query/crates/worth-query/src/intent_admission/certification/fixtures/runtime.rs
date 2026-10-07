@@ -41,62 +41,62 @@ use runtime_adapters::{
 };
 
 pub(crate) fn certification_runtime() -> WorthQueryRuntime {
-    let (source, bridge) = certification_product_root();
-    WorthQueryRuntime::builder(
-        crate::consumer_kit::test_backend::in_memory_test_product_world_resources(),
-    )
-    .aspect_contracts(certification_aspect_contracts())
-    .expect("certification aspect contracts should install")
-    .runtime_bridge(bridge)
-    .relational_source_owner(source)
-    .conditional_execution_resources(
-        crate::runtime::WorthQueryConditionalExecutionResources::development(),
-    )
-    .schema_adapter(CertificationSchemaAdapter)
-    .source_adapter(CertificationSourceAdapter::default())
-    .snapshot_identity(CertificationSnapshotIdentity)
-    .existing_truth_verification(CertificationExistingTruthVerification)
-    .write_authority(CertificationWriteAuthority)
-    .signal_sink(CertificationSignalSink)
-    .subscription_activation(CertificationSubscriptionActivation)
-    .preview_basis(CertificationPreviewBasis)
-    .inspector_evidence(CertificationInspectorEvidence)
-    .intent_authority(CertificationIntentAuthority)
-    .support_profile(certification_support_profile())
-    .build_backend_from_parts()
-    .build()
-    .expect("certification runtime backend parts should build")
+    let resources = crate::consumer_kit::test_backend::in_memory_test_product_world_resources();
+    let (source, bridge) = certification_product_root(&resources);
+    WorthQueryRuntime::builder(resources)
+        .aspect_contracts(certification_aspect_contracts())
+        .expect("certification aspect contracts should install")
+        .runtime_bridge(bridge)
+        .relational_source_owner(source)
+        .conditional_execution_resources(
+            crate::runtime::WorthQueryConditionalExecutionResources::development(),
+        )
+        .schema_adapter(CertificationSchemaAdapter)
+        .source_adapter(CertificationSourceAdapter::default())
+        .snapshot_identity(CertificationSnapshotIdentity)
+        .existing_truth_verification(CertificationExistingTruthVerification)
+        .write_authority(CertificationWriteAuthority)
+        .signal_sink(CertificationSignalSink)
+        .subscription_activation(CertificationSubscriptionActivation)
+        .preview_basis(CertificationPreviewBasis)
+        .inspector_evidence(CertificationInspectorEvidence)
+        .intent_authority(CertificationIntentAuthority)
+        .support_profile(certification_support_profile())
+        .build_backend_from_parts()
+        .build()
+        .expect("certification runtime backend parts should build")
 }
 
 pub(crate) fn certification_runtime_with_invariant_violation_authority() -> WorthQueryRuntime {
-    let (source, bridge) = certification_product_root();
-    WorthQueryRuntime::builder(
-        crate::consumer_kit::test_backend::in_memory_test_product_world_resources(),
-    )
-    .aspect_contracts(certification_aspect_contracts())
-    .expect("certification aspect contracts should install")
-    .runtime_bridge(bridge)
-    .relational_source_owner(source)
-    .conditional_execution_resources(
-        crate::runtime::WorthQueryConditionalExecutionResources::development(),
-    )
-    .schema_adapter(CertificationSchemaAdapter)
-    .source_adapter(CertificationSourceAdapter::default())
-    .snapshot_identity(CertificationSnapshotIdentity)
-    .existing_truth_verification(CertificationExistingTruthVerification)
-    .write_authority(CertificationWriteAuthority)
-    .signal_sink(CertificationSignalSink)
-    .subscription_activation(CertificationSubscriptionActivation)
-    .preview_basis(CertificationPreviewBasis)
-    .inspector_evidence(CertificationInspectorEvidence)
-    .intent_authority(InvariantViolationCertificationIntentAuthority)
-    .support_profile(certification_support_profile())
-    .build_backend_from_parts()
-    .build()
-    .expect("certification runtime backend parts should build")
+    let resources = crate::consumer_kit::test_backend::in_memory_test_product_world_resources();
+    let (source, bridge) = certification_product_root(&resources);
+    WorthQueryRuntime::builder(resources)
+        .aspect_contracts(certification_aspect_contracts())
+        .expect("certification aspect contracts should install")
+        .runtime_bridge(bridge)
+        .relational_source_owner(source)
+        .conditional_execution_resources(
+            crate::runtime::WorthQueryConditionalExecutionResources::development(),
+        )
+        .schema_adapter(CertificationSchemaAdapter)
+        .source_adapter(CertificationSourceAdapter::default())
+        .snapshot_identity(CertificationSnapshotIdentity)
+        .existing_truth_verification(CertificationExistingTruthVerification)
+        .write_authority(CertificationWriteAuthority)
+        .signal_sink(CertificationSignalSink)
+        .subscription_activation(CertificationSubscriptionActivation)
+        .preview_basis(CertificationPreviewBasis)
+        .inspector_evidence(CertificationInspectorEvidence)
+        .intent_authority(InvariantViolationCertificationIntentAuthority)
+        .support_profile(certification_support_profile())
+        .build_backend_from_parts()
+        .build()
+        .expect("certification runtime backend parts should build")
 }
 
-fn certification_product_root() -> (
+fn certification_product_root(
+    resources: &crate::runtime::WorthQueryProductWorldResources,
+) -> (
     worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
     RuntimeBridge,
 ) {
@@ -106,6 +106,7 @@ fn certification_product_root() -> (
     let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
         runtime,
         "intent-certification-product",
+        resources.invalidation_resources(),
     )
     .expect("certification Product source should admit");
     let bridge = certification_bridge_from_source(source.bridge_source());

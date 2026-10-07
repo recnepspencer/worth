@@ -9,6 +9,7 @@ pub enum WorthQueryApplicationNoEffectCause {
     ReferenceGenerationExhausted,
     CapacityExhausted,
     OwnerUnavailable,
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     PreEffectFailure,
 }
 
@@ -38,6 +39,9 @@ impl WorthQueryApplicationNoEffect {
             }
             Cause::CapacityExhausted => WorthQueryApplicationNoEffectCause::CapacityExhausted,
             Cause::OwnerUnavailable => WorthQueryApplicationNoEffectCause::OwnerUnavailable,
+            Cause::RelationalDeferred(reason) => {
+                WorthQueryApplicationNoEffectCause::RelationalDeferred(reason)
+            }
             Cause::PreEffectFailure => WorthQueryApplicationNoEffectCause::PreEffectFailure,
             Cause::StaleExpectedProductHead
             | Cause::CancelledBeforeEffect
@@ -53,11 +57,11 @@ pub use settlement_deferred::{
     WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
 };
 
-/// Evidence that a commit attempt was stale: the branch moved after the basis the
-/// candidate was built on, so nothing was committed.
+/// Evidence that sealed decision facts changed at the admitted commit basis.
+/// Nothing was committed.
 ///
 /// Re-read from a fresh basis and retry with a fresh source. The runtime never
-/// retries or rebases for you.
+/// reruns the handler for you.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationStaleAttempt {
     stale_fact_count: usize,

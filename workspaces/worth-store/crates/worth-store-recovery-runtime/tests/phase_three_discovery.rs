@@ -1,6 +1,12 @@
 #[allow(dead_code)]
 mod phase_three_support;
 
+#[path = "phase_three_discovery/checkpoint_wal_join.rs"]
+mod checkpoint_wal_join;
+
+use phase_three_support::synthetic_topology::{
+    publish_synthetic_branched_genesis, publish_synthetic_nonempty_genesis,
+};
 use phase_three_support::*;
 use worth_store_recovery_runtime::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimits,
@@ -127,7 +133,7 @@ fn total_observation_and_distinct_fact_limits_refuse_without_effects() {
             .err()
             .unwrap(),
         );
-        assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::DiscoveryLimit);
+        assert!(blocked.cause().limit().is_some());
         assert_eq!(blocked.recovery_effects(), 0);
     }
 }
@@ -179,9 +185,14 @@ fn repeated_selection_is_deterministic_and_never_promotes_wal_residue() {
 #[test]
 fn each_discovery_bound_refuses_before_recovery_effects() {
     for (selector_candidates, wal_segments, manifest_bytes, expected) in [
-        (1, 8, 8 * 1024, PhysicalRecoveryBlockKind::DiscoveryLimit),
-        (2, 8, 1, PhysicalRecoveryBlockKind::DiscoveryLimit),
-        (2, 1, 8 * 1024, PhysicalRecoveryBlockKind::DiscoveryLimit),
+        (
+            1,
+            8,
+            8 * 1024,
+            PhysicalRecoveryLimitDimension::SelectorCandidates,
+        ),
+        (2, 8, 1, PhysicalRecoveryLimitDimension::ManifestBytes),
+        (2, 1, 8 * 1024, PhysicalRecoveryLimitDimension::WalSegments),
     ] {
         let parent = tempfile::tempdir().unwrap();
         let root = parent.path().join("store");
@@ -198,7 +209,12 @@ fn each_discovery_bound_refuses_before_recovery_effects() {
             limits_for(selector_candidates, wal_segments, manifest_bytes),
         );
         let blocked = expect_blocked(admitted.discover().err().expect("limit crossing blocked"));
-        assert_eq!(blocked.kind, expected);
+        let limit = blocked
+            .cause()
+            .limit()
+            .expect("a limit crossing names its limit");
+        assert_eq!((limit.dimension(), limit.admitted()), (expected, 1));
+        assert!(limit.observed() > limit.admitted(), "{limit:?}");
         assert_eq!(blocked.recovery_effects(), 0);
     }
 }
@@ -237,7 +253,10 @@ fn absent_and_rejected_checkpoints_have_distinct_terminal_evidence() {
             .err()
             .expect("rejected checkpoint must block"),
     );
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::Checkpoint);
+    assert_eq!(
+        blocked.cause().damage(),
+        Some(PhysicalRecoveryBlockKind::Checkpoint)
+    );
     assert_eq!(blocked.store_identity(), rejected_store);
     assert_eq!(blocked.evidence().counters.checkpoints_rejected, 1);
     assert!(blocked
@@ -268,22 +287,26 @@ fn cumulative_wal_bytes_stop_before_the_crossing_artifact() {
     let crossing_store = initialize_store(&crossing_root);
     publish_synthetic_genesis(&crossing_root, crossing_store);
     write_two_eight_byte_residue_files(&crossing_root);
-    let mut declaration = limit_declaration(2, 8, 8 * 1024);
-    declaration.wal_bytes = 12;
-    let blocked = expect_blocked(
-        admitted_recovery_with_limits(
-            &crossing_root,
-            PhysicalRecoveryLimits::admit(declaration).unwrap(),
-        )
-        .discover()
-        .err()
-        .expect("cumulative WAL crossing must block"),
-    );
-    let limit = blocked.evidence().limit.unwrap();
-    assert_eq!(limit.dimension, PhysicalRecoveryLimitDimension::WalBytes);
-    assert_eq!((limit.observed, limit.admitted), (16, 12));
-    assert_eq!(blocked.evidence().counters.wal_bytes, 8);
-    assert_eq!(blocked.recovery_effects(), 0);
+    // Short by four bytes and by one, the second file is refused with the
+    // eight the first took plus its own real eight.
+    for wal_bytes in [12, 15] {
+        let mut declaration = limit_declaration(2, 8, 8 * 1024);
+        declaration.wal_bytes = wal_bytes;
+        let blocked = expect_blocked(
+            admitted_recovery_with_limits(
+                &crossing_root,
+                PhysicalRecoveryLimits::admit(declaration).unwrap(),
+            )
+            .discover()
+            .err()
+            .expect("cumulative WAL crossing must block"),
+        );
+        let limit = blocked.cause().limit().unwrap();
+        assert_eq!(limit.dimension(), PhysicalRecoveryLimitDimension::WalBytes);
+        assert_eq!((limit.observed(), limit.admitted()), (16, wal_bytes));
+        assert_eq!(blocked.evidence().counters.wal_bytes, 8);
+        assert_eq!(blocked.recovery_effects(), 0);
+    }
 
     let exact_parent = tempfile::tempdir().unwrap();
     let exact_root = exact_parent.path().join("store");
@@ -304,7 +327,7 @@ fn cumulative_wal_bytes_stop_before_the_crossing_artifact() {
 }
 
 #[test]
-fn aggregate_manifest_entries_stop_before_the_crossing_leaf_is_extended() {
+fn aggregate_manifest_entries_stop_before_the_crossing_tree_is_read() {
     let crossing_parent = tempfile::tempdir().unwrap();
     let crossing_root = crossing_parent.path().join("store");
     let crossing_store = initialize_store(&crossing_root);
@@ -320,13 +343,14 @@ fn aggregate_manifest_entries_stop_before_the_crossing_leaf_is_extended() {
         .err()
         .expect("aggregate manifest entry crossing must block"),
     );
-    assert_eq!(blocked.kind, PhysicalRecoveryBlockKind::DiscoveryLimit);
-    let limit = blocked.evidence().limit.unwrap();
+    assert!(blocked.cause().limit().is_some());
+    let limit = blocked.cause().limit().unwrap();
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::ManifestEntries
     );
-    assert_eq!((limit.observed, limit.admitted), (3, 2));
+    assert_eq!((limit.observed(), limit.admitted()), (3, 2));
+    assert_eq!(blocked.evidence().counters.manifest_blocks, 0);
     assert_eq!(blocked.recovery_effects(), 0);
 
     let exact_parent = tempfile::tempdir().unwrap();

@@ -62,6 +62,14 @@ pub(crate) fn read_page_frame(
             96 + index * 40,
             8,
         )?;
+        // All C.11 blob families must be selected as extent-backed records.
+        // An intact page checksum cannot make an inline blob route admissible.
+        scope(
+            !super::super::blob_record::is_blob_prefix(&payload[offset..end.unwrap()]),
+            48 + offset,
+            length.max(1),
+            Field::IdentityField,
+        )?;
         shape(
             payload[end.unwrap()..preceding_start]
                 .iter()

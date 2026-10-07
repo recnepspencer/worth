@@ -247,12 +247,11 @@ pub(super) fn development_serial_profile() -> WorkflowRuntimeProfile {
     }
 }
 
-#[cfg(feature = "parallel")]
-pub(super) fn development_parallel_profile() -> WorkflowRuntimeProfile {
+pub(super) fn development_parallel_profile(workers: usize) -> WorkflowRuntimeProfile {
     WorkflowRuntimeProfile {
         runtime_profile: "fintech-development".to_string(),
         policy_name: Some("fintech".to_string()),
-        executor_name: Some("aggressive-parallel".to_string()),
+        executor_name: Some(format!("lease-{workers}")),
         capability_profile: Some("serial-vs-parallel-hostile".to_string()),
     }
 }

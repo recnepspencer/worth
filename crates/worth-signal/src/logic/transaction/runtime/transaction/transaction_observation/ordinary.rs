@@ -8,7 +8,7 @@ pub struct ObservationScratchSummary {
     pub staged_candidate_observer_count: usize,
     pub staged_candidate_match_count: usize,
     pub classified_event_count: usize,
-    pub touched_event_count: usize,
+    pub visited_event_count: usize,
     pub recomputed_event_count: usize,
     pub meaningful_change_event_count: usize,
 }
@@ -20,7 +20,7 @@ pub struct ClassifiedObservationEventSummary {
     pub policy: ObservationPolicy,
     pub observed_nodes: ObservedNodeSet,
     pub matched_nodes: ObservedNodeSet,
-    pub touched: bool,
+    pub visited: bool,
     pub recomputed: bool,
     pub meaningful_change: bool,
     pub trigger_matched: bool,
@@ -56,8 +56,8 @@ impl CommittedObservationEvent {
         &self.summary.matched_nodes
     }
 
-    pub fn touched(&self) -> bool {
-        self.summary.touched
+    pub fn visited(&self) -> bool {
+        self.summary.visited
     }
 
     pub fn recomputed(&self) -> bool {

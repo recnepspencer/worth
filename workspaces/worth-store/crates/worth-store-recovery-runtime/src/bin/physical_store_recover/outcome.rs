@@ -10,12 +10,19 @@ pub(super) fn render(outcome: PhysicalRecoveryOutcome) -> Result<(), String> {
                 handoff.core().root().generation()
             );
             let fates = handoff.operation_fates();
+            let planning = handoff.planning_counters();
             eprintln!(
-                "C8_RECOVERY_FATES acknowledged={} durable_unacknowledged={} proven_no_effect={} indeterminate={}",
+                "C8_RECOVERY_REDO apply={} skip_historical_drop={}",
+                planning.redo_apply(),
+                planning.redo_skip_historical_drop(),
+            );
+            eprintln!(
+                "C8_RECOVERY_FATES acknowledged={} durable_unacknowledged={} proven_no_effect={} indeterminate={} historical_consumed={}",
                 fates.acknowledged_durable(),
                 fates.durable_unacknowledged(),
                 fates.proven_no_effect(),
                 fates.indeterminate(),
+                fates.historical_consumed(),
             );
             super::fate_marker::render(fates);
             eprintln!(
@@ -36,8 +43,8 @@ pub(super) fn render(outcome: PhysicalRecoveryOutcome) -> Result<(), String> {
         }
         PhysicalRecoveryOutcome::Blocked(block) => {
             eprintln!(
-                "C8_RECOVERY_BLOCKED kind={:?} store={} source_generation={:?} effects={}",
-                block.kind,
+                "C8_RECOVERY_BLOCKED cause={:?} store={} source_generation={:?} effects={}",
+                block.cause(),
                 hex(&block.store_identity().bytes()),
                 block.evidence().source_generation,
                 block.recovery_effects()

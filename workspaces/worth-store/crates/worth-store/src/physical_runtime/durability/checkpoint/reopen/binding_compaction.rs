@@ -3,11 +3,14 @@ use worth_store_physical_backend::{
 };
 use worth_store_physical_format::{
     CheckpointBindingCompactionHeader, CheckpointStreamFooter, PhysicalCheckpointIdentity,
-    CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
-    CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
-    CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    PhysicalCheckpointSource, CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
+    CHECKPOINT_BINDING_RECORD_PREFIX_BYTES, CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES,
+    CHECKPOINT_CERTIFIED_SCHEMA, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
+    CHECKPOINT_STREAM_FOOTER_RECORD_BYTES, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    MAX_CHECKPOINT_CERTIFICATE_BYTES, MAX_CHECKPOINT_CERTIFICATE_RECORDS,
 };
 
+use super::certificate_body::read_certificate_body;
 use super::integrity_admission::{
     admit_binding_compaction, admit_footer_envelope, admit_stream_header, physical_range,
 };
@@ -18,13 +21,15 @@ use super::{
 
 pub(in crate::physical_runtime) struct NamespaceDurablePhysicalBindingCompactionReopen {
     artifact: ArtifactTreeFile,
-    checkpoint: PhysicalCheckpointIdentity,
+    source: PhysicalCheckpointSource,
+    certificates: Box<[Box<[u8]>]>,
     header: CheckpointBindingCompactionHeader,
     footer: CheckpointStreamFooter,
     artifact_bytes: u64,
     compaction_offset: u64,
     records_offset: u64,
     footer_offset: u64,
+    binding_end_offset: u64,
 }
 
 pub(in crate::physical_runtime) struct PhysicalBindingCompactionRebuildBasis<'reopen> {
@@ -33,7 +38,10 @@ pub(in crate::physical_runtime) struct PhysicalBindingCompactionRebuildBasis<'re
     artifact_bytes: u64,
     compaction_offset: u64,
     records_offset: u64,
-    footer_offset: u64,
+    binding_end_offset: u64,
+    footer_record_bytes: u64,
+    certificate_records: u64,
+    certificate_bytes: u64,
     expected_records: u64,
     expected_encoded_bytes: u64,
     expected_digest: [u8; 32],
@@ -73,16 +81,29 @@ impl NamespaceDurablePhysicalBindingCompactionReopen {
         self.header.wal_cutoff_lsn_exclusive()
     }
 
+    /// The selected checkpoint's identity and source root basis.
+    pub(in crate::physical_runtime) const fn source(&self) -> PhysicalCheckpointSource {
+        self.source
+    }
+
+    /// The footer-admitted tag-7 certificate frames, in stream order.
+    pub(in crate::physical_runtime) fn certificate_records(&self) -> &[Box<[u8]>] {
+        &self.certificates
+    }
+
     pub(in crate::physical_runtime) fn rebuild_basis(
         &self,
     ) -> PhysicalBindingCompactionRebuildBasis<'_> {
         PhysicalBindingCompactionRebuildBasis {
             artifact: &self.artifact,
-            checkpoint: self.checkpoint,
+            checkpoint: self.source.identity(),
             artifact_bytes: self.artifact_bytes,
             compaction_offset: self.compaction_offset,
             records_offset: self.records_offset,
-            footer_offset: self.footer_offset,
+            binding_end_offset: self.binding_end_offset,
+            footer_record_bytes: self.artifact_bytes - self.footer_offset,
+            certificate_records: self.footer.certificate_record_count(),
+            certificate_bytes: self.footer.certificate_record_bytes(),
             expected_records: self.footer.binding_record_count(),
             expected_encoded_bytes: self.footer.binding_record_bytes(),
             expected_digest: self.footer.binding_records_digest(),
@@ -95,28 +116,52 @@ impl NamespaceDurablePhysicalBindingCompactionReopen {
         artifact_bytes: u64,
         store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     ) -> Result<Self, PhysicalBindingCompactionReopenFailure> {
-        if artifact_bytes < fixed_read_bytes()? {
+        if artifact_bytes < fixed_read_bytes(CHECKPOINT_STREAM_FOOTER_RECORD_BYTES as u64)? {
             return Err(PhysicalBindingCompactionReopenFailure::ArtifactTooShort);
         }
         let header_record =
             read_fixed::<CHECKPOINT_STREAM_HEADER_RECORD_BYTES>(tree, &artifact, 0)?;
         let header_range = physical_range(0, CHECKPOINT_STREAM_HEADER_RECORD_BYTES as u64)?;
         let source = admit_stream_header(&header_record, store, header_range)?;
+        let footer_record_bytes = if header_record[8] == CHECKPOINT_CERTIFIED_SCHEMA {
+            CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES
+        } else {
+            CHECKPOINT_STREAM_FOOTER_RECORD_BYTES
+        };
+        if artifact_bytes < fixed_read_bytes(footer_record_bytes as u64)? {
+            return Err(PhysicalBindingCompactionReopenFailure::ArtifactTooShort);
+        }
         let footer_offset = artifact_bytes
-            .checked_sub(CHECKPOINT_STREAM_FOOTER_RECORD_BYTES as u64)
+            .checked_sub(footer_record_bytes as u64)
             .ok_or(PhysicalBindingCompactionReopenFailure::ArtifactTooShort)?;
-        let footer_record =
-            read_fixed::<CHECKPOINT_STREAM_FOOTER_RECORD_BYTES>(tree, &artifact, footer_offset)?;
-        let footer_range =
-            physical_range(footer_offset, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES as u64)?;
-        let footer = admit_footer_envelope(&footer_record, source.identity(), footer_range)?;
+        let mut footer_record = [0_u8; CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES];
+        tree.read_exact_at(
+            &artifact,
+            footer_offset,
+            &mut footer_record[..footer_record_bytes],
+        )
+        .map_err(PhysicalBindingCompactionReopenFailure::Media)?;
+        let footer_record = &footer_record[..footer_record_bytes];
+        let footer_range = physical_range(footer_offset, footer_record_bytes as u64)?;
+        let footer = admit_footer_envelope(footer_record, source.identity(), footer_range)?;
+        if footer_record[8] != header_record[8]
+            || footer.certificate_record_count() > MAX_CHECKPOINT_CERTIFICATE_RECORDS
+            || footer.certificate_record_bytes() > MAX_CHECKPOINT_CERTIFICATE_BYTES
+        {
+            return Err(PhysicalBindingCompactionReopenFailure::ArtifactLayoutMismatch);
+        }
         let compaction_offset = footer.binding_compaction_header_offset();
         let records_offset = compaction_offset
             .checked_add(CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES as u64)
             .ok_or(PhysicalBindingCompactionReopenFailure::CounterOverflow)?;
+        // Idempotency replay owns the binding body; the following C.8/C.9
+        // certificate body is read for clean reopen custody.
+        let binding_end_offset = footer_offset
+            .checked_sub(footer.certificate_record_bytes())
+            .ok_or(PhysicalBindingCompactionReopenFailure::ArtifactLayoutMismatch)?;
         if compaction_offset < CHECKPOINT_STREAM_HEADER_RECORD_BYTES as u64
-            || records_offset > footer_offset
-            || footer_offset - records_offset != footer.binding_record_bytes()
+            || records_offset > binding_end_offset
+            || binding_end_offset - records_offset != footer.binding_record_bytes()
         {
             return Err(PhysicalBindingCompactionReopenFailure::ArtifactLayoutMismatch);
         }
@@ -151,15 +196,18 @@ impl NamespaceDurablePhysicalBindingCompactionReopen {
         if footer.binding_record_count() > footer.binding_record_bytes() / minimum_record_bytes {
             return Err(PhysicalBindingCompactionReopenFailure::ArtifactLayoutMismatch);
         }
+        let certificates = read_certificate_body(tree, &artifact, binding_end_offset, footer)?;
         Ok(Self {
             artifact,
-            checkpoint: source.identity(),
+            source,
+            certificates,
             header,
             footer,
             artifact_bytes,
             compaction_offset,
             records_offset,
             footer_offset,
+            binding_end_offset,
         })
     }
 }
@@ -177,8 +225,8 @@ impl PhysicalBindingCompactionRebuildBasis<'_> {
         self.records_offset
     }
 
-    pub(in crate::physical_runtime) const fn footer_offset(&self) -> u64 {
-        self.footer_offset
+    pub(in crate::physical_runtime) const fn binding_end_offset(&self) -> u64 {
+        self.binding_end_offset
     }
 
     pub(in crate::physical_runtime) const fn expected_records(&self) -> u64 {
@@ -198,11 +246,13 @@ impl PhysicalBindingCompactionRebuildBasis<'_> {
         records_read: u64,
     ) -> Result<PhysicalBindingCompactionReopenCounters, PhysicalBindingCompactionReopenFailure>
     {
-        let checkpoint_bytes_read = fixed_read_bytes()?
+        let checkpoint_bytes_read = fixed_read_bytes(self.footer_record_bytes)?
             .checked_add(self.expected_encoded_bytes)
+            .and_then(|bytes| bytes.checked_add(self.certificate_bytes))
             .ok_or(PhysicalBindingCompactionReopenFailure::CounterOverflow)?;
         let integrity_admissions = records_read
-            .checked_add(3)
+            .checked_add(self.certificate_records)
+            .and_then(|admissions| admissions.checked_add(3))
             .ok_or(PhysicalBindingCompactionReopenFailure::CounterOverflow)?;
         Ok(PhysicalBindingCompactionReopenCounters {
             checkpoint_artifact_bytes: self.artifact_bytes,
@@ -226,10 +276,12 @@ fn read_fixed<const BYTES: usize>(
     Ok(bytes)
 }
 
-fn fixed_read_bytes() -> Result<u64, PhysicalBindingCompactionReopenFailure> {
+fn fixed_read_bytes(
+    footer_record_bytes: u64,
+) -> Result<u64, PhysicalBindingCompactionReopenFailure> {
     (CHECKPOINT_STREAM_HEADER_RECORD_BYTES as u64)
         .checked_add(CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES as u64)
-        .and_then(|bytes| bytes.checked_add(CHECKPOINT_STREAM_FOOTER_RECORD_BYTES as u64))
+        .and_then(|bytes| bytes.checked_add(footer_record_bytes))
         .ok_or(PhysicalBindingCompactionReopenFailure::CounterOverflow)
 }
 

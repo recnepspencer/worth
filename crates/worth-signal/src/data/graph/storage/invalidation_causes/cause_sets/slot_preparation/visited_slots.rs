@@ -22,4 +22,17 @@ impl VisitedCauseSlots {
             Some(_) => self.additional.insert(slot),
         }
     }
+
+    pub(super) fn contains(&self, slot: u32) -> bool {
+        self.first == Some(slot) || self.additional.contains(&slot)
+    }
+
+    pub(super) fn remove(&mut self, slot: u32) -> bool {
+        if self.first == Some(slot) {
+            self.first = self.additional.pop_first();
+            true
+        } else {
+            self.additional.remove(&slot)
+        }
+    }
 }

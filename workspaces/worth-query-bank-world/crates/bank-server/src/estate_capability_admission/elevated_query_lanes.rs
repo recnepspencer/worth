@@ -63,6 +63,8 @@ fn approved_emergency_historical_and_preview_preserve_one_shot_meaning() {
     assert!(historical.receipt().inspect().terminal_resources_released());
     assert!(preview.receipt().inspect().terminal_resources_released());
     assert!(session.discard().unwrap().discarded());
+    // Each result owns the custody of the sources it disclosed until it drops.
+    drop((one_shot, historical, preview));
     assert_resources_released(&fixture);
 }
 

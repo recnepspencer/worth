@@ -1,12 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::data::handle::NodeId;
-use crate::data::output::PartitionTokenId;
+use crate::data::output::{InternedScopePath, ScopeCoverage};
 
 use super::fork_overlay::ReverseSubscriptionFlat;
-use super::{
-    DetailScopeKey, IndexedSubscriptionMembership, IndexedSubscriptionScope, SubscriberScopeBuckets,
-};
+use super::{IndexedSubscriptionMembership, IndexedSubscriptionScope};
 
 pub(super) fn insert_flat_membership(
     flat: &mut ReverseSubscriptionFlat,
@@ -19,29 +17,23 @@ pub(super) fn insert_flat_membership(
         IndexedSubscriptionScope::Unscoped => {
             buckets.unscoped.insert(consumer);
         }
-        IndexedSubscriptionScope::WholePartition(partition) => {
-            buckets
-                .whole_partitions
-                .entry(partition)
-                .or_default()
-                .insert(consumer);
-            buckets
-                .partition_scoped
-                .entry(partition)
-                .or_default()
-                .insert(consumer);
-        }
-        IndexedSubscriptionScope::Detail(partition, detail) => {
-            buckets
-                .exact_details
-                .entry(DetailScopeKey { partition, detail })
-                .or_default()
-                .insert(consumer);
-            buckets
-                .partition_scoped
-                .entry(partition)
-                .or_default()
-                .insert(consumer);
+        IndexedSubscriptionScope::Path(path, coverage) => {
+            buckets.same_path.entry(path).or_default().insert(consumer);
+            if coverage == ScopeCoverage::Subtree {
+                buckets
+                    .subtree_covering
+                    .entry(path)
+                    .or_default()
+                    .insert(consumer);
+            }
+            for depth in 1..=path.depth() {
+                let prefix = path.prefix(depth).expect("bounded path prefix");
+                buckets
+                    .subtree_members
+                    .entry(prefix)
+                    .or_default()
+                    .insert(consumer);
+            }
         }
     }
 }
@@ -60,17 +52,15 @@ pub(super) fn remove_flat_consumer(flat: &mut ReverseSubscriptionFlat, consumer:
             IndexedSubscriptionScope::Unscoped => {
                 buckets.unscoped.remove(&consumer);
             }
-            IndexedSubscriptionScope::WholePartition(partition) => {
-                remove_flat_member(&mut buckets.whole_partitions, partition, consumer);
-                refresh_flat_partition_scoped(buckets, partition, consumer);
-            }
-            IndexedSubscriptionScope::Detail(partition, detail) => {
-                remove_flat_member(
-                    &mut buckets.exact_details,
-                    DetailScopeKey { partition, detail },
-                    consumer,
-                );
-                refresh_flat_partition_scoped(buckets, partition, consumer);
+            IndexedSubscriptionScope::Path(path, coverage) => {
+                remove_member(&mut buckets.same_path, path, consumer);
+                if coverage == ScopeCoverage::Subtree {
+                    remove_member(&mut buckets.subtree_covering, path, consumer);
+                }
+                for depth in 1..=path.depth() {
+                    let prefix = path.prefix(depth).expect("bounded path prefix");
+                    remove_member(&mut buckets.subtree_members, prefix, consumer);
+                }
             }
         }
         if buckets.all.is_empty() {
@@ -79,33 +69,16 @@ pub(super) fn remove_flat_consumer(flat: &mut ReverseSubscriptionFlat, consumer:
     }
 }
 
-fn refresh_flat_partition_scoped(
-    buckets: &mut SubscriberScopeBuckets,
-    partition: PartitionTokenId,
+fn remove_member(
+    buckets: &mut BTreeMap<InternedScopePath, BTreeSet<NodeId>>,
+    path: InternedScopePath,
     consumer: NodeId,
 ) {
-    let remains = buckets
-        .whole_partitions
-        .get(&partition)
-        .is_some_and(|members| members.contains(&consumer))
-        || buckets.exact_details.iter().any(|(candidate, members)| {
-            candidate.partition == partition && members.contains(&consumer)
-        });
-    if !remains {
-        remove_flat_member(&mut buckets.partition_scoped, partition, consumer);
-    }
-}
-
-fn remove_flat_member<K: Copy + Ord>(
-    buckets: &mut BTreeMap<K, BTreeSet<NodeId>>,
-    key: K,
-    consumer: NodeId,
-) {
-    let remove_key = buckets.get_mut(&key).is_some_and(|members| {
+    let empty = buckets.get_mut(&path).is_some_and(|members| {
         members.remove(&consumer);
         members.is_empty()
     });
-    if remove_key {
-        buckets.remove(&key);
+    if empty {
+        buckets.remove(&path);
     }
 }

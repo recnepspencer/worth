@@ -1,3 +1,4 @@
+use super::super::ports::RuntimeWorldCurrentnessAdmissionStop;
 use super::super::ports::RuntimeWorldObservationService;
 use super::super::RuntimeWorldOwnerUnavailable;
 use std::sync::{Arc, Weak};
@@ -8,6 +9,59 @@ pub struct RuntimeWorldObservationPort {
     owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
 }
 impl RuntimeWorldObservationPort {
+    /// Install prepared derived state while the exact issued head stays current.
+    /// The callback receives currentness evidence but no mutation authority.
+    /// Perform allocation/admission beforehand and return cleanup values from
+    /// the callback; do not call this World owner inside the guarded section.
+    pub fn while_product_branch_current<Argument, Output>(
+        &self,
+        expected: &crate::branch::ProductBranchObservation,
+        argument: Argument,
+        install: impl for<'guard> FnOnce(Argument, crate::branch::CurrentProductHead<'guard>) -> Output,
+    ) -> Result<Output, crate::branch::ProductBranchCurrentnessFailure<Argument>> {
+        self.while_product_branch_current_admitted(expected, argument, &mut |_| true, install)
+    }
+
+    /// Admit physical registry lookup Work before resolving the issued head.
+    /// `prepare` must retain its original stop; `PreparationDenied` returns the
+    /// caller's argument without entering the guarded callback.
+    pub fn while_product_branch_current_admitted<Argument, Output>(
+        &self,
+        expected: &crate::branch::ProductBranchObservation,
+        argument: Argument,
+        prepare: &mut dyn FnMut(u64) -> bool,
+        install: impl for<'guard> FnOnce(Argument, crate::branch::CurrentProductHead<'guard>) -> Output,
+    ) -> Result<Output, crate::branch::ProductBranchCurrentnessFailure<Argument>> {
+        let service = match self.service() {
+            Ok(service) => service,
+            Err(denial) => {
+                return Err(
+                    crate::branch::ProductBranchCurrentnessFailure::AdmissionDenied {
+                        denial: denial.into(),
+                        argument,
+                    },
+                )
+            }
+        };
+        let scope = match service.admit_product_branch_currentness_with_work(expected, prepare) {
+            Ok(scope) => scope,
+            Err(RuntimeWorldCurrentnessAdmissionStop::Native(denial)) => {
+                return Err(
+                    crate::branch::ProductBranchCurrentnessFailure::AdmissionDenied {
+                        denial: super::super::RuntimeWorldServiceDenial::Denied(denial),
+                        argument,
+                    },
+                )
+            }
+            Err(RuntimeWorldCurrentnessAdmissionStop::Preparation) => {
+                return Err(
+                    crate::branch::ProductBranchCurrentnessFailure::PreparationDenied(argument),
+                )
+            }
+        };
+        scope.while_current(argument, install)
+    }
+
     pub(in crate::lifecycle) fn new(
         owner: Weak<dyn RuntimeWorldObservationService + Send + Sync>,
     ) -> Self {

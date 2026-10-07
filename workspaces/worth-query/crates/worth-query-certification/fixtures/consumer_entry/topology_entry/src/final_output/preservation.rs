@@ -369,4 +369,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
         )];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
 }

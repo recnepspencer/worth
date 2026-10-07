@@ -24,6 +24,30 @@ pub(super) struct CollisionExtents {
 }
 
 impl CollisionExtents {
+    pub(super) fn reserve_lookup_work<K: Hash, V>(
+        &self,
+        changes: &im::HashMap<SharedKey<K>, Option<Arc<V>>>,
+        key: &K,
+        work: &mut crate::data::retained_storage::RetainedStoragePreparation,
+    ) -> Result<(), crate::data::retained_storage::RetainedStoragePreparationDenial> {
+        use crate::data::retained_storage::{
+            ordered_lookup_steps, RetainedStoragePreparationDenial as Denial,
+        };
+        work.reserve_visits(std::mem::size_of::<K>().saturating_add(7))?;
+        let hash = full_hash(changes, key);
+        work.reserve_visits(ordered_lookup_steps(self.groups.len()))?;
+        let entries = self
+            .groups
+            .get(&hash)
+            .map_or(0, |group| group.entries)
+            .checked_add(1)
+            .ok_or(Denial::ChargeOverflow)?;
+        let comparisons = entries
+            .checked_mul(std::mem::size_of::<(SharedKey<K>, Option<Arc<V>>)>().saturating_add(1))
+            .ok_or(Denial::ChargeOverflow)?;
+        work.reserve_visits(comparisons)
+    }
+
     pub(super) fn empty_structure_charge() -> Result<
         crate::data::retained_storage::RetainedStorageCharge,
         crate::data::retained_storage::RetainedStoragePreparationDenial,
@@ -102,6 +126,75 @@ impl CollisionExtents {
                 arc_allocation_charge::<(u32, Vec<(SharedKey<K>, Option<Arc<V>>)>)>()?
                     .checked_mul(self.collision_groups)?,
             )
+    }
+
+    pub(super) fn insertion_growth_bound<K: Hash, V>(
+        &self,
+        changes: &im::HashMap<SharedKey<K>, Option<Arc<V>>>,
+        key: &K,
+        work: &mut crate::data::retained_storage::RetainedStoragePreparation,
+    ) -> Result<
+        crate::data::retained_storage::RetainedStorageCharge,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        use crate::data::retained_storage::{
+            arc_allocation_charge, ordered_index_charge, ordered_lookup_steps,
+            RetainedStorageCharge as Charge, RetainedStoragePreparationDenial as Denial,
+        };
+        work.reserve_visits(ordered_lookup_steps(self.groups.len()))?;
+        let hash = full_hash(changes, key);
+        let previous = self.groups.get(&hash).copied().unwrap_or(CollisionExtent {
+            entries: 0,
+            capacity: 0,
+        });
+        let next = previous
+            .entries
+            .checked_add(1)
+            .ok_or(Denial::ChargeOverflow)?;
+        let capacity = previous
+            .capacity
+            .max(next.checked_mul(2).ok_or(Denial::ChargeOverflow)?);
+        let levels = (usize::BITS as usize
+            - self.groups.len().saturating_add(1).leading_zeros() as usize)
+            .max(1);
+        ordered_index_charge::<u32, CollisionExtent>(1)?
+            .checked_mul(levels)?
+            .checked_add(Charge::capacity::<(SharedKey<K>, Option<Arc<V>>)>(
+                capacity,
+            )?)?
+            .checked_add(arc_allocation_charge::<(
+                u32,
+                Vec<(SharedKey<K>, Option<Arc<V>>)>,
+            )>()?)
+    }
+
+    pub(super) fn worst_insertion_growth_bound<K, V>(
+        &self,
+        overlay_entries: usize,
+    ) -> Result<
+        crate::data::retained_storage::RetainedStorageCharge,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        use crate::data::retained_storage::{
+            arc_allocation_charge, ordered_index_charge, RetainedStorageCharge as Charge,
+            RetainedStoragePreparationDenial as Denial,
+        };
+        let capacity = overlay_entries
+            .checked_add(1)
+            .and_then(|n| n.checked_mul(2))
+            .ok_or(Denial::ChargeOverflow)?;
+        let levels = (usize::BITS as usize
+            - self.groups.len().saturating_add(1).leading_zeros() as usize)
+            .max(1);
+        ordered_index_charge::<u32, CollisionExtent>(1)?
+            .checked_mul(levels)?
+            .checked_add(Charge::capacity::<(SharedKey<K>, Option<Arc<V>>)>(
+                capacity,
+            )?)?
+            .checked_add(arc_allocation_charge::<(
+                u32,
+                Vec<(SharedKey<K>, Option<Arc<V>>)>,
+            )>()?)
     }
 
     #[cfg(test)]

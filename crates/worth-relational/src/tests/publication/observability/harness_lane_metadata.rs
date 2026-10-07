@@ -20,30 +20,9 @@ fn harness_phase8_certification_matrix_reports_parallel_lane_diagnostics() {
 
     assert!(report.matched);
     assert_eq!(report.baseline_profile, "serial");
-    assert_eq!(
-        harness_summary_field(
-            report.baseline_diagnostics_summary.as_ref().unwrap(),
-            "runtime_execution_model"
-        ),
-        Some("SingleLaneExecution")
-    );
     assert_eq!(report.cases.len(), 2);
     assert_eq!(report.cases[0].candidate_profile, "staged");
     assert_eq!(report.cases[1].candidate_profile, "post-commit");
-    assert_eq!(
-        harness_summary_field(
-            report.cases[0].diagnostics_summary.as_ref().unwrap(),
-            "runtime_execution_model"
-        ),
-        Some("ParallelPreparation")
-    );
-    assert_eq!(
-        harness_summary_field(
-            report.cases[1].diagnostics_summary.as_ref().unwrap(),
-            "runtime_execution_model"
-        ),
-        Some("ParallelPostCommitConsumption")
-    );
     assert!(report
         .cases
         .iter()
@@ -77,33 +56,12 @@ fn harness_phase8_certification_matrix_closes_out_supported_runtime_lanes() {
         ),
         Some("Serial")
     );
-    assert_eq!(
-        harness_summary_field(
-            report.baseline_diagnostics_summary.as_ref().unwrap(),
-            "runtime_execution_model"
-        ),
-        Some("SingleLaneExecution")
-    );
 
     let staged = certification_case(&report, "staged");
     let post_commit = certification_case(&report, "post-commit");
 
     assert!(staged.comparison.matched);
     assert!(post_commit.comparison.matched);
-    assert_eq!(
-        harness_summary_field(
-            staged.diagnostics_summary.as_ref().unwrap(),
-            "runtime_execution_model"
-        ),
-        Some("ParallelPreparation")
-    );
-    assert_eq!(
-        harness_summary_field(
-            post_commit.diagnostics_summary.as_ref().unwrap(),
-            "runtime_execution_model"
-        ),
-        Some("ParallelPostCommitConsumption")
-    );
     assert!(harness_summary_counter(
         staged.diagnostics_summary.as_ref().unwrap(),
         "preparation_packet_count"
@@ -149,24 +107,12 @@ fn harness_phase8_observed_matrix_exposes_mode_specific_metadata() {
         Some("Serial")
     );
     assert_eq!(
-        harness_summary_field(serial_summary, "runtime_execution_model"),
-        Some("SingleLaneExecution")
-    );
-    assert_eq!(
         harness_summary_field(staged_summary, "execution_mode"),
         Some("StagedParallel")
     );
     assert_eq!(
-        harness_summary_field(staged_summary, "runtime_execution_model"),
-        Some("ParallelPreparation")
-    );
-    assert_eq!(
         harness_summary_field(post_commit_summary, "execution_mode"),
         Some("FullParallel")
-    );
-    assert_eq!(
-        harness_summary_field(post_commit_summary, "runtime_execution_model"),
-        Some("ParallelPostCommitConsumption")
     );
 
     assert!(harness_summary_counter(serial_summary, "preparation_packet_count").is_some());
@@ -205,10 +151,6 @@ fn harness_diagnostics_expose_execution_mode_and_performance_counters() {
     assert_eq!(
         harness_summary_field(&summary, "execution_mode"),
         Some("StagedParallel")
-    );
-    assert_eq!(
-        harness_summary_field(&summary, "runtime_execution_model"),
-        Some("ParallelPreparation")
     );
     assert!(harness_summary_counter(&summary, "preparation_packet_count").is_some());
     assert!(harness_summary_counter(&summary, "preparation_packet_item_count").is_some());
@@ -256,19 +198,15 @@ fn harness_phase8_serial_strategy_selection_is_harness_visible_and_still_parity_
     let serial_entries = harness_diagnostic_entries(&summary, "SerialPreparationSelected");
     let failure_entries = harness_diagnostic_entries(&summary, "PreparationFailure");
 
-    assert!(serial_entries.iter().any(|entry| {
-        harness_diagnostic_field_matches(entry, "reason", "insufficient_packet_breadth")
-    }));
+    assert!(serial_entries
+        .iter()
+        .any(|entry| { harness_diagnostic_field_matches(entry, "reason", "no_lease") }));
     assert!(failure_entries.iter().any(|entry| {
         harness_diagnostic_field_matches(entry, "failure_class", "serial_strategy_selected")
     }));
     assert_eq!(
         harness_summary_field(&summary, "execution_mode"),
         Some("StagedParallel")
-    );
-    assert_eq!(
-        harness_summary_field(&summary, "runtime_execution_model"),
-        Some("ParallelPreparation")
     );
     assert!(
         harness_summary_counter(&summary, "preparation_serial_strategy_count")

@@ -72,6 +72,9 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         TransactionCommitError::Preparation { error, .. } => {
             panic!("expected relation-integrity conflict, got preparation error: {error:?}")
         }
+        TransactionCommitError::Execution { denial, .. } => {
+            panic!("expected relation-integrity conflict, got execution denial: {denial:?}")
+        }
         TransactionCommitError::Interrupted { interruption, .. } => {
             panic!("expected relation-integrity conflict, got interruption: {interruption:?}")
         }

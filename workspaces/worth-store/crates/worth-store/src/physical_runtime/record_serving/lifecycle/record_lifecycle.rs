@@ -42,6 +42,11 @@ pub(in crate::physical_runtime) struct RecordServingOwner {
     counters: Arc<RecordServingCounterCells>,
 }
 
+#[derive(Clone)]
+pub(in crate::physical_runtime) struct RecordReaderLeaseFactory {
+    counters: Arc<RecordServingCounterCells>,
+}
+
 impl RecordServingOwner {
     pub(in crate::physical_runtime) fn new() -> Self {
         Self {
@@ -51,6 +56,12 @@ impl RecordServingOwner {
 
     pub(in crate::physical_runtime::record_serving) fn reader(&self) -> RecordReaderLease {
         RecordReaderLease::acquire(Arc::clone(&self.counters))
+    }
+
+    pub(in crate::physical_runtime) fn reader_factory(&self) -> RecordReaderLeaseFactory {
+        RecordReaderLeaseFactory {
+            counters: Arc::clone(&self.counters),
+        }
     }
 
     pub(in crate::physical_runtime::record_serving) fn observer(
@@ -65,6 +76,12 @@ impl RecordServingOwner {
         let counters = Arc::clone(&self.counters);
         drop(self);
         counters.snapshot()
+    }
+}
+
+impl RecordReaderLeaseFactory {
+    pub(in crate::physical_runtime::record_serving) fn reader(&self) -> RecordReaderLease {
+        RecordReaderLease::acquire(Arc::clone(&self.counters))
     }
 }
 

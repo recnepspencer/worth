@@ -1,16 +1,19 @@
-use super::{
-    next_locator, put_entity, put_locator, put_u32, put_u64, CheckpointCursor, Fact, KindId,
-    MAXIMUM_FACTS,
-};
-use std::io::Write;
+use std::{io::Write, sync::Arc};
+
 use worth_foundational::facade::AspectValue;
-use worth_relational::facade::indexes::DerivedIndexId;
+use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
+
+use super::{
+    next_locator, put_entity, put_locator, put_text, put_u32, put_u64, CheckpointCursor, Fact,
+    KindId, MAXIMUM_SET_ENTITIES, MAXIMUM_TEXT,
+};
 
 const MAXIMUM_VALUE_BYTES: usize = 65_536;
 
 pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
     let Fact::IndexedEntitySelection {
         index_id,
+        definition,
         entity_kind,
         locator,
         value,
@@ -20,18 +23,21 @@ pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
     else {
         return None;
     };
-    if *candidate_limit == 0
+    if definition.index_id != *index_id
+        || !matches!(&definition.kind, DerivedIndexKind::EntityField { field_locator } if field_locator == locator)
+        || *candidate_limit == 0
         || *candidate_limit == usize::MAX
         || candidates.len() > *candidate_limit
-        || candidates.len() > MAXIMUM_FACTS
+        || candidates.len() > MAXIMUM_SET_ENTITIES
         || !candidates.windows(2).all(|pair| pair[0] < pair[1])
     {
         return None;
     }
     let mut encoded = ValueWriter(Vec::new());
     serde_json::to_writer(&mut encoded, value).ok()?;
-    bytes.push(7);
     put_u64(bytes, index_id.0);
+    put_text(bytes, &definition.name)?;
+    bytes.push(u8::from(definition.branch_scoped));
     put_u32(bytes, entity_kind.as_u32());
     put_locator(bytes, locator)?;
     put_u32(bytes, u32::try_from(encoded.0.len()).ok()?);
@@ -46,6 +52,12 @@ pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
 
 pub(super) fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> {
     let index_id = DerivedIndexId(cursor.next_u64()?);
+    let name = cursor.next_bounded_text(MAXIMUM_TEXT, "checkpoint index definition name")?;
+    let branch_scoped = match cursor.next_byte()? {
+        0 => false,
+        1 => true,
+        _ => return Err("checkpoint index definition scope is invalid".to_owned()),
+    };
     let entity_kind = KindId(cursor.next_u32()?);
     let locator = next_locator(cursor)?;
     let length = usize::try_from(cursor.next_u32()?)
@@ -62,7 +74,7 @@ pub(super) fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> 
     if candidate_limit == 0
         || candidate_limit == usize::MAX
         || count > candidate_limit
-        || count > MAXIMUM_FACTS
+        || count > MAXIMUM_SET_ENTITIES
         || count > cursor.remaining.len() / 16
     {
         return Err("checkpoint predicate candidate count is invalid".to_owned());
@@ -78,8 +90,17 @@ pub(super) fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> 
         }
         candidates.push(candidate);
     }
+    let definition = Arc::new(DerivedIndexDefinition {
+        index_id,
+        name,
+        kind: DerivedIndexKind::EntityField {
+            field_locator: locator.clone(),
+        },
+        branch_scoped,
+    });
     Ok(Fact::IndexedEntitySelection {
         index_id,
+        definition,
         entity_kind,
         locator,
         value,
@@ -114,14 +135,23 @@ mod tests {
     use worth_relational::facade::identity::{EntityId, PartitionId};
 
     fn selection(candidates: Vec<EntityId>) -> Fact {
+        let locator = AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            AspectKey::new("predicate").unwrap(),
+            CanonicalFieldPath::single(FieldKey::new("value").unwrap()),
+        );
         Fact::IndexedEntitySelection {
             index_id: DerivedIndexId(4),
+            definition: Arc::new(DerivedIndexDefinition {
+                index_id: DerivedIndexId(4),
+                name: "predicate-index".to_owned(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: locator.clone(),
+                },
+                branch_scoped: false,
+            }),
             entity_kind: KindId(2),
-            locator: AspectFieldLocator::new(
-                LocatorAuthority::Authoritative,
-                AspectKey::new("predicate").unwrap(),
-                CanonicalFieldPath::single(FieldKey::new("value").unwrap()),
-            ),
+            locator,
             value: AspectValue::UInt64(u64::MAX),
             candidate_limit: 100,
             candidates,
@@ -132,10 +162,10 @@ mod tests {
     fn version_seven_preserves_absence_sets_and_exact_scalar_values() {
         for candidates in [vec![], vec![EntityId::new(PartitionId(0), 2, 1)]] {
             let fact = selection(candidates);
-            let bytes = super::super::encode(&[fact.clone()]).unwrap();
+            let bytes = super::super::encode(std::slice::from_ref(&fact)).unwrap();
             assert_eq!(super::super::decode(&bytes).unwrap().as_ref(), &[fact]);
             assert!(
-                super::super::decode_version(&bytes, 6).is_err(),
+                super::super::decode_for_wire_version(&bytes, 6).is_err(),
                 "older checkpoint versions cannot reinterpret the new fact tag"
             );
         }
@@ -161,5 +191,22 @@ mod tests {
         let mut writer = ValueWriter(Vec::new());
         assert!(serde_json::to_writer(&mut writer, &"x".repeat(MAXIMUM_VALUE_BYTES + 1)).is_err());
         assert!(writer.0.len() <= MAXIMUM_VALUE_BYTES);
+    }
+
+    #[test]
+    fn total_fact_capacity_does_not_widen_indexed_membership() {
+        let mut fact = selection(
+            (1..=MAXIMUM_SET_ENTITIES + 1)
+                .map(|slot| EntityId::new(PartitionId(0), slot as u64, 1))
+                .collect(),
+        );
+        let Fact::IndexedEntitySelection {
+            candidate_limit, ..
+        } = &mut fact
+        else {
+            unreachable!();
+        };
+        *candidate_limit = MAXIMUM_SET_ENTITIES + 1;
+        assert!(super::super::encode(&[fact]).is_none());
     }
 }

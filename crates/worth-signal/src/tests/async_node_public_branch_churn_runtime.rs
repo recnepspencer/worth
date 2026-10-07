@@ -43,7 +43,7 @@ fn public_async_gate_rediscovery_is_branch_local_and_visibility_honest_under_res
         .attach_async_capability(declaration.clone())
         .expect("gate capability should attach");
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [gate],
         Box::new(NoopAsyncNodeObservationListener),
     );
@@ -250,7 +250,7 @@ fn keyed_public_rediscovery_and_rebind_churn_stay_branch_local() {
         .attach_async_capability(&mut runtime, payload)
         .expect("feature branch should attach the original keyed public lineage");
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [attached.node()],
         Box::new(NoopAsyncNodeObservationListener),
     );

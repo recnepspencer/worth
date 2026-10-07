@@ -1,0 +1,33 @@
+error[E0599]: no method named `clone` found for struct `FundedRecoveryObservation` in the current scope
+ --> tests/ui/funded_observation_cannot_duplicate_or_extract_present_bytes.rs:4:25
+  |
+4 |     let _ = observation.clone();
+  |                         ^^^^^ method not found in `FundedRecoveryObservation`
+
+error[E0308]: mismatched types
+ --> tests/ui/funded_observation_cannot_duplicate_or_extract_present_bytes.rs:8:5
+  |
+7 | fn clone_raw(observation: &FundedRecoveryObservation) -> ObservedRecoveryArtifact {
+  |                                                          ------------------------ expected `ObservedRecoveryArtifact` because of return type
+8 |     observation.observed().clone()
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `ObservedRecoveryArtifact`, found `&ObservedRecoveryArtifact`
+  |
+note: `ObservedRecoveryArtifact` does not implement `Clone`, so `&ObservedRecoveryArtifact` was cloned instead
+ --> tests/ui/funded_observation_cannot_duplicate_or_extract_present_bytes.rs:8:5
+  |
+8 |     observation.observed().clone()
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0507]: cannot move out of a shared reference
+  --> tests/ui/funded_observation_cannot_duplicate_or_extract_present_bytes.rs:12:13
+   |
+12 |     let _ = observation.observed().into_bytes();
+   |             ^^^^^^^^^^^^^^^^^^^^^^ ------------ value moved due to this method call
+   |             |
+   |             move occurs because value has type `ObservedRecoveryArtifact`, which does not implement the `Copy` trait
+   |
+note: `ObservedRecoveryArtifact::into_bytes` takes ownership of the receiver `self`, which moves value
+  --> $WORKSPACE/crates/worth-store-physical-backend/src/recovery_media/discovery/observed_artifact.rs
+   |
+   |     pub fn into_bytes(self) -> Option<Vec<u8>> {
+   |                       ^^^^

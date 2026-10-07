@@ -4,10 +4,9 @@ use super::{
 };
 use crate::layout_declarations;
 use worth_store_contracts::{
-    CompatibilityFamilyKind, DerivedFamilyRetentionPolicy, DurableArtifactFamilyId,
-    DurableArtifactOwningBoundary, LayoutCompactionFamilyKind, LayoutFamilyCompactionUnit,
-    MaintenanceArtifactFamily, PlacementArtifactFamily, PublicationFamily, SupportArtifactFamily,
-    WalRecordFamily,
+    DerivedFamilyRetentionPolicy, DurableArtifactFamilyId, DurableArtifactOwningBoundary,
+    LayoutCompactionFamilyKind, LayoutFamilyCompactionUnit, MaintenanceArtifactFamily,
+    PlacementArtifactFamily, PublicationFamily, SupportArtifactFamily, WalRecordFamily,
 };
 
 const EXPECTED_FAMILIES: &[DurableArtifactFamilyId] = &[
@@ -38,19 +37,6 @@ const EXPECTED_FAMILIES: &[DurableArtifactFamilyId] = &[
     DurableArtifactFamilyId::ImportBundle,
     DurableArtifactFamilyId::CapsuleArtifact,
     DurableArtifactFamilyId::OfflineVerificationRecord,
-    DurableArtifactFamilyId::CompatibilityCommitEnvelope,
-    DurableArtifactFamilyId::CompatibilityBranchVersionDagRecord,
-    DurableArtifactFamilyId::CompatibilityWalRestartRecord,
-    DurableArtifactFamilyId::CompatibilitySchemaLineageCursorCheckpointSupport,
-    DurableArtifactFamilyId::CompatibilityEmbeddedCheckpointAuthority,
-    DurableArtifactFamilyId::CompatibilitySnapshotRecord,
-    DurableArtifactFamilyId::CompatibilityDeltaRecord,
-    DurableArtifactFamilyId::CompatibilityLegacyLayoutBlockChunkRecord,
-    DurableArtifactFamilyId::CompatibilityLegacyBasisContinuationDescriptor,
-    DurableArtifactFamilyId::CompatibilityLegacyBulkRecord,
-    DurableArtifactFamilyId::CompatibilityLegacyRetentionRebuildRecord,
-    DurableArtifactFamilyId::CompatibilityLegacyMaintenanceRecord,
-    DurableArtifactFamilyId::CompatibilityLegacyTieringRecord,
     DurableArtifactFamilyId::MaintenanceSnapshot,
     DurableArtifactFamilyId::MaintenanceCompaction,
     DurableArtifactFamilyId::MaintenanceReclaim,
@@ -137,13 +123,6 @@ fn named_existing_inputs_map_to_real_family_boundaries() {
     );
     assert_eq!(
         inventory
-            .declaration(DurableArtifactFamilyId::CompatibilityCommitEnvelope)
-            .unwrap()
-            .owning_boundary(),
-        DurableArtifactOwningBoundary::WorthStoreCompatibility
-    );
-    assert_eq!(
-        inventory
             .declaration(DurableArtifactFamilyId::MaintenanceSnapshot)
             .unwrap()
             .owning_boundary(),
@@ -195,7 +174,6 @@ fn non_authority_families_remain_non_authority() {
         DurableArtifactFamilyId::ReclaimReceipt,
         DurableArtifactFamilyId::ExportBundle,
         DurableArtifactFamilyId::CapsuleArtifact,
-        DurableArtifactFamilyId::CompatibilitySnapshotRecord,
         DurableArtifactFamilyId::DerivedRetentionLegacyLayoutMaterialization,
     ] {
         let declaration = inventory.declaration(family).unwrap();
@@ -239,8 +217,6 @@ fn every_real_existing_family_variant_is_individually_addressable() {
         DurableArtifactFamilyId::WalBulkCheckpointPublicationIntent,
         DurableArtifactFamilyId::WalDurablePublicationProgress,
         DurableArtifactFamilyId::WalRecoveryDecision,
-        DurableArtifactFamilyId::CompatibilityCommitEnvelope,
-        DurableArtifactFamilyId::CompatibilityLegacyTieringRecord,
         DurableArtifactFamilyId::MaintenanceCapsule,
         DurableArtifactFamilyId::SupportEmbeddedCheckpoint,
         DurableArtifactFamilyId::PlacementLegacyLayoutFamily,
@@ -269,13 +245,6 @@ fn existing_family_inputs_lower_directly_to_canonical_declarations() {
             .unwrap()
             .family_id(),
         DurableArtifactFamilyId::WalRecoveryDecision
-    );
-    assert_eq!(
-        facade
-            .admit_existing_family(&CompatibilityFamilyKind::LegacyTieringRecord)
-            .unwrap()
-            .family_id(),
-        DurableArtifactFamilyId::CompatibilityLegacyTieringRecord
     );
     assert_eq!(
         facade

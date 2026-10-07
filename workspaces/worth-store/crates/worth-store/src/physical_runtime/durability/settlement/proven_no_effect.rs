@@ -2,6 +2,9 @@ use crate::physical_runtime::{
     PhysicalMutationIdempotencyKeyIdentity, PhysicalMutationIdentity,
     PhysicalMutationRequestFingerprint,
 };
+mod admission;
+
+pub use admission::PhysicalMutationPreSealAdmissionDetail;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalMutationProvenNoEffectCause {
@@ -47,12 +50,13 @@ impl PhysicalMutationProvenNoEffectCause {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProvenNoEffectPhysicalMutation {
     idempotency: PhysicalMutationIdempotencyKeyIdentity,
     fingerprint: PhysicalMutationRequestFingerprint,
     mutation: PhysicalMutationIdentity,
     cause: PhysicalMutationProvenNoEffectCause,
+    admission_detail: Option<PhysicalMutationPreSealAdmissionDetail>,
 }
 
 impl ProvenNoEffectPhysicalMutation {
@@ -67,27 +71,46 @@ impl ProvenNoEffectPhysicalMutation {
             fingerprint,
             mutation,
             cause,
+            admission_detail: None,
         }
     }
 
-    pub const fn idempotency_identity(self) -> PhysicalMutationIdempotencyKeyIdentity {
+    pub(in crate::physical_runtime) fn with_admission_detail(
+        mut self,
+        detail: PhysicalMutationPreSealAdmissionDetail,
+    ) -> Self {
+        debug_assert!(matches!(
+            self.cause,
+            PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
+                | PhysicalMutationProvenNoEffectCause::SourceChanged
+                | PhysicalMutationProvenNoEffectCause::RetentionPressure
+        ));
+        self.admission_detail = Some(detail);
+        self
+    }
+
+    pub const fn idempotency_identity(&self) -> PhysicalMutationIdempotencyKeyIdentity {
         self.idempotency
     }
 
-    pub const fn request_fingerprint(self) -> PhysicalMutationRequestFingerprint {
+    pub const fn request_fingerprint(&self) -> PhysicalMutationRequestFingerprint {
         self.fingerprint
     }
 
-    pub const fn mutation_identity(self) -> PhysicalMutationIdentity {
+    pub const fn mutation_identity(&self) -> PhysicalMutationIdentity {
         self.mutation
     }
 
-    pub const fn cause(self) -> PhysicalMutationProvenNoEffectCause {
+    pub const fn cause(&self) -> PhysicalMutationProvenNoEffectCause {
         self.cause
     }
 
-    pub const fn diagnostic_evidence(
-        self,
+    pub const fn admission_detail(&self) -> Option<&PhysicalMutationPreSealAdmissionDetail> {
+        self.admission_detail.as_ref()
+    }
+
+    pub fn diagnostic_evidence(
+        &self,
     ) -> crate::physical_runtime::ProvenNoEffectPhysicalMutationEvidence {
         crate::physical_runtime::ProvenNoEffectPhysicalMutationEvidence::from_fate(self)
     }

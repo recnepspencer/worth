@@ -383,6 +383,8 @@ mod source_change;
 use source_change::change_input;
 #[path = "contribution_installation/checkpoint.rs"]
 mod checkpoint;
+#[path = "contribution_installation/checkpoint_transition.rs"]
+mod checkpoint_transition;
 #[path = "contribution_installation/publication_limit.rs"]
 mod publication_limit;
 pub(super) use checkpoint::{

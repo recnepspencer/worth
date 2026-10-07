@@ -107,7 +107,7 @@ pub(crate) fn public_hierarchy_branch_workload() -> PublicHierarchyBranchWorkloa
         .switch_branch(feature.clone())
         .expect("feature branch should activate");
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [gate, parent],
         Box::new(NoopAsyncNodeObservationListener),
     );
@@ -205,7 +205,7 @@ pub(crate) fn public_hierarchy_branch_workload() -> PublicHierarchyBranchWorkloa
         .switch_branch(sibling.clone())
         .expect("sibling branch should activate");
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [gate, parent],
         Box::new(NoopAsyncNodeObservationListener),
     );

@@ -10,11 +10,19 @@ use super::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
 };
 
+mod admitted_mutation;
 mod affinity_access;
+mod arc_str_layout;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
+mod mutation_readmission;
+mod query_preparation;
 mod query_read;
+pub(in crate::domain_computation) use admitted_mutation::WorthQueryAdmittedMutationSessionStartStop;
+pub(in crate::domain_computation) use query_preparation::{
+    WorthQueryAdmittedQuerySessionStartStop, WorthQueryPreparedQuerySessionIdentity,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryGraphWorkAccessContextAffinity {
@@ -83,55 +91,6 @@ pub(in crate::domain_computation) struct WorthQueryManagedGraphWorkSession {
 
 impl WorthQueryManagedGraphWorkSession {
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation) fn start_query(
-        plan: WorthQueryAdmittedGraphWorkPlan,
-        runtime: WorthQueryRuntimeAuthorityIdentity,
-        binding: &ApplicationSchemaBindingIdentity,
-        obligation: &WorthQueryInstalledGraphObligationSetIdentity,
-        subject_authority: &str,
-        principal: EntityId,
-        access: WorthQueryGraphWorkAccessContextAffinity,
-        basis: &WorthQueryApplicationBasisIdentity,
-        product: crate::basis::WorthQueryProductObservationLease,
-        authorization_product: &crate::basis::WorthQueryProductObservationLease,
-        provider: &str,
-        port: WorthQueryGraphReadOwnerPort,
-    ) -> Result<Self, WorthQueryManagedGraphWorkSessionStartDenial> {
-        let branch = WorthQueryGraphWorkBranchAffinity::from_query_basis(basis);
-        let authorization_branch =
-            WorthQueryGraphWorkBranchAffinity::from_product(authorization_product);
-        let selected_product = match basis.selection() {
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(identity) => identity,
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => {
-                return Err(WorthQueryManagedGraphWorkSessionStartDenial::BasisBranchMismatch);
-            }
-        };
-        let carried_product = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-            product.observation(),
-        );
-        if !branch.admits_query_basis(basis) || selected_product != &carried_product {
-            return Err(WorthQueryManagedGraphWorkSessionStartDenial::BasisBranchMismatch);
-        }
-        Self::start(
-            plan,
-            runtime,
-            binding,
-            obligation,
-            subject_authority,
-            principal,
-            access,
-            branch,
-            authorization_branch,
-            WorthQueryGraphWorkBasis::Query {
-                identity: basis.clone(),
-                product,
-                port,
-            },
-            provider,
-        )
-    }
-
-    #[allow(clippy::too_many_arguments)]
     pub(in crate::domain_computation) fn start_mutation(
         plan: WorthQueryAdmittedGraphWorkPlan,
         runtime: WorthQueryRuntimeAuthorityIdentity,
@@ -148,6 +107,9 @@ impl WorthQueryManagedGraphWorkSession {
             return Err(WorthQueryManagedGraphWorkSessionStartDenial::BasisBranchMismatch);
         }
         Self::start(
+            WorthQueryGraphWorkSessionIdentity::mint()
+                .ok_or(WorthQueryManagedGraphWorkSessionStartDenial::IdentityExhausted)?,
+            None,
             plan,
             runtime,
             binding,
@@ -164,6 +126,8 @@ impl WorthQueryManagedGraphWorkSession {
 
     #[allow(clippy::too_many_arguments)]
     fn start(
+        identity: WorthQueryGraphWorkSessionIdentity,
+        reserved_managed_run: Option<WorthQueryGraphWorkManagedRunIdentity>,
         plan: WorthQueryAdmittedGraphWorkPlan,
         runtime: WorthQueryRuntimeAuthorityIdentity,
         binding: &ApplicationSchemaBindingIdentity,
@@ -179,10 +143,11 @@ impl WorthQueryManagedGraphWorkSession {
         if plan.binding_identity() != binding || plan.obligation_identity() != obligation {
             return Err(WorthQueryManagedGraphWorkSessionStartDenial::PlanAffinityMismatch);
         }
-        let identity = WorthQueryGraphWorkSessionIdentity::mint()
-            .ok_or(WorthQueryManagedGraphWorkSessionStartDenial::IdentityExhausted)?;
-        let managed_run = WorthQueryGraphWorkManagedRunIdentity::mint()
-            .ok_or(WorthQueryManagedGraphWorkSessionStartDenial::ManagedRunIdentityExhausted)?;
+        let managed_run = match reserved_managed_run {
+            Some(identity) => identity,
+            None => WorthQueryGraphWorkManagedRunIdentity::mint()
+                .ok_or(WorthQueryManagedGraphWorkSessionStartDenial::ManagedRunIdentityExhausted)?,
+        };
         let session = Self {
             identity,
             managed_run,

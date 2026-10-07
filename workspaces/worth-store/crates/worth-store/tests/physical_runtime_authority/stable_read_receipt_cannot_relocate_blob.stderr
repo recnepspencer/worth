@@ -1,0 +1,21 @@
+error[E0308]: mismatched types
+ --> tests/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs:7:5
+  |
+6 | fn substitute_hold(receipt: StablePhysicalReadReceipt) -> BlobMovementReadHold<'static> {
+  |                                                           ----------------------------- expected `BlobMovementReadHold<'static>` because of return type
+7 |     receipt
+  |     ^^^^^^^ expected `BlobMovementReadHold<'_>`, found `StablePhysicalReadReceipt`
+
+error[E0308]: mismatched types
+  --> tests/physical_runtime_authority/stable_read_receipt_cannot_relocate_blob.rs:19:33
+   |
+19 |         .begin_chunk_relocation(receipt, target, request);
+   |          ---------------------- ^^^^^^^ expected `BlobMovementReadHold<'_>`, found `StablePhysicalReadReceipt`
+   |          |
+   |          arguments to this method are incorrect
+   |
+note: method defined here
+  --> src/physical_runtime/blob/facade.rs
+   |
+   |     pub fn begin_chunk_relocation(
+   |            ^^^^^^^^^^^^^^^^^^^^^^

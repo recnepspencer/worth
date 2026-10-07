@@ -1,15 +1,13 @@
 use worth_store::physical_runtime::{
     AdmittedRecoveryFilesystemMedia, CompletedPhysicalRecoveryFreshReopen,
-    IntegrityAdmittedRecoveryWalSegment, PhysicalRecoveryCoordination,
+    IntegrityAdmittedRecoveryWalSegment, PhysicalRecoveryCoordination, SharedRecoveryCheckpoint,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
-use std::sync::Arc;
 
 fn reuse_fresh_reopen(
     coordination: &PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
     reopened: CompletedPhysicalRecoveryFreshReopen,
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: SharedRecoveryCheckpoint,
 ) {
     let _first = coordination.admit_cleanup_plan(
         media,

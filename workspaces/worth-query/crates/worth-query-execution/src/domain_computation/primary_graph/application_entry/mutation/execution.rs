@@ -86,6 +86,36 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
+        self.execute_mutation_handler_observing_contact::<Binding>(
+            identities,
+            principal_identity,
+            admission,
+            || {},
+        )
+    }
+
+    /// Observe the actual installed handler invocation, after all entry and
+    /// projection denials. The observer carries accounting only.
+    pub(in crate::domain_computation::primary_graph) fn execute_mutation_handler_observing_contact<
+        Binding,
+    >(
+        &self,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        principal_identity: &Binding::PrincipalIdentity,
+        admission: WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        on_contact: impl FnOnce(),
+    ) -> Result<
+        HandlerResult<WorthQueryCompletedMutationCandidate<Schema, Binding>, Binding::Denial>,
+        MutationHandlerExecutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
         if admission
             .governed_input_identity()
             .is_some_and(|admitted| admitted != identities.input_identity())
@@ -97,6 +127,9 @@ where
         let input = identities.mutation_input();
         let request = admission.publication_request();
         let operation_scope_binding = admission.operation_scope_binding().clone();
+        let context_use = std::cell::Cell::new(
+            crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
+        );
         let projected = self
             .mutation_projection
             .project_admitted_operation(&admission, |reader, scope| {
@@ -107,7 +140,9 @@ where
                     &operation_scope_binding,
                     identities,
                     request,
+                    &context_use,
                 );
+                on_contact();
                 handler.decide(input, &mut decision_reader)
             })
             .map_err(MutationHandlerExecutionDenial::Projection)?;
@@ -123,6 +158,8 @@ where
             HandlerResult::Cancelled => return Ok(HandlerResult::Cancelled),
             HandlerResult::DeadlineExceeded => return Ok(HandlerResult::DeadlineExceeded),
         };
+        let mut admission = admission;
+        admission.record_decision_context_use(context_use.get());
         let reads = self
             .begin_projected_application_read_attempt(admission, projection)
             .map_err(MutationHandlerExecutionDenial::Attempt)?

@@ -8,6 +8,15 @@ pub struct WorthServerAdmission {
 }
 
 impl WorthServerAdmission {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        self.resolved_request_context
+            .owned_allocation_capacity_bytes()
+            .saturating_add(
+                self.prepared_query_handoff_intent
+                    .owned_allocation_capacity_bytes(),
+            )
+    }
+
     pub(crate) fn new(
         resolved_request_context: WorthServerResolvedRequestContext,
         prepared_query_handoff_intent: WorthServerPreparedQueryHandoffIntent,
@@ -45,6 +54,12 @@ pub struct WorthServerPreparedQueryHandoffIntent {
 }
 
 impl WorthServerPreparedQueryHandoffIntent {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        crate::product_adapter::execution_pipeline::read_batch_accounting::string(
+            &self.operation_name,
+        )
+    }
+
     pub(crate) fn from_pipeline_intent(intent: WorthServerPipelineIntent) -> Self {
         match intent {
             WorthServerPipelineIntent::WorthNativeSession { operation_name } => Self {

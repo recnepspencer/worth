@@ -3,12 +3,17 @@ use super::*;
 use crate::RecoveryPageSource;
 use worth_store_physical_format::{RecordArtifactFile, RecordFrameCoordinate};
 
-struct PageClaim<'a> {
-    member: usize,
-    target: &'a PhysicalRedoTarget,
+/// One admitted image of an inline page: the member that wrote it and every
+/// WAL record that claims it.
+#[derive(Debug)]
+pub(super) struct PageClaim<'a> {
+    pub(super) member: usize,
+    pub(super) target: &'a PhysicalRedoTarget,
     last_lsn: u64,
     lsns: Vec<u64>,
 }
+
+pub(super) type PageClaims<'a> = BTreeMap<(u64, u64), BTreeMap<u64, PageClaim<'a>>>;
 
 pub(super) fn admit_scratch_bytes(
     retained: u64,
@@ -25,12 +30,40 @@ pub(super) fn admit_scratch_bytes(
             sum.checked_add(record.targets().len() as u64)
         })
         .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
-    let observed = targets
-        .checked_add(projection.frames().len() as u64)
+    let mut observed = targets
+        .checked_add(
+            projection
+                .frames()
+                .expect("frame-only recovery projection admitted before planning")
+                .len() as u64,
+        )
         .and_then(|count| count.checked_add(projection.placements().len() as u64))
         .and_then(|count| count.checked_mul(4096))
         .and_then(|bytes| retained.checked_add(bytes))
         .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+    if let Some(claim) = projection.operation().release_head_tree_claim() {
+        // The encoded WAL frame, decoded path/writes, and the pure planner's
+        // recomputed writes can coexist. Charge all three frame rosters plus
+        // conservative Vec/tree overhead before retaining this member.
+        let framed = claim
+            .framed_bytes()
+            .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+        let entries = claim
+            .entry_count()
+            .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+        observed = observed
+            .checked_add(
+                framed
+                    .checked_mul(3)
+                    .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?,
+            )
+            .and_then(|bytes| {
+                entries
+                    .checked_mul(4096)
+                    .and_then(|overhead| bytes.checked_add(overhead))
+            })
+            .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+    }
     if observed > limit {
         return Err(PhysicalRedoPlanningDenial::RecoveryMemoryLimit {
             observed,
@@ -40,11 +73,12 @@ pub(super) fn admit_scratch_bytes(
     Ok(observed)
 }
 
-pub(super) fn observed_predecessors(
+/// Every admitted inline image by page and page generation. One generation
+/// of a page belongs to exactly one member and one exact target.
+pub(super) fn page_claims(
     members: &[AdmittedPhysicalRedoMember],
-    observations: &[RecoveryPageObservation],
-) -> Result<BTreeSet<(u64, PhysicalRedoTargetIdentity)>, PhysicalRedoPlanningDenial> {
-    let mut pages = BTreeMap::<(u64, u64), BTreeMap<u64, PageClaim<'_>>>::new();
+) -> Result<PageClaims<'_>, PhysicalRedoPlanningDenial> {
+    let mut pages = PageClaims::new();
     for (index, member) in members.iter().enumerate() {
         for record in &member.records {
             for target in record.targets() {
@@ -77,6 +111,14 @@ pub(super) fn observed_predecessors(
             }
         }
     }
+    Ok(pages)
+}
+
+pub(super) fn observed_predecessors(
+    members: &[AdmittedPhysicalRedoMember],
+    observations: &[RecoveryPageObservation],
+) -> Result<BTreeSet<(u64, PhysicalRedoTargetIdentity)>, PhysicalRedoPlanningDenial> {
+    let pages = page_claims(members)?;
     let mut predecessors = BTreeSet::new();
     for observed in observations {
         let PhysicalRedoTargetIdentity::InlinePage {
@@ -133,10 +175,9 @@ fn admitted_anchor<'a>(
     let PhysicalRedoTargetIdentity::InlinePage { generation, .. } = observed.target() else {
         return None;
     };
-    if let Some(exact) = history
-        .get(&generation)
-        .filter(|claim| matches_observed(claim, observed))
-    {
+    if let Some(exact) = history.get(&generation).filter(|claim| {
+        matches_observed(claim, observed) || retired_image(members, claim, observed)
+    }) {
         return Some(exact);
     }
     let prior = generation.checked_sub(1)?;
@@ -163,7 +204,11 @@ fn published_image(
     let Ok(image) = inline_image(&members[claim.member], claim.target) else {
         return false;
     };
-    let bytes = members[claim.member].projection.frames()[image.frame_index].bytes();
+    let bytes = members[claim.member]
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[image.frame_index]
+        .bytes();
     let Ok(format) =
         worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit()
     else {
@@ -188,6 +233,21 @@ fn published_image(
     digest == observed.frame_digest()
 }
 
+/// A historically retired page is anchored only by the exact last image its
+/// witness names, written by the operation that witness names.
+fn retired_image(
+    members: &[AdmittedPhysicalRedoMember],
+    claim: &PageClaim<'_>,
+    observed: &RecoveryPageObservation,
+) -> bool {
+    matches!(
+        super::historical_skip(*observed, members[claim.member].operation, claim.target),
+        Ok(Some(
+            PhysicalRedoDecisionKind::SkipHistoricallyRetiredTarget
+        ))
+    )
+}
+
 fn matches_observed(claim: &PageClaim<'_>, observed: &RecoveryPageObservation) -> bool {
     let RecoveryPageSource::Materialized { coordinate, .. } = observed.source() else {
         return false;
@@ -203,7 +263,7 @@ fn matches_observed(claim: &PageClaim<'_>, observed: &RecoveryPageObservation) -
             )
 }
 
-fn require_successor(
+pub(super) fn require_successor(
     members: &[AdmittedPhysicalRedoMember],
     prior: &PageClaim<'_>,
     next: &PageClaim<'_>,
@@ -262,8 +322,16 @@ fn require_preserved_records(
 ) -> Result<(), PhysicalRedoPlanningDenial> {
     let before = inline_image(prior, prior_target)?;
     let after = inline_image(next, next_target)?;
-    let before_bytes = prior.projection.frames()[before.frame_index].bytes();
-    let after_bytes = next.projection.frames()[after.frame_index].bytes();
+    let before_bytes = prior
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[before.frame_index]
+        .bytes();
+    let after_bytes = next
+        .projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")[after.frame_index]
+        .bytes();
     for (placement, range) in &before.records {
         let Some((_, after_range)) = after.records.iter().find(|(candidate, _)| {
             candidate.record() == placement.record()
@@ -280,7 +348,7 @@ fn require_preserved_records(
     Ok(())
 }
 
-fn inline_image<'a>(
+pub(super) fn inline_image<'a>(
     member: &'a AdmittedPhysicalRedoMember,
     target: &PhysicalRedoTarget,
 ) -> Result<&'a projection_admission::AdmittedInlineFrame, PhysicalRedoPlanningDenial> {
@@ -288,7 +356,12 @@ fn inline_image<'a>(
         .inline_frames
         .iter()
         .find(|image| {
-            let coordinate = member.projection.frames()[image.frame_index].coordinate();
+            let coordinate = member
+                .projection
+                .frames()
+                .expect("frame-only recovery projection admitted before planning")
+                [image.frame_index]
+                .coordinate();
             coordinate.artifact() == target.artifact()
                 && coordinate.offset() == target.artifact_offset()
                 && coordinate.length() == target.artifact_length()

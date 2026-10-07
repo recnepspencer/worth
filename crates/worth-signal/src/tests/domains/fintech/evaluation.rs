@@ -1,9 +1,14 @@
+mod checked_result_capacity;
 mod instrument_behavior;
 mod partition_behavior;
 mod portfolio_aggregation;
 
+pub(super) use checked_result_capacity::maximum_checked_result_heap_bytes;
+
 use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
+use crate::facade::{Aspect, AspectVersion, NodeEvaluationResult, PartitionSubscription};
+use crate::logic::checked_context::CheckedEvaluationContext;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationOutput;
 
@@ -31,6 +36,70 @@ struct InstrumentShape {
     core: InstrumentNodes,
     buckets: Vec<NodeId>,
     scenarios: Vec<NodeId>,
+}
+
+pub(super) trait FintechEvaluationView {
+    fn node(&self) -> NodeId;
+    fn read_aspect_version(
+        &mut self,
+        source: NodeId,
+        aspect: Aspect,
+    ) -> Result<AspectVersion, SignalError>;
+    fn read_partitioned_aspect_version(
+        &mut self,
+        source: NodeId,
+        aspect: Aspect,
+        scope: PartitionSubscription,
+    ) -> Result<AspectVersion, SignalError>;
+    fn finish(&self, result: NodeEvaluationResult) -> EvaluationOutput;
+}
+
+impl FintechEvaluationView for EvaluationContext<'_, ()> {
+    fn node(&self) -> NodeId {
+        self.node()
+    }
+    fn read_aspect_version(
+        &mut self,
+        source: NodeId,
+        aspect: Aspect,
+    ) -> Result<AspectVersion, SignalError> {
+        self.read_aspect_version(source, aspect)
+    }
+    fn read_partitioned_aspect_version(
+        &mut self,
+        source: NodeId,
+        aspect: Aspect,
+        scope: PartitionSubscription,
+    ) -> Result<AspectVersion, SignalError> {
+        self.read_partitioned_aspect_version(source, aspect, scope)
+    }
+    fn finish(&self, result: NodeEvaluationResult) -> EvaluationOutput {
+        self.finish(result)
+    }
+}
+
+impl FintechEvaluationView for CheckedEvaluationContext<'_, '_, '_, '_, ()> {
+    fn node(&self) -> NodeId {
+        self.node()
+    }
+    fn read_aspect_version(
+        &mut self,
+        source: NodeId,
+        aspect: Aspect,
+    ) -> Result<AspectVersion, SignalError> {
+        Ok(AspectVersion::zero().with(aspect, self.read(source, aspect)?))
+    }
+    fn read_partitioned_aspect_version(
+        &mut self,
+        source: NodeId,
+        aspect: Aspect,
+        scope: PartitionSubscription,
+    ) -> Result<AspectVersion, SignalError> {
+        Ok(AspectVersion::zero().with(aspect, self.read_scoped(source, aspect, &scope)?))
+    }
+    fn finish(&self, result: NodeEvaluationResult) -> EvaluationOutput {
+        self.finish(result)
+    }
 }
 
 impl FintechEvaluationShape {
@@ -78,9 +147,24 @@ impl FintechEvaluationShape {
         move |ctx| self.evaluate_node(ctx)
     }
 
-    fn evaluate_node(
+    pub(super) fn checked_evaluator(
         &self,
-        view: &mut EvaluationContext<'_, ()>,
+    ) -> impl for<'graph, 'work, 'run, 'lease> Fn(
+        &mut CheckedEvaluationContext<'graph, 'work, 'run, 'lease, ()>,
+    ) -> Result<EvaluationOutput, SignalError>
+           + Sync
+           + '_ {
+        move |ctx| {
+            ctx.work()
+                .checkpoint(self.instruments.len().saturating_mul(8).saturating_add(256) as u64)
+                .map_err(|_| SignalError::invalid_input("fintech kernel work exhausted"))?;
+            self.evaluate_node(ctx)
+        }
+    }
+
+    fn evaluate_node<V: FintechEvaluationView>(
+        &self,
+        view: &mut V,
     ) -> Result<EvaluationOutput, SignalError> {
         if let Some(output) = self.evaluate_instrument_node(view)? {
             return Ok(output);

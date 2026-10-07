@@ -23,9 +23,9 @@ impl PoolState {
         &mut self,
     ) -> Option<LegalEvictionVictim> {
         let oldest = self.evictable_head?;
-        let oldest_entry = self
+        let (coordinate, oldest_entry) = self
             .frames
-            .get(&oldest)
+            .frame_at_slot(oldest)
             .expect("an eviction-order identity remains resident");
         match oldest_entry.eviction_eligibility() {
             EvictionEligibility::Legal => {}
@@ -36,7 +36,7 @@ impl PoolState {
                     .expect("an exclusion has a failure predicate")
             ),
         }
-        self.detach_evictable(oldest);
-        Some(LegalEvictionVictim { coordinate: oldest })
+        self.detach_evictable_slot(oldest);
+        Some(LegalEvictionVictim { coordinate })
     }
 }

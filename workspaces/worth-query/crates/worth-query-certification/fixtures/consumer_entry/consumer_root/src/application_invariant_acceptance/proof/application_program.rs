@@ -37,7 +37,7 @@ pub(super) fn performed_source_settles_required_output(
     discovered::recovery::interrupted_discovery_recovers_both_consumed_roots(foreign);
     discovered::publication_lifecycle::unchanged_roots_join_new_publication(foreign);
     discovered::publication_lifecycle::older_publication_starts_after_newer_root_binding(foreign);
-    discovered::publication_lifecycle::running_root_supersession_preserves_sibling(foreign);
+    discovered::publication_lifecycle::running_roots_follow_the_newer_publication(foreign);
     discovered::publication_basis::joined_roots_discover_at_their_own_publication(foreign);
     required_basis::joined_required_root_discovers_at_its_own_publication(foreign);
     discovered::recovery::required_recovery_cannot_claim_discovered_custody(foreign);

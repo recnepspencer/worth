@@ -80,7 +80,9 @@ where
             .application
             .admit_program_migration::<Intent::Binding>(target)
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Migration)?;
-        let staged = self.stage();
+        let staged = self
+            .stage()
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
         let identities = self
             .identities()
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
@@ -182,68 +184,20 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        self.require_workflow_transition()?;
-        let staged = self.stage();
-        let identities = self.identities()?;
-        let prepared = prepare(&self, &identities, staged)?;
-        let principal_identity = prepared.principal_identity;
-        let admission = prepared.admission;
-        let commit_binding = WorthQueryMutationCommitBinding::new(&identities, prepared.extension);
-        if let Some(outcome) = self.resolve_idempotency(&admission, commit_binding.idempotency())? {
-            return Ok(outcome);
-        }
-        let workflow_authority = self
-            .workflow_authority
-            .as_ref()
-            .and_then(|slot| slot.take());
-        if <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY {
-            workflow_authority
-                .as_ref()
-                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?
-                .validate_before_handler(
-                    self.request.application,
-                    admission.allowed_graph_contract().decision_fact_budget(),
-                )
-                .map_err(
-                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
-                )?;
-        }
-        let completed = match self
-            .request
-            .application
-            .execute_mutation_handler::<Intent::Binding>(
-                &identities,
-                &principal_identity,
-                admission,
-            )
-            .map_err(WorthQueryApplicationRequestMutationDenial::Handler)?
-        {
-            HandlerResult::Completed(completed) => completed,
-            HandlerResult::DomainDenied(denial) => {
-                return Ok(WorthQueryApplicationMutationOutcome::DomainDenied(denial));
-            }
-            HandlerResult::ExecutionDenied(denial) => {
-                return Err(WorthQueryApplicationRequestMutationDenial::Handler(
-                    MutationHandlerExecutionDenial::Handler(denial),
-                ));
-            }
-            HandlerResult::Cancelled => {
-                return Ok(WorthQueryApplicationMutationOutcome::Cancelled);
-            }
-            HandlerResult::DeadlineExceeded => {
-                return Ok(WorthQueryApplicationMutationOutcome::DeadlineExceeded);
-            }
+        let application = self.request.application;
+        let candidate = match self.prepare_candidate(prepare)? {
+            super::preparation::CandidatePreparation::Prepared(candidate) => candidate,
+            super::preparation::CandidatePreparation::Settled(outcome) => return Ok(outcome),
         };
-        let (mut program, result) = completed.into_parts();
-        if let Some(authority) = workflow_authority.as_ref() {
-            program = program
-                .bind_workflow_operation_authority(authority)
-                .map_err(
-                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
-                )?;
-        }
+        let super::preparation::PreparedCandidate {
+            program,
+            result,
+            identities,
+            extension,
+        } = candidate;
+        let commit_binding = WorthQueryMutationCommitBinding::new(&identities, extension);
         Ok(
-            match commit(self.request.application, program, &commit_binding).landed() {
+            match commit(application, program, &commit_binding).landed() {
                 Ok((receipt, false)) => {
                     WorthQueryApplicationMutationOutcome::Committed { receipt, result }
                 }
@@ -255,7 +209,7 @@ where
         )
     }
 
-    fn require_workflow_transition(
+    pub(super) fn require_workflow_transition(
         &self,
     ) -> Result<(), WorthQueryApplicationRequestMutationDenial> {
         if <Intent::Binding as ApplicationMutationBinding<Schema>>::WORKFLOW_CONTROL {
@@ -271,7 +225,7 @@ where
         Ok(())
     }
 
-    fn resolve_idempotency(
+    pub(super) fn resolve_idempotency(
         &self,
         admission: &WorthQueryAdmittedApplicationOperation<
             Schema,

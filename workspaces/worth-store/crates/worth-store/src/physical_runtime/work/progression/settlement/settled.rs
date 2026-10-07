@@ -11,6 +11,7 @@ pub struct SettledPhysicalWork {
     dispatched: DispatchedPhysicalWork,
     evidence: PhysicalWorkSettlementEvidence,
     recovery: PhysicalWorkRecoveryDisposition,
+    recovery_obligation: crate::physical_runtime::PhysicalEffectRecoveryObligation,
 }
 
 impl SettledPhysicalWork {
@@ -20,6 +21,15 @@ impl SettledPhysicalWork {
 
     pub const fn evidence(&self) -> &PhysicalWorkSettlementEvidence {
         &self.evidence
+    }
+
+    /// What the settlement left in the recovery journal. A retained effect
+    /// whose recovery record could not be written reports
+    /// `RetainedWithoutRecord` alongside its failed evidence.
+    pub const fn recovery_obligation(
+        &self,
+    ) -> crate::physical_runtime::PhysicalEffectRecoveryObligation {
+        self.recovery_obligation
     }
 
     pub(in crate::physical_runtime) fn into_evidence(self) -> PhysicalWorkSettlementEvidence {
@@ -150,6 +160,7 @@ impl SettledPhysicalWork {
             dispatched,
             evidence,
             recovery,
+            recovery_obligation,
         }
     }
 

@@ -141,7 +141,7 @@ impl ResourceCertificationEvidence {
                     suppressed.observer_id() != delivered.observer_id()
                         || suppressed.handle_id() != delivered.handle_id()
                         || suppressed.policy() != delivered.policy()
-                        || suppressed.touched() != delivered.touched()
+                        || suppressed.visited() != delivered.visited()
                         || suppressed.recomputed() != delivered.recomputed()
                         || suppressed.meaningful_change() != delivered.meaningful_change()
                         || suppressed.trigger_matched() != delivered.trigger_matched()

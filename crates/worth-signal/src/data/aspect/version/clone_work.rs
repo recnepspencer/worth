@@ -1,29 +1,23 @@
-//! Copy work for the two owned partition override trees.
+//! Copy work for the owned scope-path version tree.
 use super::PartitionVersionOverrides;
 use crate::data::error::SignalError;
 use crate::logic::evaluation::EvaluationWork;
 impl PartitionVersionOverrides {
     pub(crate) fn admit_clone_work(
         &self,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(
-            self.partitions
+            self.paths
                 .len()
-                .checked_add(self.details.len())
-                .and_then(|n| n.checked_mul(128 + std::mem::size_of::<super::AspectVersion>()))
+                .checked_mul(128 + std::mem::size_of::<super::PathVersions>())
                 .and_then(|n| n.checked_add(64)),
         )?;
-        for partition in self.partitions.keys() {
-            work.reserve(Some(partition.0.len()))?;
-        }
-        for scope in self.details.keys() {
+        for path in self.paths.keys() {
             work.reserve(
-                scope
-                    .partition
-                    .0
-                    .len()
-                    .checked_add(scope.detail.as_ref().map_or(0, String::len)),
+                path.depth()
+                    .checked_mul(std::mem::size_of::<String>())
+                    .and_then(|bytes| bytes.checked_add(path.total_segment_bytes())),
             )?;
         }
         Ok(())

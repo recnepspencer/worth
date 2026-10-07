@@ -328,6 +328,12 @@ pub(super) fn commit_denial(
                 BankHttpNextAction::CorrectRequest,
             ),
         ),
+        // The original request applied; only its answer left the window. A
+        // dedicated kind keeps clients from resubmitting it under a new key.
+        Denial::IdempotencyWindowExpired => (
+            BankHttpMutationFailureKind::IdempotencyWindowExpired,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
         // The key's earlier commit took effect; reading current state shows it.
         Denial::IdempotencyReceiptNotRetained { .. } => (
             BankHttpMutationFailureKind::Stale,

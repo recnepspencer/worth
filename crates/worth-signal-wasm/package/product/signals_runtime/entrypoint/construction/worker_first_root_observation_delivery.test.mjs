@@ -52,7 +52,7 @@ test("default worker-first root watch and effect consume committed worker observ
     assert.ok(runSummary.nodesRecomputed >= 1);
     assert.equal(notices.length, 1);
     assert.equal(notices[0].signalId, outputId);
-    assert.equal(notices[0].touched, true);
+    assert.equal(notices[0].visited, true);
     assert.equal(notices[0].recomputed, true);
     assert.equal(notices[0].meaningfulChange, true);
     assert.equal(notices[0].triggerMatched, true);

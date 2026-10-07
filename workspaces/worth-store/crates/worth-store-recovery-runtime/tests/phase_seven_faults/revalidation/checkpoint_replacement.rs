@@ -1,8 +1,14 @@
+//! Rebuilds the persisted checkpoint as a distinct, equally long stream on
+//! the current production encoder, including the C.11 certified schema and
+//! its certificate (custody) records.
+
 use worth_store_physical_format::{
-    store_namespace::StableStoreIdentity, CheckpointBindingCompactionHeader,
-    CheckpointDirtyFrameBasis, CheckpointStreamEncoder, PhysicalCheckpointSource,
-    RecordArtifactFile, RecordFrameCoordinate, CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
-    CHECKPOINT_BINDING_RECORD_PREFIX_BYTES, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
+    checkpoint_certificate_frame_bytes, store_namespace::StableStoreIdentity,
+    CheckpointBindingCompactionHeader, CheckpointDirtyFrameBasis, CheckpointStreamEncoder,
+    PhysicalCheckpointSource, RecordArtifactFile, RecordFrameCoordinate,
+    CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
+    CHECKPOINT_CERTIFICATE_PREFIX_BYTES, CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES,
+    CHECKPOINT_CERTIFIED_SCHEMA, CHECKPOINT_DIRTY_FRAME_RECORD_BYTES,
     CHECKPOINT_STREAM_FOOTER_RECORD_BYTES, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
 use worth_store_physical_integrity::{
@@ -25,7 +31,11 @@ pub(super) fn replace_with_distinct_valid_checkpoint(
     let path = root.join("families").join("checkpoint.current");
     let original_bytes = std::fs::read(&path).unwrap();
     let original = admit_original(&original_bytes, store);
-    let (mut encoder, header) = CheckpointStreamEncoder::begin(original.source);
+    let (mut encoder, header) = if original.certificates.is_some() {
+        CheckpointStreamEncoder::begin_certified(original.source)
+    } else {
+        CheckpointStreamEncoder::begin(original.source)
+    };
     let mut replacement = header;
     for ordinal in 0..original.dirty_records {
         let coordinate =
@@ -45,6 +55,10 @@ pub(super) fn replace_with_distinct_valid_checkpoint(
     for binding in original.bindings {
         replacement.extend_from_slice(&compaction.encode_binding_record(&binding).unwrap());
     }
+    for certificate in original.certificates.unwrap_or_default() {
+        compaction.include_certificate_record(&certificate).unwrap();
+        replacement.extend_from_slice(&certificate);
+    }
     let (_, footer) = compaction.finish();
     replacement.extend_from_slice(&footer);
     assert_eq!(replacement.len(), original_bytes.len());
@@ -58,6 +72,8 @@ struct AdmittedOriginal {
     compaction_generation: u64,
     wal_cutoff_lsn_exclusive: u64,
     bindings: Vec<Box<[u8]>>,
+    /// Present exactly when the stream uses the certified schema.
+    certificates: Option<Vec<Box<[u8]>>>,
 }
 
 fn admit_original(bytes: &[u8], store: StableStoreIdentity) -> AdmittedOriginal {
@@ -73,27 +89,26 @@ fn admit_original(bytes: &[u8], store: StableStoreIdentity) -> AdmittedOriginal 
     };
     let source = header.source();
     let identity = source.identity();
-    let footer_range = range(
-        bytes.len() - CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
-        CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
-    );
+    let certified = bytes[8] == CHECKPOINT_CERTIFIED_SCHEMA;
+    let (footer_range, footer) = admit_footer_envelope(bytes, identity, certified);
     let footer_scope = PhysicalArtifactScope::checkpoint_footer(identity, footer_range);
-    let CheckpointFooterEnvelopeIntegrityValidation::Intact(envelope) =
-        validate_checkpoint_footer_envelope(input(bytes, footer_range), footer_scope).0
-    else {
-        panic!("original checkpoint footer envelope must be admitted")
-    };
-    let footer = envelope.routing_projection().footer();
     let (dirty, offset) =
         admit_dirty_records(bytes, identity, &footer, header_range.end_exclusive());
     let (compaction, offset) = admit_compaction(bytes, identity, offset);
     let (bindings, payloads) =
         admit_bindings(bytes, identity, footer.binding_record_count(), offset);
-    assert_eq!(offset_of_footer(&bindings, offset), footer_range.offset());
+    let certificates = frame_certificates(
+        bytes,
+        offset_of_footer(&bindings, offset),
+        footer_range.offset(),
+    );
+    assert_eq!(certificates.len() as u64, footer.certificate_record_count());
+    assert!(certified || certificates.is_empty());
     let CheckpointFooterIntegrityValidation::Intact(_) = validate_checkpoint_footer(
         input(bytes, footer_range),
         footer_scope,
-        CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings),
+        CheckpointFooterValidationBasis::new(&header, &dirty, &compaction, &bindings)
+            .with_certificates(&certificates),
     )
     .0
     else {
@@ -105,7 +120,58 @@ fn admit_original(bytes: &[u8], store: StableStoreIdentity) -> AdmittedOriginal 
         compaction_generation: compaction.generation(),
         wal_cutoff_lsn_exclusive: compaction.wal_cutoff_lsn_exclusive(),
         bindings: payloads,
+        certificates: certified.then(|| owned_records(&certificates)),
     }
+}
+
+/// Admits the footer envelope whose size the stream schema selects.
+fn admit_footer_envelope(
+    bytes: &[u8],
+    identity: worth_store_physical_format::PhysicalCheckpointIdentity,
+    certified: bool,
+) -> (
+    PhysicalByteRange,
+    worth_store_physical_format::CheckpointStreamFooter,
+) {
+    let footer_bytes = if certified {
+        CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES
+    } else {
+        CHECKPOINT_STREAM_FOOTER_RECORD_BYTES
+    };
+    let footer_range = range(bytes.len() - footer_bytes, footer_bytes);
+    let footer_scope = PhysicalArtifactScope::checkpoint_footer(identity, footer_range);
+    let CheckpointFooterEnvelopeIntegrityValidation::Intact(envelope) =
+        validate_checkpoint_footer_envelope(input(bytes, footer_range), footer_scope).0
+    else {
+        panic!("original checkpoint footer envelope must be admitted")
+    };
+    (footer_range, envelope.routing_projection().footer())
+}
+
+fn owned_records(records: &[(PhysicalByteRange, &[u8])]) -> Vec<Box<[u8]>> {
+    records
+        .iter()
+        .map(|(_, record)| Box::<[u8]>::from(*record))
+        .collect()
+}
+
+/// Frames the certificate records between the last binding and the footer.
+fn frame_certificates(
+    bytes: &[u8],
+    mut offset: u64,
+    footer_offset: u64,
+) -> Vec<(PhysicalByteRange, &[u8])> {
+    let mut records = Vec::new();
+    while offset < footer_offset {
+        let start = offset as usize;
+        let prefix = &bytes[start..start + CHECKPOINT_CERTIFICATE_PREFIX_BYTES];
+        let encoded = checkpoint_certificate_frame_bytes(prefix).unwrap();
+        let record_range = range(start, encoded);
+        records.push((record_range, &bytes[start..start + encoded]));
+        offset = record_range.end_exclusive();
+    }
+    assert_eq!(offset, footer_offset);
+    records
 }
 
 fn admit_dirty_records<'a>(

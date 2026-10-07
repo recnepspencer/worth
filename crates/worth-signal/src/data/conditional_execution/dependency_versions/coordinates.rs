@@ -30,14 +30,7 @@ pub(super) fn collect(
     let mut longest_scope = 0usize;
     for entry in entries {
         let bytes = match &entry.scope {
-            Some(scope) => work::checked(
-                work,
-                scope
-                    .partition
-                    .0
-                    .len()
-                    .checked_add(scope.detail.as_ref().map_or(0, String::len)),
-            )?,
+            Some(scope) => work::checked(work, scope.path().checked_segment_bytes())?,
             None => 0,
         };
         copied_bytes = work::checked(work, copied_bytes.checked_add(bytes))?;

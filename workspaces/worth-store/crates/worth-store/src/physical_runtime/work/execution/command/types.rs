@@ -1,3 +1,4 @@
+use super::checkpoint::PhysicalCheckpointCommandPayload;
 use worth_store_buffer_pool::PhysicalWritebackClaim;
 use worth_store_physical_format::RecordFrameCoordinate;
 
@@ -77,7 +78,7 @@ pub(in crate::physical_runtime) enum PhysicalRetryPayload {
         binding_digest: [u8; 32],
     },
     Checkpoint {
-        payload: Option<Box<[u8]>>,
+        payload: Option<PhysicalCheckpointCommandPayload>,
     },
     WalReclamation,
 }
@@ -100,6 +101,8 @@ pub struct PhysicalInspectionExecutorCommand {
 }
 
 pub struct PhysicalWriteExecutorCommand {
+    pub(in crate::physical_runtime) retirement_retry:
+        Option<crate::physical_runtime::record_serving::RetirementCandidateRetryScope>,
     pub(in crate::physical_runtime) work: ResourceAdmittedPhysicalWork,
     pub(in crate::physical_runtime) coordinate: RecordFrameCoordinate,
     pub(in crate::physical_runtime) payload: Box<[u8]>,
@@ -141,7 +144,7 @@ pub struct PhysicalWalBarrierExecutorCommand {
 
 pub struct PhysicalCheckpointExecutorCommand {
     pub(in crate::physical_runtime) work: ResourceAdmittedPhysicalWork,
-    pub(in crate::physical_runtime) payload: Option<Box<[u8]>>,
+    pub(in crate::physical_runtime) payload: Option<PhysicalCheckpointCommandPayload>,
     pub(in crate::physical_runtime) payload_digest: Option<[u8; 32]>,
 }
 

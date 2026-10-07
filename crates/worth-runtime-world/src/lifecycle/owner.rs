@@ -1,6 +1,8 @@
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
+use worth_execution::ExecutionAuthority;
+
 use worth_relational::facade::branch::RelationalOwnerServicePorts;
 use worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort;
 use worth_signal::facade::branch::SignalOwnerServicePorts;
@@ -88,6 +90,7 @@ where
     pub(super) signal_definition_publication:
         worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
     pub(super) bridge: RuntimeWorldCorrespondencePort,
+    pub(super) execution_authority: Option<Arc<ExecutionAuthority>>,
     pub(super) clock: RuntimeWorldClock,
     pub(super) history: CompositeHistoryCatalog,
     pub(super) retention: RuntimeWorldRetentionOwner<D, I, T>,
@@ -114,8 +117,15 @@ where
     pub fn new(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
-        let (relational, signal, signal_definition_publication, bridge, budgets, clock) =
-            inputs.into_parts();
+        let RuntimeWorldOwnerInputs {
+            relational,
+            signal,
+            signal_definition_publication,
+            bridge,
+            budgets,
+            clock,
+            execution_authority,
+        } = inputs;
         let construction = RuntimeWorldOwnerConstructionContract::new()?;
         let owner_identity = construction.owner_identity();
         let identities = construction.into_issuer();
@@ -156,6 +166,7 @@ where
                 signal,
                 signal_definition_publication,
                 bridge,
+                execution_authority,
                 clock,
                 history,
                 retention,

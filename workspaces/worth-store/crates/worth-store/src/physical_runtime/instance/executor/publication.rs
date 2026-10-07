@@ -17,11 +17,23 @@ impl PhysicalWorkExecutor {
         command: PhysicalWriteExecutorCommand,
     ) -> Result<PhysicalExecutorDispatch, crate::physical_runtime::PhysicalWorkPreEffectDenial>
     {
+        if (command.retirement_retry.is_some()
+            || matches!(
+                command.coordinate.artifact(),
+                worth_store_physical_format::RecordArtifactFile::ExtentArena { .. }
+            ))
+            && PhysicalRecordArtifactTree::new(&self.media)
+                .file_exists(command.coordinate.artifact())
+                .unwrap_or(false)
+        {
+            return self.dispatch_publication_write(command);
+        }
         let PhysicalWriteExecutorCommand {
             work,
             coordinate,
             payload,
             payload_digest,
+            retirement_retry: _,
         } = command;
         let (dispatched, plan) = work.into_execution_parts(Some(payload_digest))?;
         let prepared = self.prepare_effect_recovery(

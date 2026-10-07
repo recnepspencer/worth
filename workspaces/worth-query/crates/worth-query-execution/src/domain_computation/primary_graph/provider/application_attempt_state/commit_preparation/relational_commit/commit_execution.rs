@@ -1,8 +1,16 @@
 //! The single authoritative Relational commit transition.
 
+mod consumed_output;
+mod managed_unpublished;
 mod managed_views;
+pub(in crate::domain_computation::primary_graph::provider) use managed_unpublished::ManagedUnpublishedAttempt;
 mod precommit_snapshot;
 mod product_publication;
+mod stops;
+mod touched_records;
+use stops::{failure, index_preparation_stop, native_output_witness_stop, transaction_commit_stop};
+pub(in crate::domain_computation::primary_graph::provider) use touched_records::PreparedTouchedRecords;
+pub(in crate::domain_computation::primary_graph) use touched_records::RetainedTouchedRecords;
 mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
@@ -18,7 +26,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
 
-pub(super) struct WorthQueryCommittedApplicationSession {
+pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryCommittedApplicationSession {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
     work: WorthQueryPrimaryMutationWorkCounters,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
@@ -27,9 +35,25 @@ pub(super) struct WorthQueryCommittedApplicationSession {
     preimage_retention_work: WorthQueryPreImageRetentionWork,
     before: worth_relational::facade::snapshots::SnapshotHandle,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    committed: worth_relational::facade::transactions::CommitResult,
+    committed: std::sync::Arc<worth_relational::facade::transactions::CommitResult>,
+    published_snapshot_custody: PublishedSnapshotCustody,
+    prepared_touched_records: Option<PreparedTouchedRecords>,
     product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
     managed_views: Option<managed_views::PreparedViewPublication>,
+    source_fact_rebase: Option<super::PreparedSourceFactRebase>,
+    source_fact_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
+    required_prerequisites:
+        Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
+    prepared_lineage_slot:
+        Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
+    prepared_output_witness:
+        Option<crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness>,
+}
+
+#[derive(Clone, Copy)]
+enum PublishedSnapshotCustody {
+    LiveOwned,
+    SettledReleased,
 }
 
 pub(super) fn commit(
@@ -46,6 +70,7 @@ pub(super) fn commit(
         work,
         retained_preimage,
         preimage_retention_work,
+        source_fact_rebase,
         _completion,
     } = prepared;
     let _ = mint;
@@ -62,10 +87,33 @@ pub(super) fn commit(
         )
     })
     .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
+    let consumed_output::VerifiedConsumedOutputPublication {
+        publication_admission,
+        source_fact_work_is_bounded,
+        mut required_prerequisites,
+    } = consumed_output::verify(provider, &mut attempt, before.as_snapshot())?;
+    let mut publication_admission = Some(publication_admission);
+    let prepared_output_witness =
+        crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
+            &attempt,
+            &provider.graph.layout,
+            &provider.graph.source_owner.invalidation_owner,
+            publication_admission
+                .as_mut()
+                .expect("verified output retains its cumulative admission"),
+        )
+        .map_err(native_output_witness_stop)?;
     let mut candidate = provider
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
         .map_err(transaction_commit_stop)?;
+    let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(
+        provider,
+        &candidate,
+        publication_admission
+            .as_mut()
+            .expect("verified output retains its cumulative admission"),
+    )?;
     let ordinary_index_budget =
         crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
     #[cfg(test)]
@@ -93,7 +141,62 @@ pub(super) fn commit(
         managed_views::prepare(provider, &product, before.as_snapshot(), &candidate);
     #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
-    let performed = product_publication::publish(provider, &mut attempt, candidate)?;
+    let performed = product_publication::publish(
+        provider,
+        &mut attempt,
+        candidate,
+        &mut required_prerequisites,
+        &mut publication_admission,
+    )?;
+    let performed = match performed {
+        product_publication::WorthQueryApplicationProductPublicationOutcome::Performed(
+            performed,
+        ) => performed,
+        product_publication::WorthQueryApplicationProductPublicationOutcome::Unpublished {
+            unpublished,
+            reserved_terminal,
+            prepared_lineage_slot,
+            reservation,
+        } => {
+            let retained = ManagedUnpublishedAttempt {
+                publication_mode: if unpublished.retains_conditional_definition() {
+                    managed_unpublished::ManagedUnpublishedPublicationMode::ConditionalDefinition
+                } else {
+                    managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary
+                },
+                attempt,
+                work,
+                index_maintenance_work,
+                retained_preimage,
+                preimage_retention_work,
+                before,
+                managed_views,
+                source_fact_rebase: Some(source_fact_rebase),
+                source_fact_work_is_bounded,
+                required_prerequisites,
+                prepared_lineage_slot,
+                prepared_output_witness,
+                prepared_touched_records,
+                lineage_metadata: None,
+                publication_admission: publication_admission
+                    .take()
+                    .expect("partial publication retains cumulative admission"),
+                reserved_terminal,
+            };
+            reservation.retain_managed(unpublished.recovery_handle(), retained);
+            return Err(
+                crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductUnpublished(
+                    unpublished,
+                ),
+            );
+        }
+    };
+    let source_fact_admission = source_fact_work_is_bounded.then(|| {
+        publication_admission
+            .take()
+            .expect("performed publication retains its cumulative admission")
+    });
+    let prepared_lineage_slot = performed.prepared_lineage_slot;
     let performed = performed.publication;
     let next_basis = performed
         .publication()
@@ -104,9 +207,8 @@ pub(super) fn commit(
     let committed = performed
         .publication()
         .component_results()
-        .relational_commit_result()
-        .expect("World performed a prepared Relational application candidate")
-        .clone();
+        .retain_relational_commit_result()
+        .expect("World performed a prepared Relational application candidate");
     Ok(WorthQueryCommittedApplicationSession {
         attempt,
         work,
@@ -116,8 +218,15 @@ pub(super) fn commit(
         before: before.into_publication(),
         next_basis,
         committed,
+        published_snapshot_custody: PublishedSnapshotCustody::LiveOwned,
+        prepared_touched_records: Some(prepared_touched_records),
         product_publication: performed,
         managed_views,
+        source_fact_rebase: Some(source_fact_rebase),
+        source_fact_admission,
+        required_prerequisites,
+        prepared_lineage_slot,
+        prepared_output_witness,
     })
 }
 
@@ -149,6 +258,19 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
+    pub(super) fn take_source_fact_admission(&mut self) -> Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>{
+        self.source_fact_admission.take()
+    }
+    pub(super) fn take_prepared_touched_records(&mut self) -> PreparedTouchedRecords {
+        self.prepared_touched_records
+            .take()
+            .expect("pre-effect native touched-record receipt storage follows publication")
+    }
+    pub(super) fn take_source_fact_rebase(&mut self) -> super::PreparedSourceFactRebase {
+        self.source_fact_rebase
+            .take()
+            .expect("pre-effect source-fact rebase capacity follows the committed candidate")
+    }
     pub(super) const fn attempt(&self) -> &WorthQueryPrimaryGraphApplicationAttempt {
         &self.attempt
     }
@@ -173,8 +295,8 @@ impl WorthQueryCommittedApplicationSession {
         self.preimage_retention_work
     }
 
-    pub(super) const fn committed(&self) -> &worth_relational::facade::transactions::CommitResult {
-        &self.committed
+    pub(super) fn committed(&self) -> &worth_relational::facade::transactions::CommitResult {
+        self.committed.as_ref()
     }
 
     pub(super) fn publish_and_encode(
@@ -182,205 +304,16 @@ impl WorthQueryCommittedApplicationSession {
         provider: &WorthQueryPrimaryGraphProvider,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         evidence: super::WorthQueryPrimaryGraphCommitEvidence,
+        publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         WorthQueryProviderSessionFailure,
     > {
-        let published = publication::publish(provider, runtime, self, evidence)?;
+        let published =
+            publication::publish(provider, runtime, self, evidence, publication_admission)?;
         publication::encode(provider, published)
     }
 }
 
-fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
-    provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
-}
-
-fn index_preparation_stop(
-    denial: worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
-) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Kind;
-    if let Kind::CandidateLifetimeExpired {
-        maximum_lifetime_millis,
-    } = &denial.kind
-    {
-        return crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-            crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-                crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: *maximum_lifetime_millis,
-                },
-                "prepared candidate expired before primary index admission",
-            ),
-        );
-    }
-    let kind = match denial.kind {
-        Kind::WorkBudgetExceeded | Kind::ColdReconstructionRequired => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
-        }
-        Kind::GenerationIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexGenerationIdentityExhausted
-        }
-        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-    };
-    crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
-        WorthQueryProviderSessionFailure::new(
-            kind,
-            WorthQueryProviderSessionProtocolStage::Commit,
-            format!("primary index candidate preparation denied: {denial:?}"),
-            crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-        ),
-    )
-}
-
-fn transaction_commit_stop(
-    error: worth_relational::facade::mvcc::TransactionCommitError,
-) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use worth_relational::facade::mvcc::TransactionCommitError as Error;
-    match error {
-        Error::Interrupted { interruption, .. } => {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::ControlStopped(
-                interruption_control_stopped(interruption),
-            )
-        }
-        Error::PublicationDeferred { deferred, .. } => {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-                publication_deferred(deferred),
-            )
-        }
-        Error::PublicationFailed { failure, .. } => {
-            crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
-                publication_failure(failure),
-            )
-        }
-        Error::PerformedButDurabilityDeferred {
-            settlement, error, ..
-        } => crate::domain_computation::WorthQueryProviderSessionCommitStop::SettlementDeferred(
-            crate::domain_computation::WorthQueryProviderSessionSettlementDeferred::new(
-                error.detail,
-                settlement,
-            ),
-        ),
-        _ => crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure(
-            "Relational rejected application commit preparation",
-        )),
-    }
-}
-
-fn interruption_control_stopped(
-    event: worth_relational::facade::mvcc::RelationalInterruptionEvent,
-) -> crate::domain_computation::WorthQueryProviderSessionCommitControlStopped {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Kind;
-    let kind = match event.interruption() {
-        worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
-            Kind::Cancelled
-        }
-        worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => Kind::TimedOut,
-    };
-    crate::domain_computation::WorthQueryProviderSessionCommitControlStopped::new(
-        kind,
-        format!("{event:?}"),
-    )
-}
-
-fn publication_deferred(
-    deferred: worth_relational::facade::mvcc::RelationalPublicationDeferred,
-) -> crate::domain_computation::WorthQueryProviderSessionCommitDeferred {
-    use crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind as Kind;
-    use worth_relational::facade::mvcc::RelationalPublicationDeferred as Deferred;
-    let kind = match deferred {
-        Deferred::PatchPositionReservationContended => Kind::PatchPositionReservationContended,
-        Deferred::RetentionBackpressure => Kind::RetentionCapacityExhausted,
-        Deferred::CandidateLifetimeExpired {
-            maximum_lifetime_millis,
-        } => Kind::CandidateLifetimeExpired {
-            maximum_lifetime_millis,
-        },
-        Deferred::CandidateCapacityExhausted { maximum_candidates } => {
-            Kind::CandidateCapacityExhausted { maximum_candidates }
-        }
-        Deferred::PublishedSnapshotCapacityExhausted { maximum_handles } => {
-            Kind::PublishedSnapshotCapacityExhausted { maximum_handles }
-        }
-    };
-    crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-        kind,
-        format!("{deferred:?}"),
-    )
-}
-
-fn publication_failure(
-    failure: worth_relational::facade::mvcc::RelationalPublicationFailure,
-) -> WorthQueryProviderSessionFailure {
-    use worth_relational::facade::mvcc::RelationalPublicationFailureKind as Failure;
-    let kind = match failure.kind() {
-        Failure::SnapshotIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
-        }
-        Failure::CandidateIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::CandidateIdentityExhausted
-        }
-        Failure::RetentionIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
-        }
-        Failure::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => crate::domain_computation::WorthQueryProviderSessionDenialKind::PreparedRootBudgetExhausted {
-            maximum_bytes: *maximum_bytes,
-            required_bytes: *required_bytes,
-        },
-        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-    };
-    WorthQueryProviderSessionFailure::new(
-        kind,
-        WorthQueryProviderSessionProtocolStage::Commit,
-        failure.detail(),
-        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-    )
-}
-
 #[cfg(test)]
-mod index_preparation_tests {
-    use super::*;
-
-    #[test]
-    fn expired_candidate_remains_a_typed_retryable_defer() {
-        let stop = index_preparation_stop(
-            worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
-                kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: 17,
-                },
-                work: Default::default(),
-            },
-        );
-        let crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(deferred) =
-            stop
-        else {
-            panic!("candidate expiry must remain retryable before World effect");
-        };
-        assert_eq!(
-            deferred.kind(),
-            crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::CandidateLifetimeExpired {
-                maximum_lifetime_millis: 17,
-            },
-        );
-    }
-
-    #[test]
-    fn cold_reconstruction_exhaustion_remains_a_typed_index_budget_denial() {
-        let stop = index_preparation_stop(
-            worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
-                kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired,
-                work: Default::default(),
-            },
-        );
-        let crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(denial) =
-            stop
-        else {
-            panic!("cold index exhaustion must deny before World effect");
-        };
-        assert_eq!(
-            denial.kind(),
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
-        );
-    }
-}
+mod index_preparation_tests;

@@ -4,7 +4,6 @@ use crate::data::dependency::{DependencyEdge, DependencySnapshotEntry, Dependenc
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;
-use crate::data::output::CanonicalChangedRegions;
 use crate::data::output::NodeEvaluationResult;
 use crate::data::proof::PartitionScopeSet;
 use crate::data::reuse::{
@@ -13,6 +12,7 @@ use crate::data::reuse::{
     ReuseBoundaryContext, ReuseSemanticRegionIdentity, ReuseStrategyBoundaryAuthority,
     ReuseStrategyBoundaryContext,
 };
+use crate::logic::evaluation::EvaluationWork;
 use crate::logic::prepared::PreparedKeyedContext;
 
 pub(crate) fn resolve_reuse_boundary_context(
@@ -89,11 +89,7 @@ pub(crate) fn resolve_reuse_boundary_authority_with_policy(
         })
         .or_else(|| {
             result
-                .map(|output| {
-                    PartitionScopeSet::from_changed_regions(&CanonicalChangedRegions::from(
-                        output.changed_regions.as_slice(),
-                    ))
-                })
+                .map(|output| PartitionScopeSet::from_regions(output.changed_regions.as_slice()))
                 .filter(|regions| !regions.is_empty())
                 .map(
                     |regions| ReuseStrategyBoundaryAuthority::PartialArtifactSplice {
@@ -148,11 +144,7 @@ pub(crate) fn resolve_reuse_boundary_context_with_policy(
         })
         .or_else(|| {
             result
-                .map(|output| {
-                    PartitionScopeSet::from_changed_regions(&CanonicalChangedRegions::from(
-                        output.changed_regions.as_slice(),
-                    ))
-                })
+                .map(|output| PartitionScopeSet::from_regions(output.changed_regions.as_slice()))
                 .filter(|regions| !regions.is_empty())
         });
     let strategy_detail = keyed
@@ -200,6 +192,49 @@ pub(crate) fn resolve_reuse_boundary_context_with_policy(
         partition_region_basis: partition_region_basis.clone(),
         strategy_detail,
     })
+}
+
+pub(crate) fn resolve_reuse_boundary_context_with_policy_observed(
+    graph: &SignalGraph,
+    node: NodeId,
+    comparator_policy: crate::data::comparator::VersionComparatorPolicy,
+    result: Option<&NodeEvaluationResult>,
+    keyed: Option<&PreparedKeyedContext>,
+    work: &mut EvaluationWork<'_, '_>,
+) -> Result<ReuseBoundaryContext, SignalError> {
+    let partition_scope = graph
+        .node_eval_config(node)?
+        .contract
+        .semantics
+        .partition_scope
+        .as_deref()
+        .unwrap_or(&[]);
+    // The partition basis is built, copied into the context and copied into
+    // semantic-region identity. Composition is built and may be copied into
+    // the selected strategy detail.
+    PartitionScopeSet::admit_scopes_copy_work(partition_scope, 3, 2, work)?;
+    let detail_clones_composition = keyed
+        .and_then(|prepared| prepared.persistent_correspondence.as_ref())
+        .is_none();
+    if let Some(scopes) = keyed
+        .map(|prepared| prepared.composition_regions.as_slice())
+        .filter(|scopes| !scopes.is_empty())
+    {
+        PartitionScopeSet::admit_scopes_copy_work(
+            scopes,
+            usize::from(detail_clones_composition) + 1,
+            0,
+            work,
+        )?;
+    } else if let Some(result) = result {
+        PartitionScopeSet::admit_regions_copy_work(
+            result.changed_regions.as_slice(),
+            usize::from(detail_clones_composition) + 1,
+            1,
+            work,
+        )?;
+    }
+    resolve_reuse_boundary_context_with_policy(graph, node, comparator_policy, result, keyed)
 }
 
 fn stable_topology_regime(edges: &[DependencyEdge]) -> u32 {

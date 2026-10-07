@@ -156,4 +156,14 @@ fn killed_checkpoint_writer_reopens_and_observes_each_persisted_effect_frontier(
     assert_eq!(schedules.len(), SCENARIO_COUNT);
     assert_eq!(perturbations.len(), SCENARIO_COUNT);
 }
+
+#[test]
+#[ignore = "focused diagnosis of scenario 4; the sixteen-scenario matrix remains required"]
+fn candidate_footer_a_checkpoint_crash_diagnostic() {
+    const INDEX: usize = 4;
+    let scenario = SCENARIOS[INDEX];
+    assert_eq!(scenario.id, "c8-checkpoint-footer-a");
+    let seed = scenario_seeds()[INDEX];
+    case::run_checkpoint_case(INDEX, scenario, seed.schedule, seed.perturbation);
+}
 use sha2::{Digest, Sha256};

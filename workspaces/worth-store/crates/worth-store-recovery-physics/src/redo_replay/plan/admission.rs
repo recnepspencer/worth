@@ -1,6 +1,11 @@
 use super::group_admission::{applied_group_allocation, validate_admitted_groups};
 use super::projection_validation::validate_projection_semantics;
 use super::*;
+use sha2::Digest;
+
+#[path = "admission/projection_budget.rs"]
+mod projection_budget;
+use projection_budget::ProjectionBudget;
 
 pub fn admit_physical_redo_members(
     mut members: Vec<PhysicalRedoMemberInput>,
@@ -12,16 +17,25 @@ pub fn admit_physical_redo_members(
     let mut admitted = Vec::with_capacity(members.len());
     let mut rewrites = Vec::new();
     let mut rewrite_admissions = Vec::new();
+    let mut source_copies = Vec::new();
     let mut targets = 0_u64;
     let mut scratch_bytes = 0_u64;
     let mut distinct = BTreeSet::new();
-    let mut projection = limits.projection;
+    let mut projection = ProjectionBudget::new(limits.projection);
     let mut prior_end = None;
     for member in members {
         if prior_end.is_some_and(|end| end != member.lsn_range.start()) {
             return Err(PhysicalRedoPlanningDenial::LsnRangeMismatch);
         }
         prior_end = Some(member.lsn_range.end_exclusive());
+        let ceiling = ProjectionBudget::member_ceiling(member.canonical_redo());
+        if let Some(copy) = super::source_copy::admit(&member, format, ceiling)? {
+            scratch_bytes =
+                super::source_copy::charge(scratch_bytes, &copy, limits.recovery_memory_bytes)?;
+            projection.consume(copy.projection())?;
+            source_copies.push(copy);
+            continue;
+        }
         if let Some(rewrite) = admitted_rewrite(&member, limits.recovery_memory_bytes)? {
             scratch_bytes = scratch_bytes
                 .checked_add(rewrite.candidate_bytes())
@@ -46,8 +60,10 @@ pub fn admit_physical_redo_members(
             member.lsn_range(),
             limits.targets.saturating_sub(targets),
             Some((&mut distinct, limits.distinct_targets)),
-            projection,
-        )?;
+            ceiling,
+            format,
+        )
+        .map_err(|denial| denial.after_targets(targets))?;
         scratch_bytes = super::supersession::admit_scratch_bytes(
             scratch_bytes,
             &records,
@@ -63,7 +79,7 @@ pub fn admit_physical_redo_members(
                     .sum(),
             )
             .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
-        consume_projection_limits(&mut projection, &decoded)?;
+        projection.consume(&decoded)?;
         admitted.push(AdmittedPhysicalRedoMember {
             lsn_range: member.lsn_range(),
             operation: member.operation(),
@@ -71,20 +87,75 @@ pub fn admit_physical_redo_members(
             fate: member.fate(),
             records,
             projection: decoded,
+            canonical_redo_sha256: sha2::Sha256::digest(member.canonical_redo()).into(),
             inline_frames,
         });
     }
-    let group_allocations = validate_admitted_groups(&admitted)?;
+    let group_allocations = validate_admitted_groups(&admitted, &source_copies)?;
     Ok(AdmittedPhysicalRedoMembers {
         scratch_bytes,
         members: admitted.into_boxed_slice(),
         group_allocations,
         rewrites: rewrites.into_boxed_slice(),
         rewrite_admissions: rewrite_admissions.into_boxed_slice(),
+        source_copies: source_copies.into_boxed_slice(),
     })
 }
 
 impl AdmittedPhysicalRedoMembers {
+    /// Every semantics-admitted C.9 member in original WAL order. Callers
+    /// must account for the complete intervening group; no fate or semantic
+    /// kind is silently filtered from an attempted root-step chain.
+    pub fn admitted_root_step_members(
+        &self,
+    ) -> impl Iterator<Item = AdmittedRootStepMemberView<'_>> {
+        self.members
+            .iter()
+            .map(|member| AdmittedRootStepMemberView {
+                lsn_range: member.lsn_range,
+                operation: member.operation,
+                group: member.group,
+                fate: member.fate,
+                canonical_redo_sha256: member.canonical_redo_sha256,
+                materialization: &member.projection,
+                records: &member.records,
+            })
+    }
+
+    /// Exact admitted WAL projection and single redo record for a pending
+    /// blob drop. The caller must still authenticate selected result custody.
+    pub fn admitted_drop_members(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            [u8; 32],
+            RecoveryOperationFate,
+            &PersistedPhysicalRecoveryProjection,
+            &[u8],
+        ),
+    > {
+        self.members.iter().filter_map(|member| {
+            matches!(
+                member.projection.operation(),
+                worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped { .. }
+            )
+            .then(|| {
+                let Some(record) = member.records.first() else {
+                    return None;
+                };
+                if member.records.len() != member.projection.record_identities().len() {
+                    return None;
+                }
+                Some((
+                    member.operation,
+                    member.fate,
+                    &member.projection,
+                    record.bytes(),
+                ))
+            })
+            .flatten()
+        })
+    }
     /// Requires exact membership in the projection-validated WAL observation set.
     /// A decoded target alone does not carry this closure or operation-fate proof.
     pub fn contains_exact_observation_target(&self, target: &PhysicalRedoTarget) -> bool {
@@ -114,6 +185,16 @@ impl AdmittedPhysicalRedoMembers {
         self,
         observations: Vec<RecoveryPageObservation>,
     ) -> Result<ImmutablePhysicalRedoPlan, PhysicalRedoPlanningDenial> {
+        // A record-less member has no page decision to carry its fate or its
+        // group through the plan, so no plan may contain one.
+        if self.members.iter().any(|member| {
+            member
+                .projection
+                .operation()
+                .is_terminal_release_head_retired()
+        }) {
+            return Err(PhysicalRedoPlanningDenial::TerminalHeadRetirementUnsupported);
+        }
         let superseded = super::supersession::observed_predecessors(&self.members, &observations)?;
         let group_allocations = self.group_allocations;
         let mut page_cursor = RecoveryPageCursor::new(observations)?;
@@ -130,6 +211,7 @@ impl AdmittedPhysicalRedoMembers {
                 group: member.group,
                 fate: member.fate,
                 materialization,
+                canonical_redo_sha256: Some(member.canonical_redo_sha256),
             });
             for record in records {
                 counters.records = checked(counters.records)?;
@@ -151,8 +233,12 @@ impl AdmittedPhysicalRedoMembers {
                 planned_records.push(record);
             }
         }
-        let recovery_root_allocation_bytes =
-            applied_group_allocation(&group_allocations, &projections, &decisions)?;
+        let recovery_root_allocation_bytes = applied_group_allocation(
+            &group_allocations,
+            &projections,
+            &decisions,
+            &self.source_copies,
+        )?;
         Ok(ImmutablePhysicalRedoPlan {
             scratch_bytes: self.scratch_bytes,
             records: planned_records.into_boxed_slice(),
@@ -162,11 +248,15 @@ impl AdmittedPhysicalRedoMembers {
             counters,
             rewrites: self.rewrites,
             rewrite_admissions: self.rewrite_admissions,
+            source_copies: self.source_copies,
         })
     }
 }
 
 fn rewrite_payload(member: &PhysicalRedoMemberInput) -> Result<bool, PhysicalRedoPlanningDenial> {
+    if super::source_copy::is_copy(member.canonical_redo()) {
+        return Ok(true);
+    }
     match worth_store_physical_format::PhysicalRewriteRedo::decode(
         member.canonical_redo(),
         u64::MAX,
@@ -211,6 +301,7 @@ pub fn physical_redo_target_identities(
     members: &[PhysicalRedoMemberInput],
     maximum_targets: u64,
     maximum_distinct_targets: u64,
+    format: PhysicalRecordFormatDeclaration,
 ) -> Result<Box<[crate::PhysicalRedoTargetIdentity]>, PhysicalRedoPlanningDenial> {
     let mut targets = Vec::new();
     let mut distinct = BTreeSet::new();
@@ -225,7 +316,9 @@ pub fn physical_redo_target_identities(
             remaining,
             &mut distinct,
             maximum_distinct_targets,
-        )?;
+            format,
+        )
+        .map_err(|denial| denial.after_targets(targets.len() as u64))?;
         for record in records {
             targets.extend(record.targets().iter().map(PhysicalRedoTarget::identity));
         }
@@ -236,6 +329,7 @@ pub fn physical_redo_target_identities(
 pub fn physical_redo_observation_target_identities(
     members: &[PhysicalRedoMemberInput],
     maximum_targets: u64,
+    format: PhysicalRecordFormatDeclaration,
 ) -> Result<Box<[crate::PhysicalRedoTargetIdentity]>, PhysicalRedoPlanningDenial> {
     let mut targets = Vec::new();
     for member in members {
@@ -246,8 +340,13 @@ pub fn physical_redo_observation_target_identities(
             continue;
         }
         let remaining = maximum_targets.saturating_sub(targets.len() as u64);
-        let records =
-            decode_physical_redo_records(member.canonical_redo(), member.lsn_range(), remaining)?;
+        let records = decode_physical_redo_records(
+            member.canonical_redo(),
+            member.lsn_range(),
+            remaining,
+            format,
+        )
+        .map_err(|denial| denial.after_targets(targets.len() as u64))?;
         for record in records {
             targets.extend(record.targets().iter().map(PhysicalRedoTarget::identity));
         }
@@ -258,6 +357,7 @@ pub fn physical_redo_observation_target_identities(
 pub fn physical_redo_observation_targets(
     members: &[PhysicalRedoMemberInput],
     maximum_targets: u64,
+    format: PhysicalRecordFormatDeclaration,
 ) -> Result<Box<[PhysicalRedoTarget]>, PhysicalRedoPlanningDenial> {
     let mut targets = Vec::new();
     for member in members {
@@ -268,51 +368,16 @@ pub fn physical_redo_observation_targets(
             continue;
         }
         let remaining = maximum_targets.saturating_sub(targets.len() as u64);
-        let records =
-            decode_physical_redo_records(member.canonical_redo(), member.lsn_range(), remaining)?;
+        let records = decode_physical_redo_records(
+            member.canonical_redo(),
+            member.lsn_range(),
+            remaining,
+            format,
+        )
+        .map_err(|denial| denial.after_targets(targets.len() as u64))?;
         for record in records {
             targets.extend(record.targets().iter().cloned());
         }
     }
     Ok(targets.into_boxed_slice())
-}
-
-fn consume_projection_limits(
-    remaining: &mut PhysicalRecoveryProjectionDecodeLimits,
-    projection: &PersistedPhysicalRecoveryProjection,
-) -> Result<(), PhysicalRedoPlanningDenial> {
-    remaining.frames = remaining
-        .frames
-        .checked_sub(projection.frames().len() as u64)
-        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    remaining.record_identities = remaining
-        .record_identities
-        .checked_sub(projection.record_identities().len() as u64)
-        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    remaining.placements = remaining
-        .placements
-        .checked_sub(projection.placements().len() as u64)
-        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    remaining.segment_updates = remaining
-        .segment_updates
-        .checked_sub(projection.segment_updates().len() as u64)
-        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    remaining.manifests = remaining
-        .manifests
-        .checked_sub(projection.manifests().len() as u64)
-        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    let consumed_entries = projection
-        .placements()
-        .len()
-        .saturating_add(projection.segment_updates().len())
-        .saturating_add(projection.manifests().len()) as u64;
-    remaining.total_entries = remaining
-        .total_entries
-        .checked_sub(consumed_entries)
-        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    remaining.inline_allocations = remaining
-        .inline_allocations
-        .checked_sub(projection.root_state().inline_allocations().len() as u64)
-        .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    Ok(())
 }

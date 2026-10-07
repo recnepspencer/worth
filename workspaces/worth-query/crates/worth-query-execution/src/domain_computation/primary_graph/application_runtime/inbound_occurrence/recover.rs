@@ -126,7 +126,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .product_incarnation();
         let lane = self
             .primary_provider
-            .application_branch_commit_lane_for_occurrence(incarnation);
+            .application_branch_commit_lane_for_occurrence(incarnation)
+            .map_err(|_| Denial::CapacityExhausted)?;
         let _coordination = lane.enter();
         let state = guard
             .state

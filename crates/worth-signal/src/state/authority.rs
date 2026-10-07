@@ -1,42 +1,19 @@
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::data::graph::{DependencyEdgeStore, SubscriberEdgeStore};
-use crate::data::node::{CheckpointNodeImage, NodeEntry};
+use crate::data::node::CheckpointNodeImage;
 use crate::data::proof::SnapshotBatchCommit;
 use crate::data::telemetry::RuntimeTelemetry;
 use crate::diagnostics::state::DiagnosticsState;
 use crate::runtime_policy::InstalledSignalRuntimePolicy;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+mod slot_wire;
+
+#[derive(Debug, Clone, Serialize)]
 pub struct SignalCheckpointSlot {
-    #[serde(
-        default,
-        alias = "entry",
-        deserialize_with = "deserialize_checkpoint_slot_node"
-    )]
     pub node: Option<CheckpointNodeImage>,
     pub generation: u32,
     pub retired: bool,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(untagged)]
-enum CheckpointSlotNodeRepr {
-    Image(CheckpointNodeImage),
-    Legacy(NodeEntry),
-}
-
-fn deserialize_checkpoint_slot_node<'de, D>(
-    deserializer: D,
-) -> Result<Option<CheckpointNodeImage>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let repr = Option::<CheckpointSlotNodeRepr>::deserialize(deserializer)?;
-    Ok(repr.map(|repr| match repr {
-        CheckpointSlotNodeRepr::Image(image) => image,
-        CheckpointSlotNodeRepr::Legacy(entry) => entry.to_checkpoint_image(),
-    }))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

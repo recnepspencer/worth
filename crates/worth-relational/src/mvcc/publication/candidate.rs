@@ -35,6 +35,7 @@ pub(crate) struct CandidatePayload {
 
 pub(super) struct PreparedRelationalPublicationParts {
     pub(super) runtime_instance_id: u64,
+    pub(super) candidate_id: u64,
     pub(super) publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     pub(super) expected: crate::branch::RelationalBranchBasisDescriptor,
     pub(super) expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
@@ -54,6 +55,16 @@ pub(crate) enum PreparedRelationalCandidateAdmissionStop {
 }
 
 impl PreparedRelationalCommitCandidate {
+    /// Exact record count already finalized by this prepared publication.
+    /// A consumed or revoked candidate has no prepared payload to inspect.
+    pub fn prepared_changed_record_count(&self) -> Option<usize> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .map(|payload| payload.execution.changed_record_count())
+    }
+
     pub(crate) fn new(
         runtime_instance_id: u64,
         custom_invariant_generation: u64,
@@ -132,6 +143,14 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn custom_invariant_generation(&self) -> u64 {
         self.custom_invariant_generation
+    }
+
+    pub(crate) fn expected_basis(&self) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
+        self._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .as_ref()
+            .map(|payload| payload.expected_basis.clone())
     }
 
     pub(crate) fn belongs_to_publication_owner(
@@ -222,6 +241,7 @@ impl PreparedRelationalCommitCandidate {
         let (movement, completion) = payload.execution.split(payload.published_snapshot_slot);
         Ok(PreparedRelationalPublicationParts {
             runtime_instance_id: self.runtime_instance_id,
+            candidate_id: self.candidate_id,
             publication_binding: self.publication_binding.clone(),
             expected: payload.expected_basis,
             expected_root: payload.expected_root,

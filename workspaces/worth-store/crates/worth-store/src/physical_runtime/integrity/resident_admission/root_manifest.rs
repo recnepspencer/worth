@@ -75,6 +75,14 @@ struct AdmittedRootManifestProjection {
     routing_root: Option<worth_store_physical_format::ManifestBlockReference>,
     segment_root: Option<worth_store_physical_format::SegmentManifestBlockReference>,
     free_space_root: Option<worth_store_physical_format::FreeSpaceBlockReference>,
+    release_custody_head_root:
+        Option<worth_store_physical_format::ReleaseCustodyHeadBlockReferenceV1>,
+    next_release_custody_head_block: u64,
+    latest_blob_publication: Option<worth_store_physical_format::IndexedThroughBlobPublication>,
+    latest_blob_quarantine: Option<worth_store_physical_format::PersistedRecordIdentity>,
+    tier_epoch_anchor: Option<[u8; 32]>,
+    derived_family_directory:
+        Option<worth_store_physical_format::DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<worth_store_physical_format::PersistedRecordIdentity>,
     last_inline_segment: Option<worth_store_physical_format::SegmentGenerationCell>,
     requires_maintenance_protocol: bool,
@@ -112,6 +120,35 @@ pub(in crate::physical_runtime) fn admit_loaded_root_manifest<'frame>(
         }
     };
     source.admit(input, validated, context)
+}
+
+/// Admits a historical root through the same integrity boundary as bootstrap.
+pub(in crate::physical_runtime) fn project_loaded_root_manifest(
+    lease: &PhysicalFrameLease,
+    store: StableStoreIdentity,
+    format: PhysicalRecordFormatDeclaration,
+    generation: u64,
+    context: ResidentAdmissionContext<'_>,
+) -> Result<DurablePhysicalRootManifest, RootProtocolAdmissionDenial> {
+    let source = BoundResidentRootManifestSource::bind(lease, store, format, generation)?;
+    let input = context
+        .exact_input(lease, source.scope)
+        .map_err(map_resident_denial)?;
+    context.observe_fresh_validation();
+    let validated = match validate_root_manifest(input, source.scope).0 {
+        RootManifestIntegrityValidation::Intact(validated) => validated,
+        RootManifestIntegrityValidation::Rejected(rejection) => {
+            let _ = context.validation_rejected::<()>(rejection);
+            return Err(RootProtocolAdmissionDenial::from_validation(rejection));
+        }
+    };
+    let admitted = source.admit(input, validated, context.clone())?;
+    let projection = admitted
+        .projection
+        .ok_or(RootProtocolAdmissionDenial::OwnerProjectionRejected)?;
+    context
+        .with_owner_decoder(admitted.source, |_, _| projection.project())
+        .map_err(map_resident_denial)?
 }
 
 impl<'frame> BoundResidentRootManifestSource<'frame> {
@@ -214,6 +251,12 @@ impl AdmittedRootManifestProjection {
             routing_root: validated.routing_root(),
             segment_root: validated.segment_root(),
             free_space_root: validated.free_space_root(),
+            release_custody_head_root: validated.release_custody_head_root(),
+            next_release_custody_head_block: validated.next_release_custody_head_block(),
+            latest_blob_publication: validated.latest_blob_publication(),
+            latest_blob_quarantine: validated.latest_blob_quarantine(),
+            tier_epoch_anchor: validated.tier_epoch_anchor(),
+            derived_family_directory: validated.derived_family_directory(),
             last_inline_record: validated.last_inline_record(),
             last_inline_segment: validated.last_inline_segment(),
             requires_maintenance_protocol: validated.requires_maintenance_protocol(),
@@ -233,6 +276,12 @@ impl AdmittedRootManifestProjection {
         .routing_root(self.routing_root)
         .segment_root(self.segment_root)
         .free_space_root(self.free_space_root)
+        .release_custody_head_root(self.release_custody_head_root)
+        .next_release_custody_head_block(self.next_release_custody_head_block)
+        .latest_blob_publication(self.latest_blob_publication)
+        .latest_blob_quarantine(self.latest_blob_quarantine)
+        .tier_epoch_anchor(self.tier_epoch_anchor)
+        .derived_family_directory(self.derived_family_directory)
         .last_inline_record(self.last_inline_record)
         .last_inline_segment(self.last_inline_segment)
         .admit()

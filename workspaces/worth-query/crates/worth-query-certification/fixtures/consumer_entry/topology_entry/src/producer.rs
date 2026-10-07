@@ -1,16 +1,18 @@
 use std::marker::PhantomData;
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 
-use worth_query_consumer_values::{PlanarDerivedOutput, PlanarOperation};
+use worth_query_consumer_values::{
+    PlanarCurrentOutputExpectation, PlanarDerivedOutput, PlanarMutationDenial, PlanarOperation,
+};
 use worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
 };
 
 use super::{PlanarMutationBinding, TopologySchemaBinding};
@@ -48,19 +50,27 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for P
     const IDENTITY: &'static str = "worth.query.certification.planar-output.v1";
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = SUPPORTED;
 
-    fn profile_kind(_: &super::PlanarReadResult) -> &'static str {
-        "planar"
+    /// A body keyed `manual-` is certified by hand: its kind is served by
+    /// the alternate producer alone, which declares no Preserve posture.
+    fn profile_kind(source: &super::PlanarReadResult) -> &'static str {
+        if source.body_key.starts_with("manual-") {
+            "manual-certification"
+        } else {
+            "planar"
+        }
     }
 }
 
 pub struct InitialPlanarProvider {
     authorization_denials: Arc<AtomicUsize>,
+    domain_denial: Arc<AtomicBool>,
 }
 
 impl InitialPlanarProvider {
-    pub fn new(authorization_denials: Arc<AtomicUsize>) -> Self {
+    pub fn new(authorization_denials: Arc<AtomicUsize>, domain_denial: Arc<AtomicBool>) -> Self {
         Self {
             authorization_denials,
+            domain_denial,
         }
     }
 }
@@ -84,7 +94,23 @@ impl<Schema: TopologySchemaBinding>
         {
             input.scope_key.push_str(":authorization-denied");
         }
+        if self.domain_denial.load(Ordering::SeqCst) {
+            input.operation =
+                PlanarOperation::VerifyCurrentOutputs(vec![PlanarCurrentOutputExpectation {
+                    producer_key: source.body_key.clone(),
+                    output_key: source.body_key.clone(),
+                }]);
+        }
         input
+    }
+
+    fn domain_denial_reason(&self, denial: &PlanarMutationDenial) -> Option<&'static str> {
+        match denial {
+            PlanarMutationDenial::CurrentOutputMissing => {
+                Some("A current planar output is required before this decision.")
+            }
+            _ => None,
+        }
     }
 
     fn idempotency_key(&self, _: &super::PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
@@ -121,6 +147,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
         )];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::ROOT_INPUT_REUSE;
 }
 
 pub fn planar_producer_input(source: &super::PlanarReadResult) -> super::PlanarMutation {

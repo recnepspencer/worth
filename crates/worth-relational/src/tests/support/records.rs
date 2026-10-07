@@ -111,7 +111,10 @@ pub(crate) fn create_entity_outcome_on_branch(
     txn.commit(runtime).unwrap()
 }
 
-fn entity_fields_for_runtime(runtime: &RelationalRuntime, name: &str) -> AspectFieldPatch {
+pub(super) fn entity_fields_for_runtime(
+    runtime: &RelationalRuntime,
+    name: &str,
+) -> AspectFieldPatch {
     let declares_name = runtime.entity_aspect_plan(KindId(1)).is_some_and(|plan| {
         plan.executable_bindings.iter().any(|binding| {
             binding.aspect_key() == &AspectKey::new("name").expect("valid name aspect key")

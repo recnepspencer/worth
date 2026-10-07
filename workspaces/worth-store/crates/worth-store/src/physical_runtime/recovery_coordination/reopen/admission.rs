@@ -9,7 +9,7 @@ use crate::physical_runtime::{
 use super::super::PhysicalRecoveryFreshReopenDenialKind;
 use crate::physical_runtime::recovery_coordination::PhysicalRecoveryCoordination;
 
-pub(super) fn admit(
+pub(in crate::physical_runtime::recovery_coordination) fn admit(
     coordination: &PhysicalRecoveryCoordination,
     scope: PhysicalWorkScope,
     bytes: u64,

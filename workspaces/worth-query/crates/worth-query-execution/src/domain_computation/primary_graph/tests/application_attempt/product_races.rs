@@ -38,6 +38,23 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
         });
         (left.join().unwrap(), right.join().unwrap())
     });
+    if let (
+        WorthQueryApplicationCommitOutcome::Committed(left),
+        WorthQueryApplicationCommitOutcome::Committed(right),
+    ) = (&left, &right)
+    {
+        assert_ne!(
+            left.committed_product_publication(),
+            right.committed_product_publication()
+        );
+        assert_eq!(commit_count(), baseline + 2);
+        let current = world.selected_product();
+        assert!(
+            current.product().relational_basis_descriptor() == left.basis_descriptor()
+                || current.product().relational_basis_descriptor() == right.basis_descriptor()
+        );
+        return;
+    }
     let (winner, loser, loser_index) = match (left, right) {
         (WorthQueryApplicationCommitOutcome::Committed(winner), loser) => (winner, loser, 1),
         (loser, WorthQueryApplicationCommitOutcome::Committed(winner)) => (winner, loser, 0),
@@ -148,7 +165,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
     }
 }
 #[test]
-fn product_drift_stales_selected_attempt_and_fresh_admission_can_commit_unchanged_facts() {
+fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stale() {
     let world = installed_authorization_world(true);
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
@@ -165,6 +182,8 @@ fn product_drift_stales_selected_attempt_and_fresh_admission_can_commit_unchange
     let baseline = commit_count();
 
     let first = admitted_program(&world, &principal, &account, &request, "first");
+    let fresh = admitted_program(&world, &principal, &account, &request, "first");
+    let losing = admitted_program(&world, &principal, &account, &request, "losing");
     let unrelated_program =
         admitted_program(&world, &principal, &unrelated, &request, "unrelated-after");
 
@@ -187,47 +206,25 @@ fn product_drift_stales_selected_attempt_and_fresh_admission_can_commit_unchange
     let outcome = world
         .application
         .compare_and_commit_application(first, idempotency(2, 2));
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!(
-            "old Relational basis must fail before effects despite unchanged decision facts: {outcome:?}"
-        );
-    };
-    assert_eq!(
-        denial.kind(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
-    let after_stale = world.selected_product();
-    assert_eq!(
-        after_stale.product().selected_commit(),
+    assert!(matches!(
+        outcome,
+        WorthQueryApplicationCommitOutcome::Committed(_)
+    ));
+    assert_ne!(
+        world.selected_product().product().selected_commit(),
         current.product().selected_commit()
     );
-    assert_eq!(commit_count(), baseline + 1);
-    let fresh = admitted_program(&world, &principal, &account, &request, "first");
-    let losing = admitted_program(&world, &principal, &account, &request, "losing");
+    assert_eq!(commit_count(), baseline + 2);
     assert!(matches!(
         world
             .application
             .compare_and_commit_application(fresh, idempotency(2, 2)),
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
     let outcome = world
         .application
         .compare_and_commit_application(losing, idempotency(3, 3));
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("the second old-product attempt must fail before effects: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ProductBasisStale
-    );
-    assert_eq!(
-        denial.stage(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
+    super::assert_changed_decision(outcome, "the sealed status changed");
     assert_eq!(commit_count(), baseline + 2);
 }

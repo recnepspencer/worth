@@ -2,9 +2,6 @@ mod live;
 mod lsm;
 mod maintenance_mode;
 mod mutation_shape;
-mod operational_repair;
-#[cfg(test)]
-mod operational_repair_tests;
 mod rebuild;
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -34,10 +31,6 @@ pub use lsm::{
 };
 pub use maintenance_mode::IndexMaintenanceMode;
 pub use mutation_shape::PhysicalMutationShape;
-pub use operational_repair::{
-    DerivedIndexRepairExecutionDenial, DerivedIndexRepairPlan, DerivedIndexRepairReceipt,
-    DerivedIndexRepairRequest, LayoutOperationalRepairOwner,
-};
 #[cfg(test)]
 pub(crate) use rebuild::DerivedIndexParityView;
 pub use rebuild::{

@@ -115,7 +115,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .terminal_for(accepted)
             .ok_or(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?
             .0;
-        if !self.settle_inbound_conditional_delivery(&terminal) {
+        if !terminal.settle_fresh_delivery() {
             return Err(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable);
         }
         let mut custody = self

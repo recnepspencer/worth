@@ -1,11 +1,7 @@
 use super::logical_content_digest::accumulator_seed;
-use crate::{
-    BlobQuarantineAuthority, BlobStreamingReadAdmission, BlobStreamingReadRequest,
-    BlobStreamingReadWindow,
-};
+use crate::{BlobQuarantineAuthority, BlobStreamingReadRequest, BlobStreamingReadWindow};
 
 pub(crate) struct StreamingReadVerifier {
-    pub(crate) _admission: BlobStreamingReadAdmission,
     pub(crate) request: BlobStreamingReadRequest,
     pub(crate) window: BlobStreamingReadWindow,
     pub(crate) quarantine_authority: Option<BlobQuarantineAuthority>,
@@ -15,13 +11,11 @@ pub(crate) struct StreamingReadVerifier {
 
 impl StreamingReadVerifier {
     pub(crate) fn new(
-        admission: BlobStreamingReadAdmission,
         request: BlobStreamingReadRequest,
         window: BlobStreamingReadWindow,
         quarantine_authority: BlobQuarantineAuthority,
     ) -> Self {
         Self {
-            _admission: admission,
             request,
             window,
             quarantine_authority: Some(quarantine_authority),

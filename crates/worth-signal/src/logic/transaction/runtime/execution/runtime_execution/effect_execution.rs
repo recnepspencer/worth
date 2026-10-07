@@ -1,12 +1,11 @@
 use crate::data::error::SignalError;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::IntoEvaluationOutput;
-use crate::logic::planner::{EvaluationPlan, ExecutionReport, StageExecutor};
+use crate::logic::planner::{EvaluationPlan, ExecutionReport};
 
 use super::super::super::state::SignalRuntime;
 use super::super::shared::{
-    absorb_execution_report_telemetry, apply_strategy_maintenance,
-    execute_plan_with_runtime_config, executor_for_strategy,
+    absorb_execution_report_telemetry, apply_strategy_maintenance, execute_plan_with_runtime_config,
 };
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>
@@ -27,22 +26,16 @@ where
         O: IntoEvaluationOutput,
     {
         let strategy = self.derive_evaluation_strategy();
-        let report = self.execute_prepared_plan_with_executor(
-            plan,
-            runtime_ctx,
-            evaluator,
-            executor_for_strategy(strategy),
-        )?;
+        let report = self.execute_prepared_plan_serial(plan, runtime_ctx, evaluator)?;
         apply_strategy_maintenance(&mut self.graph, strategy);
         Ok(report)
     }
 
-    pub fn execute_prepared_plan_with_executor<F, O>(
+    fn execute_prepared_plan_serial<F, O>(
         &mut self,
         plan: &EvaluationPlan,
         runtime_ctx: &Ctx,
         evaluator: &F,
-        executor: StageExecutor,
     ) -> Result<ExecutionReport, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
@@ -58,7 +51,7 @@ where
             runtime_ctx,
             plan,
             evaluator,
-            executor,
+            None,
         )?;
         if self.graph.captures_observation_surface(
             crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,

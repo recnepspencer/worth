@@ -10,6 +10,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::ApplicationSchema;
 
 mod demand;
+pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
@@ -17,6 +18,10 @@ pub use demand::{
 };
 mod execution;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
+mod input_reuse_contract;
+pub use input_reuse_contract::{
+    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
+};
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
@@ -34,16 +39,17 @@ pub(in crate::domain_computation::primary_graph) use readiness::{
 };
 mod scheduling;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
-    schedule_output_producer, WorthQueryInstalledOutputProducerRoutes,
+    schedule_output_producer, schedule_output_producer_on_selected,
+    WorthQueryInstalledOutputProducerRoutes,
 };
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryProducerLifecyclePosture {
     Initial,
     Preserve,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryProducerApplicability {
     profile_kind: &'static str,
     lifecycle: WorthQueryProducerLifecyclePosture,
@@ -85,6 +91,13 @@ where
         source: &<<Self::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
     ) -> &'static str;
 }
+
+pub(super) type ProducerSourceBinding<Schema, Binding> =
+    <<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
+pub(super) type ProducerSourceQuery<Schema, Binding> =
+    <<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query;
+pub(super) type ProducerSourceValue<Schema, Binding> =
+    <<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowAssessmentPosture {
@@ -197,6 +210,16 @@ where
         source_identity: &[u8; 32],
     ) -> <Binding::Operation as ApplicationMutationBinding<Schema>>::IdempotencyKey;
 
+    /// Optional domain-owned words for a rejected producer decision. This is
+    /// diagnostic text, never an authority or a machine-readable domain value.
+    /// Static text bounds retained diagnostic storage; no Debug text is parsed.
+    fn domain_denial_reason(
+        &self,
+        _denial: &<Binding::Operation as ApplicationMutationBinding<Schema>>::Denial,
+    ) -> Option<&'static str> {
+        None
+    }
+
     fn demand_resources(
         &self,
         source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
@@ -239,8 +262,11 @@ where
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const RESOURCE_POLICY: &'static str;
     const REUSE_POLICY: &'static str;
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 }
 
 mod registry;
+pub(super) use registry::DeclaredProducerBinding;
+pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
+pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;
 pub use registry::WorthQueryInstalledApplicationProducerRegistry;
-pub(super) use registry::{DeclaredProducerBinding, PendingProducerRegistry};

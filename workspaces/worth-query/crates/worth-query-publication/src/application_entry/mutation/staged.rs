@@ -33,6 +33,8 @@ where
     >,
 }
 
+pub(super) struct UnstagedMutation;
+
 impl<Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
         '_,
@@ -50,10 +52,16 @@ where
     /// Moves the one-shot preconditions and source expectation out of the request.
     pub(in crate::application_entry) fn stage(
         &mut self,
-    ) -> WorthQueryStagedMutation<Schema, Intent> {
-        WorthQueryStagedMutation {
+    ) -> Result<
+        WorthQueryStagedMutation<Schema, Intent>,
+        crate::application_entry::WorthQueryApplicationRequestMutationDenial,
+    > {
+        self.unstaged.take().ok_or(
+            crate::application_entry::WorthQueryApplicationRequestMutationDenial::PreparationSpent,
+        )?;
+        Ok(WorthQueryStagedMutation {
             preconditions: std::mem::take(&mut self.request.preconditions),
             source: self.request.source.take(),
-        }
+        })
     }
 }

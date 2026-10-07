@@ -35,12 +35,7 @@ impl RuntimeCore {
             &state.store.sources,
             state.authored_graph_generation,
         ))?;
-        Ok(worker_basis(
-            branch,
-            native_basis,
-            state,
-            authored_state_digest,
-        )?)
+        worker_basis(branch, native_basis, state, authored_state_digest)
     }
 
     pub fn fork_worker_branch(

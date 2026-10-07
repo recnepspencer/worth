@@ -7,6 +7,9 @@ use super::root::{
     RelationalBranchRootCaptureDenial, RelationalBranchRootIdentityIssuer, RelationalRootRegion,
 };
 
+mod partition_visitation;
+pub(crate) use partition_visitation::RelationalPartitionVisit;
+
 const PARTITION_KEY_BITS: u32 = u32::BITS;
 
 /// Exact immutable radix index whose fixed 32-bit paths keep ordinary reads

@@ -67,6 +67,14 @@ impl WorthQueryReceiptBasisRetentionStore {
         self.mandatory.contains_key(&commit)
     }
 
+    /// Commits whose dispatch basis is mandatory; their evidence never leaves
+    /// the idempotency window.
+    pub(in crate::domain_computation::primary_graph::provider) fn mandatory_commits(
+        &self,
+    ) -> std::collections::BTreeSet<CommitId> {
+        self.mandatory.keys().copied().collect()
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn release_mandatory(
         &mut self,
         commit: CommitId,
@@ -83,6 +91,16 @@ impl WorthQueryReceiptBasisRetentionStore {
         self.by_commit.remove(&commit);
         self.mandatory.remove(&commit);
         self.order.retain(|indexed| *indexed != commit);
+    }
+
+    /// A mandatory basis belongs to its dispatch terminal, not to history.
+    pub(in crate::domain_computation::primary_graph::provider) fn release_ordinary(
+        &mut self,
+        commit: CommitId,
+    ) {
+        if self.by_commit.remove(&commit).is_some() {
+            self.order.retain(|indexed| *indexed != commit);
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn retain(

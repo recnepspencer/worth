@@ -31,6 +31,7 @@ impl BoundaryValidatedCommitExecution {
 pub(super) fn validate_commit_boundary(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut prepared: PreparedCommitExecution,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<BoundaryValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
     let (admitted, proposed_working_state, proposed_version_id, proposal_identity) =
         prepared.boundary_parts();
@@ -48,6 +49,7 @@ pub(super) fn validate_commit_boundary(
         merged_plan,
         Some(proposal_identity),
         prevalidated,
+        lease,
     )?;
     Ok(BoundaryValidatedCommitExecution {
         prepared,

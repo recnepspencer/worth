@@ -2,12 +2,13 @@ use worth_proof::TransitionOutcome;
 use worth_signal::facade::TemporalDuration;
 use worth_store::physical_runtime::{
     lower_physical_durability_performance_receipt, PageBasisPerformanceExpectation,
-    PhysicalDurabilityCloseoutOutcome, PhysicalDurabilityPerformanceContract,
-    PhysicalDurabilityPerformanceEvidenceDenial, PhysicalManifestCapacityTransition,
-    PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationPreparationSuccess, PhysicalMutationRequest, PhysicalRecordInitialization,
-    PhysicalRecordOpen, PhysicalRecoveryAttemptBindingFact, PhysicalRecoveryOperationFate,
-    RecordAppendBatch,
+    PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
+    PhysicalCheckpointRequest, PhysicalDurabilityCloseoutOutcome,
+    PhysicalDurabilityPerformanceContract, PhysicalDurabilityPerformanceEvidenceDenial,
+    PhysicalManifestCapacityTransition, PhysicalMutationDeadline,
+    PhysicalMutationIdempotencyMaterial, PhysicalMutationPreparationSuccess,
+    PhysicalMutationRequest, PhysicalRecordInitialization, PhysicalRecordOpen,
+    PhysicalRecoveryAttemptBindingFact, PhysicalRecoveryOperationFate, RecordAppendBatch,
 };
 
 use super::super::durability;
@@ -106,6 +107,42 @@ fn published_and_reopened_closeout_retains_current_and_immediate_previous_roots(
     if reopened_previous_generation != Some(initialized_generation) {
         panic!("MUTANT_PREDICATE:reopened-previous-root-dropped");
     }
+}
+
+#[test]
+fn ordinary_genesis_reopen_checkpoints_under_its_own_custody() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    let serving = initialized(&root);
+    let (_, placement, _) = configuration();
+    serving.certification_publish_single_durable_mutation(
+        placement,
+        PhysicalManifestCapacityTransition::PreserveCurrent,
+        PhysicalMutationIdempotencyMaterial::new([0x7a; 32]),
+        RecordAppendBatch::try_from_iter([b"custody-fence".as_slice()]).unwrap(),
+    );
+    serving.close();
+
+    let (format, _, access) = configuration();
+    let reopened_media = media(&root);
+    let policy = durability(&reopened_media);
+    let reopened =
+        success(reopened_media.open_record_store(PhysicalRecordOpen::new(format, access, policy)));
+    let request = PhysicalCheckpointRequest::fuzzy(
+        PhysicalCheckpointIdempotencyKey::new([0x7b; 32]),
+        PhysicalCheckpointDeadline::at(TemporalDuration::temporal_duration(10_000).unwrap()),
+    );
+    // No checkpoint was ever selected and no drop was released, so the
+    // retained WAL from genesis is the whole ledger: the clean case.
+    let TransitionOutcome::Success(handle) = reopened.checkpoints().start(request).into_raw()
+    else {
+        panic!("a clean genesis reopen owns its checkpoint custody")
+    };
+    assert!(matches!(
+        handle.wait(),
+        PhysicalCheckpointOutcome::Completed(_)
+    ));
+    reopened.close();
 }
 
 #[test]

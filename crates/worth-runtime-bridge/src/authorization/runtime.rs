@@ -17,6 +17,9 @@ use super::{
     BridgeAuthorizationRuleContract, BridgeAuthorizationRuleEffect,
 };
 
+mod retention;
+pub use retention::BridgeAuthorizationRetentionStop;
+
 pub(super) struct BridgeInstalledAuthorizationCorrespondence {
     identity: BridgeAuthorizationCorrespondenceIdentity,
     binding_identity: super::BridgeAuthorizationBindingIdentity,
@@ -55,6 +58,12 @@ pub struct BridgeAuthorizationRuntime {
 }
 
 impl BridgeAuthorizationRuntime {
+    /// Installed correspondences bound the two fixed-identity ordered reads
+    /// performed during one authorization evaluation.
+    pub fn correspondence_count(&self) -> usize {
+        self.correspondences.len()
+    }
+
     pub fn new() -> Self {
         Self {
             graph: SignalGraph::new(),
@@ -121,27 +130,6 @@ impl BridgeAuthorizationRuntime {
             Arc::clone(&installed.authority),
         ))
     }
-
-    pub fn retains(&self, evidence: &BridgeAuthorizationDecisionEvidence) -> bool {
-        self.correspondences
-            .get(&evidence.correspondence())
-            .is_some_and(|installed| {
-                Arc::ptr_eq(&installed.authority, evidence.authority())
-                    && installed.signal_policy.retains(evidence.signal())
-                    && evidence.dependency_identity() == evidence.signal().dependency_identity()
-                    && installed.rules.len() == evidence.rule_decisions().len()
-                    && installed
-                        .rules
-                        .iter()
-                        .zip(evidence.rule_decisions())
-                        .zip(evidence.signal().rule_decisions())
-                        .all(|((rule, decision), signal_decision)| {
-                            rule.effect() == decision.effect()
-                                && lower_effect(rule.effect()) == signal_decision.effect()
-                                && decision.matched() == signal_decision.matched()
-                        })
-            })
-    }
 }
 
 fn lower_signal_observation(
@@ -178,23 +166,20 @@ fn retain_rule_decisions(
     installed: &BridgeInstalledAuthorizationCorrespondence,
     signal: &worth_signal::facade::SignalAuthorizationDecisionEvidence,
 ) -> Result<Vec<super::BridgeAuthorizationRuleDecisionEvidence>, BridgeAuthorizationDenial> {
-    installed
-        .rules
-        .iter()
-        .zip(signal.rule_decisions())
-        .map(|(rule, decision)| {
-            if lower_effect(rule.effect()) != decision.effect() {
-                return Err(denial(
-                    BridgeAuthorizationDenialKind::SignalEvaluationRejected,
-                    &installed.policy,
-                ));
-            }
-            Ok(super::BridgeAuthorizationRuleDecisionEvidence::new(
-                rule.effect(),
-                decision.matched(),
-            ))
-        })
-        .collect()
+    let mut decisions = Vec::with_capacity(installed.rules.len());
+    for (rule, decision) in installed.rules.iter().zip(signal.rule_decisions()) {
+        if lower_effect(rule.effect()) != decision.effect() {
+            return Err(denial(
+                BridgeAuthorizationDenialKind::SignalEvaluationRejected,
+                &installed.policy,
+            ));
+        }
+        decisions.push(super::BridgeAuthorizationRuleDecisionEvidence::new(
+            rule.effect(),
+            decision.matched(),
+        ));
+    }
+    Ok(decisions)
 }
 
 impl Default for BridgeAuthorizationRuntime {

@@ -1,4 +1,7 @@
-use super::token_writer::{append_bytes, append_i32, append_i64, append_token, append_u64};
+use super::token_writer::{
+    append_bytes, append_i128, append_i32, append_i64, append_token, append_token_parts,
+    append_u128, append_u64,
+};
 use super::writer::{CanonicalMaterialResult, CanonicalMaterialWriter};
 use crate::aspects::StructAspectValue;
 use crate::canonicalization::{CanonicalBasisValue, CanonicalFloatWidth, CanonicalIntegerWidth};
@@ -37,12 +40,12 @@ pub(crate) fn append_value_material(
         CanonicalBasisValue::SignedInteger { width, value } => {
             append_token(material, "value.kind", "signed")?;
             append_token(material, "value.width", integer_width_token(*width))?;
-            append_token(material, "value.signed", &value.to_string())?;
+            append_i128(material, "value.signed", *value)?;
         }
         CanonicalBasisValue::UnsignedInteger { width, value } => {
             append_token(material, "value.kind", "unsigned")?;
             append_token(material, "value.width", integer_width_token(*width))?;
-            append_token(material, "value.unsigned", &value.to_string())?;
+            append_u128(material, "value.unsigned", *value)?;
         }
         CanonicalBasisValue::FloatBits { width, bits } => {
             append_token(material, "value.kind", "float")?;
@@ -159,9 +162,10 @@ pub(super) fn append_interned_string(
     value: &InternedString,
 ) -> CanonicalMaterialResult {
     match value {
-        InternedString::Raw(value) => append_token(material, &format!("{label}.raw"), value),
+        InternedString::Raw(value) => append_token_parts(material, label, ".raw", &[value]),
         InternedString::Symbol(symbol) => {
-            append_u64(material, &format!("{label}.symbol"), u64::from(symbol.0))
+            material.append(label)?;
+            append_u64(material, ".symbol", u64::from(symbol.0))
         }
     }
 }

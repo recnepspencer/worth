@@ -1,7 +1,19 @@
 use super::{
-    BoundOutputSource, DemandRegistryState, DemandState, PreparedOutputRootKind, SourceCustody,
+    BoundOutputSource, DemandRegistryState, DemandState, SourceCustody,
     WorthQueryOutputDemandRegistry, WorthQueryPerformedOutputDemandSource,
 };
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
+    Required(std::any::TypeId),
+    Discovered(std::any::TypeId),
+}
+
+#[derive(Default)]
+pub(super) struct SourcePreparationState {
+    pub(super) active: usize,
+    pub(super) retired: bool,
+}
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
@@ -319,7 +331,10 @@ fn retire_stale_records(
             && record.source_scope == Some(scope)
             && key.source.replacement_order(successor) == Some(Ordering::Less)
         {
-            let cause = denial(WorthQueryOutputDemandDenialKind::Superseded, &key.producer);
+            let cause = denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                key.producer.clone(),
+            );
             match &mut record.state {
                 DemandState::Output(output) => output.stop(cause),
                 _ => record.state = DemandState::Failed(cause),
@@ -328,17 +343,36 @@ fn retire_stale_records(
             record.wake.notify();
         }
     }
+    state.release_matching_prerequisites(|key, record| {
+        record.product_occurrence == occurrence
+            && record.source_scope == Some(scope)
+            && key.source.replacement_order(successor) == Some(Ordering::Less)
+    });
+    let required_keys = &mut state.required_keys;
+    let required_reserved_bytes = &mut state.required_reserved_bytes;
     state.records.retain(|key, record| {
-        record.product_occurrence != occurrence
+        let keep = record.product_occurrence != occurrence
             || record.source_scope != Some(scope)
             || key.source.replacement_order(successor) != Some(Ordering::Less)
             || record.interests != 0
+            || record.framework_required_count != 0
+            || record.prepared_prerequisite_claims != 0
+            || record.pending_cleanup_queued;
+        if !keep {
+            if let Some(member) = required_keys.take(key) {
+                *required_reserved_bytes = required_reserved_bytes.saturating_sub(
+                    super::required_members::member_bytes(member.as_ref())
+                        .expect("admitted key charge fits"),
+                );
+            }
+        }
+        keep
     });
 }
 
 fn denial(
     kind: WorthQueryOutputDemandDenialKind,
-    subject: impl Into<String>,
+    subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }

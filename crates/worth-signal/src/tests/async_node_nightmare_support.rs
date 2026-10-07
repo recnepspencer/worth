@@ -94,7 +94,7 @@ pub(crate) fn milestone_d_combined_workload() -> MilestoneDCombinedWorkload {
         .expect("keyed handle should exist");
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [gate, parent, keyed_binding.node()],
         Box::new(NoopAsyncNodeObservationListener),
     );

@@ -13,6 +13,8 @@ pub struct WorthQueryApplicationReadObservation {
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     product: WorthQueryProductObservationLease,
+    _required_custody:
+        Option<super::super::application_output_demand::RequiredOutputCustodyCapacity>,
 }
 
 impl WorthQueryApplicationReadObservation {
@@ -27,6 +29,23 @@ impl WorthQueryApplicationReadObservation {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             product,
+            _required_custody: None,
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_product_funded<Schema>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: WorthQueryProductObservationLease,
+        custody: super::super::application_output_demand::RequiredOutputCustodyCapacity,
+    ) -> Arc<Self>
+    where
+        Schema: ApplicationSchema,
+    {
+        Arc::new(Self {
+            runtime_authority: runtime.runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema.binding_identity(),
+            product,
+            _required_custody: Some(custody),
         })
     }
 
@@ -40,6 +59,24 @@ impl WorthQueryApplicationReadObservation {
 
     pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.product.selected_commit()
+    }
+
+    /// Historical program-read custody may precede the currently selected
+    /// head. It can constrain a fresh required continuation to its original
+    /// application and branch occurrence without authorizing the new read.
+    pub(in crate::domain_computation::primary_graph) fn belongs_to_selected_occurrence<Schema>(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        selected: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> bool
+    where
+        Schema: ApplicationSchema,
+    {
+        self.runtime_authority == runtime.runtime.authority_identity().as_u64()
+            && self.schema_binding == runtime.installed_schema.binding_identity()
+            && self.product.observation().branch_identity() == selected.branch_identity()
+            && self.product.observation().lifecycle_incarnation()
+                == selected.lifecycle_incarnation()
     }
 }
 

@@ -16,11 +16,11 @@ impl WalDiscoveryInventory {
         residue: Vec<PhysicalRecoveryResidue>,
     ) -> Self {
         Self {
-            candidates: Vec::new(),
+            candidates: crate::orchestration::wal_selection::ResidentWalCandidates::default(),
             admitted: AdmittedWalInventory::default(),
             residue,
             corruptions: Vec::new(),
-            observations: Vec::new(),
+            observations: crate::entry::WalIntegrityObservationBuilder::new(),
             ingress: RecoveryIntegrityIngressCounters::default(),
             canonical_segments,
             frames_scanned: 0,
@@ -45,7 +45,6 @@ impl WalDiscoveryInventory {
         attempted: u64,
         conclusion: WalSegmentConclusion,
     ) -> bool {
-        self.observations.extend(conclusion.observations);
         let Some(valid_frames) = self.valid_frames.checked_add(conclusion.valid_frames) else {
             return false;
         };
@@ -68,9 +67,6 @@ impl WalDiscoveryInventory {
         self.torn_suffix_bytes = torn_bytes;
         self.residue.extend(conclusion.residue);
         self.corruptions.extend(conclusion.corruptions);
-        if let Some(candidate) = conclusion.candidate {
-            self.candidates.push(candidate);
-        }
         if let Some(admitted) = conclusion.admitted {
             self.admitted.push(admitted);
         }
@@ -81,10 +77,8 @@ impl WalDiscoveryInventory {
         mut self,
         failure: WalSegmentAdmissionFailure,
     ) -> WalDiscoveryInventoryDenial {
-        let prior_frames = self.frames_scanned;
-        self.frames_scanned = prior_frames.saturating_add(policy_attempts(&failure.transcript));
-        self.observations.extend(failure.transcript.observations);
-        if !self.record_ingress(failure.transcript.counters) {
+        self.frames_scanned = self.frames_scanned.saturating_add(failure.policy_attempts);
+        if !self.record_ingress(failure.counters) {
             return self.deny(WalDiscoveryInventoryDenialKind::CounterOverflow);
         }
         let kind = match failure.denial {
@@ -92,24 +86,26 @@ impl WalDiscoveryInventory {
                 WalDiscoveryInventoryDenialKind::CounterOverflow
             }
             WalSegmentAdmissionDenial::FrameLimitExceeded { observed, admitted } => {
-                WalDiscoveryInventoryDenialKind::FrameLimitExceeded {
-                    observed: prior_frames.saturating_add(observed),
-                    admitted: prior_frames.saturating_add(admitted),
-                }
+                WalDiscoveryInventoryDenialKind::FrameLimitExceeded { observed, admitted }
             }
             WalSegmentAdmissionDenial::SourceBinding => {
                 WalDiscoveryInventoryDenialKind::SourceBinding
+            }
+            WalSegmentAdmissionDenial::Allocation(cause) => {
+                WalDiscoveryInventoryDenialKind::Allocation(cause)
+            }
+            WalSegmentAdmissionDenial::InventoryAllocation { boundary, cause } => {
+                WalDiscoveryInventoryDenialKind::InventoryAllocation { boundary, cause }
             }
         };
         self.deny(kind)
     }
 
     pub(super) fn deny_conclusion(
-        mut self,
+        self,
         failure: WalSegmentConclusionFailure,
     ) -> WalDiscoveryInventoryDenial {
-        self.observations.extend(failure.observations);
-        self.deny(WalDiscoveryInventoryDenialKind::SourceBinding)
+        self.deny(failure.kind)
     }
 
     pub(super) fn deny(self, kind: WalDiscoveryInventoryDenialKind) -> WalDiscoveryInventoryDenial {
@@ -120,7 +116,7 @@ impl WalDiscoveryInventory {
     }
 }
 
-pub(super) fn policy_attempts(transcript: &WalSegmentAdmissionTranscript) -> u64 {
+pub(super) fn policy_attempts(transcript: &WalSegmentAdmissionTranscript<'_, '_>) -> u64 {
     if transcript.observed_bytes == 0 {
         0
     } else {

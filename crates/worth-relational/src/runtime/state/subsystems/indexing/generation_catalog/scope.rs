@@ -54,6 +54,40 @@ impl GenerationScope {
             .copied()
     }
 
+    pub(super) fn exact_admitted<Stop>(
+        &self,
+        version: VersionId,
+        schema: SchemaVersionId,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        Option<DerivedIndexGenerationId>,
+        crate::indexes::data::SelectedIndexGenerationAdmissionStop<Stop>,
+    > {
+        use super::admitted_selection::navigation_work;
+        let version_work = navigation_work(self.published.versions.len(), 1).ok_or(
+            crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
+        )?;
+        prepare(version_work, 0)
+            .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
+        let Some(selected) = self.published.versions.get(&version) else {
+            return Ok(None);
+        };
+        let schema_work = navigation_work(selected.schemas.len(), 1).ok_or(
+            crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
+        )?;
+        prepare(schema_work, 0)
+            .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
+        let Some(ids) = selected.schemas.get(&schema) else {
+            return Ok(None);
+        };
+        let id_work = navigation_work(ids.len(), 1).ok_or(
+            crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
+        )?;
+        prepare(id_work, 0)
+            .map_err(crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission)?;
+        Ok(ids.last().copied())
+    }
+
     pub(super) fn published_for_commit(
         &self,
         commit: CommitId,
@@ -64,6 +98,10 @@ impl GenerationScope {
             .get(&(commit, version))?
             .last()
             .copied()
+    }
+
+    pub(super) fn published_commit_count(&self) -> usize {
+        self.published.commits.len()
     }
 
     pub(super) fn candidate(

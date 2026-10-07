@@ -69,6 +69,23 @@ impl PublishedSnapshotHandleRegistry {
         self.lock().by_id.get(&snapshot_id).cloned()
     }
 
+    pub(super) fn selected_branch_bytes(&self, snapshot_id: SnapshotId) -> Option<usize> {
+        self.lock()
+            .by_id
+            .get(&snapshot_id)
+            .map(|binding| binding.basis.branch_id().0.len())
+    }
+
+    pub(super) fn selected_root(
+        &self,
+        snapshot_id: SnapshotId,
+    ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
+        self.lock()
+            .by_id
+            .get(&snapshot_id)
+            .map(|binding| std::sync::Arc::clone(binding.basis.root()))
+    }
+
     pub(super) fn binding_for_version(
         &self,
         version_id: VersionId,

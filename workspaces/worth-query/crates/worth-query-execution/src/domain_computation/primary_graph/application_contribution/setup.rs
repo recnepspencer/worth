@@ -7,7 +7,8 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationInvariantRef, ApplicationSchema, ApplicationSchemaMember,
 };
 use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationContribution, WorthQueryInstalledApplicationSchema,
+    WorthQueryInstalledApplicationContribution, WorthQueryInstalledApplicationMutationBinding,
+    WorthQueryInstalledApplicationQueryBinding, WorthQueryInstalledApplicationSchema,
 };
 
 use super::super::application_entry::mutation::OperationHandler;
@@ -18,7 +19,9 @@ use super::super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use super::conditional::PendingConditionalRegistry;
-use super::producer::PendingProducerRegistry;
+use super::producer::{
+    PendingProducerRegistry, ProducerSourceBinding, ProducerSourceQuery, ProducerSourceValue,
+};
 use super::{WorthQueryApplicationConditionalBinding, WorthQueryApplicationProducerBinding};
 
 /// Configuration access restricted to one contribution in the exact installed schema.
@@ -91,19 +94,30 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Binding: WorthQueryApplicationProducerBinding<Schema>,
+        ProducerSourceValue<Schema, Binding>: super::super::WorthQueryApplicationProjection<
+            Schema,
+            ProducerSourceQuery<Schema, Binding>,
+        >,
     {
-        self.require_owned_query::<<Binding::OutputFamily as super::WorthQueryProducerOutputFamily<Schema>>::Source>()?;
-        self.require_owned_mutation::<Binding::Operation>()?;
+        let source_query = self.require_owned_query::<ProducerSourceBinding<Schema, Binding>>()?;
+        let mutation = self.require_owned_mutation::<Binding::Operation>()?;
         for requirement in Binding::REQUIRED_INVARIANTS {
             self.require_owned_invariant(*requirement)?;
         }
-        self.producers
-            .register::<Binding>(self.contribution.identity().as_str(), provider)
+        self.producers.register::<Binding>(
+            self.contribution.identity().as_str(),
+            provider,
+            mutation,
+            source_query,
+        )
     }
 
     fn require_owned_mutation<Binding>(
         &self,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    ) -> Result<
+        WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
+        WorthQueryPrimaryGraphInstallationDenial,
+    >
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
@@ -125,14 +139,20 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         if !operation_owned {
             return Err(member_denial(Binding::IDENTITY));
         }
-        Ok(())
+        Ok(installed)
     }
 
-    fn require_owned_query<Binding>(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    fn require_owned_query<Binding>(
+        &self,
+    ) -> Result<
+        WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+        WorthQueryPrimaryGraphInstallationDenial,
+    >
     where
         Binding: ApplicationQueryBinding<Schema>,
     {
-        self.installed_schema
+        let installed = self
+            .installed_schema
             .installed_query_binding::<Binding>()
             .map_err(|_| member_denial(Binding::IDENTITY))?;
         let query_owned = self.contribution.members().any(|member| {
@@ -144,7 +164,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         if !query_owned {
             return Err(member_denial(Binding::IDENTITY));
         }
-        Ok(())
+        Ok(installed)
     }
 
     fn require_owned_invariant(

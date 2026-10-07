@@ -68,9 +68,9 @@ fn structural_telemetry_owner_gates_are_present_before_their_writes() {
     );
 
     for (execution_owner, gate, gate_count) in [
-        (include_str!("../../logic/transaction/runtime/execution/runtime_execution/orchestration.rs"), "captures_observation_surface(", 1),
+        (include_str!("../../logic/transaction/runtime/execution/runtime_execution/orchestration.rs"), "captures_observation_surface(", 2),
         (include_str!("../../logic/transaction/runtime/execution/runtime_execution/effect_execution.rs"), "captures_observation_surface(", 1),
-        (include_str!("../../logic/transaction/runtime/execution/transaction_evaluation/orchestration.rs"), "with_telemetry(", 1),
+        (include_str!("../../logic/transaction/runtime/execution/transaction_evaluation/orchestration.rs"), "with_telemetry(", 4),
         (include_str!("../../logic/transaction/runtime/execution/transaction_evaluation/effect_execution.rs"), "with_telemetry(", 1),
         (include_str!("../../logic/transaction/runtime/execution/transaction_keyed.rs"), "with_telemetry(", 5),
     ] {
@@ -276,13 +276,14 @@ fn tier_to_strategy_recoupling_probe_uses_the_objective_axis() {
         development.default_maintenance_strategy(),
         operational.default_maintenance_strategy()
     );
-    let admission = include_str!("../../logic/planner/precompute/admission.rs");
-    assert!(admission.contains("installed_policy.execution_objective()"));
+    let admission = include_str!("../../logic/planner/model/strategy.rs");
+    assert!(admission.contains("installed.execution_objective()"));
     assert!(
-        !admission.contains("DiagnosticsTier") && !admission.contains("installed_policy.tier()"),
+        !admission.contains("DiagnosticsTier") && !admission.contains("installed.tier()"),
         "planner parallel admission must not recouple strategy to DiagnosticsTier or installed tier()"
     );
-    assert!(admission.contains("AdmittedThroughput"));
+    assert!(admission.contains("lease.resolved_posture()"));
+    assert!(admission.contains("installed.parallel_min_tasks()"));
     assert!(!admission.contains("AdmittedOperational"));
     assert!(!admission.contains("AdmittedDevelopment"));
     assert!(!admission.contains("AdmittedForensic"));

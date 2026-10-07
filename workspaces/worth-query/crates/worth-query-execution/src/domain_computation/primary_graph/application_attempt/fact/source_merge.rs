@@ -1,38 +1,31 @@
-//! Compose observations of one source fact without changing its native truth.
-
 use super::WorthQueryApplicationObservedFact as Fact;
 
 impl Fact {
-    /// Same-revision adjacency observations may cover different projection paths.
-    /// Their endpoint coverage and comparison allowance compose; native identity
-    /// and revision must agree. Every other observation still requires exact equality.
+    /// Combines observations of the same dependency at one native revision.
+    /// Adjacency endpoints and comparison limits describe each read boundary;
+    /// they may differ even when both reads observed the same structural truth.
     pub(in crate::domain_computation::primary_graph) fn merge_same_source_fact(
         &mut self,
         duplicate: Self,
     ) -> bool {
+        if self.dependency_key() != duplicate.dependency_key() {
+            return false;
+        }
         match (self, duplicate) {
             (
-                Self::SourceAdjacencyRevision {
-                    relation_kind: first_kind,
-                    anchor: first_anchor,
-                    direction: first_direction,
+                Fact::SourceAdjacencyRevision {
                     native_revision: first_revision,
                     comparison_work_limit: first_limit,
                     endpoints: first_endpoints,
+                    ..
                 },
-                Self::SourceAdjacencyRevision {
-                    relation_kind: second_kind,
-                    anchor: second_anchor,
-                    direction: second_direction,
+                Fact::SourceAdjacencyRevision {
                     native_revision: second_revision,
                     comparison_work_limit: second_limit,
                     endpoints: second_endpoints,
+                    ..
                 },
-            ) if *first_kind == second_kind
-                && *first_anchor == second_anchor
-                && *first_direction == second_direction
-                && *first_revision == second_revision =>
-            {
+            ) if *first_revision == second_revision => {
                 *first_limit = (*first_limit).max(second_limit);
                 first_endpoints.extend(second_endpoints);
                 first_endpoints.sort();

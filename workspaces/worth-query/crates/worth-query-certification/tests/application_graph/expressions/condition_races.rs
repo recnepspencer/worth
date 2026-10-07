@@ -85,12 +85,9 @@ fn a_raced_acceptance_retries_under_the_same_key() {
             .accept()
     });
     match raced {
-        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
-            denial,
-        ))) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::ProductBasisStale
-        ),
+        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Stale(
+            stale,
+        ))) => assert!(stale.stale_fact_count() > 0),
         other => panic!("a transition over a replaced source must not publish: {other:?}"),
     }
     match accept!(court, 9_177_310, days: days!(court.application), retained: retained!(court.application))

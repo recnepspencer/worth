@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+use super::super::super::retention_omission::RetentionOmission;
 use super::super::ResourceRuntimeState;
 use super::registry::resource_policy_resolution_signal_error;
 use crate::data::resource::*;
@@ -7,6 +8,8 @@ use crate::logic::transaction::runtime::state::merge::canonical_digest;
 
 pub(super) const RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION: &str =
     "worth.resource.replay-reconstruction.v2";
+pub(super) const RESOURCE_REPLAY_RECONSTRUCTION_WITH_OMISSION_SCHEMA_VERSION: &str =
+    "worth.resource.replay-reconstruction.v3";
 
 #[derive(Debug, Serialize)]
 pub(super) struct ResourceReplayLifecycleDigestBasis<'a> {
@@ -53,6 +56,9 @@ pub(super) struct ResourceReplayDenialDigestBasis<'a> {
         &'a [ResourceReplayDeniedCompletionEntryDigestBasis],
     pub(in crate::logic::transaction::runtime::state::resource) unavailable_denied_completions:
         &'a [ResourceReplayUnavailableDeniedCompletionDigestBasis],
+    #[serde(skip_serializing_if = "RetentionOmission::is_empty")]
+    pub(in crate::logic::transaction::runtime::state::resource) expired_denied_availability:
+        RetentionOmission,
 }
 
 #[derive(Debug, Serialize)]
@@ -62,6 +68,9 @@ pub(super) struct ResourceReplayRetryLineageDigestBasis<'a> {
         &'a [RetainedResourceRetryLineage],
     pub(in crate::logic::transaction::runtime::state::resource) unavailable_retry_lineages:
         &'a [ResourceRetainedRetryLineageAvailability],
+    #[serde(skip_serializing_if = "RetentionOmission::is_empty")]
+    pub(in crate::logic::transaction::runtime::state::resource) expired_retry_availability:
+        RetentionOmission,
 }
 
 #[derive(Debug, Serialize)]
@@ -71,6 +80,9 @@ pub(super) struct ResourceReplayInFlightDigestBasis<'a> {
         &'a [ResourceReplayInFlightEntryDigestBasis<'a>],
     pub(in crate::logic::transaction::runtime::state::resource) retained_history_availability:
         &'a [ResourceRetainedHistoryAvailability],
+    #[serde(skip_serializing_if = "RetentionOmission::is_empty")]
+    pub(in crate::logic::transaction::runtime::state::resource) expired_lifecycle_availability:
+        RetentionOmission,
 }
 
 #[derive(Debug, Serialize)]
@@ -159,9 +171,14 @@ pub(in crate::logic::transaction::runtime::state::resource) struct ResourceReten
 > {
     pub(in crate::logic::transaction::runtime::state::resource) schema_version: &'static str,
     pub(in crate::logic::transaction::runtime::state::resource) retained_history_decision_digests:
-        &'a [String],
+        &'a [&'a str],
     pub(in crate::logic::transaction::runtime::state::resource) retry_lineage_decision_digests:
-        &'a [String],
+        &'a [&'a str],
+    #[serde(skip_serializing_if = "RetentionOmission::is_empty")]
+    pub(in crate::logic::transaction::runtime::state::resource) expired_lifecycle:
+        RetentionOmission,
+    #[serde(skip_serializing_if = "RetentionOmission::is_empty")]
+    pub(in crate::logic::transaction::runtime::state::resource) expired_retry: RetentionOmission,
 }
 
 #[derive(Debug, Serialize)]

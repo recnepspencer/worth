@@ -57,7 +57,12 @@ pub(crate) fn root_observations(
         .into_iter()
         .map(|entry| {
             add_duplicate_evidence(
-                root_observation(entry.relative, entry.expected_generation, entry.outcome),
+                root_observation(
+                    entry.relative,
+                    entry.expected_generation,
+                    entry.canonical_bytes,
+                    entry.outcome,
+                ),
                 entry.physical_alias_of,
                 entry.semantic_duplicate,
             )
@@ -70,6 +75,7 @@ pub(crate) fn root_observations(
         observations.push(root_observation(
             format!("{ROOTS_RELATIVE}/root-{generation:016x}.manifest"),
             *generation,
+            ROOT_MANIFEST_BYTES,
             if let Some(reason) = incomplete {
                 OfflineIntegrityOutcome::Indeterminate(reason)
             } else {
@@ -106,6 +112,7 @@ fn add_duplicate_evidence(
 fn root_observation(
     relative: String,
     expected_generation: u64,
+    byte_length: usize,
     outcome: OfflineIntegrityOutcome,
 ) -> OfflineArtifactObservation {
     artifact_observation(
@@ -116,7 +123,7 @@ fn root_observation(
         format!("root:{expected_generation:016x}"),
         PhysicalArtifactGeneration::encoded(expected_generation)
             .unwrap_or(PhysicalArtifactGeneration::NotEncoded),
-        ROOT_MANIFEST_BYTES,
+        byte_length,
         outcome,
     )
 }

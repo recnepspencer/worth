@@ -6,17 +6,21 @@ use crate::integrity_observation::{
     sha256::Sha256, OfflineIntegrityOutcome as Outcome, OfflinePhysicalFormatField as Field,
 };
 
-pub(super) struct Source {
-    pub(super) identity: [u8; 24],
-    pub(super) sequence: u64,
-    pub(super) wal_end: u64,
+#[derive(Clone, Copy)]
+pub(crate) struct CheckpointSourceFacts {
+    pub(crate) identity: [u8; 24],
+    pub(crate) sequence: u64,
+    pub(crate) wal_end: u64,
+    pub(crate) wal_begin: u64,
+    pub(crate) root_generation: u64,
+    pub(crate) tree_identity: u64,
 }
 
 pub(super) fn read_source(
     payload: &[u8],
     store: [u8; 16],
     sequence: Option<u64>,
-) -> Result<Source, Outcome> {
+) -> Result<CheckpointSourceFacts, Outcome> {
     scope(payload[..16] == store, 16, 16, Field::StoreIdentity)?;
     let found = read_u64(payload, 16);
     scope(
@@ -53,10 +57,13 @@ pub(super) fn read_source(
         }
         _ => shape(false, 81, 1)?,
     }
-    Ok(Source {
+    Ok(CheckpointSourceFacts {
         identity: payload[..24].try_into().unwrap(),
         sequence: found,
         wal_end: read_u64(payload, 32),
+        wal_begin: read_u64(payload, 24),
+        root_generation: read_u64(payload, 40),
+        tree_identity: read_u64(payload, 48),
     })
 }
 
@@ -67,7 +74,8 @@ pub(super) fn read_dirty(payload: &[u8]) -> Result<(), Outcome> {
     let valid = match payload[0] {
         1 | 12 | 13 => first == 0 && second == 0,
         2 | 3 | 10 | 14 | 15 => second == 0,
-        4..=9 | 11 => true,
+        4..=7 | 11 => true,
+        16 => first != 0 && second == 0,
         _ => false,
     };
     scope(valid, 16, 24, Field::IdentityField)?;

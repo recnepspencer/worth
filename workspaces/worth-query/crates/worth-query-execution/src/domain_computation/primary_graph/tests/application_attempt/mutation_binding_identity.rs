@@ -134,12 +134,14 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
     >::encode(&key, &input)
     .expect("the request encodes");
 
+    let mut contacts = 0;
     let outcome = world
         .application
-        .execute_mutation_handler::<ProgramRequiredSiblingBinding>(
+        .execute_mutation_handler_observing_contact::<ProgramRequiredSiblingBinding>(
             &identities,
             principal.principal_identity(),
             admission,
+            || contacts += 1,
         );
     assert!(
         matches!(
@@ -148,4 +150,47 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
         ),
         "a binding with no installed handler is a typed refusal"
     );
+    assert_eq!(contacts, 0, "entry refusal never contacts the handler");
+}
+
+#[test]
+fn handler_contact_is_preserved_after_a_later_execution_denial() {
+    for status in ["open", "missing"] {
+        let world = installed_authorization_world(true);
+        let request = live_scope();
+        let principal = authenticated_principal(&world, &request);
+        let account = resolved_account(&world, "open", &request);
+        let operation = world
+            .application
+            .installed_schema()
+            .installed_operation(ProgramRequiredOperation::reference())
+            .unwrap();
+        let admission = world
+            .selected_product()
+            .authorize_operation(
+                &principal,
+                &account,
+                &operation,
+                TypedMutationPreconditions::new(),
+                &request,
+            )
+            .unwrap();
+        let key = "handler-contact".to_owned();
+        let input = ProgramRequiredInput::new(status);
+        let identities = Identities::encode(&key, &input).unwrap();
+        let mut contacts = 0;
+        let outcome = world
+            .application
+            .execute_mutation_handler_observing_contact::<ProgramRequiredMutationBinding>(
+                &identities,
+                principal.principal_identity(),
+                admission,
+                || contacts += 1,
+            );
+        assert_eq!(contacts, 1, "the real decide boundary ran for {status}");
+        assert!(
+            outcome.is_err(),
+            "a later execution denial preserves the actual handler contact"
+        );
+    }
 }

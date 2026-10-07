@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(in crate::physical_runtime::record_serving) struct PublicationObservation {
     pub(in crate::physical_runtime::record_serving) records: u64,
     pub(in crate::physical_runtime::record_serving) logical_bytes: u64,
@@ -29,12 +29,12 @@ impl PublicationObservation {
         self.peak_scratch_bytes = self.peak_scratch_bytes.max(bytes as u64);
     }
 
-    pub(in crate::physical_runtime::record_serving) fn settle_data_effects(
+    pub(in crate::physical_runtime::record_serving) fn settle_data_transfers(
         &mut self,
-        effect_count: usize,
+        transfer_count: u64,
     ) {
         self.completed_bytes = self.logical_bytes;
-        self.transfer_count = u64::try_from(effect_count).unwrap_or(u64::MAX);
+        self.transfer_count = transfer_count;
     }
 }
 
@@ -51,6 +51,13 @@ pub struct RecordRootPlanningObservation {
 }
 
 impl RecordAppendObservation {
+    /// No performance counters from the original process survive C.8 redo.
+    /// Zero here means unobserved in this Serving runtime, not zero physical
+    /// work by the original producer.
+    pub(in crate::physical_runtime) const fn unobserved_recovery() -> Self {
+        Self::from_persisted_fields([0; 13])
+    }
+
     pub(in crate::physical_runtime::record_serving) const fn from_publication(
         value: PublicationObservation,
     ) -> Self {
@@ -136,6 +143,21 @@ impl RecordAppendObservation {
                 manifest_bytes_read: fields[12],
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RecordAppendObservation;
+
+    #[test]
+    fn recovered_completion_does_not_invent_append_performance() {
+        let observed = RecordAppendObservation::unobserved_recovery();
+        assert_eq!(observed.persisted_fields(), [0; 13]);
+        assert_eq!(observed.records(), 0);
+        assert_eq!(observed.bytes_requested(), 0);
+        assert_eq!(observed.bytes_completed(), 0);
+        assert_eq!(observed.transfer_count(), 0);
     }
 }
 

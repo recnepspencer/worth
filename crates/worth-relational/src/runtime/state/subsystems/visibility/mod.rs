@@ -75,6 +75,13 @@ impl VisibilitySubsystem {
         self.handles.active_count()
     }
 
+    pub(crate) fn selected_snapshot_branch_bytes(
+        &self,
+        snapshot_id: crate::snapshots::data::SnapshotId,
+    ) -> Option<usize> {
+        self.handles.selected_branch_bytes(snapshot_id)
+    }
+
     #[cfg(test)]
     pub(crate) fn snapshot_handle_registry_cost_counters(
         &self,
@@ -115,6 +122,13 @@ impl VisibilitySubsystem {
         snapshot_id: SnapshotId,
     ) -> Option<SnapshotHandleBinding> {
         self.handles.active_binding(snapshot_id)
+    }
+
+    pub(crate) fn selected_snapshot_root(
+        &self,
+        snapshot_id: SnapshotId,
+    ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
+        self.handles.selected_root(snapshot_id)
     }
 
     pub(crate) fn is_known_snapshot(&self, snapshot_id: SnapshotId) -> bool {

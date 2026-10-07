@@ -11,11 +11,20 @@ pub use crate::runtime::{
 pub use observation::RelationalBranchObservation;
 pub(crate) use publication::PreparedCanonicalBranchMovement;
 pub use publication::{
-    DiscardedRelationalCommitCandidate, PerformedRelationalCommit,
-    PreparedRelationalCommitCandidate, PublishRelationalCommit, RelationalPublicationDeferred,
-    RelationalPublicationDenial, RelationalPublicationDurabilityPosture,
-    RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
-    RelationalPublicationPort, RelationalPublicationProjectionPosture,
+    CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop,
+    CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
+    CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
+    CompanionDerivedRootStopped, CompanionPreflightBudget, CompanionPreflightStop,
+    CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
+    DiscardedRelationalCommitCandidate, PendingCompanionRegistration, PerformedRelationalCommit,
+    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
+    PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
+    PublicationCompanionRegistrationStop, PublishRelationalCommit, RelationalPublicationCompanion,
+    RelationalPublicationDeferred, RelationalPublicationDenial,
+    RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
+    RelationalPublicationFailureKind, RelationalPublicationOutcome, RelationalPublicationPort,
+    RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
     StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{

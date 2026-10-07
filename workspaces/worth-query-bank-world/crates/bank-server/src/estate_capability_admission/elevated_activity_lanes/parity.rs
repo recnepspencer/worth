@@ -107,6 +107,15 @@ fn exact_activity_meaning_survives_every_public_lane() {
     let BankApplicationLiveCloseOutcome::Completed = live.close() else {
         panic!("the live lane must release its opening graph-read session");
     };
+    // Each result owns the custody of the sources it disclosed until it drops.
+    drop((
+        one_shot,
+        historical,
+        preview,
+        current,
+        historical_after_change,
+        update,
+    ));
     assert_resources_released(&world);
 }
 

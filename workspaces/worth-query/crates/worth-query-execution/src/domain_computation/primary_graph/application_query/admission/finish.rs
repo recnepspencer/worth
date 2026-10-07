@@ -14,18 +14,25 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::indexes::DerivedIndexId;
 
+mod admitted_graph;
+mod ordinary;
+mod prepared_permission;
+mod readmitted;
+
 use super::{
     denial::{denial, graph_work_denial},
     work_limit::{application_query_graph_read_budget, validate_work_limit},
 };
 use crate::domain_computation::primary_graph::application_query::{
     admission_preparation::validate_admission_request,
-    basis::admit_application_query_basis,
+    basis::WorthQueryApplicationQueryBasisCustody,
+    controls::WorthQueryApplicationQueryBasis,
     disclosure::{
         compile_disclosure_contract, WorthQueryAdmittedApplicationDisclosureContract,
         WorthQueryPendingApplicationQueryGovernance,
     },
     execution_shape::validate_one_shot_shape,
+    graph_read_plan_binding::WorthQueryQueryIndexPosture,
     runtime_support::primary_graph_support_inventory,
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
@@ -55,7 +62,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph::application_query) fn finish_application_query_admission<
+    fn finish_application_query_admission_with_basis<
         'a,
         Query,
         Parameters,
@@ -63,6 +70,7 @@ where
         Principal,
         PrincipalIdentity,
         Scope,
+        AdmitBasis,
     >(
         &'a self,
         query: &'a WorthQueryInstalledApplicationQuery<
@@ -82,6 +90,7 @@ where
         parameters: WorthQueryAdmittedApplicationQueryParameters,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
         pending_governance: Option<WorthQueryPendingApplicationQueryGovernance>,
+        admit_basis: AdmitBasis,
     ) -> Result<
         WorthQueryAdmittedApplicationQueryPlan<
             'a,
@@ -94,7 +103,18 @@ where
             Scope,
         >,
         WorthQueryApplicationQueryAdmissionDenial,
-    > {
+    >
+    where
+        AdmitBasis: FnOnce(
+            WorthQueryApplicationQueryBasis,
+        ) -> Result<
+            (
+                WorthQueryApplicationQueryBasisCustody,
+                WorthQueryQueryIndexPosture,
+            ),
+            WorthQueryApplicationQueryAdmissionDenial,
+        >,
+    {
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
@@ -105,7 +125,7 @@ where
             self.prepare_application_query_graph_work(query, &parameters, &controls, graph)?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let (basis_selection, security_product, controls) = controls.into_admission_parts();
-        let basis = admit_application_query_basis(self, basis_selection)?;
+        let (basis, index_posture) = admit_basis(basis_selection)?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let mut graph_work = self.start_application_query_graph_work(
             prepared.plan,
@@ -121,6 +141,7 @@ where
             &mut graph_work,
             &basis,
             &security_product,
+            &index_posture,
             query,
             access,
             &parameters,
@@ -143,11 +164,13 @@ where
             continuation_index_id: prepared.continuation_index_id,
             continuation_state: None,
             basis,
+            index_posture,
             security_product,
             graph_work,
             authorization: authorities.authorization,
             authorization_work: authorities.authorization_work,
             governance: authorities.governance,
+            selected_access: None,
         })
     }
 

@@ -137,6 +137,8 @@ fn compacted_unsealed_records(fixture: &mut RegistryFixture, count: u8) -> Vec<V
         .prepare_binding_compaction(
             PhysicalCheckpointIdentity::new(fixture.store, NonZeroU64::new(1).unwrap()),
             1,
+            crate::physical_runtime::record_serving::SelectedBlobManifestPins::empty_for_test(),
+            u64::MAX,
         )
         .unwrap();
     let mut records = Vec::new();

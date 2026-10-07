@@ -16,7 +16,10 @@ use crate::progression::{
 pub(super) struct PublicationState {
     authority: AdmittedPlatformAuthority,
     coordination: super::super::RecoveryCoordination,
-    selection: worth_store_recovery_physics::PhysicalSourceSelection,
+    selection: crate::orchestration::ResidentSourceSelection,
+    custody: crate::progression::PlanningCustody,
+    verified_selected_tier_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     discovery: crate::progression::PhysicalRecoveryDiscoveryCounters,
     root_protocol_denials: Vec<crate::entry::PhysicalRecoverySourceDenial>,
     integrity: crate::progression::RecoveryIntegrityEvidence,
@@ -38,6 +41,8 @@ impl PublicationState {
             authority,
             coordination,
             selection,
+            custody,
+            verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,
             integrity,
@@ -58,6 +63,8 @@ impl PublicationState {
                 authority,
                 coordination,
                 selection,
+                custody,
+                verified_selected_tier_custody,
                 discovery: discovery_counters,
                 root_protocol_denials,
                 integrity,
@@ -125,6 +132,8 @@ impl PublicationState {
                 authority: self.authority,
                 coordination: self.coordination,
                 selection: self.selection,
+                custody: self.custody,
+                verified_selected_tier_custody: self.verified_selected_tier_custody,
                 discovery_counters: self.discovery,
                 root_protocol_denials: self.root_protocol_denials,
                 integrity: self.integrity,
@@ -179,7 +188,9 @@ impl PublicationState {
         drop(media);
         session.block();
         PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
-            PhysicalRecoveryBlockKind::Publication,
+            crate::entry::PhysicalRecoveryBlockCause::Damage(
+                PhysicalRecoveryBlockKind::Publication,
+            ),
             store,
             session_identity,
             PhysicalRecoveryBlockEvidence {

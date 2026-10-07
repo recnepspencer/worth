@@ -1,7 +1,7 @@
 use super::Tier;
 use crate::facade::{
     mark_dirty, DependencyMode, DirtyPropagation, EvaluationOutput, EvaluationRequestMode,
-    EvaluationTrigger, NodeId, NodeState, SignalError, SignalGraph, SignalRuntime, StageExecutor,
+    EvaluationTrigger, NodeId, NodeState, SignalError, SignalGraph, SignalRuntime,
     TaskExecutionOutcome, TierPolicy, VersionComparatorPolicy,
 };
 use crate::tests::support::{evaluate, version_ab, GraphDependencyBatchExt, ASPECT_A, ASPECT_B};
@@ -89,19 +89,14 @@ fn runtime_execute_plan_with_executor_serial_matches_default_path() {
         .build_evaluation_plan(&[dependent], EvaluationRequestMode::Default)
         .unwrap();
     let report = runtime
-        .execute_prepared_plan_with_executor(
-            &plan,
-            &(),
-            &|view| {
-                let node = view.node();
-                if node == source {
-                    Ok(view.finish(source_v2(node, view.graph())?))
-                } else {
-                    Ok(view.finish(dependent_compute(node, view.graph())?))
-                }
-            },
-            StageExecutor::Serial,
-        )
+        .execute_prepared_plan(&plan, &(), &|view| {
+            let node = view.node();
+            if node == source {
+                Ok(view.finish(source_v2(node, view.graph())?))
+            } else {
+                Ok(view.finish(dependent_compute(node, view.graph())?))
+            }
+        })
         .unwrap();
 
     assert_eq!(report.stage_count, 2);

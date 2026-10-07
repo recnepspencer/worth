@@ -126,11 +126,12 @@ where
         WorthQuerySelectedProductOperation<'runtime, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        self.application.on_product(
-            self.application
+        let application = self.application;
+        application.on_product(application.admit_with_observation_room(|| {
+            application
                 .product_runtime
-                .admit_product_occurrence(self.branch.occurrence())?,
-        )
+                .admit_product_occurrence(self.branch.occurrence())
+        })?)
     }
 }
 
@@ -160,6 +161,13 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         &self,
     ) -> &super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease {
         &self.application_basis
+    }
+
+    pub(super) fn application_basis_mut(
+        &mut self,
+    ) -> &mut super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease
+    {
+        &mut self.application_basis
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_parts(

@@ -61,9 +61,13 @@ pub use crate::filesystem_media::{
     ArtifactAppendRange, ArtifactFamilyDirectory, ArtifactNewWriteOutcome, ArtifactNewWriteRange,
     ArtifactRangeReadOutcome, ArtifactRangeWriteDurability,
     ArtifactRangeWriteDurabilityRequirement, ArtifactRangeWriteOutcome, ArtifactTreeAccessLimit,
-    ArtifactTreeDirectory, ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeFile,
-    ArtifactTreeMedia, ArtifactTreeNewFile, ArtifactTreePathDenial, ArtifactTreePublicationEffect,
-    ArtifactTreePublicationEffectOutcome, ArtifactTreeReplacement, AtomicReplacementOutcome,
+    ArtifactTreeDirectory, ArtifactTreeDirectoryEntry, ArtifactTreeFailure,
+    ArtifactTreeFailureKind, ArtifactTreeFile, ArtifactTreeListingAllocationBoundary,
+    ArtifactTreeListingAllocator, ArtifactTreeListingStorageChange,
+    ArtifactTreeListingStorageRequirement, ArtifactTreeMedia, ArtifactTreeNewFile,
+    ArtifactTreePathAllocationBoundary, ArtifactTreePathAllocator, ArtifactTreePathDenial,
+    ArtifactTreePublicationEffect, ArtifactTreePublicationEffectOutcome, ArtifactTreeReadAllocator,
+    ArtifactTreeReplacement, ArtifactTreeStorageAllocator, AtomicReplacementOutcome,
     CapabilityProfileError, CapabilitySupport, CompletedArtifactAppend,
     CompletedArtifactMetadataRead, CompletedArtifactNewWrite, CompletedArtifactRangeRead,
     CompletedArtifactRangeWrite, CompletedArtifactTreePublicationEffect,
@@ -183,6 +187,8 @@ pub use crate::recovery_durability::wal_recovery_basis::{
     WalDurabilityObservationBasis, WalDurabilityObservationDenial,
     WalDurabilityObservationDenialKind, WalFrameDigest,
 };
+#[cfg(all(feature = "recovery-runtime-owner", feature = "test-support"))]
+pub use crate::recovery_media::filesystem_observation_limit_for_test;
 #[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
 pub use crate::recovery_media::{
     execute_recovery_cleanup_removal, BackendCompletedRecoveryCleanupRemoval,
@@ -190,22 +196,31 @@ pub use crate::recovery_media::{
     BackendRecoveryArtifactExpectation, BackendRecoveryCleanupArtifactRevalidationDenial,
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
+    ObservedRecoveryCheckpointArtifact,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use crate::recovery_media::{
-    AdmittedRecoveryFilesystemMedia, BoundedRecoveryFilesystemDiscovery,
+    AdmittedRecoveryFilesystemMedia, AllocatedReadFailure, AllocatedReadOutcome, ArtifactCeiling,
+    ArtifactDamage, ArtifactReadOutcome, BorrowedRecordFilesystemObservation,
+    BorrowedWalFilesystemObservation, BoundedRecoveryFilesystemDiscovery,
     CompletedRecoveryStagingWrite, CompletedScheduledRecoveryReopenRead,
     CompletedScheduledRecoveryStagingSynchronization, CompletedScheduledRecoveryStagingWrite,
     DeniedScheduledRecoveryReopenRead, DeniedScheduledRecoveryStagingWrite,
-    IndeterminateRecoveryStagingWrite, IndeterminateScheduledRecoveryStagingSynchronization,
+    ExceededFilesystemObservationBound, FilesystemObservationBound, FixedArtifact, GrantOverrun,
+    GrantedRead, GrantedReadStop, IndeterminateRecoveryStagingWrite,
+    IndeterminateScheduledRecoveryStagingSynchronization,
     IndeterminateScheduledRecoveryStagingWrite, ObservedRecoveryArtifact, ObservedWalArtifact,
-    PhysicalRecoveryMediaGeneration, QualifiedPhysicalBackendProfile,
-    QualifiedRecoveryFilesystemMedia, RecoveryDiscoveryArtifact, RecoveryDiscoveryByteLimitScope,
+    PageAddress, PhysicalRecoveryMediaGeneration, QualifiedPhysicalBackendProfile,
+    QualifiedRecoveryFilesystemMedia, ReadGrant, ReadGranted, ReadRefusal,
+    RecoveryDiscoveryAllocationFailure, RecoveryDiscoveryArtifact, RecoveryDiscoveryCount,
     RecoveryDiscoveryCounters, RecoveryDiscoveryFailure, RecoveryFilesystemQualificationError,
     RecoveryMediaHandleObservation, RecoveryReopenReadOutcome,
     RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan,
-    RecoveryStagingIndeterminatePhysical, RecoveryStagingSynchronizationOutcome,
-    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome, RecoveryWalObservationIdentity,
+    RecoverySelectedWalReadOutcome, RecoveryStagingIndeterminatePhysical,
+    RecoveryStagingSynchronizationOutcome, RecoveryStagingWriteDisposition,
+    RecoveryStagingWriteOutcome, RecoveryWalListingAllocationMode, RecoveryWalObservationIdentity,
+    RecoveryWalReadSelection, RecoveryWalReadStorage, RecoveryWalSelectionMismatch, StreamArtifact,
+    Uncharged, UnchargedRead, UnchargedReadAuthority, WalInventoryOutcome,
 };
 pub use crate::recovery_staging::{
     ClosedNonCurrentStagingMedia, ClosedStagingArtifactVerificationDenial,

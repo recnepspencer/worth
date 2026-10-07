@@ -8,8 +8,9 @@ use super::super::fixture::{
 };
 use super::{AccountStatus, TouchAccountOperation};
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationEntityIdentity,
-    WorthQueryAuthenticatedPrincipal, WorthQuerySelectedProductOperation,
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
+    WorthQuerySelectedProductOperation,
 };
 
 type Schema = super::super::fixture::IdentityExecutionSchema;
@@ -20,6 +21,29 @@ type World = super::super::fixture::AuthorizationWorld;
 type Preconditions = TypedMutationPreconditions<Schema, TouchAccountOperation, Account>;
 pub(super) type Program =
     WorthQueryApplicationEffectProgram<Schema, TouchAccountOperation, Input, Account>;
+
+pub(in crate::domain_computation::primary_graph) fn admitted_operation(
+    world: &World,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+) -> WorthQueryAdmittedApplicationOperation<Schema, TouchAccountOperation, Input, Account> {
+    let selected = world.selected_product();
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(TouchAccountOperation::reference())
+        .unwrap();
+    selected
+        .authorize_operation(
+            principal,
+            account,
+            &operation,
+            Preconditions::new(),
+            request,
+        )
+        .unwrap()
+}
 pub(super) type MutationFreeProgram = WorthQueryApplicationEffectProgram<
     Schema,
     MutationFreeEmitOperation,

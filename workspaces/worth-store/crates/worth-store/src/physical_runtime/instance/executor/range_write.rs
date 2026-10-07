@@ -45,6 +45,7 @@ impl PhysicalWorkExecutor {
             coordinate,
             payload,
             payload_digest,
+            retirement_retry,
         } = command;
         let durability = write_durability(work.intent().durability());
         let (dispatched, plan) = work.into_execution_parts(Some(payload_digest))?;
@@ -54,14 +55,25 @@ impl PhysicalWorkExecutor {
             Some(payload_digest),
         )?;
         let tree = PhysicalRecordArtifactTree::new(&self.media);
-        let physical = tree.write_scheduled_foreground_exact_at(
-            coordinate,
-            &payload,
-            plan.backend_completion_binding()
-                .backend_execution_binding(),
-            BackendQueueExecutionAdaptation::None,
-            durability,
-        );
+        let physical = if retirement_retry.is_some() {
+            tree.write_retirement_candidate_retry(
+                coordinate,
+                &payload,
+                plan.backend_completion_binding()
+                    .backend_execution_binding(),
+                BackendQueueExecutionAdaptation::None,
+                durability,
+            )
+        } else {
+            tree.write_scheduled_foreground_exact_at(
+                coordinate,
+                &payload,
+                plan.backend_completion_binding()
+                    .backend_execution_binding(),
+                BackendQueueExecutionAdaptation::None,
+                durability,
+            )
+        };
         let (outcome, physical_recovery) = self.classify_range_write(plan, physical, payload, role);
         let recovery = self.finish_effect_recovery(prepared, physical_recovery);
         Ok(PhysicalExecutorDispatch::new(dispatched, outcome, recovery))

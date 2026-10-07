@@ -1,84 +1,92 @@
-use std::collections::BTreeMap;
-
 use worth_store_physical_format::{
     durable_artifact_checksum, CurrentPhysicalRecordPlacement, ManifestBlockReference,
-    PersistedRecordIdentity, PhysicalRootRoutingBlock, RecordArtifactFile,
+    PhysicalRootRoutingBlock, RecordArtifactFile,
 };
 
-use super::super::super::{inventory, CandidateBuildDenial};
+use super::super::super::{encoding, inventory, CandidateBuildDenial};
 use super::super::CanonicalCandidateMatch;
+use super::{indexed_source_and_updates, IndexedBlock, Update};
 use crate::progression::planned::basis::RecoveryBaseImagePlan;
+use crate::progression::planned::PlanningResidentAllowance;
 
 pub(super) fn derive(
     matcher: &mut CanonicalCandidateMatch<'_>,
     base: &RecoveryBaseImagePlan,
     final_inventory: &inventory::FinalInventory,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<(Option<ManifestBlockReference>, u64), CandidateBuildDenial> {
     let selected = base.selected_root();
-    let topology = base
-        .selected_root_topology()
-        .iter()
-        .cloned()
-        .map(|(reference, block)| ((reference.generation(), reference.block()), block))
-        .collect::<BTreeMap<_, _>>();
-    let selected_entries = topology
-        .values()
-        .filter_map(PhysicalRootRoutingBlock::entries)
-        .flatten()
-        .map(|entry| (entry.record(), *entry))
-        .collect::<BTreeMap<_, _>>();
-    let updates = final_inventory
-        .placements
-        .iter()
-        .filter(|entry| selected_entries.get(&entry.record()) != Some(entry))
-        .map(|entry| (entry.record(), *entry))
-        .collect::<BTreeMap<_, _>>();
+    let (topology, updates) = indexed_source_and_updates(base, final_inventory, allowance)?;
     let mut writer = StreamingTreeWriter::new(
         matcher,
+        allowance,
         selected.tree_identity(),
         base.destination_generation(),
         final_inventory.capacity,
         selected.next_block(),
-    );
+    )?;
     let mut traversal = Traversal {
         topology: &topology,
-        updates,
+        updates: &updates,
+        cursor: 0,
         writer: &mut writer,
     };
     if let Some(root) = selected.routing_root() {
         traversal.walk(root)?;
     }
-    for (_, placement) in std::mem::take(&mut traversal.updates) {
-        traversal.writer.push_entry(placement)?;
+    while let Some((_, placement)) = traversal.updates.get(traversal.cursor) {
+        traversal.writer.push_entry(*placement)?;
+        traversal.cursor += 1;
     }
     let root = traversal.writer.finish()?;
-    Ok((root, traversal.writer.next_block))
+    let next_block = traversal.writer.next_block;
+    drop(traversal);
+    writer.release_storage()?;
+    let topology_bytes = PlanningResidentAllowance::vector_bytes(&topology)?;
+    let updates_bytes = PlanningResidentAllowance::vector_bytes(&updates)?;
+    drop((topology, updates));
+    allowance.release(topology_bytes);
+    allowance.release(updates_bytes);
+    Ok((root, next_block))
 }
 
-struct Traversal<'topology, 'writer, 'matcher, 'observed> {
-    topology: &'topology BTreeMap<(u64, u64), PhysicalRootRoutingBlock>,
-    updates: BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
+struct Traversal<'a, 'writer, 'matcher, 'observed> {
+    topology: &'a [IndexedBlock<'a>],
+    updates: &'a [Update],
+    cursor: usize,
     writer: &'writer mut StreamingTreeWriter<'matcher, 'observed>,
 }
 
 impl Traversal<'_, '_, '_, '_> {
     fn walk(&mut self, reference: ManifestBlockReference) -> Result<(), CandidateBuildDenial> {
-        let block = self
+        let key = (reference.generation(), reference.block());
+        let index = self
             .topology
-            .get(&(reference.generation(), reference.block()))
-            .ok_or(CandidateBuildDenial::Invalid)?;
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .map_err(|_| CandidateBuildDenial::Invalid)?;
+        let block = self.topology[index].1;
         if let Some(entries) = block.entries() {
             for existing in entries {
                 while self
                     .updates
-                    .first_key_value()
-                    .is_some_and(|(record, _)| *record < existing.record())
+                    .get(self.cursor)
+                    .is_some_and(|(key, _)| *key < existing.record())
                 {
-                    let (_, placement) = self.updates.pop_first().expect("first update exists");
-                    self.writer.push_entry(placement)?;
+                    self.writer.push_entry(self.updates[self.cursor].1)?;
+                    self.cursor += 1;
                 }
-                self.writer
-                    .push_entry(self.updates.remove(&existing.record()).unwrap_or(*existing))?;
+                let placement = if self
+                    .updates
+                    .get(self.cursor)
+                    .is_some_and(|(key, _)| *key == existing.record())
+                {
+                    let updated = self.updates[self.cursor].1;
+                    self.cursor += 1;
+                    updated
+                } else {
+                    *existing
+                };
+                self.writer.push_entry(placement)?;
             }
             return Ok(());
         }
@@ -91,6 +99,7 @@ impl Traversal<'_, '_, '_, '_> {
 
 struct StreamingTreeWriter<'matcher, 'observed> {
     matcher: &'matcher mut CanonicalCandidateMatch<'observed>,
+    allowance: &'matcher mut PlanningResidentAllowance,
     tree: u64,
     generation: u64,
     capacity: usize,
@@ -102,20 +111,24 @@ struct StreamingTreeWriter<'matcher, 'observed> {
 impl<'matcher, 'observed> StreamingTreeWriter<'matcher, 'observed> {
     fn new(
         matcher: &'matcher mut CanonicalCandidateMatch<'observed>,
+        allowance: &'matcher mut PlanningResidentAllowance,
         tree: u64,
         generation: u64,
         capacity: u16,
         next_block: u64,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, CandidateBuildDenial> {
+        let pending_entries =
+            allowance.reserve::<CurrentPhysicalRecordPlacement>(usize::from(capacity))?;
+        Ok(Self {
             matcher,
+            allowance,
             tree,
             generation,
             capacity: usize::from(capacity),
             next_block,
-            pending_entries: Vec::with_capacity(usize::from(capacity)),
+            pending_entries,
             pending_levels: Vec::new(),
-        }
+        })
     }
 
     fn push_entry(
@@ -133,16 +146,19 @@ impl<'matcher, 'observed> StreamingTreeWriter<'matcher, 'observed> {
         if self.pending_entries.is_empty() {
             return Ok(());
         }
-        let entries =
-            std::mem::replace(&mut self.pending_entries, Vec::with_capacity(self.capacity));
-        let block = PhysicalRootRoutingBlock::leaf(
+        let replacement = self
+            .allowance
+            .reserve::<CurrentPhysicalRecordPlacement>(self.capacity)?;
+        let entries = std::mem::replace(&mut self.pending_entries, replacement);
+        let block_id = self.allocate()?;
+        let block = encoding::root_leaf(
             self.tree,
             self.generation,
-            self.allocate()?,
+            block_id,
             entries,
             self.capacity as u16,
-        )
-        .ok_or(CandidateBuildDenial::Invalid)?;
+            self.allowance,
+        )?;
         let reference = self.stage(block)?;
         self.push_reference(0, reference)
     }
@@ -153,8 +169,11 @@ impl<'matcher, 'observed> StreamingTreeWriter<'matcher, 'observed> {
         reference: ManifestBlockReference,
     ) -> Result<(), CandidateBuildDenial> {
         if self.pending_levels.len() <= level {
+            let additional = level + 1 - self.pending_levels.len();
+            self.allowance.grow(&mut self.pending_levels, additional)?;
             self.pending_levels.resize_with(level + 1, Vec::new);
         }
+        self.allowance.grow(&mut self.pending_levels[level], 1)?;
         self.pending_levels[level].push(reference);
         if self.pending_levels[level].len() == self.capacity {
             self.flush_level(level)?;
@@ -164,10 +183,11 @@ impl<'matcher, 'observed> StreamingTreeWriter<'matcher, 'observed> {
 
     fn flush_level(&mut self, level: usize) -> Result<(), CandidateBuildDenial> {
         let children = std::mem::take(&mut self.pending_levels[level]);
+        let block_id = self.allocate()?;
         let block = PhysicalRootRoutingBlock::branch(
             self.tree,
             self.generation,
-            self.allocate()?,
+            block_id,
             u16::try_from(level + 1).map_err(|_| CandidateBuildDenial::Invalid)?,
             children,
             self.capacity as u16,
@@ -196,25 +216,52 @@ impl<'matcher, 'observed> StreamingTreeWriter<'matcher, 'observed> {
         }
     }
 
+    fn stage(
+        &mut self,
+        block: PhysicalRootRoutingBlock,
+    ) -> Result<ManifestBlockReference, CandidateBuildDenial> {
+        let bytes = encoding::root_block(&block, self.matcher.format, self.allowance)?;
+        let reference = block.reference(durable_artifact_checksum(&bytes));
+        let artifact = RecordArtifactFile::RootRoutingBlock {
+            generation: self.generation,
+            block: block.block(),
+        };
+        let block_bytes = block
+            .owned_heap_bytes()
+            .ok_or(CandidateBuildDenial::Invalid)?;
+        drop(block);
+        self.allowance.release(block_bytes);
+        self.matcher
+            .match_artifact(artifact, bytes, self.allowance)?;
+        Ok(reference)
+    }
+
     fn allocate(&mut self) -> Result<u64, CandidateBuildDenial> {
         let block = self.next_block;
         self.next_block = block.checked_add(1).ok_or(CandidateBuildDenial::Invalid)?;
         Ok(block)
     }
 
-    fn stage(
-        &mut self,
-        block: PhysicalRootRoutingBlock,
-    ) -> Result<ManifestBlockReference, CandidateBuildDenial> {
-        let bytes = block.encode(self.matcher.format);
-        let reference = block.reference(durable_artifact_checksum(&bytes));
-        self.matcher.match_artifact(
-            RecordArtifactFile::RootRoutingBlock {
-                generation: self.generation,
-                block: block.block(),
-            },
-            bytes,
-        )?;
-        Ok(reference)
+    fn release_storage(self) -> Result<(), CandidateBuildDenial> {
+        let entries_bytes = PlanningResidentAllowance::vector_bytes(&self.pending_entries)?;
+        let levels_bytes = PlanningResidentAllowance::vector_bytes(&self.pending_levels)?;
+        let child_bytes = self
+            .pending_levels
+            .iter()
+            .try_fold(0u64, |total, level| {
+                total.checked_add(PlanningResidentAllowance::vector_bytes(level).ok()?)
+            })
+            .ok_or(CandidateBuildDenial::Invalid)?;
+        let Self {
+            allowance,
+            pending_entries,
+            pending_levels,
+            ..
+        } = self;
+        drop((pending_entries, pending_levels));
+        allowance.release(entries_bytes);
+        allowance.release(levels_bytes);
+        allowance.release(child_bytes);
+        Ok(())
     }
 }

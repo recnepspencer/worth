@@ -1,5 +1,3 @@
-#![cfg(feature = "parallel")]
-
 mod apply_failure_atomicity;
 mod canonical_artifact_oracle;
 mod canonical_order_equivalence;
@@ -7,4 +5,5 @@ mod dependency_rewrite_parity;
 mod executor_policy;
 mod hostile_churn_parity;
 mod parallel_admission;
+mod publication_order;
 mod tolerance_equivalence;

@@ -102,6 +102,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
                 .provider
                 .commit_evidence()
                 .retain_output_correspondence(),
+            exact_output_settlement: self.provider.exact_output_settlement().cloned(),
         })
     }
 }

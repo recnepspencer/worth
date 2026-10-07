@@ -9,8 +9,35 @@ use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::{
     contract_space_exhausted, planned_field_locator, required_kind,
-    WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphLayout,
 };
+
+impl WorthQueryPrimaryGraphLayout {
+    /// Comparison Work before the one borrowed installed-principal lookup.
+    /// The selected key has no owned copy; each comparison checks the tag and
+    /// at most its initialized UTF-8 bytes.
+    pub(in crate::domain_computation::primary_graph) fn principal_lookup_work(
+        &self,
+        name: &str,
+    ) -> Option<u64> {
+        let mut levels = usize::from(!self.principal_bindings.is_empty());
+        let mut minimum_keys = 1usize;
+        while let Some(next) = minimum_keys.checked_mul(6).and_then(|n| n.checked_add(5)) {
+            if next > self.principal_bindings.len() {
+                break;
+            }
+            levels = levels.checked_add(1)?;
+            minimum_keys = next;
+        }
+        // One lookup cannot visit more distinct keys than this installed map
+        // contains, regardless of the conservative tree-height estimate.
+        let visits = levels.checked_mul(11)?.min(self.principal_bindings.len());
+        let work = visits
+            .checked_mul(name.len().checked_add(1)?)?
+            .checked_add(1)?;
+        u64::try_from(work).ok()
+    }
+}
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation) struct WorthQueryPrimaryPrincipalBindingLayout {

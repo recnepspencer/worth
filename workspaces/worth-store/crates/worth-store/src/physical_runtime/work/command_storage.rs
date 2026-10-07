@@ -336,9 +336,9 @@ impl PhysicalCommandArena {
 
     pub(super) fn active_counters(
         &self,
-        terminal_by_family_and_pressure: [[u64; 8]; 9],
+        terminal_by_family_and_pressure: [[u64; 13]; 9],
     ) -> super::PhysicalWorkCounterSnapshot {
-        let mut counts = [[[0_u64; 7]; 8]; 9];
+        let mut counts = [[[0_u64; 7]; 13]; 9];
         for shard in &self.declared {
             let entries = shard
                 .lock()

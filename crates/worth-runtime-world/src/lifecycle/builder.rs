@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use worth_execution::ExecutionAuthority;
 use worth_relational::facade::branch::RelationalOwnerServicePorts;
 use worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort;
 use worth_signal::facade::branch::{
@@ -18,6 +21,7 @@ pub struct RuntimeWorldOwnerBuilder<B, R, S, P, U, C> {
     signal_definition_publication: P,
     budgets: U,
     clock: C,
+    execution_authority: Option<Arc<ExecutionAuthority>>,
 }
 
 impl
@@ -38,6 +42,7 @@ impl
             signal_definition_publication: MissingRuntimeWorldInput,
             budgets: MissingRuntimeWorldInput,
             clock: MissingRuntimeWorldInput,
+            execution_authority: None,
         }
     }
 }
@@ -54,6 +59,7 @@ impl<R, S, P, U, C> RuntimeWorldOwnerBuilder<MissingRuntimeWorldInput, R, S, P, 
             signal_definition_publication: self.signal_definition_publication,
             budgets: self.budgets,
             clock: self.clock,
+            execution_authority: self.execution_authority,
         }
     }
 }
@@ -70,6 +76,7 @@ impl<B, S, P, U, C> RuntimeWorldOwnerBuilder<B, MissingRuntimeWorldInput, S, P, 
             signal_definition_publication: self.signal_definition_publication,
             budgets: self.budgets,
             clock: self.clock,
+            execution_authority: self.execution_authority,
         }
     }
 }
@@ -93,6 +100,7 @@ impl<B, R, P, U, C> RuntimeWorldOwnerBuilder<B, R, MissingRuntimeWorldInput, P, 
             signal_definition_publication: self.signal_definition_publication,
             budgets: self.budgets,
             clock: self.clock,
+            execution_authority: self.execution_authority,
         }
     }
 }
@@ -131,6 +139,7 @@ where
             signal_definition_publication: publication,
             budgets: self.budgets,
             clock: self.clock,
+            execution_authority: self.execution_authority,
         }
     }
 }
@@ -147,6 +156,7 @@ impl<B, R, S, P, C> RuntimeWorldOwnerBuilder<B, R, S, P, MissingRuntimeWorldInpu
             signal_definition_publication: self.signal_definition_publication,
             budgets,
             clock: self.clock,
+            execution_authority: self.execution_authority,
         }
     }
 }
@@ -163,7 +173,16 @@ impl<B, R, S, P, U> RuntimeWorldOwnerBuilder<B, R, S, P, U, MissingRuntimeWorldI
             signal_definition_publication: self.signal_definition_publication,
             budgets: self.budgets,
             clock,
+            execution_authority: self.execution_authority,
         }
+    }
+}
+
+impl<B, R, S, P, U, C> RuntimeWorldOwnerBuilder<B, R, S, P, U, C> {
+    /// Install the host's process authority for the World and its descendants.
+    pub fn with_execution_authority(mut self, authority: Arc<ExecutionAuthority>) -> Self {
+        self.execution_authority = Some(authority);
+        self
     }
 }
 
@@ -186,13 +205,18 @@ where
     pub fn build(
         self,
     ) -> Result<RuntimeWorldOwner<D, I, E, Ctx, T>, RuntimeWorldIdentityExhaustion> {
-        RuntimeWorldOwner::from_inputs(RuntimeWorldOwnerInputs::new(
+        let inputs = RuntimeWorldOwnerInputs::new(
             self.relational,
             self.signal,
             self.signal_definition_publication,
             self.bridge,
             self.budgets,
             self.clock,
-        ))
+        );
+        let inputs = match self.execution_authority {
+            Some(authority) => inputs.with_execution_authority(authority),
+            None => inputs,
+        };
+        RuntimeWorldOwner::from_inputs(inputs)
     }
 }

@@ -344,12 +344,9 @@ fn source_change_after_admission_is_fenced_at_publication() {
             .accept()
     });
     match raced {
-        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
-            denial,
-        ))) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::ProductBasisStale
-        ),
+        Ok(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Stale(
+            stale,
+        ))) => assert!(stale.stale_fact_count() > 0),
         other => panic!("a transition over a replaced source must not publish: {other:?}"),
     }
     court.assert_still_awaiting(9_176_612);

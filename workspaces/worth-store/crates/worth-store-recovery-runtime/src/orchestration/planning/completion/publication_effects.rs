@@ -1,6 +1,5 @@
-use crate::entry::{
-    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
-};
+use crate::entry::{PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome};
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::RecoveryPublicationPlan;
 
 use super::super::context::PlanningContext;
@@ -10,16 +9,12 @@ pub(super) fn admit(
     planning_counters: worth_store_recovery_physics::RecoveryPlanningCounters,
     publication: &RecoveryPublicationPlan,
 ) -> Result<PlanningContext, PhysicalRecoveryOutcome> {
-    if publication.expected_effects() > context.limits.publication_effects {
-        let admitted = context.limits.publication_effects;
-        return Err(context.redo_block(
-            planning_counters,
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::PublicationEffects,
-                observed: publication.expected_effects(),
-                admitted,
-            }),
-        ));
+    let effects = RecoveryAllowance::declared(
+        &context.limits,
+        PhysicalRecoveryLimitDimension::PublicationEffects,
+    );
+    if let Some(limit) = effects.past(publication.expected_effects()) {
+        return Err(context.redo_block(planning_counters, Some(limit)));
     }
     assert_eq!(
         context.effects_before,

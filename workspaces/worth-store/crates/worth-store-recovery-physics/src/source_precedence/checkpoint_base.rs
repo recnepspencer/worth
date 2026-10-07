@@ -1,12 +1,13 @@
-use std::sync::Arc;
-
-use worth_store_physical_integrity::{IntegrityValidatedRootManifest, VerifiedCheckpointStream};
+use worth_store_physical_integrity::{
+    IntegrityValidatedRootManifest, VerifiedCheckpointFacts, VerifiedCheckpointStream,
+};
 
 use super::SelectedPhysicalRoot;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhysicalCheckpointBase {
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: VerifiedCheckpointFacts,
+    source_root_frame_sha256: [u8; 32],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,7 +22,7 @@ pub enum PhysicalCheckpointBaseDenial {
 impl PhysicalCheckpointBase {
     pub fn admit(
         root: &SelectedPhysicalRoot,
-        checkpoint: VerifiedCheckpointStream,
+        checkpoint: &VerifiedCheckpointStream,
         source_root: &IntegrityValidatedRootManifest<'_>,
     ) -> Result<Self, PhysicalCheckpointBaseDenial> {
         let source = checkpoint.source();
@@ -33,20 +34,17 @@ impl PhysicalCheckpointBase {
             return Err(PhysicalCheckpointBaseDenial::CompactionCutoffOutsideCheckpoint);
         }
         Ok(Self {
-            checkpoint: Arc::new(checkpoint),
+            checkpoint: checkpoint.facts(),
+            source_root_frame_sha256: source_root.frame_sha256(),
         })
     }
 
-    pub fn checkpoint(&self) -> &VerifiedCheckpointStream {
-        self.checkpoint.as_ref()
+    pub fn checkpoint(&self) -> &VerifiedCheckpointFacts {
+        &self.checkpoint
     }
 
-    /// Shares the admitted checkpoint with a later recovery owner that must
-    /// retain it beyond this borrow. The ordinary observation accessor stays
-    /// representation-agnostic; this method makes the ownership transfer and
-    /// its reference-counting cost explicit at the call site.
-    pub fn share_checkpoint(&self) -> Arc<VerifiedCheckpointStream> {
-        Arc::clone(&self.checkpoint)
+    pub const fn source_root_frame_sha256(&self) -> [u8; 32] {
+        self.source_root_frame_sha256
     }
 
     pub fn wal_tail_begin_lsn(&self) -> u64 {

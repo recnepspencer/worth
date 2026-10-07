@@ -506,6 +506,14 @@ Other constructors on `application_installation`:
 `in_memory_rostered_program_with_authorization_time_source`, and the
 `*_from_checkpoint` variants.
 
+A reopened downstream demand may consume a checkpoint root before any separate
+root demand. Query first verifies the complete retained producer facts and native
+output witness, then retains bounded custody of that exact settlement through
+downstream publication. This static custody contains no executable source query:
+changing the root invalidates the old result and requires genuine typed source
+admission before it can refresh. Ordinary missing or retired managed settlements
+continue to refuse publication.
+
 ### 4.3 What the runtime gives you
 
 `WorthQueryProgramApplicationRuntime` dereferences to the primary-graph
@@ -526,6 +534,37 @@ on it. Its own methods:
 `discovery()` lists query requests, mutations, queries, and fields.
 Features, connections, and rules come from `installed_program()`, not from
 discovery.
+
+---
+
+### 4.4 Checkpoint program transitions
+
+Ordinary `in_memory_rostered_program_from_checkpoint` requires the recovered
+activation to name a supported program. For an app-owned predecessor mapping,
+`in_memory_rostered_program_from_checkpoint_with_transition` checks an exact
+`WorthQueryCheckpointProgramPredecessor` rendering and admits the current target
+through the ordinary program/roster installation path. The predecessor rendering
+never becomes a program revision or a roster member.
+
+Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
+and relations between entities created in that batch. It currently cannot read or
+rewrite recovered records, or link a new record to an existing endpoint. Query
+commits those effects, the target activation and complete supported entity
+revalidation in one native candidate before exposing a World. Accepted outputs,
+retained workflows and relation-scoped rules require further migration support
+and are refused before authoring. Native candidate/publication limits remain in
+force alongside explicit selection and authoring bounds.
+
+A deferred native settlement returns `CheckpointTransitionDeferred` with the
+exact unpublished repair custody. Consuming `repair_to_checkpoint` returns a
+target checkpoint after acknowledgment, or the same capsule if repair/capture
+stops. `CheckpointTransitionCaptureStopped` specifically retains the acknowledged
+phase when its first checkpoint capture stops. A later installation failure returns
+`CheckpointTransitionAcknowledged`
+with the already acknowledged target checkpoint and the original phase denial;
+fix the installation configuration and ordinary-restore that checkpoint. A
+terminal performed settlement failure has its own typed denial and issues no
+acknowledged successor.
 
 ---
 

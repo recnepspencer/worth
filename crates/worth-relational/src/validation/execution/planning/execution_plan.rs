@@ -14,28 +14,59 @@ use crate::authority::commit::preparation::proofs::locality::{
 };
 use crate::authority::commit::preparation::proofs::validity::PreparationProofValidity;
 use crate::authority::commit::preparation::reduction::keys::ValidationReductionKey;
-use crate::config::data::RelationalExecutionModel;
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
+use worth_execution::ExecutionResourceLease;
 
-use super::packet_scope::packet_partition_scope;
+use super::packet_scope::{packet_partition_scope, packet_partition_scope_checked};
 use super::packet_selection::eligible_registrations;
 
 pub(crate) fn plan_invariant_execution<'state>(
     runtime: &InvariantRuntimeView<'state>,
     request: &'state InvariantExecutionRequest<'state>,
+    lease: Option<&ExecutionResourceLease>,
 ) -> PreparedInvariantExecution<'state> {
-    let registrations = eligible_registrations(runtime, request);
+    plan_invariant_execution_inner(runtime, request, lease, None)
+}
+
+pub(crate) fn plan_invariant_execution_checked<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    request: &'state InvariantExecutionRequest<'state>,
+    lease: &ExecutionResourceLease,
+    budget: &crate::validation::custom_rule::CustomPreparationBudget,
+) -> PreparedInvariantExecution<'state> {
+    plan_invariant_execution_inner(runtime, request, Some(lease), Some(budget))
+}
+
+fn plan_invariant_execution_inner<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    request: &'state InvariantExecutionRequest<'state>,
+    lease: Option<&ExecutionResourceLease>,
+    budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
+) -> PreparedInvariantExecution<'state> {
+    let registrations = eligible_registrations(runtime, request, budget);
     let context = Arc::new(planning_context(runtime, request));
-    let partition_scope = packet_partition_scope(request.merged_plan());
-    let proof_kind = proof_kind_for_runtime(runtime);
-    let strategy = preparation_strategy_for_runtime(runtime, registrations.len(), proof_kind);
+    if budget.is_some_and(|budget| budget.stop().is_some()) {
+        return PreparedInvariantExecution {
+            context,
+            strategy: PreparationStrategy::serial(SerialPreparationReason::NoLease),
+            packets: Vec::new(),
+        };
+    }
+    let partition_scope = if let Some(budget) = budget {
+        packet_partition_scope_checked(request.merged_plan(), budget)
+    } else {
+        packet_partition_scope(request.merged_plan())
+    };
+    let proof_kind = proof_kind_for_runtime(lease);
+    let strategy = preparation_strategy_for_runtime(lease, registrations.len(), proof_kind);
     let packets = invariant_work_packets(
         request,
         registrations,
         context.clone(),
         partition_scope,
         proof_kind,
+        budget,
     );
 
     PreparedInvariantExecution {
@@ -68,15 +99,13 @@ fn planning_context(
                 .schema_contract_runtime
                 .custom_invariant_registries
                 .len(),
-        planning_contract: runtime.config.execution.planning.clone(),
     }
 }
 
-fn proof_kind_for_runtime(runtime: &InvariantRuntimeView) -> PreparationProofKind {
-    if matches!(
-        runtime.config.execution.execution_model,
-        RelationalExecutionModel::ParallelPreparation
-    ) {
+fn proof_kind_for_runtime(lease: Option<&ExecutionResourceLease>) -> PreparationProofKind {
+    if lease.is_some_and(|lease| {
+        lease.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
+    }) {
         PreparationProofKind::ReadOnlyShared
     } else {
         PreparationProofKind::RequiresSerial
@@ -84,15 +113,17 @@ fn proof_kind_for_runtime(runtime: &InvariantRuntimeView) -> PreparationProofKin
 }
 
 fn preparation_strategy_for_runtime(
-    runtime: &InvariantRuntimeView,
+    lease: Option<&ExecutionResourceLease>,
     packet_count: usize,
     proof_kind: PreparationProofKind,
 ) -> PreparationStrategy {
-    if !matches!(
-        runtime.config.execution.execution_model,
-        RelationalExecutionModel::ParallelPreparation
-    ) {
-        return PreparationStrategy::serial(SerialPreparationReason::ExecutionModelSerial);
+    if lease.is_none() {
+        return PreparationStrategy::serial(SerialPreparationReason::NoLease);
+    }
+    if lease.is_some_and(|lease| {
+        lease.resolved_posture() == worth_foundational::ExecutionPosture::Serial
+    }) {
+        return PreparationStrategy::serial(SerialPreparationReason::SerialPosture);
     }
     if !packet_width_is_profitable(packet_count, MIN_PARALLEL_PACKET_WIDTH) {
         return PreparationStrategy {
@@ -120,6 +151,7 @@ fn invariant_work_packets<'state>(
     context: Arc<PreparationPlanningContext>,
     partition_scope: Arc<[crate::identity::data::PartitionId]>,
     proof_kind: PreparationProofKind,
+    budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
 ) -> Vec<crate::authority::commit::preparation::InvariantWorkPacket<'state>> {
     let observation = request.observation();
     let relation_integrity_scopes = request.relation_integrity_scopes().cloned();
@@ -128,7 +160,17 @@ fn invariant_work_packets<'state>(
     registrations
         .into_iter()
         .enumerate()
-        .map(|(packet_index, registration)| {
+        .take_while(|_| budget.is_none_or(|budget| budget.stop().is_none()))
+        .filter_map(|(packet_index, registration)| {
+            if budget.is_some_and(|budget| {
+                !budget.try_plan_item(
+                    2 * std::mem::size_of::<
+                        crate::authority::commit::preparation::InvariantWorkPacket<'_>,
+                    >() as u64,
+                )
+            }) {
+                return None;
+            }
             let invariant_group_scope = registration.groups();
             let record_domain = if request.merged_plan().is_some() {
                 PreparationRecordDomain::Mixed
@@ -152,7 +194,7 @@ fn invariant_work_packets<'state>(
                     _ => PreparationWriteExclusionClass::ReadOnly,
                 },
             };
-            crate::authority::commit::preparation::InvariantWorkPacket {
+            Some(crate::authority::commit::preparation::InvariantWorkPacket {
                 packet_index,
                 registration,
                 reduction_key: ValidationReductionKey::new(
@@ -174,7 +216,7 @@ fn invariant_work_packets<'state>(
                 merged_plan: request.merged_plan(),
                 relation_integrity_scopes: relation_integrity_scopes.clone(),
                 current_version_minimum_index: Arc::clone(&current_version_minimum_index),
-            }
+            })
         })
         .collect()
 }

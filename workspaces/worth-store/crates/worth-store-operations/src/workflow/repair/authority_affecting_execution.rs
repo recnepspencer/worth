@@ -30,7 +30,7 @@ pub enum AuthorityAffectingRepairExecutionDenial {
     Authorization(crate::StagingAuthorizationContinuationDenial),
     Backend(NonCurrentStagingExecutionDenial),
     Recovery(BackupRestoreReplayDenial),
-    Layout(worth_store_layout_indexes::LayoutRepairConsequenceDenial),
+    Layout(worth_store_layout_indexes::operational_repair::LayoutRepairConsequenceDenial),
     Blob(worth_store_blob_chunks::BlobRepairConsequenceDenial),
     Journal(RepairJournalDenial),
     RecoveredReceiptMismatch { node: OwnerPlanNodeIdentity },
@@ -50,7 +50,7 @@ pub struct ExecutedAuthorityAffectingRepair {
     integrity: IntegrityRepairClassificationReceipt,
     backend: NonCurrentStagingExecutionReceipt,
     recovery: RecoveredBackupFrontierReceipt,
-    layout: Option<worth_store_layout_indexes::LayoutRepairConsequenceReceipt>,
+    layout: Option<worth_store_layout_indexes::operational_repair::LayoutRepairConsequenceReceipt>,
     blob: Option<worth_store_blob_chunks::BlobRepairConsequenceReceipt>,
     staging_authority: worth_store_authority::StoreCurrentAuthorityIdentity,
     security_scope: OperationalSecurityScope,
@@ -77,7 +77,8 @@ impl ExecutedAuthorityAffectingRepair {
     }
     pub const fn layout(
         &self,
-    ) -> Option<worth_store_layout_indexes::LayoutRepairConsequenceReceipt> {
+    ) -> Option<worth_store_layout_indexes::operational_repair::LayoutRepairConsequenceReceipt>
+    {
         self.layout
     }
     pub const fn blob(&self) -> Option<worth_store_blob_chunks::BlobRepairConsequenceReceipt> {
@@ -233,7 +234,7 @@ impl ExecutionReadyAuthorityAffectingRepair<'_> {
                     node,
                     RepairExecutionBoundaryMoment::BeforeOwnerEffect,
                 )?;
-                let receipt = worth_store_layout_indexes::LayoutRepairConsequenceOwner::execute(
+                let receipt = worth_store_layout_indexes::operational_repair::LayoutRepairConsequenceOwner::execute(
                     plan,
                     backend.media(),
                 )

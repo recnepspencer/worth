@@ -1,6 +1,9 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+mod addressed_roots;
+
+use super::families::root_manifest::expected_root_manifest_bytes;
 use super::families::{
     read_current_selector, read_previous_selector, read_root_manifest, OfflineRootManifestFacts,
     OfflineSelectorFacts, SelectorRole,
@@ -20,6 +23,7 @@ use super::{
     OfflinePhysicalDamageCause, OfflinePhysicalDamageLocalization, OfflinePhysicalFormatField,
     OfflineUnknownPhysicalReason,
 };
+use addressed_roots::{addressed_root_expectations, mark_missing_selector_pointers};
 
 const RECORDS_RELATIVE: &str = "families/records";
 const ROOTS_RELATIVE: &str = "families/records/roots";
@@ -39,6 +43,7 @@ pub(crate) struct SelectorEntry {
 pub(crate) struct RootEntry {
     pub(crate) relative: String,
     pub(crate) expected_generation: u64,
+    pub(crate) canonical_bytes: usize,
     pub(crate) facts: Option<OfflineRootManifestFacts>,
     pub(crate) outcome: OfflineIntegrityOutcome,
     pub(crate) exact_scope_established: bool,
@@ -55,6 +60,8 @@ pub(crate) struct AddressedRootExpectation {
 pub(crate) struct ObservedRootProtocol {
     pub(crate) artifacts: Vec<OfflineArtifactObservation>,
     pub(crate) roots: Vec<OfflineRootManifestFacts>,
+    pub(crate) current_generation: Option<u64>,
+    pub(crate) selected_root: Option<super::report::OfflineSelectedRootWitness>,
 }
 
 pub(crate) fn observe_root_protocol(
@@ -73,13 +80,34 @@ pub(crate) fn observe_root_protocol(
     unknowns.extend(root_unknowns);
     mark_root_duplicates(&mut roots, walk);
     mark_missing_selector_pointers(&mut selectors, &roots, root_incomplete, walk);
-    let admitted_roots = roots
+    let admitted_roots: Vec<OfflineRootManifestFacts> = roots
         .iter()
         .filter(|entry| {
             entry.exact_scope_established && entry.outcome == OfflineIntegrityOutcome::Intact
         })
         .filter_map(|entry| entry.facts)
         .collect();
+    let current_generation = selectors
+        .iter()
+        .find(|entry| {
+            entry.canonical
+                && entry.role == SelectorRole::Current
+                && entry.outcome == OfflineIntegrityOutcome::Intact
+        })
+        .and_then(|entry| entry.facts.as_ref())
+        .map(|facts| facts.root_generation);
+    // The current physical format names its root reference with the admitted
+    // manifest generation. Neither an unadmitted selector nor a merely
+    // present/historical root can mint comparison authority.
+    let selected_root = current_generation.and_then(|generation| {
+        admitted_roots
+            .iter()
+            .any(|root| root.generation == generation)
+            .then_some(super::report::OfflineSelectedRootWitness {
+                generation,
+                reference: generation,
+            })
+    });
     let mut observations = selector_observations(selectors);
     observations.extend(root_observations(&addressed, roots, root_incomplete));
     observations.extend(unknowns);
@@ -87,6 +115,8 @@ pub(crate) fn observe_root_protocol(
     Ok(ObservedRootProtocol {
         artifacts: observations,
         roots: admitted_roots,
+        current_generation,
+        selected_root,
     })
 }
 
@@ -109,8 +139,7 @@ fn read_selector_entries(
                     "bootstrap.catalog",
                     "segments",
                     "segment-manifests",
-                    "extents",
-                    "extent-manifests",
+                    "arenas",
                     "free-space",
                 ]
                 .iter()
@@ -255,6 +284,10 @@ fn read_root_entry(
 ) -> RootEntry {
     let relative = relative_path(store_root, path);
     let acquired = walk.acquire(path, 4);
+    let canonical_bytes = acquired.as_ref().map_or(
+        super::families::root_manifest::ROOT_MANIFEST_BYTES,
+        |value| expected_root_manifest_bytes(&value.bytes),
+    );
     let physical_alias_of = acquired
         .as_ref()
         .ok()
@@ -301,66 +334,12 @@ fn read_root_entry(
     RootEntry {
         relative,
         expected_generation,
+        canonical_bytes,
         facts,
         outcome,
         exact_scope_established,
         physical_alias_of,
         semantic_duplicate: false,
-    }
-}
-
-fn addressed_root_expectations(
-    selectors: &[SelectorEntry],
-) -> BTreeMap<u64, AddressedRootExpectation> {
-    selectors
-        .iter()
-        .filter(|entry| {
-            entry.canonical
-                && !entry.semantic_duplicate
-                && entry.outcome == OfflineIntegrityOutcome::Intact
-        })
-        .filter_map(|entry| {
-            entry.facts.as_ref().map(|facts| {
-                (
-                    facts.root_generation,
-                    AddressedRootExpectation {
-                        generation: facts.root_generation,
-                        format: facts.format,
-                    },
-                )
-            })
-        })
-        .collect()
-}
-
-fn mark_missing_selector_pointers(
-    selectors: &mut [SelectorEntry],
-    roots: &[RootEntry],
-    incomplete: Option<OfflineIndeterminatePhysicalReason>,
-    walk: &mut BoundedMediaWalk,
-) {
-    let present: BTreeSet<_> = roots
-        .iter()
-        .map(|entry| entry.expected_generation)
-        .collect();
-    let addressed: BTreeSet<_> = addressed_root_expectations(selectors).into_keys().collect();
-    for entry in selectors
-        .iter_mut()
-        .filter(|entry| entry.canonical && !entry.semantic_duplicate)
-    {
-        if let Some(facts) = &entry.facts {
-            if incomplete.is_none() && !present.contains(&facts.root_generation) {
-                entry.outcome = damage(
-                    OfflinePhysicalDamageCause::Pointer,
-                    Some((65, 8)),
-                    Some(OfflinePhysicalFormatField::RootGeneration),
-                    OfflinePhysicalBlastRadius::ReachableRootSubtree,
-                );
-            }
-        }
-    }
-    if incomplete.is_none() {
-        walk.counters_mut().missing_artifacts += addressed.difference(&present).count() as u64;
     }
 }
 

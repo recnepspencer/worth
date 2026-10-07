@@ -1,7 +1,9 @@
 //! Exact Relational truth used to resolve one application entity.
 
+mod admitted_scope;
 mod freshness;
 mod product;
+pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 mod resolved;
 #[cfg(test)]
 mod tests;
@@ -134,7 +136,10 @@ impl WorthQueryEntityResolutionTruth<'_> {
                 .relational
                 .index_access()
                 .execute_bounded_entity_field_lookup(request, parity(self.mode))
-                .map_err(|denial| map_index_denial(denial.kind(), field))?;
+                .map_err(|denial| {
+                    examined_candidate_count = denial.examined_entry_count();
+                    map_index_denial(denial.kind(), field)
+                })?;
             examined_candidate_count = lookup.examined_entry_count();
             if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
                 return Err(entity_denial(

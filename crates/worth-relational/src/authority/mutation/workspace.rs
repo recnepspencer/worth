@@ -34,6 +34,7 @@ pub(crate) struct BranchLocalDeleteAllowance {
 }
 
 pub(crate) struct MutationWorkspace<'a> {
+    commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     state: &'a mut WorkingState,
     symbols: &'a mut StringInterner,
     config: &'a MutationConfig,
@@ -57,8 +58,10 @@ impl<'a> MutationWorkspace<'a> {
         version_id: VersionId,
         branch_local_delete_allowance: BranchLocalDeleteAllowance,
         record_allocations: Option<&'a mut crate::runtime::PendingRecordAllocations>,
+        commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     ) -> Self {
         Self {
+            commit_work_budget,
             state,
             symbols,
             config,
@@ -71,6 +74,10 @@ impl<'a> MutationWorkspace<'a> {
             created_relations: BTreeMap::new(),
             record_allocations,
         }
+    }
+
+    pub(crate) fn commit_work_budget(&self) -> Option<&crate::execution::RequestWorkBudget> {
+        self.commit_work_budget.as_ref()
     }
 
     pub(crate) fn with_context<R>(&mut self, f: impl FnOnce(MutationContext<'_>) -> R) -> R {
@@ -118,10 +125,6 @@ impl<'a> MutationWorkspace<'a> {
         kind_id: crate::identity::data::KindId,
     ) -> Option<&LoweredAspectContractPlan> {
         self.aspect_plans.relation_plans.get(&kind_id)
-    }
-
-    pub(crate) fn execution_model(&self) -> crate::config::data::RelationalExecutionModel {
-        self.config.execution_model
     }
 
     pub(crate) fn record_preparation_strategy(

@@ -31,6 +31,7 @@ pub(super) fn applied_plan() -> ImmutablePhysicalRedoPlan {
         vec![observation(1, 9, [0; 32])],
         1,
         store(),
+        format(),
     )
     .expect("canonical redo fixture applies after the prior page observation")
 }
@@ -46,6 +47,7 @@ pub(super) fn skipped_plan() -> ImmutablePhysicalRedoPlan {
         vec![observation(2, 10, result_digest())],
         1,
         store(),
+        format(),
     )
     .expect("canonical redo fixture skips an already materialized page")
 }
@@ -61,6 +63,7 @@ pub(super) fn generation_denial() -> PhysicalRedoPlanningDenial {
         vec![observation(10, 10, [0; 32])],
         1,
         store(),
+        format(),
     )
     .expect_err("foreign page generation must be rejected before replay")
 }
@@ -172,7 +175,7 @@ fn projection() -> PersistedPhysicalRecoveryProjection {
     let segment_cell = authority.segment_cell(segment).with_segment_generation(
         PhysicalGeneration::from_raw(2).expect("fixture segment generation"),
     );
-    let placement = DurableInlineRecordPlacement::new(
+    let placement = DurableInlineRecordPlacement::legacy_unknown(
         record,
         segment_cell,
         page,
@@ -206,9 +209,7 @@ fn projection() -> PersistedPhysicalRecoveryProjection {
 }
 
 fn result_bytes() -> Vec<u8> {
-    let format = PhysicalRecordFormatDeclaration::builder()
-        .admit()
-        .expect("fixture format is valid");
+    let format = format();
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
     let segment = worth_store_physical_format::PhysicalSegmentId::from_raw(1)
         .expect("fixture segment is nonzero");
@@ -250,11 +251,13 @@ fn result_digest() -> [u8; 32] {
 }
 
 fn frame_len() -> u32 {
+    format().page_size().bytes()
+}
+
+fn format() -> PhysicalRecordFormatDeclaration {
     PhysicalRecordFormatDeclaration::builder()
         .admit()
         .expect("fixture format is valid")
-        .page_size()
-        .bytes()
 }
 
 fn field(target: &mut Vec<u8>, bytes: &[u8]) {

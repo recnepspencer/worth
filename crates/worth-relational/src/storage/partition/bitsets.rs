@@ -107,16 +107,22 @@ impl DenseSlotBitSet {
     }
 
     pub(crate) fn iter_set_slots(&self) -> Vec<usize> {
-        let mut slots = Vec::new();
-        for (&word_index, &word) in &self.words {
+        self.set_slots().collect()
+    }
+
+    /// Iterates set slots in canonical order without materializing their IDs.
+    pub(crate) fn set_slots(&self) -> impl Iterator<Item = usize> + '_ {
+        self.words.iter().flat_map(|(&word_index, &word)| {
             let mut remaining = word;
-            while remaining != 0 {
+            std::iter::from_fn(move || {
+                if remaining == 0 {
+                    return None;
+                }
                 let bit = remaining.trailing_zeros() as usize;
-                slots.push(word_index * 64 + bit);
                 remaining &= remaining - 1;
-            }
-        }
-        slots
+                Some(word_index * 64 + bit)
+            })
+        })
     }
 
     pub(crate) fn from_words(words: Vec<u64>) -> Self {

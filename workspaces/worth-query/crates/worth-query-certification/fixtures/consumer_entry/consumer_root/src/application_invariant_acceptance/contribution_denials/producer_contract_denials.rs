@@ -1,5 +1,8 @@
 use std::marker::PhantomData;
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize},
+    Arc,
+};
 
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationSchema, ApplicationSchemaComposition,
@@ -297,6 +300,7 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         invariant_calls: counter(),
         invariant_probe: counter(),
         producer_authorization_denials: counter(),
+        producer_domain_denial: Arc::new(AtomicBool::new(false)),
     };
     let result = application_installation::in_memory_program(
         validated_denial_program::<ForeignOperationSchema>(),

@@ -37,6 +37,10 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
+pub(in crate::domain_computation::primary_graph) use read_set::{
+    CompletedDecisionReuseProof, PreparedDecisionReuseContext,
+};
 mod retained_commit;
 pub(super) mod snapshot_lease;
 mod workflow_deadline;
@@ -50,6 +54,7 @@ mod workflow_proposal_program;
 mod workflow_transition_program;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
+    WorthQueryApplicationSnapshotRelease,
 };
 
 pub use capability_revocation_program::WorthQueryCapabilityRevocationProgram;
@@ -108,7 +113,8 @@ pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
-    observe_adjacency, observe_indexed_entity_selection, reobserve_indexed_entity_selection,
+    indexed_selection_currentness, observe_adjacency, observe_indexed_entity_selection,
+    reobserve_indexed_entity_selection, IndexedSelectionReobserveDenial,
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
     WorthQueryApplicationFactStorageKey, WorthQuerySourceCurrentnessFailure,
 };

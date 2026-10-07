@@ -116,6 +116,7 @@ impl<Schema: ApplicationSchema, Operation>
         }
         let fact = WorthQueryApplicationObservedFact::IndexedEntitySelection {
             index_id,
+            definition: outcome.retain_definition(),
             entity_kind: layout.entity_kind,
             locator: layout.locator.clone(),
             value,

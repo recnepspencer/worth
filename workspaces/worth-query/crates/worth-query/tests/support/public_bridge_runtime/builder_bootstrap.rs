@@ -65,6 +65,7 @@ impl PublicBridgeRuntimeBootstrapWithSupportProfile {
             worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
                 worth_relational::facade::runtime::RelationalRuntimeBuilder::new().build(),
                 "public-graph",
+                product_world_resources.invalidation_resources(),
             )
             .expect("public bridge tests require one real Relational product source");
         let bridge = bridge::public_bridge(&source);
@@ -100,12 +101,12 @@ mod tests {
     #[test]
     fn execution_runtime_requires_explicit_product_resources() {
         let harness = PublicBridgeRuntimeHarness::new();
-        let source = product_source("missing-resources");
+        let product_world_resources = public_product_world_resources();
+        let source = product_source("missing-resources", &product_world_resources);
         let bridge = bridge::public_bridge(&source);
         let result = harness
             .configure_runtime_builder(
-                WorthQueryRuntime::builder(public_product_world_resources())
-                    .relational_source_owner(source),
+                WorthQueryRuntime::builder(product_world_resources).relational_source_owner(source),
                 bridge,
                 public_bridge_aspect_contracts(),
                 public_graph_support_profile(),
@@ -123,11 +124,12 @@ mod tests {
     #[test]
     fn execution_runtime_requires_an_installed_relational_product_source() {
         let harness = PublicBridgeRuntimeHarness::new();
-        let bridge_source = product_source("bridge-only-source");
+        let product_world_resources = public_product_world_resources();
+        let bridge_source = product_source("bridge-only-source", &product_world_resources);
         let bridge = bridge::public_bridge(&bridge_source);
         let result = harness
             .configure_runtime_builder(
-                WorthQueryRuntime::builder(public_product_world_resources())
+                WorthQueryRuntime::builder(product_world_resources)
                     .conditional_execution_resources(public_product_resources()),
                 bridge,
                 public_bridge_aspect_contracts(),
@@ -146,12 +148,14 @@ mod tests {
     #[test]
     fn execution_runtime_rejects_a_bridge_from_another_relational_owner() {
         let harness = PublicBridgeRuntimeHarness::new();
-        let installed_source = product_source("product-source");
-        let foreign_bridge_source = product_source("foreign-bridge-source");
+        let product_world_resources = public_product_world_resources();
+        let installed_source = product_source("product-source", &product_world_resources);
+        let foreign_bridge_source =
+            product_source("foreign-bridge-source", &product_world_resources);
         let bridge = bridge::public_bridge(&foreign_bridge_source);
         let result = harness
             .configure_runtime_builder(
-                WorthQueryRuntime::builder(public_product_world_resources())
+                WorthQueryRuntime::builder(product_world_resources)
                     .relational_source_owner(installed_source)
                     .conditional_execution_resources(public_product_resources()),
                 bridge,
@@ -170,10 +174,12 @@ mod tests {
 
     fn product_source(
         role: &'static str,
+        resources: &WorthQueryProductWorldResources,
     ) -> worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner {
         worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
             worth_relational::facade::runtime::RelationalRuntimeBuilder::new().build(),
             role,
+            resources.invalidation_resources(),
         )
         .expect("test Product World source should install")
     }

@@ -116,8 +116,8 @@ impl PhysicalMutationTerminalFact {
             Self::Completed(fact) => {
                 PhysicalMutationOutcome::Completed(CompletedPhysicalMutation::from_fact(fact))
             }
-            Self::ProvenNoEffect(fate) => PhysicalMutationOutcome::ProvenNoEffect(*fate),
-            Self::Indeterminate(fate) => PhysicalMutationOutcome::Indeterminate(*fate),
+            Self::ProvenNoEffect(fate) => PhysicalMutationOutcome::ProvenNoEffect(fate.clone()),
+            Self::Indeterminate(fate) => PhysicalMutationOutcome::Indeterminate(fate.clone()),
         }
     }
 

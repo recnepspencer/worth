@@ -77,6 +77,7 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
     ForeignRelationalRuntime,
     ForeignProductWorld,
     OriginalPublicationCommitMismatch,
+    BranchCoordinationCapacityExhausted,
     ProductAdmission,
     CompletionPreparation,
     TerminalIndexUnavailable,

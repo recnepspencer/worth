@@ -104,6 +104,10 @@ impl<K: RecordKind> RecordArena<K> {
         self.slots.occupied_slots()
     }
 
+    pub(crate) fn occupied_slots_iter(&self) -> impl Iterator<Item = usize> + '_ {
+        self.slots.occupied_slots_iter()
+    }
+
     pub(crate) fn physical_index(&self, slot: usize) -> Option<usize> {
         self.slots.physical_index(slot)
     }

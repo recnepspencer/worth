@@ -17,6 +17,9 @@ pub(super) fn indeterminate_recovery_staging(
     coordinate: RecordFrameCoordinate,
 ) -> PhysicalWorkSettlementEvidence {
     match physical.into_physical() {
+        RecoveryStagingIndeterminatePhysical::Range(written) => {
+            super::indeterminate_terminal(dispatched, written)
+        }
         RecoveryStagingIndeterminatePhysical::NewArtifact(new_artifact) => {
             super::publication::indeterminate_new_artifact(dispatched, new_artifact, coordinate)
         }

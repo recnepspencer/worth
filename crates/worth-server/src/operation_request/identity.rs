@@ -27,6 +27,21 @@ pub(crate) struct WorthServerOperationIdentityParts {
 }
 
 impl WorthServerOperationIdentity {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::{
+            option_string, string,
+        };
+        string(&self.tenant_id)
+            .saturating_add(string(&self.workspace_id))
+            .saturating_add(string(&self.target_identity))
+            .saturating_add(string(&self.operation_name))
+            .saturating_add(option_string(&self.basis_digest))
+            .saturating_add(option_string(&self.idempotency_key))
+            .saturating_add(option_string(&self.product_session_identity))
+            .saturating_add(option_string(&self.payload_identity))
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub(crate) fn new(parts: WorthServerOperationIdentityParts) -> Self {
         let WorthServerOperationIdentityParts {
             operation_family,

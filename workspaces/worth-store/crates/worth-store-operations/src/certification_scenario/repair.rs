@@ -5,9 +5,9 @@ use worth_store_authority::StoreCurrentAuthorityWitness;
 
 use crate::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation,
-    ExecutedAuthorityAffectingRepair, ExecutedRepair, OperationalControlStore,
-    OperationalControlStorePort, OperationalOperationId, OperationalSecurityScope,
-    OperationalTransitionId, ProductionRestoreAdmissibleBackupBundle,
+    ExecutedAuthorityAffectingRepair, OperationalControlStore, OperationalControlStorePort,
+    OperationalOperationId, OperationalSecurityScope, OperationalTransitionId,
+    ProductionRestoreAdmissibleBackupBundle, RepairReadinessDenial,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -109,7 +109,11 @@ use super::{
     certification_operator_assertion, CurrentScenarioStagingPort, ExactScenarioAuthorizationPort,
 };
 
-pub fn execute_scenario_derived_repair(
+/// Drive a derived-index repair through Operations' pure plan, owner lowering
+/// and authorization, and return the readiness denial: D15 gives derived-index
+/// rebuild publication to the Store rebuild owner, so Operations refuses before
+/// consuming the authorization or touching the target.
+pub fn deny_scenario_derived_repair(
     operation_name: &str,
     target: &Path,
     replacement: &Path,
@@ -117,8 +121,8 @@ pub fn execute_scenario_derived_repair(
     authority: &StoreCurrentAuthorityWitness,
     control: &OperationalControlStore,
     append: &dyn OperationalControlStorePort,
-) -> ExecutedRepair {
-    crate::workflow::certification_derived_maintenance_from_fixture_observation(
+) -> RepairReadinessDenial {
+    let lowered = crate::workflow::certification_derived_maintenance_from_fixture_observation(
         OperationalOperationId::new(operation_name).expect("repair operation identity"),
         target,
         replacement,
@@ -127,28 +131,36 @@ pub fn execute_scenario_derived_repair(
     )
     .expect("independently observed derived repair fixture")
     .lower_owners()
-    .expect("canonical derived repair owner DAG")
-    .authorize(
-        &ExactScenarioAuthorizationPort,
-        &certification_operator_assertion(),
-        20,
-        80,
-        AuthorizationReplayPolicy::SingleUse,
-        AuthorizationRevocationObservation::NotRevoked { observed_at: 20 },
-    )
-    .expect("exact repair authorization")
-    .ready_with_certification_control_store(
-        control,
-        append,
-        OperationalTransitionId::new(format!("{operation_name}/consume-authorization"))
-            .expect("repair authorization transition"),
-        authority,
-        21,
-        AuthorizationRevocationObservation::NotRevoked { observed_at: 21 },
-    )
-    .expect("durable repair readiness")
-    .execute()
-    .expect("owner-backed derived repair")
+    .expect("canonical derived repair owner DAG");
+    assert!(
+        lowered
+            .explanation()
+            .nodes()
+            .iter()
+            .any(|node| node.owner() == crate::StoreOwnerKind::LayoutIndexes),
+        "Operations still schedules the layout owner in its repair plan"
+    );
+    lowered
+        .authorize(
+            &ExactScenarioAuthorizationPort,
+            &certification_operator_assertion(),
+            20,
+            80,
+            AuthorizationReplayPolicy::SingleUse,
+            AuthorizationRevocationObservation::NotRevoked { observed_at: 20 },
+        )
+        .expect("exact repair authorization")
+        .ready_with_certification_control_store(
+            control,
+            append,
+            OperationalTransitionId::new(format!("{operation_name}/consume-authorization"))
+                .expect("repair authorization transition"),
+            authority,
+            21,
+            AuthorizationRevocationObservation::NotRevoked { observed_at: 21 },
+        )
+        .err()
+        .expect("Store owns derived-index rebuild publication")
 }
 
 pub fn execute_scenario_authority_affecting_repair(
@@ -193,13 +205,13 @@ pub fn execute_scenario_authority_affecting_repair(
 
 #[cfg(test)]
 mod tests {
-    use crate::{OperationalCounterReceipt, OperationalSecurityScope};
+    use crate::OperationalSecurityScope;
 
     use super::*;
     use crate::certification_scenario::OwnerBackedBackupScenario;
 
     #[test]
-    fn scenario_repair_executes_owner_effects_and_persists_the_real_replacement() {
+    fn scenario_derived_repair_denies_typed_before_any_operations_effect() {
         let scenario = OwnerBackedBackupScenario::materialize("derived-repair-scenario");
         let control = scenario.control_store();
         let source = scenario
@@ -211,8 +223,13 @@ mod tests {
         let replacement = scenario.workspace_root().join("replacement.index");
         std::fs::write(&target, b"damaged-derived-index").unwrap();
         std::fs::write(&replacement, b"rebuilt-derived-index").unwrap();
+        let history_before = control.observe_selection_coordinates().unwrap();
+        assert!(
+            history_before.is_some(),
+            "the backup owner effect is durable"
+        );
 
-        let executed = execute_scenario_derived_repair(
+        let denial = deny_scenario_derived_repair(
             "derived-repair-scenario/repair",
             &target,
             &replacement,
@@ -222,9 +239,20 @@ mod tests {
             &control,
         );
 
-        assert_eq!(std::fs::read(&target).unwrap(), b"rebuilt-derived-index");
-        OperationalCounterReceipt::from_repair(&executed)
-            .validate_structure()
-            .unwrap();
+        assert!(matches!(
+            denial,
+            RepairReadinessDenial::StoreDerivedIndexRebuildRequired
+        ));
+        // No Operations effect: the target, the replacement and the control
+        // history (no authorization consumption, no repair journal) are unchanged.
+        assert_eq!(std::fs::read(&target).unwrap(), b"damaged-derived-index");
+        assert_eq!(
+            std::fs::read(&replacement).unwrap(),
+            b"rebuilt-derived-index"
+        );
+        assert_eq!(
+            control.observe_selection_coordinates().unwrap(),
+            history_before
+        );
     }
 }

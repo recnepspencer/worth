@@ -50,6 +50,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.product_runtime.operation_control()
     }
 
+    /// Arms real contention at the final Product read for late-request tests.
+    #[doc(hidden)]
+    pub fn pause_product_currentness_for_test(
+        &self,
+    ) -> worth_runtime_world::facade::RuntimeWorldProductCurrentnessPause {
+        self.product_runtime
+            .operation_control()
+            .pause_product_currentness(self.product_runtime.default_occurrence)
+    }
+
     /// Inspects the World's active-attempt obligations in this installed
     /// runtime in certification builds.
     #[doc(hidden)]

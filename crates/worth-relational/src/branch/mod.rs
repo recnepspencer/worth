@@ -28,6 +28,7 @@ mod root_checkpoint;
 mod root_partition_access;
 mod root_region;
 mod root_regions;
+pub(crate) use root_regions::RelationalPartitionVisit;
 mod root_runtime_access;
 mod root_selection;
 mod sharing_cost_cell;

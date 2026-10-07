@@ -23,12 +23,15 @@ impl ConstitutionSnapshots {
     pub(crate) fn observe(
         root: &Path,
         packages: &[Road1Package],
+        dag_only_packages: &[Road1Package],
         configured_surfaces: &[ConfiguredFacadeSurface],
     ) -> Result<Self, String> {
         let facades = observe_facade_document(packages, configured_surfaces)?;
         let facade_docs = observe_facade_docs(root, packages, &facades)?;
+        let mut dag_packages = packages.to_vec();
+        dag_packages.extend_from_slice(dag_only_packages);
         Ok(Self {
-            dag: crate_dag_document(packages),
+            dag: crate_dag_document(&dag_packages),
             facades,
             facade_docs,
         })
@@ -92,6 +95,21 @@ mod tests {
             },
             facade_docs: FacadeDocObservation::default(),
         }
+    }
+
+    #[test]
+    fn dag_only_store_package_does_not_create_a_facade_or_doc_surface() {
+        let package = Road1Package {
+            name: "worth-store".into(),
+            dependencies: vec!["worth-store-blob-chunks".into()],
+            manifest_path: "unused/Cargo.toml".into(),
+        };
+        let observed =
+            ConstitutionSnapshots::observe(Path::new("."), &[], &[package], &[]).unwrap();
+        assert_eq!(observed.dag.packages.len(), 1);
+        assert_eq!(observed.dag.packages[0].package, "worth-store");
+        assert!(observed.facades.facades.is_empty());
+        assert!(observed.facade_docs.facades.is_empty());
     }
 
     #[test]

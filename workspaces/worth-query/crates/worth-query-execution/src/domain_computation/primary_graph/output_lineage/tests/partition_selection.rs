@@ -1,4 +1,7 @@
-use std::{any::TypeId, sync::Arc};
+use std::{
+    any::TypeId,
+    sync::{Arc, OnceLock},
+};
 
 use super::{checkpoint_identity, source_facts, RestoredOutputBinding};
 use crate::domain_computation::primary_graph::output_lineage::{
@@ -116,20 +119,42 @@ fn unrelated_partition_selection(population: u64) {
         .entry(revised_generation)
         .or_default();
     let slot = records.len();
-    records.push(RecordedOutput {
+    let recorded = RecordedOutput {
+        native_prior_checkpoint: None,
+        performed_origin: None,
+        _retained_capacity: None,
+        consumed_outputs: Arc::from([]),
+        completed_handler_facts: None,
+        completed_decision_reuse: None,
+        prepared_input_reuse_key: None,
+        native_output_witness: OnceLock::new(),
+        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable {
+            verification_requirement: None,
+            observed_source_facts: None,
+            resources: None,
+        }),
+        settlement_identity: super::super::RecordedSettlementIdentity::retain(
+            &source,
+            ProductCoordinate {
+                occurrence,
+                generation: revised_generation,
+            },
+            slot,
+        ),
         correspondence: Arc::clone(&revised_target),
         source_identity: Some(checkpoint_identity([0x31; 32])),
         source_partition_identity: Some(partition(0)),
         producer_dependency_identity: None,
         idempotency_key_identity: [0x42; 32],
-        observed_source_facts: None,
-        resources: None,
-    });
+    };
+    let cell = Arc::new(std::sync::OnceLock::new());
+    assert!(cell.set(recorded).is_ok());
+    records.push(cell);
     lineage.partition_index.insert(
         source.clone(),
         occurrence,
         revised_generation,
-        partition(0),
+        Some(partition(0)),
         slot,
     );
     let revised_coordinate = ProductCoordinate {
@@ -172,7 +197,11 @@ fn unrelated_partition_selection(population: u64) {
         .get_mut(&occurrence)
         .unwrap()
         .get_mut(&1)
-        .unwrap()[0]
+        .unwrap()
+        .get_mut(0)
+        .and_then(Arc::get_mut)
+        .and_then(std::sync::OnceLock::get_mut)
+        .unwrap()
         .source_partition_identity = None;
     assert!(lineage
         .matching_legacy_output_budgeted(
@@ -276,6 +305,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         [0x41; 32],
         source_facts(),
         None,
+        None,
     );
     lineage.register_fork(parent, &child);
     let (candidates, work) = lineage
@@ -304,7 +334,10 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
                     generation: parent.reference_generation().get(),
                 },
                 partition(0),
+                usize::MAX,
             )
+            .expect("bounded partition lookup")
+            .0
             .is_some(),
         "a live child retains its ancestor's output locator"
     );
@@ -319,7 +352,10 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
                     generation: parent.reference_generation().get(),
                 },
                 partition(0),
+                usize::MAX,
             )
+            .expect("bounded partition lookup")
+            .0
             .is_none(),
         "retired lineage must prune its derived locator"
     );

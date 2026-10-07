@@ -53,12 +53,14 @@ pub(crate) enum ProcessRecoveryRefusalCause {
     EntryBindingDrift,
     PersistedStoreAdmission,
     CoordinationUnavailable,
+    CoordinationAdmission,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum ProcessRecoveryBlockCause {
-    DiscoveryLimit,
+    Limit,
     MediaObservation,
+    SourceAllocation,
     RootProtocol,
     Checkpoint,
     WalInventory,
@@ -69,6 +71,7 @@ pub(crate) enum ProcessRecoveryBlockCause {
     RedoPlanning,
     Staging,
     Publication,
+    SelectedCustody,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -169,6 +172,8 @@ pub(crate) enum ProcessIntegrityVersionAxis {
     PhysicalWorkObligation,
     WalFrame,
     CheckpointRecordSchema,
+    BlobRecord,
+    BTreeNode,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -264,6 +269,7 @@ pub(crate) enum ProcessIntegrityArtifactFamily {
     NamespaceIdentity,
     PhysicalWorkObligation,
     PageFrame,
+    ExtentArenaFrame,
     ExtentChunk,
     WalFrame,
     CheckpointStreamHeader,
@@ -280,4 +286,11 @@ pub(crate) enum ProcessIntegrityArtifactFamily {
     ExtentManifest,
     FreeSpaceHeader,
     FreeSpaceMembershipBlock,
+    BlobResumeSession,
+    BlobChunkFrame,
+    BlobTreeNode,
+    BlobGenerationPublication,
+    BlobDropSetManifest,
+    BlobReclaimDescriptor,
+    BTreeNode,
 }

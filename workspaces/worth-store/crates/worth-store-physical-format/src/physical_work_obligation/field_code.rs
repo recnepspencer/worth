@@ -21,11 +21,11 @@ pub enum PhysicalWorkArtifactCode {
     CatalogCandidate { publication: u64 },
     RootManifest { generation: u64 },
     RootRoutingBlock { generation: u64, block: u64 },
+    ReleaseCustodyHeadBlock { generation: u64, block: u64 },
     Segment { segment: u64, generation: u64 },
     SegmentManifest { segment: u64, generation: u64 },
     SegmentMembershipBlock { generation: u64, block: u64 },
-    Extent { extent: u64, generation: u64 },
-    ExtentManifest { extent: u64, generation: u64 },
+    ExtentArena { arena: u64 },
     FreeSpaceManifest { generation: u64 },
     FreeSpaceMembershipBlock { generation: u64, block: u64 },
 }
@@ -91,6 +91,9 @@ pub(super) fn artifact_parts(artifact: PhysicalWorkArtifactCode) -> (u8, u64, u6
         PhysicalWorkArtifactCode::CatalogCandidate { publication } => (2, publication, 0),
         PhysicalWorkArtifactCode::RootManifest { generation } => (3, generation, 0),
         PhysicalWorkArtifactCode::RootRoutingBlock { generation, block } => (4, generation, block),
+        PhysicalWorkArtifactCode::ReleaseCustodyHeadBlock { generation, block } => {
+            (17, generation, block)
+        }
         PhysicalWorkArtifactCode::Segment {
             segment,
             generation,
@@ -102,8 +105,7 @@ pub(super) fn artifact_parts(artifact: PhysicalWorkArtifactCode) -> (u8, u64, u6
         PhysicalWorkArtifactCode::SegmentMembershipBlock { generation, block } => {
             (7, generation, block)
         }
-        PhysicalWorkArtifactCode::Extent { extent, generation } => (8, extent, generation),
-        PhysicalWorkArtifactCode::ExtentManifest { extent, generation } => (9, extent, generation),
+        PhysicalWorkArtifactCode::ExtentArena { arena } => (16, arena, 0),
         PhysicalWorkArtifactCode::FreeSpaceManifest { generation } => (10, generation, 0),
         PhysicalWorkArtifactCode::FreeSpaceMembershipBlock { generation, block } => {
             (11, generation, block)
@@ -135,6 +137,12 @@ pub(super) fn decode_artifact(
             generation: first,
             block: second,
         }),
+        17 if first != 0 && second != 0 => {
+            Some(PhysicalWorkArtifactCode::ReleaseCustodyHeadBlock {
+                generation: first,
+                block: second,
+            })
+        }
         5 => Some(PhysicalWorkArtifactCode::Segment {
             segment: first,
             generation: second,
@@ -147,14 +155,9 @@ pub(super) fn decode_artifact(
             generation: first,
             block: second,
         }),
-        8 => Some(PhysicalWorkArtifactCode::Extent {
-            extent: first,
-            generation: second,
-        }),
-        9 => Some(PhysicalWorkArtifactCode::ExtentManifest {
-            extent: first,
-            generation: second,
-        }),
+        16 if first != 0 && second == 0 => {
+            Some(PhysicalWorkArtifactCode::ExtentArena { arena: first })
+        }
         10 if second == 0 => {
             Some(PhysicalWorkArtifactCode::FreeSpaceManifest { generation: first })
         }
@@ -173,5 +176,33 @@ pub(super) fn decode_artifact(
             publication: first,
         }),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn arena_work_target_has_fresh_tag_and_legacy_extent_targets_are_denied() {
+        let arena = PhysicalWorkArtifactCode::ExtentArena { arena: 7 };
+        assert_eq!(artifact_parts(arena), (16, 7, 0));
+        assert_eq!(decode_artifact(16, 7, 0), Some(arena));
+        assert_eq!(decode_artifact(8, 7, 1), None);
+        assert_eq!(decode_artifact(9, 7, 1), None);
+        assert_eq!(decode_artifact(16, 0, 0), None);
+        assert_eq!(decode_artifact(16, 7, 1), None);
+    }
+
+    #[test]
+    fn release_head_work_target_has_distinct_canonical_tag() {
+        let head = PhysicalWorkArtifactCode::ReleaseCustodyHeadBlock {
+            generation: 7,
+            block: 3,
+        };
+        assert_eq!(artifact_parts(head), (17, 7, 3));
+        assert_eq!(decode_artifact(17, 7, 3), Some(head));
+        assert_eq!(decode_artifact(17, 0, 3), None);
+        assert_eq!(decode_artifact(17, 7, 0), None);
     }
 }

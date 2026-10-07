@@ -132,7 +132,7 @@ pub(crate) enum AuthoritySealDomain {
 }
 
 impl AuthoritySealDomain {
-    const fn label(self) -> &'static [u8] {
+    pub(crate) const fn label(self) -> &'static [u8] {
         match self {
             Self::InstallationRootLineage => b"worth-query-installation-root-lineage-v1",
             Self::InstalledPackageKey => b"worth-query-installed-package-key-v1",

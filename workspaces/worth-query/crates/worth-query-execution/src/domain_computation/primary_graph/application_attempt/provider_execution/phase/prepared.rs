@@ -24,8 +24,13 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod currentness;
 mod local_workflow_settlement;
 mod provider_attempt;
+use currentness::{
+    readmit_current_basis, select_current_product, validate_elevation_currentness,
+    validate_operation_currentness, validate_workflow_deadline,
+};
 use provider_attempt::prepare_application_provider_attempt;
 pub(super) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
@@ -106,8 +111,10 @@ impl<Schema, Operation, Input, Scope>
 }
 
 struct WorthQueryProviderAttemptPreparation {
+    required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: Vec<WorthQueryApplicationObservedFact>,
+    consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     application_effect_count: usize,
     emission_retained_bytes: u64,
@@ -179,6 +186,7 @@ where
         .as_ref()
         .map(|binding| binding.approval_authority.clone());
     let mut admission = read_set.admission;
+    let required_output_demand = admission.take_required_output_demand();
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
     let idempotency =
         bind_commit_idempotency(&admission, conditional_definition.as_ref(), idempotency);
@@ -191,9 +199,14 @@ where
     if let Err(outcome) = validate_operation_currentness(&admission) {
         return terminal(outcome);
     }
+    let current_product = match select_current_product(application, read_set.lease.product()) {
+        Ok(product) => product,
+        Err(outcome) => return terminal(outcome),
+    };
     if let Some(outcome) = resolve_retained_idempotency(
         application,
         &mut admission,
+        &current_product,
         idempotency,
         aftermath_causality.as_ref(),
     ) {
@@ -204,20 +217,35 @@ where
             WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
         ));
     }
+    let ordinary_basis = conditional_definition.is_none()
+        && aftermath_causality.is_none()
+        && elevation_currentness.is_none();
     if let Err(outcome) = validate_elevation_currentness(application, elevation_currentness) {
         return terminal(outcome);
     }
     if let Err(outcome) = validate_workflow_deadline(application, workflow_deadline) {
         return terminal(outcome);
     }
+    let lease = match readmit_current_basis(
+        application,
+        &mut admission,
+        read_set.lease,
+        current_product,
+        ordinary_basis,
+    ) {
+        Ok(lease) => lease,
+        Err(outcome) => return terminal(outcome),
+    };
     prepare_authorized_application_commit(
         application,
         WorthQueryCurrentApplicationCommit {
             admission,
-            lease: read_set.lease,
+            lease,
             provider: WorthQueryProviderAttemptPreparation {
+                required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
                 facts: read_set.facts,
+                consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,
                 emission_retained_bytes,
@@ -297,48 +325,6 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         aftermath_causality,
     })
 }
-
-fn validate_operation_currentness<Schema, Operation, Input, Scope>(
-    admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-) -> Result<(), WorthQueryApplicationCommitOutcome> {
-    admission.validate_current_authority().map_err(|denial| {
-        commit_outcome_from_authorization_denial(denial, DenialStage::DecisionReadSet)
-    })
-}
-
-fn validate_elevation_currentness<Schema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
-) -> Result<(), WorthQueryApplicationCommitOutcome> {
-    if elevation_currentness
-        .as_ref()
-        .is_some_and(|currentness| !currentness.remains_current(&application.authorization_clock))
-    {
-        Err(denied(DenialStage::DecisionReadSet))
-    } else {
-        Ok(())
-    }
-}
-
-/// A workflow step prepared before its instance's deadline still commits only
-/// while the deadline lies ahead on the installed clock.
-fn validate_workflow_deadline<Schema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    deadline: Option<u64>,
-) -> Result<(), WorthQueryApplicationCommitOutcome> {
-    deadline.map_or(Ok(()), |deadline| {
-        super::super::super::workflow_deadline::ensure_before(
-            &application.authorization_clock,
-            deadline,
-        )
-        .map_err(|denial| {
-            WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
-            )
-        })
-    })
-}
-
 fn take_commit_authorization<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

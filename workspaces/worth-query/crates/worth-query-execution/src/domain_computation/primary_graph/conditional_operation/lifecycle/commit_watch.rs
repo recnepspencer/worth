@@ -1,20 +1,18 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_relational::facade::{
-    identity::{EntityId, PartitionId},
-    transactions::RecordRef,
-};
+use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_runtime_bridge::facade::{BridgeInstalledConditionalLowering, BridgeSemanticLocality};
 
 use crate::domain_computation::primary_graph::conditional_operation::temporal_reconstruction::WorthQueryReconstructedTemporalIntent;
 
-/// Exact source records whose commits can affect one retained product
+/// Exact source entities whose commits can affect one retained product
 /// evaluation. The set survives intent completion for as long as the product
-/// binding itself remains retained.
+/// binding itself remains retained. Whole-graph dependencies watch every
+/// commit; the owner's retained touches decide relevance against this set.
 #[derive(Clone, Default)]
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryConditionalCommitWatchSet
 {
-    records: BTreeSet<RecordRef>,
+    entities: BTreeSet<EntityId>,
     whole_graph: bool,
 }
 
@@ -26,15 +24,12 @@ impl WorthQueryConditionalCommitWatchSet {
         maximum_records: usize,
     ) -> Result<Self, &'static str> {
         let mut watch = predecessor.cloned().unwrap_or_default();
-        watch.records.extend(intents.values().map(|intent| {
-            let record = intent.source_record();
-            RecordRef::Entity(EntityId::new(
-                PartitionId(record.partition_id()),
-                record.local_slot(),
-                record.generation(),
-            ))
-        }));
-        if watch.records.len() > maximum_records {
+        watch.entities.extend(
+            intents
+                .values()
+                .map(|intent| source_entity(intent.source_record())),
+        );
+        if watch.entities.len() > maximum_records {
             return Err("conditional commit watch capacity is exhausted");
         }
         watch.whole_graph |= (0..lowering.contract().dependency_count()).any(|ordinal| {
@@ -46,11 +41,22 @@ impl WorthQueryConditionalCommitWatchSet {
         Ok(watch)
     }
 
-    pub(super) fn records(&self) -> impl Iterator<Item = &RecordRef> {
-        self.records.iter()
+    pub(super) const fn entities(&self) -> &BTreeSet<EntityId> {
+        &self.entities
     }
 
     pub(super) const fn includes_whole_graph(&self) -> bool {
         self.whole_graph
     }
+}
+
+/// The Relational entity behind one Bridge record identity.
+pub(in crate::domain_computation::primary_graph::conditional_operation) fn source_entity(
+    record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
+) -> EntityId {
+    EntityId::new(
+        PartitionId(record.partition_id()),
+        record.local_slot(),
+        record.generation(),
+    )
 }

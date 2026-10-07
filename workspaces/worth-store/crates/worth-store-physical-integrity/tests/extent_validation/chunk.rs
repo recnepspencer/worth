@@ -3,9 +3,10 @@ use worth_store_physical_format::{
     encode_extent_chunk, ExtentChunkCoordinate, PhysicalPageSizeClass,
 };
 use worth_store_physical_integrity::{
-    validate_extent_chunk, ExtentChunkIntegrityValidation, PhysicalBlastRadius, PhysicalByteRange,
-    PhysicalDamageCause, PhysicalFormatField, PhysicalIntegrityRejection,
-    PhysicalIntegrityRejectionClass, PhysicalIntegrityVersionAxis, UntrustedPhysicalArtifact,
+    validate_extent_chunk, ExtentChunkIntegrityValidation, PhysicalArtifactScope,
+    PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause, PhysicalFormatField,
+    PhysicalIntegrityRejection, PhysicalIntegrityRejectionClass, PhysicalIntegrityVersionAxis,
+    UntrustedPhysicalArtifact,
 };
 
 use super::support::{
@@ -122,14 +123,14 @@ fn chunk_framing_version_kind_checksum_and_truncation_are_localized() {
     );
 
     let mut unsupported_format = fixture.tail_chunk_bytes();
-    unsupported_format[10..12].copy_from_slice(&2_u16.to_le_bytes());
+    unsupported_format[10..12].copy_from_slice(&3_u16.to_le_bytes());
     reseal_durable_frame(&mut unsupported_format);
     assert_unsupported(
         &unsupported_format,
         scope,
         &manifest,
         PhysicalIntegrityVersionAxis::PhysicalFormat,
-        2,
+        3,
     );
 }
 
@@ -248,11 +249,16 @@ fn chunk_manifest_store_format_and_canonical_length_membership_cannot_be_substit
 
     let other_format = format(PhysicalPageSizeClass::KiB32);
     let other_format_bytes = encode_extent_chunk(other_format, coordinate, b"tail!").unwrap();
-    let other_format_scope = chunk_scope(
+    let other_format_scope = PhysicalArtifactScope::extent_chunk(
         fixture.store,
         other_format,
         coordinate,
-        other_format_bytes.len() as u64,
+        PhysicalByteRange::new(
+            fixture.tail_chunk_scope().byte_range().offset(),
+            other_format_bytes.len() as u64,
+        )
+        .unwrap(),
+        fixture.arena_range(),
     );
     assert_chunk_damage(
         &other_format_bytes,

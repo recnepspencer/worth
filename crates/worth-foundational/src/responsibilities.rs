@@ -29,7 +29,7 @@ impl ResponsibilityArea {
 }
 
 /// Responsibility topology exposed for Phase 1 certification.
-pub fn foundational_responsibilities() -> [ResponsibilityArea; 13] {
+pub fn foundational_responsibilities() -> [ResponsibilityArea; 14] {
     [
         crate::values::responsibility(),
         crate::aspects::responsibility(),
@@ -43,6 +43,7 @@ pub fn foundational_responsibilities() -> [ResponsibilityArea; 13] {
         crate::diagnostics::responsibility(),
         crate::boundary_evidence::responsibility(),
         crate::performance::responsibility(),
+        crate::budget_limits::responsibility(),
         crate::expressions::responsibility(),
     ]
 }

@@ -22,6 +22,10 @@ use worth_query_host::facade::declaration::application_schema::{
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph, runtime};
 
+#[path = "host/world_resources.rs"]
+mod world_resources;
+use world_resources::world_resources;
+
 use super::assessment_output::{
     RetentionAssessmentBinding, RetentionAssessmentHandler, RetentionAssessmentProducer,
     RetentionAssessmentProvider,
@@ -119,11 +123,6 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
 /// Publishes a host whose first occurrence runs P0, with P1 rostered beside it.
 pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0> {
     publish_on_first_program_with_limits(host_limits())
-}
-
-pub fn publish_on_first_program_for_history_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
-{
-    publish_on_first_program_with_limits(history_limits(16_384, 64 * 1024 * 1024, 32_768))
 }
 
 /// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
@@ -330,19 +329,11 @@ fn seed_document(
         .expect("the related document must seed");
 }
 
-fn host_limits() -> WorthQueryInMemoryApplicationLimits {
-    history_limits(256, 4 * 1024 * 1024, 256)
-}
-
-fn history_limits(
-    commits: u64,
-    metadata_bytes: u64,
-    pins: u64,
-) -> WorthQueryInMemoryApplicationLimits {
+pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
     // Installation admits the binding's maximum publication shape even though
     // the ordinary Document handler requests its narrow candidate at execution.
     WorthQueryInMemoryApplicationLimits::new(
-        world_resources(commits, metadata_bytes, pins),
+        world_resources(256, 4 * 1024 * 1024, 256),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
             200_000,
             128 * 1024 * 1024,
@@ -353,41 +344,4 @@ fn history_limits(
             .expect("valid query limits"),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
-}
-
-fn world_resources(
-    commits: u64,
-    metadata_bytes: u64,
-    pins: u64,
-) -> runtime::WorthQueryProductWorldResources {
-    runtime::WorthQueryProductWorldResources::install(
-        runtime::RuntimeWorldBudgetInstallation {
-            branches: runtime::RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 32,
-            },
-            history: runtime::RuntimeWorldHistoryBudgetInstallation {
-                retained_composite_commits: commits,
-                history_metadata_bytes: metadata_bytes,
-            },
-            observations: runtime::RuntimeWorldObservationBudgetInstallation {
-                active_observations: 128,
-            },
-            publication: runtime::RuntimeWorldPublicationBudgetInstallation {
-                active_publication_attempts: 32,
-            },
-            recovery: runtime::RuntimeWorldRecoveryBudgetInstallation {
-                retained_product_unpublished_records: 32,
-                retained_partial_metadata_bytes: 4 * 1024 * 1024,
-            },
-            retention: runtime::RuntimeWorldRetentionBudgetInstallation {
-                unique_exact_component_pins: pins,
-                in_flight_pin_acquisition_reservations: 64,
-            },
-            custody: runtime::RuntimeWorldCustodyBudgetInstallation {
-                owner_created_component_custody_records: 64,
-            },
-        },
-        runtime::WorthQueryProductWorldClock::start(),
-    )
-    .expect("the document-retention World resources are valid")
 }

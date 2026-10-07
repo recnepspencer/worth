@@ -7,11 +7,16 @@ use super::{
     encode_offline_integrity_report, OfflineIntegrityObservationRequest, OfflineIntegrityReport,
     OfflineIntegrityReportBoundaryDenial, OfflineIntegrityReportWireDenial,
 };
+use crate::{
+    encode_offline_selected_integrity_observation, PhysicalIntegrityComparisonDenial,
+    PhysicalIntegrityComparisonLimits,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OfflineIntegrityReportEmissionDenial {
     Boundary(OfflineIntegrityReportBoundaryDenial),
     Wire(OfflineIntegrityReportWireDenial),
+    SelectedWire(PhysicalIntegrityComparisonDenial),
     ElapsedBoundExceeded,
     Io,
 }
@@ -19,6 +24,35 @@ pub enum OfflineIntegrityReportEmissionDenial {
 pub fn emit_offline_integrity_report(
     request: &OfflineIntegrityObservationRequest,
     report: &OfflineIntegrityReport,
+) -> Result<(), OfflineIntegrityReportEmissionDenial> {
+    emit_with(request, || {
+        encode_offline_integrity_report(report).map_err(OfflineIntegrityReportEmissionDenial::Wire)
+    })
+}
+
+pub fn emit_offline_selected_integrity_report(
+    request: &OfflineIntegrityObservationRequest,
+    report: &OfflineIntegrityReport,
+) -> Result<(), OfflineIntegrityReportEmissionDenial> {
+    let limits = PhysicalIntegrityComparisonLimits::new(
+        request.limits().maximum_report_bytes(),
+        request.limits().maximum_entries(),
+        request.limits().maximum_report_bytes(),
+    )
+    .map_err(|_| {
+        OfflineIntegrityReportEmissionDenial::SelectedWire(
+            PhysicalIntegrityComparisonDenial::InvalidObservation,
+        )
+    })?;
+    emit_with(request, || {
+        encode_offline_selected_integrity_observation(report, limits)
+            .map_err(OfflineIntegrityReportEmissionDenial::SelectedWire)
+    })
+}
+
+fn emit_with(
+    request: &OfflineIntegrityObservationRequest,
+    encode: impl FnOnce() -> Result<String, OfflineIntegrityReportEmissionDenial>,
 ) -> Result<(), OfflineIntegrityReportEmissionDenial> {
     let started = Instant::now();
     let (_, destination) = prove_report_destination(
@@ -28,8 +62,7 @@ pub fn emit_offline_integrity_report(
         started,
     )
     .map_err(OfflineIntegrityReportEmissionDenial::Boundary)?;
-    let wire = encode_offline_integrity_report(report)
-        .map_err(OfflineIntegrityReportEmissionDenial::Wire)?;
+    let wire = encode()?;
     ensure_elapsed(request, started)?;
     match destination {
         ProvenReportDestination::StandardOutput => {

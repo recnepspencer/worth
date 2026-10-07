@@ -147,7 +147,7 @@ where
             .conditional_lifecycle()
             .activate_conditional_reconstitution(bridge_candidate)
             .map_err(|denial| bridge_denial(denial.detail()))?;
-        registry.apply_derived_runtime_reinstallation(prepared, self);
+        registry.apply_derived_runtime_reinstallation(prepared);
         self.granular_invalidation.advance_runtime_generation();
         let work = registry.reconstruction_work();
         Ok(WorthQueryConditionalRuntimeReinstallationReceipt {

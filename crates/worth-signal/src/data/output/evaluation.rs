@@ -146,6 +146,9 @@ mod tests {
         assert!(result.changed_regions.is_empty());
         assert_eq!(result.changed_aspect_regions.len(), 1);
         assert_eq!(result.changed_aspect_regions[0].0, risk);
-        assert_eq!(result.changed_aspect_regions[0].1.partition.0, "rates");
+        assert_eq!(
+            result.changed_aspect_regions[0].1.path().segments(),
+            ["rates", "2y"]
+        );
     }
 }

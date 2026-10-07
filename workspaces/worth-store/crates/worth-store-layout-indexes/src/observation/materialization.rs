@@ -1,9 +1,7 @@
 use super::owner_case::{sealed, ObserveOwnerCase, OwnerCaseObservation};
 use crate::materialization::{
-    BTreeLookupMaterializationAdmissionCaseId, BTreeLookupMaterializationAdmissionOutcome,
     BTreePublicationMaterializationAdmissionCaseId,
-    BTreePublicationMaterializationAdmissionOutcome, BTreeReplayMaterializationAdmissionCaseId,
-    BTreeReplayMaterializationAdmissionOutcome, CatalogRootMaterializationAdmissionCaseId,
+    BTreePublicationMaterializationAdmissionOutcome, CatalogRootMaterializationAdmissionCaseId,
     CatalogRootMaterializationAdmissionOutcome, ImportedBlobMaterializationAdmissionCaseId,
     ImportedBlobMaterializationAdmissionOutcome, LsmLookupMaterializationAdmissionCaseId,
     LsmLookupMaterializationAdmissionOutcome, LsmPublicationMaterializationAdmissionCaseId,
@@ -27,8 +25,6 @@ macro_rules! observe_owner_case {
 
 observe_owner_case!(CatalogRootMaterializationAdmissionOutcome => CatalogRootMaterializationAdmissionCaseId);
 observe_owner_case!(BTreePublicationMaterializationAdmissionOutcome => BTreePublicationMaterializationAdmissionCaseId);
-observe_owner_case!(BTreeLookupMaterializationAdmissionOutcome => BTreeLookupMaterializationAdmissionCaseId);
-observe_owner_case!(BTreeReplayMaterializationAdmissionOutcome => BTreeReplayMaterializationAdmissionCaseId);
 observe_owner_case!(LsmLookupMaterializationAdmissionOutcome => LsmLookupMaterializationAdmissionCaseId);
 observe_owner_case!(LsmPublicationMaterializationAdmissionOutcome => LsmPublicationMaterializationAdmissionCaseId);
 observe_owner_case!(LsmReplayMaterializationAdmissionOutcome => LsmReplayMaterializationAdmissionCaseId);

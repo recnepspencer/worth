@@ -62,6 +62,23 @@ pub enum PhysicalRecoveryStagingDenial {
 }
 
 impl PhysicalRecoveryStagingSettlementLedger {
+    /// Retained settlement backing and Store-owned nested effect storage.
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        let entries = u64::try_from(std::mem::size_of_val(&*self.entries)).ok()?;
+        self.entries.iter().try_fold(entries, |total, entry| {
+            let nested = match entry {
+                PhysicalRecoveryStagingSettlement::Completed(value) => value.owned_heap_bytes()?,
+                PhysicalRecoveryStagingSettlement::DeniedBeforeEffect(value) => {
+                    value.owned_heap_bytes()?
+                }
+                PhysicalRecoveryStagingSettlement::Indeterminate(value) => {
+                    value.owned_heap_bytes()?
+                }
+            };
+            total.checked_add(nested)
+        })
+    }
+
     pub(crate) fn new(entries: Vec<PhysicalRecoveryStagingSettlement>) -> Self {
         Self {
             entries: entries.into_boxed_slice(),

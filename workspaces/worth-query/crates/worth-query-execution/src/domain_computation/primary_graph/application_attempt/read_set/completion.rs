@@ -1,10 +1,16 @@
-use super::*;
+use std::marker::PhantomData;
+
+use super::{
+    denial, observation_admission, CompletedHandlerFactBoundary,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet,
+};
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope, Phase>
 {
     pub fn complete(
-        self,
+        mut self,
     ) -> Result<
         WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         WorthQueryApplicationAttemptDenial,
@@ -80,11 +86,15 @@ impl<Schema, Operation, Input, Scope, Phase>
                     self.admission.operation(),
                 )
             })?;
+        self.admission.record_completed_handler_facts(
+            CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
+        );
         Ok(WorthQueryCompleteApplicationReadSet {
             admission: self.admission,
             lease: self.lease,
             installed_read_scopes: self.installed_read_scopes.into_values().collect(),
             facts: self.facts.into_values().chain(self.source_facts).collect(),
+            consumed_outputs: self.consumed_outputs,
             workflow_authority_binding: None,
             mutation_handler_binding: None,
             workflow_deadline: None,

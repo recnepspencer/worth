@@ -53,6 +53,7 @@ impl DiagnosticsState {
             latest_invalidation_trace_records,
             observation_activation_mask,
             lineage_custody,
+            fact_custody,
             transaction_flow_scope,
         } = self;
         Self {
@@ -101,6 +102,7 @@ impl DiagnosticsState {
             observation_activation_mask: *observation_activation_mask,
             transaction_flow_scope: *transaction_flow_scope,
             lineage_custody: lineage_custody.clone(),
+            fact_custody: fact_custody.clone(),
         }
     }
 }

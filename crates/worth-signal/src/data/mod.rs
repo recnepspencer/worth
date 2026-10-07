@@ -28,6 +28,7 @@ pub(crate) mod persistent_ord_set;
 pub(crate) mod persistent_paged_vector;
 pub(crate) mod persistent_vector;
 pub mod proof;
+pub(crate) mod request_preparation;
 pub mod resource;
 pub(crate) mod retained_storage;
 pub mod reuse;

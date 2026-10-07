@@ -47,6 +47,9 @@ fn retained_publication_blocks_the_next_root_change() {
         Err(PhysicalPublicationAdmissionDenial::Growth(_)) => {
             panic!("the blocker is the pending publication, not growth")
         }
+        Err(PhysicalPublicationAdmissionDenial::ReclaimFenced) => {
+            panic!("bare retention admission has no reclaim fence")
+        }
     }
 }
 
@@ -82,4 +85,35 @@ fn sealed_candidate_charge_survives_lease_drop() {
     };
     assert_eq!(denied.remaining_bytes, 0);
     assert_eq!(denied.requested_bytes, 1);
+}
+
+#[test]
+fn sealing_one_candidate_preserves_another_holder_of_the_same_artifact() {
+    let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
+    let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
+    let unresolved = admission.reserve_candidate(segment(9), 60).unwrap();
+    let other = admission.reserve_candidate(segment(9), 60).unwrap();
+    admission.seal_candidate_charge(unresolved.artifact());
+    drop(unresolved);
+    assert_eq!(
+        admission
+            .lock()
+            .generations
+            .get(&segment(9))
+            .unwrap()
+            .holders,
+        1,
+        "the unrelated candidate lease must remain live"
+    );
+    drop(other);
+    assert_eq!(
+        admission
+            .lock()
+            .generations
+            .get(&segment(9))
+            .unwrap()
+            .holders,
+        0
+    );
+    assert_eq!(admission.charged_growth_bytes(), 60);
 }

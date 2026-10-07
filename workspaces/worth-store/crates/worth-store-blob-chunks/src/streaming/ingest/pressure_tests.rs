@@ -11,7 +11,7 @@ use worth_store_io_scheduler::{
 use worth_store_physical_backend::BlobBackendChunkWriteSession;
 use worth_store_security::StoreTenantScope;
 
-use crate::test_support::{blob_scope, physical_payload_for_bytes, with_blob_allocation};
+use crate::test_support::{blob_scope, physical_payload_for_bytes};
 use crate::{
     BlobChunkOrdinal, BlobChunkSize, BlobChunkingRuleAdmission, BlobStreamingChunkWriter,
     BlobStreamingIngest, BlobStreamingIngestDenial, BlobStreamingIngestRequest,
@@ -139,19 +139,14 @@ fn run_ingest(
     pressure: BlobStreamingPressureAdmission,
     source_frames: impl IntoIterator<Item = BlobStreamingSourceFrame>,
 ) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial> {
-    with_blob_allocation(4, |_, allocation| {
-        BlobStreamingIngest::run_bounded(
-            request(),
-            crate::BlobStreamingIngestExecution::new(
-                BlobStreamingWindow::bounded(4).unwrap(),
-                allocation,
-                pressure,
-                CounterEvidenceStrength::Exact,
-            ),
-            source_frames,
-            &mut TestChunkWriter,
-        )
-    })
+    BlobStreamingIngest::verify_bounded_content(
+        request(),
+        BlobStreamingWindow::bounded(4).unwrap(),
+        pressure,
+        CounterEvidenceStrength::Exact,
+        source_frames,
+        &mut TestChunkWriter,
+    )
 }
 
 fn request() -> BlobStreamingIngestRequest {

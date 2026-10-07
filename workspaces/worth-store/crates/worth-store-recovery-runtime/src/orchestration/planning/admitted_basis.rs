@@ -12,9 +12,10 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
-    PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDimension, PhysicalRecoveryOutcome,
+    PhysicalRecoveryPlanningDenial,
 };
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 use super::context::PlanningContext;
 use super::counters;
@@ -49,18 +50,15 @@ pub(super) fn admit(
         context
             .integrity
             .admitted_wal()
-            .recoverable_frames(context.selection.wal_tail()),
+            .recoverable_frame_view(context.selection.wal_tail()),
         context.limits.operation_bindings,
         context.limits.redo_bytes,
+        context.limits.recovery_memory_bytes,
     ) {
         Ok(sample) => sample,
         Err(failure) => {
             let denial = failure.denial();
-            let limit = sample_limit(
-                failure,
-                context.limits.operation_bindings,
-                context.limits.redo_bytes,
-            );
+            let limit = sample_limit(&failure, &context.limits);
             let planning_counters =
                 counters::failed_sample(failure.freshness_retained(), failure.freshness_expired());
             return Err(context.block_with_planning_attempt_denial(
@@ -68,7 +66,12 @@ pub(super) fn admit(
                 planning_counters,
                 "binding-freshness-sample",
                 limit,
-                PhysicalRecoveryPlanningDenial::BindingFreshness(denial),
+                match failure.allocation_denial() {
+                    Some(cause) => {
+                        PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(cause.clone())
+                    }
+                    None => PhysicalRecoveryPlanningDenial::BindingFreshness(denial),
+                },
             ));
         }
     };
@@ -121,8 +124,10 @@ pub(super) fn admit(
                 record_identities: context.limits.redo_targets,
                 placements: remaining_manifest_entries,
                 segment_updates: remaining_manifest_entries,
-                manifests: remaining_manifest_entries,
-                total_entries: remaining_manifest_entries,
+                manifests: redo_bytes,
+                total_entries: remaining_manifest_entries
+                    .saturating_mul(2)
+                    .saturating_add(redo_bytes),
                 inline_allocations: remaining_manifest_entries,
             },
         },
@@ -131,34 +136,19 @@ pub(super) fn admit(
         Err(denial) => {
             let planning_counters =
                 counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
-            let limit = match denial {
-                worth_store_recovery_physics::PhysicalRedoPlanningDenial::RecoveryMemoryLimit {
-                    observed,
-                    admitted,
-                } => Some(PhysicalRecoveryLimitFailure {
-                    dimension: PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-                    observed,
-                    admitted,
-                }),
-                _ => None,
-            };
-            return Err(context.redo_denial_block(planning_counters, limit, denial));
+            return Err(context.redo_denial_block(planning_counters, denial));
         }
     };
     let targets = redo.target_identities();
     let distinct_targets = targets.iter().copied().collect::<BTreeSet<_>>().len() as u64;
-    if distinct_targets > context.limits.distinct_pages_and_extents {
-        let admitted = context.limits.distinct_pages_and_extents;
+    let distinct = RecoveryAllowance::declared(
+        &context.limits,
+        PhysicalRecoveryLimitDimension::DistinctPagesAndExtents,
+    );
+    if let Some(limit) = distinct.past(distinct_targets) {
         let planning_counters =
             counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
-        return Err(context.redo_block(
-            planning_counters,
-            Some(PhysicalRecoveryLimitFailure {
-                dimension: PhysicalRecoveryLimitDimension::DistinctPagesAndExtents,
-                observed: distinct_targets,
-                admitted,
-            }),
-        ));
+        return Err(context.redo_block(planning_counters, Some(limit)));
     }
     Ok((
         context,

@@ -102,6 +102,41 @@ where
             })?;
         self.state.history.reclaim_batch(request)
     }
+    fn retire_unprotected_history(
+        &self,
+        keep: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| {
+                HistoryReclamationDenial::OwnerUnavailable(
+                    super::RuntimeWorldOwnerUnavailable::new(),
+                )
+            })?;
+        let retired = self
+            .state
+            .history
+            .retire_unprotected_history(keep)
+            .map_err(HistoryReclamationDenial::Catalog)?;
+        let keys: Vec<_> = retired
+            .iter()
+            .filter_map(|slot| slot.get())
+            .flat_map(|entry| entry.retention_keys())
+            .collect();
+        let identities = retired
+            .iter()
+            .filter_map(|slot| slot.get())
+            .map(|entry| entry.commit().identity().clone())
+            .collect();
+        // Dropping the entries releases their pins; a pin no other holder
+        // shares is then reclaimed from the registry.
+        drop(retired);
+        self.state
+            .retention
+            .reclaim_keys(&keys, keys.len())
+            .expect("retired history pins belong to this owner");
+        Ok(identities)
+    }
     fn reclaim_retention(
         &self,
         keys: &[crate::inspection::RuntimeWorldRetentionKey],

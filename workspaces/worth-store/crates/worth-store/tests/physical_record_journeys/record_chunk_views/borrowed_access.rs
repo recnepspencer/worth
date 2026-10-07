@@ -137,14 +137,12 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
         .unwrap();
     let mut logical_offset = 0_u64;
     let mut frame_index = 0_u64;
-    let artifact = RecordArtifactFile::Extent {
-        extent: 1,
-        generation: 1,
-    };
-    assert!(root
-        .join("families/records/extents")
-        .join(artifact.file_name())
-        .is_file());
+    let artifact = RecordArtifactFile::ExtentArena { arena: 1 };
+    let arena_bytes = std::fs::read(
+        root.join("families/records/arenas")
+            .join(artifact.file_name()),
+    )
+    .unwrap();
     let residency = serving.certification_physical_residency();
 
     while let Some(chunk) = session.next_chunk().unwrap() {
@@ -155,7 +153,7 @@ fn extent_views_stream_one_resident_frame_at_a_time_without_pool_copies() {
             (expected.len() - expected_payload_start).min(fixture::CHUNK_PAYLOAD_BYTES);
         let coordinate = RecordFrameCoordinate::new(
             artifact,
-            frame_index * fixture::FRAME_BYTES,
+            super::super::durable_frame_oracle::first_arena_chunk_offset(&arena_bytes, frame_index),
             (decoded_payload_offset + expected_payload_bytes) as u32,
         )
         .unwrap();
@@ -207,6 +205,10 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
         worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial::new([172; 32]),
         RecordAppendBatch::try_from_iter([expected.as_slice()]).unwrap(),
     );
+    let operation_bytes_before_read = serving
+        .residency_observation()
+        .counters()
+        .active_operation_bytes();
     let mut session = serving
         .records()
         .expect("read protection admission")
@@ -227,7 +229,7 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 1);
     assert_eq!(residency.pinned_frames(), 1);
-    assert!(residency.active_operation_bytes() > 0);
+    assert!(residency.active_operation_bytes() > operation_bytes_before_read);
 
     drop(session);
 
@@ -235,6 +237,9 @@ fn dropping_a_partially_consumed_extent_releases_its_session_frame_and_allocatio
     let residency = serving.residency_observation().counters();
     assert_eq!(residency.pin_leases(), 0);
     assert_eq!(residency.pinned_frames(), 0);
-    assert_eq!(residency.active_operation_bytes(), 0);
+    assert_eq!(
+        residency.active_operation_bytes(),
+        operation_bytes_before_read
+    );
     fixture::assert_clean_close(serving);
 }

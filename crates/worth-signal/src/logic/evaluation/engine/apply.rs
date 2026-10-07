@@ -18,7 +18,7 @@ use crate::logic::prepared::PreparedKeyedContext;
 use super::metadata::EvaluationExecutionMetadata;
 
 pub(crate) use dependency_inputs::collect_effect_dependency_inputs_iter;
-#[cfg(feature = "parallel")]
+pub(crate) use dependency_inputs::proposed_effect_dependency_inputs;
 pub(crate) use effect_lowering::build_evaluation_effect;
 pub(crate) use verdict::provisional_evaluated_verdict;
 
@@ -38,7 +38,7 @@ pub(crate) fn apply_effect_with_policy_and_condition(
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
     previous_artifact_warm: Option<PreviousArtifactWarmSnapshot>,
-    work: &mut super::work::EvaluationWork<'_>,
+    work: &mut super::work::EvaluationWork<'_, '_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     let dependency_inputs =
         dependency_inputs::resolve_effect_dependency_inputs(graph, node, dependency_inputs, work)?;

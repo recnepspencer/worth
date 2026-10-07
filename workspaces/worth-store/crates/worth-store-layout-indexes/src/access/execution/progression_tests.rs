@@ -8,7 +8,7 @@ use worth_store_security::{
 };
 
 #[test]
-fn lsm_point_selection_does_not_issue_btree_lookup_authority() {
+fn lsm_point_selection_issues_exact_lookup_authority() {
     let (lifecycle, key_domain) = admit_wal_scope();
     let catalog = crate::bootstrap::test_support::bootstrap_catalog_read_admission();
     let (materialization, source) = persisted_lsm_materialization(lifecycle, &catalog);
@@ -28,9 +28,6 @@ fn lsm_point_selection_does_not_issue_btree_lookup_authority() {
             .expect("test request must pass ordinary admission"),
         PreExecutionBudgetEnvelope::foreground_default(),
     );
-    let outcome = outcome
-        .into_btree_lookup()
-        .expect_err("LSM point selection must not mint B-tree lookup authority");
     let selected = outcome
         .into_lsm_lookup()
         .expect("LSM point selection must issue exact LSM lookup authority");

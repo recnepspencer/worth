@@ -18,7 +18,7 @@ use worth_query_installation::facade::{
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
 use super::document_retention_model::{
-    host::{publish_on_first_program_for_history_scale, DocumentWorkflowRuntime},
+    host::{publish_on_first_program, DocumentWorkflowRuntime},
     workflow::{
         bounded_retry_definition_with_attempts, propose_authoring_instance, publish_definition,
         retain_workflow_with_resources, start_instance,
@@ -54,8 +54,7 @@ impl HistoryCourt {
         )
         .unwrap()
         .with_history_reconstruction_budget(budget);
-        let application =
-            retain_workflow_with_resources(publish_on_first_program_for_history_scale(), resources);
+        let application = retain_workflow_with_resources(publish_on_first_program(), resources);
         let definition = match publish_definition(
             &application,
             bounded_retry_definition_with_attempts(6_000),
@@ -166,10 +165,11 @@ impl HistoryCourt {
             .observe_certification_cost(&native_scope)
             .expect("native owners must remain inspectable");
         let native_delta = native.relational().sharing_cost_delta();
+        // History behind each settled publication retires, so World holds
+        // the same commits however many samples publish.
         assert_eq!(
-            native.world_history_after().installed_commits()
-                - native.world_history_before().installed_commits(),
-            SAMPLES as usize
+            native.world_history_after().installed_commits(),
+            native.world_history_before().installed_commits()
         );
         assert!(native_delta.publication_new_authoritative_bytes > 0);
         assert_eq!(native.world_retention_after().observations(), 0);

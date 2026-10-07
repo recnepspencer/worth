@@ -176,7 +176,7 @@ fn isolated_progress_allocation_probe() {
         );
         assert!(
             source.retained_charge_bytes() >= live,
-            "charge {} below live {live}",
+            "charge {} below live {live} at {count}",
             source.retained_charge_bytes()
         );
         let snapshot = Region::new(&INSTRUMENTED_SYSTEM);

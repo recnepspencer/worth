@@ -12,7 +12,6 @@ pub mod fixtures;
 #[cfg(feature = "layout-fixtures")]
 pub mod layout;
 #[cfg(feature = "layout-fixtures")]
-pub mod layout_evolution;
 #[cfg(feature = "layout-fixtures")]
 mod lsm_execution_fixture;
 #[cfg(feature = "physical-isolation-fixtures")]

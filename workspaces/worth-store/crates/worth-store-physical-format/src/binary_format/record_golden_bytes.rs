@@ -59,7 +59,7 @@ fn inline_placement(
     payload_bytes: u64,
 ) -> CurrentPhysicalRecordPlacement {
     CurrentPhysicalRecordPlacement::Inline(
-        DurableInlineRecordPlacement::new(
+        DurableInlineRecordPlacement::legacy_unknown(
             record,
             PhysicalGenerationAuthority::for_canonical_physical_format()
                 .segment_cell(PhysicalSegmentId::from_raw(1).unwrap())
@@ -86,7 +86,7 @@ fn current_catalog_golden_bytes_are_bit_exact() {
     let store = store(0x11);
     let bytes = BootstrapCatalog::new(store, format(), root_entry(7)).encode();
     assert_eq!(&bytes[..10], b"WRC5FRM\0\x01\x02");
-    assert_eq!(&bytes[10..20], &[1, 0, 0, 64, 0, 0, 1, 1, 1, 24]);
+    assert_eq!(&bytes[10..20], &[2, 0, 0, 64, 0, 0, 1, 1, 1, 24]);
     assert_eq!(&bytes[20..28], &[48, 0, 0, 0, 34, 0, 0, 0]);
     assert_eq!(&bytes[28..36], &7_u64.to_le_bytes());
     assert_eq!(&bytes[36..44], &0_u64.to_le_bytes());
@@ -102,7 +102,7 @@ fn current_catalog_golden_bytes_are_bit_exact() {
     );
     assert_eq!(
         digest(&bytes),
-        "6dc78896a6e4ab0b27eb299f623dda34fa8a5e60f0ed2cf73a18bd13375efc94"
+        "1881f9c5e23452027d8626e9584f582f371639e5f5f38c1e651a1c3b51ff3174"
     );
 }
 
@@ -113,7 +113,7 @@ fn manifest_and_empty_payload_page_round_trip_independently() {
     let block = PhysicalRootRoutingBlock::leaf(7, 2, 1, vec![placement], 4).unwrap();
     let encoded_block = block.encode(format());
     let routing_reference = block.reference(durable_artifact_checksum(&encoded_block));
-    let free_key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+    let free_key = FreeSpaceKey::arena(ExtentArenaId::new(1).unwrap(), 0);
     let free_reference =
         FreeSpaceBlockReference::new(2, 1, 0, 0x0102_0304, free_key, free_key).unwrap();
     let manifest = DurablePhysicalRootManifest::builder(2, 7, 4, 0x8a9b_acbd)
@@ -136,11 +136,11 @@ fn manifest_and_empty_payload_page_round_trip_independently() {
     assert_eq!(decoded_block.entries().unwrap()[0].record(), record);
     assert_eq!(
         digest(&encoded_manifest),
-        "5b968cd21588533d3d6992c58ba2f458340ac52950ca3c0865a0e3d3ac2b4d26"
+        "1f8703e63ad822d255222d2ffc5f3e9a01d7707c4df994a6a9e09d8883c7e0e4"
     );
     assert_eq!(
         digest(&encoded_block),
-        "f0ecac4767bcbc051a7b72d18ac0d3618bd883b9d51b44b4c2a6c8eac1a7af04"
+        "927d68d03dff0546e06c63583cd1ddab9239a38fbd1a2022d65461586ec43478"
     );
 
     let page_cell = page_cell(1, 2);
@@ -153,7 +153,7 @@ fn manifest_and_empty_payload_page_round_trip_independently() {
     .unwrap();
     assert_eq!(
         digest(&page),
-        "1a787c59c393ce7f232c41e8fd7c4398a70b81b533f4798d328389ce22281c74"
+        "2d5106a0cde679cc4e8135022f24d9eee00ae57b7071be12215afda797026b1b"
     );
     assert_eq!(page.len(), format().page_bytes() as usize);
     let range = decode_inline_record(&page, record, page_cell, slot_cell)
@@ -164,7 +164,7 @@ fn manifest_and_empty_payload_page_round_trip_independently() {
     let empty_page = encode_inline_page(format(), self::page_cell(2, 3), &[]).unwrap();
     assert_eq!(
         digest(&empty_page),
-        "8012e9a71c22a06ff713d59b3275745e39a098d5c801a29d45c337e1a1195406"
+        "ae8aef05eac1dd3e93dd418ca8be3abcfbd20a103e68e073a1f2d4f0e07fae2c"
     );
     assert_eq!(&empty_page[64..66], &[0, 0]);
 
@@ -192,7 +192,7 @@ fn full_slot_directory_golden_bytes_are_bit_exact() {
     let page = encode_inline_page(format(), page_cell, &appends).unwrap();
     assert_eq!(
         digest(&page),
-        "7549c217c0cae9cdfc283ea0734de028127b6732e2bc7b594ca964d3f3aed5fa"
+        "938cf88b1bc14f059135ed8d27dee39ee5cf56109199260ffa2a9f31ffba6ffd"
     );
     assert!(
         page[decode_inline_record(&page, records[0], page_cell, slot_cell(1, 1, 9))
@@ -309,7 +309,7 @@ fn zero_crc_is_valid_reference_data_not_an_absence_sentinel() {
     );
     assert!(SegmentManifestBlockReference::new(1, 1, 0, 0, segment_key, segment_key).is_some());
 
-    let free_key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let free_key = FreeSpaceKey::inline(1).unwrap();
     assert!(FreeSpaceBlockReference::new(1, 1, 0, 0, free_key, free_key).is_some());
 }
 
@@ -322,7 +322,7 @@ fn extent_coordinate_rejects_an_invalid_generation() {
 #[test]
 fn record_placements_reject_lengths_outside_the_c5_record_width() {
     let record = PersistedRecordIdentity::new([7; 16], 1).unwrap();
-    assert!(DurableInlineRecordPlacement::new(
+    assert!(DurableInlineRecordPlacement::legacy_unknown(
         record,
         segment_cell(1, 1),
         page_cell(1, 1),
@@ -331,10 +331,13 @@ fn record_placements_reject_lengths_outside_the_c5_record_width() {
         u64::from(u32::MAX) + 1,
     )
     .is_none());
-    assert!(
-        DurableExtentRecordPlacement::new(record, extent_cell(1, 1), u64::from(u32::MAX) + 1,)
-            .is_none()
-    );
+    assert!(DurableExtentRecordPlacement::legacy_unknown(
+        record,
+        extent_cell(1, 1),
+        u64::from(u32::MAX) + 1,
+        ExtentArenaRange::new(ExtentArenaId::new(1).unwrap(), 0, 20480).unwrap()
+    )
+    .is_none());
 }
 
 fn digest(bytes: &[u8]) -> String {
@@ -348,12 +351,12 @@ fn digest(bytes: &[u8]) -> String {
 fn future_format_is_rejected_before_payload_or_checksum_work() {
     let store = store(0x22);
     let mut bytes = BootstrapCatalog::new(store, format(), root_entry(1)).encode();
-    bytes[10..12].copy_from_slice(&2_u16.to_le_bytes());
+    bytes[10..12].copy_from_slice(&3_u16.to_le_bytes());
     assert!(matches!(
         BootstrapCatalog::decode(&bytes),
         Err(BootstrapCatalogDenial::Frame(
             DurableFrameDenial::UnsupportedFormat(PhysicalRecordFormatDenial::UnsupportedVersion(
-                2
+                3
             ))
         ))
     ));

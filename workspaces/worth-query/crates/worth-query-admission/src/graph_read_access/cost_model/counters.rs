@@ -50,7 +50,15 @@ impl WorthQueryGraphReadCostEstimateCounters {
     }
 
     pub(crate) fn digest_part(&self) -> String {
-        format!(
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "counters:rows:{}:relations:{}:worksets:{}:buffers:{}:edge_scans:{}:allocations:{}",
             self.requirement_row_count,
             self.estimated_relation_row_count,
@@ -61,3 +69,4 @@ impl WorthQueryGraphReadCostEstimateCounters {
         )
     }
 }
+use std::fmt::{self, Write};

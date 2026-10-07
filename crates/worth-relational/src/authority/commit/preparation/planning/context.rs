@@ -1,4 +1,3 @@
-use crate::config::data::PlanningContract;
 use crate::transactions::data::{CommitStructuralSummary, TransactionId};
 use crate::validation::data::{InvariantExecutionPoint, InvariantPlanContract};
 use crate::validation::engine::InvariantObservationKind;
@@ -14,5 +13,4 @@ pub(crate) struct PreparationPlanningContext {
     pub(crate) plan_contract: Option<InvariantPlanContract>,
     pub(crate) schema_registry_entry_count: usize,
     pub(crate) invariant_registration_count: usize,
-    pub(crate) planning_contract: PlanningContract,
 }

@@ -7,6 +7,8 @@ use worth_query_admission::facade::{
     authenticated_principal::WorthQueryRequestScope,
 };
 
+mod selected_read;
+
 /// Where an admitted query read takes its basis from.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryBasisPosture {
@@ -195,8 +197,31 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         self.maximum_work
     }
 
+    pub(in crate::domain_computation::primary_graph) fn limit_maximum_work(
+        mut self,
+        remaining: NonZeroUsize,
+    ) -> Self {
+        self.maximum_work = self.maximum_work.min(remaining);
+        self
+    }
+
     pub const fn request_scope(&self) -> &'a WorthQueryRequestScope {
         self.request_scope
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn selected_basis(
+        &self,
+    ) -> Option<(
+        &crate::basis::WorthQueryProductObservationLease,
+        &worth_relational::facade::snapshots::SnapshotHandle,
+    )> {
+        match &self.basis {
+            WorthQueryApplicationQueryBasis::Selected {
+                product,
+                application_basis,
+            } => Some((product, application_basis.snapshot_handle())),
+            WorthQueryApplicationQueryBasis::RetainedContinuation { .. } => None,
+        }
     }
 
     pub(super) fn into_admission_parts(

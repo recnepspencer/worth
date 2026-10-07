@@ -3,7 +3,7 @@ use super::{
     PositivePlanarTurn, TopologyContribution, TopologySchemaBinding,
 };
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 use worth_query_decl::facade::application_schema::{
@@ -22,6 +22,7 @@ pub struct TopologyConfiguration {
     pub invariant_calls: Arc<AtomicUsize>,
     pub invariant_probe: Arc<AtomicUsize>,
     pub producer_authorization_denials: Arc<AtomicUsize>,
+    pub producer_domain_denial: Arc<AtomicBool>,
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -33,6 +34,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<InitialPlanarProducer<Schema>>()?;
+        #[cfg(test)]
+        super::checkpoint_recovery::required_chain::contracts(contracts)?;
         contracts.producer::<super::PlanarFinalOutputProducer<Schema>>()?;
         contracts.producer::<super::PlanarFinalPreserveProducer<Schema>>()?;
         contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
@@ -48,6 +51,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         configuration.setup_calls.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        super::checkpoint_recovery::required_chain::configure(setup)?;
         setup.invariant(
             PositivePlanarTurn::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -78,6 +83,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         )?;
         setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider::new(
             configuration.producer_authorization_denials,
+            configuration.producer_domain_denial,
         ))?;
         setup.producer::<super::PlanarFinalOutputProducer<Schema>>(
             super::PlanarFinalOutputProvider,

@@ -116,6 +116,15 @@ fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
             },
         },
         WorthQueryProductWorldClock::start(),
+        worth_query::facade::runtime::WorthQueryInvalidationResources::install(
+            worth_query::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+                1_000_000,
+                64 * 1_024 * 1_024,
+                128 * 1_024 * 1_024,
+                128,
+            ),
+        )
+        .expect("the Query invalidation installation is valid"),
     )
     .expect("the UI product resources are statically valid");
     WorthQueryInMemoryApplicationLimits::new(

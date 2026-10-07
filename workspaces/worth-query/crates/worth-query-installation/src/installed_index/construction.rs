@@ -139,10 +139,12 @@ impl InstalledIndexConstruction {
             };
             WorthQueryInstalledPackageIndexDenial::new(kind, "installed-index-canonical-identity")
         })?;
+        let authority_lineage = authority_root.lineage();
         Ok(WorthQueryInstalledPackageIndex {
             runtime,
             generation,
             authority_root,
+            authority_lineage,
             packages: self.records,
             definitions: self.definitions,
             domain_operations: self.domain_operations,

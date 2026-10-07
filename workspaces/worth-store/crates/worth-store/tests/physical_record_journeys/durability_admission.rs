@@ -39,6 +39,8 @@ mod wal_append;
 mod wal_attempt_binding_inspection;
 #[path = "durability_admission/wal_barrier.rs"]
 mod wal_barrier;
+#[path = "durability_admission/wal_barrier_journal.rs"]
+mod wal_barrier_journal;
 #[path = "durability_admission/wal_group_continuation.rs"]
 mod wal_group_continuation;
 #[path = "durability_admission/wal_preparation_authority.rs"]

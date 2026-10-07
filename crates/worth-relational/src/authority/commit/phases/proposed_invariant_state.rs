@@ -17,6 +17,7 @@ pub(crate) fn prepare_proposed_invariant_state(
     merged_plan: &MergedCommitPlan,
     schema_authority: &crate::branch::RelationalBranchRootSchemaAuthority,
     version_id: crate::identity::data::VersionId,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<WorkingState, TransactionCommitError> {
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
@@ -27,7 +28,6 @@ pub(crate) fn prepare_proposed_invariant_state(
         cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
         adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
         cross_context_policy: runtime.config.storage.cross_context_policy,
-        execution_model: runtime.config.execution.execution_model,
     };
     let mut proposed = working_state.clone();
     let allowance = branch_local_delete_allowance_for_plan(selected_state, &proposed, merged_plan);
@@ -45,8 +45,9 @@ pub(crate) fn prepare_proposed_invariant_state(
         &mut symbols,
         allowance,
         &mut record_allocations,
-    )
-    .map_err(TransactionCommitError::conflict)?;
+        lease,
+        runtime.commit_work_budget.clone(),
+    )?;
     crate::authority::mutation::apply_adjacency_deltas(
         &mut proposed,
         &applied.effect.adjacency.deltas,

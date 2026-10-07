@@ -14,7 +14,7 @@ pub(crate) fn validate_source_seed(
     if seed
         .changed_scopes()
         .iter()
-        .any(|scope| scope.partition.0.is_empty())
+        .any(|scope| scope.path().segments().iter().any(String::is_empty))
     {
         return Err(SignalError::invalid_input(
             "source recompute seed contains an empty partition token",

@@ -1,6 +1,6 @@
 use crate::facade::{
     mark_dirty, mark_dirty_with_regions, ChangedRegion, NodeEvaluationResult, NodeId, NodeState,
-    PartitionToken, SignalGraph, UpstreamCause,
+    SignalGraph, UpstreamCause,
 };
 use crate::tests::support::{
     evaluate, version_ab, DependencyBatchBuilder, GraphDependencyBatchExt, ASPECT_A, ASPECT_B,
@@ -49,10 +49,11 @@ fn partition_subscribers_only_dirty_on_matching_partition() {
     assert_eq!(causes[0].key.producer, source);
     assert_eq!(causes[0].key.aspect, ASPECT_A);
     assert_eq!(causes[0].changed_scopes.len(), 1);
-    assert!(causes[0]
-        .changed_scopes
-        .iter()
-        .any(|scope| scope.partition == PartitionToken::new("wing")));
+    assert!(causes[0].changed_scopes.iter().any(|scope| scope
+        .path()
+        .segments()
+        .first()
+        .is_some_and(|part| part == "wing")));
 }
 
 #[test]
@@ -96,8 +97,7 @@ fn detail_sensitive_partition_subscriber_reverts_clean_when_detail_does_not_matc
     assert!(matches!(
         explanation.upstream.as_slice(),
         [UpstreamCause::Clean { subscription: Some(subscription), .. }]
-        if subscription.partition == PartitionToken::new("wing")
-            && subscription.detail.as_deref() == Some("rib-12")
+        if subscription.path().segments() == ["wing", "rib-12"]
     ));
     assert_eq!(
         graph

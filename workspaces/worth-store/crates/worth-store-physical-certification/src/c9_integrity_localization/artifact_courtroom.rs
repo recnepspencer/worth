@@ -82,23 +82,8 @@ fn run_selected(
     let mut clean_recovery = None;
     let mut clean_request = None;
     for (poison, operator) in rows {
-        let poison = poison.map(|index| {
-            let target = &inventory.granules[index];
-            if operator == super::artifact_edit::ArtifactOperator::Truncate
-                && matches!(target.family, "inline_page" | "extent_chunk")
-            {
-                inventory
-                    .granules
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, candidate)| candidate.path == target.path)
-                    .max_by_key(|(_, candidate)| candidate.offset())
-                    .unwrap()
-                    .0
-            } else {
-                index
-            }
-        });
+        let poison =
+            poison.map(|index| selection::terminal_truncate_target(&inventory, index, operator));
         let family = poison.map_or("clean", |index| inventory.granules[index].family);
         let family = if matches!(
             operator,
@@ -107,7 +92,8 @@ fn run_selected(
         ) {
             match family {
                 "inline_page" => "segment_container",
-                "extent_chunk" => "extent_container",
+                "extent_manifest" => "extent_manifest_container",
+                "extent_chunk" => "extent_chunk_container",
                 "wal_frame" => "wal_container",
                 "checkpoint_stream_header" => "checkpoint_container",
                 family => family,

@@ -104,7 +104,7 @@ impl WorthQueryProgramRuleSelection {
     ) -> Result<&'state AspectValue, CustomInvariantExecutionError> {
         let identity = self
             .activation
-            .published()
+            .candidate_identity()
             .ok_or_else(|| unattributable("branch program activation was never published"))?;
         let state = context
             .aspect_states()

@@ -48,16 +48,29 @@ pub(super) fn pair_world_history(
         }
         if matches_receipt(relational, &row.original_commit) {
             let Some((completed, attempt)) = completion else {
-                return Err(Denial::WorldPairMismatch);
+                return Err(retired_or(history, Denial::WorldPairMismatch));
             };
             return Ok((commit.identity().clone(), completed, attempt));
         }
     }
-    Err(if history.is_complete() {
-        Denial::WorldPairMismatch
+    Err(retired_or(
+        history,
+        if history.is_complete() {
+            Denial::WorldPairMismatch
+        } else {
+            Denial::ReconstructionWorkExhausted
+        },
+    ))
+}
+
+/// A walk that skipped or stopped at retired history cannot prove a pair
+/// absent or mismatched; the retired commits are unavailable.
+fn retired_or(history: &CompositeHistoryTraversal, denial: Denial) -> Denial {
+    if history.crossed_retired_history() {
+        Denial::IndexUnavailable
     } else {
-        Denial::ReconstructionWorkExhausted
-    })
+        denial
+    }
 }
 
 fn matches_receipt(

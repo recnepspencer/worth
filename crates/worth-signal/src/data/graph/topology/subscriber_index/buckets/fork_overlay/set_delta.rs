@@ -17,6 +17,10 @@ pub(in super::super) struct SetMergeTraversal {
 }
 
 impl SetDelta {
+    pub(in super::super) fn added_count(&self) -> usize {
+        self.added.len()
+    }
+
     pub(super) fn contains(&self, base_contains: bool, node: &NodeId) -> bool {
         self.added.contains(node) || (base_contains && !self.removed.contains(node))
     }

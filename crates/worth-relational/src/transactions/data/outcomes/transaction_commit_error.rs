@@ -6,6 +6,23 @@ use crate::transactions::data::CommitLog;
 
 use super::{CommitConflict, CommitPreparationError};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommitExecutionDenialKind {
+    Admission,
+    ResourceExhausted,
+    Cancelled,
+    DeadlineElapsed,
+    WorkExhausted,
+    ResultCapacityExceeded,
+    WorkerFailed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CommitExecutionDenial {
+    pub kind: CommitExecutionDenialKind,
+    pub partition_identity: Option<u64>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionCommitError {
     Conflict {
@@ -18,6 +35,12 @@ pub enum TransactionCommitError {
     },
     Preparation {
         error: CommitPreparationError,
+        commit_log: CommitLog,
+    },
+    #[serde(skip)]
+    Execution {
+        denial: CommitExecutionDenial,
+        context: ErrorContext,
         commit_log: CommitLog,
     },
     Interrupted {
@@ -69,6 +92,17 @@ impl TransactionCommitError {
     pub fn preparation(error: CommitPreparationError) -> Self {
         Self::Preparation {
             error,
+            commit_log: CommitLog::new(),
+        }
+    }
+
+    pub(crate) fn execution(denial: CommitExecutionDenial) -> Self {
+        Self::Execution {
+            denial,
+            context: ErrorContext::new(
+                crate::errors::data::RelationalSubsystem::Transaction,
+                crate::errors::data::ErrorOperation::Commit,
+            ),
             commit_log: CommitLog::new(),
         }
     }
@@ -143,6 +177,13 @@ impl TransactionCommitError {
             Self::Conflict { error, .. } => Self::Conflict { error, commit_log },
             Self::Publication { error, .. } => Self::Publication { error, commit_log },
             Self::Preparation { error, .. } => Self::Preparation { error, commit_log },
+            Self::Execution {
+                denial, context, ..
+            } => Self::Execution {
+                denial,
+                context,
+                commit_log,
+            },
             Self::Interrupted {
                 interruption,
                 context,
@@ -188,6 +229,7 @@ impl TransactionCommitError {
             Self::Conflict { error, .. } => &error.context,
             Self::Publication { error, .. } => &error.context,
             Self::Preparation { error, .. } => error.context(),
+            Self::Execution { context, .. } => context,
             Self::Interrupted { context, .. } => context,
             Self::PublicationDenied { context, .. }
             | Self::PublicationDeferred { context, .. }
@@ -201,6 +243,9 @@ impl TransactionCommitError {
             Self::Conflict { error, .. } => error.detail(),
             Self::Publication { error, .. } => error.detail.clone(),
             Self::Preparation { error, .. } => error.detail(),
+            Self::Execution { denial, .. } => {
+                format!("commit preparation execution stopped: {denial:?}")
+            }
             Self::Interrupted { interruption, .. } => {
                 format!("operation interrupted before effect: {interruption:?}")
             }
@@ -225,6 +270,7 @@ impl TransactionCommitError {
             Self::Conflict { commit_log, .. } => commit_log,
             Self::Publication { commit_log, .. } => commit_log,
             Self::Preparation { commit_log, .. } => commit_log,
+            Self::Execution { commit_log, .. } => commit_log,
             Self::Interrupted { commit_log, .. } => commit_log,
             Self::PublicationDenied { commit_log, .. }
             | Self::PublicationDeferred { commit_log, .. }
@@ -251,6 +297,12 @@ impl TransactionCommitError {
 
     pub fn commit_summary(&self) -> &crate::transactions::data::CommitSummary {
         self.commit_log().summary()
+    }
+}
+
+impl From<CommitConflict> for TransactionCommitError {
+    fn from(error: CommitConflict) -> Self {
+        Self::conflict(error)
     }
 }
 

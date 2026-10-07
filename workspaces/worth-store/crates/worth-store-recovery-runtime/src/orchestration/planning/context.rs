@@ -1,6 +1,5 @@
 use worth_store_recovery_physics::{
-    PhysicalRedoPlanningDenial, PhysicalSourceSelection, RecoveryPlanCostDenial,
-    RecoveryPlanningCounters,
+    PhysicalRedoPlanningDenial, RecoveryPlanCostDenial, RecoveryPlanningCounters,
 };
 
 use crate::entry::{
@@ -13,7 +12,7 @@ use crate::progression::{
     PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence, SelectedPhysicalRecovery,
 };
 
-use super::super::RecoveryCoordination;
+use super::super::{RecoveryCoordination, ResidentSourceSelection};
 use super::denial::{
     block, block_with_planning_attempt_denial, cost_denial_block, redo_block, redo_denial_block,
 };
@@ -21,7 +20,7 @@ use super::denial::{
 pub(super) struct PlanningContext {
     pub(super) authority: AdmittedPlatformAuthority,
     pub(super) coordination: RecoveryCoordination,
-    pub(super) selection: PhysicalSourceSelection,
+    pub(super) selection: ResidentSourceSelection,
     pub(super) integrity: RecoveryIntegrityEvidence,
     pub(super) counters: PhysicalRecoveryDiscoveryCounters,
     pub(super) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
@@ -64,7 +63,7 @@ impl PlanningContext {
         artifact: &str,
         limit: Option<PhysicalRecoveryLimitFailure>,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         block(
             self.authority,
             self.coordination,
@@ -87,7 +86,7 @@ impl PlanningContext {
         limit: Option<PhysicalRecoveryLimitFailure>,
         denial: PhysicalRecoveryPlanningDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         block_with_planning_attempt_denial(
             self.authority,
             self.coordination,
@@ -110,7 +109,7 @@ impl PlanningContext {
         artifact: PhysicalRecoveryRootProtocolArtifact,
         denial: PhysicalRecoveryRootProtocolDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         self.root_protocol_denials
             .push(PhysicalRecoverySourceDenial::RootProtocol { artifact, denial });
         super::denial::block_with_root_protocol_counters(
@@ -129,6 +128,32 @@ impl PlanningContext {
         .with_block_integrity_observations(self.integrity.into_observations())
     }
 
+    /// Page observation stopped: at a limit, which carries its own counts and
+    /// names no page, or with what observation says of the pages.
+    pub(super) fn page_block(
+        self,
+        planning_counters: RecoveryPlanningCounters,
+        artifact: &str,
+        limit: Option<PhysicalRecoveryLimitFailure>,
+        denial: Option<crate::entry::PhysicalRecoveryPageAdmissionDenial>,
+    ) -> PhysicalRecoveryOutcome {
+        let integrity_trace = self.integrity_trace;
+        super::denial::block_with_root_protocol_counters(
+            self.authority,
+            self.coordination,
+            PhysicalRecoveryBlockKind::PageAdmission,
+            self.counters,
+            planning_counters,
+            self.root_protocol_counters,
+            artifact,
+            limit,
+            denial.map(PhysicalRecoveryPlanningDenial::Page),
+            self.root_protocol_denials,
+        )
+        .with_integrity_trace(integrity_trace)
+        .with_block_integrity_observations(self.integrity.into_observations())
+    }
+
     pub(super) fn successor_candidate_block(
         self,
         planning_counters: RecoveryPlanningCounters,
@@ -136,7 +161,7 @@ impl PlanningContext {
         limit: Option<PhysicalRecoveryLimitFailure>,
         denial: crate::entry::PhysicalRecoverySuccessorCandidateDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         super::denial::block_with_root_protocol_counters(
             self.authority,
             self.coordination,
@@ -158,7 +183,7 @@ impl PlanningContext {
         planning_counters: RecoveryPlanningCounters,
         limit: Option<PhysicalRecoveryLimitFailure>,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         redo_block(
             self.authority,
             self.coordination,
@@ -175,10 +200,11 @@ impl PlanningContext {
     pub(super) fn redo_denial_block(
         self,
         planning_counters: RecoveryPlanningCounters,
-        limit: Option<PhysicalRecoveryLimitFailure>,
         denial: PhysicalRedoPlanningDenial,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
+        let limit =
+            super::redo_limit::redo_limit(&self.limits, self.counters.manifest_entries, denial);
         redo_denial_block(
             self.authority,
             self.coordination,
@@ -197,9 +223,9 @@ impl PlanningContext {
         self,
         planning_counters: RecoveryPlanningCounters,
         denial: RecoveryPlanCostDenial,
-        limit: PhysicalRecoveryLimitFailure,
+        limit: Option<PhysicalRecoveryLimitFailure>,
     ) -> PhysicalRecoveryOutcome {
-        let integrity_trace = self.integrity_trace.clone();
+        let integrity_trace = self.integrity_trace;
         cost_denial_block(
             self.authority,
             self.coordination,

@@ -36,6 +36,29 @@ impl PhysicalCheckpointCaptureOwner {
             basis,
             key,
         };
+        let publication = match self.publication.upgrade() {
+            Some(publication) => publication,
+            None => {
+                return remove_created_after_tail_denial(
+                    candidate,
+                    context,
+                    PhysicalCheckpointCaptureFailureKind::RuntimeUnavailable,
+                )
+            }
+        };
+        let pins = match publication.selected_blob_manifest_pins(
+            self.idempotency_policy.live_binding_limit().get().get() as usize,
+            self.checkpoint_policy.memory_limit().get().get(),
+        ) {
+            Ok(pins) => pins,
+            Err(_) => {
+                return remove_created_after_tail_denial(
+                    candidate,
+                    context,
+                    PhysicalCheckpointCaptureFailureKind::BindingCompactionUnavailable,
+                )
+            }
+        };
         let cutover = match self.wal.checkpoint_cutover() {
             Some(cutover) => cutover,
             None => return remove_created_without_tail(candidate, context),
@@ -47,9 +70,36 @@ impl PhysicalCheckpointCaptureOwner {
                 return remove_created_after_tail_denial(candidate, context, kind);
             }
         };
+        // The WAL cutover precedes the registry lock. A root change between
+        // protected selection and this check invalidates the roster.
+        let selected_root = publication.current_root();
+        if selected_root.root_cell() != pins.root()
+            || selected_root.generation() != context.basis.source().root().generation()
+            || selected_root.tree_identity() != context.basis.source().root().tree_identity()
+        {
+            drop(cutover);
+            return remove_created_after_tail_denial(
+                candidate,
+                context,
+                PhysicalCheckpointCaptureFailureKind::BindingCompactionUnavailable,
+            );
+        }
+        let Some(maximum_binding_bytes) = u64::from(
+            self.idempotency_policy.live_binding_limit().get().get(),
+        )
+        .checked_mul(worth_store_physical_format::MAX_CHECKPOINT_BINDING_RECORD_BYTES as u64) else {
+            drop(cutover);
+            return remove_created_after_tail_denial(
+                candidate,
+                context,
+                PhysicalCheckpointCaptureFailureKind::BindingCompactionUnavailable,
+            );
+        };
         let binding_cutover = match self.binding_compaction.begin_binding_compaction(
             context.basis.identity(),
             tail.durable_tail_end_lsn_exclusive().get(),
+            pins,
+            maximum_binding_bytes,
         ) {
             Ok(cutover) => cutover,
             Err(_) => {
@@ -120,6 +170,7 @@ impl PhysicalCheckpointCaptureOwner {
             cutover,
             binding_cutover,
             tail,
+            &publication,
             &self.reclamation,
         )
     }
@@ -152,6 +203,7 @@ fn publish_under_cutover(
         '_,
     >,
     tail: Arc<ContiguousRetainedWalTail>,
+    publication_owner: &crate::physical_runtime::record_serving::RecordPublicationDirector,
     reclamation: &crate::physical_runtime::durability::PhysicalWalReclamationOwner,
 ) -> PhysicalCheckpointExecutionResult {
     let replaced = match durable.publish() {
@@ -179,6 +231,17 @@ fn publish_under_cutover(
         .enter(PhysicalCheckpointProgressPhase::NamespaceSynchronization);
     let result = match replaced.synchronize_namespace(tail, binding_cutover) {
         Ok(publication) => {
+            if publication_owner
+                .commit_selected_checkpoint_custody(&publication)
+                .is_err()
+            {
+                drop(cutover);
+                return PhysicalCheckpointExecutionResult::indeterminate(
+                    context.basis.identity(),
+                    context.key,
+                    PhysicalCheckpointCaptureFailureKind::CheckpointCustodyUnavailable,
+                );
+            }
             let checkpoint = publication.basis().identity();
             let plan = cutover.reclamation_plan(&publication);
             drop(cutover);

@@ -1,3 +1,4 @@
+use std::fmt::{self, Write};
 use worth_foundational::facade::{AspectKey, CanonicalDigestId, FieldKey};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -23,7 +24,14 @@ impl WorthQueryGraphReadRelationAuthority {
     }
 
     pub fn digest_part(&self) -> String {
-        format!("relation_authority:{}", self.relation_name)
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(output, "relation_authority:{}", self.relation_name)
     }
 }
 
@@ -67,7 +75,15 @@ impl WorthQueryGraphReadPredicateFieldAuthority {
     }
 
     pub fn digest_part(&self) -> String {
-        format!(
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "predicate_authority:{}:{}:{}",
             self.aspect.as_str(),
             self.field.as_str(),
@@ -130,7 +146,15 @@ impl WorthQueryGraphReadOrderingFieldAuthority {
     }
 
     pub fn digest_part(&self) -> String {
-        format!(
+        let mut text = String::new();
+        self.write_digest_part(&mut text)
+            .expect("String formatting cannot fail");
+        text
+    }
+
+    pub(crate) fn write_digest_part(&self, output: &mut dyn Write) -> fmt::Result {
+        write!(
+            output,
             "ordering_authority:{}:{}:{}:{}:{}",
             self.collection_path,
             self.aspect.as_str(),

@@ -1,7 +1,3 @@
-use crate::authority::commit::preparation::planning::strategy::{
-    packet_width_is_profitable, MIN_PARALLEL_PACKET_WIDTH,
-};
-use crate::config::data::RelationalExecutionModel;
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::history::data::{BranchId, CommitId};
 use crate::publication::authority::post_commit_diagnostics::build_publication_diagnostic_entries;
@@ -23,22 +19,9 @@ impl<'runtime> PublicationAuthority<'runtime> {
             .performance_access()
             .count_post_commit_consumer_shape(PACKET_COUNT, PACKET_COUNT, 1, 1);
 
-        let parallel_requested = matches!(
-            self.runtime.config.execution.execution_model,
-            RelationalExecutionModel::ParallelPostCommitConsumption
-        );
-        let should_parallelize = parallel_requested
-            && packet_width_is_profitable(PACKET_COUNT, MIN_PARALLEL_PACKET_WIDTH);
-
-        if should_parallelize {
-            self.runtime
-                .performance_access()
-                .count_post_commit_parallel_strategy();
-        } else {
-            self.runtime
-                .performance_access()
-                .count_post_commit_serial_strategy();
-        }
+        self.runtime
+            .performance_access()
+            .count_post_commit_serial_strategy();
 
         let consumption_context =
             super::post_commit_consumer::PostCommitConsumptionContext::new(commit_id, snapshot_id);

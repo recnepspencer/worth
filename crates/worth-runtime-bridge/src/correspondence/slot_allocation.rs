@@ -210,7 +210,7 @@ pub(super) fn signal_node_admits(
         scopes.as_ref().is_none_or(|scopes| {
             scopes
                 .iter()
-                .any(|scope| scope.partition == declaration.partition)
+                .any(|scope| scope.path().segments().first() == Some(&declaration.partition.0))
         })
     };
     contract.semantics.reads.contains(slot)

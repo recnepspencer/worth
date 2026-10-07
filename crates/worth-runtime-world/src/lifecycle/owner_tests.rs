@@ -17,6 +17,8 @@ use super::RuntimeWorldOwnerConstructionContract;
 mod admission_race;
 #[path = "owner_tests/close_report.rs"]
 mod close_report;
+#[path = "owner_tests/currentness_scope.rs"]
+mod currentness_scope;
 #[path = "owner_tests/product_cas_loss.rs"]
 mod product_cas_loss;
 #[path = "owner_tests/publication.rs"]
@@ -65,6 +67,41 @@ fn owner_issuer_keeps_families_scoped_and_checked() {
         RuntimeWorldIdentityFamily::PublicationAttempt
     );
     assert!(issuer.publication_attempt().is_err());
+}
+
+#[test]
+fn world_retains_the_host_execution_authority() {
+    use std::{num::NonZeroUsize, sync::Arc};
+    use worth_execution::{ConstructionDenial, ExecutionAuthority, ExecutionAuthorityConfig};
+
+    let config = ExecutionAuthorityConfig {
+        max_workers: NonZeroUsize::new(2).unwrap(),
+        charged_memory_bytes: 4096,
+    };
+    let authority = Arc::new(ExecutionAuthority::try_construct(config).unwrap());
+    let mut fixture = crate::branch::reference_test_fixture::real_fixture(4, 4);
+    let inputs = fixture.owner_inputs(
+        bootstrap_budgets(),
+        RuntimeWorldClock::from_source(FixedClock),
+    );
+    let owner = crate::lifecycle::RuntimeWorldOwner::builder()
+        .with_relational_services(inputs.relational)
+        .with_signal_services(inputs.signal)
+        .with_signal_definition_publication(inputs.signal_definition_publication)
+        .with_bridge_correspondence(inputs.bridge)
+        .with_budgets(inputs.budgets)
+        .with_clock(inputs.clock)
+        .with_execution_authority(Arc::clone(&authority))
+        .build()
+        .unwrap();
+    assert!(std::ptr::eq(
+        owner.execution_authority().unwrap(),
+        authority.as_ref()
+    ));
+    assert!(matches!(
+        ExecutionAuthority::try_construct(config),
+        Err(ConstructionDenial::AlreadyConstructed)
+    ));
 }
 
 struct FixedClock;

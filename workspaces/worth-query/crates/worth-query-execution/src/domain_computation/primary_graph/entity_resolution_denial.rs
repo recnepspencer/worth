@@ -21,6 +21,8 @@ pub enum WorthQueryEntityResolutionDenialKind {
     CorruptIdentityIndex,
     /// Resolution exceeded its work budget.
     ProjectionWorkBudgetExceeded,
+    /// The exact selected lookup could not reserve its preparation backing.
+    ProjectionPreparationMemoryExhausted,
     /// A complete selection needs a nonzero finite candidate limit.
     InvalidCandidateLimit,
     /// The complete equality result exceeds the caller's candidate limit.

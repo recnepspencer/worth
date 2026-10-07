@@ -287,7 +287,7 @@ pub(crate) fn capsule_lane(case: &str, bytes: &'static [u8], chunk_size: u64) ->
             )
         })
         .collect::<Vec<_>>();
-    let verified_read = BlobStreamingVerifiedRead::for_movement_certification_test(
+    let verified_read = BlobStreamingVerifiedRead::for_content_comparison_test(
         object_id.clone(),
         generation,
         publication.chunk_tree_root().clone(),

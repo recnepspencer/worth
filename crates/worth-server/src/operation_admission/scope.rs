@@ -29,6 +29,24 @@ pub enum WorthServerOperationScope {
 }
 
 impl WorthServerOperationScope {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        match self {
+            Self::Workspace {
+                tenant_id,
+                workspace_id,
+            } => string(tenant_id).saturating_add(string(workspace_id)),
+            Self::WorkspaceBranch {
+                tenant_id,
+                workspace_id,
+                branch_label,
+            } => string(tenant_id)
+                .saturating_add(string(workspace_id))
+                .saturating_add(string(branch_label)),
+            _ => u64::MAX,
+        }
+    }
+
     pub(crate) fn workspace(tenant_id: impl Into<String>, workspace_id: impl Into<String>) -> Self {
         Self::Workspace {
             tenant_id: tenant_id.into(),

@@ -46,6 +46,7 @@ pub(super) fn complete_existing(
             verified: None,
             prefix_verified,
             appended: Some(appended),
+            range_written: None,
         }),
         ArtifactAppendOutcome::DeniedBeforeEffect(failure) => {
             Err(RecoveryStagingPhysicalFailure::Denied(failure))
@@ -70,7 +71,8 @@ pub(super) fn create(
     coordinate: RecordFrameCoordinate,
     bytes: &[u8],
 ) -> Result<CompletedRecoveryStagingWrite, RecoveryStagingPhysicalFailure> {
-    let range = ArtifactNewWriteRange::new(bytes.len() as u64).expect("nonempty coordinate");
+    let range = ArtifactNewWriteRange::at(coordinate.offset(), bytes.len() as u64)
+        .expect("nonempty coordinate");
     match media.write_new_exact(&physical, range, bytes) {
         ArtifactNewWriteOutcome::Completed(created) => Ok(CompletedRecoveryStagingWrite {
             artifact,
@@ -81,6 +83,7 @@ pub(super) fn create(
             verified: None,
             prefix_verified: None,
             appended: None,
+            range_written: None,
         }),
         ArtifactNewWriteOutcome::DeniedBeforeEffect(failure) => {
             Err(RecoveryStagingPhysicalFailure::Denied(failure))
@@ -116,6 +119,7 @@ fn verify_complete(
         verified: Some(verified),
         prefix_verified: None,
         appended: None,
+        range_written: None,
     })
 }
 

@@ -127,7 +127,7 @@ where
             .select()
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(PreparationDenial::RequestAdmission)?;
-        let staged = self.stage();
+        let staged = self.stage().map_err(PreparationDenial::RequestAdmission)?;
         let identities = self
             .identities()
             .map_err(PreparationDenial::RequestAdmission)?;

@@ -1,8 +1,15 @@
+mod current_accepted;
+mod receipt_custody;
+use receipt_custody::SettlementReceiptCustody;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
+use super::{ReadyCompletion, WorthQueryAcceptedOutputAuthority};
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::primary_graph::output_lineage::{
+    invalidation::InvalidationEditAdmission, BoundCurrentAcceptedOutput,
+};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputCorrespondence,
     WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadObservation,
@@ -19,12 +26,14 @@ use super::WorthQueryOutputReadinessDeliveryEvidence;
 /// settlement is held. After compaction, the receipt identifies the same
 /// committed lineage so the owner can reacquire its still-current occurrence.
 pub struct WorthQueryOutputDemandSettlement {
+    posture: WorthQueryOutputSettlementPosture,
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     producer_identity: String,
     output_family_identity: String,
-    pub(in crate::domain_computation::primary_graph) receipt:
-        Option<WorthQueryApplicationCommitReceipt>,
+    receipt: Option<SettlementReceiptCustody>,
+    pub(in crate::domain_computation::primary_graph) stable:
+        Option<super::super::output_lineage::PublishedStableLineage>,
     pub(in crate::domain_computation::primary_graph) output_correspondence:
         Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) restored_source:
@@ -34,12 +43,32 @@ pub struct WorthQueryOutputDemandSettlement {
     observation: Arc<WorthQueryApplicationReadObservation>,
 }
 
+/// Whether settlement performed an output or reused stable lineage, including
+/// the corresponding posture recovered from an existing owner publication.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryOutputSettlementPosture {
+    Performed,
+    StableReused,
+    RecoveredPerformed,
+    RecoveredStableReused,
+}
+
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredOutputSource {
     pub(in crate::domain_computation::primary_graph) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) identity:
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
     pub(in crate::domain_computation::primary_graph) partition: [u8; 32],
+}
+
+impl From<&super::WorthQueryRestoredAcceptedOutput> for WorthQueryRestoredOutputSource {
+    fn from(restored: &super::WorthQueryRestoredAcceptedOutput) -> Self {
+        Self {
+            scope: restored.source_scope,
+            identity: restored.source_identity,
+            partition: restored.checkpoint.source_partition,
+        }
+    }
 }
 
 impl WorthQueryOutputDemandSettlement {
@@ -68,7 +97,7 @@ impl WorthQueryOutputDemandSettlement {
         #[cfg(feature = "test-primary-graph-faults")]
         let _held_world_observations =
             if runtime.primary_provider.take_ready_read_snapshot_pressure() {
-                Some(runtime.hold_world_snapshot_pressure_for_test(receipt))
+                Some(runtime.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
             } else {
                 None
             };
@@ -80,11 +109,13 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         Ok(Arc::new(Self {
+            posture: WorthQueryOutputSettlementPosture::Performed,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             producer_identity: producer_identity.to_owned(),
             output_family_identity: output_family_identity.to_owned(),
-            receipt: Some(receipt.clone()),
+            receipt: Some(SettlementReceiptCustody::Owned(receipt.clone())),
+            stable: None,
             output_correspondence: receipt.retain_output_correspondence(),
             restored_source: None,
             readiness_delivery: Some(readiness_delivery.clone()),
@@ -94,7 +125,21 @@ impl WorthQueryOutputDemandSettlement {
     }
 
     pub fn application_commit_receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
-        self.receipt.as_ref()
+        self.receipt
+            .as_ref()
+            .map(SettlementReceiptCustody::as_receipt)
+    }
+
+    pub const fn is_stably_reused(&self) -> bool {
+        matches!(
+            self.posture,
+            WorthQueryOutputSettlementPosture::StableReused
+                | WorthQueryOutputSettlementPosture::RecoveredStableReused
+        )
+    }
+
+    pub const fn posture(&self) -> WorthQueryOutputSettlementPosture {
+        self.posture
     }
 
     /// The settled output roles, read as the output contract `Contract`.
@@ -159,17 +204,15 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         Ok(Arc::new(Self {
+            posture: restored.settlement_posture(),
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             producer_identity: restored.checkpoint.producer.clone(),
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,
+            stable: None,
             output_correspondence: Arc::clone(&restored.correspondence),
-            restored_source: Some(WorthQueryRestoredOutputSource {
-                scope: restored.source_scope,
-                identity: restored.source_identity,
-                partition: restored.checkpoint.source_partition,
-            }),
+            restored_source: Some(restored.into()),
             readiness_delivery: None,
             producer_contacts_in_this_demand: 0,
             observation: WorthQueryApplicationReadObservation::from_product(
@@ -177,6 +220,37 @@ impl WorthQueryOutputDemandSettlement {
                 product.read_lease(),
             ),
         }))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_stable<Schema>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        stable: &super::super::output_lineage::PublishedStableLineage,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        producer_identity: &str,
+        output_family_identity: &str,
+    ) -> Arc<Self>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        Arc::new(Self {
+            posture: WorthQueryOutputSettlementPosture::StableReused,
+            runtime_authority: runtime.runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema.binding_identity(),
+            producer_identity: producer_identity.to_owned(),
+            output_family_identity: output_family_identity.to_owned(),
+            receipt: None,
+            stable: Some(stable.clone()),
+            output_correspondence: Arc::clone(stable.output_correspondence()),
+            restored_source: None,
+            readiness_delivery: Some(
+                WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
+            ),
+            producer_contacts_in_this_demand: 0,
+            observation: WorthQueryApplicationReadObservation::from_product(
+                runtime,
+                selected.product().read_lease(),
+            ),
+        })
     }
 }
 
@@ -258,6 +332,12 @@ where
                 "output settlement belongs to another application runtime",
             ));
         }
+        if settlement.posture == WorthQueryOutputSettlementPosture::RecoveredStableReused {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                "restored stable output requires native re-evidence",
+            ));
+        }
         let selected = match settlement.application_commit_receipt() {
             Some(receipt) => {
                 self.on_branch(receipt.product_branch())
@@ -285,13 +365,22 @@ where
                 receipt,
                 usize::MAX,
             ),
-            None => lineage.source_facts_for_restored_output(
-                self.runtime.authority_identity().as_u64(),
-                &self.installed_schema.binding_identity(),
-                selected.product().observation(),
-                settlement,
-                usize::MAX,
-            ),
+            None => match settlement.stable.as_ref() {
+                Some(stable) => lineage.source_facts_for_stable_output(
+                    self.runtime.authority_identity().as_u64(),
+                    &self.installed_schema.binding_identity(),
+                    selected.product().observation(),
+                    stable,
+                    usize::MAX,
+                ),
+                None => lineage.source_facts_for_restored_output(
+                    self.runtime.authority_identity().as_u64(),
+                    &self.installed_schema.binding_identity(),
+                    selected.product().observation(),
+                    settlement,
+                    usize::MAX,
+                ),
+            },
         };
         facts
             .map_err(|()| {
@@ -300,7 +389,7 @@ where
                     "settled output currentness exceeded its lineage work budget",
                 )
             })?
-            .map(|(facts, _)| facts)
+            .map(|read| read.facts)
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Superseded,

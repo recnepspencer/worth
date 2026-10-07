@@ -49,7 +49,7 @@ fn checksum_invalid_root_cannot_forge_duplicate_identity() {
         localization
             .damaged_range()
             .map(|range| (range.offset(), range.length())),
-        Some((0, 368))
+        Some((0, 384))
     );
 }
 

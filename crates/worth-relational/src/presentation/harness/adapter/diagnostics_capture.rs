@@ -27,7 +27,6 @@ pub(super) fn capture_diagnostics(
         attachments: Vec::new(),
         summary: diagnostics_summary(
             profile.execution_mode,
-            runtime.config().execution.execution_model,
             runtime.performance_access().counters(),
             publication_diagnostics,
         )

@@ -4,7 +4,13 @@ use crate::{PhysicalRecordFormatDeclaration, PhysicalRecordFormatDenial};
 pub const FRAME_HEADER_BYTES: usize = 48;
 const FRAME_MAGIC: [u8; 8] = *b"WRC5FRM\0";
 pub const FRAME_SCHEMA: u8 = 2;
+pub const SELECTED_ROUTE_SCHEMA: u8 = 3;
 pub const MAINTENANCE_ROOT_SCHEMA: u8 = 3;
+pub const DIRECTORY_BOUND_ROOT_SCHEMA: u8 = 4;
+pub const DIRECTORY_BOUND_MAINTENANCE_ROOT_SCHEMA: u8 = 5;
+pub const QUARANTINE_BOUND_ROOT_SCHEMA: u8 = 6;
+pub const QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA: u8 = 7;
+pub const TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA: u8 = 9;
 const PAGE_LSN_OFFSET: usize = 36;
 const CHECKSUM_OFFSET: usize = 44;
 
@@ -37,6 +43,7 @@ pub enum DurableFrameKind {
     SegmentMembershipBlock = 9,
     FreeSpaceMembershipBlock = 10,
     RootSelector = 11,
+    ReleaseCustodyHeadBlock = 12,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -247,7 +254,41 @@ fn write_page_lsn(bytes: &mut [u8], page_lsn: PhysicalPageLsn) {
 
 fn admitted_schema(kind: DurableFrameKind, schema: u8) -> bool {
     schema == FRAME_SCHEMA
-        || (kind == DurableFrameKind::RootManifest && schema == MAINTENANCE_ROOT_SCHEMA)
+        || (kind == DurableFrameKind::RootRoutingBlock && schema == SELECTED_ROUTE_SCHEMA)
+        || (kind == DurableFrameKind::RootManifest
+            && matches!(
+                schema,
+                MAINTENANCE_ROOT_SCHEMA
+                    | DIRECTORY_BOUND_ROOT_SCHEMA
+                    | DIRECTORY_BOUND_MAINTENANCE_ROOT_SCHEMA
+                    | QUARANTINE_BOUND_ROOT_SCHEMA
+                    | QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA
+                    | TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA
+                    | 10
+            ))
+}
+
+/// Frame into a caller-reserved backing without allocating a payload copy.
+pub(crate) fn encode_frame_in_reserved(
+    kind: DurableFrameKind,
+    format: PhysicalRecordFormatDeclaration,
+    identity: u64,
+    payload_bytes: usize,
+    schema: u8,
+    mut frame: Vec<u8>,
+    write_payload: impl FnOnce(&mut [u8]),
+) -> Option<Vec<u8>> {
+    let total = FRAME_HEADER_BYTES.checked_add(payload_bytes)?;
+    if frame.capacity() < total || u32::try_from(payload_bytes).is_err() {
+        return None;
+    }
+    frame.resize(total, 0);
+    frame.fill(0);
+    write_header(&mut frame, kind, format, identity, payload_bytes);
+    frame[9] = schema;
+    write_payload(&mut frame[FRAME_HEADER_BYTES..]);
+    refresh_checksum(&mut frame);
+    Some(frame)
 }
 
 fn require_data_kind(kind: DurableFrameKind) -> Result<(), DurableFrameDenial> {

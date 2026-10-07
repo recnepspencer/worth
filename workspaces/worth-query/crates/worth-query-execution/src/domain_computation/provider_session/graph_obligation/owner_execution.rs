@@ -2,24 +2,30 @@ use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIden
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::runtime::RelationalRuntime;
 
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphIntegrationHandle, WorthQueryPrimaryGraphLayout,
-};
+use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
+use std::sync::Arc;
 
 use super::WorthQueryGraphWorkSessionIdentity;
 
 /// The only application-query path to the primary graph's Relational runtime.
 pub(in crate::domain_computation) struct WorthQueryGraphReadOwnerPort {
     binding: ApplicationSchemaBindingIdentity,
-    graph: WorthQueryPrimaryGraphIntegrationHandle,
+    source: WorthQueryRelationalSourceOwner,
+    layout: Arc<WorthQueryPrimaryGraphLayout>,
 }
 
 impl WorthQueryGraphReadOwnerPort {
     pub(in crate::domain_computation) fn new(
         binding: ApplicationSchemaBindingIdentity,
-        graph: WorthQueryPrimaryGraphIntegrationHandle,
+        source: WorthQueryRelationalSourceOwner,
+        layout: Arc<WorthQueryPrimaryGraphLayout>,
     ) -> Self {
-        Self { binding, graph }
+        Self {
+            binding,
+            source,
+            layout,
+        }
     }
 
     pub(super) fn execute<T>(
@@ -30,7 +36,9 @@ impl WorthQueryGraphReadOwnerPort {
         if &self.binding != binding {
             return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
         }
-        Ok(self.graph.with_query_runtime_mut(read))
+        Ok(self
+            .source
+            .with_runtime_mut(|runtime| read(runtime, &self.layout)))
     }
 }
 

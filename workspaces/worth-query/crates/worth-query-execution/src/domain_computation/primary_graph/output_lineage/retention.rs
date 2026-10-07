@@ -1,4 +1,6 @@
-use super::WorthQueryApplicationOutputLineage;
+use super::{
+    prepared_slot::CancelledLineageSlot, ProductCoordinate, WorthQueryApplicationOutputLineage,
+};
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn release_occurrence(
@@ -19,11 +21,46 @@ impl WorthQueryApplicationOutputLineage {
                 }
             }
         }
-        self.by_source.retain(|_, versions| {
-            versions.retain(|indexed, _| retained.contains(indexed));
+        let cancelled = &self.cancelled_slots;
+        self.by_source.retain(|source, versions| {
+            versions.retain(|indexed, history| {
+                if retained.contains(indexed) {
+                    return true;
+                }
+                history.retain(|generation, _| {
+                    CancelledLineageSlot::contains_generation(
+                        cancelled,
+                        source,
+                        ProductCoordinate {
+                            occurrence: *indexed,
+                            generation: *generation,
+                        },
+                    )
+                });
+                !history.is_empty()
+            });
             !versions.is_empty()
         });
-        self.partition_index.retain_occurrences(&retained);
+        self.partition_index
+            .retain_occurrences(&retained, cancelled);
         self.origins.retain(|child, _| retained.contains(child));
+    }
+}
+
+#[cfg(feature = "test-query-execution-observer")]
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    /// The bytes this runtime's output lineage retains now: recorded outputs
+    /// and the generation history that locates them.
+    #[doc(hidden)]
+    pub fn output_lineage_retained_bytes_for_test(&self) -> u64 {
+        self.primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retention
+            .retained_bytes()
     }
 }

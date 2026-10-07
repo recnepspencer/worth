@@ -24,6 +24,12 @@ impl RecordPublicationDirector {
         prepared: PreparedPhysicalMutation,
         terminal_cause: crate::physical_runtime::PhysicalMutationProvenNoEffectCause,
     ) -> PhysicalPreSealCancellationOutcome {
+        if prepared.extent_copy_source().is_some() {
+            return PhysicalPreSealCancellationOutcome::NotCancelled {
+                prepared,
+                cause: PhysicalPreSealCancellationDenial::CopyIntentRequiresResolution,
+            };
+        }
         let expected = PhysicalMutationUnresolvedBindingObservation::new(
             prepared.idempotency_identity(),
             prepared.request_fingerprint(),

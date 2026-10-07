@@ -1,61 +1,131 @@
 mod concurrent;
-#[cfg(feature = "parallel")]
 mod concurrent_packets;
 mod footprint;
 mod lowering;
 mod metrics;
 mod strategy;
 
+pub(in crate::logic::planner) use concurrent::{prepare_checked_apply_map, PreparedSignalApplyMap};
+
 use crate::clock::RuntimeInstant;
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
-use crate::logic::planner::execution::StageSlice;
-use crate::logic::planner::precompute::stage::StagePrecomputeResult;
+use crate::logic::planner::execution::EpochMetadata;
+use crate::logic::planner::precompute::stage::{PreparedStageEpoch, StagePrecomputeResult};
 use crate::logic::planner::semantic::{finalize_serial_stage_batch, StageSemanticIdentity};
 use crate::logic::planner::types::{
-    ExecutionReport, PlanSummary, StageExecutionRecord, StageExecutor,
+    ExecutionReport, PlanSummary, ResolvedSignalPlannerPolicy, StageExecutionRecord,
 };
+use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 use super::serial_batch::{LoweredSerialStage, PreparedSerialStageBatch};
 use super::workspace::{StageFinalizeWork, StageScratch};
 
+pub(super) enum ApplyAdmission<'tasks, 'lease, 'authority> {
+    Checked {
+        metadata: EpochMetadata<'tasks>,
+        batch: crate::data::proof::invalidation::progression::DisjointGraphBatch,
+        lease: &'lease ExecutionResourceLease<'authority>,
+        apply: crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity,
+        prepared_map: PreparedSignalApplyMap<'authority>,
+        candidates: crate::data::graph::PreparedCandidateEpoch<'authority>,
+    },
+    LegacySerial {
+        metadata: EpochMetadata<'tasks>,
+    },
+}
+
+impl<'tasks> ApplyAdmission<'tasks, '_, '_> {
+    fn metadata(&self) -> EpochMetadata<'tasks> {
+        match self {
+            Self::Checked { metadata, .. } | Self::LegacySerial { metadata } => *metadata,
+        }
+    }
+}
+
 pub(in crate::logic::planner) fn apply_stage<R>(
     graph: &mut SignalGraph,
     summary: &PlanSummary,
-    stage: &StageSlice<'_>,
-    precomputed: StagePrecomputeResult,
+    precomputed: StagePrecomputeResult<'_, '_, '_>,
     comparator_resolver: &mut R,
-    executor: StageExecutor,
+    policy: &ResolvedSignalPlannerPolicy,
     stage_identities: &[StageSemanticIdentity],
     report: &mut ExecutionReport,
     stage_record: &mut StageExecutionRecord,
+    request_work: Option<&mut MapKernelContext<'_, '_>>,
+    preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<(), SignalError>
 where
     R: ComparatorPolicyResolver,
 {
-    let lowered = lowering::build_stage_execution_form(
-        graph,
-        stage.index,
-        stage.tasks,
-        precomputed.execution,
-        comparator_resolver,
-        executor,
-        stage_identities,
-    )?;
+    let (proposals, mut admission) = match precomputed.prepared {
+        PreparedStageEpoch::Checked {
+            metadata,
+            proposals,
+            batch,
+            lease,
+            apply,
+            prepared_map,
+            candidates,
+            ..
+        } => (
+            proposals,
+            ApplyAdmission::Checked {
+                metadata,
+                batch,
+                lease,
+                apply,
+                prepared_map,
+                candidates,
+            },
+        ),
+        PreparedStageEpoch::LegacySerial {
+            metadata,
+            proposals,
+        } => (proposals, ApplyAdmission::LegacySerial { metadata }),
+    };
+    let lowered = match &mut admission {
+        ApplyAdmission::Checked {
+            metadata, apply, ..
+        } => lowering::LoweredStageExecutionForm::Generic(
+            lowering::build_checked_stage_execution_form(
+                graph,
+                metadata.index(),
+                metadata.tasks(),
+                proposals,
+                apply,
+                policy,
+            )?,
+        ),
+        ApplyAdmission::LegacySerial { metadata } => lowering::LoweredStageExecutionForm::Serial(
+            lowering::build_legacy_stage_execution_form(
+                graph,
+                metadata.index(),
+                metadata.tasks(),
+                proposals,
+                stage_identities,
+            )?,
+        ),
+    };
+    let metadata = admission.metadata();
     metrics::record_stage_lowering_metrics(graph, &lowered);
     let stage_scratch = run_lowered_apply_pass(
         graph,
         summary,
         lowered,
         comparator_resolver,
-        executor,
+        admission,
+        policy,
         stage_identities,
+        report,
         stage_record,
+        request_work,
+        preparation,
     )?;
     let (finalize_work, pending_snapshots) = stage_scratch.into_parts();
     publish_pending_snapshots(graph, pending_snapshots)?;
-    finalize_stage_results(graph, stage, finalize_work, report, stage_record)
+    finalize_stage_results(graph, metadata.tasks(), finalize_work, report, stage_record)
 }
 
 fn publish_pending_snapshots(
@@ -70,7 +140,7 @@ fn publish_pending_snapshots(
 
 fn finalize_stage_results(
     graph: &mut SignalGraph,
-    _stage: &StageSlice<'_>,
+    tasks: &[crate::logic::planner::types::EligibleTask],
     finalize_work: StageFinalizeWork,
     report: &mut ExecutionReport,
     stage_record: &mut StageExecutionRecord,
@@ -82,11 +152,10 @@ fn finalize_stage_results(
             finalize_serial_stage_batch(graph, ready, report, stage_record)?
                 .record_into(report, stage_record);
         }
-        #[cfg(feature = "parallel")]
         StageFinalizeWork::Parallel(batch) => {
             crate::logic::planner::semantic::finalize_stage_batch(
                 graph,
-                _stage.tasks,
+                tasks,
                 batch.into_inner(),
                 report,
                 stage_record,
@@ -102,9 +171,13 @@ fn run_lowered_apply_pass<R>(
     summary: &PlanSummary,
     lowered: lowering::LoweredStageExecutionForm,
     comparator_resolver: &mut R,
-    executor: StageExecutor,
+    admission: ApplyAdmission<'_, '_, '_>,
+    policy: &ResolvedSignalPlannerPolicy,
     stage_identities: &[StageSemanticIdentity],
+    report: &mut ExecutionReport,
     stage_record: &mut StageExecutionRecord,
+    request_work: Option<&mut MapKernelContext<'_, '_>>,
+    preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<StageScratch, SignalError>
 where
     R: ComparatorPolicyResolver,
@@ -117,7 +190,6 @@ where
                 summary,
                 lowered,
                 comparator_resolver,
-                executor,
                 stage_record,
             )
         }
@@ -132,15 +204,37 @@ where
                     "generic stage dispatch received a serial apply plan after serial lowering",
                 ));
             };
+            let ApplyAdmission::Checked {
+                batch,
+                lease,
+                apply,
+                prepared_map,
+                candidates,
+                ..
+            } = admission
+            else {
+                return Err(SignalError::internal(
+                    "generic apply lacked checked epoch authority",
+                ));
+            };
             concurrent::run_grouped_concurrent_apply_pass(
                 graph,
                 summary,
                 stage_index,
                 tasks,
                 plan,
+                lease,
+                policy,
+                &batch,
+                &apply,
+                prepared_map,
+                candidates,
                 comparator_resolver,
                 stage_identities,
+                report,
                 stage_record,
+                request_work,
+                preparation,
             )
         }
     }
@@ -151,14 +245,13 @@ fn run_serial_lowered_apply_pass<R>(
     summary: &PlanSummary,
     lowered: LoweredSerialStage,
     comparator_resolver: &mut R,
-    executor: StageExecutor,
     stage_record: &mut StageExecutionRecord,
 ) -> Result<StageScratch, SignalError>
 where
     R: ComparatorPolicyResolver,
 {
     let prepared = PreparedSerialStageBatch::prepare(graph, lowered, stage_record)?;
-    let applied = prepared.apply(graph, summary, comparator_resolver, executor)?;
+    let applied = prepared.apply(graph, summary, comparator_resolver)?;
     let (applied, pending_snapshots) = applied.split_pending_snapshots();
     Ok(StageScratch::new(
         StageFinalizeWork::Serial(applied),

@@ -36,6 +36,13 @@ impl PartitionAccess for HistoricalProjectionStorage<'_> {
             Self::EmptyGenesis => Vec::new(),
         }
     }
+
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        match self {
+            Self::Retained(root) => Box::new(root.partition_ids_iter()),
+            Self::EmptyGenesis => Box::new(std::iter::empty()),
+        }
+    }
 }
 
 impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {

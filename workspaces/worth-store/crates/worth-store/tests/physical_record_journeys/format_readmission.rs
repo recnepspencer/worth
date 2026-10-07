@@ -9,6 +9,9 @@ use worth_store_physical_format::PhysicalRecordFormatDenial;
 
 use super::{configuration, media, serving_from_initialization};
 
+#[path = "format_readmission/residency_geometry.rs"]
+mod residency_geometry;
+
 #[test]
 fn poisoned_root_is_rejected_before_ordinary_interpretation_entry() {
     let parent = tempfile::tempdir().unwrap();
@@ -86,7 +89,7 @@ fn current_version_reopens_and_every_unimplemented_version_fails_typed() {
         let expected_read_bytes = super::durable_frame_oracle::artifact_bytes(&root, read_paths);
         let artifact = root.join(relative_path);
         let mut bytes = std::fs::read(&artifact).unwrap();
-        bytes[10..12].copy_from_slice(&2_u16.to_le_bytes());
+        bytes[10..12].copy_from_slice(&3_u16.to_le_bytes());
         reseal(&mut bytes);
         std::fs::write(&artifact, bytes).unwrap();
 
@@ -102,7 +105,7 @@ fn current_version_reopens_and_every_unimplemented_version_fails_typed() {
         assert!(matches!(
             denial.reason(),
             RecordBootstrapDenial::UnsupportedPhysicalRecordFormat(unsupported)
-                if unsupported.reason() == PhysicalRecordFormatDenial::UnsupportedVersion(2)
+                if unsupported.reason() == PhysicalRecordFormatDenial::UnsupportedVersion(3)
         ));
         let media = denial.into_runtime();
         let after = media.media_counters();
@@ -126,6 +129,12 @@ fn unsupported_catalog_format_dimensions_localize_before_root_traversal() {
             10,
             &[0, 0][..],
             PhysicalRecordFormatDenial::UnsupportedVersion(0),
+        ),
+        (
+            "per-record-extent-version",
+            10,
+            &[1, 0][..],
+            PhysicalRecordFormatDenial::UnsupportedVersion(1),
         ),
         (
             "page-size",

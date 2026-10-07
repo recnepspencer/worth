@@ -113,6 +113,7 @@ impl CandidateFrameSet {
 pub(in crate::physical_runtime::record_serving) enum CandidateFrameRole {
     InlinePage,
     ExtentChunk,
+    ExtentManifest,
     ManifestBlock,
     RootManifest,
     RootSelectorCandidate,
@@ -278,16 +279,16 @@ const fn coordinate_matches_role(role: CandidateFrameRole, artifact: RecordArtif
             CandidateFrameRole::InlinePage,
             RecordArtifactFile::Segment { .. }
         ) | (
-            CandidateFrameRole::ExtentChunk,
-            RecordArtifactFile::Extent { .. }
+            CandidateFrameRole::ExtentChunk | CandidateFrameRole::ExtentManifest,
+            RecordArtifactFile::ExtentArena { .. }
         ) | (
             CandidateFrameRole::ManifestBlock,
             RecordArtifactFile::RootRoutingBlock { .. }
                 | RecordArtifactFile::SegmentManifest { .. }
                 | RecordArtifactFile::SegmentMembershipBlock { .. }
-                | RecordArtifactFile::ExtentManifest { .. }
                 | RecordArtifactFile::FreeSpaceManifest { .. }
                 | RecordArtifactFile::FreeSpaceMembershipBlock { .. }
+                | RecordArtifactFile::ReleaseCustodyHeadBlock { .. }
         ) | (
             CandidateFrameRole::RootManifest,
             RecordArtifactFile::RootManifest { .. }

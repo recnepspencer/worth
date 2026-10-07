@@ -352,6 +352,11 @@ fn performance_readiness_and_grouped_surface_preserve_stronger_lane_boundaries()
 }
 
 #[test]
+fn exhausted_limits_are_minted_only_by_the_owning_budget() {
+    compile_fail("tests/ui/budget_limits/*.rs");
+}
+
+#[test]
 fn admitted_expressions_come_only_from_admission() {
     compile_fail("tests/ui/expressions/*.rs");
     trybuild::TestCases::new().pass("tests/ui/expressions/pass/*.rs");

@@ -30,7 +30,6 @@ physical-isolation-fixtures = [
     "physical-residency-fixtures",
     "dep:worth-store-authority",
     "dep:worth-store-budgets",
-    "dep:worth-store-compatibility",
     "dep:worth-store-physical-backend",
     "dep:worth-store-physical-integrity",
     "dep:worth-store-recovery-physics",
@@ -78,7 +77,6 @@ worth-store-authority = { workspace = true, optional = true }
 worth-store-blob-chunks = { workspace = true, features = ["certification-test-authority"], optional = true }
 worth-store-budgets = { workspace = true, optional = true }
 worth-store-contracts = { workspace = true, optional = true }
-worth-store-compatibility = { workspace = true, optional = true }
 worth-store-io-scheduler = { workspace = true, optional = true }
 worth-store-layout-indexes = { workspace = true, optional = true }
 worth-store-lsm-authority = { workspace = true, optional = true }

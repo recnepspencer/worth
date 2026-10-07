@@ -33,6 +33,35 @@ fn engine_executes_custom_invariant_packets() {
 }
 
 #[test]
+fn leased_opaque_custom_rule_is_denied_before_evaluation() {
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(RelationalSchemaRegistry::new())
+        .custom_invariant(CustomInvariantRegistration::new(PanicDuringEvaluateRule).unwrap())
+        .build();
+    let request = InvariantExecutionRequest::from_profile_with_contract(
+        InvariantRequestProfile::CommitBoundary,
+        &runtime,
+        InvariantObservation::committed(runtime.storage_access().current_edition()),
+        runtime.current_version_id(),
+        None,
+        None,
+    );
+    let denial = InvariantEngine::new(&runtime)
+        .execute_with_lease(request, &crate::tests::support::test_execution_lease())
+        .expect_err("opaque custom execution must fail closed under a lease");
+    assert!(matches!(
+        denial,
+        crate::transactions::data::TransactionCommitError::Execution {
+            denial: crate::transactions::data::CommitExecutionDenial {
+                kind: crate::transactions::data::CommitExecutionDenialKind::Admission,
+                ..
+            },
+            ..
+        }
+    ));
+}
+
+#[test]
 fn engine_executes_graph_composition_custom_invariant_packets() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    FreeSpaceKey, RecordAllocationClass, RecordFreeSpaceManifestEntry,
+    FreeSpaceKey, RecordFreeSpaceManifestEntry,
 };
 use worth_store_recovery_physics::{
     PhysicalRedoTarget, PhysicalRedoTargetIdentity, RecoveryPageObservation,
@@ -85,25 +85,29 @@ fn admit_extent_allocations(
         }
         extents.entry(extent).or_insert(*target);
     }
-    if !allocation_sequence_above(extents.keys().copied(), header.next_extent()) {
-        return Err(PageObservationFailure::InvalidTarget(
-            extents
-                .into_values()
-                .next()
-                .expect("nonempty failed sequence")
+    if let Some(extent) = first_invalid_extent(extents.keys().copied(), header.next_extent()) {
+        return Err(PageObservationFailure::AbsentExtentBelowFrontier {
+            target: extents
+                .get(&extent)
+                .expect("failed extent belongs to the admitted target set")
                 .identity(),
-        ));
+            next_extent: header.next_extent(),
+        });
     }
     Ok(())
 }
 
-fn allocation_sequence_above(values: impl IntoIterator<Item = u64>, first: u64) -> bool {
+fn first_invalid_extent(values: impl IntoIterator<Item = u64>, first: u64) -> Option<u64> {
     let mut prior = None;
-    values.into_iter().all(|value| {
-        let admissible = value >= first && prior.is_none_or(|prior| value > prior);
-        prior = Some(value);
-        admissible
+    values.into_iter().find(|value| {
+        let admissible = *value >= first && prior.is_none_or(|prior| *value > prior);
+        prior = Some(*value);
+        !admissible
     })
+}
+
+fn allocation_sequence_above(values: impl IntoIterator<Item = u64>, first: u64) -> bool {
+    first_invalid_extent(values, first).is_none()
 }
 
 fn reusable_capacity(
@@ -112,11 +116,12 @@ fn reusable_capacity(
     selected_pages: u64,
     capacity: u32,
 ) -> Option<u64> {
+    let frontier = entry.inline_free_frontier()?;
     (entry.generation() == selected_generation
-        && entry.first_unallocated() == selected_pages.saturating_add(1)
-        && entry
+        && frontier.first_unallocated() == selected_pages.saturating_add(1)
+        && frontier
             .first_unallocated()
-            .checked_add(entry.unallocated_count())
+            .checked_add(frontier.unallocated_count())
             == Some(u64::from(capacity) + 1))
-    .then_some(entry.unallocated_count())
+    .then_some(frontier.unallocated_count())
 }

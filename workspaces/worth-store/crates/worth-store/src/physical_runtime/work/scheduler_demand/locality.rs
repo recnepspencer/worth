@@ -139,6 +139,9 @@ fn update_artifact(digest: &mut Sha256, artifact: RecordArtifactFile) {
         RecordArtifactFile::CatalogCandidate { publication } => (2, publication, 0),
         RecordArtifactFile::RootManifest { generation } => (3, generation, 0),
         RecordArtifactFile::RootRoutingBlock { generation, block } => (4, generation, block),
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            (17, generation, block)
+        }
         RecordArtifactFile::Segment {
             segment,
             generation,
@@ -148,8 +151,7 @@ fn update_artifact(digest: &mut Sha256, artifact: RecordArtifactFile) {
             generation,
         } => (6, segment, generation),
         RecordArtifactFile::SegmentMembershipBlock { generation, block } => (7, generation, block),
-        RecordArtifactFile::Extent { extent, generation } => (8, extent, generation),
-        RecordArtifactFile::ExtentManifest { extent, generation } => (9, extent, generation),
+        RecordArtifactFile::ExtentArena { arena } => (16, arena, 0),
         RecordArtifactFile::FreeSpaceManifest { generation } => (10, generation, 0),
         RecordArtifactFile::FreeSpaceMembershipBlock { generation, block } => {
             (11, generation, block)

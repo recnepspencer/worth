@@ -1,4 +1,4 @@
-use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
+use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ReadGrant, UnchargedRead};
 use worth_store_physical_format::{
     decode_data_frame_page_lsn, encode_data_frame_page_lsn, inspect_inline_page,
     restamp_inline_page_generation, CurrentPhysicalRecordPlacement, DurableFrameKind,
@@ -8,6 +8,7 @@ use worth_store_physical_format::{
     RecordSegmentPageManifestEntry, SegmentGenerationCell,
 };
 
+use super::super::super::historical_publication::{discovery_failure, HistoricalFailure};
 use crate::progression::RecoverySelectedSourceInventory;
 
 const SPAN_LIMIT: u64 = 256 * 1024;
@@ -68,44 +69,51 @@ pub(super) fn restamp_pages(
     source: &[u8],
     pages: u32,
     rewrite: worth_store_physical_format::PhysicalRewriteRedo,
-) -> Result<Vec<RestampedPage>, ()> {
+) -> Result<Vec<RestampedPage>, HistoricalFailure> {
     let page_bytes = format.page_size().bytes() as usize;
     if source.len() != page_bytes * pages as usize {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     let mut restamped = Vec::with_capacity(pages as usize);
     for index in 0..pages {
         let start = index as usize * page_bytes;
         let slice = &source[start..start + page_bytes];
-        let geometry = inspect_inline_page(format, slice).map_err(|_| ())?;
+        let geometry =
+            inspect_inline_page(format, slice).map_err(|_| HistoricalFailure::Invalid)?;
         let source_cell = geometry.page_cell();
-        let next = source_cell.generation().get().checked_add(1).ok_or(())?;
+        let next = source_cell
+            .generation()
+            .get()
+            .checked_add(1)
+            .ok_or(HistoricalFailure::Invalid)?;
         if index + 1 == pages
             && (source_cell.generation().get() != rewrite.source_placement()
                 || next != rewrite.destination_placement())
         {
-            return Err(());
+            return Err(HistoricalFailure::Invalid);
         }
-        let generation = PhysicalGeneration::from_raw(next).map_err(|_| ())?;
-        let mut bytes =
-            restamp_inline_page_generation(format, slice, generation.get()).map_err(|_| ())?;
+        let generation =
+            PhysicalGeneration::from_raw(next).map_err(|_| HistoricalFailure::Invalid)?;
+        let mut bytes = restamp_inline_page_generation(format, slice, generation.get())
+            .map_err(|_| HistoricalFailure::Invalid)?;
         encode_data_frame_page_lsn(
             &mut bytes,
             DurableFrameKind::InlinePage,
             PhysicalPageLsn::new(rewrite.page_lsn()),
         )
-        .map_err(|_| ())?;
+        .map_err(|_| HistoricalFailure::Invalid)?;
         let destination = PhysicalGenerationAuthority::for_canonical_physical_format()
             .page_cell(source_cell.segment_id(), source_cell.page_id())
             .with_page_generation(generation);
-        let stamped = inspect_inline_page(format, &bytes).map_err(|_| ())?;
+        let stamped =
+            inspect_inline_page(format, &bytes).map_err(|_| HistoricalFailure::Invalid)?;
         if stamped.page_cell() != destination {
-            return Err(());
+            return Err(HistoricalFailure::Invalid);
         }
-        let page_lsn =
-            decode_data_frame_page_lsn(&bytes, DurableFrameKind::InlinePage).map_err(|_| ())?;
+        let page_lsn = decode_data_frame_page_lsn(&bytes, DurableFrameKind::InlinePage)
+            .map_err(|_| HistoricalFailure::Invalid)?;
         if page_lsn.get() != rewrite.page_lsn() {
-            return Err(());
+            return Err(HistoricalFailure::Invalid);
         }
         restamped.push(RestampedPage {
             source: source_cell,
@@ -122,7 +130,7 @@ pub(super) fn span_entries(
     data_generation: u64,
     start: u32,
     pages: u32,
-) -> Result<Vec<RecordSegmentPageManifestEntry>, ()> {
+) -> Result<Vec<RecordSegmentPageManifestEntry>, HistoricalFailure> {
     let mut found = Vec::new();
     for page in source
         .segment_pages
@@ -139,33 +147,41 @@ pub(super) fn span_entries(
     }
     found.sort_by_key(|entry| entry.frame_index());
     if found.len() != pages as usize {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     if found
         .iter()
         .enumerate()
         .any(|(index, entry)| entry.frame_index() != start + index as u32)
     {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     Ok(found)
 }
 
+/// Reads one admitted span, exactly its `length` bytes. A span is admitted up
+/// to `SPAN_LIMIT`; the reader's allowance is the only budget.
 pub(super) fn read_span(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     segment: u64,
     generation: u64,
     offset: u64,
     length: u32,
-    byte_limit: u64,
-) -> Result<Vec<u8>, ()> {
+) -> Result<Vec<u8>, HistoricalFailure> {
     let bytes = discovery
-        .read_segment_range(segment, generation, offset, length, byte_limit)
-        .map_err(|_| ())?
+        .read_segment_range(
+            segment,
+            generation,
+            offset,
+            length,
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .map_err(discovery_failure)?
         .into_bytes()
-        .ok_or(())?;
+        .ok_or(HistoricalFailure::Invalid)?;
     if bytes.len() != length as usize {
-        return Err(());
+        return Err(HistoricalFailure::Invalid);
     }
     Ok(bytes)
 }
@@ -176,7 +192,7 @@ pub(super) fn read_span(
 pub(super) fn segment_page_count(
     placements: &[CurrentPhysicalRecordPlacement],
     segment: u64,
-) -> Result<u32, ()> {
+) -> Result<u32, HistoricalFailure> {
     let pages = placements
         .iter()
         .filter_map(|placement| match placement {
@@ -186,7 +202,7 @@ pub(super) fn segment_page_count(
             _ => None,
         })
         .collect::<std::collections::BTreeSet<_>>();
-    u32::try_from(pages.len()).map_err(|_| ())
+    u32::try_from(pages.len()).map_err(|_| HistoricalFailure::Invalid)
 }
 
 pub(super) fn stage(
@@ -201,20 +217,20 @@ pub(super) fn stage(
     destination_cell: PageGenerationCell,
     bytes: &[u8],
     page_bytes: u64,
-) -> Result<(), ()> {
+) -> Result<(), HistoricalFailure> {
     let coordinate = RecordFrameCoordinate::new(
         artifact,
         u64::from(frame_index) * page_bytes,
-        u32::try_from(page_bytes).map_err(|_| ())?,
+        u32::try_from(page_bytes).map_err(|_| HistoricalFailure::Invalid)?,
     )
-    .ok_or(())?;
+    .ok_or(HistoricalFailure::Invalid)?;
     frames.push(
         PersistedPhysicalRecoveryFrame::new(
             PersistedPhysicalDataFrameSubject::InlinePage(destination_cell),
             coordinate,
             bytes,
         )
-        .ok_or(())?,
+        .ok_or(HistoricalFailure::Invalid)?,
     );
     updates.push(
         RecordSegmentPageManifestEntry::new(
@@ -223,7 +239,7 @@ pub(super) fn stage(
             data_page_count,
             frame_index,
         )
-        .ok_or(())?,
+        .ok_or(HistoricalFailure::Invalid)?,
     );
     destinations.push((source_cell, destination_cell));
     Ok(())

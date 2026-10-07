@@ -43,3 +43,34 @@ pub use read_result::{
 pub use read_target::{SnapshotReadTarget, SnapshotReadTargetIdentity};
 pub use selection::{BridgeTruthViewAuthorityBasis, PlannedTruthViewPacket};
 pub use token::{BridgeSnapshotToken, TruthSnapshotIdentity};
+
+#[cfg(test)]
+pub(crate) fn test_execution_lease(
+    cancellation: worth_execution::CancellationToken,
+) -> worth_execution::ExecutionResourceLease<'static> {
+    use std::{num::NonZeroUsize, sync::OnceLock};
+    use worth_execution::{ExecutionAuthority, ExecutionAuthorityConfig, LeaseRequest};
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+
+    static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
+    let authority = AUTHORITY.get_or_init(|| {
+        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
+            max_workers: NonZeroUsize::new(2).unwrap(),
+            charged_memory_bytes: 4096,
+        })
+        .unwrap()
+    });
+    authority
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Automatic,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 4096, 10),
+            ),
+            deadline: None,
+            cancellation,
+        })
+        .unwrap()
+}

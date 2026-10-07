@@ -44,6 +44,7 @@ fn restoration_rejects_conflicting_identity_for_the_same_partition() {
             [0x41; 32],
             Arc::from([]),
             None,
+            None,
         );
     }
 }

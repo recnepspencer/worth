@@ -25,7 +25,6 @@ mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod external_dispatch_attempt;
-mod inbound_delivery;
 mod inbound_occurrence;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
@@ -348,6 +347,13 @@ where
     ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
     {
         self.primary_provider.application_resource_support()
+    }
+
+    pub(in crate::domain_computation) fn graph_work_resource_support_ref(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
+    {
+        self.primary_provider.application_resource_support_ref()
     }
 
     pub(in crate::domain_computation) fn graph_work_provider_identity(&self) -> &str {

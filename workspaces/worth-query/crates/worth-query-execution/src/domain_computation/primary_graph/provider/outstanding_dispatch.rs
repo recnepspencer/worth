@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex};
 use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 use worth_relational::facade::history::CommitId;
 use worth_runtime_world::facade::{
-    CompositeCommitIdentity, CompositePublicationAttemptIdentity, ConsumedCompositePublication,
-    ProductBranchIdentity, ProductBranchIncarnation, ProductBranchObservation,
+    CompositeCommitIdentity, ConsumedCompositePublication, ProductBranchIdentity,
+    ProductBranchIncarnation, ProductBranchObservation,
 };
 
 use crate::domain_computation::application_aftermath::{
@@ -40,7 +40,10 @@ struct OutstandingDispatchEntry {
     branch: ProductBranchIdentity,
     incarnation: ProductBranchIncarnation,
     commit: Option<CommitId>,
-    performed_world: Option<(CompositeCommitIdentity, CompositePublicationAttemptIdentity)>,
+    /// The performed World publication also keeps its commit in history until
+    /// the dispatch's terminal is released.
+    performed_world:
+        Option<crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication>,
     in_flight: u64,
     terminal_world: Option<CompositeCommitIdentity>,
 }
@@ -208,13 +211,10 @@ impl OutstandingDispatchOwner {
             || entry.branch != *original_world.product_branch()
             || entry.incarnation != original_incarnation
             || entry.incarnation != original_world.product_incarnation()
-            || entry
-                .performed_world
-                .as_ref()
-                .is_none_or(|(world, attempt)| {
-                    world != original_world.composite_commit()
-                        || attempt != original_world.publication_attempt()
-                })
+            || entry.performed_world.as_ref().is_none_or(|performed| {
+                performed.composite_commit() != original_world.composite_commit()
+                    || performed.publication_attempt() != original_world.publication_attempt()
+            })
         {
             return Err(Denial::OriginalMismatch);
         }
@@ -304,10 +304,7 @@ impl OutstandingDispatchReservation {
             "World performed the reserved incarnation"
         );
         entry.commit = Some(commit);
-        entry.performed_world = Some((
-            publication.composite_commit().clone(),
-            publication.publication_attempt().clone(),
-        ));
+        entry.performed_world = Some(publication.clone());
         self.committed = true;
     }
 }

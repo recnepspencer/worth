@@ -19,6 +19,7 @@ use crate::runtime_policy::{InstalledSignalRuntimePolicy, SignalRuntimePolicy};
 use std::sync::Arc;
 
 use super::{DiagnosticsState, PendingFlowInput, TransactionFlowScope};
+mod facts;
 
 impl DiagnosticsState {
     pub(crate) fn record_observation_activation(&mut self, surface_mask: u8) {
@@ -312,22 +313,6 @@ impl DiagnosticsState {
     pub fn attach_event_epochs_to_latest_flow(&mut self, event_epochs: Vec<EventEpochSummary>) {
         if let Some(flow) = &mut self.latest_flow {
             flow.attach_event_epochs(event_epochs);
-        }
-    }
-
-    pub fn record_explanation_fact(&mut self, fact: ExplanationFact) {
-        if self.installed_retention_budget.explanation_retention
-            == crate::diagnostics::policy::ArtifactRetentionPolicy::Retain
-        {
-            self.explanation_facts.insert(fact.node, fact);
-        }
-    }
-
-    pub fn record_provenance_fact(&mut self, fact: ProvenanceFact) {
-        if self.installed_retention_budget.provenance_retention
-            == crate::diagnostics::policy::ArtifactRetentionPolicy::Retain
-        {
-            self.provenance_facts.insert(fact.node, fact);
         }
     }
 

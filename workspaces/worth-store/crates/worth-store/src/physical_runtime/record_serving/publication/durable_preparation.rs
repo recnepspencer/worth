@@ -21,6 +21,8 @@ pub use prepared::{
     PhysicalMutationAdmissionDisposition, PhysicalMutationResourceShape, PreparedPhysicalMutation,
 };
 pub(in crate::physical_runtime) use prepared::{
-    PlannedPhysicalMutationParts, PreparedPhysicalMutationContext,
+    PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext,
+    PreparedReleaseHeadBasis, PreparedReleasedDirectoryRebinding, PreparedReleasedDropBasis,
+    PreparedReuseDeclarationBasis,
 };
 pub(in crate::physical_runtime::record_serving) use scope::record_append_scope_identity;

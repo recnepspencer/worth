@@ -101,6 +101,14 @@ fn observe_dependency(
         &layout.evidence_dependency.aspect,
         facts,
     )?;
+    let native_entity_kind = optional_u64(
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.native_entity_kind,
+        facts,
+    )?;
     let field = optional_text(
         runtime,
         snapshot,
@@ -151,7 +159,8 @@ fn observe_dependency(
     )?;
     match WorkflowEvidenceDependencyKind::decode(&fact_kind) {
         Some(WorkflowEvidenceDependencyKind::Entity)
-            if aspect.is_none()
+            if native_entity_kind.is_none()
+                && aspect.is_none()
                 && field.is_none()
                 && field_presence.is_none()
                 && relation_kind.is_none()
@@ -161,8 +170,27 @@ fn observe_dependency(
         {
             Ok(WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity })
         }
+        Some(WorkflowEvidenceDependencyKind::EntityKind)
+            if aspect.is_none()
+                && field.is_none()
+                && field_presence.is_none()
+                && relation_kind.is_none()
+                && direction.is_none()
+                && native_revision.is_none()
+                && comparison_work_limit.is_none() =>
+        {
+            let kind = native_entity_kind
+                .and_then(|value| u32::try_from(value).ok())
+                .map(KindId::new)
+                .ok_or_else(|| denial("workflow evidence dependency native kind is invalid"))?;
+            Ok(WorthQueryApplicationObservedFact::Entity {
+                entity_id: entity,
+                kind,
+            })
+        }
         Some(WorkflowEvidenceDependencyKind::AspectRevision)
-            if field.is_none()
+            if native_entity_kind.is_none()
+                && field.is_none()
                 && field_presence.is_none()
                 && relation_kind.is_none()
                 && direction.is_none()
@@ -178,14 +206,18 @@ fn observe_dependency(
             })
         }
         Some(WorkflowEvidenceDependencyKind::FieldRevision)
-            if relation_kind.is_none()
+            if native_entity_kind.is_none()
+                && relation_kind.is_none()
                 && direction.is_none()
                 && comparison_work_limit.is_none() =>
         {
             decode_field_revision_fact(entity, aspect, field, native_revision, field_presence)
         }
         Some(WorkflowEvidenceDependencyKind::AdjacencyRevision)
-            if aspect.is_none() && field.is_none() && field_presence.is_none() =>
+            if native_entity_kind.is_none()
+                && aspect.is_none()
+                && field.is_none()
+                && field_presence.is_none() =>
         {
             let relation_kind = relation_kind
                 .and_then(|value| u32::try_from(value).ok())

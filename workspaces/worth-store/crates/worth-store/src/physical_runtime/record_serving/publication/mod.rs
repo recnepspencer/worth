@@ -4,6 +4,12 @@ pub(super) mod batch;
 mod completion_projection;
 mod data_image;
 mod director;
+pub(in crate::physical_runtime) use director::extent_copy::{
+    AdoptedExtentCopy, CompletedExtentCopy,
+};
+pub use director::extent_copy::{
+    PhysicalExtentCopyPhase, PhysicalExtentCopyProgress, PhysicalExtentCopyResolutionProgress,
+};
 mod durable_data_plan;
 mod durable_preparation;
 pub(super) mod extent_publication;
@@ -19,11 +25,13 @@ pub(in crate::physical_runtime) use completion_projection::PreparedRecordComplet
 pub(in crate::physical_runtime::record_serving) use data_image::ExistingDataFrameImage;
 #[cfg(feature = "certification-test-authority")]
 pub use director::CertificationPhysicalRecordSubmission;
-pub use director::{
-    InlineArtifactRewritePlanDenial, PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
-};
 pub(in crate::physical_runtime) use director::{
-    RecordPublicationDirector, RecordPublicationFoundation,
+    checkpoint_pin_scan_bytes, AdmittedPublicationRetention, RecordPublicationDirector,
+    RecordPublicationFoundation, SelectedBlobManifestPins,
+};
+pub use director::{
+    InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,
+    PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
 };
 pub(in crate::physical_runtime::record_serving) use durable_data_plan::materialize_durable_data;
 pub(in crate::physical_runtime::record_serving) use durable_preparation::{
@@ -40,7 +48,9 @@ pub use durable_preparation::{
     PreparedPhysicalMutation,
 };
 pub(in crate::physical_runtime) use durable_preparation::{
-    PlannedPhysicalMutationParts, PreparedPhysicalMutationContext,
+    PlannedPhysicalMutationParts, PreparedDerivedDirectoryBasis, PreparedPhysicalMutationContext,
+    PreparedReleaseHeadBasis, PreparedReleasedDirectoryRebinding, PreparedReleasedDropBasis,
+    PreparedReuseDeclarationBasis,
 };
 pub(in crate::physical_runtime::record_serving) use plan::{
     CandidateDataArtifact, PublicationPlan,

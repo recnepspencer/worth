@@ -31,13 +31,14 @@ impl SignalGraph {
     pub(crate) fn dependency_snapshot_shape_handle_for_evaluation(
         &mut self,
         id: crate::data::dependency::DependencySnapshotId,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<crate::data::dependency::SnapshotShapeHandle, SignalError> {
         match work {
             crate::logic::evaluation::EvaluationWork::Ordinary => {
                 Ok(self.dependency_snapshot_shape_handle(id))
             }
-            crate::logic::evaluation::EvaluationWork::Conditional(_) => {
+            crate::logic::evaluation::EvaluationWork::Conditional(_)
+            | crate::logic::evaluation::EvaluationWork::RequestCheckpoint(_) => {
                 work.reserve(Some(
                     self.topology
                         .dependency_snapshots

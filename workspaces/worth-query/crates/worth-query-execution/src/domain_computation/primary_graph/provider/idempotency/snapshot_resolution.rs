@@ -210,18 +210,26 @@ fn resolve_projected_idempotency(
         .map_err(|_| "provider idempotency emitted-effect count exceeds host representation")?;
     let commit = committed.commit().clone();
     // The receipt's evidence is process memory, retained from the publication
-    // that performed the commit. A restore or reopen, or the retirement of
-    // the performing product occurrence, releases it; the durable record still
-    // names the commit.
+    // that performed the commit. The declared idempotency window evicts the
+    // oldest evidence; a restore or reopen, or the retirement of the performing
+    // product occurrence, releases it. The durable record still names the
+    // commit, so the replay is told which, never drift and never re-execution.
     let Some(committed) = context.provider.observe_completed_application(&commit) else {
         return Err(
-            WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained {
-                commit: commit.commit_id,
+            if context
+                .provider
+                .completed_evidence_expired(commit.commit_id)
+            {
+                WorthQueryProviderIdempotencyResolutionDenial::WindowExpired
+            } else {
+                WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained {
+                    commit: commit.commit_id,
+                }
             },
         );
     };
-    let performed_product = WorthQueryProductIdempotencyAffinity::from_reference(
-        committed.product_publication().new_product_head(),
+    let performed_product = WorthQueryProductIdempotencyAffinity::from_publication(
+        committed.committed_product_publication(),
     );
     if &performed_product != expected_product {
         return Ok(WorthQueryProviderIdempotencyResolution::Drift);

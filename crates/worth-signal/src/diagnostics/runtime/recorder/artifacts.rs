@@ -6,8 +6,8 @@ use crate::data::trace::RuntimeArtifactFinalizeImage;
 use crate::diagnostics::lineage::{ArtifactTransitionKind, InvalidationCause, LineageRecord};
 use crate::logic::planner::{ExecutionRecordId, SemanticSegmentId};
 
-fn derive_lineage_transition(
-    graph: &mut SignalGraph,
+pub(crate) fn derive_lineage_transition(
+    allocate_artifact: &mut impl FnMut() -> crate::diagnostics::lineage::LineageArtifactId,
     before_trace: Option<&RuntimeArtifactFinalizeImage>,
     after_trace: &RuntimeArtifactFinalizeImage,
 ) -> (
@@ -24,8 +24,7 @@ fn derive_lineage_transition(
             | ReuseOrigin::CrossIdentityPersistentReuse
             | ReuseOrigin::PartialArtifactSplice
     ) {
-        let artifact_id = previous_artifact_id
-            .unwrap_or_else(|| graph.diagnostics_state_mut().allocate_lineage_artifact_id());
+        let artifact_id = previous_artifact_id.unwrap_or_else(&mut *allocate_artifact);
         (
             artifact_id,
             match after_trace.reuse_origin() {
@@ -69,10 +68,7 @@ fn derive_lineage_transition(
             },
         )
     } else {
-        (
-            graph.diagnostics_state_mut().allocate_lineage_artifact_id(),
-            ArtifactTransitionKind::Replaced,
-        )
+        (allocate_artifact(), ArtifactTransitionKind::Replaced)
     };
     (artifact_id, previous_artifact_id, transition)
 }
@@ -106,10 +102,13 @@ pub(crate) fn stamp_trace_summary_and_record_lineage_transition_from_image(
     after_finalize_image: &RuntimeArtifactFinalizeImage,
     execution_record_id: ExecutionRecordId,
     semantic_segment_id: SemanticSegmentId,
-    work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
 ) -> Result<(), crate::data::error::SignalError> {
-    let (artifact_id, previous_artifact_id, transition) =
-        derive_lineage_transition(graph, before_trace, after_finalize_image);
+    let (artifact_id, previous_artifact_id, transition) = derive_lineage_transition(
+        &mut || graph.diagnostics_state_mut().allocate_lineage_artifact_id(),
+        before_trace,
+        after_finalize_image,
+    );
     graph.stamp_runtime_artifact_lineage_and_execution(
         node,
         artifact_id,

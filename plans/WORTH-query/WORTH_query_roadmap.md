@@ -434,8 +434,8 @@ contracts required by physical integration:
 
 The numbered order remains the semantic dependency order. The condensed ranges
 above do not weaken any intervening milestone, acceptance gate, or proof
-obligation. 9.18 Phase 1 may begin before 9.17.7 closes; the inbound contract gates
-9.18 external-effect integration and final acceptance, not that independent phase.
+obligation. 9.17.7 is complete; its inbound contract now supplies the gate for
+9.18 external-effect integration and final acceptance.
 
 `Milestone 9.17.6.3` runs beside this chain rather than in it. Every phase
 depends only on completed work, and no chain milestone waits on it.
@@ -5544,8 +5544,8 @@ a real remote CAD effect requires its own later adoption court, not a fictitious
 service in this milestone.
 
 9.18 consumes the completed graph, evolution and workflow contracts. The inbound-effect
-milestone 9.17.7 is not yet implemented; its completion gates 9.18 external-effect
-integration and final acceptance. 9.18 Phase 1 may begin independently. None of
+milestone 9.17.7 is implemented and independently certified, supplying the contract
+for 9.18 external-effect integration and final acceptance. None of
 these specs is a progress ledger for another; each has its own production endpoint,
 owner/type contracts, destination topology, deletion and acceptance requirements.
 
@@ -5557,8 +5557,8 @@ Replace the provisional Milestone 9.16 linear undo/redo experiment with an
 accepted tree-based product over the composite history completed by Milestone
 9.17.3 under the Milestone 9.17 umbrella, through graph authoring, branch program
 evolution and workflow contracts completed by 9.17.4-9.17.6, and the inbound-effect
-contract required from 9.17.7 before external-effect integration and final acceptance.
-Phase 1 may begin independently of 9.17.7 completion. Every
+contract supplied by completed 9.17.7 for external-effect integration and final acceptance.
+Every
 reversal or reapplication selects an exact source world commit and target
 product branch/head, re-enters current authority and policy, coordinates the
 required component plans, and publishes a new composite commit without

@@ -1,11 +1,10 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
+use crate::physical_runtime::SharedRecoveryCheckpoint;
 use worth_store_physical_backend::{
     AdmittedRecoveryFilesystemMedia, PhysicalRecoveryMediaGeneration,
 };
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
-use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_wal::WalSegmentArtifactIdentity;
 
 use crate::physical_runtime::{
@@ -34,7 +33,7 @@ pub struct StoreRecoveryCleanupPlan {
     session: [u8; 16],
     policy_identity: [u8; 32],
     reopen: CompletedPhysicalRecoveryFreshReopen,
-    checkpoint: Arc<VerifiedCheckpointStream>,
+    checkpoint: SharedRecoveryCheckpoint,
     candidates: BTreeMap<WalSegmentArtifactIdentity, StoreRecoveryCleanupEligibility>,
     terminal_binding_evaluations: u64,
     media_handle_baseline: worth_store_physical_backend::RecoveryMediaHandleObservation,
@@ -90,8 +89,8 @@ impl StoreRecoveryCleanupPlan {
             && self.session == coordination.session_identity()
     }
 
-    pub(super) fn checkpoint(&self) -> Arc<VerifiedCheckpointStream> {
-        Arc::clone(&self.checkpoint)
+    pub(super) fn checkpoint(&self) -> SharedRecoveryCheckpoint {
+        self.checkpoint.clone()
     }
 
     pub(super) fn take(

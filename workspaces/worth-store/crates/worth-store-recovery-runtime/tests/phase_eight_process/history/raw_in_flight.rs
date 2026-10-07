@@ -19,9 +19,13 @@ impl ExpectedWriterHistory {
             .map_err(|error| format!("canonicalize semantic in-flight root: {error}"))?;
         let mut files = Vec::new();
         collect_files(&root, &root, &mut files)?;
+        let selected_basis = parent_oracle::select_recovery_basis(&files)?;
+        let idempotency = self
+            .dirty_idempotency()
+            .ok_or_else(|| "missing persisted dirty-operation identity binding".to_owned())?;
         let (identity_present, payload_present) = parent_oracle::classify_in_flight_artifacts(
-            &files,
-            &self.in_flight_identity(),
+            &selected_basis,
+            &idempotency,
             self.in_flight_payload(),
         )?;
         let current_root_payloads = parent_oracle::current_root_payloads(&files)?;

@@ -80,7 +80,7 @@ fn materialized_inline_prior_advances_through_exact_wal_bound_copy_on_write() {
 }
 
 #[test]
-fn multi_chunk_extent_uses_one_new_artifact_effect_then_existing_artifact_writebacks() {
+fn multi_chunk_extent_writes_distinct_new_frames_within_one_packed_arena() {
     let parent = tempfile::tempdir().unwrap();
     let store_root = parent.path().join("store");
     let serving = serving_from_initialization(&store_root);
@@ -107,18 +107,12 @@ fn multi_chunk_extent_uses_one_new_artifact_effect_then_existing_artifact_writeb
     };
     assert!(
         dispatched.effects().len() >= 3,
-        "the fixture must cross the real multi-chunk existing-artifact join"
+        "the fixture must cross the real multi-chunk packed-arena join"
     );
     let mut artifacts = BTreeSet::new();
-    for (index, effect) in dispatched.effects().iter().enumerate() {
-        assert_eq!(
-            effect.source(),
-            if index == 0 {
-                PhysicalDataEffectSource::NewArtifact
-            } else {
-                PhysicalDataEffectSource::ExistingArtifactWriteback
-            }
-        );
+    let mut ranges = Vec::new();
+    for effect in dispatched.effects() {
+        assert_eq!(effect.source(), PhysicalDataEffectSource::NewArtifact);
         assert!(matches!(
             effect.basis().target().subject(),
             PhysicalDataFrameSubject::ExtentChunk(_)
@@ -130,15 +124,20 @@ fn multi_chunk_extent_uses_one_new_artifact_effect_then_existing_artifact_writeb
         ));
         assert_eq!(effect.basis().delta().len(), 1);
         artifacts.insert(effect.coordinate().artifact());
+        ranges.push((
+            effect.coordinate().offset(),
+            effect.coordinate().offset() + u64::from(effect.coordinate().length()),
+        ));
         verify_effect(&store_root, format.declaration(), member, effect);
     }
     assert_eq!(artifacts.len(), 1);
+    assert!(ranges.windows(2).all(|pair| pair[0].1 <= pair[1].0));
     match dispatched.settle_exact_effects() {
         PhysicalDataSettlementOutcome::Settled(settled) => {
             assert_eq!(settled.mutation_identity(), member.mutation_identity())
         }
         PhysicalDataSettlementOutcome::InspectionRequired { cause, .. } => {
-            panic!("exact existing-artifact writeback effects must settle: {cause:?}")
+            panic!("exact packed-arena frame effects must settle: {cause:?}")
         }
     }
     serving.close();

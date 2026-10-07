@@ -13,7 +13,7 @@ impl SignalGraph {
     pub(crate) fn admit_pending_cause_handle_reads(
         &self,
         count: usize,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(
             self.arena
@@ -43,7 +43,7 @@ impl SignalGraph {
         &self,
         node: NodeId,
     ) -> Result<Option<&DirectInvalidationBasis>, SignalError> {
-        Ok(self.warm_ref(node)?.direct_invalidation_basis.as_ref())
+        Ok(self.warm_ref(node)?.direct_invalidation_basis.as_deref())
     }
 
     pub(crate) fn node_direct_invalidation_generation(

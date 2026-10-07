@@ -5,7 +5,7 @@ pub enum StrategyDenial {
     FamilyDoesNotMatchLifecycleAdmission,
     StrategyDoesNotSupportDeclaredAccessLane,
     StrategyDoesNotDeclarePlannedCounterEnvelope,
-    PhysicalKeyDomainDoesNotSupportBaselineBTree,
+    PhysicalKeyDomainDoesNotSupportBTree,
     PhysicalKeyDomainDoesNotSupportBaselineLsm,
     InvariantSuiteNotAvailableForFamily,
     ComparatorOrderViolation,

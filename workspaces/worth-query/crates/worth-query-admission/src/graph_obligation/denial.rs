@@ -36,12 +36,14 @@ impl WorthQueryGraphObligationSelectionDenial {
 
 #[derive(Debug)]
 pub enum WorthQueryGraphWorkAdmissionDenial {
+    Selection(WorthQueryGraphObligationSelectionDenial),
     IntentMismatch,
     UnsupportedOwner,
     GraphReadRequirementMismatch,
     GraphReadPlan(WorthQueryGraphReadPlanReviewDenialKind),
     ExecutionResource(WorthQueryExecutionResourceAdmissionDenial),
     ProviderSupportUnavailable,
+    OperationAuthorityMismatch,
     CapacityUnavailable,
     IdentityExhausted,
 }

@@ -1,12 +1,8 @@
 use worth_store::physical_runtime::{
     RecoveredPhysicalRuntimeConstructionDenial, RecoveryDiscoveryFailure,
-    StoreRecoveryBindingSampleDenial,
 };
 use worth_store_physical_format::{store_namespace::StableStoreIdentity, RecordArtifactFile};
-use worth_store_recovery_physics::{
-    OperationReconciliationDenial, PhysicalRedoPlanningDenial, PhysicalRedoTargetIdentity,
-    RecoveryPlanCostDenial, RecoveryPlanningCounters,
-};
+use worth_store_recovery_physics::{PhysicalRedoTargetIdentity, RecoveryPlanningCounters};
 
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
@@ -43,17 +39,43 @@ pub struct PhysicalRecoveryPublicationIndeterminate {
     integrity_observations: super::PhysicalRecoveryIntegrityObservations,
     reopen: Option<super::PhysicalRecoveryReopenFailure>,
     handoff: Option<RecoveredPhysicalRuntimeConstructionDenial>,
+    checkpoint_residue_indeterminate: bool,
+    /// Settled before the Store rejoin that failed, so this run still names
+    /// what cleanup removed and the debt it left deferred.
+    cleanup: Option<crate::handoff::RecoveryCleanupPosture>,
     recovery_effects: u64,
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
+#[path = "outcome/block_cause.rs"]
+mod block_cause;
+#[path = "outcome/planning_denial.rs"]
+mod planning_denial;
 mod refusal;
+#[path = "outcome/selected_release_head.rs"]
+mod selected_release_head;
+pub use block_cause::{
+    PhysicalRecoveryBlockCause, PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure,
+};
+pub use planning_denial::{
+    PhysicalRecoveryOrderedReleaseDenial, PhysicalRecoveryOrderedReleaseJoin,
+    PhysicalRecoveryOrderedReleaseStorage, PhysicalRecoveryPlanningDenial,
+};
 pub use refusal::{PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind};
+pub use selected_release_head::{
+    PhysicalRecoveryReleaseHeadControlDenial, PhysicalRecoveryReleaseHeadReadDenial,
+    PhysicalRecoveryReleaseHeadWalkDenial, PhysicalRecoverySelectedRecordReadDenial,
+    PhysicalRecoverySelectedReleaseHeadDenial,
+};
 
+/// The phase whose observation or check failed. A limit is no kind: it is
+/// its own cause.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalRecoveryBlockKind {
-    DiscoveryLimit,
     MediaObservation,
+    /// A source read's resident admission or backing was refused; the source
+    /// denials name which.
+    SourceAllocation,
     RootProtocol,
     Checkpoint,
     WalInventory,
@@ -62,34 +84,9 @@ pub enum PhysicalRecoveryBlockKind {
     PageAdmission,
     OperationReconciliation,
     RedoPlanning,
+    SelectedCustody,
     Staging,
     Publication,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PhysicalRecoveryLimitDimension {
-    SelectorCandidates,
-    ManifestBytes,
-    ManifestEntries,
-    WalSegments,
-    WalFrames,
-    WalBytes,
-    DistinctPagesAndExtents,
-    ObservationBytes,
-    OperationBindings,
-    RedoTargets,
-    RedoBytes,
-    StagingBytes,
-    RecoveryMemoryBytes,
-    DirtyFrames,
-    PublicationEffects,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PhysicalRecoveryLimitFailure {
-    pub dimension: PhysicalRecoveryLimitDimension,
-    pub observed: u64,
-    pub admitted: u64,
 }
 
 #[derive(Debug, Default)]
@@ -97,7 +94,6 @@ pub struct PhysicalRecoveryBlockEvidence {
     pub counters: PhysicalRecoveryDiscoveryCounters,
     pub planning_counters: Option<RecoveryPlanningCounters>,
     pub root_protocol_counters: Option<super::PhysicalRecoveryRootProtocolCounters>,
-    pub limit: Option<PhysicalRecoveryLimitFailure>,
     pub artifact: Option<String>,
     pub source_generation: Option<u64>,
     pub lsn: Option<u64>,
@@ -110,6 +106,8 @@ pub struct PhysicalRecoveryBlockEvidence {
     pub publication_counters: Option<super::PhysicalRecoveryPublicationCounters>,
     pub publication_denial: Option<super::PhysicalRecoveryPublicationDenial>,
     pub publication_settlements: Option<super::PhysicalRecoveryPublicationSettlementLedger>,
+    pub checkpoint_residue_denial:
+        Option<worth_store::physical_runtime::RecoveryCheckpointResidueDenial>,
     pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
 
@@ -144,9 +142,11 @@ impl PhysicalRecoveryPublicationIndeterminate {
             settlement,
             root_protocol_denials,
             root_protocol_counters,
-            integrity_observations: super::PhysicalRecoveryIntegrityObservations::new(Vec::new()),
+            integrity_observations: super::PhysicalRecoveryIntegrityObservations::empty(),
             reopen: None,
             handoff: None,
+            checkpoint_residue_indeterminate: false,
+            cleanup: None,
             recovery_effects,
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
         }
@@ -226,19 +226,31 @@ impl PhysicalRecoveryPublicationIndeterminate {
         self
     }
 
-    pub const fn handoff_failure(&self) -> Option<RecoveredPhysicalRuntimeConstructionDenial> {
-        self.handoff
+    pub fn handoff_failure(&self) -> Option<RecoveredPhysicalRuntimeConstructionDenial> {
+        self.handoff.clone()
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PhysicalRecoveryPlanningDenial {
-    BindingFreshness(StoreRecoveryBindingSampleDenial),
-    OperationReconciliation(OperationReconciliationDenial),
-    Redo(PhysicalRedoPlanningDenial),
-    Page(PhysicalRecoveryPageAdmissionDenial),
-    SuccessorCandidate(super::PhysicalRecoverySuccessorCandidateDenial),
-    Cost(RecoveryPlanCostDenial),
+    pub(crate) fn with_checkpoint_residue_indeterminate(mut self) -> Self {
+        self.checkpoint_residue_indeterminate = true;
+        self
+    }
+
+    pub const fn checkpoint_residue_indeterminate(&self) -> bool {
+        self.checkpoint_residue_indeterminate
+    }
+
+    pub(crate) fn with_cleanup_posture(
+        mut self,
+        cleanup: crate::handoff::RecoveryCleanupPosture,
+    ) -> Self {
+        self.cleanup = Some(cleanup);
+        self
+    }
+
+    /// Present exactly when cleanup settled before the handoff failed.
+    pub const fn cleanup_posture(&self) -> Option<&crate::handoff::RecoveryCleanupPosture> {
+        self.cleanup.as_ref()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -260,14 +272,39 @@ pub enum PhysicalRecoveryPageAdmissionDenial {
         denial: super::PhysicalRecoveryRootProtocolDenial,
     },
     InvalidTarget(PhysicalRedoTargetIdentity),
+    HistoricalDrop {
+        operation: [u8; 32],
+        stage: HistoricalDropAdmissionStage,
+        target: Option<PhysicalRedoTargetIdentity>,
+    },
+    AbsentExtentBelowFrontier {
+        target: PhysicalRedoTargetIdentity,
+        next_extent: u64,
+    },
+    MaterializedExtentChunkCount {
+        target: PhysicalRedoTargetIdentity,
+        admitted_chunk_count: u32,
+    },
+    MaterializedExtentCoordinate(PhysicalRedoTargetIdentity),
     InvalidPage(PhysicalRedoTargetIdentity),
-    ManifestEntryLimit,
-    ObservationByteLimit,
+    /// A count observation keeps went past every count. No limit admits it.
+    CountOverflow,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HistoricalDropAdmissionStage {
+    DescriptorBinding,
+    OrderedHistory,
+    SelectedControls,
+    ManifestBinding,
+    SourceRoot,
+    SourceResultHistory,
+    TargetWitness,
 }
 
 #[derive(Debug)]
 pub struct PhysicalRecoveryBlock {
-    pub kind: PhysicalRecoveryBlockKind,
+    cause: PhysicalRecoveryBlockCause,
     store: StableStoreIdentity,
     session: super::PhysicalRecoverySessionIdentity,
     evidence: PhysicalRecoveryBlockEvidence,
@@ -276,19 +313,24 @@ pub struct PhysicalRecoveryBlock {
 
 impl PhysicalRecoveryBlock {
     pub(crate) const fn new(
-        kind: PhysicalRecoveryBlockKind,
+        cause: PhysicalRecoveryBlockCause,
         store: StableStoreIdentity,
         session: super::PhysicalRecoverySessionIdentity,
         evidence: PhysicalRecoveryBlockEvidence,
         recovery_effects: u64,
     ) -> Self {
         Self {
-            kind,
+            cause,
             store,
             session,
             evidence,
             recovery_effects,
         }
+    }
+
+    /// A limit recovery ran out of, or the phase that failed.
+    pub const fn cause(&self) -> PhysicalRecoveryBlockCause {
+        self.cause
     }
 
     pub const fn store_identity(&self) -> StableStoreIdentity {

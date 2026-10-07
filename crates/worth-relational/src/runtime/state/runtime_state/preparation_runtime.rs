@@ -23,14 +23,17 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     snapshot_ids: Arc<std::sync::atomic::AtomicU64>,
     lineage_identity: crate::runtime::LineageIdentityAllocator,
     diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
+    index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
 }
 
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
+    pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
+    pub(crate) index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     pub(crate) history: RelationalPreparationHistory,
     pub(crate) record_identity: RecordIdentitySubsystem,
     pub(crate) services: RuntimeServices,
@@ -54,6 +57,7 @@ impl RelationalPreparationOwnerBinding {
             snapshot_ids: runtime.visibility.snapshot_identity_binding(),
             lineage_identity: runtime.lineage.identity_allocator(),
             diagnostics: runtime.publication.diagnostics.clone(),
+            index_definitions: runtime.indexes.definition_read_binding(),
         }
     }
 
@@ -70,9 +74,11 @@ impl RelationalPreparationOwnerBinding {
         configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
+            commit_work_budget: None,
             config: Arc::clone(&configuration.config),
             schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
             diagnostics: self.diagnostics.clone(),
+            index_definitions: self.index_definitions.clone(),
             history: self.history.clone(),
             record_identity: self.record_identity.clone(),
             services: self.services.clone(),
@@ -86,6 +92,14 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn with_commit_work_budget(&self) -> Self {
+        let mut runtime = self.clone();
+        if runtime.commit_work_budget.is_none() {
+            runtime.commit_work_budget = Some(crate::execution::RequestWorkBudget::new());
+        }
+        runtime
+    }
+
     pub(crate) fn admit_operation(
         &self,
     ) -> Option<super::owner_lifecycle::AdmittedRelationalRuntimeOperation> {

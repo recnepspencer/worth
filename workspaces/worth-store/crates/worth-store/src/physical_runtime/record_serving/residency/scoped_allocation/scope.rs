@@ -20,3 +20,4 @@ store_allocation_scope!(ScrubScope, Scrub);
 store_allocation_scope!(MaintenanceScope, Maintenance);
 store_allocation_scope!(VerificationScope, Verification);
 store_allocation_scope!(BlobScope, Blob);
+store_allocation_scope!(LayoutReadScope, ForegroundRead);

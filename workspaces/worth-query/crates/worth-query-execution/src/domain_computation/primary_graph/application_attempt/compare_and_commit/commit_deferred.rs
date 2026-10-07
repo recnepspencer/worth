@@ -1,10 +1,10 @@
 //! Application-owned deferred commit evidence.
 
-/// Evidence that a commit attempt stopped at a capacity or lifetime limit, carried
+/// Evidence that a commit attempt stopped at a capacity, lifetime or prerequisite boundary, carried
 /// by the `Deferred` commit outcome.
 ///
-/// Nothing was committed. The [`kind`](Self::kind) names the limit that was
-/// reached; retry later, after the limit has room again.
+/// Nothing was committed. The [`kind`](Self::kind) names the boundary that
+/// deferred publication; retry when that boundary can admit the attempt.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCommitDeferred {
     kind: WorthQueryApplicationCommitDeferredKind,
@@ -12,11 +12,15 @@ pub struct WorthQueryApplicationCommitDeferred {
     detail: String,
     counters:
         crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters,
+    prerequisite_denial:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
 }
 
 /// The limit that deferred a commit attempt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDeferredKind {
+    /// A required native publication companion deferred the attempt.
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     /// The owner had no room to retain another basis for the attempt.
     RetentionCapacityExhausted,
     /// Another attempt held the reservation this commit needed.
@@ -27,6 +31,12 @@ pub enum WorthQueryApplicationCommitDeferredKind {
     CandidateCapacityExhausted { maximum_candidates: usize },
     /// The owner already held its maximum number of published snapshot handles.
     PublishedSnapshotCapacityExhausted { maximum_handles: usize },
+    /// Source marking changed during exact same-image revalidation; retry the commit.
+    SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
+    /// Required upstream custody or its bounded preparation is unavailable.
+    RequiredPrerequisitePending(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+    ),
 }
 
 impl From<crate::domain_computation::provider_session::WorthQueryProviderSessionCommitDeferredKind>
@@ -37,6 +47,7 @@ impl From<crate::domain_computation::provider_session::WorthQueryProviderSession
     ) -> Self {
         use crate::domain_computation::provider_session::WorthQueryProviderSessionCommitDeferredKind as Provider;
         match kind {
+            Provider::RelationalDeferred(deferred) => Self::RelationalDeferred(deferred),
             Provider::RetentionCapacityExhausted => Self::RetentionCapacityExhausted,
             Provider::PatchPositionReservationContended => Self::PatchPositionReservationContended,
             Provider::CandidateLifetimeExpired {
@@ -50,6 +61,8 @@ impl From<crate::domain_computation::provider_session::WorthQueryProviderSession
             Provider::PublishedSnapshotCapacityExhausted { maximum_handles } => {
                 Self::PublishedSnapshotCapacityExhausted { maximum_handles }
             }
+            Provider::SourceCurrentnessRaced(stop) => Self::SourceCurrentnessRaced(stop),
+            Provider::RequiredPrerequisitePending(kind) => Self::RequiredPrerequisitePending(kind),
         }
     }
 }
@@ -63,7 +76,14 @@ impl WorthQueryApplicationCommitDeferred {
             stage: deferred.stage(),
             detail: deferred.detail().to_owned(),
             counters: deferred.counters(),
+            prerequisite_denial: deferred.into_prerequisite_denial(),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn into_prerequisite_denial(
+        self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        self.prerequisite_denial
     }
 
     pub const fn kind(&self) -> WorthQueryApplicationCommitDeferredKind {

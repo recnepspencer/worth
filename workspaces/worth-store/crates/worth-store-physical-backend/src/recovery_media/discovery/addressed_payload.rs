@@ -1,131 +1,130 @@
-use worth_store_physical_format::RecordArtifactFile;
-
-use super::{
-    BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, RecoveryDiscoveryFailure,
+use worth_foundational::LimitDimension;
+use worth_store_physical_format::{
+    ExtentArenaRange, RecordArtifactFile, EXTENT_ARENA_MANIFEST_FRAME_BYTES,
 };
 
+use super::super::ceiling::{ArtifactCeiling, CeilingExtent};
+use super::super::grant::{GrantShare, ReadGrant};
+use super::super::refusal::{ArtifactDamage, ArtifactReadOutcome};
+use super::artifact::ceiling_artifact;
+use super::charged_read::{outcome, ReadStop, TreeReadFailure};
+use super::{record_artifact, BoundedRecoveryFilesystemDiscovery, RecoveryDiscoveryArtifact};
+
 impl BoundedRecoveryFilesystemDiscovery {
-    pub fn read_free_space_manifest(
+    /// Reads the artifact `ceiling` names, within its ceiling and `grant`.
+    pub fn read<D: LimitDimension>(
         &mut self,
-        generation: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::FreeSpaceManifest { generation },
-            byte_limit,
-        )
+        ceiling: ArtifactCeiling,
+        grant: ReadGrant<D>,
+    ) -> ArtifactReadOutcome<D> {
+        let context = ceiling.artifact();
+        let artifact = match ceiling_artifact(ceiling.address()) {
+            Ok(artifact) => artifact,
+            Err(failure) => return outcome(Err(ReadStop::stop(failure))),
+        };
+        outcome(match ceiling.extent() {
+            CeilingExtent::Whole { bytes, fixed } => {
+                let grant = GrantShare::of(&grant);
+                self.read_whole_charged(context, bytes, fixed, &grant, |attempt, limit| {
+                    attempt
+                        .open()
+                        .read_bounded(&artifact, limit)
+                        .map_err(TreeReadFailure::Media)
+                })
+            }
+            CeilingExtent::Frame { offset, length } => {
+                self.read_range_charged(context, offset, length, &grant, |attempt, capacity| {
+                    read_exact(attempt.open(), &artifact, offset, capacity)
+                })
+            }
+        })
     }
 
-    pub fn read_free_space_membership_block(
-        &mut self,
-        generation: u64,
-        block: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::FreeSpaceMembershipBlock { generation, block },
-            byte_limit,
-        )
-    }
-
-    pub fn read_segment_manifest(
-        &mut self,
-        segment: u64,
-        generation: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::SegmentManifest {
-                segment,
-                generation,
-            },
-            byte_limit,
-        )
-    }
-
-    pub fn read_segment(
-        &mut self,
-        segment: u64,
-        generation: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::Segment {
-                segment,
-                generation,
-            },
-            byte_limit,
-        )
-    }
-
-    pub fn read_segment_membership_block(
-        &mut self,
-        generation: u64,
-        block: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::SegmentMembershipBlock { generation, block },
-            byte_limit,
-        )
-    }
-
-    pub fn read_segment_range(
+    /// Reads exactly `length` bytes at `offset` of a segment, a range a
+    /// verified parent declared.
+    pub fn read_segment_range<D: LimitDimension>(
         &mut self,
         segment: u64,
         generation: u64,
         offset: u64,
         length: u32,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed_range(
+        grant: ReadGrant<D>,
+    ) -> ArtifactReadOutcome<D> {
+        self.read_record_range(
             RecordArtifactFile::Segment {
                 segment,
                 generation,
             },
             offset,
             length,
-            byte_limit,
+            grant,
         )
     }
 
-    pub fn read_extent_manifest(
+    pub fn read_extent_manifest<D: LimitDimension>(
         &mut self,
-        extent: u64,
-        generation: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::ExtentManifest { extent, generation },
-            byte_limit,
-        )
+        range: ExtentArenaRange,
+        grant: ReadGrant<D>,
+    ) -> ArtifactReadOutcome<D> {
+        self.read_extent_range(range, 0, EXTENT_ARENA_MANIFEST_FRAME_BYTES as u32, grant)
     }
 
-    pub fn read_extent(
+    /// Reads `length` bytes at `offset` within the arena `range`.
+    pub fn read_extent_range<D: LimitDimension>(
         &mut self,
-        extent: u64,
-        generation: u64,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed(
-            RecordArtifactFile::Extent { extent, generation },
-            byte_limit,
-        )
-    }
-
-    pub fn read_extent_range(
-        &mut self,
-        extent: u64,
-        generation: u64,
+        range: ExtentArenaRange,
         offset: u64,
         length: u32,
-        byte_limit: u64,
-    ) -> Result<ObservedRecoveryArtifact, RecoveryDiscoveryFailure> {
-        self.read_addressed_range(
-            RecordArtifactFile::Extent { extent, generation },
-            offset,
-            length,
-            byte_limit,
+        grant: ReadGrant<D>,
+    ) -> ArtifactReadOutcome<D> {
+        let artifact = RecordArtifactFile::ExtentArena {
+            arena: range.arena().get(),
+        };
+        match extent_offset(range, offset, length) {
+            Some(absolute) => self.read_record_range(artifact, absolute, length, grant),
+            None => outcome(Err(ReadStop::damage(ArtifactDamage::InvalidAddress {
+                artifact: RecoveryDiscoveryArtifact::Record(artifact),
+            }))),
+        }
+    }
+
+    fn read_record_range<D: LimitDimension>(
+        &mut self,
+        file: RecordArtifactFile,
+        offset: u64,
+        length: u32,
+        grant: ReadGrant<D>,
+    ) -> ArtifactReadOutcome<D> {
+        let context = RecoveryDiscoveryArtifact::Record(file);
+        let artifact = match record_artifact(file) {
+            Ok(artifact) => artifact,
+            Err(failure) => return outcome(Err(ReadStop::stop(failure))),
+        };
+        outcome(
+            self.read_range_charged(context, offset, length, &grant, |attempt, capacity| {
+                read_exact(attempt.open(), &artifact, offset, capacity)
+            }),
         )
     }
+}
+
+/// The absolute offset of `length` bytes at `offset` within `range`; `None`
+/// where they do not lie within it.
+pub(super) fn extent_offset(range: ExtentArenaRange, offset: u64, length: u32) -> Option<u64> {
+    let end = offset
+        .checked_add(u64::from(length))
+        .filter(|end| *end <= range.length())?;
+    range.offset().checked_add(end - u64::from(length))
+}
+
+fn read_exact(
+    tree: crate::filesystem_media::ArtifactTreeMedia<'_>,
+    artifact: &crate::filesystem_media::ArtifactTreeFile,
+    offset: u64,
+    capacity: usize,
+) -> Result<Vec<u8>, TreeReadFailure<ArtifactDamage>> {
+    let mut bytes = vec![0; capacity];
+    tree.read_exact_at(artifact, offset, &mut bytes)
+        .map(|()| bytes)
+        .map_err(TreeReadFailure::Media)
 }

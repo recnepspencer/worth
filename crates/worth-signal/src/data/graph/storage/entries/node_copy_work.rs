@@ -9,7 +9,7 @@ impl SignalGraph {
     pub(crate) fn admit_effect_node_copy_work(
         &self,
         node: NodeId,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         self.admit_node_operational_copy_work(node, work)?;
         if self.arena.cold.exclusive_capacity().is_none() {
@@ -24,7 +24,7 @@ impl SignalGraph {
     pub(crate) fn admit_node_operational_copy_work(
         &self,
         node: NodeId,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         self.validate_handle(node)?;
         // No storage fork intervenes between final packet validation and

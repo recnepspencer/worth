@@ -89,7 +89,7 @@ fn malformed_membership(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalI
             PhysicalBlastRadius::ReachableSubtree,
         );
     }
-    let width = if kind == 1 { 40 } else { 56 };
+    let width = if kind == 1 { 40 } else { 72 };
     let count = usize::from(read_u16(bytes, MembershipField::COUNT));
     if bytes.len() != 88 + count * width {
         return count_damage(scope);
@@ -155,7 +155,7 @@ fn invalid_reference(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalInte
     damaged(
         scope,
         PhysicalDamageCause::ChildReferenceMismatch,
-        body_item_range(scope, bytes, 56, offending),
+        body_item_range(scope, bytes, 72, offending),
         Some(PhysicalFormatField::ChildReference),
         PhysicalBlastRadius::ReachableSubtree,
     )
@@ -163,7 +163,7 @@ fn invalid_reference(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalInte
 
 fn canonical_order(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalIntegrityRejection {
     let kind = bytes.get(68).copied().unwrap_or(0);
-    let width = if kind == 1 { 40 } else { 56 };
+    let width = if kind == 1 { 40 } else { 72 };
     if kind == 2 {
         if let Some(offending) = first_nonmember_child(bytes) {
             return damaged(
@@ -186,29 +186,32 @@ fn canonical_order(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalIntegr
 }
 
 fn first_invalid_child(bytes: &[u8]) -> Option<usize> {
-    bytes.get(88..)?.chunks_exact(56).position(|child| {
+    bytes.get(88..)?.chunks_exact(72).position(|child| {
         child[18..20] != [0; 2]
             || read_at_u64(child, 0) == 0
             || read_at_u64(child, 8) == 0
-            || !valid_key(&child[24..40])
-            || !valid_key(&child[40..56])
-            || read_key(child, 24) > read_key(child, 40)
+            || !valid_key(&child[24..48])
+            || !valid_key(&child[48..72])
+            || read_key(child, 24) > read_key(child, 48)
     })
 }
 
 fn first_invalid_entry(bytes: &[u8]) -> Option<usize> {
     bytes.get(88..)?.chunks_exact(40).position(|entry| {
         !valid_key(&entry[..16])
-            || read_at_u64(entry, 16) == 0
+            || (entry[0] == 1 && read_at_u64(entry, 16) == 0)
             || read_at_u64(entry, 24) == 0
             || read_at_u64(entry, 32) == 0
+            || read_at_u64(entry, 16)
+                .checked_add(read_at_u64(entry, 24))
+                .is_none()
     })
 }
 
 fn first_nonmember_child(bytes: &[u8]) -> Option<usize> {
     let parent_level = read_u16(bytes, MembershipField::LEVEL);
     let parent_generation = read_u64(bytes, MembershipField::GENERATION);
-    bytes.get(88..)?.chunks_exact(56).position(|child| {
+    bytes.get(88..)?.chunks_exact(72).position(|child| {
         u16::from_le_bytes(child[16..18].try_into().unwrap()).checked_add(1) != Some(parent_level)
             || read_at_u64(child, 0) > parent_generation
     })
@@ -227,15 +230,20 @@ fn first_noncanonical_item(bytes: &[u8], kind: u8, width: usize) -> Option<usize
         if kind == 1 {
             read_key(previous, 0) >= read_key(current, 0)
         } else {
-            read_key(previous, 40) >= read_key(current, 24)
+            read_key(previous, 48) >= read_key(current, 24)
         }
     })
 }
 
-fn read_key(bytes: &[u8], offset: usize) -> (u8, u64) {
+fn read_key(bytes: &[u8], offset: usize) -> (u8, u64, u64) {
     (
         bytes[offset],
         u64::from_le_bytes(bytes[offset + 8..offset + 16].try_into().unwrap()),
+        if bytes[offset] == 2 {
+            read_at_u64(bytes, offset + 16)
+        } else {
+            0
+        },
     )
 }
 

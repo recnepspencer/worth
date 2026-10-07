@@ -38,6 +38,16 @@ fn reclaimed_wal_prefix_remains_absent_after_fresh_process_reopen() {
     ));
     let (completed, _) = publish_after_foreground_rotations(&serving, submission, placement);
     assert_reclaimed_prefix(&completed.wal_reclamation(), 1);
+    assert_unmaterialized_candidates(&store_root, &serving);
+    assert_eq!(
+        serving
+            .certification_record_submission()
+            .wal_observation()
+            .unwrap()
+            .appended_frames(),
+        5
+    );
+    let retained_charge = serving.certification_charged_growth_bytes();
     serving.close();
 
     assert_eq!(
@@ -56,6 +66,16 @@ fn reclaimed_wal_prefix_remains_absent_after_fresh_process_reopen() {
     assert_eq!(observation.active_segment_count(), 2);
     assert_eq!(observation.reopened_frames(), 4);
     assert!(!observation.sealed_for_inspection());
+    assert_unmaterialized_candidates(&store_root, &reopened);
+    // These five single-page mutations reached WAL durability, not data
+    // dispatch. Reopen restores retained media, not their transient candidate
+    // reservations. Completed-publication parity is a separate journey.
+    let pending_candidate_bytes = 5 * u64::from(format.declaration().page_size().bytes());
+    assert_eq!(
+        retained_charge,
+        reopened.certification_charged_growth_bytes() + pending_candidate_bytes,
+        "reopen must not resurrect unwritten candidate reservations or reclaimed WAL"
+    );
     let replay = prepare_with_key(
         &reopened.certification_record_submission(),
         placement,
@@ -68,6 +88,21 @@ fn reclaimed_wal_prefix_remains_absent_after_fresh_process_reopen() {
     );
     assert_eq!(replay.mutation_identity(), base_identity);
     reopened.close();
+}
+
+fn assert_unmaterialized_candidates(root: &std::path::Path, serving: &ServingPhysicalRuntime) {
+    assert!(std::fs::read_dir(root.join("families/records/segments"))
+        .unwrap()
+        .next()
+        .is_none());
+    assert_eq!(
+        serving
+            .observer()
+            .acquisition_snapshot()
+            .unwrap()
+            .root_generation(),
+        1
+    );
 }
 
 fn prepare_with_key(

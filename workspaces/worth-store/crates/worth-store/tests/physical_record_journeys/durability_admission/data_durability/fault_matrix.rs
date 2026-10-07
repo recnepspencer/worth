@@ -101,8 +101,8 @@ fn uncertainty_after_first_data_effect_returns_inspection_only_authority() {
 }
 
 #[test]
-fn second_chunk_denial_retains_first_effect_and_never_launders_partial_writeback_as_retryable() {
-    let calibration = calibrated_first_existing_artifact_write();
+fn second_chunk_pre_effect_denial_preserves_and_resumes_the_exact_settled_prefix() {
+    let calibration = calibrated_second_arena_write();
     let parent = tempfile::tempdir().unwrap();
     let store_root = parent.path().join("store");
     let media = fault_scheduled_media_at_identified_ordinal(
@@ -138,30 +138,59 @@ fn second_chunk_denial_retains_first_effect_and_never_launders_partial_writeback
             .identified_operation_attempts_for(MediaOperationRole::PositionedWrite),
         calibration.before_dispatch
     );
-    let uncertain = match submission.dispatch_wal_durable_data(durable) {
-        PhysicalDataDispatchOutcome::Indeterminate(uncertain) => uncertain,
+    let suspended = match submission.dispatch_wal_durable_data(durable) {
+        PhysicalDataDispatchOutcome::Suspended(suspended) => suspended,
         _ => panic!("a denied second chunk follows a completed first data effect"),
     };
-    assert_eq!(uncertain.completed_frames(), 1);
+    assert_eq!(suspended.completed_effects().len(), 1);
     assert_eq!(
-        uncertain.effects()[0].source(),
+        suspended.completed_effects()[0].source(),
         PhysicalDataEffectSource::NewArtifact
     );
     assert!(matches!(
-        uncertain.cause(),
-        PhysicalDataDispatchFailureCause::ExistingArtifactWriteback(_)
+        suspended.cause(),
+        PhysicalDataDispatchFailureCause::Canonical(_)
     ));
-    let artifact = artifact_path(&store_root, uncertain.effects()[0].coordinate().artifact());
+    let first = suspended.completed_effects()[0].clone();
+    let artifact = artifact_path(&store_root, first.coordinate().artifact());
     assert!(fs::metadata(artifact).unwrap().len() > 0);
+    let before_resume = serving
+        .media_counters()
+        .identified_operation_attempts_for(MediaOperationRole::PositionedWrite);
+    let dispatched = match submission.dispatch_wal_durable_data(suspended.into_durable()) {
+        PhysicalDataDispatchOutcome::Dispatched(dispatched) => dispatched,
+        PhysicalDataDispatchOutcome::NotStarted { cause, .. } => panic!("resume denied: {cause:?}"),
+        PhysicalDataDispatchOutcome::Indeterminate(failure) => {
+            panic!("resume uncertain: {:?}", failure.cause())
+        }
+        _ => panic!("one-shot fault must allow the suffix to complete"),
+    };
+    assert_eq!(
+        dispatched.effects()[0],
+        first,
+        "original effect evidence is retained, not recreated"
+    );
+    assert_eq!(
+        serving
+            .media_counters()
+            .identified_operation_attempts_for(MediaOperationRole::PositionedWrite)
+            - before_resume,
+        dispatched.effects().len() as u64 - 1,
+        "only the unfinished suffix is written"
+    );
+    assert!(matches!(
+        dispatched.settle_exact_effects(),
+        PhysicalDataSettlementOutcome::Settled(_)
+    ));
     serving.close();
 }
 
-struct ExistingArtifactWriteCalibration {
+struct ArenaWriteCalibration {
     before_dispatch: u64,
     target: u64,
 }
 
-fn calibrated_first_existing_artifact_write() -> ExistingArtifactWriteCalibration {
+fn calibrated_second_arena_write() -> ArenaWriteCalibration {
     let parent = tempfile::tempdir().unwrap();
     let store_root = parent.path().join("control");
     let media = certification_media(&store_root);
@@ -194,23 +223,24 @@ fn calibrated_first_existing_artifact_write() -> ExistingArtifactWriteCalibratio
     let after = serving
         .media_counters()
         .identified_operation_attempts_for(MediaOperationRole::PositionedWrite);
-    let existing_artifact_effects = dispatched
+    let arena_effects = dispatched
         .effects()
         .iter()
-        .filter(|effect| effect.source() == PhysicalDataEffectSource::ExistingArtifactWriteback)
+        .filter(|effect| effect.source() == PhysicalDataEffectSource::NewArtifact)
         .count() as u64;
-    let new_artifact_writes = after
-        .checked_sub(before)
-        .and_then(|total| total.checked_sub(existing_artifact_effects))
-        .expect("control counters partition new-artifact and existing-artifact writes");
-    assert!(new_artifact_writes > 0);
+    assert_eq!(
+        after - before,
+        arena_effects,
+        "each arena frame has one canonical ranged write"
+    );
+    assert!(arena_effects > 1);
     assert!(matches!(
         dispatched.settle_exact_effects(),
         PhysicalDataSettlementOutcome::Settled(_)
     ));
     serving.close();
-    ExistingArtifactWriteCalibration {
+    ArenaWriteCalibration {
         before_dispatch: before,
-        target: before + new_artifact_writes + 1,
+        target: before + 2,
     }
 }

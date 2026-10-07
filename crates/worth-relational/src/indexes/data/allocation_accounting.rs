@@ -28,7 +28,7 @@ impl DerivedIndexGeneration {
 }
 
 impl DerivedIndexEntries {
-    fn owned_allocation_capacity_bytes(&self) -> u64 {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
         match self {
             Self::EntityField(entries) => comparison_entries_bytes(entries),
             Self::RelationField(entries) => comparison_entries_bytes(entries),

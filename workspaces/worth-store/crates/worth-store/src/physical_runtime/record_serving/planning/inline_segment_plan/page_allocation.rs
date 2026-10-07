@@ -11,6 +11,7 @@ use super::{
     PageDataPlan, PlannedPageMembership, PlanningSegment, RecordAllocationFrontier,
     RecordAppendDenial, RecordAppendError, WorkingSegment,
 };
+use crate::physical_runtime::record_serving::access::manifest_routing::ManifestReader;
 use crate::physical_runtime::record_serving::planning::{
     inline_page_packing::{fitting_prefix, new_page_fill_capacity, remaining_policy_capacity},
     inline_plan_failure::admitted_generation as generation,
@@ -23,6 +24,8 @@ pub(super) fn append_to_last_page(
     placement: AdmittedRecordPlacementPolicy,
     segment: &mut PlanningSegment,
     loaded: LoadedPublishedTailPage,
+    selected_routes: &ManifestReader<'_>,
+    allocation: &worth_store_buffer_pool::OperationAllocationGrant,
     inline: &mut VecDeque<MaterializedInlineInput>,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
 ) -> Result<(), RecordAppendError> {
@@ -39,7 +42,21 @@ pub(super) fn append_to_last_page(
     let candidate_page = PhysicalGenerationAuthority::for_canonical_physical_format()
         .page_cell(segment.segment.segment_id(), geometry.page())
         .with_page_generation(page_generation);
-    remap_existing_page_records(&admitted_records, segment, candidate_page, placements)?;
+    if !remap_existing_page_records(
+        &admitted_records,
+        segment,
+        geometry.page_cell(),
+        candidate_page,
+        selected_routes,
+        allocation,
+        placements,
+    )? {
+        // The prior physical page can contain slots retired by an earlier
+        // publication. Copying it would publish those slots again, while the
+        // current root has no selected route to witness them in the WAL
+        // projection. Leave this page untouched and append on a new page.
+        return Ok(());
+    }
     let candidate_frame_index = segment.data_pages.len() as u32;
     segment.last_published_page = None;
     segment
@@ -80,11 +97,31 @@ fn fitting_record_count(
 fn remap_existing_page_records(
     records: &[AdmittedCleanInlinePageRecord],
     segment: &PlanningSegment,
+    source_page: PageGenerationCell,
     candidate_page: PageGenerationCell,
+    selected_routes: &ManifestReader<'_>,
+    allocation: &worth_store_buffer_pool::OperationAllocationGrant,
     placements: &mut BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
-) -> Result<(), RecordAppendError> {
+) -> Result<bool, RecordAppendError> {
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
+    let mut selected = Vec::with_capacity(records.len());
     for descriptor in records {
+        let Some(route_metadata) = selected_routes
+            .selected_inline_metadata_if_routed(
+                allocation,
+                descriptor.record,
+                source_page,
+                descriptor.slot,
+                descriptor.slot_generation,
+                u64::from(descriptor.payload_bytes),
+            )
+            .map_err(|_| RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged))?
+        else {
+            return Ok(false);
+        };
+        selected.push((descriptor, route_metadata));
+    }
+    for (descriptor, route_metadata) in selected {
         let slot = authority
             .slot_cell(
                 segment.segment.segment_id(),
@@ -92,13 +129,14 @@ fn remap_existing_page_records(
                 descriptor.slot,
             )
             .with_slot_generation(generation(Some(descriptor.slot_generation))?);
-        let placement = DurableInlineRecordPlacement::new(
+        let placement = DurableInlineRecordPlacement::new_selected(
             descriptor.record,
             segment.segment,
             candidate_page,
             slot,
             segment.page_capacity,
             u64::from(descriptor.payload_bytes),
+            route_metadata,
         )
         .ok_or(RecordAppendError::Denied(
             RecordAppendDenial::PublishedLayoutDamaged,
@@ -108,7 +146,7 @@ fn remap_existing_page_records(
             CurrentPhysicalRecordPlacement::Inline(placement),
         );
     }
-    Ok(())
+    Ok(true)
 }
 
 pub(super) fn append_new_page(
@@ -179,13 +217,14 @@ fn take_inline_records(
             placements.insert(
                 input.record,
                 CurrentPhysicalRecordPlacement::Inline(
-                    DurableInlineRecordPlacement::new(
+                    DurableInlineRecordPlacement::new_selected(
                         input.record,
                         segment.segment,
                         page,
                         slot_cell,
                         segment.page_capacity,
                         input.bytes.len() as u64,
+                        input.route_metadata,
                     )
                     .expect("planner coordinates are consistent"),
                 ),

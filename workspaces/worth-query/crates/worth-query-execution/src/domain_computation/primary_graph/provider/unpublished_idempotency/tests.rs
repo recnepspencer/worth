@@ -10,7 +10,7 @@ fn exact_cleanup_restores_bounded_capacity_for_another_world_issued_reservation(
     let second_affinity = WorthQueryProductIdempotencyAffinity::from_observation(&second_product);
     let mut store = WorthQueryUnpublishedIdempotencyStore::new(1);
 
-    let first_key = store
+    let (first_key, _) = store
         .reserve(first_affinity, first_binding, first_handle.clone())
         .expect("one real unpublished reservation fits");
     assert!(

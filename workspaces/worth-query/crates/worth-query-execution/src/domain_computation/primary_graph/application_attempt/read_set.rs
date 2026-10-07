@@ -24,6 +24,12 @@ use crate::domain_computation::primary_graph::{
 
 mod binding_proof;
 mod completion;
+mod decision_reuse;
+pub(in crate::domain_computation::primary_graph) use decision_reuse::{
+    CompletedDecisionReuseProof, PreparedDecisionReuseContext,
+};
+mod handler_fact_boundary;
+pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
 mod observation_admission;
 mod observations;
 mod projected_completion;
@@ -59,6 +65,7 @@ pub struct WorthQueryApplicationReadAttempt<
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     source_facts: Vec<WorthQueryApplicationObservedFact>,
+    consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -80,6 +87,7 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) lease: WorthQueryApplicationSnapshotLease,
     pub(super) installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
     pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
+    pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
@@ -110,12 +118,9 @@ where
                 admission.operation(),
             ));
         }
-        admission.validate_current_authority().map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                admission.operation(),
-            )
-        })?;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignApplication,
@@ -143,6 +148,7 @@ where
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,
+            consumed_outputs: Vec::new(),
             _phase: PhantomData,
         })
     }
@@ -208,12 +214,9 @@ where
                 admission.operation(),
             ));
         }
-        admission.validate_current_authority().map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                admission.operation(),
-            )
-        })?;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignApplication,
@@ -221,7 +224,7 @@ where
             )
         })?;
         let root = admission.scope_entity_id();
-        let (lease, projected_scope, expected_facts, dependent_source_facts) =
+        let (lease, projected_scope, expected_facts, dependent_source_facts, consumed_outputs) =
             projection.into_lease_and_realized_scope();
         let mut admission = admission;
         let source_facts = merge_source_facts(
@@ -240,6 +243,7 @@ where
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,
+            consumed_outputs,
             _phase: PhantomData,
         })
     }

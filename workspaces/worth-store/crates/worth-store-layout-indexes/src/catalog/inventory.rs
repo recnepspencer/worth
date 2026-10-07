@@ -1,9 +1,9 @@
 use super::{artifact_family_inventory_rows, PhysicalArtifactFamilyDeclaration};
 use crate::ArtifactFamilyDenial;
 use worth_store_contracts::{
-    CompatibilityFamilyKind, DerivedFamilyRetentionPolicy, DurableArtifactFamilyId,
-    LayoutFamilyCompactionUnit, MaintenanceArtifactFamily, PlacementArtifactFamily,
-    PublicationFamily, SupportArtifactFamily, WalRecordFamily,
+    DerivedFamilyRetentionPolicy, DurableArtifactFamilyId, LayoutFamilyCompactionUnit,
+    MaintenanceArtifactFamily, PlacementArtifactFamily, PublicationFamily, SupportArtifactFamily,
+    WalRecordFamily,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,42 +86,6 @@ impl ExistingArtifactFamilySurface for WalRecordFamily {
                 DurableArtifactFamilyId::WalDurablePublicationProgress
             }
             Self::RecoveryDecision => DurableArtifactFamilyId::WalRecoveryDecision,
-        }
-    }
-}
-
-impl private::Sealed for CompatibilityFamilyKind {}
-impl ExistingArtifactFamilySurface for CompatibilityFamilyKind {
-    fn canonical_family_id(&self) -> DurableArtifactFamilyId {
-        match self {
-            Self::CommitEnvelope => DurableArtifactFamilyId::CompatibilityCommitEnvelope,
-            Self::BranchVersionDagRecord => {
-                DurableArtifactFamilyId::CompatibilityBranchVersionDagRecord
-            }
-
-            Self::WalRestartRecord => DurableArtifactFamilyId::CompatibilityWalRestartRecord,
-            Self::SchemaLineageCursorCheckpointSupport => {
-                DurableArtifactFamilyId::CompatibilitySchemaLineageCursorCheckpointSupport
-            }
-            Self::EmbeddedCheckpointAuthority => {
-                DurableArtifactFamilyId::CompatibilityEmbeddedCheckpointAuthority
-            }
-            Self::SnapshotRecord => DurableArtifactFamilyId::CompatibilitySnapshotRecord,
-            Self::DeltaRecord => DurableArtifactFamilyId::CompatibilityDeltaRecord,
-            Self::LegacyLayoutBlockChunkRecord => {
-                DurableArtifactFamilyId::CompatibilityLegacyLayoutBlockChunkRecord
-            }
-            Self::LegacyBasisContinuationDescriptor => {
-                DurableArtifactFamilyId::CompatibilityLegacyBasisContinuationDescriptor
-            }
-            Self::LegacyBulkRecord => DurableArtifactFamilyId::CompatibilityLegacyBulkRecord,
-            Self::LegacyRetentionRebuildRecord => {
-                DurableArtifactFamilyId::CompatibilityLegacyRetentionRebuildRecord
-            }
-            Self::LegacyMaintenanceRecord => {
-                DurableArtifactFamilyId::CompatibilityLegacyMaintenanceRecord
-            }
-            Self::LegacyTieringRecord => DurableArtifactFamilyId::CompatibilityLegacyTieringRecord,
         }
     }
 }

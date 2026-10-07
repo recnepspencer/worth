@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::identity::{
     BridgeIdentity, BridgeIdentityPayload, HistoricalResolvedLineageIdentityTag,
     HistoricalResolvedRecordIdentityTag, TruthBranchTag, TruthCommitTag, TruthPatchTag,
@@ -16,6 +14,8 @@ const RELATIONAL_RECORD_ENTITY_PREFIX: &str = "relational-record:entity:";
 const RELATIONAL_RECORD_RELATION_PREFIX: &str = "relational-record:relation:";
 const RELATIONAL_SNAPSHOT_PREFIX: &str = "relational-snapshot:";
 const RELATIONAL_SNAPSHOT_VERSION_SEPARATOR: &str = ":version:";
+
+mod branch;
 
 /// Whether a Relational record is an entity or a relation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -169,30 +169,6 @@ impl RelationalBridgeSnapshotIdentityParts {
             "{RELATIONAL_SNAPSHOT_PREFIX}{}{RELATIONAL_SNAPSHOT_VERSION_SEPARATOR}{}",
             self.snapshot_id, self.version_id
         )
-    }
-}
-
-impl BridgeIdentity<TruthBranchTag> {
-    /// The Bridge identity of a Relational branch.
-    pub fn from_relational_branch_id(branch_id: impl Into<Arc<str>>) -> Self {
-        let branch_id = branch_id.into();
-        Self::with_payload(
-            format!("{RELATIONAL_BRANCH_PREFIX}{branch_id}"),
-            BridgeIdentityPayload::RelationalBranch { branch_id },
-        )
-    }
-
-    /// The Relational branch id, if this identity names a Relational branch.
-    pub fn relational_branch_id(&self) -> Option<&str> {
-        match self.payload() {
-            BridgeIdentityPayload::RelationalBranch { branch_id } => Some(branch_id.as_ref()),
-            _ => None,
-        }
-    }
-
-    /// A test branch identity whose branch id is the fixture label itself.
-    pub fn from_bridge_harness_label(label: impl Into<Arc<str>>) -> Self {
-        Self::from_relational_branch_id(label)
     }
 }
 

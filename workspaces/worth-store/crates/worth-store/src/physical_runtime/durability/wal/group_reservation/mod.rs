@@ -172,15 +172,45 @@ impl ReservedPhysicalWalGroupMembers {
         self.0
     }
 
-    pub(super) fn retained_publication_bytes(&self) -> u64 {
-        self.0.as_slice().iter().fold(0, |total, member| {
-            let mutation = member.mutation();
-            let wal = mutation.encoded_frame().len() as u64;
-            let metadata = mutation
-                .root_projection()
-                .retained_publication_metadata_bytes();
-            total.saturating_add(wal).saturating_add(metadata)
-        })
+    pub(super) fn retained_publication_reservation(
+        &self,
+    ) -> Option<crate::physical_runtime::durability::retention::WalPublicationReservation> {
+        let (wal, metadata) =
+            self.0
+                .as_slice()
+                .iter()
+                .try_fold((0_u64, 0_u64), |(wal, metadata), member| {
+                    let mutation = member.mutation();
+                    Some((
+                        wal.checked_add(mutation.encoded_frame().len() as u64)?,
+                        metadata.checked_add(
+                            mutation
+                                .root_projection()
+                                .retained_publication_metadata_bytes(),
+                        )?,
+                    ))
+                })?;
+        let first = self
+            .0
+            .as_slice()
+            .first()?
+            .mutation()
+            .member_basis()
+            .lsn_range();
+        let last = self
+            .0
+            .as_slice()
+            .last()?
+            .mutation()
+            .member_basis()
+            .lsn_range();
+        let range = worth_store_wal::WalLsnRange::new(first.start(), last.end_exclusive()).ok()?;
+        crate::physical_runtime::durability::retention::WalPublicationReservation::new(
+            self.publication_segment(),
+            range,
+            wal,
+            metadata,
+        )
     }
 
     pub(super) fn publication_segment(&self) -> (u64, u64) {

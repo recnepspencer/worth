@@ -5,8 +5,8 @@ use worth_store_physical_format::store_namespace::{
 };
 use worth_store_physical_format::{
     durable_artifact_checksum, DurablePhysicalRootManifest, DurableRootSelector,
-    PhysicalFreeSpaceMembershipBlock, PhysicalRecordFormatDeclaration, RecordAllocationClass,
-    RecordArtifactFile, RecordFreeSpaceManifestEntry, RootSelectorIdentity, RootSelectorRole,
+    PhysicalFreeSpaceMembershipBlock, PhysicalRecordFormatDeclaration, RecordArtifactFile,
+    RecordFreeSpaceManifestEntry, RootSelectorIdentity, RootSelectorRole,
 };
 
 use super::clean_artifact_manifest::RootArtifactManifestDeclaration;
@@ -213,9 +213,7 @@ fn root_world(
     generation: u64,
     format: PhysicalRecordFormatDeclaration,
 ) -> (DurablePhysicalRootManifest, Vec<u8>) {
-    let entry =
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::InlinePage, 1, 2, 3, generation)
-            .unwrap();
+    let entry = RecordFreeSpaceManifestEntry::inline_frontier(1, 2, 3, generation).unwrap();
     let block =
         PhysicalFreeSpaceMembershipBlock::leaf(generation + 200, generation, 1, vec![entry], 4)
             .unwrap();

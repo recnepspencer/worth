@@ -12,10 +12,11 @@ pub(super) fn project(
     target: PhysicalIntegrityScrubTarget,
     observation: &PhysicalIntegrityScrubWindowObservation,
 ) -> Value {
-    let scope = target.scope();
+    let scope = observation.scope;
     let (path, identity, generation) = address(target, observation);
+    let range = json!({"offset":scope.byte_range().offset(),"length":scope.byte_range().length()});
     json!({"path":path, "family":super::vocabulary::family(scope.artifact_family()),
-        "identity":identity, "generation":generation, "range":{"offset":scope.byte_range().offset(),"length":scope.byte_range().length()},
+        "identity":identity, "generation":generation, "range":range,
         "duplicates":[], "outcome":super::outcome::project(observation.outcome)})
 }
 
@@ -24,7 +25,11 @@ fn address(
     observation: &PhysicalIntegrityScrubWindowObservation,
 ) -> (String, String, Option<u64>) {
     let scope = target.scope();
-    match target.range().target() {
+    match target
+        .media_range()
+        .expect("version-one raw target")
+        .target()
+    {
         Target::Record(record) => record_address(record, scope, observation),
         Target::Wal(identity) => {
             let file = worth_store_wal::WalSegmentArtifactIdentity::new(
@@ -97,6 +102,11 @@ fn record_address(
             format!("block:{block:016x}"),
             Some(generation),
         ),
+        Record::ReleaseCustodyHeadBlock { generation, block } => (
+            "families/records/roots",
+            format!("release-head:{generation:016x}:{block:016x}"),
+            Some(generation),
+        ),
         Record::SegmentMembershipBlock { generation, block } => (
             "families/records/segment-manifests",
             format!("block:{block:016x}"),
@@ -120,22 +130,32 @@ fn record_address(
                 Some(page.generation().get()),
             )
         }
-        Record::ExtentManifest { extent, generation } => (
-            "families/records/extent-manifests",
-            format!("extent:{extent:016x}"),
-            Some(generation),
-        ),
-        Record::Extent { extent, generation } => (
-            "families/records/extents",
-            format!(
-                "extent:{extent:016x}:chunk:{}",
-                scope
+        Record::ExtentArena { arena } => {
+            let (identity, generation) = if let Some(placement) = scope.extent_manifest_placement()
+            {
+                (
+                    format!("extent:{:016x}", placement.extent().get()),
+                    placement.extent_generation(),
+                )
+            } else {
+                let chunk = scope
                     .extent_chunk_coordinate()
-                    .expect("admitted chunk target")
-                    .ordinal()
-            ),
-            Some(generation),
-        ),
+                    .expect("admitted arena chunk target");
+                (
+                    format!(
+                        "extent:{:016x}:chunk:{}",
+                        chunk.extent_cell().extent_id().get(),
+                        chunk.ordinal()
+                    ),
+                    chunk.extent_cell().generation().get(),
+                )
+            };
+            (
+                "families/records/arenas",
+                format!("arena:{arena:016x}:{identity}"),
+                Some(generation),
+            )
+        }
         Record::CatalogCandidate { .. }
         | Record::RootSelectorCandidate { .. }
         | Record::SegmentManifest { .. } => {

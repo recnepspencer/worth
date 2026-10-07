@@ -23,6 +23,7 @@ pub use estimate::{
     WorthQueryGraphReadIntrinsicCostEstimate, WorthQueryGraphReadSupportedCostEstimate,
 };
 pub use estimator::estimate_graph_read_access_cost;
+pub(crate) use estimator::estimate_graph_read_access_cost_admitted;
 pub use evidence::{derive_graph_read_cost_evidence, WorthQueryGraphReadCostEvidence};
 pub use memory::WorthQueryGraphReadMemoryByteEstimate;
 pub use planning_observation::{

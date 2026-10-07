@@ -9,7 +9,7 @@ use super::{
     PerformedRecoveryPhysicalEffect, PhysicalRecoveryCoordination, RecoveryFreshReopenAction,
 };
 
-mod admission;
+pub(super) mod admission;
 mod execution;
 
 pub struct PhysicalRecoveryFreshReopenCommand {
@@ -90,6 +90,10 @@ impl PhysicalRecoveryCoordination {
 }
 
 impl CompletedPhysicalRecoveryFreshReopen {
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.performed.owned_heap_bytes()
+    }
+
     pub(super) const fn new(
         root: DurablePhysicalRootManifest,
         format: PhysicalRecordFormatDeclaration,

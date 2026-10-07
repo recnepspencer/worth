@@ -6,6 +6,9 @@ use worth_query_decl::facade::{
     worth_query_aspect, worth_query_entity, worth_query_field, worth_query_unit,
     worth_query_value_binding,
 };
+use worth_query_host::facade::application_contribution::{
+    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
+};
 
 mod alternate_output;
 mod application_program;
@@ -47,7 +50,18 @@ pub use producer::*;
 pub use readiness::InitialPlanarReadiness;
 pub use source_adjustment::*;
 
-pub trait TopologySchemaBinding: ApplicationSchema {}
+pub trait TopologySchemaBinding: ApplicationSchema {
+    const ROOT_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
+    /// The final producer's decision-reuse declaration is part of each installed
+    /// fixture schema, so opt-out journeys use the ordinary production installer.
+    const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+            WorthQueryDecisionContextDependencies::NONE,
+        ));
+}
 
 worth_query_value_binding! {
     pub TopologyLengthBinding for PositiveLength {
@@ -76,6 +90,8 @@ worth_query_application_contribution! {
     pub contribution TopologyContribution for Schema: TopologySchemaBinding {
         identity: "worth.query.certification.topology.v1",
         members: |schema| {
+            #[cfg(test)]
+            let schema = checkpoint_recovery::required_chain::declare(schema);
             let schema = alternate_output::declare_alternate_output(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
@@ -134,7 +150,7 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
                 .operation(EditPlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
                 .operation_decision_fact_budget(EditPlanar::reference::<Schema>(), 64)
-                .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 256)
+                .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 8_192)
                 .operation_read_entity(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())

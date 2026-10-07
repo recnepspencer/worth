@@ -7,8 +7,7 @@ mod primitive_terms;
 pub(crate) use artifact_terms::{
     commit_validation_summary_digest, lowering_summary_digest, native_entity_fields_scope_digest,
     native_entity_replacement_scope_digest, preview_validation_cost_digest,
-    runtime_execution_model_digest, runtime_invariant_catalog_digest,
-    runtime_planning_contract_digest, serial_intent_scope_digest,
+    runtime_invariant_catalog_digest, serial_intent_scope_digest,
 };
 pub(crate) use descriptor_terms::{
     commit_strategy_descriptor_digest, commit_strategy_registry_digest,

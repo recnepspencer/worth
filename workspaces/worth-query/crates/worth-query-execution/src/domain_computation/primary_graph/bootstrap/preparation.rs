@@ -146,6 +146,7 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.binding_identity(),
             layout,
             relational_runtime,
+            product_world_resources.invalidation_resources(),
             checkpoint.is_some(),
         )?;
         let recovered_publication = checkpoint
@@ -155,6 +156,13 @@ impl WorthQueryExecutionInstallationAuthority {
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),
             graph,
+            resource_support:
+                super::super::provider::WorthQueryPrimaryGraphResourceSupport::install(
+                    runtime
+                        .application_query_resource_profile()
+                        .maximum_concurrent_graph_work(),
+                    runtime.application_candidate_resource_profile(),
+                ),
             product_world_resources,
             rows: Vec::new(),
             external_identities: BTreeSet::new(),

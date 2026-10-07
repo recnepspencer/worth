@@ -9,6 +9,16 @@ pub trait TruthSnapshotReader: Send + Sync + 'static {
         &self,
         request: &SnapshotReadPacket,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError>;
+
+    /// Carries the caller's lease across Bridge correspondence. Readers with
+    /// no dispatched work may use the serial implementation.
+    fn read_packet_with_lease(
+        &self,
+        request: &SnapshotReadPacket,
+        _lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+        self.read_packet(request)
+    }
 }
 
 impl<T> TruthSnapshotReader for Box<T>
@@ -24,6 +34,14 @@ where
         request: &SnapshotReadPacket,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         (**self).read_packet(request)
+    }
+
+    fn read_packet_with_lease(
+        &self,
+        request: &SnapshotReadPacket,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+        (**self).read_packet_with_lease(request, lease)
     }
 }
 
@@ -61,6 +79,21 @@ impl<R: TruthSnapshotReader> BridgeSnapshotContext<R> {
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         self.snapshot.read_packet(request)
     }
+
+    pub fn read_packet_with_lease(
+        &self,
+        request: &SnapshotReadPacket,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+        if let Some(stop) = BridgeSnapshotReadError::execution_stopped(lease) {
+            return Err(stop);
+        }
+        let result = self.snapshot.read_packet_with_lease(request, lease)?;
+        if let Some(stop) = BridgeSnapshotReadError::execution_stopped(lease) {
+            return Err(stop);
+        }
+        Ok(result)
+    }
 }
 
 impl<R: TruthSnapshotReader> AdmittedSnapshotContext<R> {
@@ -85,10 +118,24 @@ impl<R: TruthSnapshotReader> AdmittedSnapshotContext<R> {
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         self.bound.read_packet(request)
     }
+
+    pub fn read_packet_with_lease(
+        &self,
+        request: &SnapshotReadPacket,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+        self.bound.read_packet_with_lease(request, lease)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    };
+    use worth_execution::CancellationToken;
+
     use crate::snapshot::{
         BridgeSnapshotContext, BridgeSnapshotReadError, SnapshotReadPacket,
         SnapshotReadPacketResult, TruthSnapshotIdentity, TruthSnapshotReader,
@@ -120,5 +167,60 @@ mod tests {
             context.snapshot_identity().as_str(),
             crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").as_str()
         );
+    }
+
+    struct LeaseTrackingReader(Arc<AtomicBool>);
+
+    impl TruthSnapshotReader for LeaseTrackingReader {
+        fn snapshot_identity(&self) -> TruthSnapshotIdentity {
+            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a")
+        }
+
+        fn read_packet(
+            &self,
+            _: &SnapshotReadPacket,
+        ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+            panic!("leased read must reach the leased reader method")
+        }
+
+        fn read_packet_with_lease(
+            &self,
+            _: &SnapshotReadPacket,
+            _: &worth_execution::ExecutionResourceLease<'_>,
+        ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+            self.0.store(true, Ordering::SeqCst);
+            Ok(SnapshotReadPacketResult::new(
+                self.snapshot_identity(),
+                vec![],
+            ))
+        }
+    }
+
+    #[test]
+    fn admitted_snapshot_carries_lease_and_denies_pre_cancelled_reads() {
+        let seen = Arc::new(AtomicBool::new(false));
+        let identity = crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a");
+        let snapshot = BridgeSnapshotContext::bind(
+            Box::new(LeaseTrackingReader(Arc::clone(&seen))) as Box<dyn TruthSnapshotReader>,
+        );
+        let admitted = super::AdmittedSnapshotContext::admit_for(snapshot, &identity).unwrap();
+        let lease = crate::snapshot::test_execution_lease(CancellationToken::new());
+        admitted
+            .read_packet_with_lease(&SnapshotReadPacket::new(vec![]), &lease)
+            .unwrap();
+        assert!(seen.load(Ordering::SeqCst));
+
+        seen.store(false, Ordering::SeqCst);
+        let cancelled = CancellationToken::new();
+        cancelled.cancel();
+        let lease = crate::snapshot::test_execution_lease(cancelled);
+        let error = admitted
+            .read_packet_with_lease(&SnapshotReadPacket::new(vec![]), &lease)
+            .unwrap_err();
+        assert_eq!(
+            error.kind(),
+            crate::snapshot::BridgeSnapshotReadErrorKind::ExecutionCancelled
+        );
+        assert!(!seen.load(Ordering::SeqCst));
     }
 }

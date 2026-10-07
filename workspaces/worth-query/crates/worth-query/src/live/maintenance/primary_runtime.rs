@@ -132,7 +132,12 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
     collection: Option<&mut crate::domain_installation::WorthQueryCollectionConsumerWindow>,
 ) -> Result<WorthQueryPrimaryGranularMaintenanceOutcome, WorthQueryPrimaryGranularMaintenanceDenial>
 {
-    if admitted.is_empty() {
+    // A producer that lost subscription continuity marks its batch
+    // `RefreshAll`: the admitted impacts are incomplete, so the full scope is
+    // refreshed at the batch's read basis instead.
+    let full_scope = admitted.coverage()
+        == worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationCoverage::RefreshAll;
+    if admitted.is_empty() && !full_scope {
         return Ok(
             WorthQueryPrimaryGranularMaintenanceOutcome::NoRelevantChange(
                 WorthQueryGranularNoChange {
@@ -162,8 +167,17 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
         .iter()
         .map(WorthQueryAdmittedInvalidationImpact::observation)
         .collect::<Vec<_>>();
-    let plan = coalesced_plan(&impacts, source_read_basis)
-        .ok_or(WorthQueryPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?;
+    let plan = if full_scope {
+        let strategy = if collection.is_some() {
+            WorthQueryMaintenanceStrategy::WindowRefill
+        } else {
+            WorthQueryMaintenanceStrategy::LocalProjectionPatch
+        };
+        full_scope_plan(source_read_basis, strategy)
+    } else {
+        coalesced_plan(&impacts, source_read_basis)
+            .ok_or(WorthQueryPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?
+    };
     let basis = plan
         .source_read_basis()
         .ok_or(WorthQueryPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?;
@@ -171,7 +185,7 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
         .refresh_granular_scope(plan.scope(), basis, workspace)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Execution)?;
     let maintenance_owner = live.maintenance_owner_identity().to_owned();
-    let projection = super::prepare_projection_maintenance(
+    let (projection, maintained_impacts) = prepare_covered_projection_maintenance(
         workspace,
         super::WorthQueryProjectionMaintenanceRequest {
             owner: &maintenance_owner,
@@ -180,10 +194,11 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
             current: live.snapshot(),
             refresh: &refresh,
         },
+        full_scope,
     );
     let Some(derived) = derive_performed_maintenance_effect(
         &plan,
-        &impacts,
+        maintained_impacts,
         live.snapshot(),
         &refresh,
         collection.as_deref(),
@@ -207,13 +222,22 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
         );
     };
     let effect = derived.effect;
-    let maintenance = bind_performed_invalidation_maintenance(
-        impacts,
-        &plan,
-        live.snapshot(),
-        &refresh,
-        std::sync::Arc::clone(&effect),
-    )
+    let maintenance = if full_scope {
+        super::execution::bind_full_scope_invalidation_maintenance(
+            &plan,
+            live.snapshot(),
+            &refresh,
+            std::sync::Arc::clone(&effect),
+        )
+    } else {
+        bind_performed_invalidation_maintenance(
+            impacts,
+            &plan,
+            live.snapshot(),
+            &refresh,
+            std::sync::Arc::clone(&effect),
+        )
+    }
     .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Maintenance)?;
     let deliveries = vec![
         publish_invalidation_maintenance(maintenance, live.snapshot(), &refresh)
@@ -245,6 +269,66 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
             impact_observations,
         },
     ))
+}
+
+/// The plan for refreshing a consumer's full scope after its producer lost
+/// subscription continuity.
+pub(super) fn full_scope_plan(
+    source_read_basis: Option<crate::runtime::WorthQueryGranularSourceReadBasis>,
+    strategy: WorthQueryMaintenanceStrategy,
+) -> WorthQueryCoalescedMaintenancePlan {
+    WorthQueryCoalescedMaintenancePlan {
+        strategies: vec![strategy],
+        scope: WorthQueryMaintenanceScope::WholeLogicalGraph,
+        source_read_basis,
+        roles: Vec::new(),
+        consumer_delivery_count: 0,
+    }
+}
+
+/// Prepare projection maintenance from the exact impacts, or, for a
+/// full-scope refresh, compare every refreshed field against what was last
+/// published and treat every prior and refreshed entity as a changed source.
+/// Returns the impacts that the maintenance acts on.
+pub(super) fn prepare_covered_projection_maintenance<'a, D, O, F, L: BasisOperationLane>(
+    workspace: &mut crate::runtime::WorthQueryWorkspace,
+    request: super::WorthQueryProjectionMaintenanceRequest<'a, D, O, F, L>,
+    full_scope: bool,
+) -> (
+    super::effect::WorthQueryPreparedProjectionMaintenance,
+    &'a [WorthQueryAdmittedInvalidationImpact],
+) {
+    if !full_scope {
+        let impacts = request.impacts;
+        return (
+            super::prepare_projection_maintenance(workspace, request),
+            impacts,
+        );
+    }
+    let current_facts = request.current.authority().facts();
+    let fresh_facts = request.refresh.authority().facts();
+    let full_scope_sources = current_facts
+        .entity_identities()
+        .iter()
+        .chain(fresh_facts.entity_identities())
+        .map(|fact| fact.entity_identity().clone())
+        .collect();
+    let preview = workspace.preview_projection_maintenance(
+        request.owner,
+        current_facts,
+        fresh_facts,
+        std::collections::BTreeSet::new(),
+        true,
+        true,
+        &[],
+    );
+    let projection = super::effect::WorthQueryPreparedProjectionMaintenance {
+        preview,
+        broad_collection_change: true,
+        changed_native_targets: Vec::new(),
+        full_scope_sources,
+    };
+    (projection, &[])
 }
 
 pub(super) fn coalesced_plan(

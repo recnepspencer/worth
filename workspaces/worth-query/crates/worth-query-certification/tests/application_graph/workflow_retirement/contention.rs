@@ -1,8 +1,6 @@
 //! Retirement and reopening race other definition authors between prepare
-//! and commit. An interleaved commit moves the product basis, so the loser is
+//! and commit. An interleaved commit changes tracked facts, so the loser is
 //! denied before effects; re-preparing observes the winner's currentness.
-
-use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind;
 
 use super::super::document_retention_model::{
     retention_entry::DOCUMENT_IDENTITY,
@@ -34,7 +32,7 @@ fn a_successor_published_after_prepare_makes_the_retirement_stale() {
             ),
         ));
     });
-    expect_basis_stale(outcome.map(|outcome| match outcome {
+    expect_changed_facts_stale(outcome.map(|outcome| match outcome {
         WorkflowDefinitionRetirementOutcome::Application(outcome) => outcome,
         other => panic!("the loser must not retire, got {other:?}"),
     }));
@@ -60,7 +58,7 @@ fn a_competing_retirement_after_prepare_leaves_one_committed_retirement() {
         let winner = expect_retired(retire_definition(&application, first.clone(), 513));
         assert!(!winner.replayed());
     });
-    expect_basis_stale(outcome.map(|outcome| match outcome {
+    expect_changed_facts_stale(outcome.map(|outcome| match outcome {
         WorkflowDefinitionRetirementOutcome::Application(outcome) => outcome,
         other => panic!("the loser must not retire, got {other:?}"),
     }));
@@ -93,7 +91,7 @@ fn only_one_of_two_prepared_reopens_commits() {
             ),
         ));
     });
-    expect_basis_stale(loser.map(|outcome| match outcome {
+    expect_changed_facts_stale(loser.map(|outcome| match outcome {
         WorkflowDefinitionPublicationOutcome::Application(outcome) => outcome,
         other => panic!("the losing reopen must not publish, got {other:?}"),
     }));
@@ -195,20 +193,17 @@ fn a_successor_published_after_prepare_leaves_the_start_stale() {
             533,
         ),
     );
-    expect_basis_stale(Ok::<_, ()>(match prepared.execute() {
+    expect_changed_facts_stale(Ok::<_, ()>(match prepared.execute() {
         WorkflowInstanceStartOutcome::Application(outcome) => outcome,
         other => panic!("the start prepared before the successor must not start: {other:?}"),
     }));
 }
 
-fn expect_basis_stale<Denial: std::fmt::Debug>(
+fn expect_changed_facts_stale<Denial: std::fmt::Debug>(
     result: Result<WorthQueryApplicationUncommitted, Denial>,
 ) {
     match result.expect("the losing request prepared before the winner committed") {
-        WorthQueryApplicationUncommitted::Denied(denial) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::ProductBasisStale
-        ),
-        other => panic!("expected the moved product basis to deny, got {other:?}"),
+        WorthQueryApplicationUncommitted::Stale(stale) => assert!(stale.stale_fact_count() > 0),
+        other => panic!("expected changed prepared facts to deny, got {other:?}"),
     }
 }

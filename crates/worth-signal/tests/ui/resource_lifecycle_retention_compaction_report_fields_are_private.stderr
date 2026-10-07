@@ -28,7 +28,7 @@ error: cannot construct `ResourceLifecycleRetentionCompactionReport` with struct
 22 |         performance: forged_performance(),
    |         --------------------------------- private field
    |
-   = note: ...and other private fields `retained_denied_completion_pruned_count`, `retained_retry_lineage_pruned_count`, `retained_denied_completion_width`, `retained_retry_lineage_width` and `policy_provenance_digest` that were not provided
+   = note: ...and other private fields that were not provided
 help: you might have meant to use the `new` associated function
    |
 10 -     let _forged = ResourceLifecycleRetentionCompactionReport {
@@ -45,5 +45,5 @@ help: you might have meant to use the `new` associated function
 21 -         compacted_timed_out_count: 0,
 22 -         performance: forged_performance(),
 23 -     };
-10 +     let _forged = ResourceLifecycleRetentionCompactionReport::new(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _);
+10 +     let _forged = ResourceLifecycleRetentionCompactionReport::new(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _);
    |

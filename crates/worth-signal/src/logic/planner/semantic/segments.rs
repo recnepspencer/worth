@@ -1,21 +1,19 @@
-#[cfg(feature = "parallel")]
 use crate::data::handle::NodeId;
-#[cfg(feature = "parallel")]
+
 use crate::data::node::NodeState;
-#[cfg(feature = "parallel")]
+
 use crate::data::output::MemoizedResultOrigin;
-#[cfg(feature = "parallel")]
+
 use crate::data::reuse::ReuseBasis;
-#[cfg(feature = "parallel")]
+
 use crate::data::temporal::LoweredTemporalEligibility;
-#[cfg(feature = "parallel")]
+
 use crate::data::trace::RuntimeArtifactFinalizeImage;
-#[cfg(feature = "parallel")]
+
 use crate::logic::evaluation::EvaluationVerdict;
-#[cfg(feature = "parallel")]
+
 use crate::logic::explain::RewiringSummary;
 
-#[cfg(feature = "parallel")]
 use super::super::types::SemanticTaskRange;
 use super::super::types::{ExecutionRecordId, SemanticSegmentId};
 
@@ -25,7 +23,6 @@ pub(in crate::logic::planner) struct StageSemanticIdentity {
     pub segment_id: SemanticSegmentId,
 }
 
-#[cfg(feature = "parallel")]
 #[derive(Debug, Clone)]
 pub(in crate::logic::planner) struct SemanticTaskUpdate {
     task_index: usize,
@@ -42,9 +39,9 @@ pub(in crate::logic::planner) struct SemanticTaskUpdate {
     verdict: EvaluationVerdict,
     memoized_origin: MemoizedResultOrigin,
     reuse_basis: ReuseBasis,
+    prepared_artifacts: Option<crate::data::graph::PreparedSemanticArtifactImage>,
 }
 
-#[cfg(feature = "parallel")]
 #[derive(Debug, Clone)]
 pub(in crate::logic::planner) struct SemanticSegment {
     id: SemanticSegmentId,
@@ -52,13 +49,11 @@ pub(in crate::logic::planner) struct SemanticSegment {
     updates: Vec<SemanticTaskUpdate>,
 }
 
-#[cfg(feature = "parallel")]
 #[derive(Debug, Clone, Default)]
 pub(in crate::logic::planner) struct StageSemanticBatch {
     segments: Vec<SemanticSegment>,
 }
 
-#[cfg(feature = "parallel")]
 impl StageSemanticBatch {
     pub(in crate::logic::planner) fn push_segment(&mut self, segment: SemanticSegment) {
         self.segments.push(segment);
@@ -77,7 +72,6 @@ impl StageSemanticBatch {
     }
 }
 
-#[cfg(feature = "parallel")]
 impl SemanticTaskUpdate {
     pub(in crate::logic::planner) fn new(
         task_index: usize,
@@ -110,7 +104,16 @@ impl SemanticTaskUpdate {
             verdict,
             memoized_origin,
             reuse_basis,
+            prepared_artifacts: None,
         }
+    }
+
+    pub(in crate::logic::planner) fn with_prepared_artifacts(
+        mut self,
+        artifacts: crate::data::graph::PreparedSemanticArtifactImage,
+    ) -> Self {
+        self.prepared_artifacts = Some(artifacts);
+        self
     }
 
     pub(super) fn into_parts(
@@ -130,6 +133,7 @@ impl SemanticTaskUpdate {
         EvaluationVerdict,
         MemoizedResultOrigin,
         ReuseBasis,
+        Option<crate::data::graph::PreparedSemanticArtifactImage>,
     ) {
         (
             self.task_index,
@@ -146,11 +150,11 @@ impl SemanticTaskUpdate {
             self.verdict,
             self.memoized_origin,
             self.reuse_basis,
+            self.prepared_artifacts,
         )
     }
 }
 
-#[cfg(feature = "parallel")]
 impl SemanticSegment {
     fn single(update: SemanticTaskUpdate) -> Self {
         Self {
@@ -176,7 +180,6 @@ impl SemanticSegment {
     }
 }
 
-#[cfg(feature = "parallel")]
 pub(in crate::logic::planner) fn segment_for_single_update(
     update: SemanticTaskUpdate,
 ) -> SemanticSegment {

@@ -288,15 +288,34 @@ fn normal_rebase(world: &AuthorizationWorld, facts: Vec<Fact>) -> std::sync::Arc
         .unwrap()
         .integration_handle()
         .with_runtime(|runtime| {
-            super::super::rebase(
+            exact(super::super::rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                facts,
+                super::super::PreparedSourceFactRebase::admit(facts).unwrap(),
+                &BTreeSet::new(),
                 true,
                 64,
-                64,
-            )
+                Some(&mut admission()),
+            ))
         })
+}
+
+/// Facts that need full verification are not exact facts of the commit.
+fn exact(rebased: super::super::RebasedSourceFacts) -> std::sync::Arc<[Fact]> {
+    rebased
+        .retain_exact()
+        .unwrap_or_else(|| std::sync::Arc::from([]))
+}
+
+fn admission(
+) -> crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission
+{
+    crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
+        worth_relational::facade::mvcc::CompanionPreflightBudget {
+            maximum_work_visits: 64,
+            maximum_preparation_bytes: 1024 * 1024,
+        },
+    )
 }
 
 fn selection(world: &AuthorizationWorld, facts: &[Fact]) -> bool {

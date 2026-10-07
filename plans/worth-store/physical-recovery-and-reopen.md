@@ -44,6 +44,20 @@ The runtime report describes what that process concluded. The offline observer
 walks the directory independently and describes what it read. Neither report
 can authorize writes or be admitted as Store truth.
 
+Native blob declarations, authenticated chunk occurrences, tree nodes, and
+generation publications are C.5 records under that same physical truth.
+The v6 recovery projection carries typed blob transitions through the C.8
+owner; v5 projections, including SourceCopy, retain explicit read admission.
+A durable generation transition interrupted before root publication is redone
+through the ordinary publication protocol, not a separate blob recovery writer.
+
+A declaration or claimed chunk without a selected generation is unfinished
+custody, not a published blob or evidence that the chunk may be deleted.
+Fresh recovery preserves that distinction for independent offline inspection.
+Physical recovery does not itself resume a caller's ingest or infer reclaim
+permission. See [Physical Blobs And Chunk Trees](physical-blobs-and-chunk-trees.md)
+for the currently exposed blob lifecycle.
+
 ## How It Executes
 
 The runtime consumes these phases in order: admitted, discovered, selected,
@@ -185,6 +199,26 @@ exact bytes only after bounded decoding proves the same final placements,
 membership, free-space state, frontiers, tail, and checksums. It does not skip
 the generation, overwrite a mismatch, or delete the candidate before
 publication. A report path must remain outside the Store root.
+
+A published extent copy may remain unresolved while later writes advance the
+selected root. Recovery authenticates the copy's historical publication root
+and exact destination route, then verifies the retained source transformation
+against the destination bytes. Advancing the selected generation does not
+resolve the copy. Its source-root protection also prevents retirement of later
+displaced extents, so an unresolved copy's destination remains required even
+after another rewrite replaces its route. Only the exact durable `Published`
+resolution allows recovery to stop requiring those retained copy bytes.
+
+Ordinary record-preserving rewrites have a different retention contract. Once
+later roots are selected, recovery checks the authenticated historical result
+root and its exact destination routing and membership against the rewrite WAL
+before recognizing the publication without replay. Inline and span rewrites also
+bind the WAL's source generation and frame range to authenticated source-root
+membership, preserving each page identity and its exact generation transition.
+These historical root and membership artifacts remain retained; obsolete rewrite
+data may already have been released by the retirement owner and is not required.
+A generation number alone, or a missing historical route, cannot establish
+publication.
 
 ## Anti-Patterns
 

@@ -4,6 +4,8 @@ use serde::{Serialize, Serializer};
 
 use super::{canonical_identity, encoder};
 
+mod admitted_encoding;
+
 fn identity<T: Serialize + ?Sized>(value: &T) -> [u8; 32] {
     canonical_identity("test", "scope", value)
         .expect("canonical encoding")

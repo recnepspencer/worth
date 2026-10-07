@@ -1,12 +1,15 @@
 use std::num::NonZeroUsize;
 
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationPerformedMutationOutcome,
-    WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
-    WorthQueryOutputDemandControls, WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
+    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
+    WorthQueryProgramOutputCurrentnessDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
-use worth_query_topology_entry::{PlanarOutputRead, PlanarRead, PlanarSourceAdjustment};
+use worth_query_topology_entry::{
+    PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
+};
 
 use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
@@ -27,9 +30,16 @@ pub(super) fn supersession_retires_pending_predecessor(
     let request = world.application.request(&principal, &scope);
 
     let mut predecessor = perform(&request, &world.application, "anchor-a", 2, 10_006);
+    // Another caller settles the root, so the predecessor's advance joins it
+    // and the delivery it is interrupted at is its dependent's.
+    let mut root = request
+        .demand(PlanarOutputDemand::new("anchor-a"))
+        .controls(controls())
+        .start_in_program::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .expect("another caller demands the root output");
     assert!(matches!(
-        predecessor.required_output_mut().advance(&request).unwrap(),
-        WorthQueryApplicationProgramOutputProgress::Pending
+        root.advance(&request).unwrap(),
+        WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
     world
         .application
@@ -40,12 +50,24 @@ pub(super) fn supersession_retires_pending_predecessor(
     ));
 
     let mut successor = perform(&request, &world.application, "anchor-a", 5, 10_007);
-    assert!(matches!(
-        predecessor.required_output_mut().advance(&request),
-        Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
-            WorthQueryApplicationOutputDemandDenial::Superseded,
-        ))
-    ));
+    let stopped = predecessor
+        .required_output_mut()
+        .advance(&request)
+        .map(|progress| {
+            matches!(
+                progress,
+                WorthQueryApplicationProgramOutputProgress::Pending
+            )
+        });
+    assert!(
+        matches!(
+            stopped,
+            Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+                WorthQueryApplicationOutputDemandDenial::Superseded,
+            ))
+        ),
+        "the replaced publication's pending output stops superseded: {stopped:?}"
+    );
     let settled = settle(&mut successor, &request);
     let exact = request
         .at(settled.observation())

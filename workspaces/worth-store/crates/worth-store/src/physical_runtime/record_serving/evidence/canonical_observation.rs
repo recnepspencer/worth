@@ -192,14 +192,22 @@ fn runtime_free_space(
 }
 
 fn runtime_free_entry(entry: RecordFreeSpaceManifestEntry) -> CanonicalFreeSpace {
+    let (first_unallocated, unallocated_count) = match entry.region() {
+        worth_store_physical_format::RecordFreeSpaceRegion::Inline(frontier) => {
+            (frontier.first_unallocated(), frontier.unallocated_count())
+        }
+        worth_store_physical_format::RecordFreeSpaceRegion::Arena(range) => {
+            (range.offset(), range.length())
+        }
+    };
     CanonicalFreeSpace {
         class: match entry.class() {
             RecordAllocationClass::InlinePage => 1,
-            RecordAllocationClass::Extent => 2,
+            RecordAllocationClass::ExtentArena => 2,
         },
         owner: entry.owner(),
-        first_unallocated: entry.first_unallocated(),
-        unallocated_count: entry.unallocated_count(),
+        first_unallocated,
+        unallocated_count,
         generation: entry.generation(),
     }
 }

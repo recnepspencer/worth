@@ -2,15 +2,12 @@ use super::*;
 
 #[test]
 fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
-    fn build_runtime(
-        execution_model: crate::facade::runtime::RelationalExecutionModel,
-    ) -> RelationalRuntime {
+    fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(declared_aspect_schema_registry(
                 CascadeDeletePolicy::CascadeDeleteRelations,
             ))
-            .execution_model(execution_model)
             .build()
     }
 
@@ -61,8 +58,7 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
         (snapshot, packet)
     }
 
-    let serial_runtime =
-        build_runtime(crate::facade::runtime::RelationalExecutionModel::SingleLaneExecution);
+    let serial_runtime = build_runtime();
     let (serial_snapshot, serial_packet) = build_fixture(&serial_runtime);
     let serial = serial_runtime
         .read_truth()
@@ -74,17 +70,18 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
         )
         .expect("serial execution");
 
-    let staged_runtime =
-        build_runtime(crate::facade::runtime::RelationalExecutionModel::ParallelPreparation);
+    let staged_runtime = build_runtime();
     let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan(
+        .execute_query_plan_with_lease(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
+            &test_execution_lease(),
         )
+        .expect("leased execution")
         .expect("staged execution");
 
     assert_eq!(serial.result, staged.result);
@@ -109,17 +106,13 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
 }
 
 #[test]
-fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_across_execution_models(
-) {
-    fn build_runtime(
-        execution_model: crate::facade::runtime::RelationalExecutionModel,
-    ) -> RelationalRuntime {
+fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_with_a_lease() {
+    fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(declared_aspect_schema_registry(
                 CascadeDeletePolicy::CascadeDeleteRelations,
             ))
-            .execution_model(execution_model)
             .build()
     }
 
@@ -170,8 +163,7 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_a
         )
     }
 
-    let serial_runtime =
-        build_runtime(crate::facade::runtime::RelationalExecutionModel::SingleLaneExecution);
+    let serial_runtime = build_runtime();
     let (serial_snapshot, serial_packet) = build_fixture(&serial_runtime);
     serial_runtime.performance_access().reset_counters();
     let serial = serial_runtime
@@ -185,18 +177,19 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_a
         .expect("serial execution");
     let serial_counters = serial_runtime.performance_access().counters();
 
-    let staged_runtime =
-        build_runtime(crate::facade::runtime::RelationalExecutionModel::ParallelPreparation);
+    let staged_runtime = build_runtime();
     let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
     staged_runtime.performance_access().reset_counters();
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan(
+        .execute_query_plan_with_lease(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
+            &test_execution_lease(),
         )
+        .expect("leased execution")
         .expect("staged execution");
     let staged_counters = staged_runtime.performance_access().counters();
 
@@ -209,15 +202,12 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_a
 
 #[test]
 fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_matches_serial() {
-    fn build_runtime(
-        execution_model: crate::facade::runtime::RelationalExecutionModel,
-    ) -> RelationalRuntime {
+    fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(declared_aspect_schema_registry(
                 CascadeDeletePolicy::CascadeDeleteRelations,
             ))
-            .execution_model(execution_model)
             .build()
     }
 
@@ -255,8 +245,7 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
         )
     }
 
-    let serial_runtime =
-        build_runtime(crate::facade::runtime::RelationalExecutionModel::SingleLaneExecution);
+    let serial_runtime = build_runtime();
     let (serial_snapshot, serial_packet) = build_fixture(&serial_runtime);
     let serial = serial_runtime
         .read_truth()
@@ -268,17 +257,18 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
         )
         .expect("serial outcome");
 
-    let staged_runtime =
-        build_runtime(crate::facade::runtime::RelationalExecutionModel::ParallelPreparation);
+    let staged_runtime = build_runtime();
     let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan(
+        .execute_query_plan_with_lease(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged plan"),
+            &test_execution_lease(),
         )
+        .expect("leased execution")
         .expect("staged outcome");
 
     assert_eq!(serial.result, staged.result);

@@ -209,6 +209,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             &graph.layout,
         )
         .expect("ordinary source binding retains root-path native facts");
+    observed_source.assert_fact_materialization_capacity_for_test(&graph.layout);
     assert_eq!(
         source_facts
             .iter()

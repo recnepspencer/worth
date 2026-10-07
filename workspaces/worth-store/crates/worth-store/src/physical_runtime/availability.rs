@@ -16,21 +16,36 @@ impl PhysicalCapability {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CapabilityAvailability {
     Absent,
+    Present,
 }
 
-/// Immutable status of the physical capability families installed by C.3.
+/// Immutable status derived from the runtime construction stage, not a caller claim.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InstalledCapabilityStatus {
-    _private: (),
+    serving: bool,
 }
 
 impl InstalledCapabilityStatus {
     pub(crate) const fn c3() -> Self {
-        Self { _private: () }
+        Self { serving: false }
+    }
+
+    pub(in crate::physical_runtime) const fn record_serving_with_layouts() -> Self {
+        Self { serving: true }
     }
 
     pub const fn availability(self, capability: PhysicalCapability) -> CapabilityAvailability {
         match capability {
+            PhysicalCapability::Media
+            | PhysicalCapability::PageRecord
+            | PhysicalCapability::WalCheckpoint
+            | PhysicalCapability::Maintenance
+            | PhysicalCapability::Layout
+            | PhysicalCapability::Blob
+                if self.serving =>
+            {
+                CapabilityAvailability::Present
+            }
             PhysicalCapability::Media
             | PhysicalCapability::PageRecord
             | PhysicalCapability::WalCheckpoint
@@ -67,5 +82,43 @@ impl InstalledCapabilityStatus {
 
     pub const fn blobs(self) -> CapabilityAvailability {
         self.availability(PhysicalCapability::Blob)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CapabilityAvailability, InstalledCapabilityStatus, PhysicalCapability};
+
+    #[test]
+    fn installed_status_requires_constructed_serving_owner() {
+        let admitted = InstalledCapabilityStatus::c3();
+        let serving = InstalledCapabilityStatus::record_serving_with_layouts();
+        for family in [
+            PhysicalCapability::Media,
+            PhysicalCapability::PageRecord,
+            PhysicalCapability::WalCheckpoint,
+            PhysicalCapability::Maintenance,
+            PhysicalCapability::Layout,
+            PhysicalCapability::Blob,
+        ] {
+            assert_eq!(
+                admitted.availability(family),
+                CapabilityAvailability::Absent
+            );
+            assert_eq!(
+                serving.availability(family),
+                CapabilityAvailability::Present
+            );
+        }
+        for unowned in [PhysicalCapability::Recovery] {
+            assert_eq!(
+                admitted.availability(unowned),
+                CapabilityAvailability::Absent
+            );
+            assert_eq!(
+                serving.availability(unowned),
+                CapabilityAvailability::Absent
+            );
+        }
     }
 }

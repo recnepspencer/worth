@@ -51,6 +51,8 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// The provider, or Relational behind it, refused the load, the touches, or
     /// the verdict. The failure's detail says which.
     ProviderRejected,
+    /// Relational deferred publication until its required derived companion can proceed.
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     /// A custom invariant refused the candidate; see
     /// [`WorthQueryInvariantExecutionFailure::custom_invariant_denial`].
     CustomInvariantDenied,

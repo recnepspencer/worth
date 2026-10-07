@@ -11,6 +11,8 @@ mod schema;
 mod delivery_convergence;
 #[path = "granular_invalidation/financial_runtime_world.rs"]
 mod financial_runtime_world;
+#[path = "granular_invalidation/heal_refresh.rs"]
+mod heal_refresh;
 #[path = "granular_invalidation/query_runtime_world.rs"]
 mod query_runtime_world;
 #[path = "granular_invalidation/runtime_composition.rs"]
@@ -48,6 +50,11 @@ fn primary_runtime_retains_the_admitted_read_basis_across_a_head_advance() {
 #[test]
 fn primary_runtime_stamps_granular_receipts_from_the_execution_basis() {
     runtime_composition::assert_granular_receipt_uses_execution_snapshot_basis();
+}
+
+#[test]
+fn healed_conditional_observation_refreshes_live_projection() {
+    heal_refresh::assert_healed_observation_refreshes_live_projection();
 }
 
 #[test]

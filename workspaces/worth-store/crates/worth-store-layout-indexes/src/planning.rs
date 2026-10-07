@@ -30,7 +30,7 @@ pub use access_request::{
 };
 pub use admission::access_planning;
 pub(crate) use admission::AccessPlanningFacade;
-pub use candidates::{BTreeLookupOperation, SelectionCandidateAudit, SelectionCandidateOutcome};
+pub use candidates::{SelectionCandidateAudit, SelectionCandidateOutcome};
 pub use cost::{AccessPlanCostClass, AccessPlanCostDenial, AccessPlanCostEstimate};
 pub use decision::AccessPlanSelectionCaseId;
 pub use denial::{
@@ -42,11 +42,9 @@ pub use imported_blob::{
 };
 pub use plan_identity::AccessPlanIdentity;
 pub use selected_plan::{
-    SelectedBTreeLookup, SelectedBTreeReplayRecovery, SelectedDegradedExactScan,
-    SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery, SelectedLsmRunPublication,
+    SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
+    SelectedLsmRunPublication,
 };
-#[cfg(test)]
-pub(crate) use selection_basis::PlanningCapabilityGrant;
 pub use selection_basis::{DeterministicSelectionRule, SelectionCandidateEligibility};
 pub use selection_outcome::{
     access_plan_selection_cases, AccessPlanSelectionOutcome, AccessPlanSelectionView,

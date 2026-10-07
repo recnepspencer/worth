@@ -8,6 +8,7 @@ pub enum BackgroundIoPressureClass {
     ReplicationPrepRead,
     IngestPressure,
     MigrationPressure,
+    BlobReclaimPressure,
     BackupPrepRead,
     RepairScan,
     VerificationPressure,
@@ -20,7 +21,9 @@ impl BackgroundIoPressureClass {
             Self::CheckpointFlush => BackgroundDebtKind::CheckpointFlushDebt,
             Self::ScrubScan => BackgroundDebtKind::ScrubPressure,
             Self::ReplicationPrepRead => BackgroundDebtKind::ReplicationPrepPressure,
-            Self::IngestPressure | Self::MigrationPressure => BackgroundDebtKind::BlobContention,
+            Self::IngestPressure | Self::MigrationPressure | Self::BlobReclaimPressure => {
+                BackgroundDebtKind::BlobContention
+            }
             Self::BackupPrepRead => BackgroundDebtKind::BackupPressure,
             Self::RepairScan | Self::VerificationPressure => BackgroundDebtKind::RepairPressure,
         }

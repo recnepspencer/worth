@@ -1,7 +1,10 @@
 mod chunk;
 mod manifest;
 
-pub(crate) use chunk::{admit_extent_chunk_projection, IntegrityAdmittedExtentChunkFrame};
+pub(crate) use chunk::{
+    admit_extent_chunk_projection, admit_extent_chunk_projection_for_selected_record,
+    IntegrityAdmittedExtentChunkFrame,
+};
 pub(crate) use manifest::{admit_extent_manifest_projection, IntegrityAdmittedExtentManifest};
 
 #[cfg(test)]

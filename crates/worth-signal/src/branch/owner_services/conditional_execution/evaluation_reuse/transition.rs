@@ -111,9 +111,7 @@ fn target_charge(targets: &[SignalCommittedPatchTarget]) -> Charge {
     let mut bytes = std::mem::size_of_val(targets) as u64;
     for target in targets {
         for region in target.changed_regions().as_slice() {
-            bytes = bytes
-                .saturating_add(region.partition.0.capacity() as u64)
-                .saturating_add(region.detail.as_ref().map_or(0, String::capacity) as u64);
+            bytes = bytes.saturating_add(region.path().retained_capacity_bytes() as u64);
         }
     }
     // Saturation is rejected by the ledger if it exceeds its configured bound.

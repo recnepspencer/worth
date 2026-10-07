@@ -1,5 +1,4 @@
-//! Blob streaming and compaction execution authority remains move-owned at
-//! each public consumer boundary.
+//! Blob pressure and compaction planning inputs remain move-owned.
 //!
 //! Ingest pressure admission cannot be cloned.
 //!
@@ -19,29 +18,6 @@
 //! fn consume(_: BlobStreamingPressureAdmission) {}
 //!
 //! fn consume_twice(admission: BlobStreamingPressureAdmission) {
-//!     consume(admission);
-//!     consume(admission);
-//! }
-//! ```
-//!
-//! Verification-read admission cannot be cloned.
-//!
-//! ```compile_fail
-//! use worth_store_blob_chunks::BlobStreamingReadAdmission;
-//!
-//! fn duplicate(admission: BlobStreamingReadAdmission) {
-//!     let _duplicate = admission.clone();
-//! }
-//! ```
-//!
-//! Verification-read admission cannot be consumed twice.
-//!
-//! ```compile_fail
-//! use worth_store_blob_chunks::BlobStreamingReadAdmission;
-//!
-//! fn consume(_: BlobStreamingReadAdmission) {}
-//!
-//! fn consume_twice(admission: BlobStreamingReadAdmission) {
 //!     consume(admission);
 //!     consume(admission);
 //! }

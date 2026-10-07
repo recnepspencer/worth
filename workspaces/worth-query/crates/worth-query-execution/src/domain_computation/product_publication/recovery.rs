@@ -69,6 +69,8 @@ impl WorthQueryProductUnpublishedRecovery {
 pub enum WorthQueryProductUnpublishedRecoveryReleaseDenial {
     /// Runtime World refused to inspect or release the record.
     World(RuntimeWorldRecoveryDenial),
+    /// A managed recovery or another release owns this exact provider partial.
+    ProviderBusy,
     /// No owner-cleanup capacity was available; retry later.
     CleanupCapacityExhausted,
 }

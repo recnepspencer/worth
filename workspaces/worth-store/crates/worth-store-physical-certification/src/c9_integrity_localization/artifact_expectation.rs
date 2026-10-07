@@ -49,13 +49,11 @@ pub(super) fn require(
             );
         }
         Operator::EnvelopeVersion | Operator::RecordVersion => {
+            let root_envelope =
+                operator == Operator::EnvelopeVersion && target.family == "root_manifest";
             assert_eq!(
                 outcome["supported"],
-                if operator == Operator::EnvelopeVersion {
-                    "2"
-                } else {
-                    "1"
-                }
+                if root_envelope { "2|3" } else { "2" }
             );
             let (offset, length) = if runtime {
                 (target.offset(), target.length())
@@ -72,11 +70,7 @@ pub(super) fn require(
             assert_eq!(outcome["posture"], "unsupported", "{label}: {artifact}");
             assert_eq!(
                 outcome["observed"],
-                if operator == Operator::EnvelopeVersion {
-                    3
-                } else {
-                    2
-                },
+                if root_envelope { 4 } else { 3 },
                 "{label}"
             );
             assert_eq!(

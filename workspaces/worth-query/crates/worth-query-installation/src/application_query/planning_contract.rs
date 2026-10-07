@@ -4,15 +4,23 @@ use worth_foundational::facade::{
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryCardinality, ApplicationQueryOrderingDirection,
-    ApplicationQueryResultTraversalDirection,
 };
 
-use super::graph_access_contract::{
-    WorthQueryInstalledGraphPlanningPreparation, WorthQueryInstalledGraphReadMeaning,
-};
+use super::graph_access_contract::WorthQueryInstalledGraphPlanningPreparation;
 use super::{
     canonical_basis::prepare_planning_basis, WorthQueryApplicationCanonicalArtifact,
     WorthQueryInstalledGraphReadContract,
+};
+
+mod admitted_inventory;
+mod views;
+use views::{
+    all_predicate_count, guard, ordering, predicate, projection, relation, root_guard_count,
+    root_relation_count,
+};
+
+pub use admitted_inventory::{
+    WorthQueryAdmittedReadGraphPlanningInventory, WorthQueryPlanningInventoryStop,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -236,147 +244,14 @@ impl WorthQueryPreparedReadGraphPlanningContract for WorthQueryInstalledGraphRea
     }
 }
 
-fn projection(
-    meaning: &WorthQueryInstalledGraphReadMeaning,
-    index: usize,
-) -> Option<WorthQueryReadGraphProjectionView<'_>> {
-    meaning
-        .projections
-        .get(index)
-        .map(|projection| WorthQueryReadGraphProjectionView {
-            aspect: projection.aspect_key(),
-            field: projection.field_key(),
-            output_name: projection.output_name(),
-        })
-}
-
-fn relation(
-    meaning: &WorthQueryInstalledGraphReadMeaning,
-    index: usize,
-) -> Option<WorthQueryReadGraphRelationView<'_>> {
-    let root_count = root_relation_count(meaning);
-    if index < root_count {
-        return root_relation(meaning, index);
+impl WorthQueryInstalledGraphReadContract {
+    pub fn admitted_planning_inventory<Stop>(
+        &self,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        WorthQueryAdmittedReadGraphPlanningInventory<'_>,
+        WorthQueryPlanningInventoryStop<Stop>,
+    > {
+        WorthQueryAdmittedReadGraphPlanningInventory::prepare(self.meaning(), prepare)
     }
-    meaning
-        .relations
-        .get(index - root_count)
-        .map(|relation| WorthQueryReadGraphRelationView {
-            relation: relation.relation(),
-            direction: match relation.direction() {
-                ApplicationQueryResultTraversalDirection::Forward => {
-                    WorthQueryReadGraphRelationDirection::Forward
-                }
-                ApplicationQueryResultTraversalDirection::Reverse => {
-                    WorthQueryReadGraphRelationDirection::Reverse
-                }
-            },
-            cardinality: relation.cardinality(),
-            depth: relation.depth(),
-        })
-}
-
-fn root_relation_count(meaning: &WorthQueryInstalledGraphReadMeaning) -> usize {
-    meaning
-        .root_paths
-        .iter()
-        .map(|path| path.steps().len())
-        .sum()
-}
-
-fn root_relation(
-    meaning: &WorthQueryInstalledGraphReadMeaning,
-    index: usize,
-) -> Option<WorthQueryReadGraphRelationView<'_>> {
-    let mut remaining = index;
-    for path in &meaning.root_paths {
-        if let Some(step) = path.steps().get(remaining) {
-            return Some(WorthQueryReadGraphRelationView {
-                relation: step.relation(),
-                direction: match step.direction() {
-                    worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Forward => WorthQueryReadGraphRelationDirection::Forward,
-                    worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Reverse => WorthQueryReadGraphRelationDirection::Reverse,
-                },
-                cardinality: ApplicationQueryCardinality::Many,
-                depth: step.depth(),
-            });
-        }
-        remaining = remaining.saturating_sub(path.steps().len());
-    }
-    None
-}
-
-fn root_guard_count(meaning: &WorthQueryInstalledGraphReadMeaning) -> usize {
-    meaning
-        .root_paths
-        .iter()
-        .map(|path| path.guards().len())
-        .sum()
-}
-
-fn guard(
-    meaning: &WorthQueryInstalledGraphReadMeaning,
-    index: usize,
-) -> Option<WorthQueryReadGraphGuardView<'_>> {
-    let mut remaining = index;
-    for path in &meaning.root_paths {
-        if let Some(guard) = path.guards().get(remaining) {
-            return Some(WorthQueryReadGraphGuardView {
-                after_step: guard.after_step(),
-                entity: guard.entity(),
-                aspect: guard.aspect(),
-                field: guard.field(),
-                scalar_family: guard.scalar_family(),
-                value_type: guard.value_type(),
-                expected: guard.expected(),
-            });
-        }
-        remaining = remaining.saturating_sub(path.guards().len());
-    }
-    None
-}
-
-fn predicate(
-    meaning: &WorthQueryInstalledGraphReadMeaning,
-    index: usize,
-) -> Option<WorthQueryReadGraphPredicateView<'_>> {
-    let predicate = meaning.predicates.get(index).or_else(|| {
-        meaning
-            .relations
-            .iter()
-            .filter_map(|relation| relation.predicate())
-            .nth(index.saturating_sub(meaning.predicates.len()))
-    });
-    predicate.map(|predicate| WorthQueryReadGraphPredicateView {
-        aspect: predicate.aspect_key(),
-        field: predicate.field_key(),
-        parameter: predicate.parameter(),
-        scalar_family: predicate.scalar_family(),
-    })
-}
-
-fn all_predicate_count(meaning: &WorthQueryInstalledGraphReadMeaning) -> usize {
-    meaning.predicates.len()
-        + meaning
-            .relations
-            .iter()
-            .filter(|relation| relation.predicate().is_some())
-            .count()
-}
-
-fn ordering(
-    meaning: &WorthQueryInstalledGraphReadMeaning,
-    index: usize,
-) -> Option<WorthQueryReadGraphOrderingView<'_>> {
-    meaning
-        .ordering
-        .get(index)
-        .map(|ordering| WorthQueryReadGraphOrderingView {
-            collection_path: ordering.collection_path(),
-            aspect: ordering.aspect_key(),
-            field: ordering.field_key(),
-            direction: ordering.direction(),
-            scalar_family: ordering.scalar_family(),
-            mechanism: WorthQueryReadGraphOrderingMechanism::BoundedProjectedCollection,
-        })
 }

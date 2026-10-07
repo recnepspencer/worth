@@ -119,7 +119,9 @@ fn retained_lineage_publication_never_repairs_unprepared_ordinary_history() {
     let mut graph = SignalGraph::new();
     let node = graph.create_node();
     let mut state = DiagnosticsState::default();
-    state.record_lineage_record(record(node, 0));
+    // Simulate an unprepared historical root, bypassing the ordinary writer
+    // that now maintains charge facts as part of its publication.
+    state.lineage_records.push_back(record(node, 0)).unwrap();
     let before = state.clone();
     let ledger = ledger(64 * 1024 * 1024);
     assert!(matches!(

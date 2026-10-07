@@ -41,6 +41,9 @@ pub enum OfflineRecordPlacement {
         extent: u64,
         generation: u64,
         payload_bytes: u64,
+        arena: u64,
+        arena_offset: u64,
+        arena_length: u64,
     },
 }
 
@@ -134,7 +137,7 @@ impl OfflineSegmentPageMembership {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum OfflineAllocationClass {
     InlinePage,
-    Extent,
+    ExtentArena,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

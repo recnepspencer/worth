@@ -8,12 +8,15 @@ use crate::entry::{
 };
 use crate::progression::{NamespaceDurablePhysicalRecovery, ReopenedPhysicalRecovery};
 
+#[path = "reopen/custody_rebind.rs"]
+mod custody_rebind;
+
 pub(crate) fn reopen_recovery(
     durable: NamespaceDurablePhysicalRecovery,
 ) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
     let NamespaceDurablePhysicalRecovery {
         state,
-        expectation,
+        mut expectation,
         publication_counters,
         publication_settlement,
     } = durable;
@@ -32,6 +35,23 @@ pub(crate) fn reopen_recovery(
     {
         PhysicalRecoveryFreshReopenOutcome::Completed(completed) => {
             let counters = completed_counters(&completed);
+            let rebound_state = custody_rebind::rebind_selected_custody(
+                state,
+                &mut expectation,
+                &publication_settlement,
+                &publication_counters,
+                &completed,
+            );
+            let state = match rebound_state {
+                Ok(state) => state,
+                Err(state) => {
+                    return Err(custody_indeterminate(
+                        state,
+                        publication_counters,
+                        publication_settlement,
+                    ))
+                }
+            };
             Ok(ReopenedPhysicalRecovery::new(
                 state,
                 expectation,
@@ -52,6 +72,39 @@ pub(crate) fn reopen_recovery(
             ))
         }
     }
+}
+
+fn custody_indeterminate(
+    state: crate::progression::NamespaceDurableState,
+    publication_counters: crate::entry::PhysicalRecoveryPublicationCounters,
+    publication_settlement: crate::entry::PhysicalRecoveryPublicationSettlementLedger,
+) -> PhysicalRecoveryOutcome {
+    let store = state.authority.media.store_identity();
+    let session = state.authority.session.identity();
+    let recovery_effects = state.authority.media.recovery_effect_count();
+    let crate::entry::AdmittedPlatformAuthority {
+        media,
+        session: session_authority,
+        ..
+    } = state.authority;
+    drop(media);
+    session_authority.publication_indeterminate();
+    PhysicalRecoveryOutcome::PublicationIndeterminate(
+        PhysicalRecoveryPublicationIndeterminate::new(
+            store,
+            session,
+            publication_counters,
+            publication_settlement,
+            state.root_protocol_denials,
+            state.root_protocol_counters,
+            recovery_effects,
+        )
+        .with_integrity_observations(state.integrity.into_observations())
+        .with_integrity_trace(state.integrity_trace)
+        .with_handoff_failure(
+            worth_store::physical_runtime::RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch,
+        ),
+    )
 }
 
 fn completed_counters(

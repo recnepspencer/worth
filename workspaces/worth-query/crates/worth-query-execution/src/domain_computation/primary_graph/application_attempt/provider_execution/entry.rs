@@ -32,7 +32,9 @@ where
         if self.operation_requires_workflow_authority::<Operation>() {
             Some(WorthQueryApplicationCommitDenial::workflow_authority_required())
         } else if self.operation_requires_application_program::<Operation>() {
-            Some(WorthQueryApplicationCommitDenial::application_program_required())
+            Some(WorthQueryApplicationCommitDenial::program_lane_required::<
+                Operation,
+            >())
         } else {
             None
         }
@@ -121,7 +123,8 @@ where
             .contains_operation::<Operation>()
         {
             return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
+                WorthQueryApplicationCommitDenial::conditional_operation_not_installed::<Operation>(
+                ),
             );
         }
         if let Err(outcome) =

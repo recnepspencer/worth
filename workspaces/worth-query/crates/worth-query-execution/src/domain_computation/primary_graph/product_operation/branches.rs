@@ -106,13 +106,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     }
 
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
-        let commit_lane = self
-            .application
-            .primary_provider
-            .application_branch_commit_lane_for_occurrence(source.occurrence());
         self.branches.fork(source).with_application_lifecycle(
             std::sync::Arc::clone(&self.application.primary_provider.graph.output_lineage),
-            commit_lane,
+            &self.application.primary_provider,
             self.application,
         )
     }

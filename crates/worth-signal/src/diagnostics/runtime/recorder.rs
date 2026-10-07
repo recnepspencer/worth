@@ -19,7 +19,8 @@ impl<'a> DiagnosticsRecorder<'a> {
 #[cfg(test)]
 pub(crate) use artifacts::record_lineage_transition;
 pub(crate) use artifacts::{
-    record_invalidation_lineage, stamp_trace_summary_and_record_lineage_transition_from_image,
+    derive_lineage_transition, record_invalidation_lineage,
+    stamp_trace_summary_and_record_lineage_transition_from_image,
 };
 pub(crate) use branching::{
     record_branch_fork_lineage, record_branch_merge_failure, record_branch_merge_summary,

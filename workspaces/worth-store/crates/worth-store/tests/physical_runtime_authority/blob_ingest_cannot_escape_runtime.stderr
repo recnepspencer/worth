@@ -1,0 +1,10 @@
+error: lifetime may not live long enough
+  --> tests/physical_runtime_authority/blob_ingest_cannot_escape_runtime.rs:12:5
+   |
+ 6 |   fn escape<'runtime>(
+   |             -------- lifetime `'runtime` defined here
+...
+12 | /     facade
+13 | |         .begin_ingest(declaration, placement, 1024, limits)
+14 | |         .unwrap()
+   | |_________________^ returning this value requires that `'runtime` must outlive `'static`

@@ -12,10 +12,15 @@ use crate::{
     BackendQueueExecutionAdaptation, BackendQueueExecutionPlanBinding, BackendQueueSpeculativeScope,
 };
 
+mod arena;
+mod candidate_prefix;
+
 #[derive(Clone, Copy)]
 enum ArtifactRangeWritePosture {
     ExistingRange,
     AppendAtEof,
+    ArenaRange,
+    CandidatePrefix,
 }
 
 #[derive(Clone, Copy)]
@@ -238,6 +243,9 @@ impl ArtifactTreeMedia<'_> {
                 ArtifactTreeFailureKind::AccessLimitExceeded,
             ));
         }
+        if matches!(request.posture, ArtifactRangeWritePosture::CandidatePrefix) {
+            candidate_prefix::verify(self.owner, &mut file, request.bytes, length)?;
+        }
         file.seek(SeekFrom::Start(request.coordinate.offset()))
             .map_err(|error| {
                 ArtifactTreeFailure::io(ArtifactTreeFailureKind::DeniedBeforeEffect, &error)
@@ -368,6 +376,10 @@ impl<'a> ArtifactRangeWriteRequest<'a> {
         match self.posture {
             ArtifactRangeWritePosture::ExistingRange => end <= length,
             ArtifactRangeWritePosture::AppendAtEof => self.coordinate.offset() == length,
+            ArtifactRangeWritePosture::ArenaRange => true,
+            ArtifactRangeWritePosture::CandidatePrefix => {
+                self.coordinate.offset() == 0 && length <= end
+            }
         }
     }
 }

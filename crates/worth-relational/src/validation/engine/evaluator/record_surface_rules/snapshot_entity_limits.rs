@@ -7,14 +7,17 @@ use super::super::super::context::InvariantExecutionContext;
 use super::super::common::{storage_inconsistency_violation, StorageInconsistencyContext};
 
 pub(super) fn evaluate_max_snapshot_entities(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,
     limit: usize,
 ) -> Option<InvariantViolation> {
     let state_view = context.state_view();
     let mut visible_entities = 0;
     if state_view.version_id() == context.current_version_id() {
-        for partition_id in state_view.state().partition_ids() {
+        for partition_id in state_view.state().partition_ids_iter() {
+            if !context.checkpoint(1) {
+                return None;
+            }
             let Some(partition) = state_view.state().get_partition(partition_id) else {
                 return Some(storage_inconsistency_violation(
                     class,
@@ -27,10 +30,16 @@ pub(super) fn evaluate_max_snapshot_entities(
                         .with_scan(StorageInconsistencyScan::MaxSnapshotEntities),
                 ));
             };
+            if !context.checkpoint(partition.entity_arena.slot_count() as u64) {
+                return None;
+            }
             visible_entities += partition.entity_arena.live_bitset.count_ones();
         }
     } else {
-        for partition_id in state_view.state().partition_ids() {
+        for partition_id in state_view.state().partition_ids_iter() {
+            if !context.checkpoint(1) {
+                return None;
+            }
             let Some(partition) = state_view.state().get_partition(partition_id) else {
                 return Some(storage_inconsistency_violation(
                     class,
@@ -46,15 +55,20 @@ pub(super) fn evaluate_max_snapshot_entities(
             context
                 .metrics()
                 .count_entity_slot_scans(partition.entity_arena.slot_count());
-            visible_entities += partition
-                .entity_arena
-                .occupied_slots()
-                .into_iter()
-                .filter(|slot| state_view.entity_visible_at_version(&partition.entity_arena, *slot))
-                .count();
+            for slot in partition.entity_arena.occupied_slots_iter() {
+                if !context.checkpoint(1) {
+                    return None;
+                }
+                visible_entities += usize::from(
+                    state_view.entity_visible_at_version(&partition.entity_arena, slot),
+                );
+            }
         }
     }
     if visible_entities > limit {
+        if !context.claim_result(4096) {
+            return None;
+        }
         return Some(InvariantViolation {
             class,
             code: DiagnosticCode::InvariantViolation,

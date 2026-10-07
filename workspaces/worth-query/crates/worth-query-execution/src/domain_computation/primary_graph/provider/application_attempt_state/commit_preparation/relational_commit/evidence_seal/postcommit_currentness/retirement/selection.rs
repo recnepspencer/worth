@@ -78,15 +78,15 @@ fn sealed_rebase(
         .unwrap()
         .integration_handle()
         .with_runtime(|runtime| {
-            super::super::super::rebase_output(
+            exact(super::super::super::rebase_output(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                facts,
+                super::super::super::PreparedSourceFactRebase::admit(facts).unwrap(),
                 correspondence,
                 changed,
                 true,
                 64,
-                64,
-            )
+                Some(&mut admission()),
+            ))
         })
 }

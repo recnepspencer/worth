@@ -1,0 +1,8 @@
+error[E0624]: associated function `witness` is private
+  --> tests/ui/budget_limits/sibling_cannot_use_owner_witness.rs:24:62
+   |
+ 7 |     worth_proof::authority_marker!(pub OwnerAuthority);
+   |     -------------------------------------------------- private associated function defined here
+...
+24 |             Performed::record(&super::owner::OwnerAuthority::witness(), LimitCounts::new(1, 0));
+   |                                                              ^^^^^^^ private associated function

@@ -3,7 +3,6 @@ use crate::commit_strategies::data::{
     CanonicalStrategyInputDigest, StrategyInputSchemaName, StrategyInputSchemaVersion,
     StrategyLoweringSummary, StrategyPreviewValidationCostSummary,
 };
-use crate::config::data::{PlanningContract, RelationalExecutionModel};
 use crate::transactions::data::{CommitValidationSummary, ExistingRecordTarget};
 use crate::validation::data::InvariantCatalog;
 use worth_foundational::facade::AspectFieldLocator;
@@ -63,24 +62,6 @@ pub(crate) fn preview_validation_cost_digest(
 pub(crate) fn runtime_invariant_catalog_digest(catalog: &InvariantCatalog) -> [u8; 32] {
     commit_strategy_digest("strategy-runtime-invariant-catalog-v1", |bytes| {
         bytes.string(&catalog.canonical_registration_digest());
-    })
-}
-
-pub(crate) fn runtime_planning_contract_digest(planning: &PlanningContract) -> [u8; 32] {
-    commit_strategy_digest("strategy-runtime-planning-contract-v1", |bytes| {
-        bytes.bool(planning.immutable_snapshot_reads_required);
-        bytes.bool(planning.worker_local_staging_required);
-        bytes.bool(planning.deterministic_merge_required);
-    })
-}
-
-pub(crate) fn runtime_execution_model_digest(model: RelationalExecutionModel) -> [u8; 32] {
-    commit_strategy_digest("strategy-runtime-execution-model-v1", |bytes| {
-        bytes.tag(match model {
-            RelationalExecutionModel::SingleLaneExecution => 1,
-            RelationalExecutionModel::ParallelPreparation => 2,
-            RelationalExecutionModel::ParallelPostCommitConsumption => 3,
-        });
     })
 }
 

@@ -1,0 +1,317 @@
+//! One canonical, bounded V3 source-to-result inventory predicate shared by
+//! C.8 and Store. A transcript of two valid trees alone is not a legal drop.
+
+use super::{ExceededRootHistoryBound, RootHistoryAllowance, VerifiedReleasedDirectoryReplacement};
+use crate::VerifiedSelectedReleaseHeadReplayV14;
+
+#[path = "released_v3_inventory_transition/delta.rs"]
+mod delta;
+#[path = "released_v3_inventory_transition/laid_out.rs"]
+mod laid_out;
+#[path = "released_v3_inventory_transition/transcripts.rs"]
+mod transcripts;
+use delta::{next_extent, root_semantics_match, routes_match, validate_arenas};
+pub use laid_out::ReleasedInventoryParts;
+pub(crate) use transcripts::transcript;
+use transcripts::{reserve, transcript_reserved};
+use worth_store_physical_format::{
+    CurrentPhysicalRecordPlacement, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
+    ExtentArenaId, ExtentArenaRange, FreeSpaceKey, PersistedRecordIdentity,
+    PhysicalInventoryTranscriptV1, PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry,
+    RecordSegmentPageManifestEntry,
+};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReleasedV3InventoryTransitionDenial {
+    Allocation {
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
+    BoundExceeded(ExceededRootHistoryBound),
+    /// A size past every count: no ceiling admits it, so no limit states it.
+    SizeOverflow,
+    InvalidSource,
+    InvalidResult,
+    InvalidDelta,
+}
+
+impl ReleasedV3InventoryTransitionDenial {
+    /// The admitted bound this check ran past, where that is why it stopped.
+    pub const fn exceeded_bound(&self) -> Option<ExceededRootHistoryBound> {
+        match self {
+            Self::BoundExceeded(exceeded) => Some(*exceeded),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct ReleasedInventoryView<'a> {
+    pub root: &'a DurablePhysicalRootManifest,
+    pub free: &'a DurableFreeSpaceManifestHeader,
+    pub routes: &'a [CurrentPhysicalRecordPlacement],
+    pub segments: &'a [RecordSegmentPageManifestEntry],
+    pub free_entries: &'a [RecordFreeSpaceManifestEntry],
+}
+
+impl<'a> ReleasedInventoryView<'a> {
+    pub fn new(
+        root: &'a DurablePhysicalRootManifest,
+        free: &'a DurableFreeSpaceManifestHeader,
+        routes: &'a [CurrentPhysicalRecordPlacement],
+        segments: &'a [RecordSegmentPageManifestEntry],
+        free_entries: &'a [RecordFreeSpaceManifestEntry],
+    ) -> Self {
+        Self {
+            root,
+            free,
+            routes,
+            segments,
+            free_entries,
+        }
+    }
+
+    /// How many routes, segments and free entries this view holds.
+    pub(crate) const fn entry_counts(self) -> [usize; 3] {
+        [
+            self.routes.len(),
+            self.segments.len(),
+            self.free_entries.len(),
+        ]
+    }
+}
+
+/// This owned token can be minted only by checking an exact V3 inventory
+/// transition. Store must still independently rewalk actual media and call
+/// the same constructor; caller-supplied views have no inherent authority.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerifiedReleasedV3InventoryTransition {
+    source: PhysicalInventoryTranscriptV1,
+    result: PhysicalInventoryTranscriptV1,
+    scratch_bytes: u64,
+    projected: Box<[CurrentPhysicalRecordPlacement]>,
+    directory_replacement: Option<VerifiedReleasedDirectoryReplacement>,
+}
+
+impl VerifiedReleasedV3InventoryTransition {
+    /// Additional construction peak, excluding the borrowed source/result inputs.
+    /// Headers, sorted subtraction ranges, and retained projected-copy conversion
+    /// occupy separate windows; each is admitted before its first reservation.
+    pub fn maximum_construction_heap_bytes(
+        source: ReleasedInventoryView<'_>,
+        result: ReleasedInventoryView<'_>,
+        projected: &[CurrentPhysicalRecordPlacement],
+        maximum_entries: u64,
+    ) -> Option<u64> {
+        if source.routes.len() as u64 > maximum_entries
+            || result.routes.len() as u64 > maximum_entries
+            || source.free_entries.len() as u64 > maximum_entries
+            || result.free_entries.len() as u64 > maximum_entries
+            || projected.len() as u64 > maximum_entries
+        {
+            return None;
+        }
+        let headers = |view: ReleasedInventoryView<'_>| {
+            (view.root.encoded_frame_bytes() as u64)
+                .checked_add(view.free.encoded_frame_bytes() as u64)
+        };
+        let ranges =
+            (projected.len() as u64).checked_mul(std::mem::size_of::<ExtentArenaRange>() as u64)?;
+        let retained = (projected.len() as u64)
+            .checked_mul(std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64)?
+            .checked_mul(2)?;
+        Some(
+            headers(source)?
+                .max(headers(result)?)
+                .max(ranges)
+                .max(retained),
+        )
+    }
+
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.projected.len())
+            .ok()?
+            .checked_mul(u64::try_from(std::mem::size_of::<CurrentPhysicalRecordPlacement>()).ok()?)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit(
+        source: ReleasedInventoryView<'_>,
+        result: ReleasedInventoryView<'_>,
+        dropped: &[PersistedRecordIdentity],
+        projected: &[CurrentPhysicalRecordPlacement],
+        format: PhysicalRecordFormatDeclaration,
+        maximum_entries: u64,
+        maximum_scratch_bytes: u64,
+        directory_replacement: Option<&VerifiedReleasedDirectoryReplacement>,
+    ) -> Result<Self, ReleasedV3InventoryTransitionDenial> {
+        Self::admit_inner(
+            source,
+            result,
+            dropped,
+            projected,
+            None,
+            directory_replacement,
+            format,
+            maximum_entries,
+            maximum_scratch_bytes,
+        )
+    }
+
+    /// The head-tree fields may change only under an exact, C.9-admitted
+    /// WAL effect whose source path was re-read from selected media.
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit_with_head_replay(
+        source: ReleasedInventoryView<'_>,
+        result: ReleasedInventoryView<'_>,
+        dropped: &[PersistedRecordIdentity],
+        projected: &[CurrentPhysicalRecordPlacement],
+        head_replay: &VerifiedSelectedReleaseHeadReplayV14,
+        format: PhysicalRecordFormatDeclaration,
+        maximum_entries: u64,
+        maximum_scratch_bytes: u64,
+        directory_replacement: Option<&VerifiedReleasedDirectoryReplacement>,
+    ) -> Result<Self, ReleasedV3InventoryTransitionDenial> {
+        Self::admit_inner(
+            source,
+            result,
+            dropped,
+            projected,
+            Some(head_replay),
+            directory_replacement,
+            format,
+            maximum_entries,
+            maximum_scratch_bytes,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn admit_inner(
+        source: ReleasedInventoryView<'_>,
+        result: ReleasedInventoryView<'_>,
+        dropped: &[PersistedRecordIdentity],
+        projected: &[CurrentPhysicalRecordPlacement],
+        head_replay: Option<&VerifiedSelectedReleaseHeadReplayV14>,
+        directory_replacement: Option<&VerifiedReleasedDirectoryReplacement>,
+        format: PhysicalRecordFormatDeclaration,
+        maximum_entries: u64,
+        maximum_scratch_bytes: u64,
+    ) -> Result<Self, ReleasedV3InventoryTransitionDenial> {
+        use ReleasedV3InventoryTransitionDenial as Denial;
+        let counts = [source.entry_counts(), result.entry_counts()];
+        let step = [dropped.len(), projected.len()];
+        RootHistoryAllowance::entries(maximum_entries)
+            .admit_each(counts.into_iter().flatten().chain(step))
+            .map_err(Denial::BoundExceeded)?;
+        let peak =
+            Self::maximum_construction_heap_bytes(source, result, projected, maximum_entries)
+                .ok_or(Denial::SizeOverflow)?;
+        let scratch_bytes = RootHistoryAllowance::scratch_bytes(maximum_scratch_bytes)
+            .admit(peak)
+            .map_err(Denial::BoundExceeded)?;
+        let source_topology =
+            transcript_reserved(source, format, maximum_entries, maximum_scratch_bytes)?;
+        let result_topology =
+            transcript_reserved(result, format, maximum_entries, maximum_scratch_bytes).map_err(
+                |denial| match denial {
+                    Denial::InvalidSource => Denial::InvalidResult,
+                    other => other,
+                },
+            )?;
+        if !root_semantics_match(
+            source,
+            result,
+            dropped,
+            projected,
+            head_replay,
+            directory_replacement,
+        ) || dropped.is_empty()
+            || projected.is_empty()
+            || dropped.windows(2).any(|pair| pair[0] >= pair[1])
+            || projected
+                .windows(2)
+                .any(|pair| pair[0].record() >= pair[1].record())
+            || projected.iter().any(|route| {
+                !matches!(route, CurrentPhysicalRecordPlacement::Extent(_))
+                    || source
+                        .routes
+                        .binary_search_by_key(&route.record(), |item| item.record())
+                        .is_ok()
+            })
+            || dropped.iter().any(|record| {
+                source
+                    .routes
+                    .binary_search_by_key(record, |item| item.record())
+                    .is_err()
+            })
+            || source.segments != result.segments
+        {
+            return Err(Denial::InvalidDelta);
+        }
+        if !routes_match(source.routes, result.routes, dropped, projected)
+            || result.free.next_segment() != source.free.next_segment()
+            || result.free.next_page() != source.free.next_page()
+            || result.free.next_extent()
+                != next_extent(source.free, result.routes).ok_or(Denial::InvalidDelta)?
+        {
+            return Err(Denial::InvalidDelta);
+        }
+        let next_arena = validate_arenas(
+            source,
+            result,
+            projected,
+            maximum_entries,
+            maximum_scratch_bytes,
+        )?;
+        if result.free.next_arena() != next_arena
+            || result.free.tree_identity() != source.free.tree_identity()
+            || result.free.node_capacity() != source.free.node_capacity()
+            || result.free.segment_page_capacity() != source.free.segment_page_capacity()
+            || result.free.arena_capacity() != source.free.arena_capacity()
+            || result.free.arena_alignment() != source.free.arena_alignment()
+            || result.free.tier_epoch_start() != source.free.tier_epoch_start()
+        {
+            return Err(Denial::InvalidDelta);
+        }
+        let mut retained_projected =
+            reserve::<CurrentPhysicalRecordPlacement>(projected.len(), 0, maximum_scratch_bytes)?;
+        retained_projected.extend_from_slice(projected);
+        let conversion_peak = ((retained_projected.capacity() + retained_projected.len()) as u64)
+            .checked_mul(std::mem::size_of::<CurrentPhysicalRecordPlacement>() as u64)
+            .ok_or(Denial::SizeOverflow)?;
+        let conversion_peak = RootHistoryAllowance::scratch_bytes(maximum_scratch_bytes)
+            .admit(conversion_peak)
+            .map_err(Denial::BoundExceeded)?;
+        Ok(Self {
+            source: source_topology,
+            result: result_topology,
+            scratch_bytes: scratch_bytes.max(conversion_peak),
+            projected: retained_projected.into_boxed_slice(),
+            directory_replacement: directory_replacement
+                .map(|proof| proof.bind_result_root(result.root)),
+        })
+    }
+
+    pub const fn source_topology(&self) -> PhysicalInventoryTranscriptV1 {
+        self.source
+    }
+    pub const fn result_topology(&self) -> PhysicalInventoryTranscriptV1 {
+        self.result
+    }
+    pub const fn scratch_bytes(&self) -> u64 {
+        self.scratch_bytes
+    }
+    pub fn projected(&self) -> &[CurrentPhysicalRecordPlacement] {
+        &self.projected
+    }
+    pub const fn directory_replacement(&self) -> Option<&VerifiedReleasedDirectoryReplacement> {
+        self.directory_replacement.as_ref()
+    }
+}
+
+#[cfg(test)]
+#[path = "released_v3_inventory_transition/directory_tests.rs"]
+mod directory_tests;
+#[cfg(test)]
+#[path = "released_v3_inventory_transition/tests.rs"]
+mod tests;

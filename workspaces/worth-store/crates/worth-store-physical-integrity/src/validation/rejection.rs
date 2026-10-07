@@ -9,6 +9,8 @@ pub enum PhysicalIntegrityVersionAxis {
     PhysicalWorkObligation,
     WalFrame,
     CheckpointRecordSchema,
+    BlobRecord,
+    BTreeNode,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

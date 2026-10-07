@@ -122,15 +122,13 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         ),
         native_revision: None,
     };
-    assert!(
-        !graph.integration_handle().with_runtime(|runtime| {
-            unavailable
-                .source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
-                .unwrap()
-                .0
-        }),
-        "an unavailable restored field revision cannot authorize reuse"
-    );
+    let unavailable_currentness = graph.integration_handle().with_runtime(|runtime| {
+        unavailable.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
+    });
+    assert!(matches!(
+        unavailable_currentness,
+        Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Unavailable)
+    ), "an unavailable restored field revision must preserve its typed verification failure");
     assert!(
         !graph.integration_handle().with_runtime(|runtime| {
             fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)

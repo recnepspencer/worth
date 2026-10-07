@@ -53,18 +53,20 @@ impl PhysicalSegmentMembershipBlock {
         }
         let body = &payload[BLOCK_PREFIX_BYTES..];
         let decoded = if level == 0 {
-            let entries = body
-                .chunks_exact(entry_bytes)
-                .map(decode_entry)
-                .collect::<Option<Vec<_>>>()
-                .ok_or(SegmentMembershipBlockDenial::InvalidEntry)?;
+            let mut entries = Vec::with_capacity(usize::from(count));
+            for entry in body.chunks_exact(entry_bytes) {
+                entries
+                    .push(decode_entry(entry).ok_or(SegmentMembershipBlockDenial::InvalidEntry)?);
+            }
             Self::leaf(tree_identity, generation, block, entries, capacity)
         } else {
-            let children = body
-                .chunks_exact(entry_bytes)
-                .map(decode_reference)
-                .collect::<Option<Vec<_>>>()
-                .ok_or(SegmentMembershipBlockDenial::InvalidReference)?;
+            let mut children = Vec::with_capacity(usize::from(count));
+            for entry in body.chunks_exact(entry_bytes) {
+                children.push(
+                    decode_reference(entry)
+                        .ok_or(SegmentMembershipBlockDenial::InvalidReference)?,
+                );
+            }
             Self::branch(tree_identity, generation, block, level, children, capacity)
         };
         decoded

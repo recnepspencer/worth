@@ -40,6 +40,30 @@ impl RuntimeCore {
                     ))
                 })?
         };
+        family.scope_key_requirement.validate_key(key)?;
+        let reads = family
+            .spec
+            .reads
+            .iter()
+            .map(|read| match read {
+                RecipeFamilyReadSpec::Signal { id, scope, aspects } => {
+                    Ok(RecipeReadSpec::Signal(RecipeReadSignalSpec {
+                        id: id.clone(),
+                        scope: scope.as_ref().map(|value| value.resolve(key)).transpose()?,
+                        aspects: aspects.clone(),
+                    }))
+                }
+                RecipeFamilyReadSpec::Keyed {
+                    family_id,
+                    scope,
+                    aspects,
+                } => Ok(RecipeReadSpec::Signal(RecipeReadSignalSpec {
+                    id: composite_keyed_id(family_id, key),
+                    scope: scope.as_ref().map(|value| value.resolve(key)).transpose()?,
+                    aspects: aspects.clone(),
+                })),
+            })
+            .collect::<Result<_, WorthSignalJsError>>()?;
         for read in &family.spec.reads {
             if let RecipeFamilyReadSpec::Keyed { family_id, .. } = read {
                 let source_id = composite_keyed_id(family_id, key);
@@ -54,29 +78,7 @@ impl RuntimeCore {
         }
         let recipe = RecipeSpec {
             id: composite_id.clone(),
-            reads: family
-                .spec
-                .reads
-                .iter()
-                .map(|read| match read {
-                    RecipeFamilyReadSpec::Signal { id, scope, aspects } => {
-                        RecipeReadSpec::Signal(RecipeReadSignalSpec {
-                            id: id.clone(),
-                            scope: scope.as_ref().and_then(|value| value.resolve(key)),
-                            aspects: aspects.clone(),
-                        })
-                    }
-                    RecipeFamilyReadSpec::Keyed {
-                        family_id,
-                        scope,
-                        aspects,
-                    } => RecipeReadSpec::Signal(RecipeReadSignalSpec {
-                        id: composite_keyed_id(family_id, key),
-                        scope: scope.as_ref().and_then(|value| value.resolve(key)),
-                        aspects: aspects.clone(),
-                    }),
-                })
-                .collect(),
+            reads,
             expr: rewrite_keyed_expr(&family.spec.expr, &family.spec.reads, key),
             when: family.spec.when.as_ref().map(|condition| {
                 crate::expression::model::ConditionSpec {

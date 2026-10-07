@@ -7,7 +7,7 @@ use std::sync::Arc;
 /// Accounting follows retained diagnostics, but is not diagnostic meaning.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct LineageRetentionCustody(
-    pub(super) Option<Arc<SignalConditionalRetentionReservation>>,
+    pub(crate) Option<Arc<SignalConditionalRetentionReservation>>,
 );
 impl PartialEq for LineageRetentionCustody {
     fn eq(&self, _: &Self) -> bool {

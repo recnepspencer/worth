@@ -11,6 +11,18 @@ pub trait WorthServerProductApplicationAdapter: Send + Sync + 'static {
         &self,
         operation: &WorthServerScheduledProductOperation,
     ) -> Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError>;
+
+    /// Executes a shared-read packet under the caller's bounded authority.
+    /// Implementations must explicitly carry `lease` into any nested work.
+    fn execute_with_lease(
+        &self,
+        operation: &WorthServerScheduledProductOperation,
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<
+        Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError>,
+        worth_execution::MapKernelStop,
+    >;
 }
 
 pub trait WorthServerProductPayloadSchemaValidator: Send + Sync + 'static {
@@ -35,6 +47,17 @@ pub enum WorthServerProductAdapterExecutionError {
 }
 
 impl WorthServerProductAdapterExecutionError {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use super::execution_pipeline::read_batch_accounting::string;
+        match self {
+            Self::Denied(denial) => denial.owned_allocation_capacity_bytes(),
+            Self::InvalidResultArtifact(error) => error.owned_allocation_capacity_bytes(),
+            Self::Failed { reason_key, detail } => {
+                string(reason_key).saturating_add(string(detail))
+            }
+        }
+    }
+
     pub fn denied(denial: WorthServerProductOperationDenial) -> Self {
         Self::Denied(denial)
     }

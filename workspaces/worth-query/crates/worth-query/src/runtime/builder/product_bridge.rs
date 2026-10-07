@@ -25,13 +25,16 @@ impl WorthQueryPendingRelationalProductBridge {
     pub(super) fn install(
         self,
         parts: crate::runtime::WorthQueryRuntimeBackendParts,
+        invalidation_resources: worth_query_execution::facade::integration::WorthQueryInvalidationResources,
     ) -> Result<
         (crate::runtime::WorthQueryRuntimeBackendParts, RuntimeBridge),
         WorthQueryRuntimeError,
     > {
-        parts.install_query_owned_relational_product_bridge(self.graph_role, move |source| {
-            (self.build)(source)
-        })
+        parts.install_query_owned_relational_product_bridge(
+            self.graph_role,
+            invalidation_resources,
+            move |source| (self.build)(source),
+        )
     }
 }
 
@@ -57,7 +60,8 @@ impl WorthQueryRuntimeBuilder {
             return Ok(());
         };
         let parts = std::mem::take(&mut self.backend_parts);
-        let (parts, bridge) = pending.install(parts)?;
+        let (parts, bridge) =
+            pending.install(parts, self.product_world_resources.invalidation_resources())?;
         self.backend_parts = parts;
         self.conditional_runtime_bridge = Some(bridge);
         Ok(())

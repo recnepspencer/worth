@@ -5,9 +5,9 @@ use crate::placement::movement::{
 pub(crate) fn require_read_hold_present(
     request: &BlobPlacementMovementRequest,
 ) -> Option<MovementEligibilityCase> {
-    if request.read_hold().is_some() {
+    if request.read_plan().is_some() {
         None
     } else {
-        Some(MovementEligibilityCase::MissingReadHold)
+        Some(MovementEligibilityCase::MissingReadPlan)
     }
 }

@@ -110,10 +110,7 @@ impl RuntimeCore {
             changed_regions: explanation
                 .changed_regions
                 .iter()
-                .map(|region| match &region.detail {
-                    Some(detail) => format!("{}:{}", region.partition.0, detail),
-                    None => region.partition.0.clone(),
-                })
+                .map(|region| region.path().segments().join(":"))
                 .collect(),
             propagation_suppressed: explanation.propagation_suppressed,
             output_change: explanation

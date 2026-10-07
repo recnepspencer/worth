@@ -2,7 +2,9 @@ use crate::data::aspect::Aspect;
 use crate::data::error::SignalError;
 use crate::data::graph::subscription_candidates;
 use crate::data::handle::NodeId;
-use crate::data::output::{InternedPartitionSubscription, PartitionMatchMode};
+use crate::data::output::{
+    InternedPartitionSubscription, InternedScopePath, ScopeCoverage, ScopePath,
+};
 use crate::data::retained_storage::ordered_lookup_steps;
 use crate::logic::evaluation::EvaluationWork;
 
@@ -10,8 +12,7 @@ use super::fork_overlay::{
     extend_merged_set, BucketDelta, ReverseSubscriptionStorage, SetMergeTraversal,
 };
 use super::{
-    DetailScopeKey, ProducerAspectKey, ReverseSubscriptionIndex, ReverseSubscriptionQuery,
-    SubscriberScopeBuckets,
+    ProducerAspectKey, ReverseSubscriptionIndex, ReverseSubscriptionQuery, SubscriberScopeBuckets,
 };
 
 impl ReverseSubscriptionIndex {
@@ -19,7 +20,7 @@ impl ReverseSubscriptionIndex {
         &self,
         producer: NodeId,
         aspect: Aspect,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<ReverseSubscriptionQuery, SignalError> {
         self.query_whole_aspect_observed(producer, aspect, work)
             .map(|(query, _)| query)
@@ -29,7 +30,7 @@ impl ReverseSubscriptionIndex {
         &self,
         producer: NodeId,
         aspect: Aspect,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(ReverseSubscriptionQuery, SetMergeTraversal), SignalError> {
         let key = ProducerAspectKey::from_committed_output(producer, aspect);
         let (base, delta) = self.bucket_view(&key, work)?;
@@ -60,7 +61,7 @@ impl ReverseSubscriptionIndex {
         &self,
         producer: NodeId,
         aspect: Aspect,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<ReverseSubscriptionQuery, SignalError> {
         let key = ProducerAspectKey::from_committed_output(producer, aspect);
         let (base, delta) = self.bucket_view(&key, work)?;
@@ -82,15 +83,30 @@ impl ReverseSubscriptionIndex {
         producer: NodeId,
         aspect: Aspect,
         scope: InternedPartitionSubscription,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
+    ) -> Result<ReverseSubscriptionQuery, SignalError> {
+        self.query_known_scope(producer, aspect, scope.path(), scope.coverage(), true, work)
+    }
+
+    pub(crate) fn query_known_scope(
+        &self,
+        producer: NodeId,
+        aspect: Aspect,
+        path: InternedScopePath,
+        coverage: ScopeCoverage,
+        complete: bool,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<ReverseSubscriptionQuery, SignalError> {
         let key = ProducerAspectKey::from_committed_output(producer, aspect);
         let (base, delta) = self.bucket_view(&key, work)?;
+        let ancestor_depth = if complete {
+            path.depth().saturating_sub(1)
+        } else {
+            path.depth()
+        };
+        let probes = 1 + ancestor_depth as u64 + u64::from(complete);
         if base.is_none() && delta.is_none() {
-            return Ok(empty_query(match scope.match_mode {
-                PartitionMatchMode::WholePartition => 2,
-                PartitionMatchMode::PartitionAndDetail => 3,
-            }));
+            return Ok(empty_query(probes));
         }
         let mut candidates = Vec::new();
         let _ = extend_merged_set(
@@ -99,60 +115,52 @@ impl ReverseSubscriptionIndex {
             &mut candidates,
             work,
         )?;
-        let probes = match scope.match_mode {
-            PartitionMatchMode::WholePartition => {
-                admit_scope_lookup(
-                    base.map_or(0, |b| b.partition_scoped.len()),
-                    delta.map_or(0, |d| d.partition_scoped.len()),
-                    work,
-                )?;
-                let _ = extend_merged_set(
-                    base.and_then(|buckets| buckets.partition_scoped.get(&scope.partition)),
-                    delta.and_then(|delta| delta.partition_scoped.get(&scope.partition)),
-                    &mut candidates,
-                    work,
-                )?;
-                2
-            }
-            PartitionMatchMode::PartitionAndDetail => {
-                admit_scope_lookup(
-                    base.map_or(0, |b| b.whole_partitions.len()),
-                    delta.map_or(0, |d| d.whole_partitions.len()),
-                    work,
-                )?;
-                let _ = extend_merged_set(
-                    base.and_then(|buckets| buckets.whole_partitions.get(&scope.partition)),
-                    delta.and_then(|delta| delta.whole_partitions.get(&scope.partition)),
-                    &mut candidates,
-                    work,
-                )?;
-                if let Some(detail) = scope.detail {
-                    admit_scope_lookup(
-                        base.map_or(0, |b| b.exact_details.len()),
-                        delta.map_or(0, |d| d.exact_details.len()),
-                        work,
-                    )?;
-                    let key = DetailScopeKey {
-                        partition: scope.partition,
-                        detail,
-                    };
-                    let _ = extend_merged_set(
-                        base.and_then(|buckets| buckets.exact_details.get(&key)),
-                        delta.and_then(|delta| delta.exact_details.get(&key)),
-                        &mut candidates,
-                        work,
-                    )?;
-                }
-                3
-            }
-        };
+        for depth in 1..=ancestor_depth {
+            let prefix = path.prefix(depth).expect("bounded path prefix");
+            admit_scope_lookup(
+                base.map_or(0, |b| b.subtree_covering.len()),
+                delta.map_or(0, |d| d.subtree_covering.len()),
+                work,
+            )?;
+            let _ = extend_merged_set(
+                base.and_then(|b| b.subtree_covering.get(&prefix)),
+                delta.and_then(|d| d.subtree_covering.get(&prefix)),
+                &mut candidates,
+                work,
+            )?;
+        }
+        if complete {
+            let map = if coverage == ScopeCoverage::Exact {
+                ScopeMap::Exact
+            } else {
+                ScopeMap::Subtree
+            };
+            let (base_map, delta_map) = match map {
+                ScopeMap::Exact => (base.map(|b| &b.same_path), delta.map(|d| &d.same_path)),
+                ScopeMap::Subtree => (
+                    base.map(|b| &b.subtree_members),
+                    delta.map(|d| &d.subtree_members),
+                ),
+            };
+            admit_scope_lookup(
+                base_map.map_or(0, |b| b.len()),
+                delta_map.map_or(0, |d| d.len()),
+                work,
+            )?;
+            let _ = extend_merged_set(
+                base_map.and_then(|b| b.get(&path)),
+                delta_map.and_then(|d| d.get(&path)),
+                &mut candidates,
+                work,
+            )?;
+        }
         finish_query(candidates, probes, work)
     }
 
     fn bucket_view(
         &self,
         key: &ProducerAspectKey,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(Option<&SubscriberScopeBuckets>, Option<&BucketDelta>), SignalError> {
         Ok(match &self.storage {
             ReverseSubscriptionStorage::Exclusive(flat) => {
@@ -171,6 +179,11 @@ impl ReverseSubscriptionIndex {
     }
 }
 
+enum ScopeMap {
+    Exact,
+    Subtree,
+}
+
 fn empty_query(bucket_probes: u64) -> ReverseSubscriptionQuery {
     ReverseSubscriptionQuery {
         candidates: Vec::new(),
@@ -181,7 +194,7 @@ fn empty_query(bucket_probes: u64) -> ReverseSubscriptionQuery {
 fn finish_query(
     mut candidates: Vec<NodeId>,
     bucket_probes: u64,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<ReverseSubscriptionQuery, SignalError> {
     subscription_candidates::normalize(&mut candidates, work)?;
     Ok(ReverseSubscriptionQuery {
@@ -193,10 +206,10 @@ fn finish_query(
 fn admit_scope_lookup(
     base_len: usize,
     delta_len: usize,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
-    // Producer/aspect and partition/detail keys contain at most three words.
+    // Each ordered comparison may inspect all eight interned path segments.
     work.reserve(Some(
-        4 * (ordered_lookup_steps(base_len) + ordered_lookup_steps(delta_len)),
+        ScopePath::MAX_DEPTH * (ordered_lookup_steps(base_len) + ordered_lookup_steps(delta_len)),
     ))
 }

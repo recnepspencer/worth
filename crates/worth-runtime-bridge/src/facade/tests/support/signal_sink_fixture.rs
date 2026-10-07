@@ -8,6 +8,7 @@ impl InvalidationSink for StaticSink {
     fn deliver_invalidation(
         &self,
         delivery: BridgeSignalInvalidationDelivery,
+        _lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

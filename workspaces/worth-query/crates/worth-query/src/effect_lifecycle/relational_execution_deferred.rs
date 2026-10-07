@@ -140,6 +140,15 @@ pub(super) fn publication(
 ) -> RelationalEffectExecutionFailure {
     use RelationalPublicationDeferred as Deferred;
     let kind = match deferred {
+        Deferred::CompanionRegistrationPending | Deferred::CompanionRebindRequired => {
+            EffectExecutionDeferredKind::InvalidationCompanionPending
+        }
+        Deferred::CompanionPreflight(stop) if super::companion_stop_is_transient(&stop) => {
+            EffectExecutionDeferredKind::InvalidationCompanionPending
+        }
+        Deferred::CompanionPreflight(_) => {
+            EffectExecutionDeferredKind::InvalidationCompanionCapacityExhausted
+        }
         Deferred::PatchPositionReservationContended => {
             EffectExecutionDeferredKind::PatchPositionReservationContended
         }

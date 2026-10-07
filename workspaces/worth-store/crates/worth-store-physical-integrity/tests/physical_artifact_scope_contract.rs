@@ -82,7 +82,13 @@ fn every_phase_four_family_has_a_canonical_scope_and_version_contract() {
             EXTENT_MANIFEST_INTEGRITY_DECLARATION,
         ),
         (
-            PhysicalArtifactScope::extent_chunk(store, format, extent_chunk(), range(384)),
+            PhysicalArtifactScope::extent_chunk(
+                store,
+                format,
+                extent_chunk(),
+                range(384),
+                arena_range(),
+            ),
             PhysicalIntegrityArtifactFamily::ExtentChunk,
             EXTENT_CHUNK_INTEGRITY_DECLARATION,
         ),
@@ -207,7 +213,7 @@ fn family_scopes_round_trip_their_canonical_identities() {
         Some(extent)
     );
     assert_eq!(
-        PhysicalArtifactScope::extent_chunk(store, format, chunk, range(320))
+        PhysicalArtifactScope::extent_chunk(store, format, chunk, range(320), arena_range())
             .extent_chunk_coordinate(),
         Some(chunk)
     );

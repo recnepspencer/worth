@@ -45,7 +45,7 @@ where
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
         Family::Entity: OperationReads<Binding::Operation>,
     {
-        self.reader()
+        self.reader
             .current_output::<Family, Producer>(producer)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -65,7 +65,7 @@ where
         Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
         Role::Entity: OperationReads<Binding::Operation>,
     {
-        self.reader()
+        self.reader
             .prior_output::<PriorBinding, Role>()
             .map_err(HandlerExecutionDenial::new)
     }
@@ -82,7 +82,7 @@ where
         Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
         Role::Entity: OperationReads<Binding::Operation>,
     {
-        self.reader()
+        self.reader
             .prior_output_if_present::<PriorBinding, Role>()
             .map_err(HandlerExecutionDenial::new)
     }
@@ -131,7 +131,7 @@ where
             WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
         Family::Entity: OperationReads<Binding::Operation>,
     {
-        self.reader()
+        self.reader
             .prior_output_family::<PriorBinding, Family>()
             .map_err(HandlerExecutionDenial::new)
     }
@@ -150,7 +150,7 @@ where
             WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
         Family::Entity: OperationReads<Binding::Operation>,
     {
-        self.reader()
+        self.reader
             .prior_output_family_if_present::<PriorBinding, Family>()
             .map_err(HandlerExecutionDenial::new)
     }
@@ -167,7 +167,7 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        self.reader()
+        self.reader
             .decision_field(identity, field)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -185,7 +185,7 @@ where
     where
         Relation: OperationReads<Binding::Operation>,
     {
-        self.reader().decision_relations_from(relation, source)
+        self.reader.decision_relations_from(relation, source)
     }
 
     /// Read the complete admitted incoming adjacency and retain absence as a
@@ -201,7 +201,7 @@ where
     where
         Relation: OperationReads<Binding::Operation>,
     {
-        self.reader().decision_relations_to(relation, target)
+        self.reader.decision_relations_to(relation, target)
     }
 
     /// Read the one target promised by an exactly-one outgoing cardinality
@@ -278,7 +278,7 @@ where
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
     ) -> Result<WorthQueryInvariantMutationTarget<Schema, Entity>, HandlerExecutionDenial> {
-        self.reader()
+        self.reader
             .mutation_target(identity)
             .map_err(HandlerExecutionDenial::new)
     }

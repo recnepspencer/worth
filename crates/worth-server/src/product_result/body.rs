@@ -7,6 +7,11 @@ pub struct WorthServerProductResultBody {
 }
 
 impl WorthServerProductResultBody {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        crate::product_adapter::execution_pipeline::read_batch_accounting::json(&self.value)
+            .saturating_add(u64::try_from(self.canonical_bytes.capacity()).unwrap_or(u64::MAX))
+    }
+
     pub(crate) fn canonical_json(value: Value) -> Result<Self, serde_json::Error> {
         let (value, canonical_bytes) = super::canonicalize_json(value)?;
         Ok(Self {

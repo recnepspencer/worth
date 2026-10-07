@@ -34,16 +34,14 @@ fn installed_scoped_change_retains_aspect_correlated_regions() {
     let changes = admitted.changes().collect::<Vec<_>>();
     assert_eq!(changes.len(), 2);
     assert_eq!(changes[0].aspect(), aspect_a);
-    assert_eq!(changes[0].changed_regions()[0].partition.0, "rates");
     assert_eq!(
-        changes[0].changed_regions()[0].detail.as_deref(),
-        Some("5y")
+        changes[0].changed_regions()[0].path().segments(),
+        ["rates", "5y"]
     );
     assert_eq!(changes[1].aspect(), aspect_b);
-    assert_eq!(changes[1].changed_regions()[0].partition.0, "credit");
     assert_eq!(
-        changes[1].changed_regions()[0].detail.as_deref(),
-        Some("ig")
+        changes[1].changed_regions()[0].path().segments(),
+        ["credit", "ig"]
     );
     assert_eq!(graph.get_state(source).unwrap(), NodeState::Dirty);
     let rates_5y = PartitionSubscription::partition_and_detail("rates", "5y");
@@ -116,23 +114,9 @@ fn duplicate_and_foreign_capabilities_fail_before_effects() {
 }
 
 #[test]
-fn failed_scoped_batch_restores_global_and_partition_versions_exactly() {
-    let mut graph = SignalGraph::new();
-    let source = graph.node().build();
-    let aspect = Aspect::new(0);
-    let TransitionOutcome::Success(capability) = graph.admit_installed_aspect(source, aspect)
-    else {
-        panic!("source aspect must admit")
-    };
-    let before = graph.node_partition_version_map(source).unwrap();
-
-    let failed = apply_installed_scoped_changes(
-        &mut graph,
-        [InstalledSignalScopedChange::new(
-            capability,
-            [ChangedRegion::new("").with_detail("invalid")],
-        )],
+fn invalid_scope_path_is_rejected_before_scoped_batch_construction() {
+    assert_eq!(
+        crate::data::output::ScopePath::one(""),
+        Err(crate::data::output::ScopePathError::EmptySegment)
     );
-    assert!(matches!(failed, TransitionOutcome::Failed(_)));
-    assert_eq!(graph.node_partition_version_map(source).unwrap(), before);
 }

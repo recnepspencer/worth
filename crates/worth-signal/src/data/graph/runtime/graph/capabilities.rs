@@ -1,6 +1,4 @@
-use crate::data::graph::runtime::strategy::{
-    EvaluationStrategy, GcPressure, ObservationLevel, ParallelismHint,
-};
+use crate::data::graph::runtime::strategy::{EvaluationStrategy, GcPressure, ObservationLevel};
 
 use super::{EdgeTopology, NodeArena, RuntimeObservation, SignalGraph, TraversalResources};
 
@@ -13,11 +11,6 @@ impl SignalGraph {
         let active_nodes = self.active_node_count();
         let tombstone_ratio = self.tombstone_ratio();
         EvaluationStrategy {
-            parallelism: if active_nodes >= Self::PARALLELISM_NODE_THRESHOLD {
-                ParallelismHint::Preferred
-            } else {
-                ParallelismHint::Serial
-            },
             gc_pressure: if tombstone_ratio >= Self::GC_PRESSURE_TOMBSTONE_RATIO
                 || self
                     .arena

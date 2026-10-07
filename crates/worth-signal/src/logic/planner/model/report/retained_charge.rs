@@ -26,7 +26,6 @@ impl RetainedStorageMeasurement for StageExecutionOutcome {
         work.visit()?;
         match self {
             Self::CompletedSerial => Ok(Charge::ZERO),
-            #[cfg(feature = "parallel")]
             Self::CompletedParallel => Ok(Charge::ZERO),
         }
     }

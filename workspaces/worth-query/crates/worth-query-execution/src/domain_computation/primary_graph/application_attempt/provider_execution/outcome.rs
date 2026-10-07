@@ -76,10 +76,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn progres
         Kind::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
         Kind::DeadlineExceeded => WorthQueryProviderProgressionOutcome::TimedOut,
         _ => WorthQueryProviderProgressionOutcome::Denied(
-            WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                stage,
-                denial.to_string(),
-            ),
+            WorthQueryApplicationCommitDenial::request_authority_denied(stage, &denial),
         ),
     }
 }
@@ -93,10 +90,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn commit_
         Kind::Cancelled => WorthQueryApplicationCommitOutcome::Cancelled,
         Kind::DeadlineExceeded => WorthQueryApplicationCommitOutcome::TimedOut,
         _ => WorthQueryApplicationCommitOutcome::Denied(
-            WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
-                stage,
-                denial.to_string(),
-            ),
+            WorthQueryApplicationCommitDenial::request_authority_denied(stage, &denial),
         ),
     }
 }

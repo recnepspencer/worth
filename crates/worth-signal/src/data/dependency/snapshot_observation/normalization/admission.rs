@@ -5,17 +5,15 @@ use crate::logic::evaluation::EvaluationWork;
 
 pub(super) fn comparison_bound(
     entries: &[DependencySnapshotEntry],
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<usize, SignalError> {
     work.reserve(Some(entries.len()))?;
     let mut largest = 0;
     for entry in entries {
-        let bytes = entry.scope.as_ref().map_or(Some(0), |s| {
-            s.partition
-                .0
-                .len()
-                .checked_add(s.detail.as_ref().map_or(0, String::len))
-        });
+        let bytes = entry
+            .scope
+            .as_ref()
+            .map_or(Some(0), |s| s.path().checked_segment_bytes());
         work.reserve(bytes.map(|_| 0))?;
         largest = largest.max(bytes.expect("checked scope size"));
     }
@@ -27,7 +25,7 @@ pub(super) fn comparison_bound(
 pub(super) fn mutation_bound(
     entries: &[DependencySnapshotEntry],
     comparison: usize,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     // Arc::make_mut may copy every entry and both scope strings. Charge even
     // exclusive input conservatively; uniqueness is not an admission proof.
@@ -38,12 +36,10 @@ pub(super) fn mutation_bound(
             .filter(|n| *n <= isize::MAX as usize),
     )?;
     for entry in entries {
-        let bytes = entry.scope.as_ref().map_or(Some(0), |s| {
-            s.partition
-                .0
-                .len()
-                .checked_add(s.detail.as_ref().map_or(0, String::len))
-        });
+        let bytes = entry
+            .scope
+            .as_ref()
+            .map_or(Some(0), |s| s.path().checked_segment_bytes());
         work.reserve(bytes)?;
     }
     let count = entries.len();

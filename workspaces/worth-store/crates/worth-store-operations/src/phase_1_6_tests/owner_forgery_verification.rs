@@ -218,7 +218,7 @@ const fn artifact_format_for_bundle_family(
         BackupBundleArtifactFamily::WalSegment => BackupBundleArtifactFormat::WalSegmentV1,
         BackupBundleArtifactFamily::Page => BackupBundleArtifactFormat::PhysicalDataPageV1,
         BackupBundleArtifactFamily::Extent => BackupBundleArtifactFormat::PhysicalExtentRecordV1,
-        BackupBundleArtifactFamily::Index => BackupBundleArtifactFormat::LayoutBTreeLeafV1,
+        BackupBundleArtifactFamily::Index => BackupBundleArtifactFormat::BTreeNodeV1,
         BackupBundleArtifactFamily::BlobChunk => BackupBundleArtifactFormat::BlobChunkV1,
         BackupBundleArtifactFamily::SecondaryRoot => {
             BackupBundleArtifactFormat::PhysicalSecondaryRootManifestV1

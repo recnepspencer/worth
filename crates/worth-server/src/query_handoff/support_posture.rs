@@ -52,6 +52,14 @@ pub enum WorthServerQuerySupportPosture {
 }
 
 impl WorthServerQuerySupportPosture {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::string;
+        match self {
+            Self::ProductIndependent { label } => string(label),
+            Self::PrimaryGraphApplicationSupported { basis_token } => string(basis_token),
+            _ => u64::MAX,
+        }
+    }
     pub fn runtime_resume_support_posture(
         &self,
     ) -> worth_query::facade::runtime::WorthQueryLowerRuntimeSupportPosture {

@@ -30,6 +30,23 @@ pub enum ArtifactTreePathDenial {
 }
 
 impl ArtifactTreeDirectory {
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub(crate) fn validate_file_component(component: &str) -> Result<(), ArtifactTreePathDenial> {
+        validate_component(component)
+    }
+    /// Retained path backing, excluding the inline directory value.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        let slots = self
+            .components
+            .capacity()
+            .checked_mul(std::mem::size_of::<String>())?;
+        self.components
+            .iter()
+            .try_fold(u64::try_from(slots).ok()?, |total, component| {
+                total.checked_add(u64::try_from(component.capacity()).ok()?)
+            })
+    }
+
     pub fn families() -> Self {
         Self {
             root: ArtifactTreeRoot::Families,
@@ -78,8 +95,42 @@ impl ArtifactTreeDirectory {
 }
 
 impl ArtifactTreeFile {
+    /// Retained directory and filename backing, excluding the inline file value.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.directory
+            .owned_heap_bytes()?
+            .checked_add(u64::try_from(self.file_name.capacity()).ok()?)
+    }
+
     pub(in crate::filesystem_media) fn coordination_key(&self) -> String {
         format!("{}/{}", self.directory.coordination_key(), self.file_name)
+    }
+}
+
+#[cfg(test)]
+mod owned_heap_tests {
+    use super::ArtifactTreeDirectory;
+
+    #[test]
+    fn nested_file_path_charge_includes_owned_component_and_name_backing() {
+        let root = ArtifactTreeDirectory::families();
+        assert_eq!(root.owned_heap_bytes(), Some(0));
+        let nested = root
+            .child("records")
+            .unwrap()
+            .child("segment-manifests")
+            .unwrap();
+        let file = nested.file("manifest-0000000000000001.frame").unwrap();
+        assert!(
+            nested.owned_heap_bytes().unwrap()
+                >= "records".len() as u64 + "segment-manifests".len() as u64
+        );
+        let content_lower_bound = 2 * std::mem::size_of::<String>()
+            + "records".len()
+            + "segment-manifests".len()
+            + "manifest-0000000000000001.frame".len();
+        assert!(file.owned_heap_bytes().unwrap() >= content_lower_bound as u64);
+        assert!(file.owned_heap_bytes().unwrap() > root.owned_heap_bytes().unwrap());
     }
 }
 
@@ -102,31 +153,13 @@ pub(in crate::filesystem_media) fn validate_component(
         return Err(ArtifactTreePathDenial::NonPortableComponent);
     }
     let stem = component.split('.').next().unwrap_or(component);
-    if matches!(
-        stem.to_ascii_uppercase().as_str(),
-        "CON"
-            | "PRN"
-            | "AUX"
-            | "NUL"
-            | "COM1"
-            | "COM2"
-            | "COM3"
-            | "COM4"
-            | "COM5"
-            | "COM6"
-            | "COM7"
-            | "COM8"
-            | "COM9"
-            | "LPT1"
-            | "LPT2"
-            | "LPT3"
-            | "LPT4"
-            | "LPT5"
-            | "LPT6"
-            | "LPT7"
-            | "LPT8"
-            | "LPT9"
-    ) {
+    if [
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+        "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    ]
+    .iter()
+    .any(|device| stem.eq_ignore_ascii_case(device))
+    {
         return Err(ArtifactTreePathDenial::ReservedDeviceName);
     }
     Ok(())

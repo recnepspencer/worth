@@ -14,6 +14,7 @@ pub(super) fn prepare_application_provider_attempt(
         preparation.application_effect_count,
         preparation.installed_read_scopes,
         preparation.facts,
+        preparation.consumed_outputs,
         preparation.effects,
         preparation.emission_retained_bytes,
         preparation.emission_retained_bytes_ceiling,
@@ -26,4 +27,5 @@ pub(super) fn prepare_application_provider_attempt(
         preparation.producer_required_invariants,
         preparation.output_currentness_facts,
     )
+    .map(|prepared| prepared.with_required_output_demand(preparation.required_output_demand))
 }

@@ -1,7 +1,7 @@
 use crate::{
     PageGenerationCell, PersistedRecordIdentity, PhysicalExtentId, PhysicalPageId,
     PhysicalRecordSlot, PhysicalSegmentId, RecordExtentGenerationCell, SegmentGenerationCell,
-    SlotGenerationCell,
+    SelectedRecordRouteMetadata, SlotGenerationCell,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,10 +12,11 @@ pub struct DurableInlineRecordPlacement {
     slot: SlotGenerationCell,
     segment_page_capacity: u32,
     payload_bytes: u64,
+    route_metadata: SelectedRecordRouteMetadata,
 }
 
 impl DurableInlineRecordPlacement {
-    pub fn new(
+    pub fn legacy_unknown(
         record: PersistedRecordIdentity,
         segment: SegmentGenerationCell,
         page: PageGenerationCell,
@@ -35,7 +36,39 @@ impl DurableInlineRecordPlacement {
             slot,
             segment_page_capacity,
             payload_bytes,
+            route_metadata: SelectedRecordRouteMetadata::legacy_primary(),
         })
+    }
+
+    pub fn new_selected(
+        record: PersistedRecordIdentity,
+        segment: SegmentGenerationCell,
+        page: PageGenerationCell,
+        slot: SlotGenerationCell,
+        segment_page_capacity: u32,
+        payload_bytes: u64,
+        route_metadata: SelectedRecordRouteMetadata,
+    ) -> Option<Self> {
+        let mut placement = Self::legacy_unknown(
+            record,
+            segment,
+            page,
+            slot,
+            segment_page_capacity,
+            payload_bytes,
+        )?;
+        placement.route_metadata = route_metadata;
+        Some(placement)
+    }
+
+    pub const fn route_metadata(self) -> SelectedRecordRouteMetadata {
+        self.route_metadata
+    }
+    pub const fn content_class(self) -> crate::SelectedRecordContentClass {
+        self.route_metadata.content_class()
+    }
+    pub const fn tier_class(self) -> crate::PhysicalTierClass {
+        self.route_metadata.tier_class()
     }
 
     pub const fn record(self) -> PersistedRecordIdentity {
@@ -81,13 +114,16 @@ pub struct DurableExtentRecordPlacement {
     record: PersistedRecordIdentity,
     extent: RecordExtentGenerationCell,
     payload_bytes: u64,
+    arena_range: crate::ExtentArenaRange,
+    route_metadata: SelectedRecordRouteMetadata,
 }
 
 impl DurableExtentRecordPlacement {
-    pub const fn new(
+    pub const fn legacy_unknown(
         record: PersistedRecordIdentity,
         extent: RecordExtentGenerationCell,
         payload_bytes: u64,
+        arena_range: crate::ExtentArenaRange,
     ) -> Option<Self> {
         if payload_bytes > u32::MAX as u64 {
             return None;
@@ -96,7 +132,34 @@ impl DurableExtentRecordPlacement {
             record,
             extent,
             payload_bytes,
+            arena_range,
+            route_metadata: SelectedRecordRouteMetadata::legacy_primary(),
         })
+    }
+
+    pub const fn new_selected(
+        record: PersistedRecordIdentity,
+        extent: RecordExtentGenerationCell,
+        payload_bytes: u64,
+        arena_range: crate::ExtentArenaRange,
+        route_metadata: SelectedRecordRouteMetadata,
+    ) -> Option<Self> {
+        let mut placement = match Self::legacy_unknown(record, extent, payload_bytes, arena_range) {
+            Some(placement) => placement,
+            None => return None,
+        };
+        placement.route_metadata = route_metadata;
+        Some(placement)
+    }
+
+    pub const fn route_metadata(self) -> SelectedRecordRouteMetadata {
+        self.route_metadata
+    }
+    pub const fn content_class(self) -> crate::SelectedRecordContentClass {
+        self.route_metadata.content_class()
+    }
+    pub const fn tier_class(self) -> crate::PhysicalTierClass {
+        self.route_metadata.tier_class()
     }
 
     pub const fn record(self) -> PersistedRecordIdentity {
@@ -104,6 +167,9 @@ impl DurableExtentRecordPlacement {
     }
     pub const fn extent(self) -> PhysicalExtentId {
         self.extent.extent_id()
+    }
+    pub const fn arena_range(self) -> crate::ExtentArenaRange {
+        self.arena_range
     }
     pub const fn extent_cell(self) -> RecordExtentGenerationCell {
         self.extent
@@ -123,6 +189,34 @@ pub enum CurrentPhysicalRecordPlacement {
 }
 
 impl CurrentPhysicalRecordPlacement {
+    pub(crate) fn with_route_metadata(self, metadata: SelectedRecordRouteMetadata) -> Self {
+        match self {
+            Self::Inline(mut value) => {
+                value.route_metadata = metadata;
+                Self::Inline(value)
+            }
+            Self::Extent(mut value) => {
+                value.route_metadata = metadata;
+                Self::Extent(value)
+            }
+        }
+    }
+
+    pub const fn route_metadata(self) -> SelectedRecordRouteMetadata {
+        match self {
+            Self::Inline(value) => value.route_metadata(),
+            Self::Extent(value) => value.route_metadata(),
+        }
+    }
+
+    pub const fn content_class(self) -> crate::SelectedRecordContentClass {
+        self.route_metadata().content_class()
+    }
+
+    pub const fn tier_class(self) -> crate::PhysicalTierClass {
+        self.route_metadata().tier_class()
+    }
+
     pub const fn record(self) -> PersistedRecordIdentity {
         match self {
             Self::Inline(value) => value.record(),

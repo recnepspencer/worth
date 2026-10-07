@@ -6,6 +6,7 @@ use std::io::Write;
 
 mod artifact;
 mod outcome;
+mod selected;
 mod vocabulary;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -13,6 +14,10 @@ pub enum PhysicalIntegrityRuntimeReportDenial {
     InvalidIdentity,
     ExecutableIdentityUnavailable,
     InvalidReportBound,
+    SelectedTargetRequiresVersionTwo,
+    SelectedScopeRequired,
+    SelectedRootMismatch,
+    ObservationIncomplete,
     ReportBoundExceeded,
     SinkWriteFailure,
 }
@@ -53,24 +58,23 @@ impl ManagedPhysicalIntegrityScrubHandle {
         if maximum_report_bytes == 0 || maximum_report_bytes > 16 * 1024 * 1024 {
             return Err(Denial::InvalidReportBound);
         }
-        let executable = std::env::current_exe()
-            .ok()
-            .and_then(|path| {
-                path.file_name()
-                    .map(|name| name.to_string_lossy().into_owned())
-            })
-            .filter(|name| {
-                !name.is_empty() && name.len() <= 256 && !name.chars().any(char::is_control)
-            })
-            .ok_or(Denial::ExecutableIdentityUnavailable)?;
+        if self.remaining_scope().2.iter().any(|target| {
+            matches!(
+                target.source(),
+                crate::physical_runtime::PhysicalIntegrityScrubSource::SelectedRecord(_)
+            )
+        }) {
+            return Err(Denial::SelectedTargetRequiresVersionTwo);
+        }
+        let executable = executable_identity()?;
         let initial = self.counters();
         let (store, deadline, remaining) = self.remaining_scope();
         let header = json!({"protocol":"store.physical.integrity-observation", "version":1,
             "role":"runtime-integrity-observer", "executable":executable, "process":std::process::id().to_string(),
             "run":context.run, "scenario":context.scenario, "store":hex(&store.bytes()),
             "compatibility":{"earliest":1,"latest":1},
-            "declared_limits":{"entries":remaining.len(), "bytes":remaining.iter().map(|target| u64::from(target.range().length())).sum::<u64>(),
-                "window_bytes":remaining.iter().map(|target| target.range().length()).max().unwrap_or(0),
+            "declared_limits":{"entries":remaining.len(), "bytes":remaining.iter().map(|target| u64::from(target.declared_bytes())).sum::<u64>(),
+                "window_bytes":remaining.iter().map(|target| target.declared_bytes()).max().unwrap_or(0),
                 "elapsed_ms":deadline.as_millis(), "report_bytes":maximum_report_bytes}});
         let mut wire = ReportWire {
             output,
@@ -136,6 +140,17 @@ impl ManagedPhysicalIntegrityScrubHandle {
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn executable_identity() -> Result<String, PhysicalIntegrityRuntimeReportDenial> {
+    std::env::current_exe()
+        .ok()
+        .and_then(|path| {
+            path.file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
+        .filter(|name| !name.is_empty() && name.len() <= 256 && !name.chars().any(char::is_control))
+        .ok_or(PhysicalIntegrityRuntimeReportDenial::ExecutableIdentityUnavailable)
 }
 
 struct ReportWire<'sink, W> {

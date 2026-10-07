@@ -126,9 +126,10 @@ impl PhysicalRecordResidencyPolicyBuilder {
         let page_bytes = NonZeroU64::new(u64::from(format.declaration().page_size().bytes()))
             .expect("an admitted physical format has a nonzero page size");
         match self.declaration.admit(page_bytes) {
-            Ok(limits) => {
-                TransitionOutcome::success(AdmittedPhysicalRecordResidencyPolicy { limits })
-            }
+            Ok(limits) => TransitionOutcome::success(AdmittedPhysicalRecordResidencyPolicy {
+                limits,
+                record_format: format.declaration(),
+            }),
             Err(denial) => TransitionOutcome::denied(denial.into()),
         }
     }

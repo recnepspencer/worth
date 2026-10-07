@@ -1,4 +1,15 @@
-use super::WorthQueryOutputDemandNotifications;
+use super::{DemandWake, WorthQueryOutputDemandNotifications};
+
+impl DemandWake {
+    pub(super) fn notify(&self) {
+        let mut generation = self
+            .generation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        *generation = generation.saturating_add(1);
+        self.changed.notify_all();
+    }
+}
 
 impl WorthQueryOutputDemandNotifications {
     pub fn generation(&self) -> u64 {

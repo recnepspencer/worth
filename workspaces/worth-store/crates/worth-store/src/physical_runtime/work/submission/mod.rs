@@ -97,6 +97,10 @@ pub(super) struct PhysicalSubmissionState {
 }
 
 impl PhysicalWorkSubmissionOwner {
+    pub(in crate::physical_runtime) fn runtime_identity(&self) -> RuntimeIdentity {
+        self.shared.runtime
+    }
+
     pub(in crate::physical_runtime) fn new(foundation: PhysicalWorkSubmissionFoundation) -> Self {
         let capacity = foundation.bindings.capacity();
         Self {

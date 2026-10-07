@@ -34,10 +34,7 @@ fn worker_phase7_performance_contracts_certify_required_counter_and_cost_catalog
         package.bridge_allocation_posture.posture,
         "explicitBoundaryAllocationAccounting"
     );
-    assert_eq!(
-        package.bridge_allocation_posture.hidden_allocation_allowed,
-        false
-    );
+    assert!(!package.bridge_allocation_posture.hidden_allocation_allowed);
     assert_digest_shape(&package.counter_catalog_digest);
     assert_digest_shape(&package.complexity_contract_digest);
     assert_digest_shape(&package.failure_mode_digest);

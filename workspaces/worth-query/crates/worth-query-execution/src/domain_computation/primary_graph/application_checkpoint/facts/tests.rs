@@ -46,15 +46,12 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
     let encoded = encode(&facts).expect("all facts have native comparison meaning");
     assert_eq!(decode(&encoded).unwrap().as_ref(), facts.as_slice());
     assert!(
-        decode_version(&encoded, 5).is_err(),
+        decode_for_wire_version(&encoded, 5).is_err(),
         "v5 cannot admit a v6 retirement fact"
     );
-    assert_eq!(
-        decode_version(&encode(&facts[..5]).unwrap(), 5)
-            .unwrap()
-            .as_ref(),
-        &facts[..5]
-    );
+    // One decode path: facts at an older wire version are never read, with
+    // or without the newer fact kinds.
+    assert!(decode_for_wire_version(&encode(&facts[..5]).unwrap(), 5).is_err());
 }
 
 #[test]
@@ -85,4 +82,106 @@ fn fact_decode_rejects_unbounded_count_and_foreign_kind_before_allocation() {
     assert!(decode(&u32::MAX.to_be_bytes()).is_err());
     assert!(decode(&[0, 0, 0, 1, 255]).is_err());
     assert!(decode(&vec![0; MAXIMUM_FACT_BYTES + 1]).is_err());
+}
+
+#[test]
+fn complete_large_decisions_round_trip_at_the_total_fact_ceiling() {
+    let facts = (1..=MAXIMUM_FACTS)
+        .map(|slot| Fact::SourceEntity {
+            entity_id: EntityId::new(
+                worth_relational::facade::identity::PartitionId(0),
+                slot as u64,
+                1,
+            ),
+        })
+        .collect::<Vec<_>>();
+    let encoded = encode(&facts).expect("bounded decisions retain every dependency");
+    assert!(encoded.len() > 1024 * 1024);
+    assert_eq!(decode(&encoded).unwrap().as_ref(), facts.as_slice());
+    let mut excessive = facts;
+    excessive.push(excessive[0].clone());
+    assert!(encode(&excessive).is_none());
+    let mut forged = encoded;
+    forged[..4].copy_from_slice(&((MAXIMUM_FACTS + 1) as u32).to_be_bytes());
+    assert!(decode(&forged).is_err());
+}
+
+#[test]
+fn total_byte_capacity_does_not_widen_each_membership_set() {
+    let entity = EntityId::new(worth_relational::facade::identity::PartitionId(0), 1, 1);
+    let adjacency = Fact::SourceAdjacencyRevision {
+        relation_kind: KindId(1),
+        anchor: entity,
+        direction: RelationalAdjacencyDirection::Outgoing,
+        native_revision: Some(VersionId(1)),
+        comparison_work_limit: MAXIMUM_SET_ENTITIES + 1,
+        endpoints: vec![entity; MAXIMUM_SET_ENTITIES + 1],
+    };
+    assert!(encode(&[adjacency]).is_none());
+    let large_fact = Fact::SourceAspectRevision {
+        entity_id: entity,
+        aspect: AspectKey::new("a".repeat(MAXIMUM_TEXT)).unwrap(),
+        native_revision: Some(1),
+    };
+    // Count is admissible; complete encoding must still refuse excess bytes.
+    assert!(encode(&vec![large_fact; MAXIMUM_FACT_BYTES / MAXIMUM_TEXT + 1]).is_none());
+}
+
+#[test]
+fn optional_absence_is_exact_and_an_older_wire_version_is_never_read() {
+    let entity = EntityId::new(worth_relational::facade::identity::PartitionId(1), 2, 1);
+    let fact = Fact::SourceAspectRevision {
+        entity_id: entity,
+        aspect: AspectKey::new("test.optional").unwrap(),
+        native_revision: None,
+    };
+    let bytes = encode(std::slice::from_ref(&fact)).expect("fresh absence has a bounded wire");
+    assert_eq!(
+        decode_for_wire_version(&bytes, WIRE_VERSION)
+            .unwrap()
+            .as_ref(),
+        &[fact]
+    );
+    for older in [5, 6] {
+        assert!(decode_for_wire_version(&bytes, older).is_err());
+    }
+}
+
+#[test]
+fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
+    use std::sync::Arc;
+    use worth_foundational::facade::{AspectValue, CanonicalF64};
+    use worth_relational::facade::indexes::{
+        DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
+    };
+
+    let entity = EntityId::new(worth_relational::facade::identity::PartitionId(1), 2, 1);
+    let locator = AspectFieldLocator::new(
+        LocatorAuthority::Authoritative,
+        AspectKey::new("test.index").unwrap(),
+        CanonicalFieldPath::single(FieldKey::new("value").unwrap()),
+    );
+    let fact = Fact::IndexedEntitySelection {
+        index_id: DerivedIndexId(8),
+        definition: Arc::new(DerivedIndexDefinition {
+            index_id: DerivedIndexId(8),
+            name: "test-index".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: true,
+        }),
+        entity_kind: KindId(3),
+        locator,
+        value: AspectValue::Float64(CanonicalF64::from_f64(-0.0)),
+        candidate_limit: 4,
+        candidates: vec![entity],
+    };
+    let bytes = encode(std::slice::from_ref(&fact)).expect("bounded native index fact encodes");
+    assert_eq!(
+        decode_for_wire_version(&bytes, WIRE_VERSION)
+            .unwrap()
+            .as_ref(),
+        &[fact]
+    );
 }

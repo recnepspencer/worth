@@ -2,10 +2,9 @@ use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::{EvaluationRequestMode, IntoEvaluationOutput};
-use crate::logic::planner::{ExecutionReport, StageExecutor};
+use crate::logic::planner::ExecutionReport;
 
 use super::super::super::transaction::SignalTransaction;
-use super::super::shared::executor_for_strategy;
 
 use super::request::{TransactionExecutionIntent, TransactionExecutionRequest};
 
@@ -41,25 +40,6 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        self.evaluate_with_plan_and_executor(
-            node,
-            evaluator,
-            request_mode,
-            executor_for_strategy(self.graph.derive_evaluation_strategy()),
-        )
-    }
-
-    pub fn evaluate_with_plan_and_executor<F, O>(
-        &mut self,
-        node: NodeId,
-        evaluator: &F,
-        request_mode: EvaluationRequestMode,
-        executor: StageExecutor,
-    ) -> Result<ExecutionReport, SignalError>
-    where
-        F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
-        O: IntoEvaluationOutput,
-    {
         self.execute_evaluation(
             TransactionExecutionIntent::Targets {
                 targets: std::slice::from_ref(&node),
@@ -67,7 +47,7 @@ where
                 stage_task_candidates: false,
             },
             evaluator,
-            executor,
+            None,
         )
     }
 }

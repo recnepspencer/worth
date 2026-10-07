@@ -7,6 +7,7 @@ use super::super::{
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
     WorthQueryOperationScopeBinding,
 };
+use super::DecisionContextUse;
 
 /// Why a mutation handler stopped before finishing.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -36,7 +37,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    reader: &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
+    pub(super) reader: &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
         'reader,
         'runtime,
         Schema,
@@ -51,6 +52,7 @@ where
     identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
     request:
         &'borrow worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    context_use: &'borrow Cell<DecisionContextUse>,
 }
 
 impl<'borrow, 'reader, 'runtime, Schema, Binding>
@@ -74,6 +76,7 @@ where
         operation_scope_binding: &'borrow WorthQueryOperationScopeBinding,
         identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
         request: &'borrow worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        context_use: &'borrow Cell<DecisionContextUse>,
     ) -> Self {
         Self {
             reader,
@@ -82,6 +85,7 @@ where
             operation_scope_binding,
             identities,
             request,
+            context_use,
         }
     }
 
@@ -93,6 +97,7 @@ where
         Schema,
         Binding::Operation,
     > {
+        self.context_use.set(self.context_use.get().opaque_reader());
         self.reader
     }
 
@@ -102,16 +107,19 @@ where
         Schema,
         <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
     > {
+        self.context_use.set(self.context_use.get().scope());
         self.scope
     }
 
     pub fn idempotency_key(&self) -> &Binding::IdempotencyKey {
+        self.context_use.set(self.context_use.get().key());
         self.identities.idempotency_key()
     }
 
     /// Identity of the request's idempotency key, encoded once for the whole
     /// request and scoped to the binding's key namespace.
     pub fn key_identity(&self) -> &[u8; 32] {
+        self.context_use.set(self.context_use.get().key());
         self.identities.key_identity()
     }
 
@@ -125,16 +133,21 @@ where
     /// Resolved application principal identity for this admitted operation.
     /// This is decision data; the admission proof remains the authority.
     pub fn principal_identity(&self) -> &Binding::PrincipalIdentity {
+        self.context_use.set(self.context_use.get().principal());
         self.principal_identity
     }
 
     /// Descriptive installed operation/principal/scope affinity used for
     /// deterministic domain identities. This value carries no authority.
     pub fn operation_scope_binding(&self) -> &WorthQueryOperationScopeBinding {
+        self.context_use
+            .set(self.context_use.get().scope().principal());
         self.operation_scope_binding
     }
 
     pub fn checkpoint(&self) -> Result<(), HandlerInterruption> {
+        self.context_use
+            .set(self.context_use.get().request_context());
         self.request.interruption().map_or(Ok(()), |interruption| {
             Err(HandlerInterruption::from(interruption))
         })
@@ -143,8 +156,11 @@ where
     pub fn managed_computation_execution(
         &self,
     ) -> crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution<'_> {
+        self.context_use
+            .set(self.context_use.get().managed_computation());
         crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution::new(
             self.request,
         )
     }
 }
+use std::cell::Cell;

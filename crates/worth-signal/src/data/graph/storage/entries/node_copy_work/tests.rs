@@ -14,7 +14,7 @@ fn retained_node_payload_copy_is_admitted_before_mutation() {
     });
     let mut runtime = crate::data::trace::RuntimeArtifactState::default();
     runtime.warm_mut().output_identity = Some(crate::data::output::OutputIdentity::new(&payload));
-    graph.warm_mut(node).unwrap().runtime_artifact_state = Some(runtime);
+    graph.warm_mut(node).unwrap().runtime_artifact_state = Some(std::sync::Arc::new(runtime));
     graph
         .warm_mut(node)
         .unwrap()
@@ -23,6 +23,29 @@ fn retained_node_payload_copy_is_admitted_before_mutation() {
             crate::data::aspect::Aspect::new(0),
             crate::data::output::PartitionSubscription::whole_partition(payload.as_str()),
         ));
+    let warm = graph.warm_ref(node).unwrap().clone();
+    let mut larger_runtime = warm.clone();
+    let mut richer = crate::data::trace::RuntimeArtifactState::default();
+    richer.warm_mut().output_identity =
+        Some(crate::data::output::OutputIdentity::new(payload.repeat(4)));
+    larger_runtime.runtime_artifact_state = Some(std::sync::Arc::new(richer));
+    let mut base_copy = Work::new(usize::MAX);
+    warm.admit_clone_work(&mut EvaluationWork::Conditional(&mut base_copy))
+        .unwrap();
+    let mut larger_copy = Work::new(usize::MAX);
+    larger_runtime
+        .admit_clone_work(&mut EvaluationWork::Conditional(&mut larger_copy))
+        .unwrap();
+    assert_eq!(base_copy.visits(), larger_copy.visits());
+    assert!(std::sync::Arc::ptr_eq(
+        warm.runtime_artifact_state.as_ref().unwrap(),
+        graph
+            .warm_ref(node)
+            .unwrap()
+            .runtime_artifact_state
+            .as_ref()
+            .unwrap(),
+    ));
     let mut exclusive = Work::new(0);
     graph
         .admit_effect_node_copy_work(node, &mut EvaluationWork::Conditional(&mut exclusive))
@@ -34,7 +57,8 @@ fn retained_node_payload_copy_is_admitted_before_mutation() {
         .admit_effect_node_copy_work(node, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let cost = measured.visits();
-    assert!(cost >= 5 * payload.len());
+    // Cold kind/key/value and the dirty scope path still require real copies.
+    assert!(cost >= 4 * payload.len());
     for available in [cost - 1, cost] {
         let mut work = Work::new(cost + 19);
         work.reserve_visits(cost + 19 - available).unwrap();

@@ -16,8 +16,37 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 use super::{
     checkpoint::{installed_checkpoint_producer, validate_checkpoint_output_meaning},
     operation_binding_uniqueness::duplicate_operation_binding,
-    DeclaredProducerBinding, InstalledProducerProvider,
+    DeclaredProducerBinding, InstalledProducerEdition, InstalledProducerProvider,
 };
+
+#[test]
+fn producer_input_reuse_is_portable_installed_meaning_bound_to_the_handler() {
+    let base = declared(TypeId::of::<InstalledProducer>());
+    let mut opted_in = base.clone();
+    opted_in.input_reuse = Some(
+        super::super::WorthQueryProducerInputReuseContract::canonical_bitwise(
+            super::super::WorthQueryDecisionContextDependencies::NONE,
+        ),
+    );
+    let mut changed_handler = opted_in.clone();
+    changed_handler.handler_identity = "another-handler".into();
+    let mut changed_dependencies = opted_in.clone();
+    changed_dependencies.input_reuse = Some(
+        super::super::WorthQueryProducerInputReuseContract::canonical_bitwise(
+            super::super::WorthQueryDecisionContextDependencies::KEY,
+        ),
+    );
+
+    assert!(!base.has_same_meaning_as(&opted_in));
+    let edition = |declaration| {
+        InstalledProducerEdition::from_declaration(declaration)
+            .unwrap()
+            .digest()
+    };
+    assert_ne!(edition(&base), edition(&opted_in));
+    assert_ne!(edition(&opted_in), edition(&changed_handler));
+    assert_ne!(edition(&opted_in), edition(&changed_dependencies));
+}
 
 #[test]
 fn producer_meaning_rejects_a_distinct_rust_binding_type_reusing_the_identity() {
@@ -65,7 +94,8 @@ fn checkpoint_role_must_match_installed_producer_meaning() {
 
 #[test]
 fn checkpoint_producer_must_be_installed() {
-    let entries = std::collections::BTreeMap::<String, InstalledProducerProvider<()>>::new();
+    let entries =
+        std::collections::BTreeMap::<String, std::sync::Arc<InstalledProducerProvider<()>>>::new();
     let denial = match installed_checkpoint_producer(&entries, "missing") {
         Err(denial) => denial,
         Ok(_) => panic!("an absent producer cannot be readmitted"),
@@ -134,6 +164,7 @@ fn checkpoint(
 ) -> crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity{
     crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
         producer: "producer".into(),
+        posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [0; 32],
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
             worth_relational::facade::identity::EntityId::new(
@@ -145,7 +176,8 @@ fn checkpoint(
         idempotency_key: [0; 32],
         resources: None,
         roles,
-        producer_facts: None,
+            producer_facts: None,
+            producer_fact_wire_version: 0,
     }
 }
 
@@ -176,12 +208,14 @@ fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         output_role_families: Vec::new(),
         output_role: "output".into(),
         operation: "operation".into(),
+        handler_identity: "handler".into(),
         provider_identity: "provider".into(),
         applicability: Vec::new(),
         supported: Vec::new(),
         required_invariants: Vec::new(),
         resource_policy: "bounded".into(),
         reuse_policy: "exact".into(),
+        input_reuse: None,
         binding_type,
         source_type: TypeId::of::<()>(),
         operation_binding_type: TypeId::of::<()>(),

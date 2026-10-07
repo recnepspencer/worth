@@ -31,7 +31,7 @@ impl PerformedWorkBuffer {
     pub(super) fn reserve_pending(
         &mut self,
         ledger: Option<&Arc<Ledger>>,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<u64, SignalError> {
         let needed = self
             .len

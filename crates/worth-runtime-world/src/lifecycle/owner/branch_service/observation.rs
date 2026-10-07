@@ -6,6 +6,7 @@ use crate::branch::{
 use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
 
 use super::super::RuntimeWorldOwnerRoot;
+use crate::lifecycle::ports::RuntimeWorldCurrentnessAdmissionStop as Stop;
 
 impl<D, I, E, Ctx, T> crate::lifecycle::ports::RuntimeWorldObservationService
     for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -14,6 +15,50 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn admit_product_branch_currentness_with_work<'selected>(
+        &self,
+        expected: &'selected ProductBranchObservation,
+        prepare: &mut dyn FnMut(u64) -> bool,
+    ) -> Result<crate::branch::ProductBranchCurrentnessScope<'selected>, Stop> {
+        if expected.owner_identity() != self.owner_identity() {
+            return Err(Stop::Native(
+                RuntimeWorldBranchAdmissionDenial::ForeignOwner,
+            ));
+        }
+        if !self.branch_service_is_available() {
+            return Err(Stop::Native(
+                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+            ));
+        }
+        let operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Stop::Native(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable))?;
+        let cell = self
+            .state
+            .branches
+            .branch_cell_by_lifecycle_admitted(expected.lifecycle_incarnation(), prepare)
+            .map_err(|stop| match stop {
+                crate::branch::registry::ProductBranchCurrentnessLookupStop::AdmissionRefused => {
+                    Stop::Preparation
+                }
+                crate::branch::registry::ProductBranchCurrentnessLookupStop::AccountingOverflow => {
+                    Stop::Native(RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow)
+                }
+            })?
+            .ok_or(Stop::Native(
+                RuntimeWorldBranchAdmissionDenial::RetiredBranch,
+            ))?;
+        Ok(crate::branch::ProductBranchCurrentnessScope::owner_issued(
+            cell,
+            expected,
+            operation,
+            #[cfg(feature = "test-operation-control")]
+            self.state
+                .operation_control
+                .currentness_latch(expected.lifecycle_incarnation()),
+        ))
+    }
+
     fn observe_product_branch(
         &self,
         branch: &ProductBranchIdentity,

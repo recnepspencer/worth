@@ -152,7 +152,7 @@ fn post_effect_uncertainty_never_mints_wal_durable_authority_or_returns_retry_au
     serving.close();
 }
 
-fn append(
+pub(super) fn append(
     submission: &worth_store::physical_runtime::certification::CertificationPhysicalRecordSubmission,
     placement: worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
     material: PhysicalMutationIdempotencyMaterial,

@@ -167,7 +167,7 @@ impl SignalGraph {
         Ok(self
             .warm_ref(id)?
             .runtime_artifact_state
-            .as_ref()
+            .as_deref()
             .map(crate::data::trace::RuntimeArtifactState::reuse_boundary_snapshot))
     }
 
@@ -178,7 +178,7 @@ impl SignalGraph {
         Ok(self
             .warm_ref(id)?
             .runtime_artifact_state
-            .as_ref()
+            .as_deref()
             .map(crate::data::trace::RuntimeArtifactState::operational_summary))
     }
 
@@ -187,7 +187,7 @@ impl SignalGraph {
         id: NodeId,
     ) -> Result<Option<&crate::data::trace::RuntimeArtifactState>, SignalError> {
         crate::data::access_counters::note_runtime_artifact_state_read();
-        Ok(self.warm_ref(id)?.runtime_artifact_state.as_ref())
+        Ok(self.warm_ref(id)?.runtime_artifact_state.as_deref())
     }
 
     pub(crate) fn node_runtime_artifact_finalize_image(
@@ -197,7 +197,7 @@ impl SignalGraph {
         Ok(self
             .warm_ref(id)?
             .runtime_artifact_state
-            .as_ref()
+            .as_deref()
             .map(RuntimeArtifactFinalizeImage::from_runtime_state))
     }
 
@@ -221,7 +221,7 @@ impl SignalGraph {
             dirty_partition_scopes: warm.dirty_partition_scope_payload.iter().cloned().collect(),
             aspect_versions: crate::data::aspect::PartitionVersionMap::from_storage_parts(
                 hot.aspect_version_header,
-                warm.aspect_version_overrides.clone(),
+                warm.aspect_version_overrides.as_ref().clone(),
             ),
             dependencies_id: hot.dependencies_id,
             subscribers_id: hot.subscribers_id,
@@ -229,7 +229,10 @@ impl SignalGraph {
             pending_cause_set_id: hot.pending_cause_set_id,
             dependency_revision: hot.dependency_revision,
             pending_dependency_revalidation: warm.pending_dependency_revalidation.clone(),
-            direct_invalidation_basis: warm.direct_invalidation_basis.clone(),
+            direct_invalidation_basis: warm
+                .direct_invalidation_basis
+                .as_ref()
+                .map(|basis| basis.as_ref().clone()),
             direct_invalidation_generation: warm.direct_invalidation_generation,
             tombstoned: self.definition_ref(id)?.tombstoned,
             conditional_contract_generation: self
@@ -238,7 +241,10 @@ impl SignalGraph {
             conditional_contract_occurrence: self
                 .definition_ref(id)?
                 .conditional_contract_occurrence,
-            runtime_artifact_state: warm.runtime_artifact_state.clone(),
+            runtime_artifact_state: warm
+                .runtime_artifact_state
+                .as_ref()
+                .map(|runtime| runtime.as_ref().clone()),
             retained_artifact: cold.and_then(|cold| cold.retained_artifact.clone()),
             causality: cold.and_then(|cold| cold.causality.clone()),
             execution_trace: cold.and_then(|cold| cold.execution_trace),

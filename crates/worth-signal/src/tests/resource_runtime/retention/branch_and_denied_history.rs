@@ -127,4 +127,21 @@ fn resource_retention_budget_prunes_denied_completion_history_with_typed_availab
             .resource_retained_denied_completion_count,
         1
     );
+
+    let expiry = runtime.compact_resource_lifecycle_history_with_budget(
+        0,
+        ResourceRetentionCompactionBudget::unbounded().with_pruned_availability_limits(1, 0, 1),
+    );
+    assert_eq!(expiry.expired_denied_availability_count(), 1);
+    assert_eq!(expiry.total_expired_denied_availability(), 1);
+    assert!(runtime
+        .retained_denied_completion_availability(first_denied.denial_id())
+        .is_none());
+    assert_eq!(
+        runtime
+            .reconstruct_resource_replay_summary()
+            .denied_completion_unavailable_count(),
+        1,
+        "replay must report the omission without inventing the expired denial"
+    );
 }

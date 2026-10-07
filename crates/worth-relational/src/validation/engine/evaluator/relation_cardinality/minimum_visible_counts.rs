@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::LoweredCardinalityMinimumContract;
 use crate::storage::substrate::{HistoricalMetadata, RelationArena, VersionedRelationMetadata};
 use crate::transactions::data::EntityReference;
@@ -8,6 +7,7 @@ use crate::transactions::data::EntityReference;
 use super::super::super::context::InvariantExecutionContext;
 use super::super::super::state_view::InvariantStateView;
 use super::super::common::contract_candidate_kind_matches;
+use super::minimum_current_index::CurrentVersionMinimumIndex;
 
 #[derive(Default)]
 pub(super) struct VisibleRelationCountSnapshot {
@@ -20,71 +20,8 @@ pub(super) struct VisibleRelationCountSnapshot {
     pub(super) entity_slot_scans: usize,
 }
 
-/// One committed-current-version scan shared by all minimum registrations in
-/// an invariant execution. Historical observations retain their versioned scan.
-pub(crate) struct CurrentVersionMinimumIndex {
-    entities: BTreeMap<KindId, Vec<EntityId>>,
-    relations: BTreeMap<KindId, Vec<(EntityId, EntityId)>>,
-    entity_slot_scans: usize,
-    relation_slot_scans: usize,
-}
-
-impl CurrentVersionMinimumIndex {
-    fn build(context: &InvariantExecutionContext<'_>) -> Self {
-        let mut index = Self {
-            entities: BTreeMap::new(),
-            relations: BTreeMap::new(),
-            entity_slot_scans: 0,
-            relation_slot_scans: 0,
-        };
-        let state = context.state_view();
-        for partition_id in state.state().partition_ids() {
-            let Some(partition) = state.state().get_partition(partition_id) else {
-                continue;
-            };
-            for slot in partition.entity_arena.live_bitset.iter_set_slots() {
-                index.entity_slot_scans += 1;
-                let Some(view) = partition.entity_arena.get_slot(slot) else {
-                    continue;
-                };
-                let Some(kind_id) = view.kind_id() else {
-                    continue;
-                };
-                index
-                    .entities
-                    .entry(kind_id)
-                    .or_default()
-                    .push(EntityId::new(partition_id, slot as u64, view.generation()));
-            }
-            for slot in partition.relation_arena.live_bitset.iter_set_slots() {
-                index.relation_slot_scans += 1;
-                let Some(view) = partition.relation_arena.get_slot(slot) else {
-                    continue;
-                };
-                let (Some(kind_id), Some(endpoints)) =
-                    (view.kind_id(), view.extra().endpoints.as_ref())
-                else {
-                    continue;
-                };
-                index
-                    .relations
-                    .entry(kind_id)
-                    .or_default()
-                    .push((endpoints.source, endpoints.target));
-            }
-        }
-        context
-            .metrics()
-            .count_entity_slot_scans(index.entity_slot_scans);
-        context
-            .metrics()
-            .count_relation_slot_scans(index.relation_slot_scans);
-        index
-    }
-}
-
 pub(super) fn visible_relation_counts(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     contract: &LoweredCardinalityMinimumContract,
 ) -> VisibleRelationCountSnapshot {
     if context.merged_plan().is_some() {
@@ -95,29 +32,70 @@ pub(super) fn visible_relation_counts(
 
     if state_view.version_id() == context.current_version_id() {
         let mut built_scans = None;
-        let index = context.current_version_minimum_index().get_or_init(|| {
-            let index = CurrentVersionMinimumIndex::build(context);
-            built_scans = Some((index.entity_slot_scans, index.relation_slot_scans));
-            index
+        let owned_index = context
+            .is_leased()
+            .then(|| CurrentVersionMinimumIndex::build(context));
+        let index = owned_index.as_ref().unwrap_or_else(|| {
+            context.current_version_minimum_index().get_or_init(|| {
+                let index = CurrentVersionMinimumIndex::build(context);
+                built_scans = Some((index.entity_slot_scans, index.relation_slot_scans));
+                index
+            })
         });
+        if context.is_leased() {
+            built_scans = Some((index.entity_slot_scans, index.relation_slot_scans));
+        }
+        if !context.checkpoint(0) {
+            return snapshot;
+        }
         if let Some((entity_scans, relation_scans)) = built_scans {
             snapshot.entity_slot_scans = entity_scans;
             snapshot.relation_slot_scans = relation_scans;
         }
         if let Some(relations) = index.relations.get(&contract.relation_kind_id) {
             for &(source, target) in relations {
+                if !context.checkpoint(1) {
+                    return snapshot;
+                }
+                if !context.claim_scratch(
+                    (4 * std::mem::size_of::<EntityReference>() + 6 * std::mem::size_of::<usize>())
+                        as u64,
+                ) {
+                    return snapshot;
+                }
                 record_existing_relation_endpoints(&mut snapshot, source, target);
             }
         }
-        for kind_id in contract
+        for (ordinal, kind_id) in contract
             .candidate_source_kinds
             .iter()
             .chain(&contract.candidate_target_kinds)
             .copied()
-            .collect::<BTreeSet<_>>()
+            .enumerate()
         {
+            if !context.checkpoint((ordinal as u64).saturating_add(1)) {
+                return snapshot;
+            }
+            if contract
+                .candidate_source_kinds
+                .iter()
+                .chain(&contract.candidate_target_kinds)
+                .take(ordinal)
+                .any(|prior| *prior == kind_id)
+            {
+                continue;
+            }
             if let Some(entities) = index.entities.get(&kind_id) {
                 for &entity_id in entities {
+                    if !context.checkpoint(1) {
+                        return snapshot;
+                    }
+                    if !context.claim_scratch(
+                        (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>())
+                            as u64,
+                    ) {
+                        return snapshot;
+                    }
                     record_candidate_entity(
                         contract,
                         &mut snapshot,
@@ -130,7 +108,10 @@ pub(super) fn visible_relation_counts(
         return snapshot;
     }
 
-    for partition_id in state_view.state().partition_ids() {
+    for partition_id in state_view.state().partition_ids_iter() {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
         let Some(partition) = state_view.state().get_partition(partition_id) else {
             continue;
         };
@@ -148,7 +129,7 @@ pub(super) fn visible_relation_counts(
 }
 
 fn planned_visible_relation_counts(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     contract: &LoweredCardinalityMinimumContract,
 ) -> VisibleRelationCountSnapshot {
     let mut snapshot = VisibleRelationCountSnapshot::default();
@@ -156,17 +137,44 @@ fn planned_visible_relation_counts(
         return snapshot;
     };
     for (key, count) in &scope.source_counts {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
+        if !context.claim_scratch(
+            (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
+        ) {
+            return snapshot;
+        }
         snapshot.source_counts.insert(key.entity_id.clone(), *count);
     }
     for (key, count) in &scope.target_counts {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
+        if !context.claim_scratch(
+            (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
+        ) {
+            return snapshot;
+        }
         snapshot.target_counts.insert(key.entity_id.clone(), *count);
     }
     for (key, count) in &scope.directed_pair_counts {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
+        if !context.claim_scratch(
+            (2 * std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
+        ) {
+            return snapshot;
+        }
         snapshot
             .directed_pair_counts
             .insert((key.source.clone(), key.target.clone()), *count);
     }
     for edge in &scope.visible_edges {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
         if scope.deleted_entities.contains(&edge.source)
             || scope.deleted_entities.contains(&edge.target)
         {
@@ -178,6 +186,9 @@ fn planned_visible_relation_counts(
         }
     }
     for edge in &scope.planned_edges {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
         let deleted_endpoint = [&edge.source, &edge.target].into_iter().any(|endpoint| {
             matches!(endpoint, EntityReference::Existing(id) if scope.deleted_entities.contains(id))
         });
@@ -187,10 +198,18 @@ fn planned_visible_relation_counts(
     }
     let state_view = context.state_view();
     for id in &scope.minimum_touched_entities {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
         if scope.deleted_entities.contains(id) {
             continue;
         }
         if let Some(metadata) = state_view.entity_metadata(*id) {
+            if !context.claim_scratch(
+                (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
+            ) {
+                return snapshot;
+            }
             record_candidate_entity(
                 contract,
                 &mut snapshot,
@@ -200,6 +219,15 @@ fn planned_visible_relation_counts(
         }
     }
     for created in &scope.created_candidate_entities {
+        if !context.checkpoint(1) {
+            return snapshot;
+        }
+        if !context.claim_scratch(
+            ((std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64)
+                .saturating_add(created.client_key.owned_allocation_capacity_bytes()),
+        ) {
+            return snapshot;
+        }
         record_candidate_entity(
             contract,
             &mut snapshot,
@@ -211,13 +239,16 @@ fn planned_visible_relation_counts(
 }
 
 fn collect_historical_relation_counts(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     contract: &LoweredCardinalityMinimumContract,
     partition: &crate::storage::overlay::PartitionState,
     snapshot: &mut VisibleRelationCountSnapshot,
 ) {
     let state_view = context.state_view();
-    for slot in partition.relation_arena.occupied_slots() {
+    for slot in partition.relation_arena.occupied_slots_iter() {
+        if !context.checkpoint(1) {
+            return;
+        }
         context.metrics().count_relation_slot_scans(1);
         snapshot.relation_slot_scans += 1;
         let Some(metadata) =
@@ -228,6 +259,11 @@ fn collect_historical_relation_counts(
         if metadata.kind_id != contract.relation_kind_id {
             continue;
         }
+        if !context.claim_scratch(
+            (4 * std::mem::size_of::<EntityReference>() + 6 * std::mem::size_of::<usize>()) as u64,
+        ) {
+            return;
+        }
         record_existing_relation_endpoints(
             snapshot,
             metadata.endpoints.source,
@@ -237,14 +273,17 @@ fn collect_historical_relation_counts(
 }
 
 fn collect_historical_candidate_entities(
-    context: &InvariantExecutionContext<'_>,
+    context: &InvariantExecutionContext<'_, '_>,
     contract: &LoweredCardinalityMinimumContract,
     partition_id: crate::identity::data::PartitionId,
     partition: &crate::storage::overlay::PartitionState,
     snapshot: &mut VisibleRelationCountSnapshot,
 ) {
     let state_view = context.state_view();
-    for slot in partition.entity_arena.occupied_slots() {
+    for slot in partition.entity_arena.occupied_slots_iter() {
+        if !context.checkpoint(1) {
+            return;
+        }
         context.metrics().count_entity_slot_scans(1);
         snapshot.entity_slot_scans += 1;
         let Some(metadata) =
@@ -252,6 +291,11 @@ fn collect_historical_candidate_entities(
         else {
             continue;
         };
+        if !context.claim_scratch(
+            (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
+        ) {
+            return;
+        }
         record_candidate_entity(
             contract,
             snapshot,

@@ -12,7 +12,6 @@ pub(super) struct CandidateCost {
     pub(super) reads: u64,
     pub(super) raw_bytes: u64,
     pub(super) peak_bytes: u64,
-    pub(super) comparison_scratch_bytes: u64,
     pub(super) manifest_entries: u64,
     pub(super) partial_peaks: CandidatePartialPeaks,
 }
@@ -41,8 +40,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
     let mut placements = 0_usize;
     let mut segment_entries = 0_usize;
     let mut free_entries = 0_usize;
-    let mut manifest_entries = 0_u64;
-    let mut largest_artifact = root_bytes.len() as u64;
     let root_routing_peak = materialized_bytes(
         retained_bytes,
         retained_artifacts,
@@ -73,17 +70,12 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
                 .expect("decode candidate routing block for cost oracle");
         assert_eq!(found_format, format);
         placements += block.entries().map_or(0, <[_]>::len);
-        manifest_entries += block
-            .entries()
-            .map_or_else(|| block.children().unwrap_or_default().len(), <[_]>::len)
-            as u64;
         root_queue.extend(block.children().unwrap_or_default().iter().copied());
         reads += 1;
         raw_bytes += bytes.len() as u64;
         if reference.generation() == generation {
             retained_artifacts += 1;
             retained_bytes += bytes.len() as u64;
-            largest_artifact = largest_artifact.max(bytes.len() as u64);
         }
     }
 
@@ -116,17 +108,12 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
                 .expect("decode candidate segment block for cost oracle");
         assert_eq!(found_format, format);
         segment_entries += block.entries().map_or(0, <[_]>::len);
-        manifest_entries += block
-            .entries()
-            .map_or_else(|| block.children().unwrap_or_default().len(), <[_]>::len)
-            as u64;
         segment_queue.extend(block.children().unwrap_or_default().iter().copied());
         reads += 1;
         raw_bytes += bytes.len() as u64;
         if reference.generation() == generation {
             retained_artifacts += 1;
             retained_bytes += bytes.len() as u64;
-            largest_artifact = largest_artifact.max(bytes.len() as u64);
         }
     }
 
@@ -144,7 +131,6 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
     raw_bytes += free_bytes.len() as u64;
     retained_artifacts += 1;
     retained_bytes += free_bytes.len() as u64;
-    largest_artifact = largest_artifact.max(free_bytes.len() as u64);
     retained_references += 1;
 
     let free_space_peak = materialized_bytes(
@@ -176,17 +162,12 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
                 .expect("decode candidate free-space block for cost oracle");
         assert_eq!(found_format, format);
         free_entries += block.entries().map_or(0, <[_]>::len);
-        manifest_entries += block
-            .entries()
-            .map_or_else(|| block.children().unwrap_or_default().len(), <[_]>::len)
-            as u64;
         free_queue.extend(block.children().unwrap_or_default().iter().copied());
         reads += 1;
         raw_bytes += bytes.len() as u64;
         if reference.generation() == generation {
             retained_artifacts += 1;
             retained_bytes += bytes.len() as u64;
-            largest_artifact = largest_artifact.max(bytes.len() as u64);
         }
     }
 
@@ -204,8 +185,9 @@ pub(super) fn candidate_cost(root: &Path, generation: u64) -> CandidateCost {
         reads,
         raw_bytes,
         peak_bytes,
-        comparison_scratch_bytes: largest_artifact,
-        manifest_entries,
+        // The candidate root's one entry and its leaf entries: blocks and
+        // branch children charge nothing.
+        manifest_entries: (1 + placements + segment_entries + free_entries) as u64,
         partial_peaks: CandidatePartialPeaks {
             root_routing: root_routing_peak,
             segment_membership: segment_membership_peak,

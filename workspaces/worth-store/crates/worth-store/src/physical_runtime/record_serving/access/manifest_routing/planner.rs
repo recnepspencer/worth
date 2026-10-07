@@ -1,12 +1,20 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, ManifestBlockReference,
-    PersistedRecordIdentity, PhysicalRootRoutingBlock, RecordArtifactFile,
-    SegmentManifestBlockReference,
+    PersistedRecordIdentity, RecordArtifactFile, SegmentManifestBlockReference,
 };
 
 use super::{ManifestDiscoveryCounterSnapshot, ManifestLookupFailure, ManifestReader};
+
+#[path = "planner/assignment.rs"]
+mod assignment;
+mod latest_publication;
+mod leaf_updates;
+mod rewrite;
+
+use latest_publication::{surviving_directory_binding, surviving_latest_publication};
+use rewrite::UpdatePlanner;
 
 pub(in crate::physical_runtime::record_serving) struct ManifestPublicationPlan {
     pub(in crate::physical_runtime::record_serving) root: DurablePhysicalRootManifest,
@@ -15,6 +23,10 @@ pub(in crate::physical_runtime::record_serving) struct ManifestPublicationPlan {
 }
 
 pub(in crate::physical_runtime::record_serving) struct RootManifestUpdateRequest<'updates> {
+    pub(in crate::physical_runtime::record_serving) derived_updates:
+        crate::physical_runtime::record_serving::planning::prepared_root_projection::DerivedRootUpdates,
+    pub(in crate::physical_runtime::record_serving) release_head_effect:
+        Option<&'updates worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1>,
     pub(in crate::physical_runtime::record_serving) successor_generation: u64,
     pub(in crate::physical_runtime::record_serving) successor_capacity: u16,
     pub(in crate::physical_runtime::record_serving) free_space_checksum: u32,
@@ -25,6 +37,8 @@ pub(in crate::physical_runtime::record_serving) struct RootManifestUpdateRequest
     pub(in crate::physical_runtime::record_serving) next_segment_block: u64,
     pub(in crate::physical_runtime::record_serving) placements:
         &'updates BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
+    pub(in crate::physical_runtime::record_serving) drops:
+        &'updates BTreeSet<PersistedRecordIdentity>,
     pub(in crate::physical_runtime::record_serving) last_inline_record:
         Option<PersistedRecordIdentity>,
     pub(in crate::physical_runtime::record_serving) last_inline_segment:
@@ -56,6 +70,21 @@ struct ManifestUpdatePlanning<'context, 'media, 'updates> {
 impl ManifestUpdatePlanning<'_, '_, '_> {
     fn plan(self) -> Result<ManifestPublicationPlan, ManifestLookupFailure> {
         self.require_branchable_capacities()?;
+        self.require_head_transition()?;
+        if self
+            .request
+            .drops
+            .iter()
+            .any(|record| self.request.placements.contains_key(record))
+            || unhandled_tail_drop(
+                self.current.last_inline_record(),
+                self.request.last_inline_record,
+                self.request.drops,
+                self.request.placements,
+            )
+        {
+            return Err(ManifestLookupFailure::Damaged);
+        }
         if self.request.successor_capacity != self.current.node_capacity() {
             if let Some(current_root) = self.current.routing_root() {
                 return self.rebuild_for_successor_capacity(current_root);
@@ -86,6 +115,21 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         }
     }
 
+    fn require_head_transition(&self) -> Result<(), ManifestLookupFailure> {
+        let Some(transition) = self.request.release_head_effect else {
+            return Ok(());
+        };
+        if transition.source_root() != self.current.release_custody_head_root()
+            || transition.source_next_block() != self.current.next_release_custody_head_block()
+            || transition.result_root().generation() != self.request.successor_generation
+            || transition.result_root().block() >= transition.result_next_block()
+            || transition.result_next_block() < transition.source_next_block()
+        {
+            return Err(ManifestLookupFailure::Damaged);
+        }
+        Ok(())
+    }
+
     fn rebuild_for_successor_capacity(
         self,
         current_root: ManifestBlockReference,
@@ -97,6 +141,8 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             request,
         } = self;
         let RootManifestUpdateRequest {
+            derived_updates,
+            release_head_effect,
             successor_generation,
             successor_capacity,
             free_space_checksum,
@@ -104,6 +150,7 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             segment_root,
             next_segment_block,
             placements: updates,
+            drops,
             last_inline_record,
             last_inline_segment,
         } = request;
@@ -120,11 +167,13 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
                     .iter()
                     .map(|(record, placement)| (*record, *placement))
                     .collect(),
+                drops: drops.clone(),
             },
         )?;
         let record_count = current
             .record_count()
             .checked_add(rebuilt.inserted)
+            .and_then(|count| count.checked_sub(rebuilt.removed))
             .ok_or(ManifestLookupFailure::Damaged)?;
         let root = DurablePhysicalRootManifest::builder(
             successor_generation,
@@ -135,13 +184,44 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         .record_count(record_count)
         .next_block(rebuilt.next_block)
         .next_segment_block(next_segment_block)
+        .next_release_custody_head_block(
+            release_head_effect.map_or(current.next_release_custody_head_block(), |transition| {
+                transition.result_next_block()
+            }),
+        )
         .routing_root(rebuilt.root)
+        .release_custody_head_root(
+            release_head_effect.map_or(current.release_custody_head_root(), |transition| {
+                Some(transition.result_root())
+            }),
+        )
         .segment_root(segment_root)
         .free_space_root(free_space_root)
+        .tier_epoch_anchor(current.tier_epoch_anchor())
+        .latest_blob_publication(surviving_latest_publication(
+            current.latest_blob_publication(),
+            derived_updates.latest_blob_publication,
+            &drops,
+        ))
+        .latest_blob_quarantine(
+            derived_updates
+                .latest_blob_quarantine
+                .or(current.latest_blob_quarantine()),
+        )
+        .derived_family_directory(surviving_directory_binding(
+            current.derived_family_directory(),
+            derived_updates.directory,
+            &drops,
+        ))
         .last_inline_record(last_inline_record)
         .last_inline_segment(last_inline_segment)
         .admit()
         .ok_or(ManifestLookupFailure::Damaged)?;
+        let root = if current.requires_maintenance_protocol() {
+            root.with_maintenance_protocol()
+        } else {
+            root
+        };
         Ok(ManifestPublicationPlan {
             root,
             blocks: rebuilt.blocks,
@@ -153,6 +233,8 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         &self,
     ) -> Result<Option<ManifestPublicationPlan>, ManifestLookupFailure> {
         let RootManifestUpdateRequest {
+            derived_updates,
+            release_head_effect,
             successor_generation,
             successor_capacity,
             free_space_checksum,
@@ -160,6 +242,7 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             segment_root,
             next_segment_block,
             placements: updates,
+            drops,
             last_inline_record,
             last_inline_segment,
         } = self.request;
@@ -173,14 +256,19 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             blocks: Vec::new(),
             discovery: ManifestDiscoveryCounterSnapshot::default(),
             inserted: 0,
+            removed: 0,
         };
         let mut roots = match self.current.routing_root() {
-            Some(root) => planner.rewrite(root, updates)?,
+            Some(root) => planner.rewrite(root, updates, drops)?,
             None => {
+                if !drops.is_empty() {
+                    return Err(ManifestLookupFailure::Damaged);
+                }
                 planner.inserted = updates.len() as u64;
                 planner.write_leaves(updates.values().copied().collect())?
             }
         };
+        leaf_updates::require_complete_drop(planner.removed, drops.len())?;
         while roots.len() > 1 {
             roots = planner.write_parent_level(roots)?;
         }
@@ -189,6 +277,7 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             .current
             .record_count()
             .checked_add(planner.inserted)
+            .and_then(|count| count.checked_sub(planner.removed))
             .ok_or(ManifestLookupFailure::Damaged)?;
         let packed_level =
             worth_store_physical_format::required_tree_level(record_count, successor_capacity);
@@ -204,13 +293,43 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         .record_count(record_count)
         .next_block(planner.next_block)
         .next_segment_block(next_segment_block)
+        .next_release_custody_head_block(release_head_effect.map_or(
+            self.current.next_release_custody_head_block(),
+            |transition| transition.result_next_block(),
+        ))
         .routing_root(routing_root)
+        .release_custody_head_root(
+            release_head_effect.map_or(self.current.release_custody_head_root(), |transition| {
+                Some(transition.result_root())
+            }),
+        )
         .segment_root(segment_root)
         .free_space_root(free_space_root)
+        .tier_epoch_anchor(self.current.tier_epoch_anchor())
+        .latest_blob_publication(surviving_latest_publication(
+            self.current.latest_blob_publication(),
+            derived_updates.latest_blob_publication,
+            drops,
+        ))
+        .latest_blob_quarantine(
+            derived_updates
+                .latest_blob_quarantine
+                .or(self.current.latest_blob_quarantine()),
+        )
+        .derived_family_directory(surviving_directory_binding(
+            self.current.derived_family_directory(),
+            derived_updates.directory,
+            drops,
+        ))
         .last_inline_record(last_inline_record)
         .last_inline_segment(last_inline_segment)
         .admit()
         .ok_or(ManifestLookupFailure::Damaged)?;
+        let root = if self.current.requires_maintenance_protocol() {
+            root.with_maintenance_protocol()
+        } else {
+            root
+        };
         Ok(Some(ManifestPublicationPlan {
             root,
             blocks: planner.blocks,
@@ -219,162 +338,57 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
     }
 }
 
-struct UpdatePlanner<'reader> {
-    allocation: &'reader worth_store_buffer_pool::OperationAllocationGrant,
-    reader: &'reader ManifestReader<'reader>,
-    current: &'reader DurablePhysicalRootManifest,
-    successor_generation: u64,
-    successor_capacity: u16,
-    next_block: u64,
-    blocks: Vec<(RecordArtifactFile, Vec<u8>)>,
-    discovery: ManifestDiscoveryCounterSnapshot,
-    inserted: u64,
+fn unhandled_tail_drop<T>(
+    current_tail: Option<PersistedRecordIdentity>,
+    successor_tail: Option<PersistedRecordIdentity>,
+    drops: &BTreeSet<PersistedRecordIdentity>,
+    placements: &BTreeMap<PersistedRecordIdentity, T>,
+) -> bool {
+    current_tail.is_some_and(|old_tail| {
+        drops.contains(&old_tail)
+            && !successor_tail.is_some_and(|new_tail| {
+                new_tail != old_tail
+                    && !drops.contains(&new_tail)
+                    && placements.contains_key(&new_tail)
+            })
+    })
 }
 
-impl UpdatePlanner<'_> {
-    fn rewrite(
-        &mut self,
-        reference: ManifestBlockReference,
-        updates: &BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
-    ) -> Result<Vec<ManifestBlockReference>, ManifestLookupFailure> {
-        let block = self
-            .reader
-            .read_block(self.allocation, reference, &mut self.discovery)?;
-        match block {
-            PhysicalRootRoutingBlock::Leaf { entries, .. } => {
-                let mut merged = entries
-                    .into_iter()
-                    .map(|entry| (entry.record(), entry))
-                    .collect::<BTreeMap<_, _>>();
-                for (record, placement) in updates {
-                    if merged.insert(*record, *placement).is_none() {
-                        self.inserted += 1;
-                    }
-                }
-                self.write_leaves(merged.into_values().collect())
-            }
-            PhysicalRootRoutingBlock::Branch { children, .. } => {
-                self.rewrite_children(children, updates)
-            }
-        }
-    }
+#[cfg(test)]
+mod tail_drop_tests {
+    use super::*;
 
-    fn rewrite_children(
-        &mut self,
-        children: Vec<ManifestBlockReference>,
-        updates: &BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
-    ) -> Result<Vec<ManifestBlockReference>, ManifestLookupFailure> {
-        let assigned = self.assign_updates(&children, updates);
-        let mut rewritten = Vec::new();
-        for (child, child_updates) in children.into_iter().zip(assigned) {
-            if child_updates.is_empty() {
-                rewritten.push(child);
-            } else {
-                rewritten.extend(self.rewrite(child, &child_updates)?);
-            }
-        }
-        self.write_branch_level(rewritten)
-    }
-
-    fn assign_updates(
-        &mut self,
-        children: &[ManifestBlockReference],
-        updates: &BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
-    ) -> Vec<BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>> {
-        let mut assigned = vec![BTreeMap::new(); children.len()];
-        for (record, placement) in updates {
-            let (index, comparisons) =
-                super::super::counted_search::partition_point(children, |child| {
-                    child.last() < *record
-                });
-            self.discovery.observe_comparisons(comparisons);
-            let index = index.min(children.len().saturating_sub(1));
-            assigned[index].insert(*record, *placement);
-        }
-        assigned
-    }
-
-    fn write_leaves(
-        &mut self,
-        entries: Vec<CurrentPhysicalRecordPlacement>,
-    ) -> Result<Vec<ManifestBlockReference>, ManifestLookupFailure> {
-        let capacity = usize::from(self.successor_capacity);
-        entries
-            .chunks(capacity)
-            .map(|chunk| {
-                let block_id = self.allocate_block()?;
-                let block = PhysicalRootRoutingBlock::leaf(
-                    self.current.tree_identity(),
-                    self.successor_generation,
-                    block_id,
-                    chunk.to_vec(),
-                    self.successor_capacity,
-                )
-                .ok_or(ManifestLookupFailure::Damaged)?;
-                Ok(self.stage(block))
-            })
-            .collect()
-    }
-
-    fn write_branch_level(
-        &mut self,
-        children: Vec<ManifestBlockReference>,
-    ) -> Result<Vec<ManifestBlockReference>, ManifestLookupFailure> {
-        let capacity = usize::from(self.successor_capacity);
-        children
-            .chunks(capacity)
-            .map(|chunk| {
-                let block_id = self.allocate_block()?;
-                let level = chunk[0]
-                    .level()
-                    .checked_add(1)
-                    .ok_or(ManifestLookupFailure::Damaged)?;
-                let block = PhysicalRootRoutingBlock::branch(
-                    self.current.tree_identity(),
-                    self.successor_generation,
-                    block_id,
-                    level,
-                    chunk.to_vec(),
-                    self.successor_capacity,
-                )
-                .ok_or(ManifestLookupFailure::Damaged)?;
-                Ok(self.stage(block))
-            })
-            .collect()
-    }
-
-    fn write_parent_level(
-        &mut self,
-        children: Vec<ManifestBlockReference>,
-    ) -> Result<Vec<ManifestBlockReference>, ManifestLookupFailure> {
-        if children.len() == 1 {
-            Ok(children)
-        } else {
-            self.write_branch_level(children)
-        }
-    }
-
-    fn allocate_block(&mut self) -> Result<u64, ManifestLookupFailure> {
-        let block = self.next_block;
-        self.next_block = self
-            .next_block
-            .checked_add(1)
-            .ok_or(ManifestLookupFailure::Damaged)?;
-        Ok(block)
-    }
-
-    fn stage(&mut self, block: PhysicalRootRoutingBlock) -> ManifestBlockReference {
-        let bytes = block.encode(self.reader.format_declaration());
-        let reference = block.reference(worth_store_physical_format::durable_artifact_checksum(
-            &bytes,
+    #[test]
+    fn dropping_current_inline_tail_requires_distinct_routed_successor() {
+        let old = PersistedRecordIdentity::new([7; 16], 1).unwrap();
+        let new = PersistedRecordIdentity::new([7; 16], 2).unwrap();
+        let drops = BTreeSet::from([old]);
+        let mut placements = BTreeMap::new();
+        assert!(unhandled_tail_drop(Some(old), None, &drops, &placements));
+        assert!(unhandled_tail_drop(
+            Some(old),
+            Some(new),
+            &drops,
+            &placements
         ));
-        self.blocks.push((
-            RecordArtifactFile::RootRoutingBlock {
-                generation: self.successor_generation,
-                block: block.block(),
-            },
-            bytes,
+        placements.insert(new, ());
+        assert!(!unhandled_tail_drop(
+            Some(old),
+            Some(new),
+            &drops,
+            &placements
         ));
-        reference
+        assert!(unhandled_tail_drop(
+            Some(old),
+            Some(old),
+            &drops,
+            &placements
+        ));
+        assert!(!unhandled_tail_drop(
+            Some(old),
+            None,
+            &BTreeSet::new(),
+            &placements
+        ));
     }
 }

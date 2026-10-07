@@ -226,7 +226,6 @@ fn builder_grouped_setup_sections_apply_overrides() {
         .runtime_setup(|runtime| {
             runtime
                 .runtime_name("grouped-runtime")
-                .execution_model(crate::config::data::RelationalExecutionModel::SingleLaneExecution)
                 .diagnostics(RelationalDiagnosticsProfile::geometry_operational_hot_path());
         })
         .schema_setup(|schema| {

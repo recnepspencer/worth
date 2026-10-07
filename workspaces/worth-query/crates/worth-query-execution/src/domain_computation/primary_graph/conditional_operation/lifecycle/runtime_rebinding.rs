@@ -97,14 +97,15 @@ where
             )
         })?;
     Ok(WorthQueryPreparedConditionalRuntimeBinding {
-        pending_direct_delivery: super::direct_delivery::empty(),
+        pending_invalidations:
+            super::pending_invalidations::WorthQueryPendingGranularInvalidations::empty(),
         lowering,
         managed_clock,
         affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity::new(
             product,
             signal_basis,
         ),
-        authoritative_commit_cursor: 0,
+        authoritative_commit_cursor: None,
         commit_watch: Default::default(),
         reconstructed_intent_count: 0,
         authoritative_reconstruction: Box::new(()),

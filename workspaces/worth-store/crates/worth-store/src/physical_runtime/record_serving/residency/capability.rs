@@ -32,6 +32,27 @@ const _: () =
     assert!(std::mem::size_of::<PhysicalResidencyWorkPort>() <= std::mem::size_of::<usize>() * 4);
 
 impl PhysicalResidencyWorkPort {
+    pub(in crate::physical_runtime::record_serving) fn read_fresh_exact(
+        &self,
+        coordinate: RecordFrameCoordinate,
+    ) -> Result<
+        (
+            Box<[u8]>,
+            crate::physical_runtime::instance::PhysicalProjectionFailureCapability,
+        ),
+        crate::physical_runtime::record_serving::read_work_port::CanonicalRecordReadFailureEvidence,
+    > {
+        self.source.read_fresh_exact(coordinate)
+    }
+    pub(in crate::physical_runtime::record_serving) fn invalidate_released_arena_range(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+    ) -> Result<(), worth_store_buffer_pool::PhysicalResidencyDenial> {
+        self.access
+            .frame_ports
+            .invalidate_released_arena_range(range)
+    }
+
     pub(in crate::physical_runtime::record_serving) fn store_identity(
         &self,
     ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
@@ -70,6 +91,27 @@ impl PhysicalResidencyWorkPort {
     pub(in crate::physical_runtime::record_serving) fn for_scan(mut self) -> Self {
         self.source = self.source.for_scan();
         self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_rebuild(mut self) -> Self {
+        self.source = self.source.for_rebuild();
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_diagnostic_scrub(mut self) -> Self {
+        self.source = self.source.for_diagnostic_scrub();
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn for_ordinary(mut self) -> Self {
+        self.source = self.source.for_ordinary();
+        self
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn read_allocation_scope(
+        &self,
+    ) -> worth_store_buffer_pool::PhysicalOperationAllocationScope {
+        self.source.allocation_scope()
     }
 
     pub(in crate::physical_runtime::record_serving) fn begin_operation(

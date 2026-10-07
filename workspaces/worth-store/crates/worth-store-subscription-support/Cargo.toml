@@ -7,7 +7,6 @@ license.workspace = true
 description = "Roadmap 1 durable subscription-support artifacts and accuracy certification."
 
 [dependencies]
-worth-store-compatibility.workspace = true
 worth-store-contracts.workspace = true
 worth-store-maintenance.workspace = true
 worth-store-replication.workspace = true

@@ -19,7 +19,7 @@ where
         Family::Entity: OperationReads<Binding::Operation>,
         Action: WorthQueryApplicationOutputAction,
     {
-        self.reader()
+        self.reader
             .prior_output_member::<PriorBinding, Family, Action>(suffix)
             .map_err(HandlerExecutionDenial::new)
     }
@@ -40,7 +40,7 @@ where
         Family::Entity: OperationReads<Binding::Operation>,
         Action: WorthQueryApplicationOutputAction,
     {
-        self.reader()
+        self.reader
             .prior_output_member_if_present::<PriorBinding, Family, Action>(suffix)
             .map_err(HandlerExecutionDenial::new)
     }

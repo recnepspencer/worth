@@ -129,6 +129,10 @@ impl WorthQueryCompiledApplicationQuery {
         self.obligations.inspect()
     }
 
+    pub(crate) const fn graph_obligation_set(&self) -> &WorthQueryInstalledGraphObligationSet {
+        &self.obligations
+    }
+
     pub(crate) fn retain_graph_obligations(&self) -> WorthQueryInstalledGraphObligationSet {
         self.obligations.clone()
     }

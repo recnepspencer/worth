@@ -11,6 +11,8 @@ pub(crate) struct Road1Config {
     pub(crate) seed_skeletons: Vec<SeedSkeletonConfig>,
     pub(crate) subworkspaces: Vec<SubworkspaceConfig>,
     #[serde(default)]
+    pub(crate) snapshot_dependency_packages: Vec<SnapshotDependencyPackagesConfig>,
+    #[serde(default)]
     pub(crate) context_workspaces: Vec<ContextWorkspaceConfig>,
     pub(crate) legacy_reference_ratchet: LegacyReferenceRatchetConfig,
     /// Compile-time law substrates legal outside the band grammar (e.g. worth-proof).
@@ -30,6 +32,37 @@ pub(crate) struct Road1Config {
     pub(crate) raw_geometry_denials: Vec<RawGeometryDenialConfig>,
     #[serde(default)]
     pub(crate) truth_type_denials: Vec<TruthTypeDenialConfig>,
+    #[serde(default)]
+    pub(crate) threading_sites: Vec<ThreadingSiteConfig>,
+}
+
+/// An observed production thread or parallel-computation site. A legacy lane
+/// must name the phase that removes it; a non-compute thread must name its role.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ThreadingSiteConfig {
+    pub(crate) source: String,
+    pub(crate) item: String,
+    pub(crate) kind: String,
+    pub(crate) count: usize,
+    pub(crate) category: String,
+    pub(crate) reason: String,
+    #[serde(default)]
+    pub(crate) retire_phase: Option<u8>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct SnapshotDependencyPackagesConfig {
+    pub(crate) workspace_manifest: String,
+    pub(crate) packages: Vec<String>,
+    #[serde(default)]
+    pub(crate) required_edges: Vec<SnapshotDependencyEdgeConfig>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct SnapshotDependencyEdgeConfig {
+    pub(crate) source: String,
+    pub(crate) target: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]

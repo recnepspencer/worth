@@ -1,4 +1,6 @@
-use super::{RuntimeArtifactHot, RuntimeArtifactState, RuntimeArtifactWarm};
+use super::{
+    RuntimeArtifactFinalizeImage, RuntimeArtifactHot, RuntimeArtifactState, RuntimeArtifactWarm,
+};
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStorageMeasurement,
     RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
@@ -27,6 +29,20 @@ impl RetainedStorageMeasurement for RuntimeArtifactHot {
             changed_scopes,
         } = self;
         changed_scopes.retained_heap_charge(work)
+    }
+}
+
+impl RetainedStorageMeasurement for RuntimeArtifactFinalizeImage {
+    fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
+        work.visit()?;
+        let Self {
+            hot,
+            reuse_origin: _,
+            reuse_boundary_authority,
+            lineage_artifact_id: _,
+        } = self;
+        hot.retained_heap_charge(work)?
+            .checked_add(reuse_boundary_authority.retained_heap_charge(work)?)
     }
 }
 

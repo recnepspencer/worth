@@ -71,7 +71,7 @@ fn assert_scheduling_counters(
     );
     assert_eq!(
         observation.peak_ready_width,
-        expected.value(ExpectedLocalityCounterRow::MaximumReadyFrontierWidth)
+        observation.physical_ready_peak,
     );
 }
 

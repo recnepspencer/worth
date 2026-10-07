@@ -15,8 +15,9 @@ use crate::diagnostics::profile::DiagnosticsTier;
 use crate::diagnostics::summary::{
     EvaluationPlanSummary, ExecutionReportSummary, ExplanationSummary,
 };
-use crate::logic::planner::{EvaluationPlan, ExecutionReport, StageExecutor};
+use crate::logic::planner::{EvaluationPlan, ExecutionReport};
 use crate::logic::transaction::ObservationBoundarySummary;
+use worth_foundational::ExecutionPosture;
 
 /// Structured summary of one upstream change input to signal execution.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,7 +93,7 @@ pub struct PlanningSummary {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrecomputeSummary {
-    pub executor: Option<StageExecutor>,
+    pub posture: Option<ExecutionPosture>,
     pub stage_count: u32,
     pub task_count: u32,
     pub prepared_evaluations_produced: u32,
@@ -327,10 +328,10 @@ impl PlanningSummary {
 
 impl PrecomputeSummary {
     /// Adds the precompute work of a later execution of the same flow. The
-    /// executor is the first one that ran.
+    /// posture is the first measured one that ran.
     pub fn absorb(&mut self, other: PrecomputeSummary) {
-        if self.executor.is_none() {
-            self.executor = other.executor;
+        if self.posture.is_none() {
+            self.posture = other.posture;
         }
         self.stage_count = self.stage_count.saturating_add(other.stage_count);
         self.task_count = self.task_count.saturating_add(other.task_count);
@@ -346,15 +347,12 @@ impl PrecomputeSummary {
     }
 
     pub fn from_report(report: &ExecutionReport, _profile: DiagnosticsTier) -> Self {
-        let executor = report.stages.first().map(|stage| match stage.outcome {
-            crate::logic::planner::StageExecutionOutcome::CompletedSerial => StageExecutor::Serial,
-            #[cfg(feature = "parallel")]
-            crate::logic::planner::StageExecutionOutcome::CompletedParallel => {
-                StageExecutor::parallel(1)
-            }
-        });
+        let posture = report
+            .execution
+            .first()
+            .map(|execution| execution.resolved_posture());
         Self {
-            executor,
+            posture,
             stage_count: report.stage_count,
             task_count: report.task_count,
             prepared_evaluations_produced: report.prepared_evaluations_produced,

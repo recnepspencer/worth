@@ -7,6 +7,9 @@ use crate::canonical_identity_derivation::WorthQueryCanonicalIdentityBasis;
 
 use super::{WorthQueryGraphReadAccessRequirementKind, WorthQueryGraphReadAccessRequirementRow};
 
+mod admitted;
+mod canonical_basis;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryGraphReadAccessRequirementSetDigest(CanonicalDigestId);
 
@@ -36,11 +39,18 @@ impl WorthQueryGraphReadAccessRequirementSet {
         read_graph_digest: CanonicalDigestId,
         access_shape_digest: CanonicalDigestId,
         selectivity_shape_digest: CanonicalDigestId,
-        mut rows: Vec<WorthQueryGraphReadAccessRequirementRow>,
+        rows: Vec<WorthQueryGraphReadAccessRequirementRow>,
         budget: CanonicalDigestWorkBudget,
         prior_work: WorthQueryCanonicalWorkEvidence,
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
-        rows.sort_by_key(WorthQueryGraphReadAccessRequirementRow::digest_part);
+        // Render each semantic key once; comparisons borrow it. The stable
+        // order and row equality remain the existing canonical contract.
+        let mut keyed: Vec<_> = rows
+            .into_iter()
+            .map(|row| (row.digest_part(), row))
+            .collect();
+        keyed.sort_by(|left, right| left.0.cmp(&right.0));
+        let mut rows: Vec<_> = keyed.into_iter().map(|(_, row)| row).collect();
         rows.dedup();
         let counters = WorthQueryGraphReadAccessRequirementCounters::from_rows(&rows);
         let (digest, work) = derive_requirement_set_digest(
@@ -196,16 +206,29 @@ fn derive_requirement_set_digest(
     budget: CanonicalDigestWorkBudget,
 ) -> Result<(CanonicalDigestId, WorthQueryCanonicalWorkEvidence), CanonicalDigestDerivationDenial> {
     let mut basis = WorthQueryCanonicalIdentityBasis::new(
-        "worth-query.application-query-access-requirements",
-        "worth-query-application-query-access-requirements-v1",
+        canonical_basis::DOMAIN,
+        canonical_basis::VERSION,
         budget,
     );
-    basis.digest("read-graph", read_graph_digest)?;
-    basis.digest("access-shape", access_shape_digest)?;
-    basis.digest("selectivity-shape", selectivity_shape_digest)?;
-    basis.unsigned("row-count", rows.len())?;
-    for (index, row) in rows.iter().enumerate() {
-        basis.text(format!("row[{index}]"), row.digest_part())?;
-    }
+    canonical_basis::emit_fields(
+        read_graph_digest,
+        access_shape_digest,
+        selectivity_shape_digest,
+        rows,
+        |field| match field {
+            canonical_basis::RequirementDigestField::Digest(locus, value) => {
+                basis.digest(locus, value)
+            }
+            canonical_basis::RequirementDigestField::Unsigned(locus, value) => {
+                basis.unsigned(locus, value)
+            }
+            canonical_basis::RequirementDigestField::Row(index, row) => {
+                let mut locus = String::new();
+                canonical_basis::write_row_locus(&mut locus, index)
+                    .expect("String formatting cannot fail");
+                basis.text(locus, row.digest_part())
+            }
+        },
+    )?;
     basis.derive()
 }

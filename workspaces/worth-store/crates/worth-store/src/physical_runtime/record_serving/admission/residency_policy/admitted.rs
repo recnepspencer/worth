@@ -6,9 +6,72 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AdmittedPhysicalRecordResidencyPolicy {
     pub(super) limits: worth_store_buffer_pool::PhysicalResidencyLimits,
+    pub(super) record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
 }
 
 impl AdmittedPhysicalRecordResidencyPolicy {
+    /// The same complete default used by ordinary Record initialization and open.
+    pub fn canonical(
+        format: crate::physical_runtime::record_serving::AdmittedPhysicalRecordFormat,
+    ) -> Self {
+        super::defaults::canonical_residency_policy(format)
+    }
+
+    /// Entry-binding identity of the complete admitted policy, not allocation authority.
+    pub fn canonical_identity_bytes(self) -> [u8; 32] {
+        use super::{
+            PhysicalOperationAllocationScope as Scope, PhysicalSpeculativeWorkKind as Kind,
+        };
+        use sha2::{Digest, Sha256};
+
+        let mut digest = Sha256::new();
+        digest.update(b"worth.store.physical.residency.policy@1");
+        digest.update(self.record_format.canonical_identity_bytes());
+        for bytes in [
+            self.total_bytes(),
+            self.resident_bytes(),
+            self.metadata_bytes(),
+            u64::from(self.frame_entries()),
+            u64::from(self.pinned_frames()),
+            u64::from(self.pin_leases()),
+            u64::from(self.dirty_frames()),
+            self.dirty_replacement_bytes(),
+            self.operation_bytes(),
+        ] {
+            digest.update(bytes.to_le_bytes());
+        }
+        for scope in [
+            Scope::ForegroundRead,
+            Scope::ForegroundWrite,
+            Scope::Recovery,
+            Scope::Scrub,
+            Scope::Maintenance,
+            Scope::Verification,
+            Scope::Blob,
+        ] {
+            digest.update(self.scope_bytes(scope).to_le_bytes());
+        }
+        for kind in [Kind::ReadAhead, Kind::Prefetch, Kind::WriteBehind] {
+            digest.update(self.speculative_frames(kind).to_le_bytes());
+        }
+        digest.update(self.limits.progress_headroom_bytes().to_le_bytes());
+        digest.finalize().into()
+    }
+
+    /// The physical geometry against which every dimension was admitted.
+    pub const fn record_format(
+        self,
+    ) -> worth_store_physical_format::PhysicalRecordFormatDeclaration {
+        self.record_format
+    }
+
+    pub fn matches_format(
+        self,
+        format: crate::physical_runtime::record_serving::AdmittedPhysicalRecordFormat,
+    ) -> bool {
+        self.record_format == format.declaration()
+    }
+
     pub(in crate::physical_runtime) const fn limits(
         self,
     ) -> worth_store_buffer_pool::PhysicalResidencyLimits {

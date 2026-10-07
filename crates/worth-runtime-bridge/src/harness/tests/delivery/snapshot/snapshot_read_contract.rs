@@ -65,3 +65,32 @@ fn bridge_snapshot_contract_rejects_missing_required_reads() {
         .as_str()
         .starts_with("snapshot-read-target:sha256:"));
 }
+
+#[test]
+fn leased_route_surfaces_cancellation_before_snapshot_reads() {
+    let source = InMemoryRelationalBridgeSource::default();
+    source.insert_committed_patch(committed_patch(
+        commit_a(),
+        patch_a(),
+        snapshot_a(),
+        worth_foundational::facade::FieldKey::new("name".to_owned()).unwrap(),
+    ));
+    source.insert_snapshot(SnapshotFixture::new(snapshot_a(), vec![]));
+    let runtime = build_runtime_with_aspects(
+        source,
+        RecordingSignalBridgeSink::default(),
+        vec![registration()],
+        vec![field_aspect_registration()],
+    );
+    let route = runtime
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .unwrap();
+    let cancellation = worth_execution::CancellationToken::new();
+    cancellation.cancel();
+    let lease = crate::snapshot::test_execution_lease(cancellation);
+
+    let error = runtime
+        .deliver_invalidation_with_lease(route, &lease)
+        .expect_err("cancelled lease must deny the read");
+    assert_eq!(error.kind(), BridgeDeliveryErrorKind::ExecutionCancelled);
+}

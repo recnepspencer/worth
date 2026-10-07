@@ -11,7 +11,18 @@ use super::super::{
 };
 
 mod assembly;
+mod manifest_residue;
 mod projection;
+mod retirement;
+mod terminal_head_retirement;
+#[cfg(feature = "certification-test-authority")]
+mod tier_epoch;
+pub(in crate::physical_runtime::record_serving) use manifest_residue::plan_manifest_residue_cleanup;
+pub(in crate::physical_runtime::record_serving) use retirement::{
+    plan_arena_forget, plan_retirement_release, RetirementRootPlanningContext,
+};
+#[cfg(feature = "certification-test-authority")]
+pub(in crate::physical_runtime::record_serving) use tier_epoch::plan_tier_epoch_activation;
 
 pub(in crate::physical_runtime::record_serving) struct RootRebaseContext<'plan> {
     pub(in crate::physical_runtime::record_serving) allocation:
@@ -53,7 +64,17 @@ pub(in crate::physical_runtime::record_serving) fn project_settled_root(
     }
     let maintenance = prepared.requires_maintenance_protocol
         || context.current_root.requires_maintenance_protocol();
-    let mut projected = match projection::project_successor_root(&context, &prepared, generation) {
+    let retirement = prepared
+        .release_head_effect
+        .as_ref()
+        .and_then(|claim| claim.terminal_head_retired());
+    let projected = match retirement {
+        Some(retirement) => {
+            terminal_head_retirement::project(&context, &prepared, retirement, generation)
+        }
+        None => projection::project_successor_root(&context, &prepared, generation),
+    };
+    let mut projected = match projected {
         Ok(projected) => projected,
         Err(cause) => return Err((prepared, cause)),
     };
@@ -62,6 +83,8 @@ pub(in crate::physical_runtime::record_serving) fn project_settled_root(
     }
     let payload_manifests = prepared.payload_manifests;
     let publication = PublicationPlan {
+        routing_metadata_bytes: None,
+        arena_reservations: prepared.arena_reservations,
         generation,
         manifests: Vec::new(),
         root: RecordArtifactFile::RootManifest { generation },

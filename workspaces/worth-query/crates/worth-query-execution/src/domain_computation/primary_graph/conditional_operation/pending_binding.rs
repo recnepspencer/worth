@@ -247,7 +247,9 @@ where
         bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
         affinity: &ConditionalRuntimeAffinity,
-        authoritative_commit_cursor: u64,
+        authoritative_commit_cursor: Option<
+            worth_relational::facade::publication::PatchStreamPosition,
+        >,
     ) -> Result<
         Box<dyn super::lifecycle::WorthQueryInstalledConditionalOperation<Schema>>,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -299,7 +301,8 @@ where
             bootstrap_commit_catch_up_pending: true,
             commit_watch: Default::default(),
             operation_totals: Default::default(),
-            pending_direct_delivery: None,
+            pending_invalidations: super::lifecycle::WorthQueryPendingGranularInvalidations::empty(
+            ),
             inactive_bindings: Default::default(),
             next_evaluation_binding_ordinal: 1,
         }))

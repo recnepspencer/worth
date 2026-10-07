@@ -10,7 +10,10 @@ pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
                 external_input::NeutralExternalProvider,
             >()
             .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
-            .mutation::<VertexReplacementBinding<ConsumerSchema>>()
+            .mutation_with_external_input::<
+                VertexReplacementBinding<ConsumerSchema>,
+                external_input::NeutralExternalProvider,
+            >()
             .finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>()
             .provides::<PlanarDerivedBodyOutput>()

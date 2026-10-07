@@ -90,15 +90,15 @@ fn repeated_partition_invalidations_union_dirty_scopes_until_evaluation() {
     assert_eq!(graph.get_state(source).unwrap(), NodeState::Dirty);
     assert_eq!(graph.get_state(dependent).unwrap(), NodeState::Clean);
     assert!(
-        scopes.iter().any(|(_, scope)| {
-            scope.partition.0.as_str() == "wing" && scope.detail.as_deref() == Some("rib-12")
-        }),
+        scopes
+            .iter()
+            .any(|(_, scope)| { scope.path().segments() == ["wing", "rib-12"] }),
         "the first invalidation scope should not be erased by a later wave"
     );
     assert!(
-        scopes.iter().any(|(_, scope)| {
-            scope.partition.0.as_str() == "wing" && scope.detail.as_deref() == Some("rib-13")
-        }),
+        scopes
+            .iter()
+            .any(|(_, scope)| { scope.path().segments() == ["wing", "rib-13"] }),
         "the second invalidation scope should be merged with earlier scopes"
     );
 }
@@ -140,7 +140,7 @@ fn whole_aspect_invalidation_does_not_erase_other_aspects_partition_precision() 
     let scopes = graph.node_dirty_scoped_aspects(source).unwrap();
     assert!(
         scopes.iter().any(|(_, scope)| {
-            scope.partition.0.as_str() == "tail" && scope.detail.as_deref() == Some("panel-7")
+            scope.path().segments() == ["tail", "panel-7"]
         }),
         "whole-aspect invalidation on aspect A must not erase scoped dirtiness retained for aspect B"
     );

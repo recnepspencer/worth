@@ -22,7 +22,7 @@ const EXTENT_IDENTITY_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::ne
 const LOGICAL_BYTES_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(80, 8);
 const MAXIMUM_FRAME_BYTES_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(88, 4);
 const CHUNK_COUNT_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(92, 4);
-const RESERVED_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(96, 8);
+const ALIGNMENT_FIELD: DurableFrameFieldRange = DurableFrameFieldRange::new(96, 8);
 const ENCODED_LENGTH_FIELDS: DurableFrameFieldRange = DurableFrameFieldRange::new(20, 8);
 
 #[derive(Debug)]
@@ -65,6 +65,25 @@ pub fn validate_extent_manifest<'media>(
     }
     if let Some(rejection) = placement_mismatch(scope, manifest) {
         return rejected(rejection, byte_count);
+    }
+    let placement = scope.extent_manifest_placement().expect("manifest scope");
+    if !worth_store_physical_format::ExtentArenaFrameLayout::new(
+        record_format,
+        manifest.alignment(),
+    )
+    .is_some_and(|layout| layout.admits(placement.arena_range(), manifest.chunk_count()))
+        || scope.byte_range().offset() != placement.arena_range().offset()
+    {
+        return rejected(
+            field_damage(
+                scope,
+                PhysicalDamageCause::ChildReferenceMismatch,
+                ALIGNMENT_FIELD,
+                PhysicalFormatField::ChildReference,
+                PhysicalBlastRadius::ReachableSubtree,
+            ),
+            byte_count,
+        );
     }
 
     let byte_range_checksum = durable_artifact_checksum(artifact.bytes());
@@ -165,7 +184,7 @@ fn manifest_denial(
         MembershipManifestDenial::Reserved => field_damage(
             scope,
             PhysicalDamageCause::MalformedStructure,
-            RESERVED_FIELD,
+            ALIGNMENT_FIELD,
             PhysicalFormatField::Reserved,
             PhysicalBlastRadius::CompleteArtifact,
         ),
@@ -226,10 +245,10 @@ fn malformed_manifest(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalInt
             PhysicalDamageCause::MalformedStructure,
             PhysicalBlastRadius::ReachableSubtree,
         )
-    } else if bytes[96..104] != [0; 8] {
+    } else if !u64::from_le_bytes(bytes[96..104].try_into().unwrap()).is_power_of_two() {
         (
-            RESERVED_FIELD,
-            PhysicalFormatField::Reserved,
+            ALIGNMENT_FIELD,
+            PhysicalFormatField::Payload,
             PhysicalDamageCause::MalformedStructure,
             PhysicalBlastRadius::CompleteArtifact,
         )

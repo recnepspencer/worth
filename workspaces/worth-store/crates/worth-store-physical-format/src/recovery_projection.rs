@@ -1,28 +1,83 @@
-use std::collections::BTreeSet;
-
 use crate::{
     CurrentPhysicalRecordPlacement, DurableExtentRecordPlacement, DurableInlineRecordPlacement,
-    ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject, PersistedRecordIdentity,
-    PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
-    PhysicalRecordSlot, PhysicalSegmentId, RecordArtifactFile, RecordFrameCoordinate,
-    RecordSegmentPageManifestEntry,
+    ExtentArenaId, ExtentArenaRange, ExtentChunkCoordinate, PersistedPhysicalDataFrameSubject,
+    PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
+    PhysicalPageId, PhysicalRecordSlot, PhysicalSegmentId, RecordArtifactFile,
+    RecordFrameCoordinate, RecordSegmentPageManifestEntry,
 };
 
 mod codec;
+pub(crate) mod decode_storage;
+mod frame;
+mod head_effect;
+mod operation;
+mod release_head_retirement;
+mod release_head_tree_claim;
+mod released_directory_replacement;
+mod retained_storage;
 mod root_state;
+mod source_copy;
+pub use decode_storage::{PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage};
+pub use head_effect::PersistedReleaseCustodyHeadEffectV1;
+pub use operation::{
+    PersistedBlobSemanticRecordBinding, PersistedDerivedDirectoryRecordBinding,
+    PersistedPhysicalRecoveryOperation,
+};
+pub use release_head_retirement::PersistedTerminalReleaseHeadRetirementV1;
+pub use release_head_tree_claim::{PersistedReleaseHeadClaim, PersistedReleaseHeadTreeClaim};
+pub use released_directory_replacement::PersistedReleasedDirectoryReplacementV1;
 pub use root_state::{PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryRootState};
+pub use source_copy::PersistedExtentCopyRecipe;
 
-const DOMAIN: &[u8] = b"store.physical.recovery-projection.v3";
+const PROJECTION_DOMAIN_PREFIX: &[u8] = b"store.physical.recovery-projection.v";
+const CURRENT_RECOVERY_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PersistedDerivedDirectoryRetirement {
+    expected_previous: Option<crate::DerivedFamilyRootDirectoryBinding>,
+    dropped_records: Box<[PersistedRecordIdentity]>,
+}
+
+impl PersistedDerivedDirectoryRetirement {
+    pub fn new(
+        expected_previous: Option<crate::DerivedFamilyRootDirectoryBinding>,
+        mut dropped_records: Vec<PersistedRecordIdentity>,
+    ) -> Option<Self> {
+        dropped_records.sort_unstable();
+        (dropped_records.windows(2).all(|pair| pair[0] != pair[1])
+            && expected_previous
+                .is_none_or(|previous| dropped_records.contains(&previous.directory_record())))
+        .then_some(Self {
+            expected_previous,
+            dropped_records: dropped_records.into_boxed_slice(),
+        })
+    }
+
+    pub const fn expected_previous(&self) -> Option<crate::DerivedFamilyRootDirectoryBinding> {
+        self.expected_previous
+    }
+
+    pub fn dropped_records(&self) -> &[PersistedRecordIdentity] {
+        &self.dropped_records
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PersistedPhysicalRecoveryProjection {
     source_root_generation: u64,
     root_state: PersistedPhysicalRecoveryRootState,
     record_identities: Box<[PersistedRecordIdentity]>,
-    frames: Box<[PersistedPhysicalRecoveryFrame]>,
+    payload: PersistedPhysicalRecoveryPayload,
+    operation: PersistedPhysicalRecoveryOperation,
     placements: Box<[CurrentPhysicalRecordPlacement]>,
     segment_updates: Box<[RecordSegmentPageManifestEntry]>,
     manifests: Box<[PersistedPhysicalRecoveryManifest]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PersistedPhysicalRecoveryPayload {
+    Frames(Box<[PersistedPhysicalRecoveryFrame]>),
+    SourceCopy(PersistedExtentCopyRecipe),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,13 +89,14 @@ pub struct PersistedPhysicalRecoveryFrame {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PersistedPhysicalRecoveryManifest {
-    artifact: RecordArtifactFile,
+    coordinate: RecordFrameCoordinate,
     bytes: Box<[u8]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalRecoveryProjectionDenial {
     Malformed,
+    UnsupportedVersion(u16),
     EntryLimit,
     InvalidFrame,
     InvalidPlacement,
@@ -69,27 +125,88 @@ impl PersistedPhysicalRecoveryProjection {
         segment_updates: Vec<RecordSegmentPageManifestEntry>,
         manifests: Vec<PersistedPhysicalRecoveryManifest>,
     ) -> Option<Self> {
+        Self::new_with_operation(
+            source_root_generation,
+            root_state,
+            record_identities,
+            frames,
+            placements,
+            segment_updates,
+            manifests,
+            PersistedPhysicalRecoveryOperation::None,
+        )
+    }
+
+    pub fn new_with_operation(
+        source_root_generation: u64,
+        root_state: PersistedPhysicalRecoveryRootState,
+        record_identities: Vec<PersistedRecordIdentity>,
+        frames: Vec<PersistedPhysicalRecoveryFrame>,
+        placements: Vec<CurrentPhysicalRecordPlacement>,
+        segment_updates: Vec<RecordSegmentPageManifestEntry>,
+        manifests: Vec<PersistedPhysicalRecoveryManifest>,
+        operation: PersistedPhysicalRecoveryOperation,
+    ) -> Option<Self> {
+        Self::new_with_operation_in_storage(
+            source_root_generation,
+            root_state,
+            record_identities,
+            frames,
+            placements,
+            segment_updates,
+            manifests,
+            operation,
+            &mut decode_storage::UnrestrictedDecodeStorage,
+        )
+        .ok()
+    }
+
+    fn new_with_operation_in_storage<S: PhysicalRecoveryDecodeStorage>(
+        source_root_generation: u64,
+        root_state: PersistedPhysicalRecoveryRootState,
+        record_identities: Vec<PersistedRecordIdentity>,
+        frames: Vec<PersistedPhysicalRecoveryFrame>,
+        placements: Vec<CurrentPhysicalRecordPlacement>,
+        segment_updates: Vec<RecordSegmentPageManifestEntry>,
+        manifests: Vec<PersistedPhysicalRecoveryManifest>,
+        operation: PersistedPhysicalRecoveryOperation,
+        storage: &mut S,
+    ) -> Result<Self, PhysicalRecoveryDecodeFailure<S::Denial>> {
+        // A terminal head retirement is the one record-less member: it moves no
+        // data, so it carries no record, frame, placement or inline delta.
+        let record_less = operation.is_terminal_release_head_retired();
         (source_root_generation != 0
-            && !record_identities.is_empty()
-            && !frames.is_empty()
-            && unique(record_identities.iter().copied())
-            && unique(frames.iter().map(|frame| (frame.subject, frame.coordinate)))
+            && record_identities.is_empty() == record_less
+            && frames.is_empty() == record_less
+            && (!record_less
+                || (segment_updates.is_empty()
+                    && manifests.is_empty()
+                    && root_state.inline_allocations().is_empty()
+                    && root_state.last_inline_record().is_none()))
+            && unique_in_storage(record_identities.iter().copied(), storage)?
+            && unique_in_storage(
+                frames.iter().map(|frame| (frame.subject, frame.coordinate)),
+                storage,
+            )?
             && strictly_ordered(placements.iter().map(|placement| placement.record()))
             && strictly_ordered(
                 segment_updates
                     .iter()
                     .map(|entry| (entry.page_cell().segment_id().get(), entry.page().get())),
             )
-            && strictly_ordered(manifests.iter().map(|manifest| manifest.artifact)))
+            && strictly_ordered(manifests.iter().map(|manifest| manifest.coordinate))
+            && operation.admits(source_root_generation, &record_identities, &placements))
         .then_some(Self {
             source_root_generation,
             root_state,
             record_identities: record_identities.into_boxed_slice(),
-            frames: frames.into_boxed_slice(),
+            payload: PersistedPhysicalRecoveryPayload::Frames(frames.into_boxed_slice()),
+            operation,
             placements: placements.into_boxed_slice(),
             segment_updates: segment_updates.into_boxed_slice(),
             manifests: manifests.into_boxed_slice(),
         })
+        .ok_or_else(|| PhysicalRecoveryProjectionDenial::Malformed.into())
     }
 
     pub const fn source_root_generation(&self) -> u64 {
@@ -101,8 +218,17 @@ impl PersistedPhysicalRecoveryProjection {
     pub fn record_identities(&self) -> &[PersistedRecordIdentity] {
         &self.record_identities
     }
-    pub fn frames(&self) -> &[PersistedPhysicalRecoveryFrame] {
-        &self.frames
+    pub fn payload(&self) -> &PersistedPhysicalRecoveryPayload {
+        &self.payload
+    }
+    pub const fn operation(&self) -> &PersistedPhysicalRecoveryOperation {
+        &self.operation
+    }
+    pub fn frames(&self) -> Option<&[PersistedPhysicalRecoveryFrame]> {
+        match &self.payload {
+            PersistedPhysicalRecoveryPayload::Frames(frames) => Some(frames),
+            PersistedPhysicalRecoveryPayload::SourceCopy(_) => None,
+        }
     }
     pub fn placements(&self) -> &[CurrentPhysicalRecordPlacement] {
         &self.placements
@@ -115,76 +241,27 @@ impl PersistedPhysicalRecoveryProjection {
     }
 }
 
-fn unique<T: Ord>(values: impl Iterator<Item = T>) -> bool {
-    let mut seen = BTreeSet::new();
-    values.into_iter().all(|value| seen.insert(value))
+fn unique_in_storage<T: Ord, S: PhysicalRecoveryDecodeStorage>(
+    values: impl ExactSizeIterator<Item = T>,
+    storage: &mut S,
+) -> Result<bool, PhysicalRecoveryDecodeFailure<S::Denial>> {
+    let mut seen = decode_storage::reserve_vec(values.len(), storage)?;
+    seen.extend(values);
+    seen.sort_unstable();
+    Ok(seen.windows(2).all(|pair| pair[0] != pair[1]))
 }
 
-fn strictly_ordered<T: Ord>(values: impl Iterator<Item = T>) -> bool {
-    let values = values.collect::<Vec<_>>();
-    values.windows(2).all(|pair| pair[0] < pair[1])
-}
-
-impl PersistedPhysicalRecoveryFrame {
-    pub fn new(
-        subject: PersistedPhysicalDataFrameSubject,
-        coordinate: RecordFrameCoordinate,
-        bytes: &[u8],
-    ) -> Option<Self> {
-        (bytes.len() == coordinate.length() as usize && subject_matches(subject, coordinate))
-            .then_some(Self {
-                subject,
-                coordinate,
-                bytes: bytes.into(),
-            })
-    }
-    pub const fn subject(&self) -> PersistedPhysicalDataFrameSubject {
-        self.subject
-    }
-    pub const fn coordinate(&self) -> RecordFrameCoordinate {
-        self.coordinate
-    }
-    pub fn bytes(&self) -> &[u8] {
-        &self.bytes
-    }
-}
-
-impl PersistedPhysicalRecoveryManifest {
-    pub fn new(artifact: RecordArtifactFile, bytes: &[u8]) -> Option<Self> {
-        matches!(artifact, RecordArtifactFile::ExtentManifest { .. }).then_some(Self {
-            artifact,
-            bytes: bytes.into(),
-        })
-    }
-    pub const fn artifact(&self) -> RecordArtifactFile {
-        self.artifact
-    }
-    pub fn bytes(&self) -> &[u8] {
-        &self.bytes
-    }
-}
-
-fn subject_matches(
-    subject: PersistedPhysicalDataFrameSubject,
-    coordinate: RecordFrameCoordinate,
-) -> bool {
-    match (subject, coordinate.artifact()) {
-        (
-            PersistedPhysicalDataFrameSubject::InlinePage(page),
-            RecordArtifactFile::Segment {
-                segment,
-                generation: _,
-            },
-        ) => page.segment_id().get() == segment,
-        (
-            PersistedPhysicalDataFrameSubject::ExtentChunk(chunk),
-            RecordArtifactFile::Extent { extent, generation },
-        ) => {
-            chunk.extent_cell().extent_id().get() == extent
-                && chunk.extent_cell().generation().get() == generation
+fn strictly_ordered<T: Ord>(mut values: impl Iterator<Item = T>) -> bool {
+    let Some(mut prior) = values.next() else {
+        return true;
+    };
+    for value in values {
+        if prior >= value {
+            return false;
         }
-        _ => false,
+        prior = value;
     }
+    true
 }
 
 #[cfg(test)]

@@ -20,6 +20,7 @@ impl<S> SuccessfulTransitionOutcome<S> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[must_use]
 pub enum TransitionOutcome<
     S,
     D = Infallible,

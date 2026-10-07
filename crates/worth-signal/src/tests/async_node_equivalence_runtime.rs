@@ -36,7 +36,7 @@ fn async_node_capability_equivalence_report_matches_legacy_runtime_truth_for_ric
         .expect("async capability should attach");
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [node],
         Box::new(NoopAsyncNodeObservationListener),
     );

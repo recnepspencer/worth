@@ -1,0 +1,10 @@
+error[E0624]: associated function `witness` is private
+  --> tests/ui/manifest_entry_charge_cannot_be_forged.rs:15:34
+   |
+15 |         &ManifestEntryAuthority::witness(),
+   |                                  ^^^^^^^ private associated function
+   |
+  ::: tests/ui/manifest_entry/../../../src/orchestration/planning/page_observation/walk_entry/manifest_entry_budget.rs
+   |
+   | worth_foundational::limit_authority!(pub ManifestEntryAuthority);
+   | ---------------------------------------------------------------- private associated function defined here

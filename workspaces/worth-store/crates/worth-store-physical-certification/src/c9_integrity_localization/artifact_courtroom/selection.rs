@@ -1,6 +1,33 @@
 //! Mandatory family and operator selection from a production-issued inventory.
 use super::{ArtifactInventory, ProductionWorldProfile};
+use crate::c9_integrity_localization::artifact_edit::ArtifactOperator;
 use std::collections::BTreeSet;
+
+pub(super) fn terminal_truncate_target(
+    inventory: &ArtifactInventory,
+    index: usize,
+    operator: ArtifactOperator,
+) -> usize {
+    let target = &inventory.granules[index];
+    if operator != ArtifactOperator::Truncate
+        || !matches!(
+            target.family,
+            "inline_page" | "extent_manifest" | "extent_chunk"
+        )
+    {
+        return index;
+    }
+    // A file truncation must target its final selected frame; an arena
+    // manifest truncation also removes that extent's chunks.
+    inventory
+        .granules
+        .iter()
+        .enumerate()
+        .filter(|(_, candidate)| candidate.path == target.path && candidate.family == target.family)
+        .max_by_key(|(_, candidate)| candidate.offset())
+        .unwrap()
+        .0
+}
 
 pub(super) fn rows(
     inventory: &ArtifactInventory,

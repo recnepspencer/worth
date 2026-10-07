@@ -1,28 +1,36 @@
-use crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection;
-use rayon::prelude::*;
+use worth_execution::ExecutionResourceLease;
+use worth_foundational::ExecutionReport;
 
 use super::super::query_fragment_work::execute_explicit_query_fragment_from_exact_basis;
 use super::super::query_packetization::PacketizedQueryWork;
 use super::super::{SnapshotPinnedQueryPlan, VisibilityReadContext};
+use super::leased_explicit::execute_leased_explicit_fragment;
+use super::leased_map::{execute_leased_query_packets, QueryReadExecutionStop};
 use crate::storage::overlay::PartitionAccess;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_explicit_query_fragments_from_exact_basis(
     reader: &VisibilityReadContext<'_>,
     plan: &SnapshotPinnedQueryPlan,
-    packets: &[PacketizedQueryWork],
+    packets: Vec<PacketizedQueryWork>,
     basis: &crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    strategy: PreparationStrategySelection,
-) -> Option<Vec<crate::query::data::QueryWorkerFragment>> {
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<
+    Option<(
+        Vec<crate::query::data::QueryWorkerFragment>,
+        Option<ExecutionReport>,
+    )>,
+    QueryReadExecutionStop,
+> {
     let state_access: &(dyn PartitionAccess + Sync) = basis.root().as_ref();
     let registry = basis.root().schema_authority().registry();
     let version_id = basis.version_id();
-    match strategy {
-        PreparationStrategySelection::Serial => {
+    match lease {
+        None => {
             reader
                 .runtime()
                 .performance_access()
                 .count_query_serial_strategy();
-            packets
+            Ok(packets
                 .iter()
                 .enumerate()
                 .map(|(ordinal, packet)| {
@@ -37,39 +45,33 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
                         ordinal as u64,
                     )
                 })
-                .collect()
+                .collect::<Option<Vec<_>>>()
+                .map(|fragments| (fragments, None)))
         }
-        PreparationStrategySelection::StagedParallel => {
+        Some(lease) => {
             reader
                 .runtime()
                 .performance_access()
                 .count_query_staged_parallel_strategy();
-            let bucket_count = packets.len().min(rayon::current_num_threads()).max(1);
-            let mut buckets = vec![Vec::new(); bucket_count];
-            for (ordinal, packet) in packets.iter().enumerate() {
-                buckets[ordinal % bucket_count].push((ordinal as u64, packet));
-            }
-            let bucketed_fragments = buckets
-                .into_par_iter()
-                .map(|bucket| {
-                    bucket
-                        .into_iter()
-                        .map(|(ordinal, packet)| {
-                            execute_explicit_query_fragment_from_exact_basis(
-                                reader,
-                                basis,
-                                state_access,
-                                registry,
-                                version_id,
-                                &plan.packet,
-                                packet,
-                                ordinal,
-                            )
-                        })
-                        .collect::<Option<Vec<_>>>()
-                })
-                .collect::<Option<Vec<Vec<_>>>>()?;
-            Some(bucketed_fragments.into_iter().flatten().collect())
+            let (fragments, report) = execute_leased_query_packets(
+                packets,
+                lease,
+                |packet, ordinal, ceiling, context| {
+                    execute_leased_explicit_fragment(
+                        reader,
+                        basis,
+                        state_access,
+                        registry,
+                        version_id,
+                        &plan.packet,
+                        packet,
+                        ordinal as u64,
+                        ceiling,
+                        context,
+                    )
+                },
+            )?;
+            Ok(Some((fragments, Some(report))))
         }
     }
 }

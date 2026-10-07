@@ -63,6 +63,11 @@ impl WorthServer {
         self.runtime.assembly().operation_registry().inventory()
     }
 
+    /// Borrow the authority installed by the host for request lease admission.
+    pub fn execution_authority(&self) -> Option<&worth_execution::ExecutionAuthority> {
+        self.runtime.assembly().execution_authority()
+    }
+
     pub fn route_inventory(&self) -> WorthServerRouteInventory {
         self.runtime.assembly().route_assembly().inventory().clone()
     }

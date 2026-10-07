@@ -15,6 +15,11 @@ use super::{
     basis::WorthQueryApplicationQueryBasisCustody, WorthQueryAdmittedApplicationQueryControls,
 };
 
+pub(super) enum WorthQueryQueryIndexPosture {
+    HistoricalAllPrimary,
+    SelectedInstalled(super::PreparedSelectedReadIndexes),
+}
+
 /// Sealed execution authority for one exact installed query admission.
 ///
 /// Descriptive query identities, support inventories, and graph-plan reviews
@@ -43,12 +48,16 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) continuation_index_id: Option<DerivedIndexId>,
     pub(super) continuation_state: Option<WorthQueryAdmittedContinuationState>,
     pub(super) basis: WorthQueryApplicationQueryBasisCustody,
+    pub(super) index_posture: WorthQueryQueryIndexPosture,
     pub(super) security_product: crate::basis::WorthQueryProductObservationLease,
     pub(super) graph_work:
         crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
     pub(super) authorization_work: super::WorthQueryApplicationAuthorizationWorkEvidence,
+    pub(super) selected_access: Option<
+        super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
+    >,
     pub(super) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
 }
 

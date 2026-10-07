@@ -1,5 +1,7 @@
 use super::*;
 
+struct RegistryOutputFamily;
+
 pub(super) fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
     static OCCURRENCE: std::sync::OnceLock<worth_runtime_world::facade::ProductBranchIncarnation> =
         std::sync::OnceLock::new();
@@ -48,7 +50,9 @@ pub(super) fn key_with_query_identity(
     let query = [query_identity; 32];
     let root = root(root_slot);
     WorthQueryOutputDemandKey::new(
+        std::any::TypeId::of::<RegistryOutputFamily>(),
         producer.to_owned(),
+        crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
         crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch::new(
             query,
             [query_identity.wrapping_add(1); 32],
@@ -74,15 +78,31 @@ pub(super) fn record(
     interests: usize,
 ) -> DemandRecord {
     DemandRecord {
+        _record_capacity: test_record_capacity(),
+        work_membership: None,
+        source_commit_capacity: None,
         interests,
-        required: false,
+        required_interests: 0,
+        performed_obligations: Vec::new(),
+        framework_required_count: 0,
+        prerequisites: Vec::new(),
+        checkpoint_prerequisites: None,
+        prepared_prerequisite_claims: 0,
+        pending_cleanup_next: None,
+        pending_cleanup_queued: false,
+        pending_cleanup_key_bytes: 0,
+        settlements: Vec::new(),
         product_occurrence: occurrence,
         source_scope: None,
         source_commits: Vec::new(),
         state,
         performed_source: None,
+        readmission_source: None,
         successor_of: None,
+        required_stop: None,
+        held_successor: None,
         wake: Arc::new(DemandWake {
+            _record_capacity: test_record_capacity(),
             generation: Mutex::new(0),
             changed: Condvar::new(),
         }),
@@ -94,8 +114,26 @@ pub(super) fn interest(
     key: WorthQueryOutputDemandKey,
     wake: Arc<DemandWake>,
 ) -> WorthQueryOutputDemandInterest {
+    interest_with_requirement(registry, key, wake, false)
+}
+
+pub(super) fn required_interest(
+    registry: &WorthQueryOutputDemandRegistry,
+    key: WorthQueryOutputDemandKey,
+    wake: Arc<DemandWake>,
+) -> WorthQueryOutputDemandInterest {
+    interest_with_requirement(registry, key, wake, true)
+}
+
+fn interest_with_requirement(
+    registry: &WorthQueryOutputDemandRegistry,
+    key: WorthQueryOutputDemandKey,
+    wake: Arc<DemandWake>,
+    requires_output: bool,
+) -> WorthQueryOutputDemandInterest {
     WorthQueryOutputDemandInterest {
         key,
+        requires_output,
         notifications: WorthQueryOutputDemandNotifications {
             wake: Arc::clone(&wake),
         },

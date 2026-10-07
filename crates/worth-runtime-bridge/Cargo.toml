@@ -13,6 +13,7 @@ certification-construction = []
 
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
+worth-execution = { path = "../worth-execution" }
 worth-proof = { path = "../worth-proof" }
 worth-relational = { path = "../worth-relational" }
 worth-signal = { path = "../worth-signal" }

@@ -285,6 +285,7 @@ impl InvalidationSink for StaticSink {
     fn deliver_invalidation(
         &self,
         delivery: BridgeSignalInvalidationDelivery,
+        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
     ) -> Result<worth_runtime_bridge::facade::BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(worth_runtime_bridge::facade::BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

@@ -3,9 +3,9 @@ use std::path::Path;
 
 use super::{BindingField, BindingInspectionDenial};
 
-const REWRITE_DOMAIN: &[u8] = b"store.physical.rewrite-redo.v1";
+const REWRITE_DOMAIN: &[u8] = b"store.physical.rewrite-redo.v2";
 const CANONICAL_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const BODY_BYTES: usize = 216;
+const BODY_BYTES: usize = 280;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct IndependentRewriteRedo {
@@ -14,6 +14,7 @@ pub(crate) struct IndependentRewriteRedo {
     pub(in super::super) destination_length: u32,
     pub(in super::super) candidate_bytes: u64,
     pub(in super::super) resulting_root_generation: u64,
+    pub(crate) arena_routes: Option<([u64; 3], [u64; 3], u64)>,
 }
 
 pub(in super::super) fn inspect_rewrite_redo(
@@ -45,10 +46,43 @@ pub(in super::super) fn inspect_rewrite_redo(
     let destination_length = take_u32(&mut cursor)?;
     let _page_lsn = take_u64(&mut cursor)?;
     cursor = &cursor[32..];
-    let _source_placement = take_u64(&mut cursor)?;
-    let _destination_placement = take_u64(&mut cursor)?;
+    let source_placement = take_u64(&mut cursor)?;
+    let destination_placement = take_u64(&mut cursor)?;
     let candidate_bytes = take_u64(&mut cursor)?;
     let resulting_root_generation = take_u64(&mut cursor)?;
+    let mut route_fields = [0_u64; 8];
+    for field in &mut route_fields {
+        *field = take_u64(&mut cursor)?;
+    }
+    let arena_routes = if route_fields == [0; 8] {
+        None
+    } else {
+        let [tag, source_arena, source_offset, source_bytes, destination_arena, destination_offset, destination_bytes, alignment] =
+            route_fields;
+        if tag != 1
+            || source_placement != destination_placement
+            || source_arena == 0
+            || destination_arena == 0
+            || source_bytes == 0
+            || source_bytes != destination_bytes
+            || !alignment.is_power_of_two()
+            || source_offset % alignment != 0
+            || destination_offset % alignment != 0
+            || source_bytes % alignment != 0
+            || source_offset.checked_add(source_bytes).is_none()
+            || destination_offset.checked_add(destination_bytes).is_none()
+            || (source_arena == destination_arena
+                && source_offset < destination_offset + destination_bytes
+                && destination_offset < source_offset + source_bytes)
+        {
+            return Err(BindingInspectionDenial::InvalidFrame);
+        }
+        Some((
+            [source_arena, source_offset, source_bytes],
+            [destination_arena, destination_offset, destination_bytes],
+            alignment,
+        ))
+    };
     if !cursor.is_empty() {
         return Err(BindingInspectionDenial::TrailingBytes);
     }
@@ -66,6 +100,7 @@ pub(in super::super) fn inspect_rewrite_redo(
         destination_length,
         candidate_bytes,
         resulting_root_generation,
+        arena_routes,
     })
 }
 

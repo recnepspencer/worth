@@ -1,14 +1,13 @@
 use crate::data::graph::SignalGraph;
 use std::collections::BTreeMap;
 
-use super::super::types::{ExecutionReport, PlanSummary, StageExecutionRecord, StageExecutor};
+use super::super::types::{ExecutionReport, PlanSummary, StageExecutionRecord};
 
 pub(crate) fn begin_execution_report(
     graph: &mut SignalGraph,
     summary: &PlanSummary,
     stage_count: usize,
     maybe_stale_validation_tasks: u64,
-    executor: StageExecutor,
 ) -> ExecutionReport {
     let max_stage_width = summary.max_stage_width as u64;
     graph.with_telemetry(|telemetry| {
@@ -20,9 +19,8 @@ pub(crate) fn begin_execution_report(
         telemetry.planner.maybe_stale_validation_tasks += maybe_stale_validation_tasks;
     });
 
-    record_executor_usage(graph, executor);
-
     ExecutionReport {
+        execution: Vec::new(),
         plan_summary: *summary,
         stage_count: summary.stage_count,
         task_count: summary.task_count,
@@ -47,29 +45,6 @@ pub(crate) fn begin_execution_report(
         semantic_finalize_nanos: 0,
         semantic_segment_count: 0,
         stages: Vec::new(),
-    }
-}
-
-fn record_executor_usage(graph: &mut SignalGraph, executor: StageExecutor) {
-    #[cfg(feature = "parallel")]
-    {
-        match executor {
-            StageExecutor::StagedParallelPrecompute { .. } | StageExecutor::FullParallel { .. } => {
-                graph.with_telemetry(|telemetry| {
-                    telemetry.execution.parallel_executor_usage_count += 1;
-                });
-            }
-            StageExecutor::Serial => {
-                graph.with_telemetry(|telemetry| {
-                    telemetry.execution.serial_executor_usage_count += 1;
-                });
-            }
-        }
-    }
-    #[cfg(not(feature = "parallel"))]
-    {
-        let _ = executor;
-        graph.with_telemetry(|telemetry| telemetry.execution.serial_executor_usage_count += 1);
     }
 }
 

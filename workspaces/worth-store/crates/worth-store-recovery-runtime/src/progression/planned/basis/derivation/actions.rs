@@ -10,42 +10,56 @@ pub(super) fn derive(
     redo: &ImmutablePhysicalRedoPlan,
     materialization: &ProjectedMaterializationBasis,
     staging_generation: u64,
+    allowance: &mut PlanningResidentAllowance,
 ) -> Result<StagingActionBasis, ExecutionBasisDenial> {
-    let mut grouped = BTreeMap::<
-        PhysicalRedoTargetIdentity,
-        (PhysicalRedoTarget, Vec<RecoveryStagingRedoStep>),
-    >::new();
-    for decision in redo.resolved_decisions() {
+    let count = redo
+        .resolved_decisions()
+        .filter(|decision| decision.kind() == PhysicalRedoDecisionKind::Apply)
+        .count();
+    let mut grouped = allowance.reserve(count)?;
+    for (ordinal, decision) in redo.resolved_decisions().enumerate() {
         if decision.kind() != PhysicalRedoDecisionKind::Apply {
             continue;
         }
         let target = decision.target();
         let step = step(decision)?;
-        match grouped.get_mut(&target.identity()) {
-            Some((retained, steps)) if *retained == *target => steps.push(step),
-            Some(_) => return Err(ExecutionBasisDenial::Invalid),
-            None => {
-                grouped.insert(target.identity(), (target.clone(), vec![step]));
-            }
-        }
+        grouped.push((target.identity(), ordinal, target, step));
     }
-    let allocated_targets = grouped.keys().copied().collect::<Vec<_>>();
-    let actions = grouped
-        .into_iter()
+    grouped.sort_unstable_by_key(|row| (row.0, row.1));
+    let group_count = grouped
+        .iter()
         .enumerate()
-        .map(|(ordinal, (identity, (source, steps)))| {
-            materialization
+        .filter(|(index, row)| *index == 0 || grouped[*index - 1].0 != row.0)
+        .count();
+    let mut allocated_targets = allowance.reserve(group_count)?;
+    let mut actions = allowance.reserve(group_count)?;
+    let mut start = 0;
+    while start < grouped.len() {
+        let identity = grouped[start].0;
+        let source = grouped[start].2;
+        let end = start + grouped[start..].partition_point(|row| row.0 == identity);
+        if grouped[start..end].iter().any(|row| row.2 != source)
+            || materialization
                 .frames
-                .contains_key(&identity)
-                .then_some(RecoveryStagingAction {
-                    ordinal: ordinal as u64,
-                    steps: steps.into_boxed_slice(),
-                    source,
-                    destination_generation: staging_generation,
-                })
-                .ok_or(ExecutionBasisDenial::Invalid)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+                .binary_search_by_key(&identity, |row| row.0)
+                .is_err()
+        {
+            return Err(ExecutionBasisDenial::Invalid);
+        }
+        let mut steps = allowance.reserve(end - start)?;
+        steps.extend(grouped[start..end].iter().map(|row| row.3.clone()));
+        actions.push(RecoveryStagingAction {
+            ordinal: actions.len() as u64,
+            steps: allowance.into_box(steps)?,
+            source: source.clone(),
+            destination_generation: staging_generation,
+        });
+        allocated_targets.push(identity);
+        start = end;
+    }
+    let scratch = PlanningResidentAllowance::vector_bytes(&grouped)?;
+    drop(grouped);
+    allowance.release(scratch);
     Ok(StagingActionBasis {
         actions,
         allocated_targets,

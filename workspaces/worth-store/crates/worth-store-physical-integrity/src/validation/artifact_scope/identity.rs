@@ -1,7 +1,8 @@
 use worth_store_physical_format::{
-    DurableExtentRecordPlacement, ExtentChunkCoordinate, FreeSpaceHeaderScopeIdentity,
-    FreeSpaceMembershipBlockScopeIdentity, PageGenerationCell, PhysicalCheckpointIdentity,
-    PhysicalRecordFormatDeclaration, PhysicalWorkObligationIdentity, RootRoutingBlockScopeIdentity,
+    BlobRecordKind, DurableExtentRecordPlacement, ExtentChunkCoordinate,
+    FreeSpaceHeaderScopeIdentity, FreeSpaceMembershipBlockScopeIdentity, PageGenerationCell,
+    PersistedRecordIdentity, PhysicalCheckpointIdentity, PhysicalRecordFormatDeclaration,
+    PhysicalWorkObligationIdentity, RootRoutingBlockScopeIdentity,
     SegmentMembershipBlockScopeIdentity, WalSegmentIdentity,
 };
 
@@ -29,6 +30,14 @@ pub(super) enum PhysicalArtifactScopeIdentity {
         record_format: PhysicalRecordFormatDeclaration,
         page: PageGenerationCell,
     },
+    BTreeNode {
+        record: PersistedRecordIdentity,
+        family_code: u16,
+    },
+    BlobRecord {
+        record: PersistedRecordIdentity,
+        kind: BlobRecordKind,
+    },
     ExtentManifest {
         record_format: PhysicalRecordFormatDeclaration,
         placement: DurableExtentRecordPlacement,
@@ -36,6 +45,7 @@ pub(super) enum PhysicalArtifactScopeIdentity {
     ExtentChunk {
         record_format: PhysicalRecordFormatDeclaration,
         coordinate: ExtentChunkCoordinate,
+        arena_range: worth_store_physical_format::ExtentArenaRange,
     },
     WalFrame(WalSegmentIdentity),
     CheckpointStreamHeader(CheckpointStreamHeaderScopeIdentity),

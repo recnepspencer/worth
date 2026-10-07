@@ -7,7 +7,7 @@ use super::{IndexedSubscriptionMembership, ReverseSubscriptionIndex};
 use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
 use crate::data::output::{
-    DetailTokenId, InternedPartitionSubscription, PartitionMatchMode, PartitionTokenId,
+    InternedPartitionSubscription, InternedScopePath, PartitionTokenId, ScopeCoverage,
 };
 
 const TEST_NAME: &str = "data::graph::topology::subscriber_index::buckets::fork_granule_tests::unrelated_replace_does_not_clone_an_inherited_changed_consumer_payload";
@@ -213,11 +213,10 @@ fn membership(
 }
 
 fn detail_scope(partition: u32, detail: u32) -> InternedPartitionSubscription {
-    InternedPartitionSubscription {
-        partition: PartitionTokenId(partition),
-        detail: Some(DetailTokenId(detail)),
-        match_mode: PartitionMatchMode::PartitionAndDetail,
-    }
+    InternedPartitionSubscription::new(
+        InternedScopePath::new(&[PartitionTokenId(partition), PartitionTokenId(detail)]).unwrap(),
+        ScopeCoverage::Exact,
+    )
 }
 
 fn assert_scope(

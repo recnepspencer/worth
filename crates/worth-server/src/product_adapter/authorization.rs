@@ -53,6 +53,14 @@ pub struct WorthServerProductOperationAuthorization {
 }
 
 impl WorthServerProductOperationAuthorization {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use super::execution_pipeline::read_batch_accounting::string;
+        string(&self.authority_identity)
+            .saturating_add(string(&self.plan_digest))
+            .saturating_add(string(&self.authority_basis))
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub fn new(
         authority_identity: impl Into<String>,
         plan_digest: impl Into<String>,

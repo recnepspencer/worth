@@ -7,6 +7,8 @@ use worth_foundational::facade::{AspectValue, InternedString};
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 #[cfg(feature = "test-primary-graph-faults")]
+mod native_field_write;
+#[cfg(feature = "test-primary-graph-faults")]
 mod workflow_approval;
 #[cfg(feature = "test-primary-graph-faults")]
 mod workflow_definition;
@@ -31,6 +33,15 @@ where
     pub fn fail_next_post_commit_snapshot_for_test(&self) {
         self.primary_provider
             .fail_next_post_commit_snapshot_for_test();
+    }
+
+    /// Holds the next producer commit's rebased facts under a requirement
+    /// to verify them in full, where the commit would seal them as exact.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn leave_next_producer_settlement_unsealed_for_test(&self) {
+        self.primary_provider
+            .leave_next_producer_settlement_unsealed_for_test();
     }
 
     /// Drops only rebuildable workflow-instance progress projections.
@@ -103,12 +114,12 @@ where
     #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn hold_world_snapshot_pressure_for_test(
         &self,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        branch: crate::basis::WorthQueryProductBranch,
     ) -> Vec<crate::basis::WorthQueryProductBranchLease> {
         let mut held = Vec::new();
         let mut exhausted = false;
         for _ in 0..1_024 {
-            match self.product_runtime.integration_admit_product_branch(receipt.product_branch()) {
+            match self.product_runtime.integration_admit_product_branch(branch) {
                 Ok(observation) => held.push(observation),
                 Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted) => {
                     exhausted = true;

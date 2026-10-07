@@ -307,7 +307,10 @@ fn scoped_cause_validation_admits_both_checks_before_publication() {
     graph.publish_output_commit_packet(packet);
     let causes = graph.pending_causes(consumer).unwrap();
     assert_eq!(causes.len(), 1);
-    assert_eq!(causes[0].changed_scopes.as_slice()[0].partition.0, text);
+    assert_eq!(
+        causes[0].changed_scopes.as_slice()[0].path().segments(),
+        [text.as_str(), text.as_str()]
+    );
     assert_eq!(graph.node_aspect_version(producer).unwrap().get(aspect), 9);
 }
 

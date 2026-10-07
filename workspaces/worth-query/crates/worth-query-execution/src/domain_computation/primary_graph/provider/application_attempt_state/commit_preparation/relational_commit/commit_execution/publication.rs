@@ -5,7 +5,7 @@ mod provider_result;
 
 pub(in crate::domain_computation::primary_graph) use committed_application::WorthQueryPrimaryGraphCommittedApplication;
 
-use super::WorthQueryCommittedApplicationSession;
+use super::{PublishedSnapshotCustody, WorthQueryCommittedApplicationSession};
 use crate::domain_computation::primary_graph::provider::{
     pending_application_publication::WorthQueryPendingApplicationPublication,
     WorthQueryPrimaryGraphProvider,
@@ -32,10 +32,26 @@ pub(super) fn publish(
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
+    publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
-    let published_snapshot = committed.committed.snapshot.clone();
-    let publication = publish_retained(provider, runtime, committed, evidence);
-    crate::relational_snapshot_release::release_query_snapshot(runtime, &published_snapshot);
+    let release_published_snapshot = matches!(
+        committed.published_snapshot_custody,
+        PublishedSnapshotCustody::LiveOwned
+    );
+    let native_result = std::sync::Arc::clone(&committed.committed);
+    let publication = publish_retained(
+        provider,
+        runtime,
+        committed,
+        evidence,
+        publication_admission,
+    );
+    if release_published_snapshot {
+        crate::relational_snapshot_release::release_query_snapshot(
+            runtime,
+            &native_result.snapshot,
+        );
+    }
     publication
 }
 
@@ -44,6 +60,7 @@ fn publish_retained(
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
+    publication_admission: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let WorthQueryCommittedApplicationSession {
         mut attempt,
@@ -52,8 +69,20 @@ fn publish_retained(
         committed,
         product_publication,
         managed_views,
+        required_prerequisites,
+        mut prepared_lineage_slot,
+        prepared_output_witness,
         ..
     } = committed;
+    if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut()) {
+        if let Some(sealed) = witness.finish(
+            evidence.output_correspondence(),
+            runtime,
+            &committed.snapshot,
+        ) {
+            slot.retain_native_output_witness(sealed);
+        }
+    }
     if let Some(managed_views) = managed_views {
         managed_views.apply(&committed, &next_basis, &product_publication);
     }
@@ -82,8 +111,9 @@ fn publish_retained(
             next_basis,
             committed,
             application,
-            emitted_effect_count,
-            outcome_identity,
+            required_prerequisites,
+            prepared_lineage_slot,
+            publication_admission,
         ),
     )?;
     Ok(WorthQueryPublishedApplicationCommit { _private: () })

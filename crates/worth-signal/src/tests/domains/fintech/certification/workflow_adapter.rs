@@ -23,7 +23,7 @@ pub(super) fn initialize_session(
     profile: &WorkflowRuntimeProfile,
 ) -> Result<CertifiedFintechWorkflowSession, SignalError> {
     let policy = SignalFintechWorkflowCertificationAdapter::runtime_policy(profile)?;
-    let executor = SignalFintechWorkflowCertificationAdapter::executor(profile)?;
+    let workers = SignalFintechWorkflowCertificationAdapter::workers(profile)?;
     let mut world = compile_unseeded_runtime_fixture(FinancialWorldDefinition::runtime_fixture(
         FintechScale::smoke(),
         MarketRegime::Calm,
@@ -33,7 +33,7 @@ pub(super) fn initialize_session(
     let main = world.current_branch();
     Ok(CertifiedFintechWorkflowSession {
         world,
-        executor,
+        workers,
         policy,
         named_branches: BTreeMap::from([("main".to_string(), main)]),
         named_snapshots: BTreeMap::new(),
@@ -78,14 +78,17 @@ pub(super) fn execute_step(
             Ok(WorkflowStepOutcome::applied())
         }
         FintechWorkflowStep::ReadPrimaryAuditSurface { alias } => {
-            let value = session.world.read_primary_audit_surface(session.executor)?;
+            let value = match session.workers {
+                Some(workers) => session
+                    .world
+                    .read_primary_audit_surface_with_workers(workers)?,
+                None => session.world.read_primary_audit_surface()?,
+            };
             session.named_audits.insert((*alias).to_string(), value);
             Ok(WorkflowStepOutcome::applied())
         }
         FintechWorkflowStep::InjectSyntheticRollback => {
-            session
-                .world
-                .inject_primary_market_rollback(session.executor)?;
+            session.world.inject_primary_market_rollback()?;
             if let Some(injection) = injection {
                 session
                     .failure_injections

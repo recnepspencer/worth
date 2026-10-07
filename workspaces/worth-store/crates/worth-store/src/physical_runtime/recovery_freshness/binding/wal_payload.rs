@@ -1,6 +1,10 @@
 use crate::physical_runtime::durability::{
     decode_retirement, payload_is_retirement, RetirementRecord,
 };
+use worth_store_physical_format::{
+    payload_is_blob_manifest_residue_cleanup_any, payload_is_tier_epoch_activation,
+    BlobManifestResidueCleanup, TierEpochActivationV1,
+};
 
 use super::StoreRecoveryBindingSampleDenial;
 
@@ -10,11 +14,27 @@ pub(super) enum ClassifiedWalPayload<'payload> {
         redo: &'payload [u8],
     },
     Retirement(RetirementRecord),
+    ExtentCopy(&'payload [u8]),
+    BlobManifestResidueCleanup(BlobManifestResidueCleanup),
+    TierEpochActivation(TierEpochActivationV1),
 }
 
 pub(super) fn classify_wal_payload(
     payload: &[u8],
 ) -> Result<ClassifiedWalPayload<'_>, StoreRecoveryBindingSampleDenial> {
+    if worth_store_physical_format::payload_is_extent_copy_any(payload) {
+        return Ok(ClassifiedWalPayload::ExtentCopy(payload));
+    }
+    if payload_is_blob_manifest_residue_cleanup_any(payload) {
+        return BlobManifestResidueCleanup::decode(payload)
+            .map(ClassifiedWalPayload::BlobManifestResidueCleanup)
+            .map_err(|_| StoreRecoveryBindingSampleDenial::InvalidWalMember);
+    }
+    if payload_is_tier_epoch_activation(payload) {
+        return TierEpochActivationV1::decode(payload)
+            .map(ClassifiedWalPayload::TierEpochActivation)
+            .map_err(|_| StoreRecoveryBindingSampleDenial::InvalidWalMember);
+    }
     if payload_is_retirement(payload) {
         return decode_retirement(payload)
             .map(ClassifiedWalPayload::Retirement)
@@ -72,6 +92,7 @@ mod tests {
             false,
             4,
             16,
+            None,
         );
         let ClassifiedWalPayload::Retirement(record) = classify_wal_payload(&payload).unwrap()
         else {
@@ -91,6 +112,7 @@ mod tests {
             false,
             4,
             16,
+            None,
         );
         payload.pop();
         assert!(matches!(

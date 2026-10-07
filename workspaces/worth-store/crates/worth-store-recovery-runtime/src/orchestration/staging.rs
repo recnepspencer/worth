@@ -1,5 +1,6 @@
+use crate::orchestration::ResidentSourceSelection;
 use worth_store::physical_runtime::StoreRecoveryBindingFreshnessSample;
-use worth_store_recovery_physics::{PhysicalSourceSelection, RecoveryPlanningCounters};
+use worth_store_recovery_physics::RecoveryPlanningCounters;
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence,
@@ -21,7 +22,10 @@ mod execution;
 pub(crate) struct RecoveryStagingInput {
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
-    pub(crate) selection: PhysicalSourceSelection,
+    pub(crate) selection: ResidentSourceSelection,
+    pub(crate) custody: crate::progression::PlanningCustody,
+    pub(crate) verified_selected_tier_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     pub(crate) discovery_counters: PhysicalRecoveryDiscoveryCounters,
     pub(crate) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     pub(crate) integrity: RecoveryIntegrityEvidence,
@@ -44,9 +48,9 @@ pub(crate) enum RecoveryStagingCancellation {
 }
 
 pub(crate) fn stage_recovery(
-    input: RecoveryStagingInput,
+    mut input: RecoveryStagingInput,
 ) -> Result<StagedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    match execution::run(&input) {
+    match execution::run(&mut input) {
         Ok(execution) => complete(input, execution),
         Err(execution) => Err(block(input, execution)),
     }
@@ -79,6 +83,8 @@ fn complete(
         input.authority,
         input.coordination,
         input.selection,
+        input.custody,
+        input.verified_selected_tier_custody,
         input.discovery_counters,
         input.root_protocol_denials,
         input.integrity,
@@ -108,7 +114,7 @@ fn block(
     drop(media);
     session.block();
     PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
-        PhysicalRecoveryBlockKind::Staging,
+        crate::entry::PhysicalRecoveryBlockCause::Damage(PhysicalRecoveryBlockKind::Staging),
         store,
         session_identity,
         PhysicalRecoveryBlockEvidence {

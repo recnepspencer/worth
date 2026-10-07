@@ -4,9 +4,10 @@ use std::path::Path;
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::{
     ExternalPhysicalRecordLocator, PhysicalRecordInitialization, PhysicalRecordOpen,
-    RecordAppendBatch, RecordByteLimit, RecordReadLimits, RecordScanOutcome, RecordScanRequest,
+    PhysicalRecoveryJournalCounters, RecordAppendBatch, RecordByteLimit, RecordReadLimits,
+    RecordScanOutcome, RecordScanRequest, ServingPhysicalRuntime,
 };
-use worth_store_physical_backend::MediaOperationRole;
+use worth_store_physical_backend::{MediaCounterSnapshot, MediaOperationRole};
 
 pub(super) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::path::PathBuf) {
     let records = super::courtroom_oracle::read(&oracle);
@@ -16,12 +17,14 @@ pub(super) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::pat
         PhysicalRecordInitialization::new(format, placement, access, durability)
     }));
     let counters_before_workload = serving.media_counters();
+    let mut publications = PublicationBarriers::start(&serving);
     let first = super::durable_publication::publish_single(
         &serving,
         placement,
         super::durable_publication::certification_material("c5-mixed-record-courtroom", 1),
         RecordAppendBatch::try_from_iter([payload(records[0])]).unwrap(),
     );
+    publications.mark(&serving);
     let first_id = first.settled_members()[0].record_id(0).unwrap();
     let inline = records[1..1_400].iter().copied().map(payload);
     let inline = super::durable_publication::publish_single(
@@ -30,12 +33,14 @@ pub(super) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::pat
         super::durable_publication::certification_material("c5-mixed-record-courtroom", 2),
         RecordAppendBatch::try_from_iter(inline).unwrap(),
     );
+    publications.mark(&serving);
     let boundary = super::durable_publication::publish_single(
         &serving,
         placement,
         super::durable_publication::certification_material("c5-mixed-record-courtroom", 3),
         RecordAppendBatch::try_from_iter([payload(records[1_400])]).unwrap(),
     );
+    publications.mark(&serving);
     let large = records[1_401];
     let large = super::durable_publication::publish_single(
         &serving,
@@ -49,6 +54,7 @@ pub(super) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::pat
             .build()
             .unwrap(),
     );
+    publications.mark(&serving);
     let inline_member = &inline.settled_members()[0];
     let boundary_member = &boundary.settled_members()[0];
     let large_member = &large.settled_members()[0];
@@ -73,6 +79,7 @@ pub(super) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::pat
     );
     writer.flush().unwrap();
     super::scenario_evidence::emit_process("writer", &serving);
+    publications.emit();
     let counters = serving.media_counters();
     println!(
         "C5_COURTROOM_WRITER {} {} {} {} {} {}",
@@ -102,6 +109,51 @@ pub(super) fn writer(root: &Path, locators: std::path::PathBuf, oracle: std::pat
     );
     std::io::stdout().flush().unwrap();
     std::process::exit(0);
+}
+
+/// Per-publication catalog replacements and the directory barriers issued
+/// outside the recovery journal, so a parent-directory barrier can be checked
+/// against each replacement instead of against the whole workload.
+struct PublicationBarriers {
+    last: (MediaCounterSnapshot, PhysicalRecoveryJournalCounters),
+    rows: Vec<(u64, u64, u64)>,
+}
+
+impl PublicationBarriers {
+    fn start(serving: &ServingPhysicalRuntime) -> Self {
+        Self {
+            last: Self::observe(serving),
+            rows: Vec::new(),
+        }
+    }
+
+    fn observe(
+        serving: &ServingPhysicalRuntime,
+    ) -> (MediaCounterSnapshot, PhysicalRecoveryJournalCounters) {
+        (
+            serving.media_counters(),
+            serving.physical_recovery_journal_counters(),
+        )
+    }
+
+    fn mark(&mut self, serving: &ServingPhysicalRuntime) {
+        let (media, journal) = Self::observe(serving);
+        let (last_media, last_journal) = self.last;
+        let delta = |role| media.attempts_for(role) - last_media.attempts_for(role);
+        let replacements = delta(MediaOperationRole::AtomicReplace);
+        let journal_barriers = journal.directory_barriers() - last_journal.directory_barriers();
+        let namespace_barriers =
+            delta(MediaOperationRole::SynchronizeDirectoryPublication) - journal_barriers;
+        self.rows
+            .push((replacements, namespace_barriers, journal_barriers));
+        self.last = (media, journal);
+    }
+
+    fn emit(&self) {
+        for (replacements, namespace, journal) in &self.rows {
+            println!("C5_COURTROOM_PUBLICATION {replacements} {namespace} {journal}");
+        }
+    }
 }
 
 pub(super) fn reopener(root: &Path, evidence: std::path::PathBuf) {

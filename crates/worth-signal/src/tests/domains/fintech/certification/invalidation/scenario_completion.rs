@@ -104,7 +104,7 @@ impl FinancialScenarioCompletion {
         let details = evidence
             .pending_scopes()
             .iter()
-            .filter_map(|scope| scope.detail.as_deref())
+            .filter_map(|scope| scope.path().segments().get(1).map(String::as_str))
             .collect::<BTreeSet<_>>();
         require(
             evidence.gated_consumer_was_pending()

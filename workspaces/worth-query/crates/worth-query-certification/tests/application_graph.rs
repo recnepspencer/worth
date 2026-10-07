@@ -11,6 +11,8 @@ mod document_retention_model;
 mod expression_conditions;
 #[path = "application_graph/fork_decision_reads.rs"]
 mod fork_decision_reads;
+#[path = "application_graph/history_retirement.rs"]
+mod history_retirement;
 #[path = "application_graph/mutation_binding_guard.rs"]
 mod mutation_binding_guard;
 #[path = "application_graph/producer_predicate_checkpoint.rs"]

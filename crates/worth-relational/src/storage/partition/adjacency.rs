@@ -24,6 +24,26 @@ pub(crate) struct AdjacencyEntries {
 }
 
 impl AdjacencySet {
+    pub(crate) fn selected_kind_navigation_work_bound(
+        &self,
+        basis: super::AdjacencyKindBasis,
+    ) -> usize {
+        let entries = self.entries();
+        let selected = match basis {
+            super::AdjacencyKindBasis::Current => &entries.current_by_kind,
+            super::AdjacencyKindBasis::Historical => &entries.historical_by_kind,
+        };
+        selected
+            .as_ref()
+            .map_or(1, |map| map.navigation_work_bound())
+    }
+    pub(crate) fn structural_revision_navigation_work_bound(&self) -> usize {
+        self.entries()
+            .structural_revision_by_kind
+            .as_ref()
+            .map_or(1, |map| map.navigation_work_bound())
+    }
+
     pub(crate) fn changed_current_memberships(
         &self,
         previous: Option<&Self>,

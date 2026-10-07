@@ -143,7 +143,18 @@ pub enum WorthQueryApplicationAttemptDenialKind {
 pub struct WorthQueryApplicationAttemptDenial {
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: String,
-    expression: Option<worth_foundational::expression_api::ExpressionDenial>,
+    cause: AttemptDenialCause,
+}
+
+/// The typed denial a kind carries, when it has one. The request's stop is
+/// held apart: every refusal that carries an attempt denial stays small.
+#[derive(Debug)]
+enum AttemptDenialCause {
+    None,
+    Expression(worth_foundational::expression_api::ExpressionDenial),
+    RequestAuthority(
+        Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>,
+    ),
 }
 
 impl WorthQueryApplicationAttemptDenial {
@@ -154,7 +165,7 @@ impl WorthQueryApplicationAttemptDenial {
         Self {
             kind,
             subject: subject.into(),
-            expression: None,
+            cause: AttemptDenialCause::None,
         }
     }
 
@@ -165,7 +176,19 @@ impl WorthQueryApplicationAttemptDenial {
         Self {
             kind: WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
             subject: subject.into(),
-            expression: Some(denial),
+            cause: AttemptDenialCause::Expression(denial),
+        }
+    }
+
+    /// The attempt's request lost its authority: it was cancelled, passed
+    /// its deadline, or its authentication expired.
+    pub(in crate::domain_computation::primary_graph) fn request_authority_lost(
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
+            subject: denial.subject().to_owned(),
+            cause: AttemptDenialCause::RequestAuthority(Box::new(denial)),
         }
     }
 
@@ -181,7 +204,22 @@ impl WorthQueryApplicationAttemptDenial {
     pub const fn expression(
         &self,
     ) -> Option<&worth_foundational::expression_api::ExpressionDenial> {
-        self.expression.as_ref()
+        match &self.cause {
+            AttemptDenialCause::Expression(denial) => Some(denial),
+            _ => None,
+        }
+    }
+
+    /// The request's own stop behind `CurrentAuthorityDenied`, when the
+    /// request rather than the attempt lost its authority.
+    pub const fn request_authority(
+        &self,
+    ) -> Option<&crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    {
+        match &self.cause {
+            AttemptDenialCause::RequestAuthority(denial) => Some(denial),
+            _ => None,
+        }
     }
 }
 

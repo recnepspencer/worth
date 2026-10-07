@@ -10,6 +10,15 @@ pub struct WorthServerOperationInputEnvelope {
 }
 
 impl WorthServerOperationInputEnvelope {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::{
+            option_string, string,
+        };
+        option_string(&self.declared_schema_identity)
+            .saturating_add(string(&self.payload_identity))
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub fn json(
         declared_schema_identity: impl Into<String>,
         payload: &Value,

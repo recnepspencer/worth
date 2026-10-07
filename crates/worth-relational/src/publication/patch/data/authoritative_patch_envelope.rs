@@ -18,6 +18,19 @@ pub struct PublishedAuthoritativeRecordPatch {
 }
 
 impl PublishedAuthoritativeRecordPatch {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.semantic_changes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<super::PublishedAuthoritativeAspectChange>() as u64)
+            .saturating_add(
+                self.semantic_changes
+                    .iter()
+                    .map(super::PublishedAuthoritativeAspectChange::owned_allocation_capacity_bytes)
+                    .sum::<u64>(),
+            )
+            .saturating_add(self.authoritative_patch.owned_allocation_capacity_bytes())
+            .saturating_add(self.detail.owned_allocation_capacity_bytes())
+    }
+
     pub fn authoritative_changed_aspect_keys(&self) -> impl Iterator<Item = &AspectKey> {
         self.authoritative_patch.changed_aspect_keys()
     }
@@ -40,6 +53,14 @@ impl PublishedAuthoritativeRecordPatch {
             contains_opaque_aspect: self.contains_opaque_aspect,
             detail: self.detail.canonicalized(),
         }
+    }
+
+    pub(crate) fn into_canonicalized(mut self) -> Self {
+        self.authoritative_patch = self.authoritative_patch.into_canonicalized();
+        self.semantic_changes
+            .sort_by_key(super::PublishedAuthoritativeAspectChange::canonical_key);
+        self.semantic_changes.dedup();
+        self
     }
 }
 

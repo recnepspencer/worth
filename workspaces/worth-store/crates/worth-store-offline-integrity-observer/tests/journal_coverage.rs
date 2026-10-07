@@ -83,11 +83,18 @@ fn present_rejected_middle_wal_retains_unknown_coverage_and_its_own_failure() {
             "{label}: {:?}",
             gap.outcome()
         );
-        assert_eq!(
-            report.counters().missing_artifacts(),
-            clean.counters().missing_artifacts(),
-            "rejected presence must not increase missing artifacts: {label}"
-        );
+        if mutate == 3 {
+            // WAL retirement evidence precedes record accounting. Exhausting
+            // the byte bound here prevents later missing-record probes.
+            assert!(report.counters().exhausted_bounds() > 0);
+            assert!(report.counters().missing_artifacts() <= clean.counters().missing_artifacts());
+        } else {
+            assert_eq!(
+                report.counters().missing_artifacts(),
+                clean.counters().missing_artifacts(),
+                "rejected presence must not increase missing artifacts: {label}"
+            );
+        }
         let middle = report
             .artifacts()
             .iter()

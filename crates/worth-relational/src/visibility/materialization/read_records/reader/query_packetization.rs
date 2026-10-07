@@ -62,7 +62,8 @@ pub(super) enum PacketizedQueryWork {
 
 pub(super) fn packetized_query_work(
     packet: &PlannedQueryPacket,
-    read_view: &RelationalReadView,
+    entity_partitions: &[crate::identity::data::PartitionId],
+    relation_partitions: &[crate::identity::data::PartitionId],
 ) -> Option<Vec<PacketizedQueryWork>> {
     match &packet.scope {
         QueryScope::ExplicitTargets { targets } => Some(packetized_explicit_target_work(targets)),
@@ -70,7 +71,7 @@ pub(super) fn packetized_query_work(
             kind_id,
             partition_scope,
         } => Some(
-            entity_scan_partitions(partition_scope, read_view)
+            entity_scan_partitions(partition_scope, entity_partitions)
                 .into_iter()
                 .map(|partition_id| PacketizedQueryWork::EntityKindScan {
                     partition_id,
@@ -82,7 +83,7 @@ pub(super) fn packetized_query_work(
             kind_id,
             partition_scope,
         } => Some(
-            relation_scan_partitions(partition_scope, read_view)
+            relation_scan_partitions(partition_scope, relation_partitions)
                 .into_iter()
                 .map(|partition_id| PacketizedQueryWork::RelationKindScan {
                     partition_id,
@@ -95,7 +96,7 @@ pub(super) fn packetized_query_work(
             value,
             partition_scope,
         } => Some(
-            entity_scan_partitions(partition_scope, read_view)
+            entity_scan_partitions(partition_scope, entity_partitions)
                 .into_iter()
                 .map(|partition_id| PacketizedQueryWork::EntityFieldEquals {
                     partition_id,
@@ -111,7 +112,7 @@ pub(super) fn packetized_query_work(
         } => {
             let comparison_keys = canonical_query_comparison_keys(values.as_ref());
             Some(
-                entity_scan_partitions(partition_scope, read_view)
+                entity_scan_partitions(partition_scope, entity_partitions)
                     .into_iter()
                     .map(|partition_id| PacketizedQueryWork::EntityFieldAnyOf {
                         partition_id,
@@ -126,7 +127,7 @@ pub(super) fn packetized_query_work(
             value,
             partition_scope,
         } => Some(
-            relation_scan_partitions(partition_scope, read_view)
+            relation_scan_partitions(partition_scope, relation_partitions)
                 .into_iter()
                 .map(|partition_id| PacketizedQueryWork::RelationFieldEquals {
                     partition_id,
@@ -142,7 +143,7 @@ pub(super) fn packetized_query_work(
         } => {
             let comparison_keys = canonical_query_comparison_keys(values.as_ref());
             Some(
-                relation_scan_partitions(partition_scope, read_view)
+                relation_scan_partitions(partition_scope, relation_partitions)
                     .into_iter()
                     .map(|partition_id| PacketizedQueryWork::RelationFieldAnyOf {
                         partition_id,
@@ -157,7 +158,7 @@ pub(super) fn packetized_query_work(
             aspect_filter,
             partition_scope,
         } => Some(
-            entity_scan_partitions(partition_scope, read_view)
+            entity_scan_partitions(partition_scope, entity_partitions)
                 .into_iter()
                 .map(|partition_id| PacketizedQueryWork::AspectFilteredEntities {
                     partition_id,
@@ -171,7 +172,7 @@ pub(super) fn packetized_query_work(
             aspect_filter,
             partition_scope,
         } => Some(
-            relation_scan_partitions(partition_scope, read_view)
+            relation_scan_partitions(partition_scope, relation_partitions)
                 .into_iter()
                 .map(
                     |partition_id| PacketizedQueryWork::AspectFilteredRelations {
@@ -191,10 +192,13 @@ pub(super) fn packetized_query_work(
 fn canonical_query_comparison_keys(
     values: &[worth_foundational::facade::AspectValue],
 ) -> Vec<AuthoritativeFieldComparisonKey> {
-    QueryScope::canonical_value_scope(values)
+    let mut keys = QueryScope::canonical_value_scope(values)
         .iter()
         .map(AuthoritativeFieldComparisonKey::from_aspect_value)
-        .collect()
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys.dedup();
+    keys
 }
 
 pub(super) fn packetized_explicit_target_work(

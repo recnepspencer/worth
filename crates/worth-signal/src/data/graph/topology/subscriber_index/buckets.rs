@@ -5,11 +5,12 @@ use crate::data::aspect::Aspect;
 use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::data::handle::NodeId;
-use crate::data::output::{
-    DetailTokenId, InternedPartitionSubscription, PartitionMatchMode, PartitionTokenId,
-};
+use crate::data::output::{InternedPartitionSubscription, InternedScopePath, ScopeCoverage};
 
+mod capacity;
 mod consumer_payload;
+pub(crate) use capacity::{candidate_map_memory_requirement, CandidateEpochBasis};
+mod batch;
 mod discovery;
 mod flat_mutation;
 #[cfg(test)]
@@ -18,8 +19,12 @@ mod fork_cost_tests;
 mod fork_granule_tests;
 mod fork_overlay;
 #[cfg(test)]
+mod leased_queries_tests;
+#[cfg(test)]
 mod model_tests;
 mod operational_clone;
+mod prepared;
+pub(crate) use prepared::{PreparedCandidateEpoch, PreparedCandidateQueries};
 mod persistent_fork;
 mod query;
 
@@ -30,8 +35,7 @@ use fork_overlay::{ReverseSubscriptionFlat, ReverseSubscriptionStorage};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum IndexedSubscriptionScope {
     Unscoped,
-    WholePartition(PartitionTokenId),
-    Detail(PartitionTokenId, DetailTokenId),
+    Path(InternedScopePath, ScopeCoverage),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -48,12 +52,6 @@ impl ProducerAspectKey {
     fn from_committed_output(producer: NodeId, aspect: Aspect) -> Self {
         Self { producer, aspect }
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct DetailScopeKey {
-    partition: PartitionTokenId,
-    detail: DetailTokenId,
 }
 
 impl SignalGraph {
@@ -105,10 +103,7 @@ impl IndexedSubscriptionMembership {
     ) -> Option<Self> {
         let scope = match scope {
             None => IndexedSubscriptionScope::Unscoped,
-            Some(scope) if scope.match_mode == PartitionMatchMode::WholePartition => {
-                IndexedSubscriptionScope::WholePartition(scope.partition)
-            }
-            Some(scope) => IndexedSubscriptionScope::Detail(scope.partition, scope.detail?),
+            Some(scope) => IndexedSubscriptionScope::Path(scope.path(), scope.coverage()),
         };
         Some(Self {
             key: ProducerAspectKey::from_authoritative_edge(producer, aspect),
@@ -121,9 +116,9 @@ impl IndexedSubscriptionMembership {
 struct SubscriberScopeBuckets {
     all: BTreeSet<NodeId>,
     unscoped: BTreeSet<NodeId>,
-    whole_partitions: BTreeMap<PartitionTokenId, BTreeSet<NodeId>>,
-    exact_details: BTreeMap<DetailScopeKey, BTreeSet<NodeId>>,
-    partition_scoped: BTreeMap<PartitionTokenId, BTreeSet<NodeId>>,
+    same_path: BTreeMap<InternedScopePath, BTreeSet<NodeId>>,
+    subtree_covering: BTreeMap<InternedScopePath, BTreeSet<NodeId>>,
+    subtree_members: BTreeMap<InternedScopePath, BTreeSet<NodeId>>,
 }
 
 #[derive(Debug)]

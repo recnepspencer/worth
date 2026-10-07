@@ -13,4 +13,6 @@ pub use read_plan::PhysicalProtectedRootObservation;
 pub use retention::{PhysicalReadProtectionObservation, PhysicalReadProtectionObserver};
 
 pub(in crate::physical_runtime) use lifecycle::PhysicalReadProtectionOwner;
-pub(in crate::physical_runtime) use retention::{PhysicalRootReadLease, RootProtectionRegistry};
+pub(in crate::physical_runtime) use retention::{
+    PhysicalRootReadLease, RootProtectionRegistry, TerminalHeadNoReaderOrRecoveryHold,
+};

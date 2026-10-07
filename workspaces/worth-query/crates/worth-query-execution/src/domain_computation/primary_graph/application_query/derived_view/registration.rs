@@ -227,7 +227,7 @@ where
         if &source.query_identity != expected_query {
             return Err(Denial::ForeignQuery);
         }
-        if source.branch != state.branch
+        if source.branch.as_ref() != &state.branch
             || source.selected_product_occurrence() != Some(state.incarnation)
         {
             return Err(Denial::ForeignBranch);

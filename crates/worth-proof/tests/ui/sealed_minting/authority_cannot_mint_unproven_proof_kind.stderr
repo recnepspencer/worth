@@ -1,11 +1,11 @@
 error[E0599]: the function or associated item `from_authority_witness` exists for struct `Proof<Disjointness, NarrowAuthority>`, but its trait bounds were not satisfied
-  --> tests/ui/sealed_minting/authority_cannot_mint_unproven_proof_kind.rs:13:49
+  --> tests/ui/sealed_minting/authority_cannot_mint_unproven_proof_kind.rs:11:58
    |
- 6 | struct NarrowAuthority;
+ 5 | struct NarrowAuthority;
    | ---------------------- doesn't satisfy `NarrowAuthority: AuthorityProves<Disjointness>`
 ...
-13 |         Proof::<Disjointness, NarrowAuthority>::from_authority_witness(&authority);
-   |                                                 ^^^^^^^^^^^^^^^^^^^^^^ function or associated item cannot be called on `Proof<Disjointness, NarrowAuthority>` due to unsatisfied trait bounds
+11 |     let _proof = Proof::<Disjointness, NarrowAuthority>::from_authority_witness(&authority);
+   |                                                          ^^^^^^^^^^^^^^^^^^^^^^ function or associated item cannot be called on `Proof<Disjointness, NarrowAuthority>` due to unsatisfied trait bounds
    |
    = note: the following trait bounds were not satisfied:
            `NarrowAuthority: AuthorityProves<Disjointness>`

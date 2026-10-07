@@ -1,29 +1,20 @@
-#[cfg(feature = "parallel")]
-use std::num::NonZeroUsize;
+mod leased_signal_support;
 
-#[cfg(feature = "parallel")]
 use serde_json::json;
-#[cfg(feature = "parallel")]
 use worth_signal::facade::diagnostics::{DiagnosticsAvailability, DiagnosticsLevel};
-#[cfg(feature = "parallel")]
 use worth_signal::facade::runtime::{mark_dirty_batch, RuntimePolicy};
-#[cfg(feature = "parallel")]
-use worth_signal::facade::specialist::{ParallelExecutionPolicy, RunMode, StageExecutor};
-#[cfg(feature = "parallel")]
+use worth_signal::facade::specialist::RunMode;
 use worth_signal::facade::{
     Aspect, AspectVersion, BatchChange, ChangedRegion, DependencyEdge, NodeEvaluationResult,
     NodeId, SignalGraph, SignalRuntime,
 };
 
-#[cfg(feature = "parallel")]
 const ASPECT_A: Aspect = Aspect::new(0);
 
-#[cfg(feature = "parallel")]
 fn version_ab(a: u64, b: u64) -> AspectVersion {
     AspectVersion::from_updates([(ASPECT_A, a), (Aspect::new(1), b)])
 }
 
-#[cfg(feature = "parallel")]
 fn policy_name(policy: RuntimePolicy) -> &'static str {
     match policy.tier {
         DiagnosticsLevel::Operational => "operational",
@@ -32,7 +23,6 @@ fn policy_name(policy: RuntimePolicy) -> &'static str {
     }
 }
 
-#[cfg(feature = "parallel")]
 fn parse_runtime_policy(label: &str) -> RuntimePolicy {
     match label {
         "operational" => RuntimePolicy::operational(),
@@ -42,7 +32,6 @@ fn parse_runtime_policy(label: &str) -> RuntimePolicy {
     }
 }
 
-#[cfg(feature = "parallel")]
 fn materialization_label(mode: DiagnosticsAvailability) -> &'static str {
     match mode {
         DiagnosticsAvailability::RetainedAvailable => "retained",
@@ -55,7 +44,6 @@ fn materialization_label(mode: DiagnosticsAvailability) -> &'static str {
     }
 }
 
-#[cfg(feature = "parallel")]
 fn canonical_runtime_artifacts(
     graph: &SignalGraph,
     node: NodeId,
@@ -136,29 +124,15 @@ fn canonical_runtime_artifacts(
     })
 }
 
-#[cfg(feature = "parallel")]
-fn parse_executor(label: &str) -> StageExecutor {
-    let policy_2x1 = ParallelExecutionPolicy::new(NonZeroUsize::new(1).unwrap())
-        .with_worker_count(2)
-        .with_chunk_size(1)
-        .with_apply_group_min_width(1)
-        .with_max_concurrent_apply_groups(2);
-    let policy_4x2 = ParallelExecutionPolicy::new(NonZeroUsize::new(1).unwrap())
-        .with_worker_count(4)
-        .with_chunk_size(2)
-        .with_apply_group_min_width(1)
-        .with_max_concurrent_apply_groups(4);
+fn parse_workers(label: &str) -> usize {
     match label {
-        "serial" => StageExecutor::Serial,
-        "staged-2x1" => StageExecutor::parallel(1).with_parallel_policy(policy_2x1),
-        "staged-4x2" => StageExecutor::parallel(1).with_parallel_policy(policy_4x2),
-        "full-2x1" => StageExecutor::full_parallel(1).with_parallel_policy(policy_2x1),
-        "full-4x2" => StageExecutor::full_parallel(1).with_parallel_policy(policy_4x2),
-        other => panic!("unsupported profile: {other}"),
+        "serial" | "workers-1" => 1,
+        "workers-2" => 2,
+        "workers-4" => 4,
+        other => panic!("unsupported lease profile: {other}"),
     }
 }
 
-#[cfg(feature = "parallel")]
 fn main() {
     let profile = std::env::args()
         .nth(1)
@@ -168,17 +142,37 @@ fn main() {
             .nth(2)
             .unwrap_or_else(|| "development".to_string()),
     );
-    let executor = parse_executor(&profile);
+    let workers = parse_workers(&profile);
+    let host = leased_signal_support::host();
+    let lease = leased_signal_support::lease(&host, workers);
 
     let mut runtime = SignalRuntime::<(), (), (), (), ()>::builder(SignalGraph::new())
         .with_kernel_defaults()
         .runtime_policy(runtime_policy)
         .build();
     let mut graph = runtime.graph_mut();
-    let source = graph.node().output_identity().build();
-    let shell = graph.node().tolerance(1).partitioned_output().build();
-    let core = graph.node().tolerance(1).partitioned_output().build();
-    let target = graph.node().output_identity().build();
+    let source = graph
+        .node()
+        .with_contract(leased_signal_support::contract(&[], ASPECT_A))
+        .output_identity()
+        .build();
+    let shell = graph
+        .node()
+        .with_contract(leased_signal_support::contract(&[source], ASPECT_A))
+        .tolerance(1)
+        .partitioned_output()
+        .build();
+    let core = graph
+        .node()
+        .with_contract(leased_signal_support::contract(&[source], ASPECT_A))
+        .tolerance(1)
+        .partitioned_output()
+        .build();
+    let target = graph
+        .node()
+        .with_contract(leased_signal_support::contract(&[shell, core], ASPECT_A))
+        .output_identity()
+        .build();
     graph
         .set_dependencies(
             shell,
@@ -248,7 +242,7 @@ fn main() {
         .build_evaluation_plan(&[target], RunMode::Default)
         .unwrap();
     graph
-        .execute_prepared_plan_with_executor(
+        .execute_prepared_plan_checked(
             &plan,
             &(),
             &move |ctx| {
@@ -261,11 +255,11 @@ fn main() {
                             .with_changed_region(ChangedRegion::new("mesh").with_detail("face-b")),
                     )
                 } else if node == shell || node == core {
-                    let version = ctx.read_aspect_version(source, ASPECT_A)?;
+                    let version = version_ab(ctx.read(source, ASPECT_A)?, 0);
                     ctx.finish(NodeEvaluationResult::from_version(version))
                 } else {
-                    let shell_v = ctx.read_aspect_version(shell, ASPECT_A)?;
-                    let core_v = ctx.read_aspect_version(core, ASPECT_A)?;
+                    let shell_v = version_ab(ctx.read(shell, ASPECT_A)?, 0);
+                    let core_v = version_ab(ctx.read(core, ASPECT_A)?, 0);
                     ctx.finish(
                         NodeEvaluationResult::from_version(AspectVersion::from_updates([(
                             ASPECT_A,
@@ -276,7 +270,7 @@ fn main() {
                 };
                 Ok(result)
             },
-            executor,
+            &lease,
         )
         .unwrap();
 
@@ -285,9 +279,4 @@ fn main() {
         serde_json::to_string_pretty(&canonical_runtime_artifacts(&graph, target, runtime_policy))
             .unwrap()
     );
-}
-
-#[cfg(not(feature = "parallel"))]
-fn main() {
-    panic!("signal_semantic_snapshot requires the `parallel` feature");
 }

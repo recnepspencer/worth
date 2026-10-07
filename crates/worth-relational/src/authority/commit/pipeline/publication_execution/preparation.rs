@@ -64,6 +64,10 @@ pub(super) struct PreparedPublicationCompletion {
 }
 
 impl PreparedPublicationPhase {
+    pub(super) fn changed_record_count(&self) -> usize {
+        self.changed_records.len()
+    }
+
     pub(super) fn reservation_count(&self) -> usize {
         self.record_allocations.reservation_count()
     }

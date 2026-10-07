@@ -79,7 +79,11 @@ impl PhysicalCheckpointSource {
     pub fn decode_stream_header_record(
         record: &[u8],
     ) -> Result<Self, CheckpointStreamDecodeDenial> {
-        let maintenance = record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA);
+        let maintenance = matches!(
+            record.get(8),
+            Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA)
+                | Some(&super::record::CERTIFIED_CHECKPOINT_SCHEMA)
+        );
         let payload =
             super::record::decode_record(record, super::record::HEADER_KIND, HEADER_PAYLOAD_BYTES)?;
         let source = decode_header(payload)?;
@@ -158,18 +162,6 @@ impl PhysicalCheckpointSource {
     pub const fn with_maintenance_protocol(mut self) -> Self {
         self.requires_maintenance_protocol = true;
         self
-    }
-
-    /// C.9 checkpoint envelope. A maintenance-capable stream is rejected before its header is served.
-    pub fn decode_c9_legacy_stream_header_record(
-        record: &[u8],
-    ) -> Result<Self, CheckpointStreamDecodeDenial> {
-        if record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA) {
-            return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(
-                super::record::MAINTENANCE_CHECKPOINT_SCHEMA,
-            ));
-        }
-        Self::decode_stream_header_record(record)
     }
 }
 

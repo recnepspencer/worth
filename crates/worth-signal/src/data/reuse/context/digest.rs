@@ -85,9 +85,12 @@ fn hash_partition_subscription(
     mut hash: StableHashValue,
     scope: &PartitionSubscription,
 ) -> StableHashValue {
-    hash = hash_str(hash, scope.partition.0.as_str());
-    hash = hash_str(hash, scope.detail.as_deref().unwrap_or(""));
-    hash_u64(hash, scope.match_mode as u64)
+    hash = hash_u64(hash, scope.path().depth() as u64);
+    for segment in scope.path().segments() {
+        hash = hash_u64(hash, segment.len() as u64);
+        hash = hash_str(hash, segment);
+    }
+    hash_u64(hash, scope.coverage() as u64)
 }
 
 fn hash_context_requirement(

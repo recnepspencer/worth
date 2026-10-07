@@ -1,14 +1,13 @@
+use super::pending_factory::{PendingProducerExecutor, TypedPendingProducer};
 use super::*;
 
-pub(in crate::domain_computation::primary_graph::application_contribution) struct PendingProducerRegistry<
-    Schema,
-> {
+pub(in crate::domain_computation::primary_graph) struct PendingProducerRegistry<Schema> {
     declared: BTreeMap<String, DeclaredProducerBinding>,
     providers: BTreeMap<
         String,
         (
             Arc<dyn Any + Send + Sync>,
-            Arc<dyn InstalledProducerExecutor<Schema>>,
+            Box<dyn PendingProducerExecutor<Schema>>,
         ),
     >,
     marker: PhantomData<fn() -> Schema>,
@@ -34,9 +33,22 @@ where
         &mut self,
         owner: &str,
         provider: Binding::Provider,
+        mutation: worth_query_installation::facade::WorthQueryInstalledApplicationMutationBinding<
+            Schema,
+            Binding::Operation,
+        >,
+        source_query: worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding<
+            Schema,
+            super::super::ProducerSourceBinding<Schema, Binding>,
+        >,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Binding: WorthQueryApplicationProducerBinding<Schema>,
+        super::super::ProducerSourceValue<Schema, Binding>:
+            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                Schema,
+                super::super::ProducerSourceQuery<Schema, Binding>,
+            >,
     {
         let declared = self
             .declared
@@ -65,14 +77,20 @@ where
             Binding::IDENTITY.to_owned(),
             (
                 provider.clone(),
-                Arc::new(TypedInstalledProducer::<Schema, Binding>::new(provider)),
+                Box::new(TypedPendingProducer::<Schema, Binding>::new(
+                    provider,
+                    mutation,
+                    source_query,
+                )),
             ),
         );
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn seal(
-        self,
+    pub(in crate::domain_computation::primary_graph) fn seal_with_support(
+        mut self,
+        support: &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot,
+        packages: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
     ) -> Result<
         WorthQueryInstalledApplicationProducerRegistry<Schema>,
         WorthQueryPrimaryGraphInstallationDenial,
@@ -94,21 +112,23 @@ where
             .declared
             .into_iter()
             .map(|(identity, declaration)| {
+                let edition = InstalledProducerEdition::from_declaration(&declaration)?;
                 let (value, executor) = self
                     .providers
-                    .get(&identity)
-                    .expect("complete provider inventory checked")
-                    .clone();
-                (
+                    .remove(&identity)
+                    .expect("complete provider inventory checked");
+                let executor = executor.prepare(support, packages)?;
+                Ok((
                     identity,
-                    InstalledProducerProvider {
+                    Arc::new(InstalledProducerProvider {
                         declaration,
+                        edition,
                         value,
                         executor,
-                    },
-                )
+                    }),
+                ))
             })
-            .collect();
+            .collect::<Result<_, WorthQueryPrimaryGraphInstallationDenial>>()?;
         Ok(WorthQueryInstalledApplicationProducerRegistry {
             entries,
             marker: PhantomData,

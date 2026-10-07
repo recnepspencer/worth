@@ -22,7 +22,7 @@ fn observation_phase3_commit_dispatches_once_per_observer_per_transaction() {
     let calls = Arc::new(Mutex::new(Vec::<CommittedObservationRecord>::new()));
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [source, derived],
         Box::new(Phase3RecordingObservationListener {
             calls: Arc::clone(&calls),
@@ -49,7 +49,7 @@ fn observation_phase3_commit_dispatches_once_per_observer_per_transaction() {
         "one delivery per observer per committed transaction"
     );
     assert_eq!(calls[0].matched_node_count, 2);
-    assert!(calls[0].touched);
+    assert!(calls[0].visited);
     assert!(calls[0].recomputed);
     assert!(calls[0].meaningful_change);
     assert!(calls[0].trigger_matched);
@@ -72,7 +72,7 @@ fn observation_phase3_touched_observer_fires_for_commit_without_execution_report
     let mut runtime = build_runtime(graph);
     let calls = Arc::new(Mutex::new(Vec::<CommittedObservationRecord>::new()));
     let handle = runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [source],
         Box::new(Phase3RecordingObservationListener {
             calls: Arc::clone(&calls),
@@ -98,7 +98,7 @@ fn observation_phase3_touched_observer_fires_for_commit_without_execution_report
             observer_id: handle.observer_id().get(),
             handle_id: handle.handle_id().get(),
             matched_node_count: 1,
-            touched: true,
+            visited: true,
             recomputed: false,
             meaningful_change: false,
             trigger_matched: true,

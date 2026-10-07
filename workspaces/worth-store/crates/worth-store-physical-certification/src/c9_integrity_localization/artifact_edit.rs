@@ -124,11 +124,16 @@ pub(super) fn common_render(
             frame_checksum::refresh_checksum(&mut bytes[start..end]);
         }
         ArtifactOperator::EnvelopeVersion => {
-            bytes[start + 9] = 3;
+            // Root schema 3 is the supported maintenance variant.
+            bytes[start + 9] = if granule.family == "root_manifest" {
+                4
+            } else {
+                3
+            };
             frame_checksum::refresh_checksum(&mut bytes[start..end]);
         }
         ArtifactOperator::RecordVersion => {
-            bytes[start + 10..start + 12].copy_from_slice(&2_u16.to_le_bytes());
+            bytes[start + 10..start + 12].copy_from_slice(&3_u16.to_le_bytes());
             frame_checksum::refresh_checksum(&mut bytes[start..end]);
         }
         ArtifactOperator::Truncate => bytes.truncate(start + granule.length() / 2),
@@ -165,11 +170,11 @@ pub(super) fn audit(
     assert_eq!(before.len(), after.len());
     assert_eq!(before[..start], after[..start]);
     assert_eq!(before[end..], after[end..]);
-    let changed = before
+    let changed = before[start..end]
         .iter()
-        .zip(after)
+        .zip(&after[start..end])
         .enumerate()
-        .filter_map(|(i, (a, b))| (a != b).then_some(i - start))
+        .filter_map(|(i, (a, b))| (a != b).then_some(i))
         .collect::<Vec<_>>();
     assert!(!changed.is_empty());
     let allowed = match operator {
@@ -200,8 +205,15 @@ pub(super) fn audit(
             u32::from_le_bytes(after[start + 24..start + 28].try_into().unwrap()) as usize + 48,
             granule.length() + 1
         ),
-        EnvelopeVersion => assert_eq!(after[start + 9], 3),
-        RecordVersion => assert_eq!(&after[start + 10..start + 12], &2_u16.to_le_bytes()),
+        EnvelopeVersion => assert_eq!(
+            after[start + 9],
+            if granule.family == "root_manifest" {
+                4
+            } else {
+                3
+            }
+        ),
+        RecordVersion => assert_eq!(&after[start + 10..start + 12], &3_u16.to_le_bytes()),
         ScopeSubstitution => {
             for range in common_scope::substitution_fields(granule) {
                 assert_ne!(

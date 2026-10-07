@@ -56,6 +56,9 @@ fn encode_artifact(artifact: RecordArtifactFile) -> (u8, u64, u64) {
         RecordArtifactFile::CatalogCandidate { publication } => (2, publication, 0),
         RecordArtifactFile::RootManifest { generation } => (3, generation, 0),
         RecordArtifactFile::RootRoutingBlock { generation, block } => (4, generation, block),
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            (17, generation, block)
+        }
         RecordArtifactFile::Segment {
             segment,
             generation,
@@ -65,8 +68,7 @@ fn encode_artifact(artifact: RecordArtifactFile) -> (u8, u64, u64) {
             generation,
         } => (6, segment, generation),
         RecordArtifactFile::SegmentMembershipBlock { generation, block } => (7, generation, block),
-        RecordArtifactFile::Extent { extent, generation } => (8, extent, generation),
-        RecordArtifactFile::ExtentManifest { extent, generation } => (9, extent, generation),
+        RecordArtifactFile::ExtentArena { arena } => (16, arena, 0),
         RecordArtifactFile::FreeSpaceManifest { generation } => (10, generation, 0),
         RecordArtifactFile::FreeSpaceMembershipBlock { generation, block } => {
             (11, generation, block)
@@ -87,6 +89,10 @@ fn decode_artifact(
             generation: first,
             block: second,
         },
+        17 if first != 0 && second != 0 => RecordArtifactFile::ReleaseCustodyHeadBlock {
+            generation: first,
+            block: second,
+        },
         5 => RecordArtifactFile::Segment {
             segment: first,
             generation: second,
@@ -99,14 +105,7 @@ fn decode_artifact(
             generation: first,
             block: second,
         },
-        8 => RecordArtifactFile::Extent {
-            extent: first,
-            generation: second,
-        },
-        9 => RecordArtifactFile::ExtentManifest {
-            extent: first,
-            generation: second,
-        },
+        16 if first != 0 && second == 0 => RecordArtifactFile::ExtentArena { arena: first },
         10 if second == 0 => RecordArtifactFile::FreeSpaceManifest { generation: first },
         11 => RecordArtifactFile::FreeSpaceMembershipBlock {
             generation: first,

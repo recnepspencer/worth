@@ -31,7 +31,6 @@ pub(in crate::tests::domains::fintech) use locality_expectation::{
     ExpectedLocalityCounterRow, FinancialLocalityExpectationManifest,
 };
 pub(in crate::tests::domains::fintech) use locality_fresh_recompute::FreshFinancialLocalityRecompute;
-#[cfg(feature = "parallel")]
 pub(crate) use locality_receipt::verify_locality_case_with_policy;
 pub(crate) use locality_receipt::{verify_locality_case, FinancialLocalityCaseEvidence};
 pub(in crate::tests::domains::fintech) use necessity_manifest::{

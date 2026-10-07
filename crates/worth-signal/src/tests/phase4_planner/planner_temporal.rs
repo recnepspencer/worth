@@ -3,7 +3,7 @@ use crate::facade::{
     build_evaluation_plan_with_policy_resolver, execute_plan_with_policy_and_condition, Aspect,
     AspectVersion, ClockAdvanceRequest, ClockDomain, ClockTick, DefaultComparatorPolicyResolver,
     EvaluationOutput, EvaluationRequestMode, NodeEvaluationResult, NodeId, NodeState, SignalError,
-    SignalGraph, SignalRuntime, StageExecutor, TaskExecutionOutcome, TemporalEligibilityAuthority,
+    SignalGraph, SignalRuntime, TaskExecutionOutcome, TemporalEligibilityAuthority,
 };
 use crate::tests::support::version_ab;
 
@@ -50,7 +50,6 @@ fn execution_report_marks_temporal_deferral_explicitly() {
         &mut |_id: NodeId, _graph: &SignalGraph| Ok(version_ab(9, 0)),
         &mut comparator,
         &mut resolver,
-        StageExecutor::Serial,
         None,
     )
     .unwrap();

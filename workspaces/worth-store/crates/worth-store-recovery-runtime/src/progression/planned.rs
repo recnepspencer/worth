@@ -8,14 +8,17 @@ use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryOutcome, PhysicalRecoverySourceDenial,
 };
 use crate::handoff::RecoveryOperationFateSet;
-use crate::orchestration::RecoveryCoordination;
+use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 
 use super::{PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence};
 
 pub struct PlannedPhysicalRecovery {
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
-    selection: PhysicalSourceSelection,
+    selection: ResidentSourceSelection,
+    custody: crate::progression::PlanningCustody,
+    verified_selected_tier_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     discovery_counters: PhysicalRecoveryDiscoveryCounters,
     root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     integrity: RecoveryIntegrityEvidence,
@@ -38,7 +41,11 @@ impl PlannedPhysicalRecovery {
     pub(crate) const fn new(
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
-        selection: PhysicalSourceSelection,
+        selection: ResidentSourceSelection,
+        custody: crate::progression::PlanningCustody,
+        verified_selected_tier_custody: Option<
+            worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
+        >,
         discovery_counters: PhysicalRecoveryDiscoveryCounters,
         root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
         integrity: RecoveryIntegrityEvidence,
@@ -57,6 +64,8 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
+            custody,
+            verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,
             integrity,
@@ -117,7 +126,7 @@ impl PlannedPhysicalRecovery {
         self.quiescence
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.selection
+        self.selection.facts()
     }
     pub const fn integrity_observation_count(&self) -> u64 {
         self.integrity_trace.counters().attempted
@@ -207,6 +216,8 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
+            custody,
+            verified_selected_tier_custody,
             discovery_counters,
             freshness,
             fates,
@@ -225,6 +236,8 @@ impl PlannedPhysicalRecovery {
             authority,
             coordination,
             selection,
+            custody,
+            verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,
             integrity,
@@ -241,11 +254,14 @@ impl PlannedPhysicalRecovery {
     }
 }
 mod basis;
+mod resident_memory;
+pub(crate) use resident_memory::{PlanningMemoryDenial, PlanningResidentAllowance};
 
 pub(crate) use basis::{
-    derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
-    ExecutionBasisDenial, RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
-    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
+    derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
+    CandidateMaterializationCost, ExecutionBasisDenial, RecoveryObservedCandidateArtifact,
+    RecoveryObservedSuccessorCandidate, RecoverySelectedSegmentPage,
+    RecoverySelectedSourceInventory,
 };
 pub use basis::{
     RecoveryBaseImageAction, RecoveryBaseImagePlan, RecoveryPayloadManifestAction,

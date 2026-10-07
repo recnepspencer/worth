@@ -1,4 +1,3 @@
-use crate::config::data::RelationalExecutionModel;
 use crate::runtime::RelationalPreparationOwnerBinding;
 use crate::tests::support::*;
 
@@ -33,52 +32,6 @@ fn phase3b_initial_schema_installs_while_a_settlement_port_is_live() {
         "the contract runtime is lowered from the registry that was installed",
     );
     assert_eq!(port.runtime_instance_id(), runtime.runtime_instance_id());
-}
-
-/// Selecting an execution model is owner authority, and a live settlement
-/// service does not withdraw it either.
-#[test]
-fn phase3b_execution_model_changes_while_a_settlement_port_is_live() {
-    let mut runtime = runtime_with_test_schema();
-    let port = runtime.settlement_port();
-    let before = runtime.config().execution.execution_model;
-    assert_ne!(before, RelationalExecutionModel::ParallelPreparation);
-
-    runtime.set_execution_model(RelationalExecutionModel::ParallelPreparation);
-
-    assert_eq!(
-        runtime.config().execution.execution_model,
-        RelationalExecutionModel::ParallelPreparation,
-    );
-    assert_eq!(port.runtime_instance_id(), runtime.runtime_instance_id());
-}
-
-/// One configuration authority, read live. A port bound before the change sees
-/// the change on its next operation, and the snapshot it had already taken for
-/// an operation in progress does not move underneath that operation.
-#[test]
-fn phase3b_live_configuration_change_is_visible_through_a_shared_preparation_port() {
-    let mut runtime = runtime_with_test_schema();
-    let preparation = RelationalPreparationOwnerBinding::from_runtime(&runtime);
-    let in_progress = preparation.runtime_snapshot();
-    let before = in_progress.config.execution.execution_model;
-    assert_ne!(before, RelationalExecutionModel::ParallelPreparation);
-
-    runtime.set_execution_model(RelationalExecutionModel::ParallelPreparation);
-
-    assert_eq!(
-        preparation
-            .runtime_snapshot()
-            .config
-            .execution
-            .execution_model,
-        RelationalExecutionModel::ParallelPreparation,
-        "a port bound before the change reads the configuration now in force",
-    );
-    assert_eq!(
-        in_progress.config.execution.execution_model, before,
-        "an operation already under way keeps the configuration it started with",
-    );
 }
 
 /// The installed schema and the contract runtime lowered from it are one

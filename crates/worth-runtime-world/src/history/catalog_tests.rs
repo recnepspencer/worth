@@ -13,6 +13,8 @@ mod reservation;
 #[path = "catalog_tests/scale.rs"]
 mod scale;
 
+#[path = "catalog_tests/history_retirement.rs"]
+mod history_retirement;
 #[path = "catalog_tests/pending_storage.rs"]
 mod pending_storage;
 #[path = "catalog_tests/protected_installation.rs"]

@@ -87,9 +87,9 @@ pub(crate) struct PreparedPendingRevalidationResolution {
     pub(crate) buckets: BTreeMap<NodeId, im::OrdSet<NodeId>>,
 }
 
-struct ResolutionPreparation<'a> {
+struct ResolutionPreparation<'a, 'observer> {
     graph: &'a SignalGraph,
-    work: &'a mut Work,
+    work: &'a mut Work<'observer>,
     draft: PreparedPendingRevalidationResolution,
 }
 
@@ -104,7 +104,34 @@ impl SignalGraph {
         projections: BTreeMap<NodeId, PendingRevalidationNodeProjection>,
         work: &mut Work,
     ) -> Result<PreparedPendingRevalidationResolution, PendingRevalidationPreparationDenial> {
-        self.validate_handle(producer)?;
+        self.prepare_pending_revalidation_resolution_for_producers(&[producer], projections, work)
+    }
+
+    pub(crate) fn prepare_pending_revalidation_resolution_for_producers(
+        &self,
+        producers: &[NodeId],
+        projections: BTreeMap<NodeId, PendingRevalidationNodeProjection>,
+        work: &mut Work,
+    ) -> Result<PreparedPendingRevalidationResolution, PendingRevalidationPreparationDenial> {
+        self.prepare_pending_revalidation_resolution_with_buckets(
+            producers,
+            projections,
+            BTreeMap::new(),
+            work,
+        )
+    }
+
+    pub(crate) fn prepare_pending_revalidation_resolution_with_buckets(
+        &self,
+        producers: &[NodeId],
+        projections: BTreeMap<NodeId, PendingRevalidationNodeProjection>,
+        buckets: BTreeMap<NodeId, im::OrdSet<NodeId>>,
+        work: &mut Work,
+    ) -> Result<PreparedPendingRevalidationResolution, PendingRevalidationPreparationDenial> {
+        for &producer in producers {
+            work.visit()?;
+            self.validate_handle(producer)?;
+        }
         preparation_work::reserve(
             work,
             projections
@@ -122,19 +149,27 @@ impl SignalGraph {
             draft: PreparedPendingRevalidationResolution {
                 initial_waiter_count: 0,
                 nodes: projections,
-                buckets: BTreeMap::new(),
+                buckets,
             },
         };
         // The old outer loop visits initial consumers in ascending order;
         // recursive extensions use the existing ascending-push/LIFO order.
-        let initial = preparation.current_waiters(producer)?;
-        preparation.draft.initial_waiter_count = initial.len();
-        preparation_work::sequence_growth(preparation.work, 0, initial.len())?;
-        let mut resolutions = initial
-            .into_iter()
-            .rev()
-            .map(|consumer| (consumer, producer))
-            .collect::<Vec<_>>();
+        let mut resolutions = Vec::new();
+        for &producer in producers.iter().rev() {
+            let initial = preparation.current_waiters(producer)?;
+            preparation.draft.initial_waiter_count = preparation
+                .draft
+                .initial_waiter_count
+                .checked_add(initial.len())
+                .ok_or_else(|| SignalError::invalid_input("waiter count overflow"))?;
+            preparation_work::sequence_growth(preparation.work, resolutions.len(), initial.len())?;
+            resolutions.extend(
+                initial
+                    .into_iter()
+                    .rev()
+                    .map(|consumer| (consumer, producer)),
+            );
+        }
         while let Some((consumer, resolved_producer)) = resolutions.pop() {
             preparation.work.visit()?;
             preparation_work::map_lookup(preparation.work, preparation.draft.buckets.len())?;
@@ -156,7 +191,7 @@ impl SignalGraph {
     }
 }
 
-impl ResolutionPreparation<'_> {
+impl ResolutionPreparation<'_, '_> {
     fn load_node(&mut self, node: NodeId) -> Result<(), PendingRevalidationPreparationDenial> {
         preparation_work::map_lookup(self.work, self.draft.nodes.len())?;
         if self.draft.nodes.contains_key(&node) {

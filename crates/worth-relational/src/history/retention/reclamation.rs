@@ -135,6 +135,11 @@ impl crate::runtime::RelationalRuntime {
         self.history
             .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size)
     }
+
+    /// Retired branch roots awaiting reclamation now.
+    pub fn retired_branch_root_count(&self) -> usize {
+        self.history.retired_branch_root_count()
+    }
 }
 
 impl RelationalBranchRootReclamationOutcome {

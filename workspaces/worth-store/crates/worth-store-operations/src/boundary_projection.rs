@@ -109,12 +109,6 @@ fn owner_receipt_fingerprint(executed: &ExecutedRepair) -> [u8; 32] {
                 digest.update(value.plan_fingerprint());
                 digest.update(value.classified_regions().to_be_bytes());
             }
-            ExecutedRepairOwnerReceipt::Layout(value) => {
-                digest.update([5]);
-                digest.update(value.plan_fingerprint());
-                digest.update(value.published_generation().to_be_bytes());
-                digest.update(value.content_digest());
-            }
         }
     }
     digest.finalize().into()

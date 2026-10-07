@@ -2,7 +2,9 @@ use super::super::policy::replay::ResourceRetentionCompactionPolicyProvenanceDig
 use super::super::ResourceRuntimeState;
 use crate::data::resource::*;
 use crate::data::telemetry::ResourceTelemetry;
-use crate::logic::transaction::runtime::state::merge::canonical_digest;
+use serde::Serialize;
+use sha2::{Digest, Sha256};
+use std::io::{self, Write};
 
 #[derive(Default)]
 struct LifecycleCompactionCounts {
@@ -17,6 +19,9 @@ struct LifecycleCompactionCounts {
     compacted_superseded_count: u32,
     compacted_cancelled_count: u32,
     compacted_timed_out_count: u32,
+    expired_lifecycle_availability_count: u32,
+    expired_denied_availability_count: u32,
+    expired_retry_availability_count: u32,
 }
 
 impl ResourceRuntimeState {
@@ -60,6 +65,10 @@ impl ResourceRuntimeState {
         self.apply_retained_history_limit(budget.retained_lifecycle_history_limit(), &mut counts);
         self.apply_denied_completion_limit(budget.retained_denied_completion_limit(), &mut counts);
         self.apply_retry_lineage_limit(budget.retained_retry_lineage_limit(), &mut counts);
+        let expired = self.expire_pruned_availability(budget);
+        counts.expired_lifecycle_availability_count = expired[0];
+        counts.expired_denied_availability_count = expired[1];
+        counts.expired_retry_availability_count = expired[2];
         self.record_compaction_telemetry(&counts, telemetry.as_deref_mut());
 
         let retained_history_width = self.retained_in_flight_history_by_request.len() as u32;
@@ -91,6 +100,12 @@ impl ResourceRuntimeState {
             counts.compacted_superseded_count,
             counts.compacted_cancelled_count,
             counts.compacted_timed_out_count,
+            counts.expired_lifecycle_availability_count,
+            counts.expired_denied_availability_count,
+            counts.expired_retry_availability_count,
+            self.expired_lifecycle_availability.count(),
+            self.expired_denied_availability.count(),
+            self.expired_retry_availability.count(),
             policy_provenance_digest,
             performance,
         )
@@ -317,17 +332,53 @@ impl ResourceRuntimeState {
         let retained_history_decision_digests = self
             .pruned_in_flight_history_by_request
             .values()
-            .map(|availability| availability.retention_decision_digest().as_str().to_owned())
+            .map(|availability| availability.retention_decision_digest().as_str())
             .collect::<Vec<_>>();
         let retry_lineage_decision_digests = self
             .pruned_retry_lineage_by_ordinal
             .values()
-            .map(|availability| availability.policy_decision_digest().as_str().to_owned())
+            .map(|availability| availability.policy_decision_digest().as_str())
             .collect::<Vec<_>>();
-        canonical_digest(&ResourceRetentionCompactionPolicyProvenanceDigestBasis {
-            schema_version: "worth.resource.retention-compaction-policy-provenance.v1",
+        streaming_policy_digest(&ResourceRetentionCompactionPolicyProvenanceDigestBasis {
+            schema_version: if self.expired_lifecycle_availability.is_empty()
+                && self.expired_retry_availability.is_empty()
+            {
+                "worth.resource.retention-compaction-policy-provenance.v1"
+            } else {
+                "worth.resource.retention-compaction-policy-provenance.v2"
+            },
             retained_history_decision_digests: &retained_history_decision_digests,
             retry_lineage_decision_digests: &retry_lineage_decision_digests,
+            expired_lifecycle: self.expired_lifecycle_availability,
+            expired_retry: self.expired_retry_availability,
         })
     }
 }
+
+fn streaming_policy_digest<T: Serialize>(value: &T) -> String {
+    let mut writer = PolicyDigestWriter(Sha256::new());
+    serde_json::to_writer(&mut writer, value).expect("retention policy provenance serialization");
+    writer
+        .0
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+struct PolicyDigestWriter(Sha256);
+
+impl Write for PolicyDigestWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.0.update(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+#[path = "compaction/streaming_digest_tests.rs"]
+mod streaming_digest_tests;

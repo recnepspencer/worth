@@ -13,9 +13,9 @@ fn projection_matches_actual_scoped_writes() {
             ChangedRegion::new("q"),
         ],
     );
-    let mut unusual = PartitionSubscription::partition_and_detail("p", "old");
-    unusual.match_mode = PartitionMatchMode::WholePartition;
-    basis.details.insert(unusual.clone(), old);
+    let unusual = PartitionSubscription::subtree(
+        crate::data::output::ScopePath::new(["p".to_owned(), "old".to_owned()]).unwrap(),
+    );
     let queries = [
         None,
         Some(PartitionSubscription::whole_partition("p")),

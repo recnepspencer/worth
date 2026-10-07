@@ -13,6 +13,19 @@ pub enum WorthServerOperationPreconditionPosture {
 }
 
 impl WorthServerOperationPreconditionPosture {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::{
+            option_string, string,
+        };
+        match self {
+            Self::NotRequired { canonical_digest } => string(canonical_digest),
+            Self::ProductBasis(value) => option_string(&value.requested_basis_digest)
+                .saturating_add(string(&value.observed_basis_digest))
+                .saturating_add(string(&value.operation_name))
+                .saturating_add(string(&value.canonical_digest)),
+            Self::CompatibilityMutation(_) => u64::MAX,
+        }
+    }
     pub fn canonical_digest(&self) -> &str {
         match self {
             Self::NotRequired { canonical_digest } => canonical_digest,

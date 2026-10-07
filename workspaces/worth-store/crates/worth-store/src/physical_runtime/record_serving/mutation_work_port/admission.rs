@@ -12,6 +12,22 @@ use super::{
 };
 
 impl CanonicalRecordMutationPort {
+    pub(in crate::physical_runtime) fn prepare_retirement_candidate_retry(
+        &self,
+        stage: RecordPublicationStage,
+        coordinate: RecordFrameCoordinate,
+        payload: &[u8],
+        scope: super::super::RetirementCandidateRetryScope,
+    ) -> Result<PreparedCanonicalRecordMutation, CanonicalRecordMutationFailure> {
+        let work = self.admit_range(stage, coordinate)?;
+        let identity = work.intent().identity();
+        let command = PhysicalExecutorCommand::retirement_candidate_retry(work, payload, scope)
+            .map_err(|failure| CanonicalRecordMutationFailure::command(identity, failure))?;
+        Ok(self.prepared(
+            command,
+            crate::physical_runtime::PhysicalWorkRecoveryTarget::Range(coordinate),
+        ))
+    }
     pub(in crate::physical_runtime) fn prepare_new_artifact(
         &self,
         stage: RecordPublicationStage,
@@ -56,7 +72,7 @@ impl CanonicalRecordMutationPort {
         self.admit_scheduler(&runtime, ready, reservation, backend)
     }
 
-    fn runtime(
+    pub(super) fn runtime(
         &self,
     ) -> Result<
         std::sync::Arc<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
@@ -67,7 +83,7 @@ impl CanonicalRecordMutationPort {
             .ok_or_else(CanonicalRecordMutationFailure::runtime_released)
     }
 
-    fn request_ready(
+    pub(super) fn request_ready(
         &self,
         runtime: &crate::physical_runtime::instance::PhysicalStoreWorkRuntime,
         stage: RecordPublicationStage,
@@ -134,7 +150,7 @@ impl CanonicalRecordMutationPort {
         .map_err(|failure| CanonicalRecordMutationFailure::scheduler(identity, failure))
     }
 
-    fn prepared(
+    pub(super) fn prepared(
         &self,
         command: PhysicalExecutorCommand,
         target: crate::physical_runtime::PhysicalWorkRecoveryTarget,

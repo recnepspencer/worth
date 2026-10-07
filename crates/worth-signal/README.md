@@ -124,6 +124,23 @@ need measured execution evidence can bracket real work with
 execution; planning estimates and diagnostic summaries cannot substitute for
 it.
 
+## Committed Observation Tiers
+
+`ObservationPolicy::visited()` observes nodes considered during committed
+transaction processing. A visit does not imply recomputation or a changed
+value. `recomputed()` observes evaluation, and `meaningful_change()` observes
+the committed change selected by the node's comparison contract. Use the
+semantic commit delta when deciding what changed.
+
+Policy serialization carries schema identity
+`worth.signal.observation-policy.v2` and the `Visited` trigger. The decoder
+accepts only that schema and spelling: unversioned or v1 policies, the
+`Touched` trigger, and unsupported versions are rejected.
+
+Committed observation summaries expose `visited`, and scratch summaries expose
+`visited_event_count`; there is no `touched` spelling. These observation names
+do not rename native touched records or commit deltas.
+
 ## Where It Fits
 
 - web backends and reactive views

@@ -121,7 +121,7 @@ pub(super) fn evaluate_relation_update_delta(
                     .iter()
                     .find(|candidate| candidate.aspect_key() == &binding.aspect_key)
                     .expect("patch binding came from the same lowered relation plan");
-                let (value_evidence, _) = evaluate_authoritative_binding_delta(
+                let (value_evidence, changed) = evaluate_authoritative_binding_delta(
                     lowered,
                     BindingEvaluationContext::Relation {
                         structural_change: RecordStructuralChange::Updated,
@@ -139,7 +139,14 @@ pub(super) fn evaluate_relation_update_delta(
                     &value_evidence,
                     RecordStructuralChange::Updated,
                 ));
+                binding.changed = changed;
             }
+            delta.changed_aspects.retain(|aspect| {
+                delta
+                    .evaluated_bindings
+                    .iter()
+                    .any(|binding| binding.changed && &binding.aspect_key == aspect)
+            });
             Ok(delta)
         }
         None => evaluate_relation_delta(

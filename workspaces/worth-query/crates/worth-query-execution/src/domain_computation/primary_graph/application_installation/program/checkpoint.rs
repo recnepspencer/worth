@@ -73,5 +73,6 @@ where
         |_graph, _installed| Ok(()),
         None,
         Some(checkpoint),
+        None,
     )
 }

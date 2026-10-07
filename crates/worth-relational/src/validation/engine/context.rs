@@ -3,12 +3,13 @@ use crate::schema::data::LoweredAspectContractPlan;
 use crate::transactions::data::MergedCommitPlan;
 use crate::validation::engine::InvariantRuntimeView;
 
+use super::budget::InvariantBudget;
 use super::metrics::InvariantMetrics;
 use super::observation::InvariantObservation;
 use super::request::{PreparedRelationIntegrityScope, PreparedRelationIntegrityScopes};
 use super::state_view::InvariantStateView;
 
-pub struct InvariantExecutionContext<'runtime> {
+pub struct InvariantExecutionContext<'runtime, 'budget> {
     observation: InvariantObservation<'runtime>,
     version_id: crate::identity::data::VersionId,
     current_version_id: crate::identity::data::VersionId,
@@ -17,9 +18,10 @@ pub struct InvariantExecutionContext<'runtime> {
     relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
     current_version_minimum_index:
         std::sync::Arc<std::sync::OnceLock<super::evaluator::CurrentVersionMinimumIndex>>,
+    budget: Option<&'budget dyn InvariantBudget>,
 }
 
-impl<'runtime> InvariantExecutionContext<'runtime> {
+impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     pub fn new(
         runtime: &InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'runtime>,
@@ -39,7 +41,60 @@ impl<'runtime> InvariantExecutionContext<'runtime> {
             runtime: runtime.clone(),
             relation_integrity_scopes,
             current_version_minimum_index,
+            budget: None,
         }
+    }
+
+    pub(crate) fn with_budget(mut self, budget: &'budget dyn InvariantBudget) -> Self {
+        self.budget = Some(budget);
+        self
+    }
+
+    pub(crate) fn is_leased(&self) -> bool {
+        self.budget.is_some()
+    }
+
+    pub(crate) fn checkpoint(&self, units: u64) -> bool {
+        self.budget.is_none_or(|budget| budget.checkpoint(units))
+    }
+
+    pub(crate) fn claim_result(&self, bytes: u64) -> bool {
+        self.budget.is_none_or(|budget| budget.claim_result(bytes))
+    }
+
+    pub(crate) fn claim_contract_violation(
+        &self,
+        contract_id: &crate::schema::data::ContractId,
+        references: &[&crate::transactions::data::EntityReference],
+    ) -> bool {
+        let reference_bytes = references
+            .iter()
+            .map(|reference| match reference {
+                crate::transactions::data::EntityReference::Existing(_) => 0,
+                crate::transactions::data::EntityReference::Created(created) => {
+                    created.client_key.owned_allocation_capacity_bytes()
+                }
+            })
+            .sum::<u64>();
+        self.claim_result(
+            4096_u64
+                .saturating_add((contract_id.as_str().len() as u64).saturating_mul(8))
+                .saturating_add(reference_bytes.saturating_mul(8)),
+        )
+    }
+
+    pub(crate) fn claim_scratch(&self, bytes: u64) -> bool {
+        self.budget.is_none_or(|budget| budget.claim_scratch(bytes))
+    }
+
+    pub(crate) fn check_scratch_peak(&self, bytes: u64) -> bool {
+        self.budget
+            .is_none_or(|budget| budget.check_scratch_peak(bytes))
+    }
+
+    pub(crate) fn check_result_peak(&self, bytes: u64) -> bool {
+        self.budget
+            .is_none_or(|budget| budget.check_result_peak(bytes))
     }
 
     pub fn state_view(&self) -> InvariantStateView<'_> {

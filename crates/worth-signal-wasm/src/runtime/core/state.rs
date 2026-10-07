@@ -10,7 +10,8 @@ use worth_signal::facade::{
 
 use crate::expression::model::SignalValue;
 use crate::recipe::model::{
-    KeyedRecipeFamilySpec, KeyedSourceFamilySpec, RecipeReadSpec, RecipeSpec, WasmAspectId,
+    KeyedRecipeFamilySpec, KeyedSourceFamilySpec, RecipeFamilyScopeKeyRequirement, RecipeReadSpec,
+    RecipeSpec, WasmAspectId,
 };
 use crate::runtime::compute_callbacks;
 use crate::runtime::compute_callbacks::CapturedHostCapabilityRead;
@@ -135,6 +136,7 @@ pub(super) struct PendingCallbackDependencyPatch {
 #[derive(Debug, Clone)]
 pub(super) struct StoredRecipeFamily {
     pub(super) spec: KeyedRecipeFamilySpec,
+    pub(super) scope_key_requirement: RecipeFamilyScopeKeyRequirement,
 }
 
 #[derive(Debug, Clone, Default)]

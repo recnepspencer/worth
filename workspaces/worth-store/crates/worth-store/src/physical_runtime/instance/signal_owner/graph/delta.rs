@@ -1,4 +1,4 @@
-use worth_signal::facade::ChangedRegion;
+use worth_signal::facade::{ChangedRegion, ScopeCoverage};
 
 use crate::physical_runtime::work::{PhysicalSignalAspectBindingDigest, PhysicalWorkAspectDelta};
 
@@ -24,10 +24,12 @@ impl super::PhysicalSignalGraph {
             .source_for_slot(route_slot)
             .ok_or(PhysicalSignalDeltaApplicationFailure::BindingNotInstalled)?;
         let aspect = binding.signal_aspect();
-        let region = binding.partition().map(|partition| ChangedRegion {
-            partition: partition.partition.clone(),
-            detail: partition.detail.clone(),
-        });
+        let region = binding
+            .partition()
+            .map(|partition| match partition.coverage() {
+                ScopeCoverage::Exact => ChangedRegion::exact(partition.path().clone()),
+                ScopeCoverage::Subtree => ChangedRegion::subtree(partition.path().clone()),
+            });
         let expected_basis = self
             .runtime
             .observe_signal_branch_basis(self.runtime.current_branch())

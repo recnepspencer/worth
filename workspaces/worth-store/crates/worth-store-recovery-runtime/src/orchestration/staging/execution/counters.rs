@@ -22,6 +22,13 @@ pub(super) fn record_completed(
     content.update(physical.byte_count().to_le_bytes());
     content.update(physical.payload_digest());
     match physical.disposition() {
+        RecoveryStagingWriteDisposition::RangeWritten => {
+            counters.bytes_verified = counters
+                .bytes_verified
+                .saturating_add(physical.verified().map_or(0, |read| read.completed_bytes()));
+            counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
+            counters.performed_effects = counters.performed_effects.saturating_add(1);
+        }
         RecoveryStagingWriteDisposition::Created => {
             counters.artifacts_created = counters.artifacts_created.saturating_add(1);
             counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
@@ -142,6 +149,13 @@ fn record_materialization(
     record_one_settled_stage(counters);
     let physical = materialization.physical();
     match physical.disposition() {
+        RecoveryStagingWriteDisposition::RangeWritten => {
+            counters.bytes_verified = counters
+                .bytes_verified
+                .saturating_add(physical.verified().map_or(0, |read| read.completed_bytes()));
+            counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
+            counters.performed_effects = counters.performed_effects.saturating_add(1);
+        }
         RecoveryStagingWriteDisposition::Created => {
             counters.artifacts_created = counters.artifacts_created.saturating_add(1);
             counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
@@ -178,6 +192,15 @@ fn record_materialization_evidence(
     record_one_settled_stage(counters);
     let physical = materialization.physical();
     match physical.disposition() {
+        RecoveryStagingWriteDisposition::RangeWritten => {
+            counters.bytes_verified = counters
+                .bytes_verified
+                .saturating_add(physical.verified().map_or(0, |read| read.completed_bytes()));
+            counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());
+            if materialization.is_performed() {
+                counters.performed_effects = counters.performed_effects.saturating_add(1);
+            }
+        }
         RecoveryStagingWriteDisposition::Created => {
             counters.artifacts_created = counters.artifacts_created.saturating_add(1);
             counters.bytes_written = counters.bytes_written.saturating_add(physical.byte_count());

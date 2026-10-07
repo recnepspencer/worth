@@ -16,6 +16,7 @@ pub mod prelude;
 mod proof;
 pub mod raw;
 mod recipe;
+mod release;
 mod source_observation;
 mod transition;
 mod type_level;
@@ -78,12 +79,17 @@ pub use raw::{
 pub use raw::{Artifact, ArtifactParts, ArtifactView};
 pub use raw::{
     AuthorityMarker, AuthorityProves, AuthorityWitness, CanonicalOrder, CapabilityMarker,
-    CapabilityWitness, Disjointness, NoProofs, Normalization, Proof, ProofMarker, ProofSet,
-    ProofSetAuthorizedBy, ProofSetCons, StructuralProofAuthority, Uniqueness,
+    CapabilityWitness, Disjointness, ExecutionAuthorityMarker, NoProofs, Normalization, Proof,
+    ProofMarker, ProofSet, ProofSetAuthorizedBy, ProofSetCons, StructuralProofAuthority,
+    Uniqueness,
 };
 pub use raw::{Binding, BindingAxes};
-pub use raw::{CanonicalVec, DisjointPair, ExactlyOne, NonEmpty, Pair, UniqueVec};
+pub use raw::{
+    CanonicalUniqueVec, CanonicalVec, DisjointKeySetDenial, DisjointKeySetFamily,
+    DisjointKeySetViolation, DisjointPair, ExactlyOne, NonEmpty, Pair, UniqueVec,
+};
 pub use raw::{LinearResource, TerminalReceipt, TerminalState};
+pub use release::{AdmittedBlobReleaseProof, BlobReleaseProofDenial};
 pub use source_observation::{
     AdmittedConditionalSourceObservation, ConditionalEvaluationSource,
     ConditionalSourceObservationAuthority, ConditionalSourceObservationOwner,

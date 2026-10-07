@@ -12,9 +12,7 @@ use super::preparation::SerialFinalizeSeed;
 use super::task_lowering::{lower_serial_task_patch, LoweredSerialTask};
 use super::witness::{ExactStageWidth, StageTaskOrderProof};
 use crate::logic::planner::precompute::PreparedTaskPatch;
-#[cfg(feature = "parallel")]
 use crate::logic::planner::types::ApplyPlanSerialFallbackReason;
-use crate::logic::planner::types::LoweredTask;
 
 #[derive(Debug, Clone)]
 pub(in crate::logic::planner) struct LoweredSerialStage {
@@ -23,7 +21,6 @@ pub(in crate::logic::planner) struct LoweredSerialStage {
     pub(super) authority_policy: AuthorityPolicy,
     pub(super) dirty_delta: crate::data::proof::StructuralDelta,
     pub(super) maintenance_strategy: ResolvedMaintenanceStrategy,
-    #[cfg(feature = "parallel")]
     pub(super) serial_rejection_reason: Option<ApplyPlanSerialFallbackReason>,
     pub(super) lowered_tasks: Vec<LoweredSerialTask>,
     pub(super) finalize_seeds: Vec<SerialFinalizeSeed>,
@@ -32,76 +29,6 @@ pub(in crate::logic::planner) struct LoweredSerialStage {
 }
 
 impl LoweredSerialStage {
-    pub(in crate::logic::planner) fn from_lowered_tasks(
-        stage_index: u32,
-        stage_tasks: &[EligibleTask],
-        authority_policy: AuthorityPolicy,
-        dirty_delta: crate::data::proof::StructuralDelta,
-        maintenance_strategy: ResolvedMaintenanceStrategy,
-        #[cfg(feature = "parallel")] serial_rejection_reason: Option<ApplyPlanSerialFallbackReason>,
-        tasks: Vec<LoweredTask>,
-        stage_identities: &[StageSemanticIdentity],
-    ) -> Self {
-        let mut lowered_tasks = Vec::with_capacity(tasks.len());
-        let mut finalize_seeds = Vec::with_capacity(tasks.len());
-
-        for task in tasks {
-            let identity = stage_identities[task.task_index()];
-            let (
-                task_index,
-                node,
-                _produced_aspects,
-                dependency_inputs,
-                _path_class,
-                _authority_policy,
-                _footprint,
-                execution,
-            ) = task.into_parts();
-            let (
-                prepared,
-                before_state,
-                before_artifact_state,
-                dependency_updates,
-                recomputed,
-                partition_aware,
-                rewiring,
-            ) = execution.into_parts();
-            let finalize_seed = SerialFinalizeSeed::from_execution_parts(
-                task_index,
-                node,
-                identity,
-                before_state,
-                before_artifact_state,
-                dependency_updates,
-                recomputed,
-                partition_aware,
-                rewiring,
-            );
-            lowered_tasks.push(LoweredSerialTask {
-                node,
-                record_id: identity.record_id,
-                desired_dependencies: dependency_inputs,
-                prepared,
-                dependency_updates,
-            });
-            finalize_seeds.push(finalize_seed);
-        }
-
-        Self {
-            stage_index,
-            stage_tasks: stage_tasks.to_vec(),
-            authority_policy,
-            dirty_delta,
-            maintenance_strategy,
-            #[cfg(feature = "parallel")]
-            serial_rejection_reason,
-            exact_width: ExactStageWidth::new(lowered_tasks.len()),
-            lowered_tasks,
-            finalize_seeds,
-            stage_order: StageTaskOrderProof::established(),
-        }
-    }
-
     pub(in crate::logic::planner) fn from_prepared_patches(
         graph: &mut SignalGraph,
         stage_index: u32,
@@ -157,7 +84,6 @@ impl LoweredSerialStage {
                 Some(touched_scope),
             ),
             maintenance_strategy,
-            #[cfg(feature = "parallel")]
             serial_rejection_reason: None,
             exact_width: ExactStageWidth::new(lowered_tasks.len()),
             lowered_tasks,
@@ -182,7 +108,6 @@ impl LoweredSerialStage {
         self.maintenance_strategy
     }
 
-    #[cfg(feature = "parallel")]
     pub(in crate::logic::planner) fn serial_rejection_reason(
         &self,
     ) -> Option<ApplyPlanSerialFallbackReason> {

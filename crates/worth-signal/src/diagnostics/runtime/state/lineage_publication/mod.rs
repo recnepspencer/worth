@@ -43,6 +43,11 @@ struct LineagePublication {
     resources: Reservation,
 }
 
+pub(super) fn epoch_lineage_publication_frame_charge(
+) -> Result<Charge, RetainedStoragePreparationDenial> {
+    Charge::capacity::<LineagePublication>(1)
+}
+
 impl DiagnosticsState {
     pub(crate) fn record_retained_lineage(
         &mut self,

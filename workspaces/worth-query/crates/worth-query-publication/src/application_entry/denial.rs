@@ -122,6 +122,9 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// but this runtime no longer holds its receipt. Retrying the same request
     /// cannot commit it again.
     IdempotencyReceiptNotRetained,
+    /// The key's commit took effect and has left the declared idempotency
+    /// window. Retrying the same request cannot commit it again.
+    IdempotencyWindowExpired,
     /// The key's recorded intent was written by an earlier encoding that
     /// cannot be checked against this request.
     IdempotencyIntentUnverifiable,
@@ -144,6 +147,8 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     ApplicationProgramMismatch,
     RequiresWorkflowTransition,
     WorkflowAuthoritySpent,
+    /// This keyed request already consumed its one-shot preparation. Build a new request to retry.
+    PreparationSpent,
     WorkflowTransitionCurrentness,
 }
 
@@ -174,6 +179,8 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     ApplicationProgramMismatch,
     RequiresWorkflowTransition,
     WorkflowAuthoritySpent,
+    /// This keyed request already consumed its one-shot preparation. Build a new request to retry.
+    PreparationSpent,
     WorkflowTransitionCurrentness(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial,
     ),
@@ -230,6 +237,9 @@ impl WorthQueryApplicationRequestMutationDenial {
             Self::WorkflowAuthoritySpent => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowAuthoritySpent
             }
+            Self::PreparationSpent => {
+                WorthQueryApplicationRequestMutationDenialKind::PreparationSpent
+            }
             Self::WorkflowTransitionCurrentness(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowTransitionCurrentness
             }
@@ -254,6 +264,7 @@ const fn idempotency_kind(
         }
         Resolution::CommittedReceiptNotRetained { .. } => Request::IdempotencyReceiptNotRetained,
         Resolution::RecordedIntentUnverifiable => Request::IdempotencyIntentUnverifiable,
+        Resolution::IdempotencyWindowExpired => Request::IdempotencyWindowExpired,
     }
 }
 

@@ -61,20 +61,30 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
             PlanarOutputDemand::new("anchor-a"),
             controls(),
         )
-        .expect("the drifted source selects its preserve producer");
+        .expect("the drifted source starts over its retained output");
     let settlement = crate::application_invariant_acceptance::proof::settle(|| {
         crate::application_invariant_acceptance::proof::settled(
             preserved
                 .advance(&request)
-                .expect("an exact preserved no-op still completes readiness"),
+                .expect("an equal republication still completes readiness"),
         )
     });
     let delivery = settlement
         .root_readiness_delivery()
-        .expect("preserved output readiness carries delivery evidence");
+        .expect("the republished output carries delivery evidence");
     assert!(
         !delivery.has_conditional_successor(),
-        "the proof must exercise the no-successor preserve path"
+        "an equal republication schedules no Signal successor"
+    );
+    // The edit changed a field the source fetches and the output's input
+    // omits: the output is republished equal without reaching its producer.
+    assert_eq!(
+        (
+            settlement.root_receipt().is_some(),
+            settlement.root_producer_contacts_in_this_demand()
+        ),
+        (false, 0),
+        "an equal republication commits nothing and contacts no producer"
     );
     assert_eq!(
         request
@@ -88,12 +98,6 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
             .value,
         length(2)
     );
-    let committed = settlement
-        .root_receipt()
-        .expect("the produced root retains its commit")
-        .committed_product_publication()
-        .composite_commit()
-        .clone();
     let readiness_attempts = world.application.output_readiness_attempt_count_for_test();
     drop(settlement);
     drop(preserved);
@@ -125,13 +129,9 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
         }
         WorthQueryApplicationOutputDemandProgress::Settled(value) => value,
     };
-    assert_eq!(
-        reopened
-            .application_commit_receipt()
-            .expect("the reopened output retains its commit")
-            .committed_product_publication()
-            .composite_commit(),
-        &committed,
+    assert!(
+        reopened.application_commit_receipt().is_none(),
+        "opening the republished output commits nothing"
     );
     assert!(!reopened
         .readiness_delivery()

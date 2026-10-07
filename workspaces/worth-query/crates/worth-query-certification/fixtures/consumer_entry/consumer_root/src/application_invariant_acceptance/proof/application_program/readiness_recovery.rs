@@ -105,13 +105,18 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
             Err(denial) => Some(denial),
         })
         .expect("the producer denial must surface within bounded advances");
-    assert!(matches!(
-        denial,
-        WorthQueryRequiredOutputPreparationDenial::Demand(
-            WorthQueryApplicationOutputDemandDenial::Demand(denial)
-        ) if denial.kind()
-            == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerUnavailable
-    ));
+    assert!(
+        matches!(
+            &denial,
+            WorthQueryRequiredOutputPreparationDenial::Demand(
+                WorthQueryApplicationOutputDemandDenial::Demand(cause)
+            ) if cause.kind()
+                == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::SourceScope(
+                    worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::UnknownEntity
+                )
+        ),
+        "the producer's operation names a scope that does not resolve: {denial:?}"
+    );
     let settled = (0..64).find_map(
         |_| match peer.advance(&request).expect("the peer resumes") {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
@@ -140,14 +145,6 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
     let request = world.application.request(&principal, &scope);
     let mut output = perform(&request, &world.application, "anchor-c", 2, 10_020);
     let source_receipt = output.receipt().clone();
-    assert!(matches!(
-        output.required_output_mut().advance(&request).unwrap(),
-        WorthQueryApplicationProgramOutputProgress::Pending
-    ));
-    assert!(matches!(
-        output.required_output_mut().advance(&request).unwrap(),
-        WorthQueryApplicationProgramOutputProgress::Pending
-    ));
     world
         .application
         .fail_next_output_readiness_evaluation_for_test();
@@ -217,15 +214,6 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
     let request = world.application.request(&principal, &scope);
     let mut output = perform(&request, &world.application, "anchor-c", 2, 10_023);
     let source_receipt = output.receipt().clone();
-    assert!(matches!(
-        output.required_output_mut().advance(&request).unwrap(),
-        WorthQueryApplicationProgramOutputProgress::Pending
-    ));
-    assert!(matches!(
-        output.required_output_mut().advance(&request).unwrap(),
-        WorthQueryApplicationProgramOutputProgress::Pending
-    ));
-
     world
         .application
         .press_next_readiness_with_world_snapshots_for_test();

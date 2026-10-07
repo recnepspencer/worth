@@ -116,11 +116,13 @@ impl RecordReadPartition {
             | RecordArtifactFile::RootSelectorCandidate { .. }
             | RecordArtifactFile::CatalogCandidate { .. }
             | RecordArtifactFile::RootManifest { .. }
-            | RecordArtifactFile::RootRoutingBlock { .. } => Self::Root,
-            RecordArtifactFile::Segment { .. } | RecordArtifactFile::Extent { .. } => Self::Frame,
+            | RecordArtifactFile::RootRoutingBlock { .. }
+            | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => Self::Root,
+            RecordArtifactFile::Segment { .. } | RecordArtifactFile::ExtentArena { .. } => {
+                Self::Frame
+            }
             RecordArtifactFile::SegmentManifest { .. }
             | RecordArtifactFile::SegmentMembershipBlock { .. }
-            | RecordArtifactFile::ExtentManifest { .. }
             | RecordArtifactFile::FreeSpaceManifest { .. }
             | RecordArtifactFile::FreeSpaceMembershipBlock { .. } => Self::Artifact,
         }
@@ -133,7 +135,8 @@ impl RecordReadPartition {
             | RecordArtifactFile::PreviousRootSelector
             | RecordArtifactFile::CatalogCandidate { .. }
             | RecordArtifactFile::RootManifest { .. }
-            | RecordArtifactFile::RootRoutingBlock { .. } => Self::Root,
+            | RecordArtifactFile::RootRoutingBlock { .. }
+            | RecordArtifactFile::ReleaseCustodyHeadBlock { .. } => Self::Root,
             _ => Self::Artifact,
         }
     }
@@ -205,7 +208,7 @@ mod tests {
             let subscription = declaration
                 .partition()
                 .expect("read dependency is partitioned");
-            assert_eq!(subscription.partition.0, *partition_name);
+            assert_eq!(subscription.path().segments(), [*partition_name]);
         }
         for (index, (partition, _, _)) in expected.iter().enumerate() {
             let basis = installed.bases.for_partition(*partition);
@@ -229,10 +232,7 @@ mod tests {
             RecordReadPartition::Artifact
         );
         assert_eq!(
-            RecordReadPartition::for_range(RecordArtifactFile::Extent {
-                extent: 9,
-                generation: 3,
-            }),
+            RecordReadPartition::for_range(RecordArtifactFile::ExtentArena { arena: 9 }),
             RecordReadPartition::Frame
         );
     }

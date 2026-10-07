@@ -17,7 +17,7 @@ use worth_relational::facade::{
 
 use super::{
     planned_field_locator, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryRelationLayout,
+    WorthQueryPrimaryRelationLayout, WorthQuerySupportLookupStop,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -167,6 +167,62 @@ impl WorthQueryPrimaryContinuationOrderingLayout {
 }
 
 impl super::WorthQueryPrimaryGraphLayout {
+    pub(in crate::domain_computation::primary_graph) fn supports_continuation_ordering_admitted<
+        Stop,
+    >(
+        &self,
+        contract: &WorthQueryInstalledApplicationContinuationContract,
+        admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<bool, WorthQuerySupportLookupStop<Stop>> {
+        admit(2, 0).map_err(WorthQuerySupportLookupStop::Admission)?;
+        for layout in &self.continuation_orderings {
+            // Row, relation, child, endpoint, and both ordering headers are
+            // inspected before the same installed matcher decides support.
+            admit(6, 0).map_err(WorthQuerySupportLookupStop::Admission)?;
+            let mut text_bytes = layout
+                .relation
+                .len()
+                .checked_add(contract.relation().len())
+                .and_then(|n| n.checked_add(layout.child_entity.len()))
+                .and_then(|n| n.checked_add(contract.child_entity().len()))
+                .ok_or(WorthQuerySupportLookupStop::AccountingOverflow)?;
+            for (installed, declared) in layout.ordering.iter().zip(contract.ordering()) {
+                // Locator aspect/path, declared field, and both directions.
+                admit(6, 0).map_err(WorthQuerySupportLookupStop::Admission)?;
+                let (_, aspect, field) = declared.field();
+                let stored_aspect = installed.locator().aspect().aspect_key().as_str();
+                let stored_field = installed
+                    .locator()
+                    .field_path()
+                    .fields()
+                    .first()
+                    .map_or("", |key| key.as_str());
+                text_bytes = text_bytes
+                    .checked_add(stored_aspect.len())
+                    .and_then(|n| n.checked_add(aspect.len()))
+                    .and_then(|n| n.checked_add(stored_field.len()))
+                    .and_then(|n| n.checked_add(field.len()))
+                    .ok_or(WorthQuerySupportLookupStop::AccountingOverflow)?;
+            }
+            let work = u64::try_from(text_bytes)
+                .map_err(|_| WorthQuerySupportLookupStop::AccountingOverflow)?;
+            admit(work, 0).map_err(WorthQuerySupportLookupStop::Admission)?;
+            // The unchanged matcher makes a second pass over its row headers
+            // and, when those match, every paired ordering term.
+            let paired = layout.ordering.len().min(contract.ordering().len());
+            let matcher_work = paired
+                .checked_mul(6)
+                .and_then(|visits| visits.checked_add(6))
+                .and_then(|visits| u64::try_from(visits).ok())
+                .ok_or(WorthQuerySupportLookupStop::AccountingOverflow)?;
+            admit(matcher_work, 0).map_err(WorthQuerySupportLookupStop::Admission)?;
+            if layout.matches(contract) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn register_continuation_orderings<E>(
         &mut self,
         mut register: impl FnMut(
@@ -178,15 +234,6 @@ impl super::WorthQueryPrimaryGraphLayout {
             continuation.bind_index(index_id);
         }
         Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn supports_continuation_ordering(
-        &self,
-        contract: &WorthQueryInstalledApplicationContinuationContract,
-    ) -> bool {
-        self.continuation_orderings
-            .iter()
-            .any(|layout| layout.matches(contract))
     }
 
     pub(in crate::domain_computation::primary_graph) fn continuation_ordering_index_id(

@@ -323,6 +323,9 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         0,
         "both root identities consumed their exact prepared custody"
     );
+    world
+        .application
+        .delay_next_output_readiness_delivery_for_test();
     assert!(matches!(
         started.required_output_mut().advance(&request).unwrap(),
         WorthQueryDiscoveredProgramOutputProgress::Pending

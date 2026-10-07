@@ -5,6 +5,7 @@ use crate::data::aspect::AspectVersion;
 use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
 use crate::data::output::{NodeEvaluationResult, PartitionSubscription};
+use crate::logic::checked_context::CheckedEvaluationContext;
 use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationOutput;
 use crate::tests::domains::fintech::world::{
@@ -156,6 +157,50 @@ impl ChurnEvaluationProgram {
         Ok(view.finish(result))
     }
 
+    pub(super) fn evaluate_checked(
+        &self,
+        view: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>,
+    ) -> Result<EvaluationOutput, SignalError> {
+        view.work()
+            .checkpoint(self.outputs_by_node.len().saturating_add(256) as u64)
+            .map_err(|_| SignalError::invalid_input("churn kernel work exhausted"))?;
+        let output_id = self.outputs_by_node[&view.node()];
+        let state = self.state.lock().expect("churn program state poisoned");
+        let output = &state.outputs[output_id.ordinal() as usize];
+        for subscription in &output.subscriptions {
+            let source = self.handles[&subscription.upstream];
+            let aspect = signal_aspect(subscription.input_aspect);
+            match subscription.edge_scope {
+                None => {
+                    view.read(source, aspect)?;
+                }
+                Some(scope) => {
+                    let scope = PartitionSubscription::partition_and_detail(
+                        scope.partition_label(),
+                        scope.detail_label().expect("churn detail scope"),
+                    );
+                    view.read_scoped(source, aspect, &scope)?;
+                }
+            }
+        }
+        Ok(view.finish(state.preview_result(output)))
+    }
+
+    pub(super) fn record_completed(&self, report: &crate::logic::planner::ExecutionReport) {
+        let mut state = self.state.lock().expect("churn program state poisoned");
+        for stage in &report.stages {
+            for task in &stage.task_records {
+                if let Some(output) = self
+                    .outputs_by_node
+                    .get(&task.node)
+                    .filter(|_| task.recomputed)
+                {
+                    state.commit_output(*output);
+                }
+            }
+        }
+    }
+
     pub(super) fn evaluated_outputs(&self) -> BTreeSet<LocalitySemanticOutputId> {
         self.state
             .lock()
@@ -166,21 +211,36 @@ impl ChurnEvaluationProgram {
 
     fn result_for(&self, output: &FinancialLocalityOutput) -> NodeEvaluationResult {
         let mut state = self.state.lock().expect("churn program state poisoned");
-        let value = state.current_values[&output.id];
-        let changed = state.committed_values[&output.id] != value;
+        state.commit_output(output.id);
+        state.preview_result(output)
+    }
+}
+
+impl ChurnProgramState {
+    fn commit_output(&mut self, output_id: LocalitySemanticOutputId) {
+        let value = self.current_values[&output_id];
+        let changed = self.committed_values[&output_id] != value;
         if changed {
-            state.committed_values.insert(output.id, value);
-            for aspect in output.produced_aspects() {
-                *state.versions.get_mut(&(output.id, aspect)).unwrap() += 1;
+            self.committed_values.insert(output_id, value);
+            for aspect in self.outputs[output_id.ordinal() as usize].produced_aspects() {
+                *self.versions.get_mut(&(output_id, aspect)).unwrap() += 1;
             }
         }
-        state.evaluated.insert(output.id);
+        self.evaluated.insert(output_id);
+    }
+
+    fn preview_result(&self, output: &FinancialLocalityOutput) -> NodeEvaluationResult {
+        let value = self.current_values[&output.id];
+        let changed = self.committed_values[&output.id] != value;
         let version =
             output
                 .produced_aspects()
                 .into_iter()
                 .fold(AspectVersion::zero(), |version, aspect| {
-                    version.with(signal_aspect(aspect), state.versions[&(output.id, aspect)])
+                    version.with(
+                        signal_aspect(aspect),
+                        self.versions[&(output.id, aspect)] + u64::from(changed),
+                    )
                 });
         NodeEvaluationResult::from_version(version).with_output_identity(format!(
             "financial-locality:{:?}:{:?}:{}:{}",
@@ -190,9 +250,6 @@ impl ChurnEvaluationProgram {
             value
         ))
     }
-}
-
-impl ChurnProgramState {
     fn recompute_dependencies(&mut self) -> Result<(), SignalError> {
         for output in &self.outputs {
             let value = match output.formula {

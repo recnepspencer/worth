@@ -4,17 +4,23 @@ use crate::data::retained_storage::RetainedStoragePreparation;
 /// Application callers name their work owner. Conditional execution always
 /// borrows its existing attempt; ordinary evaluation retains its installed
 /// waiter policy. Neither posture creates execution or publication authority.
-pub(crate) enum EvaluationWork<'a> {
+pub(crate) enum EvaluationWork<'borrow, 'observer> {
     Ordinary,
-    Conditional(&'a mut RetainedStoragePreparation),
+    Conditional(&'borrow mut RetainedStoragePreparation<'observer>),
+    /// Read-only request preparation lends the actual kernel safe point.
+    /// This grants no retained node mutation or waiter publication capability.
+    RequestCheckpoint(&'borrow mut dyn FnMut(usize) -> Result<(), SignalError>),
 }
 
-impl EvaluationWork<'_> {
+impl EvaluationWork<'_, '_> {
     pub(crate) fn reserve(&mut self, visits: Option<usize>) -> Result<(), SignalError> {
         match self {
             Self::Ordinary => visits
                 .map(|_| ())
                 .ok_or_else(|| SignalError::internal("evaluation work bound overflow")),
+            Self::RequestCheckpoint(checkpoint) => checkpoint(
+                visits.ok_or_else(|| SignalError::internal("request work bound overflow"))?,
+            ),
             Self::Conditional(work) => {
                 crate::data::conditional_execution::conditional_work::reserve(work, visits)
             }
@@ -28,6 +34,9 @@ impl EvaluationWork<'_> {
     ) -> Result<R, SignalError> {
         match self {
             Self::Ordinary => prepare(&mut RetainedStoragePreparation::new(maximum_waiter_visits)),
+            Self::RequestCheckpoint(_) => Err(SignalError::internal(
+                "request discovery checkpoint cannot prepare waiter publication",
+            )),
             Self::Conditional(work) => {
                 let maximum_attempt_visits = work.maximum_visits();
                 let mut limit = work.limit_additional_visits(maximum_waiter_visits);

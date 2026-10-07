@@ -1,6 +1,9 @@
 use std::future::Future;
 use std::pin::pin;
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize},
+    Arc,
+};
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant, SystemTime};
 
@@ -24,6 +27,8 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+mod installation;
+use installation::install_program_with_domain_denial;
 
 pub(super) type Application = application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,
@@ -34,6 +39,16 @@ pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
 ) -> Application {
     install_with_demand_profile(checkpoint, Default::default())
+}
+
+pub(super) fn install_with_domain_denial(domain_denial: Arc<AtomicBool>) -> Application {
+    install_program_with_domain_denial::<CheckpointProgram>(
+        None,
+        Default::default(),
+        limits(32, invalidation(128 * 1_024 * 1_024, 1_000_000, 128)),
+        seed_cycle,
+        domain_denial,
+    )
 }
 
 pub(super) fn install_with_demand_profile(
@@ -50,54 +65,85 @@ pub(super) fn install_program<Program>(
 where
     Program: ApplicationProgramDefinition<
         CheckpointSchema,
-        Outputs = ApplicationProgramOutputs<CheckpointRoot>,
         Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
     >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    let configuration = (TopologyConfiguration {
-        setup_calls: Arc::new(AtomicUsize::new(0)),
-        invariant_calls: Arc::new(AtomicUsize::new(0)),
-        invariant_probe: Arc::new(AtomicUsize::new(0)),
-        producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
-    },);
-    let program = ApplicationProgramAuthoring::<CheckpointSchema, Program>::begin()
-        .validated_program()
-        .expect("the checkpoint program is complete");
-    let declaration = CheckpointSchema::declaration().expect("the checkpoint schema is valid");
-    match checkpoint {
-        Some(checkpoint) => application_installation::in_memory_program_from_checkpoint(
-            program,
-            declaration,
-            configuration,
-            limits().with_output_demand_resources(profile),
-            checkpoint,
-        )
-        .expect("the checkpoint restores"),
-        None => application_installation::in_memory_program(
-            program,
-            declaration,
-            configuration,
-            limits().with_output_demand_resources(profile),
-            |graph, installed| {
-                let principal = installed
-                    .principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>())
-                    .expect("the principal mapping is installed");
-                graph.bind_principal(
-                    &principal,
-                    primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
-                    1_u64,
-                    external_identity(),
-                    WorthQueryPrincipalMappingStatus::Enabled,
-                )?;
-                seed_cycle(graph);
-                Ok(())
-            },
-        )
-        .expect("the checkpoint source installs"),
-    }
+    install_program_with_history::<Program>(checkpoint, profile, 32, 128 * 1_024 * 1_024)
 }
 
-fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
+pub(super) fn install_program_with_history<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    retained_composite_commits: u64,
+    retained_invalidation_bytes: u64,
+) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<
+        CheckpointSchema,
+        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    install_program_with_seed::<Program>(
+        checkpoint,
+        profile,
+        retained_composite_commits,
+        retained_invalidation_bytes,
+        1_000_000,
+        seed_cycle,
+    )
+}
+
+pub(super) fn install_program_with_seed<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    retained_composite_commits: u64,
+    retained_invalidation_bytes: u64,
+    maximum_invalidation_work: u64,
+    seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<
+        CheckpointSchema,
+        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    let limits = limits(
+        retained_composite_commits,
+        invalidation(retained_invalidation_bytes, maximum_invalidation_work, 128),
+    );
+    install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
+}
+
+/// Installs with caller-built limits, so a test can keep the invalidation
+/// resources it observes.
+pub(super) fn install_program_with_limits<Program>(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryInMemoryApplicationLimits,
+    seed: fn(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<
+        CheckpointSchema,
+        Contributions = <CheckpointSchema as ApplicationSchemaComposition>::Contributions,
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    install_program_with_domain_denial::<Program>(
+        checkpoint,
+        profile,
+        limits,
+        seed,
+        Arc::new(AtomicBool::new(false)),
+    )
+}
+
+pub(super) fn seed_cycle<Schema: TopologySchemaBinding>(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+) {
     for (name, x, y) in [
         ("a", 1, 1),
         ("b", 10, 1),
@@ -109,14 +155,13 @@ fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
         let key = format!("anchor-{name}");
         graph
             .bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Body::reference::<CheckpointSchema>(),
-                    entity_key(&key),
-                )
-                .field(BodyKey::reference::<CheckpointSchema>(), key)
-                .field(Length::reference::<CheckpointSchema>(), length(1))
-                .field(PositionX::reference::<CheckpointSchema>(), length(x))
-                .field(PositionY::reference::<CheckpointSchema>(), length(y)),
+                WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
+                    .field(BodyKey::reference::<Schema>(), key)
+                    // The initial performed publication writes an equal derived
+                    // value; native revisions still decide whether it can reuse.
+                    .field(Length::reference::<Schema>(), length(y + 1))
+                    .field(PositionX::reference::<Schema>(), length(x))
+                    .field(PositionY::reference::<Schema>(), length(y)),
             )
             .unwrap();
     }
@@ -130,7 +175,7 @@ fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
     ] {
         graph
             .bind_relation(WorthQueryApplicationRelationSeed::new(
-                PlanarSuccessor::reference::<CheckpointSchema>(),
+                PlanarSuccessor::reference::<Schema>(),
                 format!("anchor-{from}-to-{to}"),
                 entity_key(&format!("anchor-{from}")),
                 entity_key(&format!("anchor-{to}")),
@@ -139,7 +184,9 @@ fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
     }
 }
 
-fn entity_key(key: &str) -> WorthQueryApplicationEntityKey<CheckpointSchema, Body> {
+fn entity_key<Schema: TopologySchemaBinding>(
+    key: &str,
+) -> WorthQueryApplicationEntityKey<Schema, Body> {
     WorthQueryApplicationEntityKey::new(key.to_owned()).unwrap()
 }
 
@@ -147,7 +194,38 @@ pub(super) fn length(value: u64) -> PositiveLength {
     PositiveLength::new(value).unwrap()
 }
 
-fn limits() -> WorthQueryInMemoryApplicationLimits {
+pub(super) fn invalidation(
+    retained_invalidation_bytes: u64,
+    maximum_invalidation_work: u64,
+    retained_positions: usize,
+) -> worth_query_host::facade::runtime::WorthQueryInvalidationResources {
+    worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
+        worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
+            maximum_invalidation_work,
+            64 * 1_024 * 1_024,
+            retained_invalidation_bytes,
+            retained_positions,
+        ),
+    )
+    .expect("the Query invalidation installation is valid")
+}
+
+pub(super) fn limits(
+    retained_composite_commits: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+) -> WorthQueryInMemoryApplicationLimits {
+    limits_with_room(retained_composite_commits, 16, 64, invalidation)
+}
+
+/// A world with room for a long history under open demands. Rows settled at
+/// different commits keep their own product observations active, and every
+/// open demand pins the exact components it settled on.
+pub(super) fn limits_with_room(
+    retained_composite_commits: u64,
+    active_observations: u64,
+    unique_exact_component_pins: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
             RuntimeWorldBudgetInstallation {
@@ -155,11 +233,11 @@ fn limits() -> WorthQueryInMemoryApplicationLimits {
                     live_product_branches: 4,
                 },
                 history: RuntimeWorldHistoryBudgetInstallation {
-                    retained_composite_commits: 32,
+                    retained_composite_commits,
                     history_metadata_bytes: 524_288,
                 },
                 observations: RuntimeWorldObservationBudgetInstallation {
-                    active_observations: 16,
+                    active_observations,
                 },
                 publication: RuntimeWorldPublicationBudgetInstallation {
                     active_publication_attempts: 4,
@@ -169,7 +247,7 @@ fn limits() -> WorthQueryInMemoryApplicationLimits {
                     retained_partial_metadata_bytes: 524_288,
                 },
                 retention: RuntimeWorldRetentionBudgetInstallation {
-                    unique_exact_component_pins: 64,
+                    unique_exact_component_pins,
                     in_flight_pin_acquisition_reservations: 16,
                 },
                 custody: RuntimeWorldCustodyBudgetInstallation {
@@ -177,6 +255,7 @@ fn limits() -> WorthQueryInMemoryApplicationLimits {
                 },
             },
             WorthQueryProductWorldClock::start(),
+            invalidation,
         )
         .unwrap(),
         WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 8_192, 4_096).unwrap(),
@@ -219,23 +298,17 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
     }
 }
 
-fn external_identity() -> WorthQueryExternalPrincipalIdentity {
+pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner")
         .unwrap()
 }
 
-pub(super) fn authenticate<Program>(
-    application: &application_installation::WorthQueryProgramApplicationRuntime<
-        CheckpointSchema,
-        Program,
-    >,
+pub(super) fn authenticate<Schema: ApplicationSchema + 'static>(
+    application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 ) -> (
     authentication::WorthQueryRequestScope,
-    authentication::WorthQueryAuthenticatedExternalPrincipal<CheckpointSchema>,
-)
-where
-    Program: ApplicationProgramDefinition<CheckpointSchema>,
-{
+    authentication::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+) {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
         Instant::now() + Duration::from_secs(120),

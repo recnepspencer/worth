@@ -7,7 +7,7 @@ use crate::logic::evaluation::EvaluationWork;
 impl NodeColdData {
     pub(crate) fn admit_clone_work(
         &self,
-        work: &mut EvaluationWork<'_>,
+        work: &mut EvaluationWork<'_, '_>,
     ) -> Result<(), SignalError> {
         work.reserve(Some(std::mem::size_of::<Self>() + 32))?;
         let Self {
@@ -26,8 +26,9 @@ impl NodeColdData {
             } = artifact;
             sequence::<crate::data::output::ChangedRegion>(changed_regions.as_slice().len(), work)?;
             for region in changed_regions.as_slice() {
-                string(Some(&region.partition.0), work)?;
-                string(region.detail.as_deref(), work)?;
+                for segment in region.path().segments() {
+                    string(Some(segment), work)?;
+                }
             }
             sequence::<String>(labels.len(), work)?;
             for label in labels {
@@ -59,7 +60,7 @@ impl NodeColdData {
 
 fn context_copy(
     context: &crate::data::reuse::ReuseBoundaryContext,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     use crate::data::reuse::{PersistentCorrespondenceEvidence, ReuseStrategyBoundaryContext};
     let crate::data::reuse::ReuseBoundaryContext {

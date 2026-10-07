@@ -4,13 +4,13 @@ use worth_store_physical_format::{
 };
 use worth_store_physical_integrity::{
     validate_extent_chunk, validate_extent_manifest, ExtentChunkIntegrityValidation,
-    ExtentManifestIntegrityValidation, PhysicalBlastRadius, PhysicalDamageCause,
-    PhysicalFormatField, UntrustedPhysicalArtifact,
+    ExtentManifestIntegrityValidation, PhysicalArtifactScope, PhysicalBlastRadius,
+    PhysicalDamageCause, PhysicalFormatField, UntrustedPhysicalArtifact,
 };
 
 use super::support::{
-    assert_damage, assert_rejected_counters, chunk_payload_capacity, chunk_scope, extent_cell,
-    field_range, format, record, reseal_durable_frame, validated_manifest, ExtentFixture,
+    assert_damage, assert_rejected_counters, chunk_payload_capacity, extent_cell, field_range,
+    format, record, reseal_durable_frame, validated_manifest, ExtentFixture,
 };
 
 #[test]
@@ -162,11 +162,12 @@ fn chunk_format_declaration_must_match_the_certified_chunk_scope() {
     let manifest_bytes = fixture.manifest_bytes();
     let manifest = validated_manifest(&manifest_bytes, fixture.manifest_scope());
     let bytes = fixture.tail_chunk_bytes();
-    let narrow_scope = chunk_scope(
+    let narrow_scope = PhysicalArtifactScope::extent_chunk(
         fixture.store,
         format(PhysicalPageSizeClass::KiB16),
         fixture.chunk_coordinate(2),
-        bytes.len() as u64,
+        fixture.tail_chunk_scope().byte_range(),
+        fixture.arena_range(),
     );
 
     assert_chunk_rejected(

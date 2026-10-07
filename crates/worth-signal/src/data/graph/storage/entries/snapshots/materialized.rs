@@ -5,7 +5,7 @@ impl SignalGraph {
     pub(crate) fn prepare_dependency_snapshot_insertion(
         &mut self,
         snapshot: DependencySnapshot,
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<PreparedSnapshotInsertion, SignalError> {
         self.topology.dependency_snapshots.prepare_insertion(
             snapshot,

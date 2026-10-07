@@ -48,6 +48,19 @@ impl std::fmt::Debug for WorthServerProductOperationDeclaration {
 }
 
 impl WorthServerProductOperationDeclaration {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use super::execution_pipeline::read_batch_accounting::string;
+        let authority_bytes = match &self.authority_requirement {
+            WorthServerProductOperationAuthorityRequirement::SharedRead => 0,
+            _ => u64::MAX,
+        };
+        string(&self.operation_name)
+            .saturating_add(string(&self.payload_schema_identity))
+            .saturating_add(self.result_contract.owned_allocation_capacity_bytes())
+            .saturating_add(self.support_snapshot.owned_allocation_capacity_bytes())
+            .saturating_add(authority_bytes)
+    }
+
     pub fn product_read(
         operation_name: impl Into<String>,
         payload_schema_identity: impl Into<String>,

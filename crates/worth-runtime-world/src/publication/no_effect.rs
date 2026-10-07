@@ -12,6 +12,7 @@ pub enum NoEffectCause {
     ReferenceGenerationExhausted,
     CapacityExhausted,
     OwnerUnavailable,
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     PreEffectFailure,
 }
 

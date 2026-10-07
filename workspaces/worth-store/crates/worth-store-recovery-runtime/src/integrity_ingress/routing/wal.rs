@@ -1,4 +1,6 @@
-use worth_store::physical_runtime::ObservedWalArtifact;
+use worth_store::physical_runtime::{
+    ObservedWalArtifact, RecoveryWalAllocationDenial, RecoveryWalIntegrityAdmissionDenial,
+};
 use worth_store_physical_integrity::{
     PhysicalArtifactScope, PhysicalByteRange, WalFrameIntegrityValidation,
 };
@@ -16,20 +18,25 @@ impl<'media> IntegrityAdmittedRecoveryArtifact<'media> {
         relative_range: PhysicalByteRange,
         validation: WalFrameIntegrityValidation<'media>,
         counters: &mut RecoveryIntegrityIngressCounters,
-    ) -> RecoveryIntegrityIngressAttempt<'media> {
+    ) -> Result<RecoveryIntegrityIngressAttempt<'media>, RecoveryWalAllocationDenial> {
         match validation {
-            WalFrameIntegrityValidation::Intact(validated) => recorded(
-                expected_scope,
-                IntegrityAdmittedWalFrame::bind(
+            WalFrameIntegrityValidation::Intact(validated) => {
+                let binding = IntegrityAdmittedWalFrame::bind(
                     owner,
                     ObservedWalFrameSource::new(observed, expected_scope, relative_range),
                     validated,
-                )
-                .map(Self::WalFrame),
-                counters,
-            ),
+                );
+                let outcome = match binding {
+                    Ok(frame) => Ok(Self::WalFrame(frame)),
+                    Err(RecoveryWalIntegrityAdmissionDenial::Allocation(cause)) => {
+                        return Err(cause)
+                    }
+                    Err(denial) => Err(super::super::families::wal::map_store_denial(denial)),
+                };
+                Ok(recorded(expected_scope, outcome, counters))
+            }
             WalFrameIntegrityValidation::Rejected(rejection) => {
-                rejected_integrity(expected_scope, rejection, counters)
+                Ok(rejected_integrity(expected_scope, rejection, counters))
             }
         }
     }

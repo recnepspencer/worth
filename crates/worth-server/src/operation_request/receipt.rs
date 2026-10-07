@@ -14,6 +14,16 @@ pub struct WorthServerOperationRequestReceipt {
 }
 
 impl WorthServerOperationRequestReceipt {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use crate::product_adapter::execution_pipeline::read_batch_accounting::{
+            option_string, string,
+        };
+        string(&self.request_context_digest)
+            .saturating_add(option_string(&self.source_contract_digest))
+            .saturating_add(option_string(&self.browser_origin))
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub(crate) fn new(
         surface_family: WorthServerSurfaceFamily,
         transport_class: WorthServerTransportClass,

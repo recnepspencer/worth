@@ -2,9 +2,20 @@ use super::*;
 
 pub(super) fn validate_admitted_groups(
     members: &[AdmittedPhysicalRedoMember],
+    copies: &[PhysicalExtentCopyAdmission],
 ) -> Result<BTreeMap<[u8; 32], u64>, PhysicalRedoPlanningDenial> {
-    let mut groups = BTreeMap::<[u8; 32], Vec<&AdmittedPhysicalRedoMember>>::new();
-    for member in members {
+    let mut groups = BTreeMap::<[u8; 32], Vec<GroupMember<'_>>>::new();
+    for member in members
+        .iter()
+        .map(|member| GroupMember {
+            group: member.group,
+            projection: &member.projection,
+        })
+        .chain(copies.iter().map(|copy| GroupMember {
+            group: copy.group(),
+            projection: copy.projection(),
+        }))
+    {
         groups
             .entry(member.group.group_identity())
             .or_default()
@@ -19,10 +30,16 @@ pub(super) fn validate_admitted_groups(
     Ok(allocations)
 }
 
+struct GroupMember<'a> {
+    group: PhysicalRedoGroupBinding,
+    projection: &'a PersistedPhysicalRecoveryProjection,
+}
+
 pub(super) fn applied_group_allocation(
     allocations: &BTreeMap<[u8; 32], u64>,
     projections: &[PhysicalRedoProjection],
     decisions: &[PhysicalRedoDecision],
+    copies: &[PhysicalExtentCopyAdmission],
 ) -> Result<u64, PhysicalRedoPlanningDenial> {
     let applied_groups = decisions
         .iter()
@@ -33,6 +50,12 @@ pub(super) fn applied_group_allocation(
                 .find(|projection| projection.operation() == decision.operation())
                 .map(|projection| projection.group().group_identity())
         })
+        .chain(
+            copies
+                .iter()
+                .filter(|copy| copy.fate() == RecoveryOperationFate::Indeterminate)
+                .map(|copy| copy.group().group_identity()),
+        )
         .collect::<BTreeSet<_>>();
     applied_groups.into_iter().try_fold(0_u64, |total, group| {
         let allocation = allocations
@@ -45,9 +68,7 @@ pub(super) fn applied_group_allocation(
     })
 }
 
-fn validate_one_group(
-    members: &[&AdmittedPhysicalRedoMember],
-) -> Result<u64, PhysicalRedoPlanningDenial> {
+fn validate_one_group(members: &[GroupMember<'_>]) -> Result<u64, PhysicalRedoPlanningDenial> {
     let first = members
         .first()
         .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
@@ -95,7 +116,7 @@ fn validate_one_group(
             || projection
                 .manifests()
                 .iter()
-                .any(|manifest| !manifests.insert(manifest.artifact()))
+                .any(|manifest| !manifests.insert(manifest.coordinate()))
             || projection
                 .placements()
                 .iter()

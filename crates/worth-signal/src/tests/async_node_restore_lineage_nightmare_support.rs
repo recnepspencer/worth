@@ -47,7 +47,7 @@ pub(crate) fn milestone_d_restore_lineage_nightmare_workload(
         .expect("grandchild capability should attach");
 
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [parent],
         Box::new(NoopAsyncNodeObservationListener),
     );
@@ -97,7 +97,7 @@ pub(crate) fn milestone_d_restore_lineage_nightmare_workload(
         .async_capable_node(&mut runtime)
         .expect("first keyed handle should exist");
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [binding_a.node()],
         Box::new(NoopAsyncNodeObservationListener),
     );
@@ -180,7 +180,7 @@ pub(crate) fn milestone_d_restore_lineage_nightmare_workload(
         .async_capable_node(&mut runtime)
         .expect("rebound keyed handle should exist");
     runtime.observe_nodes(
-        ObservationPolicy::touched(),
+        ObservationPolicy::visited(),
         [binding_b.node()],
         Box::new(NoopAsyncNodeObservationListener),
     );

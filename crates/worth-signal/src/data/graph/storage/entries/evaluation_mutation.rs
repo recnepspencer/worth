@@ -12,6 +12,60 @@ pub(in crate::data::graph) struct NodeEvaluationMutation<'a> {
     target: EvaluationMutationTarget<'a>,
 }
 
+/// An epoch consumer can update topology and invalidation state only. It has
+/// no handle to artifact or cold storage.
+pub(in crate::data::graph) struct ConsumerNodeMutation<'a> {
+    hot: &'a mut NodeHotData,
+    warm: &'a mut NodeWarmData,
+}
+
+impl<'a> ConsumerNodeMutation<'a> {
+    pub(in crate::data::graph) fn draft(
+        hot: &'a mut NodeHotData,
+        warm: &'a mut NodeWarmData,
+    ) -> Self {
+        Self { hot, warm }
+    }
+
+    pub(in crate::data::graph) fn replace_dependency_topology(
+        &mut self,
+        dependencies: crate::data::graph::DependencySetId,
+        pending: crate::data::proof::invalidation::binding::PendingDependencyRevalidation,
+    ) {
+        super::evaluation_payload::replace_dependency_topology(
+            self.hot,
+            self.warm,
+            dependencies,
+            pending,
+        );
+    }
+
+    pub(in crate::data::graph) fn replace_subscriber_set(
+        &mut self,
+        subscribers: crate::data::graph::SubscriberSetId,
+    ) {
+        self.hot.subscribers_id = subscribers;
+    }
+
+    pub(in crate::data::graph) fn apply_cause_resolution(
+        &mut self,
+        cause_set: super::super::invalidation_causes::PendingCauseSetId,
+        cache: super::PreparedInvalidationCache,
+        projected: crate::data::graph::PendingRevalidationNodeProjection,
+    ) {
+        self.hot.pending_cause_set_id = cause_set;
+        cache.install_payload(self.hot, self.warm);
+        super::evaluation_payload::install_revalidation_resolution(self.hot, self.warm, projected);
+    }
+
+    pub(in crate::data::graph) fn apply_revalidation_resolution(
+        &mut self,
+        projected: crate::data::graph::PendingRevalidationNodeProjection,
+    ) {
+        super::evaluation_payload::install_revalidation_resolution(self.hot, self.warm, projected);
+    }
+}
+
 enum EvaluationMutationTarget<'a> {
     Installed {
         index: usize,
@@ -61,6 +115,13 @@ impl<'a> NodeEvaluationMutation<'a> {
     ) {
         let (hot, warm) = self.hot_warm();
         super::evaluation_payload::replace_dependency_topology(hot, warm, dependencies, pending);
+    }
+
+    pub(in crate::data::graph) fn replace_subscriber_set(
+        &mut self,
+        subscribers: crate::data::graph::SubscriberSetId,
+    ) {
+        self.hot().subscribers_id = subscribers;
     }
 
     pub(in crate::data::graph) fn draft(
@@ -127,7 +188,11 @@ impl<'a> NodeEvaluationMutation<'a> {
             } => (&mut warm[*index], &mut cold[*index]),
             EvaluationMutationTarget::Draft { warm, cold, .. } => (&mut **warm, &mut **cold),
         };
-        if let Some(runtime) = warm.runtime_artifact_state.as_mut() {
+        if let Some(runtime) = warm
+            .runtime_artifact_state
+            .as_mut()
+            .map(std::sync::Arc::make_mut)
+        {
             super::evaluation_payload::stamp_lineage_and_execution(
                 runtime,
                 cold,

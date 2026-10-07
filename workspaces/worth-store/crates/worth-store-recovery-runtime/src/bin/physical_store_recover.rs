@@ -13,13 +13,27 @@ mod terminal;
 
 use std::process::ExitCode;
 
+const RECOVERY_WORKER_STACK_BYTES: usize = 16 * 1024 * 1024;
+
 fn main() -> ExitCode {
-    match run(std::env::args_os().skip(1).collect()) {
+    match run_on_recovery_worker(std::env::args_os().skip(1).collect()) {
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => {
             eprintln!("physical_store_recover: {message}");
             ExitCode::FAILURE
         }
+    }
+}
+
+fn run_on_recovery_worker(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
+    let worker = std::thread::Builder::new()
+        .name("physical-store-recovery".to_owned())
+        .stack_size(RECOVERY_WORKER_STACK_BYTES)
+        .spawn(move || run(arguments))
+        .map_err(|error| format!("could not start recovery worker: {error}"))?;
+    match worker.join() {
+        Ok(outcome) => outcome,
+        Err(panic) => std::panic::resume_unwind(panic),
     }
 }
 

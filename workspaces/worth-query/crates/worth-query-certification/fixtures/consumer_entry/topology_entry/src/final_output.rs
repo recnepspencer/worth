@@ -7,8 +7,9 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
-    WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
+    WorthQueryApplicationProducerProvider, WorthQueryDecisionContextDependencies,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
 };
 use worth_query_host::facade::primary_graph::{
@@ -349,6 +350,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
         )];
     const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::FINAL_INPUT_REUSE;
 }
 
 mod preservation;

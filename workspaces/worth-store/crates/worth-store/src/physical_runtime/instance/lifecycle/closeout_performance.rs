@@ -157,5 +157,5 @@ const fn publication_residue_class_count(residue: RecordPublicationResidueObserv
         + residue.successor_free_space() as u64
         + residue.next_segment_artifacts() as u64
         + residue.reusable_segment_artifacts() as u64
-        + residue.next_extent_artifacts() as u64
+        + residue.next_arena_artifact() as u64
 }

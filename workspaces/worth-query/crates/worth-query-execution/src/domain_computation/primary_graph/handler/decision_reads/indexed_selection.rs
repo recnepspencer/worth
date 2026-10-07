@@ -37,7 +37,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        self.reader()
+        self.reader
             .decision_select_entities(field, value, candidate_limit)
     }
 
@@ -106,7 +106,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         }
         let identity = matches.pop();
         if let Some(ref identity) = identity {
-            self.reader()
+            self.reader
                 .require_decision_field(identity, field)
                 .map_err(HandlerExecutionDenial::new)?;
         }

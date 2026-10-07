@@ -1,11 +1,29 @@
-error[E0451]: fields `retained_lifecycle_history_limit`, `retained_denied_completion_limit` and `retained_retry_lineage_limit` of struct `ResourceRetentionCompactionBudget` are private
- --> tests/ui/resource_retention_compaction_budget_fields_are_private.rs:5:9
+error: cannot construct `ResourceRetentionCompactionBudget` with struct literal syntax due to private fields
+ --> tests/ui/resource_retention_compaction_budget_fields_are_private.rs:4:19
   |
 4 |     let _budget = ResourceRetentionCompactionBudget {
-  |                   --------------------------------- in this type
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 |         retained_lifecycle_history_limit: Some(1),
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+  |         ----------------------------------------- private field
 6 |         retained_denied_completion_limit: Some(2),
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+  |         ----------------------------------------- private field
 7 |         retained_retry_lineage_limit: Some(3),
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+  |         ------------------------------------- private field
+  |
+  = note: ...and other private fields `pruned_lifecycle_availability_limit`, `pruned_denied_availability_limit` and `pruned_retry_availability_limit` that were not provided
+help: you might have meant to use an associated function to build this type
+  |
+4 -     let _budget = ResourceRetentionCompactionBudget {
+5 -         retained_lifecycle_history_limit: Some(1),
+6 -         retained_denied_completion_limit: Some(2),
+7 -         retained_retry_lineage_limit: Some(3),
+8 -     };
+4 +     let _budget = ResourceRetentionCompactionBudget::unbounded();
+  |
+4 -     let _budget = ResourceRetentionCompactionBudget {
+5 -         retained_lifecycle_history_limit: Some(1),
+6 -         retained_denied_completion_limit: Some(2),
+7 -         retained_retry_lineage_limit: Some(3),
+8 -     };
+4 +     let _budget = ResourceRetentionCompactionBudget::retained_history_limit_only(_);
+  |

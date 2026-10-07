@@ -10,15 +10,23 @@ use super::observation::{OfflineAllocationClass, OfflineFreeSpaceMembership};
 use super::root_tree::{read_u16, read_u32, read_u64, OfflineRootHeader};
 use super::{read_artifact, OfflineDurableManifestDenial};
 
-const HEADER_PAYLOAD_BYTES: usize = 128;
+const HEADER_PAYLOAD_BYTES: usize = 168;
 const BLOCK_PREFIX_BYTES: usize = 40;
-const REFERENCE_BYTES: usize = 56;
+const REFERENCE_BYTES: usize = 72;
 const ENTRY_BYTES: usize = 40;
+
+#[derive(Clone, Copy)]
+pub(super) struct ArenaGeometry {
+    pub(super) next_arena: u64,
+    pub(super) capacity: u64,
+    pub(super) alignment: u64,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct FreeSpaceKey {
     class: OfflineAllocationClass,
     owner: u64,
+    offset: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,7 +54,8 @@ pub(super) fn walk_free_space_tree(
     store_root: &Path,
     header: &OfflineRootHeader,
     format: PhysicalRecordFormatDeclaration,
-) -> Result<(Vec<OfflineFreeSpaceMembership>, u64, u64), OfflineDurableManifestDenial> {
+) -> Result<(Vec<OfflineFreeSpaceMembership>, u64, u64, ArenaGeometry), OfflineDurableManifestDenial>
+{
     let path = store_root.join(format!(
         "families/records/free-space/free-space-{:016x}.manifest",
         header.generation
@@ -57,7 +66,7 @@ pub(super) fn walk_free_space_tree(
     }
     let free = decode_header(&header_bytes, header, format)?;
     let Some(root) = free.root else {
-        return Ok((Vec::new(), 0, header_bytes.len() as u64));
+        return Ok((Vec::new(), 0, header_bytes.len() as u64, free.arena));
     };
     let mut pending = vec![root];
     let mut visited = BTreeSet::new();
@@ -85,14 +94,22 @@ pub(super) fn walk_free_space_tree(
         }
     }
     if entries.len() as u64 != free.entry_count
-        || !entries.windows(2).all(|pair| key(pair[0]) < key(pair[1]))
+        || !entries.windows(2).all(|pair| {
+            key(pair[0]) < key(pair[1])
+                && !(pair[0].class == OfflineAllocationClass::ExtentArena
+                    && pair[1].class == OfflineAllocationClass::ExtentArena
+                    && pair[0].owner == pair[1].owner
+                    && pair[0].first_unallocated + pair[0].unallocated_count
+                        >= pair[1].first_unallocated)
+        })
     {
         return Err(OfflineDurableManifestDenial::InvalidTreeShape);
     }
-    Ok((entries, blocks, bytes_read))
+    Ok((entries, blocks, bytes_read, free.arena))
 }
 
 struct OfflineFreeSpaceHeader {
+    arena: ArenaGeometry,
     generation: u64,
     tree_identity: u64,
     node_capacity: u16,
@@ -116,13 +133,18 @@ fn decode_header(
         return Err(OfflineDurableManifestDenial::MalformedFreeSpace);
     }
     let header = OfflineFreeSpaceHeader {
+        arena: ArenaGeometry {
+            next_arena: read_u64(payload, 144),
+            capacity: read_u64(payload, 152),
+            alignment: read_u64(payload, 160),
+        },
         generation: read_u64(payload, 0),
         tree_identity: read_u64(payload, 8),
         node_capacity: read_u16(payload, 16),
         segment_page_capacity: read_u32(payload, 18),
         entry_count: read_u64(payload, 24),
         next_block: read_u64(payload, 56),
-        root: optional_reference(payload[64], &payload[72..128])?,
+        root: optional_reference(payload[64], &payload[72..144])?,
     };
     if header.generation != root.generation
         || header.generation != frame.identity
@@ -136,12 +158,16 @@ fn decode_header(
         || header.root.is_some_and(|reference| {
             reference.generation > header.generation
                 || reference.block >= header.next_block
-                || required_tree_level(read_u64(payload, 32), header.node_capacity)
+                || required_tree_level(header.entry_count, header.node_capacity)
                     .is_none_or(|maximum| reference.level > maximum)
         })
         || read_u64(payload, 32) == 0
         || read_u64(payload, 40) == 0
         || read_u64(payload, 48) == 0
+        || read_u64(payload, 144) == 0
+        || read_u64(payload, 152) == 0
+        || !read_u64(payload, 160).is_power_of_two()
+        || !read_u64(payload, 152).is_multiple_of(read_u64(payload, 160))
     {
         return Err(OfflineDurableManifestDenial::MalformedFreeSpace);
     }
@@ -229,8 +255,8 @@ fn decode_reference(bytes: &[u8]) -> Result<FreeSpaceBlockReference, OfflineDura
         block: read_u64(bytes, 8),
         level: read_u16(bytes, 16),
         checksum: read_u32(bytes, 20),
-        first: decode_key(&bytes[24..40])?,
-        last: decode_key(&bytes[40..56])?,
+        first: decode_key(&bytes[24..48])?,
+        last: decode_key(&bytes[48..72])?,
     };
     if bytes[18..20] != [0; 2]
         || reference.generation == 0
@@ -252,7 +278,15 @@ fn decode_key(bytes: &[u8]) -> Result<FreeSpaceKey, OfflineDurableManifestDenial
     if owner == 0 {
         return Err(OfflineDurableManifestDenial::MalformedReference);
     }
-    Ok(FreeSpaceKey { class, owner })
+    let offset = read_u64(bytes, 16);
+    if class == OfflineAllocationClass::InlinePage && offset != 0 {
+        return Err(OfflineDurableManifestDenial::MalformedReference);
+    }
+    Ok(FreeSpaceKey {
+        class,
+        owner,
+        offset,
+    })
 }
 
 fn decode_entry(bytes: &[u8]) -> Result<OfflineFreeSpaceMembership, OfflineDurableManifestDenial> {
@@ -267,7 +301,7 @@ fn decode_entry(bytes: &[u8]) -> Result<OfflineFreeSpaceMembership, OfflineDurab
         generation: read_u64(bytes, 32),
     };
     if entry.owner == 0
-        || entry.first_unallocated == 0
+        || (entry.class == OfflineAllocationClass::InlinePage && entry.first_unallocated == 0)
         || entry.unallocated_count == 0
         || entry.generation == 0
         || entry
@@ -283,7 +317,7 @@ fn decode_entry(bytes: &[u8]) -> Result<OfflineFreeSpaceMembership, OfflineDurab
 fn decode_class(value: u8) -> Result<OfflineAllocationClass, OfflineDurableManifestDenial> {
     match value {
         1 => Ok(OfflineAllocationClass::InlinePage),
-        2 => Ok(OfflineAllocationClass::Extent),
+        2 => Ok(OfflineAllocationClass::ExtentArena),
         _ => Err(OfflineDurableManifestDenial::MalformedMembership),
     }
 }
@@ -292,6 +326,11 @@ fn key(entry: OfflineFreeSpaceMembership) -> FreeSpaceKey {
     FreeSpaceKey {
         class: entry.class,
         owner: entry.owner,
+        offset: if entry.class == OfflineAllocationClass::ExtentArena {
+            entry.first_unallocated
+        } else {
+            0
+        },
     }
 }
 

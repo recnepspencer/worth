@@ -1,0 +1,5 @@
+error[E0277]: the trait bound `ObservedWalArtifact: Clone` is not satisfied
+ --> tests/ui/wal_observation_cannot_clone.rs:4:6
+  |
+4 |     <ObservedWalArtifact as Clone>::clone(&observed.artifacts()[0])
+  |      ^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `ObservedWalArtifact`

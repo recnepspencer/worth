@@ -6,6 +6,32 @@ use crate::data::retained_storage::{
     RetainedStoragePreparation as Work, RetainedStoragePreparationDenial as Denial,
 };
 impl DiagnosticsState {
+    /// Snapshot restoration rebuilds every selected lineage index at once.
+    /// Reconstitute charge facts here, before any ordinary or leased writer
+    /// can append to those roots. This scan runs once per restoration.
+    pub(crate) fn reconstitute_selected_epoch_charge(&mut self) {
+        let mut work = Work::new(usize::MAX);
+        self.lineage_records
+            .prepare_retained_charge(&mut work)
+            .expect("restored lineage charge overflow");
+        prepare_index_histories(&self.lineage_records_by_artifact, &mut work)
+            .expect("restored artifact history charge overflow");
+        prepare_index_histories(&self.lineage_records_by_node, &mut work)
+            .expect("restored node history charge overflow");
+        self.lineage_records_by_artifact
+            .prepare_retained_charge(&mut work)
+            .expect("restored artifact index charge overflow");
+        self.lineage_records_by_node
+            .prepare_retained_charge(&mut work)
+            .expect("restored node index charge overflow");
+        self.explanation_facts
+            .prepare_retained_charge(&mut work)
+            .expect("restored explanation index charge overflow");
+        self.provenance_facts
+            .prepare_retained_charge(&mut work)
+            .expect("restored provenance index charge overflow");
+    }
+
     /// Returns heap charge only; the enclosing slot owns inline storage charges.
     /// Denial may leave child accounting prepared, but changes no semantic state.
     /// This does not carry an aggregate charge or reserve mutation capacity.
@@ -53,6 +79,7 @@ impl DiagnosticsState {
             latest_invalidation_trace_records,
             observation_activation_mask: _,
             lineage_custody,
+            fact_custody,
             transaction_flow_scope: _,
         } = self;
         prepare_index_histories(replay_events_by_branch, work)?;
@@ -61,6 +88,7 @@ impl DiagnosticsState {
         prepare_index_histories(lineage_records_by_artifact, work)?;
         prepare_index_histories(lineage_records_by_node, work)?;
         let mut charge = lineage_custody.retained_heap_charge(work)?;
+        charge = charge.checked_add(fact_custody.retained_heap_charge(work)?)?;
         charge = charge.checked_add(latest_flow.retained_heap_charge(work)?)?;
         charge = charge.checked_add(latest_failure.retained_heap_charge(work)?)?;
         charge = charge.checked_add(latest_rollback.retained_heap_charge(work)?)?;

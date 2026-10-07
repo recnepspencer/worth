@@ -129,17 +129,43 @@ fn membership_digest(
     members: &[PhysicalWalMemberIdentity],
     idempotency: &[PhysicalMutationIdempotencyKeyIdentity],
 ) -> PhysicalGroupMembershipDigest {
+    let facts =
+        mutations
+            .iter()
+            .zip(members)
+            .zip(idempotency)
+            .map(|((mutation, member), idempotency)| {
+                (
+                    mutation.store_identity().bytes(),
+                    mutation.runtime_identity().get(),
+                    mutation.operation_identity().get(),
+                    member.bytes(),
+                    idempotency.bytes(),
+                )
+            });
+    PhysicalGroupMembershipDigest(
+        reopened_membership_digest_fields(mutations.len(), facts)
+            .expect("validated group membership has matching identity dimensions"),
+    )
+}
+
+pub(in crate::physical_runtime) fn reopened_membership_digest_fields(
+    count: usize,
+    facts: impl IntoIterator<Item = ([u8; 16], u64, u64, [u8; 32], [u8; 32])>,
+) -> Option<[u8; 32]> {
     let mut digest = Sha256::new();
     digest.update(MEMBERSHIP_DOMAIN);
-    digest.update((mutations.len() as u64).to_le_bytes());
-    for ((mutation, member), idempotency) in mutations.iter().zip(members).zip(idempotency) {
-        digest.update(mutation.store_identity().bytes());
-        digest.update(mutation.runtime_identity().get().to_le_bytes());
-        digest.update(mutation.operation_identity().get().to_le_bytes());
-        digest.update(member.bytes());
-        digest.update(idempotency.bytes());
+    digest.update((count as u64).to_le_bytes());
+    let mut seen = 0_usize;
+    for (store, runtime, operation, member, idempotency) in facts {
+        seen = seen.checked_add(1)?;
+        digest.update(store);
+        digest.update(runtime.to_le_bytes());
+        digest.update(operation.to_le_bytes());
+        digest.update(member);
+        digest.update(idempotency);
     }
-    PhysicalGroupMembershipDigest(digest.finalize().into())
+    (seen == count).then(|| digest.finalize().into())
 }
 
 pub(in crate::physical_runtime) fn reopened_membership_digest(

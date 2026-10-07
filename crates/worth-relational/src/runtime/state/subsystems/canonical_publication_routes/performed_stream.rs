@@ -93,7 +93,7 @@ impl PerformedPublicationStream {
     pub(super) fn record_with_cutover(
         &self,
         route: Arc<CanonicalPublicationRoute>,
-        cutover: impl FnOnce(),
+        cutover: impl FnOnce(PatchStreamPosition),
     ) -> Result<Arc<PositionedCanonicalCommit>, PerformedPublicationRecordError> {
         let _reservation = self.reservation.try_enter()?;
         let current = self.head.load_full();
@@ -117,9 +117,10 @@ impl PerformedPublicationStream {
             route: Arc::clone(&route),
             previous: current,
         });
+        route.set_position(PatchStreamPosition(next_position));
         self.head.store(Some(node));
         self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
-        cutover();
+        cutover(PatchStreamPosition(next_position));
         route.mark_performed();
         Ok(positioned)
     }
@@ -205,17 +206,6 @@ impl PerformedPublicationStream {
             .take(max_commits)
             .map(|(position, node)| (*position, node.positioned.envelope().commit.commit_id))
             .collect()
-    }
-
-    pub(super) fn position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
-        let index = self.refresh_index();
-        index.by_commit.get(&commit_id).and_then(|position| {
-            index
-                .by_patch
-                .get(position)
-                .filter(|node| node.route.is_visible())
-                .map(|_| *position)
-        })
     }
 
     pub(super) fn positioned(&self, commit_id: CommitId) -> Option<Arc<PositionedCanonicalCommit>> {

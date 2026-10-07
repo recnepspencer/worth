@@ -19,6 +19,7 @@ use crate::domain_computation::execution_runtime::{
 use super::authenticated_principal::WorthQueryResolvedPrincipalEvidence;
 use super::freshness::{validate_freshness_at_snapshot, WorthQueryPrincipalFreshnessEvidence};
 use super::observations::{observe_mapping, resolve_principal_target};
+use super::output_lineage::invalidation::InvalidationEditAdmission;
 use super::resolution_denial::{
     entity_lookup_resolution_denial, principal_binding_resolution_denial, resolution_denial,
 };
@@ -48,8 +49,15 @@ struct WorthQueryPrincipalSnapshotResolution<'a> {
     binding_identity: ApplicationSchemaBindingIdentity,
 }
 
+#[path = "resolution/admitted.rs"]
+mod admitted;
+#[path = "resolution/admitted_lookup.rs"]
+mod admitted_lookup;
+#[path = "resolution/admitted_observations.rs"]
+mod admitted_observations;
 #[path = "resolution/selected_product.rs"]
 mod selected_product;
+pub(in crate::domain_computation) use selected_product::WorthQueryIssuedSelectedPrincipal;
 
 fn principal_graph_binding<'a>(
     runtime: &'a WorthQueryExecutionRuntime,
@@ -78,6 +86,56 @@ fn principal_graph_binding<'a>(
             )
         })?;
     Ok((graph, layout))
+}
+
+fn principal_graph_binding_admitted<'a>(
+    runtime: &'a WorthQueryExecutionRuntime,
+    binding: &str,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<
+    (
+        &'a WorthQueryPrimaryGraph,
+        &'a WorthQueryPrimaryPrincipalBindingLayout,
+    ),
+    WorthQueryPrincipalResolutionDenial,
+> {
+    let graph = runtime.primary_graph().ok_or_else(|| {
+        resolution_denial(
+            WorthQueryPrincipalResolutionDenialKind::PrimaryGraphNotInstalled,
+            binding,
+        )
+    })?;
+    let work = graph.layout.principal_lookup_work(binding).ok_or_else(|| {
+        resolution_denial(
+            WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+            binding,
+        )
+    })?;
+    admission
+        .charge_external_work(work)
+        .map_err(|stop| principal_admission_denial(stop, binding))?;
+    let layout = graph.layout.principal_binding(binding).ok_or_else(|| {
+        resolution_denial(
+            WorthQueryPrincipalResolutionDenialKind::BindingNotInstalled,
+            binding,
+        )
+    })?;
+    Ok((graph, layout))
+}
+
+fn principal_admission_denial(
+    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    binding: &str,
+) -> WorthQueryPrincipalResolutionDenial {
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+    let kind = match stop {
+        CompanionPreflightStop::PreparationMemoryExhausted { .. }
+        | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
+            WorthQueryPrincipalResolutionDenialKind::ProjectionPreparationMemoryExhausted
+        }
+        _ => WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+    };
+    resolution_denial(kind, binding)
 }
 
 fn resolve_at_snapshot<

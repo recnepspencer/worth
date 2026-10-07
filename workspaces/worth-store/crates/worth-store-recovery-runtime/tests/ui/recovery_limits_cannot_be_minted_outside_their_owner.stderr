@@ -1,0 +1,94 @@
+error[E0308]: mismatched types
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:25:55
+   |
+25 |     let _ = mint(FilesystemObservationBound::Entries, refusal());
+   |             ----                                      ^^^^^^^^^ expected `FilesystemObservationBudgetAuthority`, found `RecoveryForgerAuthority`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_physical_backend::recovery_media::discovery::observation_budget::FilesystemObservationBudgetAuthority, LimitCounts>`
+              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+note: function defined here
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
+   |
+17 | fn mint<D: LimitDimension>(
+   |    ^^^^
+18 |     dimension: D,
+19 |     refusal: Performed<BudgetRefused, D::Authority, LimitCounts>,
+   |     ------------------------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:26:54
+   |
+26 |     let _ = mint(ReleaseCustodyHeadWalkBound::Nodes, refusal());
+   |             ----                                     ^^^^^^^^^ expected `ReleaseCustodyHeadWalkBudgetAuthority`, found `RecoveryForgerAuthority`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_physical_integrity::artifact::release_custody_head::walk_budget::ReleaseCustodyHeadWalkBudgetAuthority, LimitCounts>`
+              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+note: function defined here
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
+   |
+17 | fn mint<D: LimitDimension>(
+   |    ^^^^
+18 |     dimension: D,
+19 |     refusal: Performed<BudgetRefused, D::Authority, LimitCounts>,
+   |     ------------------------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:27:47
+   |
+27 |     let _ = mint(PhysicsBound::ResidentBytes, refusal());
+   |             ----                              ^^^^^^^^^ expected `PhysicsBudgetAuthority`, found `RecoveryForgerAuthority`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_recovery_physics::source_precedence::physics_budget::PhysicsBudgetAuthority, LimitCounts>`
+              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+note: function defined here
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
+   |
+17 | fn mint<D: LimitDimension>(
+   |    ^^^^
+18 |     dimension: D,
+19 |     refusal: Performed<BudgetRefused, D::Authority, LimitCounts>,
+   |     ------------------------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:28:46
+   |
+28 |     let _ = mint(HeadReplayBound::HeapBytes, refusal());
+   |             ----                             ^^^^^^^^^ expected `HeadReplayBudgetAuthority`, found `RecoveryForgerAuthority`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_recovery_physics::redo_replay::plan::head_replay::exceeded_bound::HeadReplayBudgetAuthority, LimitCounts>`
+              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+note: function defined here
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
+   |
+17 | fn mint<D: LimitDimension>(
+   |    ^^^^
+18 |     dimension: D,
+19 |     refusal: Performed<BudgetRefused, D::Authority, LimitCounts>,
+   |     ------------------------------------------------------------
+
+error[E0308]: mismatched types
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:29:45
+   |
+29 |     let _ = mint(RootHistoryBound::Entries, refusal());
+   |             ----                            ^^^^^^^^^ expected `RootHistoryBudgetAuthority`, found `RecoveryForgerAuthority`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `worth_proof::Performed<BudgetRefused, worth_store_recovery_physics::source_precedence::exceeded_bound::RootHistoryBudgetAuthority, LimitCounts>`
+              found struct `worth_proof::Performed<BudgetRefused, RecoveryForgerAuthority, LimitCounts>`
+note: function defined here
+  --> tests/ui/recovery_limits_cannot_be_minted_outside_their_owner.rs:17:4
+   |
+17 | fn mint<D: LimitDimension>(
+   |    ^^^^
+18 |     dimension: D,
+19 |     refusal: Performed<BudgetRefused, D::Authority, LimitCounts>,
+   |     ------------------------------------------------------------

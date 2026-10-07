@@ -6,7 +6,7 @@ use crate::logic::evaluation::EvaluationWork;
 pub(crate) fn reserve_additional(
     candidates: &mut Vec<NodeId>,
     additional: usize,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     let count = candidates.len().checked_add(additional);
     work.reserve(count.and_then(|count| {
@@ -24,7 +24,7 @@ pub(crate) fn reserve_additional(
 pub(crate) fn append(
     candidates: &mut Vec<NodeId>,
     incoming: Vec<NodeId>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     reserve_additional(candidates, incoming.len(), work)?;
     candidates.extend(incoming);
@@ -33,7 +33,7 @@ pub(crate) fn append(
 
 pub(crate) fn normalize(
     candidates: &mut Vec<NodeId>,
-    work: &mut EvaluationWork<'_>,
+    work: &mut EvaluationWork<'_, '_>,
 ) -> Result<(), SignalError> {
     let count = candidates.len();
     let height = usize::BITS as usize - count.leading_zeros() as usize;

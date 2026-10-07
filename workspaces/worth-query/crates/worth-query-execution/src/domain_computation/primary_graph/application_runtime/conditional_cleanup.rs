@@ -11,11 +11,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .conditional_operations
             .get_mut()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
-        self.primary_provider.replace_conditional_commit_routes(
-            std::iter::empty(),
-            false,
-            std::iter::empty(),
-        );
     }
 }
 

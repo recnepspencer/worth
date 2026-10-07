@@ -113,7 +113,7 @@ where
             .map_err(
                 WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
             )?;
-        let staged = self.stage();
+        let staged = self.stage().map_err(WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission)?;
         let identities = self.identities().map_err(
             WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
         )?;

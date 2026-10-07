@@ -1,15 +1,15 @@
+use super::FintechEvaluationView;
 use crate::data::error::SignalError;
 use crate::data::output::PartitionSubscription;
 use crate::facade::{AspectVersion, NodeEvaluationResult};
-use crate::logic::context::EvaluationContext;
 use crate::logic::evaluation::EvaluationOutput;
 
 use super::super::aspects::PRICE;
 
 impl super::FintechEvaluationShape {
-    pub(super) fn evaluate_partition_node(
+    pub(super) fn evaluate_partition_node<V: FintechEvaluationView>(
         &self,
-        view: &mut EvaluationContext<'_, ()>,
+        view: &mut V,
     ) -> Result<Option<EvaluationOutput>, SignalError> {
         let node = view.node();
         if node == self.partition.rates_partition {

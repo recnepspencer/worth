@@ -17,7 +17,7 @@ impl NodeEntry {
                 .collect(),
             aspect_versions: PartitionVersionMap::from_storage_parts(
                 self.hot.aspect_version_header,
-                self.warm.aspect_version_overrides.clone(),
+                self.warm.aspect_version_overrides.as_ref().clone(),
             ),
             dependencies_id: self.hot.dependencies_id,
             subscribers_id: self.hot.subscribers_id,
@@ -25,12 +25,20 @@ impl NodeEntry {
             pending_cause_set_id: self.hot.pending_cause_set_id,
             dependency_revision: self.hot.dependency_revision,
             pending_dependency_revalidation: self.warm.pending_dependency_revalidation.clone(),
-            direct_invalidation_basis: self.warm.direct_invalidation_basis.clone(),
+            direct_invalidation_basis: self
+                .warm
+                .direct_invalidation_basis
+                .as_ref()
+                .map(|basis| basis.as_ref().clone()),
             direct_invalidation_generation: self.warm.direct_invalidation_generation,
             tombstoned: self.definition.tombstoned,
             conditional_contract_generation: self.definition.conditional_contract_generation,
             conditional_contract_occurrence: self.definition.conditional_contract_occurrence,
-            runtime_artifact_state: self.warm.runtime_artifact_state.clone(),
+            runtime_artifact_state: self
+                .warm
+                .runtime_artifact_state
+                .as_ref()
+                .map(|runtime| runtime.as_ref().clone()),
             retained_artifact: self.cold_artifact_record().cloned(),
             causality: self.get_causality().cloned(),
             execution_trace: self.execution_trace_stamp(),
@@ -63,11 +71,11 @@ impl NodeEntry {
             },
             warm: NodeWarmData {
                 pending_dependency_revalidation: image.pending_dependency_revalidation,
-                direct_invalidation_basis: image.direct_invalidation_basis,
+                direct_invalidation_basis: image.direct_invalidation_basis.map(std::sync::Arc::new),
                 direct_invalidation_generation: image.direct_invalidation_generation,
-                aspect_version_overrides,
+                aspect_version_overrides: std::sync::Arc::new(aspect_version_overrides),
                 dirty_partition_scope_payload: image.dirty_partition_scopes.into_iter().collect(),
-                runtime_artifact_state: image.runtime_artifact_state,
+                runtime_artifact_state: image.runtime_artifact_state.map(std::sync::Arc::new),
             },
             cold: None,
         };

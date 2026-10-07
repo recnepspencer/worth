@@ -3,7 +3,6 @@
 mod blob_chunks;
 mod branch_deltas;
 mod buffer_pool;
-mod compatibility;
 mod io_scheduler;
 mod maintenance;
 mod offline_verifier;
@@ -41,7 +40,6 @@ static ROWS: LazyLock<Box<[ArtifactFamilyInventoryRow]>> = LazyLock::new(|| {
     rows.extend_from_slice(security::ROWS);
     rows.extend_from_slice(operations::TRANSFER_ROWS);
     rows.extend_from_slice(offline_verifier::ROWS);
-    rows.extend_from_slice(compatibility::ROWS);
     rows.extend_from_slice(maintenance::SUPPORT_ROWS);
     rows.extend_from_slice(io_scheduler::RESERVATION_ROWS);
     rows.extend_from_slice(tiering::TIER_OPERATION_ROWS);

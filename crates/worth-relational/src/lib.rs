@@ -34,6 +34,7 @@ mod config;
 mod diagnostics;
 mod durability;
 mod errors;
+mod execution;
 mod history;
 mod identity;
 mod identity_authority;

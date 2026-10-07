@@ -1,3 +1,5 @@
+#[path = "checkpoint_validation/certificate_grammar.rs"]
+mod certificate_grammar;
 #[path = "checkpoint_validation/checksum_oracles.rs"]
 mod checksum_oracles;
 #[path = "checkpoint_validation/footer_record.rs"]

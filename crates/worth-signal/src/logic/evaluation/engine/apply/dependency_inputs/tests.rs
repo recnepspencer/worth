@@ -122,3 +122,54 @@ fn dependency_capture_charges_scope_bytes_even_when_dependency_count_is_unchange
         assert_eq!(long.get_dep_snapshot(node).unwrap(), &before);
     }
 }
+
+#[test]
+fn proposed_deep_dependency_snapshot_does_not_mutate_topology_or_snapshot() {
+    let mut graph = SignalGraph::new();
+    let old_source = graph.create_node();
+    let new_source = graph.create_node();
+    let consumer = graph.create_node();
+    let aspect = Aspect::new(0);
+    graph
+        .apply_node_aspect_version(new_source, AspectVersion::from_updates([(aspect, 13)]), &[])
+        .unwrap();
+    graph
+        .set_dependencies(consumer, [DependencyEdge::new(old_source, aspect)])
+        .unwrap();
+    let before_revision = graph.node_dependency_revision(consumer).unwrap();
+    let before_dependencies = graph
+        .current_runtime_dependencies_of(consumer)
+        .unwrap()
+        .to_vec();
+    let before_snapshot = graph.get_dep_snapshot(consumer).unwrap().clone();
+    let path =
+        crate::data::output::ScopePath::new((0..8).map(|depth| format!("level-{depth}"))).unwrap();
+    let desired = DependencyEdge::with_partition_scope(
+        new_source,
+        aspect,
+        PartitionSubscription::exact(path.clone()),
+    );
+    let inputs = proposed_effect_dependency_inputs(&graph, consumer, &[desired]).unwrap();
+
+    assert_eq!(inputs.dependency_snapshot_update.entry_count(), 1);
+    assert_eq!(
+        inputs.dependency_snapshot_update.change_kind(),
+        crate::data::dependency::SnapshotChangeKind::StructuralReplace
+    );
+    let CommittedSnapshotUpdate::Replace(replacement) = inputs.dependency_snapshot_update else {
+        panic!("changed dependency topology needs a replacement snapshot");
+    };
+    let entry = &replacement.snapshot().entries()[0];
+    assert_eq!(entry.source, new_source);
+    assert_eq!(entry.cached_version, 13);
+    assert_eq!(entry.scope.as_ref().unwrap().path(), &path);
+    assert_eq!(
+        graph.node_dependency_revision(consumer).unwrap(),
+        before_revision
+    );
+    assert_eq!(
+        graph.current_runtime_dependencies_of(consumer).unwrap(),
+        before_dependencies
+    );
+    assert_eq!(graph.get_dep_snapshot(consumer).unwrap(), &before_snapshot);
+}

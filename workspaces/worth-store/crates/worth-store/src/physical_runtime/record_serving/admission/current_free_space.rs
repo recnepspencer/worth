@@ -22,6 +22,13 @@ pub(super) fn load_free_space_manifest(
     admission: &CurrentRootAdmission<'_>,
     current_root: &DurablePhysicalRootManifest,
 ) -> Result<DurableFreeSpaceManifestHeader, BootstrapTransitionFailure> {
+    load_free_space_manifest_with_len(admission, current_root).map(|(header, _)| header)
+}
+
+pub(super) fn load_free_space_manifest_with_len(
+    admission: &CurrentRootAdmission<'_>,
+    current_root: &DurablePhysicalRootManifest,
+) -> Result<(DurableFreeSpaceManifestHeader, u64), BootstrapTransitionFailure> {
     let free_space_bytes = ServingRecordArtifacts::new(admission.media, admission.loader)
         .load_bounded(
             admission.allocation,
@@ -104,7 +111,7 @@ pub(super) fn load_free_space_manifest(
             RecordBootstrapDenial::FreeSpaceManifestDamaged,
         ));
     }
-    Ok(free_space)
+    Ok((free_space, free_space_bytes.len() as u64))
 }
 
 fn classify_free_space_denial(

@@ -71,6 +71,7 @@ impl WorthQueryRuntimeBackendParts {
     pub(in crate::runtime) fn install_query_owned_relational_product_bridge(
         mut self,
         graph_role: impl Into<std::sync::Arc<str>>,
+        invalidation_resources: worth_query_execution::facade::integration::WorthQueryInvalidationResources,
         build: impl FnOnce(
             worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
         )
@@ -97,7 +98,9 @@ impl WorthQueryRuntimeBackendParts {
         };
         let owner =
             worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
-                runtime, graph_role,
+                runtime,
+                graph_role,
+                invalidation_resources,
             )
             .map_err(|denial| WorthQueryRuntimeError::InvariantRegistration {
                 stage: "relational_product_source_installation",

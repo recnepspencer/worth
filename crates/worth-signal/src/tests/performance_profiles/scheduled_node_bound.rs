@@ -4,7 +4,7 @@ use crate::facade::SignalRuntimePolicy;
 use crate::tests::domains::fintech::compile_financial_locality_world_with_policy;
 
 use super::throughput_definition::{
-    assert_within_throughput_budget, partitioned_world_for_output_floor, performance_executor,
+    assert_within_throughput_budget, partitioned_world_for_output_floor, performance_workers,
     PERFORMANCE_SEED, RECORDED_SCHEDULED_OUTPUT_FLOOR,
 };
 const SCHEDULED_BATCHES: usize = 8;
@@ -18,7 +18,7 @@ fn scheduled_node_bound_records_governing_scale() {
     )
     .expect("scheduled bound world compiles under installed operational policy");
     let report = world
-        .run_locality_performance_sequence(SCHEDULED_BATCHES, performance_executor(), false)
+        .run_locality_performance_sequence(SCHEDULED_BATCHES, performance_workers(), false)
         .expect("scheduled bound sequence settles");
     assert!(
         report.node_count >= RECORDED_SCHEDULED_OUTPUT_FLOOR as usize,

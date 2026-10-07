@@ -12,6 +12,7 @@ use crate::runtime::{
 /// installs a new one meanwhile.
 #[derive(Clone)]
 pub(crate) struct InvariantRuntimeView<'a> {
+    pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: std::sync::Arc<SchemaContractRuntimeSubsystem>,
     instrumentation: &'a RuntimeInstrumentation,
@@ -28,6 +29,7 @@ pub(crate) struct InvariantRuntimeView<'a> {
 impl<'a> InvariantRuntimeView<'a> {
     pub(crate) fn from_runtime(runtime: &'a RelationalRuntime) -> Self {
         Self {
+            commit_work_budget: None,
             config: std::sync::Arc::clone(&runtime.config),
             schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
             instrumentation: &runtime.services.instrumentation,
@@ -46,6 +48,7 @@ impl<'a> InvariantRuntimeView<'a> {
         state: &crate::branch::RelationalBranchRootState,
     ) -> Self {
         Self {
+            commit_work_budget: runtime.commit_work_budget.clone(),
             config: std::sync::Arc::clone(&runtime.config),
             schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
             instrumentation: &runtime.services.instrumentation,
@@ -71,6 +74,7 @@ impl<'a> InvariantRuntimeView<'a> {
         'a: 'state,
     {
         InvariantRuntimeView {
+            commit_work_budget: self.commit_work_budget.clone(),
             config: std::sync::Arc::clone(&self.config),
             schema_contract_runtime: std::sync::Arc::clone(&self.schema_contract_runtime),
             instrumentation: self.instrumentation,

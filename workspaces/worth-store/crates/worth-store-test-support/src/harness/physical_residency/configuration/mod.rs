@@ -14,7 +14,10 @@ mod successor_scope_pressure;
 pub(super) use record_publication::record_publication_configuration;
 pub(super) use recovery_planning::{
     compact_recovery_planning_configuration, dense_recovery_planning_configuration,
-    recovery_planning_configuration, span_rewrite_configuration,
+    recovery_planning_configuration,
+    recovery_planning_configuration_with_format_and_manifest_capacity,
+    recovery_planning_configuration_with_maintenance_scope,
+    recovery_planning_configuration_with_recovery_scope, span_rewrite_configuration,
 };
 #[cfg(test)]
 pub(super) use successor_scope_pressure::successor_scope_pressure_configuration;
@@ -66,6 +69,22 @@ pub(super) fn admitted_store_base() -> PhysicalResidencyStoreAdmissionBase {
     );
     let placement = PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(ManifestEntryCapacity::new(64).unwrap())
+        .admit(format)
+        .unwrap();
+    let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
+    PhysicalResidencyStoreAdmissionBase {
+        format,
+        placement,
+        access,
+    }
+}
+
+pub(super) fn admitted_store_base_with_format_and_manifest_capacity(
+    format: AdmittedPhysicalRecordFormat,
+    manifest_capacity: u16,
+) -> PhysicalResidencyStoreAdmissionBase {
+    let placement = PhysicalRecordPlacementPolicy::builder()
+        .manifest_capacity(ManifestEntryCapacity::new(manifest_capacity).unwrap())
         .admit(format)
         .unwrap();
     let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();

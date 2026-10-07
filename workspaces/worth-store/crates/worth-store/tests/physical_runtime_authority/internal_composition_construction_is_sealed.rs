@@ -15,7 +15,7 @@ fn construct_runtime() {
 }
 
 fn construct_capability_status() {
-    let _status = InstalledCapabilityStatus { _private: () };
+    let _status = InstalledCapabilityStatus { serving: false };
 }
 
 fn unavailable<T>() -> T {

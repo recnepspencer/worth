@@ -1,13 +1,18 @@
 use worth_store::physical_runtime::{
     recovery_wal::{wal_frame_integrity_scope_identity, WalSegmentArtifactIdentity},
-    IntegrityAdmittedRecoveryWalFrame, ObservedWalArtifact,
+    IntegrityAdmittedRecoveryWalFrame, IntegrityAdmittedRecoveryWalSegmentBuilder,
+    ObservedWalArtifact, PhysicalRecoveryCoordination, RecoveryWalAllocationDenial,
+    RecoveryWalIntegrityAdmissionDenial,
 };
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_integrity::{
     validate_wal_frame_prefix, PhysicalIntegrityRejection, UntrustedPhysicalArtifact,
 };
 
-use crate::entry::PhysicalRecoveryWalIntegrityObservation;
+use crate::entry::{
+    PhysicalRecoveryWalIntegrityObservation, PhysicalRecoveryWalInventoryAllocationBoundary,
+    WalIntegrityObservationBuilder,
+};
 use crate::integrity_ingress::{
     IntegrityAdmittedRecoveryArtifact, RecoveryIntegrityIngressCounters,
     RecoveryIntegrityIngressRejection,
@@ -15,32 +20,34 @@ use crate::integrity_ingress::{
 
 use super::observation_projection::public_observation;
 
-/// C.9 transcript for one exact C.4-observed WAL artifact.
-///
-/// This records admission truth only. C.8 decides whether a rejection is a
-/// lawful torn tail, corruption, or residue after all canonical sources are
-/// known.
-pub(super) struct WalSegmentAdmissionTranscript {
+/// Admission truth for one exact C4 source; C8 classifies its final disposition.
+pub(super) struct WalSegmentAdmissionTranscript<'owner, 'source> {
     pub identity: WalSegmentArtifactIdentity,
-    pub name: String,
-    pub artifact: ObservedWalArtifact,
+    pub name: &'source std::ffi::OsStr,
     pub observed_bytes: u64,
-    pub frames: Vec<IntegrityAdmittedRecoveryWalFrame>,
-    pub observations: Vec<PhysicalRecoveryWalIntegrityObservation>,
+    pub frames: IntegrityAdmittedRecoveryWalSegmentBuilder<'owner, 'source>,
     pub rejection: Option<PhysicalIntegrityRejection>,
     pub counters: RecoveryIntegrityIngressCounters,
 }
 
-#[derive(Clone, Copy)]
 pub(super) enum WalSegmentAdmissionDenial {
     CounterOverflow,
-    FrameLimitExceeded { observed: u64, admitted: u64 },
+    FrameLimitExceeded {
+        observed: u64,
+        admitted: u64,
+    },
     SourceBinding,
+    Allocation(RecoveryWalAllocationDenial),
+    InventoryAllocation {
+        boundary: PhysicalRecoveryWalInventoryAllocationBoundary,
+        cause: RecoveryWalAllocationDenial,
+    },
 }
 
 pub(super) struct WalSegmentAdmissionFailure {
     pub denial: WalSegmentAdmissionDenial,
-    pub transcript: WalSegmentAdmissionTranscript,
+    pub counters: RecoveryIntegrityIngressCounters,
+    pub policy_attempts: u64,
 }
 
 enum FrameAdmission {
@@ -55,28 +62,34 @@ enum FrameAdmission {
     },
 }
 
-pub(super) fn admit_segment(
-    owner: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
+pub(super) fn admit_segment<'owner, 'source>(
+    owner: &'owner PhysicalRecoveryCoordination,
     identity: WalSegmentArtifactIdentity,
-    artifact: ObservedWalArtifact,
+    artifact: &'source ObservedWalArtifact,
     store: StableStoreIdentity,
     maximum_attempts: u64,
-) -> Result<WalSegmentAdmissionTranscript, WalSegmentAdmissionFailure> {
-    let name = artifact.name().to_string_lossy().into_owned();
-    let observed_bytes = artifact.bytes().map_or(0, |bytes| bytes.len() as u64);
-    let mut offset = 0_usize;
+    observations: &mut WalIntegrityObservationBuilder,
+) -> Result<WalSegmentAdmissionTranscript<'owner, 'source>, WalSegmentAdmissionFailure> {
+    let frames = owner
+        .begin_recovery_wal_segment(artifact, identity)
+        .map_err(|denial| WalSegmentAdmissionFailure {
+            denial: owner_denial(denial),
+            counters: RecoveryIntegrityIngressCounters::default(),
+            policy_attempts: 0,
+        })?;
     let mut transcript = WalSegmentAdmissionTranscript {
         identity,
-        name,
-        artifact,
-        observed_bytes,
-        frames: Vec::new(),
-        observations: Vec::new(),
+        name: artifact.name(),
+        observed_bytes: artifact.bytes().map_or(0, |bytes| bytes.len() as u64),
+        frames,
         rejection: None,
         counters: RecoveryIntegrityIngressCounters::default(),
     };
-    let bytes_len = transcript.artifact.bytes().map_or(0, <[u8]>::len);
-    while offset < bytes_len || (bytes_len == 0 && transcript.observations.is_empty()) {
+    let mut offset = 0_usize;
+    let bytes_len = artifact.bytes().map_or(0, <[u8]>::len);
+    let mut empty_source_pending = bytes_len == 0;
+    while offset < bytes_len || empty_source_pending {
+        empty_source_pending = false;
         if bytes_len != 0 {
             let Some(observed) = (transcript.frames.len() as u64).checked_add(1) else {
                 return Err(failure(
@@ -94,9 +107,18 @@ pub(super) fn admit_segment(
                 ));
             }
         }
+        if let Err(cause) = observations.reserve_one(owner) {
+            return Err(failure(
+                WalSegmentAdmissionDenial::InventoryAllocation {
+                    boundary: PhysicalRecoveryWalInventoryAllocationBoundary::IntegrityObservations,
+                    cause,
+                },
+                transcript,
+            ));
+        }
         match admit_frame(
             owner,
-            &transcript.artifact,
+            artifact,
             identity,
             store,
             offset,
@@ -107,15 +129,17 @@ pub(super) fn admit_segment(
                 observation,
                 next_offset,
             }) => {
-                transcript.observations.push(observation);
+                observations.push_reserved(observation);
                 offset = next_offset;
-                transcript.frames.push(frame);
+                if let Err(denial) = transcript.frames.push(frame) {
+                    return Err(failure(owner_denial(denial), transcript));
+                }
             }
             Ok(FrameAdmission::Rejected {
                 rejection,
                 observation,
             }) => {
-                transcript.observations.push(observation);
+                observations.push_reserved(observation);
                 transcript.rejection = Some(rejection);
                 break;
             }
@@ -126,7 +150,7 @@ pub(super) fn admit_segment(
 }
 
 fn admit_frame(
-    owner: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
+    owner: &PhysicalRecoveryCoordination,
     artifact: &ObservedWalArtifact,
     identity: WalSegmentArtifactIdentity,
     store: StableStoreIdentity,
@@ -155,7 +179,8 @@ fn admit_frame(
         scope.byte_range(),
         validation,
         counters,
-    );
+    )
+    .map_err(WalSegmentAdmissionDenial::Allocation)?;
     let observation = attempt.observation();
     match attempt.into_outcome() {
         Ok(IntegrityAdmittedRecoveryArtifact::WalFrame(frame)) => {
@@ -179,9 +204,25 @@ fn admit_frame(
     }
 }
 
+pub(super) fn owner_denial(
+    denial: RecoveryWalIntegrityAdmissionDenial,
+) -> WalSegmentAdmissionDenial {
+    match denial {
+        RecoveryWalIntegrityAdmissionDenial::Allocation(cause) => {
+            WalSegmentAdmissionDenial::Allocation(cause)
+        }
+        _ => WalSegmentAdmissionDenial::SourceBinding,
+    }
+}
+
 fn failure(
     denial: WalSegmentAdmissionDenial,
-    transcript: WalSegmentAdmissionTranscript,
+    transcript: WalSegmentAdmissionTranscript<'_, '_>,
 ) -> WalSegmentAdmissionFailure {
-    WalSegmentAdmissionFailure { denial, transcript }
+    let policy_attempts = super::inventory_accumulation::policy_attempts(&transcript);
+    WalSegmentAdmissionFailure {
+        denial,
+        counters: transcript.counters,
+        policy_attempts,
+    }
 }

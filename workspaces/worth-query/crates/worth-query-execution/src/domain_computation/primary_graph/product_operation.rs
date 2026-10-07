@@ -1,4 +1,7 @@
 mod application_basis;
+mod shared_query_basis;
+pub(in crate::domain_computation::primary_graph) use shared_query_basis::SelectedQueryBasisRetentionStop;
+pub(in crate::domain_computation) use shared_query_basis::SharedSelectedProductOperation;
 mod branches;
 mod cleanup;
 mod close;
@@ -7,6 +10,7 @@ mod context;
 mod generated_materialization;
 pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
 mod history;
+mod observation_room;
 mod operation;
 mod program_adoption;
 mod query;
@@ -15,6 +19,9 @@ mod security_basis;
 mod transaction;
 
 pub(in crate::domain_computation) use security_basis::WorthQueryProductSecurityBasis;
+pub(in crate::domain_computation::primary_graph) use security_basis::{
+    SelectedPermissionSecurityStop, WorthQuerySelectedPermissionSecurityBasis,
+};
 
 pub use branches::WorthQueryApplicationProductBranches;
 pub use cleanup::{

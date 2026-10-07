@@ -118,7 +118,7 @@ impl From<BranchMergePlan> for MergePlanArtifactSummary {
                     source_node: node_id_key(entry.source_node),
                     target_identity: {
                         let target_identity_json =
-                            serde_json::to_value(&entry.target_identity).unwrap_or_default();
+                            serde_json::to_value(entry.target_identity).unwrap_or_default();
                         let kind = target_identity_json
                             .as_object()
                             .and_then(|object| object.keys().next().cloned())

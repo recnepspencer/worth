@@ -2,8 +2,7 @@ use worth_store_physical_format::{
     certification_crc32c_invocations, durable_artifact_checksum, DurableArtifactCrc32c,
     DurableFreeSpaceManifestHeader, FreeSpaceHeaderScopeIdentity,
     FreeSpaceMembershipBlockScopeIdentity, PhysicalFreeSpaceMembershipBlock, PhysicalGeneration,
-    PhysicalTreeIdentity, RecordAllocationClass, RecordArtifactFile, RecordFrameCoordinate,
-    RecordFreeSpaceManifestEntry,
+    PhysicalTreeIdentity, RecordArtifactFile, RecordFrameCoordinate, RecordFreeSpaceManifestEntry,
 };
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
@@ -18,7 +17,9 @@ use crate::physical_runtime::ResidentAdmissionCounterCells;
 fn free_space_header_projection_does_not_rehash_and_invalidation_requires_actual_validation() {
     let store = store(81);
     let format = format();
-    let header = DurableFreeSpaceManifestHeader::new(2, 71, 4, 4, 0, 1, 1, 1, 1, None).unwrap();
+    let header =
+        DurableFreeSpaceManifestHeader::new(2, 71, 4, 4, 0, 1, 1, 1, 1, 65536, 4096, 1, None)
+            .unwrap();
     let bytes = header.encode(format);
     let scope = PhysicalArtifactScope::free_space_header(
         store,
@@ -65,8 +66,7 @@ fn free_space_header_projection_does_not_rehash_and_invalidation_requires_actual
 fn free_space_membership_projection_does_not_rehash_and_invalidation_requires_actual_validation() {
     let store = store(82);
     let format = format();
-    let entry =
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::InlinePage, 1, 2, 3, 2).unwrap();
+    let entry = RecordFreeSpaceManifestEntry::inline_frontier(1, 2, 3, 2).unwrap();
     let block = PhysicalFreeSpaceMembershipBlock::leaf(71, 2, 1, vec![entry], 4).unwrap();
     let bytes = block.encode(format);
     let scope = PhysicalArtifactScope::free_space_membership_block(

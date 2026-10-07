@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 pub enum PhysicalRecordFormatVersion {
-    V1 = 1,
+    V2 = 2,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,7 +86,7 @@ impl PhysicalRecordFormatDeclaration {
 
     pub(crate) fn decode(bytes: [u8; 10]) -> Result<Self, PhysicalRecordFormatDenial> {
         let version = u16::from_le_bytes([bytes[0], bytes[1]]);
-        if version != PhysicalRecordFormatVersion::V1 as u16 {
+        if version != PhysicalRecordFormatVersion::V2 as u16 {
             return Err(PhysicalRecordFormatDenial::UnsupportedVersion(version));
         }
         let page_bytes = u32::from_le_bytes(bytes[2..6].try_into().expect("fixed field"));
@@ -129,7 +129,7 @@ impl PhysicalRecordFormatDeclaration {
 
     const fn canonical(page_size: PhysicalPageSizeClass) -> Self {
         Self {
-            version: PhysicalRecordFormatVersion::V1,
+            version: PhysicalRecordFormatVersion::V2,
             page_size,
             byte_order: PhysicalRecordByteOrder::LittleEndian,
             root_protocol: PhysicalRecordRootProtocol::StagedCatalogV1,
@@ -150,7 +150,7 @@ impl PhysicalRecordFormatDeclarationBuilder {
     }
 
     pub fn admit(self) -> Result<PhysicalRecordFormatDeclaration, PhysicalRecordFormatDenial> {
-        let version = self.version.unwrap_or(PhysicalRecordFormatVersion::V1);
+        let version = self.version.unwrap_or(PhysicalRecordFormatVersion::V2);
         let page_size = self.page_size.unwrap_or(PhysicalPageSizeClass::KiB16);
         Ok(PhysicalRecordFormatDeclaration {
             version,

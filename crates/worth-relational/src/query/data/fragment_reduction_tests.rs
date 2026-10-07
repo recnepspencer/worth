@@ -1,12 +1,13 @@
+use super::canonical_digest::query_result_reduction_digest_checked;
 use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::schema::data::{KindResolution, SchemaId, SchemaVersionId};
 use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
 
 use super::{
     query_authoritative_entity_record_digest, reduce_query_fragments,
-    DeterministicQueryFragmentKey, DeterministicQueryPlanKey, QueryExecutionShape,
-    QueryFragmentCounters, QueryOrderingContract, QueryWorkerFragment, TraversalEntityVisitKey,
-    TraversalReductionBasis, TraversalRelationVisitKey,
+    reduce_query_fragments_checked, DeterministicQueryFragmentKey, DeterministicQueryPlanKey,
+    QueryExecutionShape, QueryFragmentCounters, QueryOrderingContract, QueryWorkerFragment,
+    TraversalEntityVisitKey, TraversalReductionBasis, TraversalRelationVisitKey,
 };
 
 fn test_authoritative_entity_record(
@@ -22,6 +23,59 @@ fn test_authoritative_entity_record(
         retired_at_version: None,
         authoritative_aspect_state: None,
     }
+}
+
+#[test]
+fn checked_reduction_matches_serial_ordering_and_can_stop_during_digest() {
+    let entity = crate::identity::data::EntityId::new(PartitionId(1), 1, 1);
+    let kind = KindResolution {
+        kind_id: KindId(1),
+        kind_name: "test.entity".to_string(),
+        schema_id: SchemaId("test".to_string()),
+        schema_version_id: SchemaVersionId(1),
+    };
+    for ordering in [
+        QueryOrderingContract::CanonicalEntityIdOrder,
+        QueryOrderingContract::CanonicalRelationIdOrder,
+        QueryOrderingContract::CanonicalRecordRefOrder,
+        QueryOrderingContract::CanonicalTraversalOrder,
+    ] {
+        let fragments = vec![QueryWorkerFragment {
+            plan_key: DeterministicQueryPlanKey(1),
+            fragment_key: DeterministicQueryFragmentKey(1),
+            ordering,
+            entities: vec![test_authoritative_entity_record(entity, kind.clone())],
+            relations: vec![],
+            counters: QueryFragmentCounters {
+                target_count: 1,
+                authoritative_entity_records_emitted: 1,
+                authoritative_relation_records_emitted: 0,
+                touched_partitions: 1,
+            },
+            traversal_basis: None,
+        }];
+        let serial = reduce_query_fragments(
+            QueryExecutionShape::BulkPacketized,
+            ordering,
+            fragments.clone(),
+        );
+        let checked = reduce_query_fragments_checked(
+            QueryExecutionShape::BulkPacketized,
+            ordering,
+            fragments.clone(),
+            |_, _| Ok::<(), ()>(()),
+        )
+        .unwrap();
+        assert_eq!(checked, serial);
+    }
+    let record = test_authoritative_entity_record(entity, kind);
+    let stopped = query_result_reduction_digest_checked(
+        QueryOrderingContract::CanonicalEntityIdOrder,
+        &[record],
+        &[],
+        |work, _| if work > 0 { Err(()) } else { Ok(()) },
+    );
+    assert_eq!(stopped, Err(()));
 }
 
 fn test_authoritative_relation_record(

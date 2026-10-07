@@ -42,7 +42,9 @@ mod public_reachability;
 mod query_fence;
 mod raw_geometry;
 mod source_reachability;
+mod store_current_projection;
 mod store_integrity_routes;
+mod threading;
 mod truth_types;
 mod type_alias_reachability;
 mod use_binding_resolution;
@@ -58,6 +60,7 @@ pub(crate) use crate_modules::{parse_crate_modules_where, GovernedCrate, ModuleG
 pub(crate) use path_dependencies::path_backed_dependency_roots;
 pub(crate) use raw_geometry::enforce_raw_geometry_denials;
 pub(crate) use source_reachability::enforce_workspace_source_reachability;
+pub(crate) use threading::enforce_threading_boundary;
 pub(crate) use truth_types::enforce_truth_type_denials;
 
 pub(super) fn validate(
@@ -99,6 +102,7 @@ pub(super) fn validate(
             &module_graph,
         ));
         diagnostics.extend(store_integrity_routes::enforce(&governed, &module_graph));
+        diagnostics.extend(store_current_projection::enforce(&governed, &module_graph));
         let reachable = match public_reachability::externally_reachable_items(
             &module_graph,
             &governed.crate_root,

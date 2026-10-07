@@ -30,6 +30,6 @@ pub use stream_header::{
     validate_checkpoint_stream_header, CheckpointStreamHeaderIntegrityValidation,
 };
 pub use verified_stream::{
-    VerifiedCheckpointCompactionCutover, VerifiedCheckpointStream,
-    VerifiedCheckpointStreamAssemblyDenial,
+    ValidatedCheckpointStreamAssembly, VerifiedCheckpointCompactionCutover,
+    VerifiedCheckpointFacts, VerifiedCheckpointStream, VerifiedCheckpointStreamAssemblyDenial,
 };

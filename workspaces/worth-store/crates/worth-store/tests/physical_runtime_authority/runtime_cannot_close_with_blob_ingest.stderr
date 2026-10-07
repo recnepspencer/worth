@@ -1,0 +1,13 @@
+error[E0505]: cannot move out of `runtime` because it is borrowed
+  --> tests/physical_runtime_authority/runtime_cannot_close_with_blob_ingest.rs:15:5
+   |
+ 6 |     runtime: ServingPhysicalRuntime,
+   |     ------- binding `runtime` declared here
+...
+11 |     let blobs = runtime.blobs().unwrap();
+   |                 ------- borrow of `runtime` occurs here
+...
+15 |     runtime.close();
+   |     ^^^^^^^ move out of `runtime` occurs here
+16 |     drop(session);
+   |          ------- borrow later used here

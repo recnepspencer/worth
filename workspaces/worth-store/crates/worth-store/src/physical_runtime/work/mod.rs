@@ -80,6 +80,7 @@ pub use progression::{
     ReadyPhysicalWork, ResourceAdmittedPhysicalWork, SettledPhysicalWork,
 };
 pub use recovery::PhysicalCheckpointRecoveryAction;
+pub use recovery::PhysicalRecoveryJournalCounters;
 pub(in crate::physical_runtime) use recovery::{
     PhysicalEffectJournal, PhysicalEffectRecoveryInventory, PreparedPhysicalEffect,
 };
@@ -108,10 +109,11 @@ pub use submission::{
 pub use admission::{PhysicalWorkAdmission, PhysicalWorkPreEffectDenial};
 pub use aspect_delta::{PhysicalWorkAspectDelta, PhysicalWorkAspectDeltaDenial};
 pub(in crate::physical_runtime) use declaration::PhysicalWorkIntentParts;
+pub use execution::PhysicalEffectRecoveryObligation;
 pub(in crate::physical_runtime) use execution::{
     IndeterminatePhysicalCheckpointAction, IndeterminatePhysicalPublicationEffect,
     IndeterminatePhysicalWalBarrier, IndeterminatePhysicalWalReclamationAction,
-    PhysicalCheckpointExecutorCommand, PhysicalEffectRecoveryObligation, PhysicalExecutorDispatch,
+    PhysicalCheckpointCommandPayload, PhysicalCheckpointExecutorCommand, PhysicalExecutorDispatch,
     PhysicalExecutorOutcome, PhysicalMetadataExecutorCommand, PhysicalPublicationExecutorCommand,
     PhysicalReadExecutorCommand, PhysicalResidencyWritebackCompletion,
     PhysicalResidencyWritebackExecutorCommand, PhysicalRetryPayload,

@@ -27,7 +27,8 @@ pub(in crate::http::server) fn request_mutation_denial(
         // earlier commit; reading current state shows it.
         Denial::WorkflowAuthoritySpent
         | Denial::WorkflowTransitionCurrentness
-        | Denial::IdempotencyReceiptNotRetained => {
+        | Denial::IdempotencyReceiptNotRetained
+        | Denial::IdempotencyWindowExpired => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         // The same request can never pass these, so a retry would loop forever:
@@ -44,6 +45,11 @@ pub(in crate::http::server) fn request_mutation_denial(
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
+        // The server prepared this request object once already. Every HTTP
+        // request builds a fresh one, so sending it again can pass.
+        Denial::PreparationSpent => {
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
+        }
         // No identity remains for resolving the key until reconfiguration.
         Denial::IdempotencyIdentityExhausted => BankHttpDenial::new(
             BankHttpDenialKind::Unavailable,
@@ -130,6 +136,14 @@ mod tests {
                 "{kind:?}"
             );
         }
+    }
+
+    #[test]
+    fn a_key_whose_commit_left_the_window_asks_for_a_refresh_not_a_retry() {
+        assert_eq!(
+            request_mutation_denial(Denial::IdempotencyWindowExpired),
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        );
     }
 
     #[test]

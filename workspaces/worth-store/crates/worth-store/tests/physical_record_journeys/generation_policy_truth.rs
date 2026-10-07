@@ -200,8 +200,8 @@ fn segment_target_drift_opens_a_new_policy_honest_segment() {
         .map(|entry| {
             (
                 entry.owner(),
-                entry.first_unallocated(),
-                entry.unallocated_count(),
+                entry.inline_free_frontier().unwrap().first_unallocated(),
+                entry.inline_free_frontier().unwrap().unallocated_count(),
                 entry.generation(),
             )
         })

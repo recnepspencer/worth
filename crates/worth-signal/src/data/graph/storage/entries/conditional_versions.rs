@@ -100,7 +100,7 @@ impl SignalGraph {
         scope: Option<&PartitionSubscription>,
         version: crate::data::aspect::AspectVersion,
         regions: &[crate::data::output::ChangedRegion],
-        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<u64, SignalError> {
         work.reserve(
             self.arena
@@ -168,10 +168,7 @@ mod tests {
         let node = graph.node().build();
         let aspect = Aspect::new(1);
         // Storage-value fixture; no conditional execution is claimed here.
-        graph
-            .warm_mut(node)
-            .unwrap()
-            .aspect_version_overrides
+        std::sync::Arc::make_mut(&mut graph.warm_mut(node).unwrap().aspect_version_overrides)
             .apply_evaluation(
                 AspectVersion::zero().with(aspect, 7),
                 &[ChangedRegion::new("partition-λ").with_detail("detail-λ")],
@@ -190,7 +187,7 @@ mod tests {
                     "partition-λ",
                     "absent",
                 )),
-                7,
+                0,
             ),
             (Some(PartitionSubscription::whole_partition("missing")), 0),
         ] {

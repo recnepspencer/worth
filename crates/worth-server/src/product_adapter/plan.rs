@@ -19,6 +19,24 @@ pub struct WorthServerLoweredProductOperationPlan {
 }
 
 impl WorthServerLoweredProductOperationPlan {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        use super::execution_pipeline::read_batch_accounting::string;
+        self.operation_admission
+            .owned_allocation_capacity_bytes()
+            .saturating_add(self.declaration.owned_allocation_capacity_bytes())
+            .saturating_add(self.payload.owned_allocation_capacity_bytes())
+            .saturating_add(
+                self.application_authorization
+                    .as_ref()
+                    .map_or(0, |authorization| {
+                        authorization.owned_allocation_capacity_bytes()
+                    }),
+            )
+            .saturating_add(self.support_posture.owned_allocation_capacity_bytes())
+            .saturating_add(self.precondition_posture.owned_allocation_capacity_bytes())
+            .saturating_add(string(&self.canonical_digest))
+    }
+
     pub(crate) fn new(
         operation_admission: WorthServerOperationAdmissionPosture,
         declaration: WorthServerProductOperationDeclaration,

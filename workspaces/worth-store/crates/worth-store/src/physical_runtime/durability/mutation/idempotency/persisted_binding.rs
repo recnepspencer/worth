@@ -1,7 +1,11 @@
+use super::canonical_encoding::CanonicalBindingEncoding;
+
 use super::attempt_binding::AllocatedPhysicalMutationAttemptBinding;
 use super::registry::PhysicalMutationUnresolvedBindingObservation;
 
 mod decoding;
+#[cfg(test)]
+pub(super) mod tests;
 pub(in crate::physical_runtime) use decoding::{
     decode_binding_basis, CanonicalBindingCursor, PhysicalBindingDecodingContext,
     PhysicalPersistedBindingDecodeDenial,
@@ -95,37 +99,33 @@ impl PersistedPhysicalMutationAttemptBinding {
     }
 
     fn encode(&self) -> Vec<u8> {
-        let lease = self.key.lease();
-        let range = self.member.lsn_range();
         let mut bytes = Vec::with_capacity(320);
-        write_field(
-            &mut bytes,
-            worth_store_wal::PHYSICAL_MUTATION_ATTEMPT_BINDING_DOMAIN,
-        );
-        write_field(&mut bytes, &self.key.identity().bytes());
-        write_field(&mut bytes, &lease.store_identity().bytes());
-        write_field(&mut bytes, &lease.policy_identity().bytes());
-        bytes.extend_from_slice(&lease.issuance_generation().get().to_le_bytes());
-        bytes.extend_from_slice(&lease.expiry_generation().get().to_le_bytes());
-        write_field(&mut bytes, &self.key.caller_material().bytes());
-        write_field(&mut bytes, &self.fingerprint.bytes());
-        write_field(&mut bytes, &self.mutation.store_identity().bytes());
-        bytes.extend_from_slice(&self.mutation.runtime_identity().get().to_le_bytes());
-        bytes.extend_from_slice(&self.mutation.lifecycle_generation().to_le_bytes());
-        bytes.extend_from_slice(&self.mutation.operation_identity().get().to_le_bytes());
-        write_field(&mut bytes, &self.group.group_identity().bytes());
-        bytes.extend_from_slice(&self.group.ordinal().get().to_le_bytes());
-        bytes.extend_from_slice(&self.group.member_count().get().to_le_bytes());
-        write_field(&mut bytes, &self.group.membership_digest());
-        write_field(&mut bytes, &self.member.member_identity().bytes());
-        bytes.extend_from_slice(&range.start().get().to_le_bytes());
-        bytes.extend_from_slice(&range.end_exclusive().get().to_le_bytes());
-        write_field(&mut bytes, &self.redo_digest);
+        self.encode_into(&mut bytes);
         bytes
     }
-}
 
-fn write_field(target: &mut Vec<u8>, field: &[u8]) {
-    target.extend_from_slice(&(field.len() as u64).to_le_bytes());
-    target.extend_from_slice(field);
+    fn encode_into(&self, bytes: &mut impl CanonicalBindingEncoding) {
+        let lease = self.key.lease();
+        let range = self.member.lsn_range();
+        bytes.field(worth_store_wal::PHYSICAL_MUTATION_ATTEMPT_BINDING_DOMAIN);
+        bytes.field(&self.key.identity().bytes());
+        bytes.field(&lease.store_identity().bytes());
+        bytes.field(&lease.policy_identity().bytes());
+        bytes.write(&lease.issuance_generation().get().to_le_bytes());
+        bytes.write(&lease.expiry_generation().get().to_le_bytes());
+        bytes.field(&self.key.caller_material().bytes());
+        bytes.field(&self.fingerprint.bytes());
+        bytes.field(&self.mutation.store_identity().bytes());
+        bytes.write(&self.mutation.runtime_identity().get().to_le_bytes());
+        bytes.write(&self.mutation.lifecycle_generation().to_le_bytes());
+        bytes.write(&self.mutation.operation_identity().get().to_le_bytes());
+        bytes.field(&self.group.group_identity().bytes());
+        bytes.write(&self.group.ordinal().get().to_le_bytes());
+        bytes.write(&self.group.member_count().get().to_le_bytes());
+        bytes.field(&self.group.membership_digest());
+        bytes.field(&self.member.member_identity().bytes());
+        bytes.write(&range.start().get().to_le_bytes());
+        bytes.write(&range.end_exclusive().get().to_le_bytes());
+        bytes.field(&self.redo_digest);
+    }
 }

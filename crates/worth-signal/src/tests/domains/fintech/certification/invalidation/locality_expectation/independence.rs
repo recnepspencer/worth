@@ -18,9 +18,9 @@ const PURE_WORLD_OWNERS: &[&str] = &[
     "positions",
 ];
 const ORACLE_CLOSURE_DIGEST: &str =
-    "609c208becd1af0d08db662890e7922081d1d62a97bdeda44869f2457740f052";
+    "f58d7541656a3af7ecbc4f2b418b857d573e87b0137863894aef4726192847b0";
 const PURE_WORLD_CLOSURE_DIGEST: &str =
-    "655b53ad30ce7fdd902848e766041deb9771a40e04b85abc3bdcd511507f02e9";
+    "3ee574bc54d6cee0109bb50bdb45c994b7941e1932df92d7dbe4f39efa273a9b";
 
 #[test]
 fn complete_oracle_dependency_graph_excludes_runtime_authority() {

@@ -50,6 +50,9 @@ fn parse_stage(encoded: &str) -> Result<PhysicalMutationCheckpoint, String> {
         "after-writeback-admission-before-effect" => {
             Ok(PhysicalMutationCheckpoint::AfterWritebackAdmissionBeforeEffect)
         }
+        "after-arena-write-admission-before-effect" => {
+            Ok(PhysicalMutationCheckpoint::AfterArenaWriteAdmissionBeforeEffect)
+        }
         "during-data-settlement" => Ok(PhysicalMutationCheckpoint::DuringDataSettlement),
         "after-data-settlement" => Ok(PhysicalMutationCheckpoint::AfterDataSettlement),
         "during-root-publication" => Ok(PhysicalMutationCheckpoint::DuringRootPublication),

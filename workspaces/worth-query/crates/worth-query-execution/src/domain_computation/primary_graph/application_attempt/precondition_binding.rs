@@ -10,9 +10,11 @@ use worth_query_installation::facade::{
     WorthQueryCanonicalWorkEvidence, WorthQueryCompiledApplicationOperationContracts,
 };
 use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use canonical_identity::prepare_precondition_identity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -41,6 +43,9 @@ pub(in crate::domain_computation) fn bind_mutation_preconditions<Schema, Operati
     layout: &WorthQueryPrimaryGraphLayout,
 ) -> Result<WorthQueryBoundMutationPreconditions, ()> {
     let mut entries = requested.into_entries();
+    if entries.is_empty() {
+        return Ok(empty_bound_preconditions());
+    }
     entries.sort_by(|left, right| left.target().cmp(right.target()));
     if entries
         .windows(2)
@@ -95,6 +100,48 @@ pub(in crate::domain_computation) fn bind_mutation_preconditions<Schema, Operati
         expected_version_count,
         expected_fact_count,
     })
+}
+
+/// The producer's default preconditions have no selected rows. This is the
+/// same empty acceptance branch as the ordinary binder, issued before its
+/// unrelated installed-target collection. A nonempty selected request has no
+/// admitted binding route and refuses before operation effects.
+pub(in crate::domain_computation) fn bind_empty_mutation_preconditions_admitted<
+    Schema,
+    Operation,
+    Scope,
+>(
+    requested: TypedMutationPreconditions<Schema, Operation, Scope>,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<WorthQueryBoundMutationPreconditions, EmptyMutationPreconditionAdmissionStop> {
+    let work = std::mem::size_of::<WorthQueryBoundMutationPreconditions>()
+        .checked_add(3)
+        .and_then(|n| u64::try_from(n).ok())
+        .ok_or(EmptyMutationPreconditionAdmissionStop::AccountingOverflow)?;
+    admission
+        .charge_external_work(work)
+        .map_err(EmptyMutationPreconditionAdmissionStop::Admission)?;
+    if !requested.entries().is_empty() {
+        return Err(EmptyMutationPreconditionAdmissionStop::Nonempty);
+    }
+    Ok(empty_bound_preconditions())
+}
+
+#[derive(Debug)]
+pub(in crate::domain_computation) enum EmptyMutationPreconditionAdmissionStop {
+    Admission(CompanionPreflightStop),
+    AccountingOverflow,
+    Nonempty,
+}
+
+fn empty_bound_preconditions() -> WorthQueryBoundMutationPreconditions {
+    WorthQueryBoundMutationPreconditions {
+        entries: Vec::new(),
+        canonical_digest: None,
+        canonical_work: WorthQueryCanonicalWorkEvidence::zero(),
+        expected_version_count: 0,
+        expected_fact_count: 0,
+    }
 }
 
 impl WorthQueryBoundMutationPreconditions {

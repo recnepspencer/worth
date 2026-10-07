@@ -1,7 +1,5 @@
-use worth_store::physical_runtime::BlobPhysicalAllocation;
 use worth_store_budgets::CounterEvidenceStrength;
 
-use super::super::super::allocation::AdmittedBlobStreamingAllocation;
 use super::super::transitions::{
     admit_stream, advance_frontier, emit_ingest_receipt, finalize_sequence,
 };
@@ -12,62 +10,48 @@ use crate::{
     BlobStreamingPressureAdmission, BlobStreamingSourceFrame, BlobStreamingWindow,
 };
 
-pub struct BlobStreamingIngestExecution<'runtime> {
-    window: BlobStreamingWindow,
-    allocation: BlobPhysicalAllocation<'runtime>,
-    pressure: BlobStreamingPressureAdmission,
-    counter_strength: CounterEvidenceStrength,
-}
-
-impl<'runtime> BlobStreamingIngestExecution<'runtime> {
-    pub fn new(
+impl BlobStreamingIngest {
+    /// Verifies a bounded content sequence. Physical allocation and durable publication
+    /// belong to the Store runtime, not to this mechanism result.
+    pub fn verify_bounded_content<W>(
+        request: BlobStreamingIngestRequest,
         window: BlobStreamingWindow,
-        allocation: BlobPhysicalAllocation<'runtime>,
         pressure: BlobStreamingPressureAdmission,
         counter_strength: CounterEvidenceStrength,
-    ) -> Self {
-        Self {
-            window,
-            allocation,
-            pressure,
-            counter_strength,
-        }
-    }
-}
-
-impl BlobStreamingIngest {
-    pub(crate) fn run_bounded<'runtime, W>(
-        request: BlobStreamingIngestRequest,
-        execution: BlobStreamingIngestExecution<'runtime>,
         source_frames: impl IntoIterator<Item = BlobStreamingSourceFrame>,
         writer: &mut W,
     ) -> Result<Self, BlobStreamingIngestDenial>
     where
         W: BlobStreamingChunkWriter,
     {
-        execute_bounded_ingest(request, execution, source_frames, writer)
+        verify_bounded_content(
+            request,
+            window,
+            pressure,
+            counter_strength,
+            source_frames,
+            writer,
+        )
     }
 }
 
-pub(crate) fn execute_bounded_ingest<'runtime, W>(
+pub(crate) fn verify_bounded_content<W>(
     request: BlobStreamingIngestRequest,
-    execution: BlobStreamingIngestExecution<'runtime>,
+    window: BlobStreamingWindow,
+    pressure: BlobStreamingPressureAdmission,
+    counter_strength: CounterEvidenceStrength,
     source_frames: impl IntoIterator<Item = BlobStreamingSourceFrame>,
     writer: &mut W,
 ) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial>
 where
     W: BlobStreamingChunkWriter,
 {
-    counter_strength::require_exact(execution.counter_strength)?;
-    let allocation = AdmittedBlobStreamingAllocation::admit(
-        execution.allocation,
-        execution.window.max_resident_bytes(),
-    )?;
+    counter_strength::require_exact(counter_strength)?;
     let declared_total_bytes = request.declared_total_bytes();
-    let (admission, chunking, counters) = admit_stream::admit_stream(request, execution.pressure)?;
+    let (admission, chunking, counters) = admit_stream::admit_stream(request, pressure)?;
     let (admission, chunking, counters) = advance_frontier::advance_frontier(
         source_frames,
-        execution.window,
+        window,
         declared_total_bytes,
         admission,
         chunking,
@@ -76,11 +60,5 @@ where
     )?;
     let (sequence, counters) =
         finalize_sequence::finalize_sequence(chunking, admission, counters, writer)?;
-    emit_ingest_receipt::emit_ingest_receipt(
-        sequence,
-        allocation,
-        execution.window,
-        execution.counter_strength,
-        counters,
-    )
+    emit_ingest_receipt::emit_ingest_receipt(sequence, counters)
 }

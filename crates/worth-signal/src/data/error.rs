@@ -1,4 +1,5 @@
 use std::fmt;
+use worth_execution::{ChargedBytes, LeaseDenial};
 
 use crate::data::graph::ScratchLeaseKind;
 use crate::data::handle::NodeId;
@@ -6,10 +7,26 @@ use crate::data::node::ContextRequirement;
 use crate::logic::transaction::{BranchMergeFailureEvidence, BranchMergeFailureKind};
 use crate::state::SignalBranchId;
 
+mod execution_stop;
+pub use execution_stop::{
+    SignalExecutionFailure, SignalExecutionStop, SignalExecutionStopReason,
+    SignalPublicationDisposition, SignalPublicationProgress,
+};
+
 /// Library-native error type for signal graph operations.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalError {
+    ExecutionStopped(Box<SignalExecutionStop>),
+    ExecutionAdmissionDenied(LeaseDenial),
+    PreparationMemoryExhausted {
+        required: Option<u64>,
+        reserved: u64,
+    },
     EvaluationStorageCapacityExhausted,
+    CheckedResultCapacityExceeded {
+        required: u64,
+        declared: u64,
+    },
     EvaluationStorageUnavailable,
     SnapshotIndexUnavailable,
     ConditionalEvaluationWorkExhausted {
@@ -72,6 +89,10 @@ pub enum SignalError {
 }
 
 impl SignalError {
+    pub fn execution_stopped(stop: SignalExecutionStop) -> Self {
+        Self::ExecutionStopped(Box::new(stop))
+    }
+
     pub fn stale_handle(node: NodeId, expected_generation: u32) -> Self {
         Self::StaleHandle {
             node,
@@ -170,7 +191,14 @@ impl SignalError {
 impl fmt::Display for SignalError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ExecutionStopped(stop) => write!(f, "signal execution stopped: {stop}"),
+            Self::ExecutionAdmissionDenied(denial) => write!(f, "Signal execution admission denied: {denial:?}"),
+            Self::PreparationMemoryExhausted { required, reserved } => write!(f, "Signal preparation memory exhausted: required {required:?}, reserved {reserved}"),
             Self::EvaluationStorageCapacityExhausted => write!(f, "evaluation storage capacity exhausted"),
+            Self::CheckedResultCapacityExceeded { required, declared } => write!(
+                f,
+                "checked result heap exceeds its declaration: required {required}, declared {declared}"
+            ),
             Self::EvaluationStorageUnavailable => write!(f, "evaluation storage unavailable"),
             Self::SnapshotIndexUnavailable => write!(f, "snapshot indexes are unavailable for retained evaluation"),
             Self::ConditionalEvaluationWorkExhausted { maximum_visits } => write!(
@@ -275,3 +303,48 @@ impl fmt::Display for SignalError {
 }
 
 impl std::error::Error for SignalError {}
+
+impl ChargedBytes for SignalError {
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
+            Self::ExecutionStopped(stop) => stop
+                .additional_charged_bytes()
+                .saturating_add(std::mem::size_of::<SignalExecutionStop>() as u64),
+            Self::CycleDetected { path } => path.additional_charged_bytes(),
+            Self::EventFlushFailed { subscriber, source } => subscriber
+                .additional_charged_bytes()
+                .saturating_add(source.additional_charged_bytes()),
+            Self::IncompatibleSnapshot { reason } => reason.additional_charged_bytes(),
+            Self::UnknownBranch { branch_name, .. } => branch_name.additional_charged_bytes(),
+            Self::BranchMergeFailed {
+                evidence: Some(_), ..
+            } => u64::MAX,
+            Self::BranchMergeFailed {
+                message,
+                evidence: None,
+                ..
+            } => message.additional_charged_bytes(),
+            Self::InvalidInput { message, context } | Self::Internal { message, context } => {
+                message
+                    .additional_charged_bytes()
+                    .saturating_add(context.additional_charged_bytes())
+            }
+            Self::PreparationMemoryExhausted { .. }
+            | Self::ExecutionAdmissionDenied(_)
+            | Self::EvaluationStorageCapacityExhausted
+            | Self::CheckedResultCapacityExceeded { .. }
+            | Self::EvaluationStorageUnavailable
+            | Self::SnapshotIndexUnavailable
+            | Self::ConditionalEvaluationWorkExhausted { .. }
+            | Self::UpstreamDependencyWorkExhausted { .. }
+            | Self::WaiterResolutionWorkExhausted { .. }
+            | Self::StaleHandle { .. }
+            | Self::ScratchReentry { .. }
+            | Self::ScratchMismatch { .. }
+            | Self::ContractViolation { .. }
+            | Self::TransactionFinished
+            | Self::TransactionPoisoned
+            | Self::ManagedQueueBranchTransferDenied { .. } => 0,
+        }
+    }
+}

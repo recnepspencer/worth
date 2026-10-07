@@ -20,7 +20,7 @@ pub struct CompletedPhysicalCheckpoint {
     wal_reclamation: crate::physical_runtime::PhysicalWalReclamationObservation,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalCheckpointProvenNoEffectCause {
     CancelledBeforeCandidate,
     CancelledAndCandidateRemoved,
@@ -28,14 +28,14 @@ pub enum PhysicalCheckpointProvenNoEffectCause {
     DeniedBeforeCandidate(PhysicalCheckpointCaptureFailureKind),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProvenNoEffectPhysicalCheckpoint {
     identity: PhysicalCheckpointIdentity,
     idempotency: PhysicalCheckpointIdempotencyKey,
     cause: PhysicalCheckpointProvenNoEffectCause,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndeterminatePhysicalCheckpoint {
     identity: PhysicalCheckpointIdentity,
     idempotency: PhysicalCheckpointIdempotencyKey,
@@ -144,16 +144,16 @@ impl ProvenNoEffectPhysicalCheckpoint {
         }
     }
 
-    pub const fn identity(self) -> PhysicalCheckpointIdentity {
+    pub const fn identity(&self) -> PhysicalCheckpointIdentity {
         self.identity
     }
 
-    pub const fn idempotency_key(self) -> PhysicalCheckpointIdempotencyKey {
+    pub const fn idempotency_key(&self) -> PhysicalCheckpointIdempotencyKey {
         self.idempotency
     }
 
-    pub const fn cause(self) -> PhysicalCheckpointProvenNoEffectCause {
-        self.cause
+    pub fn cause(&self) -> PhysicalCheckpointProvenNoEffectCause {
+        self.cause.clone()
     }
 }
 
@@ -170,16 +170,16 @@ impl IndeterminatePhysicalCheckpoint {
         }
     }
 
-    pub const fn identity(self) -> PhysicalCheckpointIdentity {
+    pub const fn identity(&self) -> PhysicalCheckpointIdentity {
         self.identity
     }
 
-    pub const fn idempotency_key(self) -> PhysicalCheckpointIdempotencyKey {
+    pub const fn idempotency_key(&self) -> PhysicalCheckpointIdempotencyKey {
         self.idempotency
     }
 
-    pub const fn failure(self) -> PhysicalCheckpointCaptureFailureKind {
-        self.failure
+    pub fn failure(&self) -> PhysicalCheckpointCaptureFailureKind {
+        self.failure.clone()
     }
 }
 

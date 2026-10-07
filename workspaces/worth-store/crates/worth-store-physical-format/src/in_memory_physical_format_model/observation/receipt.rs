@@ -155,14 +155,14 @@ pub enum PlatformPhysicalModelReceiptDenial {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlatformPhysicalModelStrategy {
-    BaselineBTreeRange,
+    BTreeRange,
 }
 
 impl PlatformPhysicalModelReceipt {
     pub const fn from_append(report: PlatformPhysicalAppendReport) -> Self {
         Self {
             operation: PlatformPhysicalModelOperation::AppendPhysicalRecord,
-            strategy: PlatformPhysicalModelStrategy::BaselineBTreeRange,
+            strategy: PlatformPhysicalModelStrategy::BTreeRange,
             counters: report.counters(),
             outcome: PlatformPhysicalModelOutcome::AppendCompleted,
         }
@@ -176,7 +176,7 @@ impl PlatformPhysicalModelReceipt {
         }
         Ok(Self {
             operation: PlatformPhysicalModelOperation::DenyHiddenBroadScan,
-            strategy: PlatformPhysicalModelStrategy::BaselineBTreeRange,
+            strategy: PlatformPhysicalModelStrategy::BTreeRange,
             counters: receipt.counters(),
             outcome: PlatformPhysicalModelOutcome::HiddenScanDenied,
         })
@@ -185,7 +185,7 @@ impl PlatformPhysicalModelReceipt {
     pub const fn from_root_publication(report: &PlatformPhysicalRootPublicationReport) -> Self {
         Self {
             operation: PlatformPhysicalModelOperation::PublishPhysicalRoot,
-            strategy: PlatformPhysicalModelStrategy::BaselineBTreeRange,
+            strategy: PlatformPhysicalModelStrategy::BTreeRange,
             counters: report.counters(),
             outcome: PlatformPhysicalModelOutcome::RootPublished,
         }
