@@ -89,11 +89,21 @@ where
     /// Consumes this candidate through the authoritative program commit path.
     /// Denial, cancellation and duplicate replay never release the candidate result.
     pub fn commit(self) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
+        self.commit_report().into_outcome()
+    }
+
+    /// Publishes once, retaining the original preparation's work even on duplicate commit.
+    pub fn commit_report(
+        self,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result>,
+    > {
         let PreparedCandidate {
             program,
             result,
             identities,
             extension,
+            decision_work,
         } = self.candidate;
         let binding = WorthQueryMutationCommitBinding::new(&identities, extension);
         let outcome = match self.selected_owner {
@@ -108,13 +118,14 @@ where
                 |idempotency| binding.extension().apply(idempotency),
             ),
         };
-        match outcome.landed() {
+        let outcome = match outcome.landed() {
             Ok((receipt, false)) => {
                 WorthQueryApplicationMutationOutcome::Committed { receipt, result }
             }
             Ok((receipt, true)) => WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
             Err(uncommitted) => WorthQueryApplicationMutationOutcome::Commit(uncommitted),
-        }
+        };
+        super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
     }
 }
 
@@ -156,6 +167,51 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
+        self.prepare_in_program_report(application).into_outcome()
+    }
+
+    /// Reports decision work without releasing the candidate's unpublished result.
+    pub fn prepare_in_program_report<'request, Program>(
+        &'request mut self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        Result<
+            WorthQueryApplicationProgramMutationPreparation<
+                'request,
+                'application,
+                Schema,
+                Intent::Binding,
+                Program,
+            >,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        let mut decision_work =
+            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
+        let outcome = self.prepare_in_program_with_work(application, &mut decision_work);
+        super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
+    }
+
+    fn prepare_in_program_with_work<'request, Program>(
+        &'request mut self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+    ) -> Result<
+        WorthQueryApplicationProgramMutationPreparation<
+            'request,
+            'application,
+            Schema,
+            Intent::Binding,
+            Program,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
         }
@@ -172,9 +228,12 @@ where
         if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
-        match self.prepare_candidate(move |request, identities, staged| {
-            super::authorization::prepare_selected(request, identities, staged, &selected)
-        })? {
+        match self.prepare_candidate(
+            move |request, identities, staged| {
+                super::authorization::prepare_selected(request, identities, staged, &selected)
+            },
+            decision_work,
+        )? {
             CandidatePreparation::Prepared(candidate) => {
                 Ok(WorthQueryApplicationProgramMutationPreparation::Prepared(
                     WorthQueryPreparedProgramMutation {

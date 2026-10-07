@@ -98,6 +98,46 @@ recovery. Those use their existing source, workflow, and publication owners.
 
 ## How It Executes
 
+### Observing installed mutation work
+
+Use `execute_in_program_report` when a caller needs the installed handler's
+decision projection evidence alongside the ordinary outcome:
+
+```rust,ignore
+use worth_query_host::facade::primary_graph::WorthQueryMutationHandlerWork;
+
+let report = request.mutate(mutation_intent)
+    .without_source().idempotency(&command_id)
+    .execute_in_program_report(&application);
+if let WorthQueryMutationHandlerWork::Captured(capture) = report.decision_work() {
+    let projection = capture.projection_work();
+    println!("{} fields read", projection.field_reads());
+}
+let outcome = report.into_outcome()?;
+```
+
+`execute_report`, `prepare_in_program_report`, the prepared handle's
+`commit_report`, and `execute_performed_report` preserve the same distinction.
+Existing methods execute that same path and return only its ordinary outcome.
+Reports have sealed construction; captured values describe actual Query work
+and grant no execution, read, publication or result-reuse authority.
+
+`NotStarted` means no decision projection reader ran in this invocation.
+`Captured` can contain zero work and records whether the installed handler was
+contacted. A denial after projection begins retains its observed work. A cached
+idempotency replay before handler execution is `NotStarted`; a duplicate found
+when committing an already prepared candidate retains that candidate's original
+capture without releasing its unpublished result. Preparation and commit reports
+repeat the same capture, so adding them would double-count one execution.
+
+The eleven counters cover indexed candidates, adjacency/endpoint visits, field
+reads, aggregate activity and output-lineage lookups during decision projection.
+They exclude candidate construction, commit work, physical I/O, latency and
+whole-process memory. Compare the complete work value when checking structural
+amplification: `provider_work_units()` excludes aggregate cache hits and rebuild
+input rows. Commit receipts continue to describe landed history rather than
+the fresh work of a retry.
+
 The ordinary request path is:
 
 ```text

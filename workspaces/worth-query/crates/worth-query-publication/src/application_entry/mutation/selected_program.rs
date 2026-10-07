@@ -60,12 +60,37 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
+        self.execute_in_program_report(application).into_outcome()
+    }
+
+    /// The same selected-program execution, with this attempt's sealed decision work.
+    pub fn execute_in_program_report<Program>(
+        self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        Result<
+            WorthQueryApplicationMutationOutcome<
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+            >,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
         let mut request = self;
-        match request.prepare_in_program(application)? {
-            super::WorthQueryApplicationProgramMutationPreparation::Prepared(candidate) => {
-                Ok(candidate.commit())
+        let (outcome, decision_work) = request.prepare_in_program_report(application).into_parts();
+        match outcome {
+            Ok(super::WorthQueryApplicationProgramMutationPreparation::Prepared(candidate)) => {
+                candidate.commit_report().map(Ok)
             }
-            super::WorthQueryApplicationProgramMutationPreparation::Settled(outcome) => Ok(outcome),
+            Ok(super::WorthQueryApplicationProgramMutationPreparation::Settled(outcome)) => {
+                super::WorthQueryApplicationMutationAttemptReport::new(Ok(outcome), decision_work)
+            }
+            Err(denial) => {
+                super::WorthQueryApplicationMutationAttemptReport::new(Err(denial), decision_work)
+            }
         }
     }
 

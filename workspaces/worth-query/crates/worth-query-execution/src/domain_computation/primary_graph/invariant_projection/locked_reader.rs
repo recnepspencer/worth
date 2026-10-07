@@ -195,7 +195,9 @@ where
             self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             });
-            return Err(WorthQueryInvariantProjectionDenial::work_budget_exceeded());
+            return Err(WorthQueryInvariantProjectionDenial::work_budget_exceeded(
+                work,
+            ));
         }
         Ok(WorthQueryCompletedInvariantProjection {
             output,

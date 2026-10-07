@@ -83,6 +83,8 @@ pub use super::application_contribution::{
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
+    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
+    WorthQueryMutationHandlerWork,
 };
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_output_demand::required_ready_custody_bytes_for_test;

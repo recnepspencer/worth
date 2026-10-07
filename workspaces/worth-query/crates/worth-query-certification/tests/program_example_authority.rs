@@ -1,6 +1,8 @@
 #[path = "../examples/product_workflow_support/mod.rs"]
 pub mod product_workflow_support;
 
+mod mutation_attempt_report;
+
 use product_workflow_support::adapters::ClockSource;
 use product_workflow_support::application::{example_limits, seed_graph};
 use product_workflow_support::application_entry::AmendTemporalBinding;

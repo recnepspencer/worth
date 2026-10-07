@@ -18,6 +18,8 @@ use super::document_retention_model::{
     settled_verdict::{settle, RetentionVerdict},
 };
 
+#[path = "producer_predicate_checkpoint/ordinary_source.rs"]
+mod ordinary_source;
 #[path = "producer_predicate_checkpoint/program.rs"]
 mod program;
 #[path = "producer_predicate_checkpoint/transition.rs"]
