@@ -30,7 +30,7 @@ static TRACE: Mutex<Trace> = Mutex::new(Trace {
     class_dumps: [0; 3],
 });
 
-fn enabled() -> bool {
+pub(super) fn enabled() -> bool {
     *ENABLED.get_or_init(|| {
         std::env::var_os("WORTH_QUERY_COMPOSED_DIAGNOSTICS").is_some_and(|v| v == "1")
     })
@@ -45,12 +45,28 @@ pub(super) struct DemandDescription {
     pub(super) lifecycle: u8,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct RetirementDescription {
+    pub(super) interests: usize,
+    pub(super) required_interests: usize,
+    pub(super) framework_claims: usize,
+    pub(super) prepared_claims: usize,
+    pub(super) prerequisites: usize,
+    pub(super) obligations: usize,
+    pub(super) pending_cleanup: bool,
+    pub(super) cached_ready: bool,
+    pub(super) terminal: bool,
+    pub(super) performed_source: bool,
+    pub(super) held_successor: bool,
+}
+
 #[derive(Debug)]
 pub(super) struct Event {
     kind: &'static str,
     identity: RecordedSettlementIdentity,
     demand: Option<DemandDescription>,
     site: &'static Location<'static>,
+    retirement: Option<RetirementDescription>,
 }
 
 struct Trace {
@@ -73,7 +89,19 @@ pub(super) fn event(
         identity: identity.clone(),
         demand,
         site,
+        retirement: None,
     })
+}
+
+#[track_caller]
+pub(super) fn retirement_event(
+    identity: &RecordedSettlementIdentity,
+    demand: DemandDescription,
+    retirement: RetirementDescription,
+) -> Option<Event> {
+    let mut event = event("retire-row-input", identity, Some(demand))?;
+    event.retirement = Some(retirement);
+    Some(event)
 }
 
 pub(super) fn record(event: Option<Event>) {
@@ -155,6 +183,9 @@ fn dump(class: DumpClass, reason: fmt::Arguments<'_>) {
                     "WQ-COMPOSED demand family={:?} source={:?} generation={} lifecycle={}",
                     demand.family, demand.source, demand.generation, demand.lifecycle
                 );
+            }
+            if let Some(retirement) = &event.retirement {
+                eprintln!("WQ-COMPOSED retirement {retirement:?}");
             }
         }
     }

@@ -30,6 +30,7 @@ use crate::domain_computation::primary_graph::{
 impl WorthQueryOutputDemandRegistry {
     /// Make room for `bytes` more required custody by retiring closed cached
     /// rows. The retired rows drop after the registry lock is released.
+    #[track_caller]
     pub(in crate::domain_computation::primary_graph) fn reclaim_cached_rows(
         &self,
         bytes: usize,
@@ -56,6 +57,7 @@ impl WorthQueryOutputDemandRegistry {
     /// Release one product observation nothing holds: retire a closed
     /// cached row, or with none left release an unheld performed source.
     /// Whether one was released.
+    #[track_caller]
     pub(in crate::domain_computation::primary_graph) fn reclaim_unheld_observation(
         &self,
         admission: &mut InvalidationEditAdmission,
@@ -91,6 +93,7 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 impl DemandRegistryState {
+    #[track_caller]
     fn reclaim_cached_rows(
         &mut self,
         bytes: usize,
@@ -122,6 +125,7 @@ impl DemandRegistryState {
     }
 
     /// Retire the next reclaimable row. Whether one was left to retire.
+    #[track_caller]
     fn retire_next_cached_row(
         &mut self,
         still_claimed: &mut Option<WorthQueryOutputDemandKey>,

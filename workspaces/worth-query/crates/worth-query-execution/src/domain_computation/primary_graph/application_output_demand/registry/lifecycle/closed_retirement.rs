@@ -67,11 +67,37 @@ impl DemandRegistryState {
 
     /// Remove `key`'s row with its claims, which it returns. A superseded
     /// row first hands its settlements to the newest row of its occurrence.
+    #[track_caller]
     pub(super) fn retire_row(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired: &mut Vec<DemandRecord>,
     ) -> Vec<Arc<WorthQueryOutputDemandKey>> {
+        use crate::domain_computation::primary_graph::composed_output_diagnostics as diagnostic;
+        if diagnostic::enabled() {
+            if let Some(record) = self.records.get(key) {
+                let retirement = diagnostic::RetirementDescription {
+                    interests: record.interests,
+                    required_interests: record.required_interests,
+                    framework_claims: record.framework_required_count,
+                    prepared_claims: record.prepared_prerequisite_claims,
+                    prerequisites: record.prerequisites.len(),
+                    obligations: record.performed_obligations.len(),
+                    pending_cleanup: record.pending_cleanup_queued,
+                    cached_ready: record.has_cached_ready(),
+                    terminal: record.terminal(),
+                    performed_source: record.performed_source.is_some(),
+                    held_successor: record.held_successor.is_some(),
+                };
+                for (identity, _) in &record.settlements {
+                    diagnostic::record(diagnostic::retirement_event(
+                        identity,
+                        key.diagnostic_description(),
+                        retirement,
+                    ));
+                }
+            }
+        }
         if self.records.get(key).is_some_and(superseded) {
             self.hand_settlements_to_newest(key);
         }
