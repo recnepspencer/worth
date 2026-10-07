@@ -17,9 +17,13 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
 mod mutation_readmission;
+mod prepared_query_read;
 mod query_preparation;
 mod query_read;
 pub(in crate::domain_computation) use admitted_mutation::WorthQueryAdmittedMutationSessionStartStop;
+pub(in crate::domain_computation) use prepared_query_read::{
+    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+};
 pub(in crate::domain_computation) use query_preparation::{
     WorthQueryAdmittedQuerySessionStartStop, WorthQueryPreparedQuerySessionIdentity,
 };

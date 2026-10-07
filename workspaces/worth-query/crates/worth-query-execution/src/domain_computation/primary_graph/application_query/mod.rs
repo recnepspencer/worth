@@ -115,3 +115,10 @@ pub use resource_lifecycle::{
     WorthQueryApplicationResultBufferObserver,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
+
+pub use one_shot::WorthQueryDerivedPairReadPlans;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::{
+    DispatchWitness, Interrupt as DispatchInterrupt, InterruptionPoint,
+};

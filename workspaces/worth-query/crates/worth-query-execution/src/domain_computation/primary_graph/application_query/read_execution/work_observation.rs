@@ -7,21 +7,50 @@ use std::cell::Cell;
 /// finalization adds its performed custody copies (scope and descriptor), which
 /// only the carried admission pays. Separate cells keep a denial's partial work
 /// without a second budget.
-pub(in crate::domain_computation::primary_graph::application_query) struct OneShotReadWorkObservation
-{
+pub(in crate::domain_computation::primary_graph::application_query) struct OneShotReadWorkObservation<
+    'charge,
+> {
+    charge: Option<
+        &'charge dyn Fn(usize, &str) -> Result<(), super::WorthQueryApplicationReadExecutionDenial>,
+    >,
     root: Cell<usize>,
     tree: Cell<usize>,
     scope: Cell<usize>,
     descriptor: Cell<usize>,
 }
 
-impl OneShotReadWorkObservation {
+impl<'charge> OneShotReadWorkObservation<'charge> {
     pub(in crate::domain_computation::primary_graph::application_query) const fn new() -> Self {
         Self {
+            charge: None,
             root: Cell::new(0),
             tree: Cell::new(0),
             scope: Cell::new(0),
             descriptor: Cell::new(0),
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn with_charge(
+        charge: &'charge dyn Fn(
+            usize,
+            &str,
+        )
+            -> Result<(), super::WorthQueryApplicationReadExecutionDenial>,
+    ) -> Self {
+        Self {
+            charge: Some(charge),
+            ..Self::new()
+        }
+    }
+
+    pub(super) fn charge(
+        &self,
+        units: usize,
+        subject: &str,
+    ) -> Result<(), super::WorthQueryApplicationReadExecutionDenial> {
+        match self.charge {
+            Some(charge) => charge(units, subject),
+            None => Ok(()),
         }
     }
 

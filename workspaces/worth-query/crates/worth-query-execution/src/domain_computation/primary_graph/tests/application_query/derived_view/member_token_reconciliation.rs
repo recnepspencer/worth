@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fail_closed() {
     let world = installed_authorization_world(true);
     let request = live_scope();
+    let execution = serial_request(&request);
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world.selected_product();
     let membership_query = world
@@ -107,17 +108,53 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             .collect::<Vec<_>>()
     };
     let membership = read_membership();
+    let pair_principal = selected
+        .resolve_authenticated_principal(
+            &world.binding,
+            &external,
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let pair_scope = selected
+        .resolve_entity(
+            AccountStatus::reference(),
+            "open".to_string(),
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let pair_access = WorthQueryApplicationQueryAccessContext::new(&pair_principal, &pair_scope);
     let keys = world
         .application
-        .reconstruct_managed_derived_collection_pair_parallel(
+        .reconstruct_managed_derived_collection_pair(
+            worth_execution::ExecutionRequest::serial(&execution),
             &view,
             selected.product(),
             &membership,
             members,
-            |token| {
-                let first = read_entry(token)?;
-                let second = read_entry(first.rows()[0].status())?;
-                Ok((first, second))
+            |_: &String| {
+                let first = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                let second = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                Ok(WorthQueryDerivedPairReadPlans::new(first, second))
             },
             |row| row.status().to_string(),
             |row| row.status().to_string(),
@@ -134,19 +171,35 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
         .unwrap();
     let denied = world
         .application
-        .reconstruct_managed_derived_collection_pair_parallel(
+        .reconstruct_managed_derived_collection_pair(
+            worth_execution::ExecutionRequest::serial(&execution),
             &view,
             selected.product(),
             &membership,
             members,
-            |token| {
-                if token == "open" {
-                    Err(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
-                } else {
-                    let first = read_entry(token)?;
-                    let second = read_entry(first.rows()[0].status())?;
-                    Ok((first, second))
-                }
+            |_: &String| {
+                let first = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                let second = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                let pair = WorthQueryDerivedPairReadPlans::new(first, second);
+                Err::<(), _>(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied).and(Ok(pair))
             },
             |row| row.status().to_string(),
             |row| row.status().to_string(),

@@ -8,7 +8,7 @@ use super::{
     read_execution_denial, OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial,
     WorthQueryApplicationReadExecutionDenialKind,
 };
-use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
+use crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
 
 mod evidence;
 mod path_union;
@@ -38,34 +38,18 @@ pub(super) struct BoundedRootSelection {
 mod work;
 use work::RootSelectionWork;
 
-pub(super) fn select_bounded_roots<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
+pub(super) fn select_bounded_roots(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
+    plan: &ReadPlan<'_>,
     result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
-    spent: Option<&OneShotReadWorkObservation>,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
     maximum_work: usize,
+    interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
-    super::interruption::checkpoint(plan.controls.request_scope(), plan.query.name())?;
-    let contract = plan.query.read_family_binding().planning_contract();
+    interruption.checkpoint(plan.name)?;
+    let contract = plan.contract;
     if !contract.root_paths().is_empty() {
         return path_union::select_root_path_union(
             runtime,
@@ -76,22 +60,24 @@ pub(super) fn select_bounded_roots<
             capture_result_set,
             spent,
             maximum_work,
+            interruption,
         );
     }
     match contract.predicates() {
         [] => {
             if let Some(spent) = spent {
+                spent.charge(1, plan.name)?;
                 spent.root(1);
             }
             let result_set_source = if capture_result_set {
                 let mut source = RootPathSourceBuilder::default();
-                source.observe_entity(plan.scope.entity_id());
+                source.observe_entity(plan.root);
                 Some(source.finish(result_buffer)?)
             } else {
                 None
             };
             Ok(BoundedRootSelection {
-                candidates: vec![plan.scope.entity_id()],
+                candidates: vec![plan.root],
                 selected_predicate_source: None,
                 root_path_source: None,
                 result_set_source,
@@ -112,40 +98,25 @@ pub(super) fn select_bounded_roots<
             capture_result_set,
             spent,
             maximum_work,
+            interruption,
         ),
         _ => Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-            plan.query.name(),
+            plan.name,
         )),
     }
 }
 
-fn select_indexed_root<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
+fn select_indexed_root(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
+    plan: &ReadPlan<'_>,
     predicate: &worth_query_installation::facade::WorthQueryInstalledGraphPredicate,
     result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
-    spent: Option<&OneShotReadWorkObservation>,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
     maximum_work: usize,
+    interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let (entity, aspect, field) = predicate.field();
     let computation = plan
@@ -192,7 +163,7 @@ fn select_indexed_root<
         )
     })?;
     let request = BoundedEntityFieldLookupRequest::new(
-        plan.basis.snapshot_handle().clone(),
+        plan.snapshot.clone(),
         equality_index_id,
         layout.entity_kind,
         layout.locator.clone(),
@@ -205,7 +176,7 @@ fn select_indexed_root<
             field,
         )
     })?;
-    super::interruption::checkpoint(plan.controls.request_scope(), field)?;
+    interruption.checkpoint(field)?;
     let lookup =
         execute_governed_predicate_lookup(runtime, computation, request).map_err(|_| {
             read_execution_denial(
@@ -213,12 +184,14 @@ fn select_indexed_root<
                 field,
             )
         })?;
-    super::interruption::checkpoint(plan.controls.request_scope(), field)?;
+    let mut work = RootSelectionWork::new(maximum_work, interruption, spent);
+    work.charge_predicate(lookup.examined_entry_count(), 0, field)?;
+    interruption.checkpoint(field)?;
     let scoped = lookup
         .candidate_entity_ids()
         .iter()
         .copied()
-        .find(|candidate| *candidate == plan.scope.entity_id());
+        .find(|candidate| *candidate == plan.root);
     if scoped.is_none() && lookup.overflowed() {
         return Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::PredicateLookupOverflow,
@@ -227,22 +200,20 @@ fn select_indexed_root<
     }
     let projection = runtime
         .read_truth()
-        .project_snapshot(plan.basis.snapshot_handle())
+        .project_snapshot(plan.snapshot)
         .ok_or_else(|| {
             read_execution_denial(
                 WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
                 field,
             )
         })?;
-    let mut work = RootSelectionWork::new(maximum_work, plan.controls.request_scope(), spent);
-    work.charge_predicate(lookup.examined_entry_count(), 0, field)?;
     let mut set_source = RootPathSourceBuilder::default();
     let selected_predicate_source = if capture_result_set || scoped.is_some() {
-        set_source.observe_entity(plan.scope.entity_id());
+        set_source.observe_entity(plan.root);
         let observed = set_source.observe_guard_field(
             &projection,
             graph,
-            plan.scope.entity_id(),
+            plan.root,
             entity,
             predicate.aspect_key(),
             predicate.field_key(),

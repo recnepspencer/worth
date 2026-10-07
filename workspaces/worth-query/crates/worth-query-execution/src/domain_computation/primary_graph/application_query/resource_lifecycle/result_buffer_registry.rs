@@ -240,6 +240,21 @@ impl Drop for WorthQueryRetainedSourceCharge {
     }
 }
 
+impl worth_execution::ChargedBytes for WorthQueryApplicationResultBufferReservation {
+    fn additional_charged_bytes(&self) -> u64 {
+        // The shared registry allocation belongs to its runtime owner; this
+        // reservation owns counters only, not the separately charged row tree.
+        let Self {
+            registry: _registry,
+            limit_bytes: _limit_bytes,
+            retained_bytes: _retained_bytes,
+            peak_bytes: _peak_bytes,
+            released: _released,
+        } = self;
+        0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

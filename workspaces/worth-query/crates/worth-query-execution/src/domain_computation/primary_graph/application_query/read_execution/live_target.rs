@@ -48,11 +48,12 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
     let selection = select_bounded_roots(
         runtime,
         graph,
-        plan,
+        &super::read_plan::ReadPlan::of(plan),
         &mut result_buffer,
         false,
         None,
         plan.controls.maximum_work().get(),
+        super::ReadInterruption::Query(plan.controls.request_scope()),
     )?;
     super::validate_cardinality_and_limit(
         contract.cardinality(),
@@ -104,7 +105,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
             .get()
             .saturating_sub(admitted_before_materialization),
         collection_selection,
-        plan.controls.request_scope(),
+        super::ReadInterruption::Query(plan.controls.request_scope()),
         &mut result_buffer,
         None,
     )?;

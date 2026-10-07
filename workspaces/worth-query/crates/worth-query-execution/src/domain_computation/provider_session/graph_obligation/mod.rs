@@ -4,6 +4,10 @@ mod mutation_progression;
 mod owner_execution;
 mod read_terminal;
 mod session;
+pub(in crate::domain_computation) use session::{
+    WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
+    WorthQueryPreparedSessionRead,
+};
 mod session_identity;
 
 pub(in crate::domain_computation) use branch_affinity::WorthQueryGraphWorkBranchAffinity;

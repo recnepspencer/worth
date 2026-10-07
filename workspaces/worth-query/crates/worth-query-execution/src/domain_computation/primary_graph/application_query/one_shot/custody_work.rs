@@ -12,13 +12,13 @@ use super::super::observed_source::WorthQueryObservedScopeSelector;
 /// limit. Their bytes are claimed from the result buffer; an admitted read also
 /// pays this work on its carried admission.
 #[derive(Clone, Copy)]
-pub(super) struct RetainedCustodyWork {
-    pub(super) scope: usize,
-    pub(super) descriptor: usize,
+pub(in crate::domain_computation::primary_graph::application_query) struct RetainedCustodyWork {
+    pub(in crate::domain_computation::primary_graph::application_query) scope: usize,
+    pub(in crate::domain_computation::primary_graph::application_query) descriptor: usize,
 }
 
 impl RetainedCustodyWork {
-    pub(super) fn of(
+    pub(in crate::domain_computation::primary_graph::application_query) fn of(
         scope_locator: &AspectFieldLocator,
         scope_value: &AspectValue,
         query_name: &str,
@@ -30,7 +30,9 @@ impl RetainedCustodyWork {
         })
     }
 
-    pub(super) fn total(self) -> Option<usize> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn total(
+        self,
+    ) -> Option<usize> {
         self.scope.checked_add(self.descriptor)
     }
 }

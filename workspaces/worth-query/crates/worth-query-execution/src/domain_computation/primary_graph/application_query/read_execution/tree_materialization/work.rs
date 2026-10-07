@@ -5,7 +5,7 @@ use super::{
 };
 
 pub(super) struct ResultTreeWork<'a> {
-    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    interruption: super::super::ReadInterruption<'a>,
     maximum_work: usize,
     pub(super) projected_records: usize,
     pub(super) projected_fields: usize,
@@ -15,7 +15,7 @@ pub(super) struct ResultTreeWork<'a> {
     pub(super) relation_predicate_work_units: usize,
     pub(super) ordering_comparisons: usize,
     pub(super) work_units: usize,
-    spent: Option<&'a OneShotReadWorkObservation>,
+    spent: Option<&'a OneShotReadWorkObservation<'a>>,
 }
 
 fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExecutionDenial {
@@ -28,11 +28,11 @@ fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExe
 impl<'a> ResultTreeWork<'a> {
     pub(super) fn new(
         maximum_work: usize,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        spent: Option<&'a OneShotReadWorkObservation>,
+        interruption: super::super::ReadInterruption<'a>,
+        spent: Option<&'a OneShotReadWorkObservation<'a>>,
     ) -> Self {
         Self {
-            request: request.clone(),
+            interruption,
             maximum_work,
             projected_records: 0,
             projected_fields: 0,
@@ -121,6 +121,9 @@ impl<'a> ResultTreeWork<'a> {
         if self.work_units.saturating_add(units) > self.maximum_work {
             return Err(work_limit_denial(subject));
         }
+        if let Some(spent) = self.spent {
+            spent.charge(units, subject)?;
+        }
         self.work_units += units;
         Ok(())
     }
@@ -133,7 +136,7 @@ impl<'a> ResultTreeWork<'a> {
         &self,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-        super::super::interruption::checkpoint(&self.request, subject)
+        self.interruption.checkpoint(subject)
     }
 }
 

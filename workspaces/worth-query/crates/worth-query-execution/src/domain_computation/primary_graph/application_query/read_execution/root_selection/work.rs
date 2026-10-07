@@ -4,25 +4,24 @@ use super::super::{
 };
 
 pub(super) struct RootSelectionWork<'a> {
-    pub(super) request:
-        worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    pub(super) interruption: super::super::ReadInterruption<'a>,
     pub(super) maximum_work: usize,
     pub(super) work_units: usize,
     pub(super) adjacency_lists_read: usize,
     pub(super) relation_records_examined: usize,
     pub(super) predicate_records_examined: usize,
     pub(super) predicate_work_units: usize,
-    pub(super) spent: Option<&'a OneShotReadWorkObservation>,
+    pub(super) spent: Option<&'a OneShotReadWorkObservation<'a>>,
 }
 
 impl<'a> RootSelectionWork<'a> {
     pub(super) fn new(
         maximum_work: usize,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        spent: Option<&'a OneShotReadWorkObservation>,
+        interruption: super::super::ReadInterruption<'a>,
+        spent: Option<&'a OneShotReadWorkObservation<'a>>,
     ) -> Self {
         Self {
-            request: request.clone(),
+            interruption,
             maximum_work,
             work_units: 0,
             adjacency_lists_read: 0,
@@ -41,7 +40,7 @@ impl<'a> RootSelectionWork<'a> {
         &self,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-        super::super::interruption::checkpoint(&self.request, subject)
+        self.interruption.checkpoint(subject)
     }
 
     pub(super) fn charge(
@@ -60,6 +59,9 @@ impl<'a> RootSelectionWork<'a> {
                 WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
                 subject,
             ));
+        }
+        if let Some(spent) = self.spent {
+            spent.charge(charged, subject)?;
         }
         self.work_units = self.work_units.saturating_add(charged);
         self.adjacency_lists_read = self
@@ -85,6 +87,9 @@ impl<'a> RootSelectionWork<'a> {
                 subject,
             ));
         }
+        if let Some(spent) = self.spent {
+            spent.charge(charged, subject)?;
+        }
         self.work_units = self.work_units.saturating_add(charged);
         self.predicate_records_examined = self
             .predicate_records_examined
@@ -104,6 +109,9 @@ impl<'a> RootSelectionWork<'a> {
                 subject,
             ));
         }
+        if let Some(spent) = self.spent {
+            spent.charge(1, subject)?;
+        }
         self.work_units += 1;
         Ok(())
     }
@@ -119,6 +127,9 @@ impl<'a> RootSelectionWork<'a> {
                 WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
                 subject,
             ));
+        }
+        if let Some(spent) = self.spent {
+            spent.charge(units, subject)?;
         }
         self.work_units += units;
         Ok(())

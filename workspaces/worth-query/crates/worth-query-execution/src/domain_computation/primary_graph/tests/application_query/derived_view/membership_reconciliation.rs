@@ -8,6 +8,7 @@ use worth_foundational::facade::AspectFieldLocator;
 fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_entries() {
     let world = installed_authorization_world(true);
     let request = live_scope();
+    let execution = serial_request(&request);
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world.selected_product();
     let membership_query = world
@@ -106,15 +107,54 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         )).collect::<Vec<_>>()
     };
     let membership = read_membership();
+    let pair_principal = selected
+        .resolve_authenticated_principal(
+            &world.binding,
+            &external,
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let pair_scope = selected
+        .resolve_entity(
+            AccountStatus::reference(),
+            "open".to_string(),
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let pair_access = WorthQueryApplicationQueryAccessContext::new(&pair_principal, &pair_scope);
     let keys = world
         .application
-        .reconstruct_managed_derived_collection_pair_lazy(
+        .reconstruct_managed_derived_collection_pair(
+            worth_execution::ExecutionRequest::serial(&execution),
             &view,
             selected.product(),
             &membership,
             members,
-            |key| read_entry(key),
-            |row| read_entry(row.status()),
+            |_: &String| {
+                let first = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                let second = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                Ok(WorthQueryDerivedPairReadPlans::new(first, second))
+            },
             |row| row.status().to_string(),
             |row| row.status().to_string(),
             |_, body| SceneLabel(body.label().to_string()),

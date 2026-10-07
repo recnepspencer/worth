@@ -261,3 +261,6 @@ pub use crate::domain_computation::primary_graph::relational_execution_kind;
 pub use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
 };
+
+pub use crate::domain_computation::primary_graph::ExecutionRequest;
+pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;

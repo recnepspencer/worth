@@ -1,10 +1,18 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
+mod cardinality;
 mod denial;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) mod dispatch_witness;
+use cardinality::{validate_cardinality_and_limit, validate_read_cardinality};
 #[cfg(feature = "test-query-execution-observer")]
 mod entry_observation;
 mod interruption;
+use interruption::ReadInterruption;
+mod kernel_capacity;
 mod kernel_outcome;
 mod live_target;
+pub(super) mod prepared_pair;
+pub(super) mod read_plan;
 mod root_selection;
 mod tree_materialization;
 mod work_observation;
@@ -84,13 +92,33 @@ pub(super) fn read_bounded_root_rows<
         PrincipalIdentity,
         Scope,
     >,
-    mut result_buffer: WorthQueryApplicationResultBufferReservation,
-    spent: Option<&OneShotReadWorkObservation>,
+    result_buffer: WorthQueryApplicationResultBufferReservation,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
     maximum_work: usize,
+) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
+    read_prepared_root_rows(
+        runtime,
+        graph,
+        &read_plan::ReadPlan::of(plan),
+        result_buffer,
+        spent,
+        maximum_work,
+        ReadInterruption::Query(plan.controls.request_scope()),
+    )
+}
+
+pub(super) fn read_prepared_root_rows(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    plan: &read_plan::ReadPlan<'_>,
+    mut result_buffer: WorthQueryApplicationResultBufferReservation,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    maximum_work: usize,
+    interruption: ReadInterruption<'_>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     #[cfg(feature = "test-query-execution-observer")]
     entry_observation::record_kernel_entry();
-    let contract = plan.query.read_family_binding().planning_contract();
+    let contract = plan.contract;
     let selection = select_bounded_roots(
         runtime,
         graph,
@@ -99,21 +127,22 @@ pub(super) fn read_bounded_root_rows<
         true,
         spent,
         maximum_work,
+        interruption,
     )?;
-    validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
+    validate_read_cardinality(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         runtime,
-        plan.basis.snapshot_handle(),
+        plan.snapshot,
         graph,
         contract,
-        &plan.governance,
-        &plan.parameters,
+        plan.governance,
+        plan.parameters,
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
         selection.root_path_source.as_ref(),
         maximum_work.saturating_sub(selection.work_units),
         ResultTreeCollectionSelection::Complete,
-        plan.controls.request_scope(),
+        interruption,
         &mut result_buffer,
         spent,
     )?;
@@ -121,7 +150,7 @@ pub(super) fn read_bounded_root_rows<
     if actual_work > maximum_work {
         return Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-            plan.query.name(),
+            plan.name,
         ));
     }
     verify_result_tree_accounting(
@@ -131,7 +160,7 @@ pub(super) fn read_bounded_root_rows<
         &tree.source_footprints,
         tree.source_footprints.capacity(),
         selection.result_set_source.as_deref(),
-        plan.query.name(),
+        plan.name,
     )?;
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
@@ -204,11 +233,12 @@ pub(super) fn read_continuation_page<
     let selection = select_bounded_roots(
         runtime,
         graph,
-        plan,
+        &read_plan::ReadPlan::of(plan),
         &mut result_buffer,
         false,
         None,
         plan.controls.maximum_work().get(),
+        ReadInterruption::Query(plan.controls.request_scope()),
     )?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
@@ -236,7 +266,7 @@ pub(super) fn read_continuation_page<
             after,
             page_width: plan.controls.maximum_result_count().get(),
         }),
-        plan.controls.request_scope(),
+        ReadInterruption::Query(plan.controls.request_scope()),
         &mut result_buffer,
         None,
     )?;
@@ -336,47 +366,4 @@ fn verify_result_tree_accounting(
             subject,
         )
     })
-}
-
-fn validate_cardinality_and_limit<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
-    cardinality: ApplicationQueryCardinality,
-    count: usize,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
-) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    if count > plan.controls.maximum_result_count().get() {
-        return Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::ResultLimitExceeded,
-            plan.query.name(),
-        ));
-    }
-    let valid = match cardinality {
-        ApplicationQueryCardinality::OptionalOne => count <= 1,
-        ApplicationQueryCardinality::ExactlyOne => count == 1,
-        ApplicationQueryCardinality::Many => true,
-    };
-    if valid {
-        Ok(())
-    } else {
-        Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::CardinalityMismatch,
-            plan.query.name(),
-        ))
-    }
 }

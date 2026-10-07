@@ -72,10 +72,10 @@ mod filtered_activity_query;
 pub(super) use application_queries::{
     cross_root_definition, AccountSummaryQuery, AccountSummaryResult, CrossRootQuery,
     GovernedAccountSummaryQuery, OrderedAccountSummaryQuery, PublicAccountMembershipQuery,
-    PublicAccountMembershipResult, PublicScopedAccountSummaryQuery, ScopedAccountSummaryQuery,
+    PublicAccountMembershipResult, ScopedAccountSummaryQuery,
 };
 pub(in crate::domain_computation::primary_graph) use application_queries::{
-    status_parameter, AccountSummaryParameters,
+    status_parameter, AccountSummaryParameters, PublicScopedAccountSummaryQuery,
 };
 pub(super) use current_output_source::TestAccountSourceBinding;
 pub(super) use filtered_activity_query::{
@@ -373,3 +373,8 @@ worth_query_application_schema! {
         }
     }
 }
+
+mod reconstruction_execution;
+pub(in crate::domain_computation::primary_graph) use reconstruction_execution::{
+    isolated_request_owner, test_authority, test_policy,
+};

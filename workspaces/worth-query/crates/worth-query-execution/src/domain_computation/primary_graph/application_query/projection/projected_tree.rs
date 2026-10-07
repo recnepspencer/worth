@@ -126,26 +126,30 @@ impl WorthQueryApplicationProjectionNode {
     pub(in crate::domain_computation::primary_graph::application_query) fn retained_bytes(
         &self,
     ) -> usize {
-        let fields = self
-            .fields
+        let Self {
+            entity_id: _entity_id,
+            source_path: _source_path,
+            source_dependencies_complete: _source_dependencies_complete,
+            fields,
+            relations,
+        } = self;
+        let fields = fields
             .iter()
             .map(WorthQueryApplicationProjectedField::retained_bytes)
             .fold(
-                self.fields
+                fields
                     .capacity()
                     .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectedField>()),
                 usize::saturating_add,
             );
-        self.relations
+        relations
             .iter()
             .map(WorthQueryApplicationProjectedRelation::retained_bytes)
             .fold(
                 fields.saturating_add(
-                    self.relations
-                        .capacity()
-                        .saturating_mul(
-                            std::mem::size_of::<WorthQueryApplicationProjectedRelation>(),
-                        ),
+                    relations.capacity().saturating_mul(std::mem::size_of::<
+                        WorthQueryApplicationProjectedRelation,
+                    >()),
                 ),
                 usize::saturating_add,
             )
@@ -178,7 +182,13 @@ impl WorthQueryApplicationProjectedField {
     }
 
     fn retained_bytes(&self) -> usize {
-        self.value.owned_allocation_capacity_bytes()
+        let Self {
+            result_path: _result_path,
+            slot_type: _slot_type,
+            slot_key: _slot_key,
+            value,
+        } = self;
+        value.owned_allocation_capacity_bytes()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn matches<
@@ -293,15 +303,22 @@ impl WorthQueryApplicationProjectedRelation {
     }
 
     fn retained_bytes(&self) -> usize {
-        self.predicate_sources
+        let Self {
+            result_path: _result_path,
+            slot_type: _slot_type,
+            slot_key: _slot_key,
+            cardinality: _cardinality,
+            predicate_sources,
+            rows,
+        } = self;
+        predicate_sources
             .capacity()
             .saturating_mul(std::mem::size_of::<EntityId>())
             .saturating_add(
-                self.rows
-                    .iter()
+                rows.iter()
                     .map(WorthQueryApplicationProjectionNode::retained_bytes)
                     .fold(
-                        self.rows.capacity().saturating_mul(std::mem::size_of::<
+                        rows.capacity().saturating_mul(std::mem::size_of::<
                             WorthQueryApplicationProjectionNode,
                         >()),
                         usize::saturating_add,

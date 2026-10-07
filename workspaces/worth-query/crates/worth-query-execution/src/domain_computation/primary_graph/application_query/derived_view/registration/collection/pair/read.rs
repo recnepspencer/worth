@@ -83,7 +83,10 @@ where
         }
         let first_result = self
             .execute_application_query_one_shot(first)
-            .map_err(|_| Denial::QueryExecutionDenied)?;
+            .map_err(|denial| Denial::ReadDenied {
+                root: expected_root,
+                denial,
+            })?;
         self.read_managed_entry_pair_from_result(
             view,
             product,

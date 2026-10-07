@@ -1,5 +1,4 @@
 use super::*;
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
 use crate::domain_computation::primary_graph::tests::fixture::{
     AccountSummaryResult, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };
@@ -8,6 +7,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entry() {
     let world = installed_authorization_world(true);
     let request = live_scope();
+    let execution = serial_request(&request);
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world.selected_product();
     let principal = selected
@@ -59,6 +59,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
         )
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &open);
+    let pair_access = WorthQueryApplicationQueryAccessContext::new(&principal, &open);
     let membership = world
         .application
         .execute_application_query_one_shot(
@@ -78,7 +79,8 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
     assert_eq!(membership.rows()[0].members, vec![open.entity_id()]);
     let keys = world
         .application
-        .reconstruct_managed_derived_collection_pair_lazy(
+        .reconstruct_managed_derived_collection_pair(
+            worth_execution::ExecutionRequest::serial(&execution),
             &view,
             selected.product(),
             &membership,
@@ -88,57 +90,28 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     .map(|root| (*root, row.tag.clone()))
                     .collect()
             },
-            |occurrence_key| {
-                let occurrence_scope = selected
-                    .resolve_entity(
-                        AccountStatus::reference(),
-                        occurrence_key.clone(),
-                        &request,
-                        WorthQueryPrincipalResolutionMode::Ordinary,
+            |_: &String| {
+                let first = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
                     )
                     .unwrap();
-                let occurrence_access =
-                    WorthQueryApplicationQueryAccessContext::new(&principal, &occurrence_scope);
-                world
-                    .application
-                    .execute_application_query_one_shot(
-                        world
-                            .selected_product()
-                            .admit_application_query(
-                                &entry_query,
-                                &occurrence_access,
-                                ApplicationQueryParameterSet::new(),
-                                current_controls(&request),
-                            )
-                            .unwrap(),
-                    )
-                    .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
-            },
-            |row| {
-                let body_scope = selected
-                    .resolve_entity(
-                        AccountStatus::reference(),
-                        row.status().to_string(),
-                        &request,
-                        WorthQueryPrincipalResolutionMode::Ordinary,
+                let second = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
                     )
                     .unwrap();
-                let body_access =
-                    WorthQueryApplicationQueryAccessContext::new(&principal, &body_scope);
-                world
-                    .application
-                    .execute_application_query_one_shot(
-                        world
-                            .selected_product()
-                            .admit_application_query(
-                                &entry_query,
-                                &body_access,
-                                ApplicationQueryParameterSet::new(),
-                                current_controls(&request),
-                            )
-                            .unwrap(),
-                    )
-                    .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
+                Ok(WorthQueryDerivedPairReadPlans::new(first, second))
             },
             |row| row.status().to_string(),
             |row| row.status().to_string(),
@@ -157,7 +130,8 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
     assert_eq!(original.0, "primary");
     let denied = world
         .application
-        .reconstruct_managed_derived_collection_pair_lazy(
+        .reconstruct_managed_derived_collection_pair(
+            worth_execution::ExecutionRequest::serial(&execution),
             &view,
             selected.product(),
             &membership,
@@ -167,20 +141,30 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     .map(|root| (*root, row.tag.clone()))
                     .collect()
             },
-            |_: &String| -> Result<
-                WorthQueryApplicationOneShotResult<
-                    PublicScopedAccountSummaryQuery,
-                    AccountSummaryResult,
-                >,
-                WorthQueryManagedDerivedViewDenial,
-            > { Err(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied) },
-            |_| -> Result<
-                WorthQueryApplicationOneShotResult<
-                    PublicScopedAccountSummaryQuery,
-                    AccountSummaryResult,
-                >,
-                WorthQueryManagedDerivedViewDenial,
-            > { unreachable!("second read cannot run after first denial") },
+            |_: &String| {
+                let first = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                let second = selected
+                    .retain_selection()
+                    .unwrap()
+                    .admit_application_query(
+                        &entry_query,
+                        &pair_access,
+                        ApplicationQueryParameterSet::new(),
+                        current_controls(&request),
+                    )
+                    .unwrap();
+                let pair = WorthQueryDerivedPairReadPlans::new(first, second);
+                Err::<(), _>(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied).and(Ok(pair))
+            },
             |row| row.status().to_string(),
             |row| row.status().to_string(),
             |_, body| SceneLabel(body.label().to_string()),

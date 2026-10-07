@@ -1396,33 +1396,6 @@ category = "async-runtime"
 reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
 
 [[threading_sites]]
-source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/worker_pool.rs"
-item = "read_bounded_pairs"
-kind = "thread-builder"
-count = 1
-category = "legacy-parallel"
-reason = "Query derived-view reconstruction becomes a leased map in Phase 7."
-retire_phase = 7
-
-[[threading_sites]]
-source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/worker_pool.rs"
-item = "read_bounded_pairs"
-kind = "thread-scope"
-count = 1
-category = "legacy-parallel"
-reason = "Query derived-view reconstruction becomes a leased map in Phase 7."
-retire_phase = 7
-
-[[threading_sites]]
-source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/worker_pool.rs"
-item = "read_bounded_pairs"
-kind = "thread-spawn"
-count = 1
-category = "legacy-parallel"
-reason = "Query derived-view reconstruction becomes a leased map in Phase 7."
-retire_phase = 7
-
-[[threading_sites]]
 source = "workspaces/worth-store/crates/worth-store-formal-models/src/runner/execution.rs"
 item = "execute_protocol_check"
 kind = "thread-spawn"

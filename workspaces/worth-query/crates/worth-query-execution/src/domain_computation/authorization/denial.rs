@@ -1,6 +1,7 @@
 //! Typed authorization denial topology.
 
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
+mod capacity;
 
 /// The specific reason authorization refused an operation or query.
 ///

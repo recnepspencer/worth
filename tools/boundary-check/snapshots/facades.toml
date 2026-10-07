@@ -329,6 +329,7 @@ package = "worth-query-host::primary_graph"
 exports = [
     "CandidateWriter",
     "DecisionReader",
+    "ExecutionRequest",
     "ExternalEffectCausalLink",
     "ExternalEffectClassification",
     "ExternalEffectCorrelationIdentity",
@@ -534,6 +535,7 @@ exports = [
     "WorthQueryCurrentOutputSelection",
     "WorthQueryCustomInvariantDenial",
     "WorthQueryDelegationActivationProgram",
+    "WorthQueryDerivedPairReadPlans",
     "WorthQueryDispatchOutboxDurabilityPosture",
     "WorthQueryDispatchOutboxRecord",
     "WorthQueryElevationApprovalAuthorizationDenial",
