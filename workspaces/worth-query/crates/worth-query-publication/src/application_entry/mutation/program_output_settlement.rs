@@ -169,6 +169,7 @@ pub struct ProgramOutputRecord {
     >,
     observation: crate::application_entry::WorthQueryApplicationReadObservation,
     checkpoint_readmission_work_units: u64,
+    checkpoint_readmission_work_bound: u64,
     checkpoint_readmission_charged_preparation_bytes: u64,
 }
 
@@ -234,6 +235,10 @@ impl ProgramOutputRecord {
         self.checkpoint_readmission_work_units
     }
 
+    pub(super) fn checkpoint_readmission_work_bound(&self) -> u64 {
+        self.checkpoint_readmission_work_bound
+    }
+
     pub(super) fn checkpoint_readmission_charged_preparation_bytes(&self) -> u64 {
         self.checkpoint_readmission_charged_preparation_bytes
     }
@@ -256,6 +261,7 @@ impl ProgramOutputRecord {
         let receipt = settlement.application_commit_receipt().cloned();
         let readiness_delivery = settlement.readiness_delivery().cloned();
         let checkpoint_readmission_work_units = settlement.checkpoint_readmission_work_units();
+        let checkpoint_readmission_work_bound = settlement.checkpoint_readmission_work_bound();
         let checkpoint_readmission_charged_preparation_bytes =
             settlement.checkpoint_readmission_charged_preparation_bytes();
         let declaration = Connection::declaration();
@@ -268,6 +274,7 @@ impl ProgramOutputRecord {
             receipt,
             readiness_delivery,
             checkpoint_readmission_work_units,
+            checkpoint_readmission_work_bound,
             checkpoint_readmission_charged_preparation_bytes,
             observation,
         }

@@ -170,6 +170,7 @@ where
     resources_validated: bool,
     producer_contacts_in_this_demand: usize,
     checkpoint_readmission_work_units: u64,
+    checkpoint_readmission_work_bound: u64,
     checkpoint_readmission_charged_preparation_bytes: u64,
     // Whether an advance of this demand has settled. Until one does, a cached
     // Ready it joined at its start is still cache: see `caller_custody`.
@@ -205,6 +206,13 @@ where
     /// Charged owner work comparing this demand's checkpoint output before reuse.
     pub const fn checkpoint_readmission_work_units(&self) -> u64 {
         self.checkpoint_readmission_work_units
+    }
+
+    /// Saturating sum of owner-computed charged-work ceilings for accepted
+    /// checkpoint readmissions; excludes decoding, rejected candidates and
+    /// adoption. `u64::MAX` marks saturation, not a finite aggregate guarantee.
+    pub const fn checkpoint_readmission_work_bound(&self) -> u64 {
+        self.checkpoint_readmission_work_bound
     }
 
     /// Largest admitted scratch bound among this demand's accepted checkpoint

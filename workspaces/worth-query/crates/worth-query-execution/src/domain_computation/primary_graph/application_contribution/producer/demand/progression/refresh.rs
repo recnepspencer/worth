@@ -62,6 +62,9 @@ where
         refreshed.checkpoint_readmission_work_units = refreshed
             .checkpoint_readmission_work_units
             .saturating_add(demand.checkpoint_readmission_work_units);
+        refreshed.checkpoint_readmission_work_bound = refreshed
+            .checkpoint_readmission_work_bound
+            .saturating_add(demand.checkpoint_readmission_work_bound);
         refreshed.checkpoint_readmission_charged_preparation_bytes = refreshed
             .checkpoint_readmission_charged_preparation_bytes
             .max(demand.checkpoint_readmission_charged_preparation_bytes);

@@ -41,6 +41,7 @@ pub struct WorthQueryApplicationProgramWork {
     invariant_executions: usize,
     derived_publications: usize,
     checkpoint_readmission_work_units: u64,
+    checkpoint_readmission_work_bound: u64,
     checkpoint_readmission_peak_charged_preparation_bytes: u64,
 }
 
@@ -52,11 +53,13 @@ impl WorthQueryApplicationProgramWork {
             Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
             u64,
             u64,
+            u64,
         ),
         descendants: impl Iterator<
             Item = (
                 Option<&'settlement WorthQueryApplicationCommitReceipt>,
                 Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
+                u64,
                 u64,
                 u64,
             ),
@@ -74,6 +77,7 @@ impl WorthQueryApplicationProgramWork {
                 Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
                 u64,
                 u64,
+                u64,
             ),
         >,
     ) -> Self {
@@ -84,10 +88,15 @@ impl WorthQueryApplicationProgramWork {
         let mut invariant_executions = 0_usize;
         let mut derived_publications = 0_usize;
         let mut checkpoint_readmission_work_units = 0_u64;
+        let mut checkpoint_readmission_work_bound = 0_u64;
         let mut checkpoint_readmission_peak_charged_preparation_bytes = 0_u64;
-        for (receipt, readiness, readmission_work, readmission_bytes) in settlements {
+        for (receipt, readiness, readmission_work, readmission_bound, readmission_bytes) in
+            settlements
+        {
             checkpoint_readmission_work_units =
                 checkpoint_readmission_work_units.saturating_add(readmission_work);
+            checkpoint_readmission_work_bound =
+                checkpoint_readmission_work_bound.saturating_add(readmission_bound);
             checkpoint_readmission_peak_charged_preparation_bytes =
                 checkpoint_readmission_peak_charged_preparation_bytes.max(readmission_bytes);
             if let Some(readiness) = readiness {
@@ -120,6 +129,7 @@ impl WorthQueryApplicationProgramWork {
             invariant_executions,
             derived_publications,
             checkpoint_readmission_work_units,
+            checkpoint_readmission_work_bound,
             checkpoint_readmission_peak_charged_preparation_bytes,
         }
     }
@@ -163,6 +173,13 @@ impl WorthQueryApplicationProgramWork {
     /// Sum of owner-charged checkpoint output comparisons for these demands.
     pub const fn checkpoint_readmission_work_units(self) -> u64 {
         self.checkpoint_readmission_work_units
+    }
+
+    /// Saturating sum of owner-computed charged-work ceilings for accepted
+    /// checkpoint readmissions; excludes decoding, rejected candidates and
+    /// adoption. `u64::MAX` marks saturation, not a finite aggregate guarantee.
+    pub const fn checkpoint_readmission_work_bound(self) -> u64 {
+        self.checkpoint_readmission_work_bound
     }
 
     /// Largest charged scratch bound for one checkpoint readmission. This is

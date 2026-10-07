@@ -208,6 +208,7 @@ where
                 resources_validated: true,
                 producer_contacts_in_this_demand: 0,
                 checkpoint_readmission_work_units: readmitted.preparation_work_units,
+                checkpoint_readmission_work_bound: readmitted.preparation_work_bound,
                 checkpoint_readmission_charged_preparation_bytes: readmitted
                     .charged_preparation_bytes,
                 settled: false,
@@ -293,6 +294,7 @@ where
             resources_validated,
             producer_contacts_in_this_demand: 0,
             checkpoint_readmission_work_units: 0,
+            checkpoint_readmission_work_bound: 0,
             checkpoint_readmission_charged_preparation_bytes: 0,
             settled: false,
             admission_kind,

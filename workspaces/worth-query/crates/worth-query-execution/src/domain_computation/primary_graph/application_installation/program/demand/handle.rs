@@ -19,6 +19,13 @@ where
         self.admitted.checkpoint_readmission_work_units()
     }
 
+    /// Saturating sum of owner-computed charged-work ceilings for accepted
+    /// checkpoint readmissions; excludes decoding, rejected candidates and
+    /// adoption. `u64::MAX` marks saturation, not a finite aggregate guarantee.
+    pub const fn checkpoint_readmission_work_bound(&self) -> u64 {
+        self.admitted.checkpoint_readmission_work_bound()
+    }
+
     /// Largest admitted scratch bound among the child's accepted checkpoint
     /// readmissions. This is not measured allocation or resident memory.
     pub const fn checkpoint_readmission_charged_preparation_bytes(&self) -> u64 {

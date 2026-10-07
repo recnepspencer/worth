@@ -181,6 +181,9 @@ where
             )
         })?;
         let owner = &self.primary_provider.graph.source_owner.invalidation_owner;
+        // World registry/header comparisons debit their owner-declared bounds
+        // before traversal. The remaining witness ceiling covers its execution.
+        let preparation_prefix = admission.charged_work() - preparation_work_before;
         let Some(witness) = crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness::from_checkpoint_facts(
             &readmitted.correspondence,
             graph.layout(),
@@ -209,6 +212,17 @@ where
         if !current.map_err(restoration_resource_denial)? {
             return Ok(None);
         }
+        // Qualification runs only after original completeness/currentness has
+        // accepted. Missing, conflicting or unsupported proof retains the same
+        // conservative Fresh decision without a needless ceiling traversal.
+        let calculation_start = admission.charged_work();
+        let witness_work_bound = crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness::checkpoint_comparison_work_bound(
+            &readmitted.correspondence,
+            graph.layout(),
+            &observed_source_facts,
+            admission,
+        ).map_err(restoration_resource_denial)?;
+        let calculation_work = admission.charged_work() - calculation_start;
         // The verified Arc travels through the restored carrier, registry
         // record and lineage's single witness cell after admission. Fund its
         // initialized Option moves before either owner installs the row.
@@ -228,6 +242,24 @@ where
         admission
             .charge_external_work(witness_moves)
             .map_err(restoration_resource_denial)?;
+        let preparation_work_bound = preparation_prefix
+            .checked_add(witness_work_bound)
+            .and_then(|work| work.checked_add(calculation_work))
+            .and_then(|work| work.checked_add(witness_moves))
+            .ok_or_else(|| {
+                restoration_resource_denial(
+                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
+                )
+            })?;
+        let preparation_work_units = admission.charged_work() - preparation_work_before;
+        if preparation_work_units > preparation_work_bound {
+            return Err(restoration_resource_denial(
+                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
+                    required: preparation_work_units,
+                    maximum: preparation_work_bound,
+                },
+            ));
+        }
         Ok(Some(ReadmittedOutput {
             restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput {
                 checkpoint: readmitted.checkpoint.clone(),
@@ -240,7 +272,8 @@ where
             },
             settlement,
             verified_at,
-            preparation_work_units: admission.charged_work() - preparation_work_before,
+            preparation_work_units,
+            preparation_work_bound,
             charged_preparation_bytes: admission.charged_bytes() - preparation_bytes_before,
         }))
     }
@@ -315,6 +348,7 @@ pub(super) struct ReadmittedOutput {
     >,
     verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
     pub(super) preparation_work_units: u64,
+    pub(super) preparation_work_bound: u64,
     pub(super) charged_preparation_bytes: u64,
 }
 

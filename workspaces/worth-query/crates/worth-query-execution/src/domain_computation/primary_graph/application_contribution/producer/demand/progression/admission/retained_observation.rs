@@ -246,6 +246,7 @@ where
             resources_validated: false,
             producer_contacts_in_this_demand: 0,
             checkpoint_readmission_work_units: 0,
+            checkpoint_readmission_work_bound: 0,
             checkpoint_readmission_charged_preparation_bytes: 0,
             settled: false,
             admission_kind: DemandAdmissionKind::Ordinary,
