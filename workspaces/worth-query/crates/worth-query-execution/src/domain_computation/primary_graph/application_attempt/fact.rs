@@ -8,6 +8,7 @@ mod entity_touch;
 mod indexed_entity_selection;
 mod locator_identity;
 mod source_currentness;
+mod source_merge;
 mod workflow_definition_predecessor;
 mod workflow_history_basis;
 mod workflow_instance_capacity;
