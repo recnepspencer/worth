@@ -24,7 +24,10 @@ type StagePreparation =
         WorthQueryWorkflowStagePreparation<'a>,
     )
         -> Result<WorthQueryWorkflowStageTask, WorthQueryWorkflowStageComputationFailure>;
-type StageComputation = fn(WorthQueryWorkflowStageTask) -> WorthQueryWorkflowStageComputed;
+type StageComputation = fn(
+    WorthQueryWorkflowStageTask,
+    &mut worth_execution::MapKernelContext<'_, '_>,
+) -> WorthQueryWorkflowStageComputed;
 
 trait ErasedWorkflowStageExecutor: Send + Sync {
     fn idempotent_stage_retry(&self) -> bool;
@@ -78,7 +81,10 @@ impl WorthQueryInstalledWorkflowStageExecutor {
 
     pub(crate) fn computation(
         &self,
-    ) -> fn(WorthQueryWorkflowStageTask) -> WorthQueryWorkflowStageComputed {
+    ) -> fn(
+        WorthQueryWorkflowStageTask,
+        &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> WorthQueryWorkflowStageComputed {
         self.computation
     }
 

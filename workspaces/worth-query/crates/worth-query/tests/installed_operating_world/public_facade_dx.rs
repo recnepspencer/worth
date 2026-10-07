@@ -1,3 +1,5 @@
+use crate::workflow_request::workflow_request;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{domain, installed};
 
 mod operational_lifecycle;
@@ -173,7 +175,11 @@ fn workflow_lineage_aftermath_support_and_inspection_stay_inside_the_facade() {
             &lineage,
         )
         .unwrap()
-        .reexecute(super::operation_lineage::intent(), &mut lineage)
+        .reexecute(
+            super::operation_lineage::intent(),
+            &mut lineage,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     assert_ne!(trace.identity(), reexecuted.identity());
     assert_eq!(

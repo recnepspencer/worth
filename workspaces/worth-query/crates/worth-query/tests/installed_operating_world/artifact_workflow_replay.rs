@@ -1,3 +1,5 @@
+use crate::workflow_request::workflow_request;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{certification, domain};
 
 use super::installed_operation_fixture::{
@@ -13,7 +15,11 @@ fn fresh_runs_ignore_operational_artifact_identity_but_compare_canonical_meaning
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("produce"), &mut workspace)
+        .reexecute(
+            move_intent("produce"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let reexecuted = bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
@@ -21,7 +27,11 @@ fn fresh_runs_ignore_operational_artifact_identity_but_compare_canonical_meaning
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("produce"), &mut workspace)
+        .reexecute(
+            move_intent("produce"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let original_semantics = original.semantics();
     let reexecuted_semantics = reexecuted.semantics();
@@ -62,7 +72,11 @@ fn certification_replay_reexecutes_from_intent_without_retaining_an_operational_
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("produce"), &mut workspace)
+        .reexecute(
+            move_intent("produce"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let replay = certification::replay_installed_workflow(
         certification::issue_query_certification_replay_capability(),
@@ -71,6 +85,7 @@ fn certification_replay_reexecutes_from_intent_without_retaining_an_operational_
         move_intent("produce"),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
 

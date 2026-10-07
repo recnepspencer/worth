@@ -63,6 +63,7 @@ where
         self,
         intent: WorthQueryNormalizedWorkflowIntent,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryWorkflowReexecutionOutcome<D, O, F, L> {
         let mut run = match self.start_workflow(workspace) {
             TransitionOutcome::Success(run) => run,
@@ -97,7 +98,12 @@ where
         for stage in intent.stages() {
             let advanced = match stage.input() {
                 super::WorthQueryWorkflowIntentValue::PredecessorArtifact { predecessor_stage } => {
-                    run.advance_with_artifact(stage.stage_identity(), predecessor_stage, workspace)
+                    run.advance_with_artifact(
+                        stage.stage_identity(),
+                        predecessor_stage,
+                        workspace,
+                        request,
+                    )
                 }
                 super::WorthQueryWorkflowIntentValue::PredecessorArtifactLease {
                     predecessor_stage,
@@ -107,6 +113,7 @@ where
                     predecessor_stage,
                     lease_role.clone(),
                     workspace,
+                    request,
                 ),
                 input => run.advance(
                     stage.stage_identity(),
@@ -114,6 +121,7 @@ where
                         .runtime_value()
                         .expect("non-artifact intent has a primitive runtime value"),
                     workspace,
+                    request,
                 ),
             };
             run = match advanced {

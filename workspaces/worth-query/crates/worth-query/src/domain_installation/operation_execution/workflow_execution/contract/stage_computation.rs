@@ -14,8 +14,8 @@ pub enum WorthQueryWorkflowStageComputePayload {
 
 #[derive(Debug)]
 pub struct WorthQueryWorkflowStageComputationFailure {
-    class: WorthQueryOperationFailureClass,
-    detail: String,
+    pub(super) class: WorthQueryOperationFailureClass,
+    pub(super) detail: String,
 }
 
 impl WorthQueryWorkflowStageComputationFailure {
@@ -55,6 +55,40 @@ pub(in crate::domain_installation::operation_execution) struct WorkflowStageComp
 ///     task.pass_through()
 /// }
 /// ```
+/// Registered computation is a bare function pointer, never an owner-capturing
+/// closure. These twins differ only in the value referenced by the closure.
+/// ```
+/// use worth_query::facade::domain::*;
+/// fn registered(workspace: &mut WorthQueryWorkflowStageWorkspace<'_>) -> fn(
+///     WorthQueryWorkflowStageTask, &mut worth_execution::MapKernelContext<'_, '_>
+/// ) -> WorthQueryWorkflowStageComputed {
+///     |task, _meter| { let _ = &task; task.pass_through() }
+/// }
+/// ```
+/// ```compile_fail
+/// use worth_query::facade::domain::*;
+/// fn registered(workspace: &mut WorthQueryWorkflowStageWorkspace<'_>) -> fn(
+///     WorthQueryWorkflowStageTask, &mut worth_execution::MapKernelContext<'_, '_>
+/// ) -> WorthQueryWorkflowStageComputed {
+///     |task, _meter| { let _ = &workspace; task.pass_through() }
+/// }
+/// ```
+/// ```
+/// use worth_query::facade::domain::*;
+/// fn registered(reader: &mut WorthQueryStageArtifactReader<'_>) -> fn(
+///     WorthQueryWorkflowStageTask, &mut worth_execution::MapKernelContext<'_, '_>
+/// ) -> WorthQueryWorkflowStageComputed {
+///     |task, _meter| { let _ = &task; task.pass_through() }
+/// }
+/// ```
+/// ```compile_fail
+/// use worth_query::facade::domain::*;
+/// fn registered(reader: &mut WorthQueryStageArtifactReader<'_>) -> fn(
+///     WorthQueryWorkflowStageTask, &mut worth_execution::MapKernelContext<'_, '_>
+/// ) -> WorthQueryWorkflowStageComputed {
+///     |task, _meter| { let _ = &reader; task.pass_through() }
+/// }
+/// ```
 /// A task has no workspace or reader door:
 /// ```
 /// use worth_query::facade::domain::WorthQueryWorkflowStageTask;
@@ -66,8 +100,9 @@ pub(in crate::domain_installation::operation_execution) struct WorkflowStageComp
 /// ```
 #[derive(Debug)]
 pub struct WorthQueryWorkflowStageTask {
-    identity: WorkflowStageComputationIdentity,
-    payload: WorthQueryWorkflowStageComputePayload,
+    pub(super) declaration: super::computation_declaration::WorkflowStageComputationDeclaration,
+    pub(super) identity: WorkflowStageComputationIdentity,
+    pub(super) payload: WorthQueryWorkflowStageComputePayload,
 }
 
 impl WorthQueryWorkflowStageTask {
@@ -75,7 +110,11 @@ impl WorthQueryWorkflowStageTask {
         identity: WorkflowStageComputationIdentity,
         payload: WorthQueryWorkflowStageComputePayload,
     ) -> Self {
-        Self { identity, payload }
+        Self {
+            identity,
+            payload,
+            declaration: Default::default(),
+        }
     }
 
     pub fn stage_identity(&self) -> &str {
@@ -110,8 +149,8 @@ impl WorthQueryWorkflowStageTask {
 /// Only consuming a prepared task can make a computed result for that occurrence.
 #[derive(Debug)]
 pub struct WorthQueryWorkflowStageComputed {
-    identity: WorkflowStageComputationIdentity,
-    result:
+    pub(super) identity: WorkflowStageComputationIdentity,
+    pub(super) result:
         Result<WorthQueryWorkflowStageComputePayload, WorthQueryWorkflowStageComputationFailure>,
 }
 
@@ -125,6 +164,10 @@ impl WorthQueryWorkflowStageComputed {
     ) -> Self {
         Self { identity, result }
     }
+    pub(in crate::domain_installation::operation_execution) fn failed(&self) -> bool {
+        self.result.is_err()
+    }
+
     pub(in crate::domain_installation::operation_execution) fn into_result(
         self,
         expected: &WorkflowStageComputationIdentity,

@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use worth_proof::TransitionOutcome;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{domain, read};
 
 use super::installed_operation_fixture::{
@@ -29,24 +31,28 @@ fn installed_dag_mints_one_query_owned_trace_and_publication() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let trace = run.complete().unwrap();
@@ -148,6 +154,7 @@ fn incomplete_completion_denial_retains_exact_run_work_without_deeper_execution(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let before = run.counters();
@@ -186,6 +193,7 @@ fn skipping_a_predecessor_denies_before_stage_executor_contact() {
         "publish",
         domain::WorthQueryWorkflowValue::Text("skip".into()),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("skipped predecessor did not produce an exact denial"),
@@ -221,12 +229,14 @@ fn duplicate_stage_advancement_denies_without_a_second_executor_contact() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let denial = match run.advance(
         "start",
         domain::WorthQueryWorkflowValue::NotRequired,
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("duplicate stage did not produce an exact denial"),
@@ -261,6 +271,7 @@ fn copied_stage_label_is_only_a_candidate_and_cannot_invent_progression() {
         &copied_label,
         domain::WorthQueryWorkflowValue::NotRequired,
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("a copied label invented workflow progression"),
@@ -296,6 +307,7 @@ fn foreign_runtime_denies_stage_progression_before_executor_contact() {
         "start",
         domain::WorthQueryWorkflowValue::NotRequired,
         &mut foreign,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("foreign runtime did not produce an exact denial"),
@@ -340,6 +352,7 @@ fn complete_trace(name: &str, order: [&str; 2]) -> String {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     for stage in order {
@@ -348,6 +361,7 @@ fn complete_trace(name: &str, order: [&str; 2]) -> String {
                 stage,
                 domain::WorthQueryWorkflowValue::Text("start".into()),
                 &mut workspace,
+                ExecutionRequest::serial(&workflow_request()),
             )
             .unwrap();
     }
@@ -355,6 +369,7 @@ fn complete_trace(name: &str, order: [&str; 2]) -> String {
         "publish",
         domain::WorthQueryWorkflowValue::Text("join".into()),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap()
     .complete()

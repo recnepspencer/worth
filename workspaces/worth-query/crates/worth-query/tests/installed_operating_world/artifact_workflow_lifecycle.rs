@@ -2,8 +2,10 @@ use super::installed_operation_fixture::{
     artifact_lease_workspace, artifact_move_workspace, bind_artifact_workflow, lease_intent,
     lease_intent_with_mode, move_intent,
 };
+use crate::workflow_request::workflow_request;
 use worth_proof::TransitionOutcome;
 use worth_query::facade::domain;
+use worth_query::facade::runtime::ExecutionRequest;
 
 #[test]
 fn moved_artifact_borrows_once_and_disposes_exactly_once() {
@@ -14,7 +16,11 @@ fn moved_artifact_borrows_once_and_disposes_exactly_once() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("produce"), &mut workspace)
+        .reexecute(
+            move_intent("produce"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
 
     assert_eq!(trace.stage_receipts().len(), 2);
@@ -45,7 +51,11 @@ fn distinct_retained_leases_borrow_and_release_the_same_owner_generation_safely(
             &workspace,
         )
         .unwrap()
-        .reexecute(lease_intent(), &mut workspace)
+        .reexecute(
+            lease_intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
 
     assert_eq!(trace.stage_receipts().len(), 3);
@@ -85,9 +95,16 @@ fn completed_consumer_denial_precedes_a_second_lease_mutation() {
             "produce",
             domain::WorthQueryWorkflowValue::Text("retain-observer-lease".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
-        .advance_with_artifact_lease("observe-a", "produce", "observer-a", &mut workspace)
+        .advance_with_artifact_lease(
+            "observe-a",
+            "produce",
+            "observer-a",
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let retained = probe
         .take_escaped_lease()
@@ -100,6 +117,7 @@ fn completed_consumer_denial_precedes_a_second_lease_mutation() {
         "produce",
         "forbidden-retry",
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("completed artifact consumer did not deny"),
@@ -124,7 +142,11 @@ fn replacement_disposes_the_prior_owner_and_eventually_the_successor_once_each()
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("replace"), &mut workspace)
+        .reexecute(
+            move_intent("replace"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
 
     assert_eq!(probe.allocations(), 2);
@@ -142,7 +164,11 @@ fn explicit_cancellation_returns_a_cancelled_receipt_and_disposes_once() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("cancel"), &mut workspace);
+        .reexecute(
+            move_intent("cancel"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
 
     assert!(matches!(
         outcome,
@@ -162,7 +188,11 @@ fn declared_failure_after_registration_releases_the_owned_resource() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("fail-after-production"), &mut workspace);
+        .reexecute(
+            move_intent("fail-after-production"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
 
     assert!(matches!(
         outcome,
@@ -182,7 +212,11 @@ fn declared_failure_after_transfer_releases_the_owned_resource() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("fail-after-transfer"), &mut workspace);
+        .reexecute(
+            move_intent("fail-after-transfer"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
 
     assert!(matches!(
         outcome,
@@ -207,6 +241,7 @@ fn declared_failure_after_lease_transfer_releases_lease_and_owner_exactly_once()
         .reexecute(
             lease_intent_with_mode("fail-after-lease-transfer"),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         );
 
     assert!(matches!(
@@ -233,7 +268,11 @@ fn escaped_transferred_handle_is_revoked_and_disposed_by_the_run_registry() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("escape-after-transfer"), &mut workspace);
+        .reexecute(
+            move_intent("escape-after-transfer"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
 
     assert!(matches!(
         outcome,
@@ -276,7 +315,11 @@ fn preparation_producer_and_consumer_panics_each_dispose_exactly_once() {
                     &workspace,
                 )
                 .unwrap()
-                .reexecute(move_intent(mode), &mut workspace);
+                .reexecute(
+                    move_intent(mode),
+                    &mut workspace,
+                    ExecutionRequest::serial(&workflow_request()),
+                );
         }));
 
         assert!(unwind.is_err(), "{mode} did not unwind");

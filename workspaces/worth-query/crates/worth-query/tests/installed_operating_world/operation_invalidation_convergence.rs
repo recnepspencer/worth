@@ -1,3 +1,5 @@
+use crate::workflow_request::workflow_request;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{certification, domain, runtime};
 
 use super::installed_operation_fixture::{
@@ -32,7 +34,11 @@ fn cert_reexecution_and_live_maintenance_converge_without_replay_authority_promo
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let original_delivery = subject.drain(&mut workspace).unwrap();
     let _original_peer = candidate.drain(&mut workspace).unwrap();
@@ -46,6 +52,7 @@ fn cert_reexecution_and_live_maintenance_converge_without_replay_authority_promo
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     assert_eq!(

@@ -1,5 +1,7 @@
+use crate::workflow_request::workflow_request;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
+use worth_query::facade::runtime::ExecutionRequest;
 
 use worth_proof::TransitionOutcome;
 use worth_query::facade::{
@@ -210,24 +212,28 @@ fn workflow_stage_retains_the_same_signal_decision_in_its_receipt() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
 

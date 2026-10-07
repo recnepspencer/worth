@@ -250,6 +250,7 @@ pub use crate::runtime::{
     WorthQueryWriteCommand, WorthQueryWriteReceipt, WorthQueryWriteReceiptInspection,
     WriteAuthorityExecutionReceipt,
 };
+pub use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 pub use worth_query_execution::facade::runtime::{
     RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
 };

@@ -1,6 +1,7 @@
 use crate::basis_lifecycle::BasisOperationLane;
 use crate::runtime::WorthQueryWorkspace;
 
+mod entry;
 pub(in crate::domain_installation::operation_execution) mod evidence_validation;
 mod execution_context;
 mod outcome_routing;
@@ -58,53 +59,21 @@ impl WorthQueryWorkflowStageCompletion {
 }
 
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
-    pub fn advance(
-        mut self,
-        stage_identity: &str,
-        input: WorthQueryWorkflowValue,
-        workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        let runtime_admission = match self.admit_stage_runtime_authority(workspace) {
-            Ok(admission) => admission,
-            Err(denial) => return self.outcome_from_denial(denial),
-        };
-        self.advance_with_runtime_admission(stage_identity, input, workspace, runtime_admission)
-    }
-
-    pub(super) fn advance_with_runtime_admission(
-        mut self,
-        stage_identity: &str,
-        input: WorthQueryWorkflowValue,
-        workspace: &mut WorthQueryWorkspace,
-        runtime_admission: WorthQueryWorkflowStageRuntimeAdmission,
-    ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        match self.advance_once_with_runtime_admission(
-            stage_identity,
-            input,
-            workspace,
-            runtime_admission,
-        ) {
-            Ok(WorthQueryWorkflowAdvanceStep::Advanced) => TransitionOutcome::Success(self),
-            Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
-                TransitionOutcome::Deferred(
-                    crate::domain_installation::WorthQueryDeferredWorkflowStage {
-                        run: self,
-                        conditional,
-                    },
-                )
-            }
-            Err(denial) => self.outcome_from_denial(denial),
-        }
-    }
-
     pub(super) fn advance_once(
         &mut self,
         stage_identity: &str,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let admission = self.admit_stage_runtime_authority(workspace)?;
-        self.advance_once_with_runtime_admission(stage_identity, input, workspace, admission)
+        self.advance_once_with_runtime_admission(
+            stage_identity,
+            input,
+            workspace,
+            admission,
+            request,
+        )
     }
     pub(super) fn advance_once_with_computation(
         &mut self,
@@ -121,9 +90,10 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
         runtime_admission: WorthQueryWorkflowStageRuntimeAdmission,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let admitted = self.admit_stage(stage_identity, &input, runtime_admission)?;
-        self.advance_once_with_admitted_stage(admitted, input, workspace)
+        self.advance_once_with_admitted_stage(admitted, input, workspace, request)
     }
 
     pub(super) fn advance_with_admitted_stage(
@@ -131,8 +101,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         admitted: WorthQueryAdmittedWorkflowStage,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        match self.advance_once_with_admitted_stage(admitted, input, workspace) {
+        match self.advance_once_with_admitted_stage(admitted, input, workspace, request) {
             Ok(WorthQueryWorkflowAdvanceStep::Advanced) => TransitionOutcome::Success(self),
             Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
                 TransitionOutcome::Deferred(
@@ -151,10 +122,13 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         admitted: WorthQueryAdmittedWorkflowStage,
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let prepared =
             self.prepare_frontier_computation(vec![(admitted.stage.identity().into(), input)]);
-        prepared.compute().apply(self, workspace, Some(admitted))
+        prepared
+            .compute(request)
+            .apply(self, workspace, Some(admitted))
     }
     pub(super) fn advance_once_with_admitted_computation(
         &mut self,

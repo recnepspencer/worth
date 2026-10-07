@@ -1,5 +1,7 @@
+use crate::workflow_request::workflow_request;
 use worth_proof::TransitionOutcome;
 use worth_query::facade::domain;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use super::installed_operation_fixture::{
     divergent_frontier_workspace, missing_parallel_provider_workspace,
@@ -29,6 +31,7 @@ fn admitted_parallel_frontier_retains_lower_proof_and_converges_with_serial_trac
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance_admitted_frontier(
@@ -43,12 +46,14 @@ fn admitted_parallel_frontier_retains_lower_proof_and_converges_with_serial_trac
                 ),
             ],
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let trace = run.complete().unwrap();
@@ -96,6 +101,7 @@ fn nondeterministic_lowering_cannot_enter_parallel_progression() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let denial = match run.advance_admitted_frontier(
@@ -110,6 +116,7 @@ fn nondeterministic_lowering_cannot_enter_parallel_progression() {
             ),
         ],
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("nondeterministic lowering did not produce an exact denial"),
@@ -154,6 +161,7 @@ fn lower_runtime_parallel_denial_stops_before_frontier_graph_or_executor_work() 
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let denial = match run.advance_admitted_frontier(
@@ -168,6 +176,7 @@ fn lower_runtime_parallel_denial_stops_before_frontier_graph_or_executor_work() 
             ),
         ],
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("serial lower-runtime receipt did not produce an exact denial"),
@@ -205,12 +214,14 @@ fn parallel_frontier_accepts_ready_incomparable_stages_with_distinct_predecessor
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "bridge",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance_admitted_frontier(
@@ -225,6 +236,7 @@ fn parallel_frontier_accepts_ready_incomparable_stages_with_distinct_predecessor
                 ),
             ],
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let proof = run
@@ -260,24 +272,28 @@ fn complete_serial_trace(name: &str) -> String {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .complete()

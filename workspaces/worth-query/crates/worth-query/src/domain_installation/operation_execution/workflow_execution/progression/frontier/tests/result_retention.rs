@@ -12,9 +12,11 @@ fn failure_retains_only_the_canonical_prefix() {
     run.validate_parallel_runtime_authority(&workspace).unwrap();
     let frontier = run.prepare_parallel_frontier(&stages).unwrap();
     run.admit_parallel_frontier(frontier).unwrap();
-    let computed = run.prepare_frontier_computation(stages).compute();
+    let computed = run.prepare_frontier_computation(stages).compute(
+        worth_query::facade::runtime::ExecutionRequest::serial(&super::request::workflow_request()),
+    );
     assert_eq!(
-        phased_workflow::fold_executor::take_computes(),
+        _probe.take_computes(),
         phased_workflow::MEMBERS
             .iter()
             .map(|stage| (stage.to_string(), 17))
@@ -50,15 +52,34 @@ fn missing_predecessor_authority_remains_a_typed_denial() {
         } else {
             run.receipt_index.remove("start");
         }
+        let mut ordinary_workspace = phased_workflow::phased_workspace("phase-missing-predecessor");
+        let mut ordinary = start(&mut ordinary_workspace);
+        if invalid_index {
+            ordinary.receipt_index.insert("start".into(), usize::MAX);
+        } else {
+            ordinary.receipt_index.remove("start");
+        }
+        let ordinary_denial = ordinary
+            .advance_once(
+                "left",
+                domain::WorthQueryWorkflowValue::Text("7:0".into()),
+                &mut ordinary_workspace,
+                worth_execution::ExecutionRequest::serial(&super::request::workflow_request()),
+            )
+            .err()
+            .unwrap();
         let denial = run
             .prepare_frontier_computation(inputs())
-            .compute()
+            .compute(worth_query::facade::runtime::ExecutionRequest::serial(
+                &super::request::workflow_request(),
+            ))
             .apply(&mut run, &mut workspace, None)
             .err()
             .unwrap();
         assert!(
             matches!(denial.kind(), domain::WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(stage) if stage == "start")
         );
+        assert_eq!(denial.counters(), ordinary_denial.counters());
         assert_eq!(run.receipts().len(), 1);
         assert!(denial.executed_effects().is_empty());
     }

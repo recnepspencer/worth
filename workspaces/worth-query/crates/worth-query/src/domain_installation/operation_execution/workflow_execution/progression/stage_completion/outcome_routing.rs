@@ -13,30 +13,51 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         mut self,
         mut denial: WorthQueryWorkflowAdvanceDenial,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        let stale = match denial.kind() {
-            WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(
-                crate::domain_installation::WorthQueryDomainHandleDenialKind::StaleInstallationGeneration,
-            ) => true,
-            WorthQueryWorkflowAdvanceDenialKind::ArtifactCarriage(artifact) => {
-                artifact.kind()
-                    == crate::domain_installation::WorthQueryArtifactDenialKind::StaleInstallationGeneration
-            }
-            _ => false,
+        use WorthQueryWorkflowAdvanceDenialKind as Kind;
+        let (stale, rebind, failed) = match denial.kind() {
+            Kind::RuntimeAuthority(cause) => (
+                *cause == crate::domain_installation::WorthQueryDomainHandleDenialKind::StaleInstallationGeneration,
+                *cause == crate::domain_installation::WorthQueryDomainHandleDenialKind::PackageIdentityChanged,
+                false,
+            ),
+            Kind::ArtifactCarriage(artifact) => (
+                artifact.kind() == crate::domain_installation::WorthQueryArtifactDenialKind::StaleInstallationGeneration,
+                false,
+                false,
+            ),
+            Kind::StageExecutor { .. }
+            | Kind::UndeclaredFailureClass(_)
+            | Kind::PredecessorAuthorityMissing(_)
+            | Kind::ResourceAdmissionMissing
+            | Kind::ConditionalExecution(_)
+            | Kind::ComputationPanic { .. }
+            | Kind::ComputationResultCapacity { .. }
+            | Kind::ComputationNestedStopped { .. } => (false, false, true),
+            Kind::UnknownStage
+            | Kind::StageAlreadyCompleted
+            | Kind::PredecessorIncomplete(_)
+            | Kind::RequiredCapability(_)
+            | Kind::RequiredDomain(_)
+            | Kind::InputContract
+            | Kind::GraphProvider(_)
+            | Kind::PrimaryReadEvidence
+            | Kind::EffectEvidence
+            | Kind::InvariantEvidence
+            | Kind::LineageEvidence
+            | Kind::CostContract
+            | Kind::OutputContract
+            | Kind::TerminalContract
+            | Kind::DomainEvidence(_)
+            | Kind::ComputationAdmission(_)
+            | Kind::ComputationWorkExhausted { .. }
+            | Kind::ComputationCancelled { .. }
+            | Kind::ComputationDeadline { .. }
+            | Kind::ParallelFrontierShape
+            | Kind::NonDeterministicLowering
+            | Kind::ParallelProvider(_)
+            | Kind::ParallelNotAdmitted(_)
+            | Kind::ConditionalReentry(_) => (false, false, false),
         };
-        let rebind = matches!(
-            denial.kind(),
-            WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(
-                crate::domain_installation::WorthQueryDomainHandleDenialKind::PackageIdentityChanged
-            )
-        );
-        let failed = matches!(
-            denial.kind(),
-            WorthQueryWorkflowAdvanceDenialKind::StageExecutor { .. }
-                | WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(_)
-                | WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(_)
-                | WorthQueryWorkflowAdvanceDenialKind::ResourceAdmissionMissing
-                | WorthQueryWorkflowAdvanceDenialKind::ConditionalExecution(_)
-        );
         for receipt in self.receipts.iter_mut().rev() {
             receipt.cancel_artifact_output();
         }

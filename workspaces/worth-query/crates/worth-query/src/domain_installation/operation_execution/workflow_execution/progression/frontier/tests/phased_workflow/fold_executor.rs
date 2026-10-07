@@ -1,38 +1,8 @@
 use super::{reference_executor, world, PhaseDomain, PhaseFamily, PhaseOperation};
-use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use worth_query::facade::{domain, read, runtime};
-
-type ComputeEvents = Mutex<Vec<(String, usize)>>;
-static TEST_SERIALIZATION: Mutex<()> = Mutex::new(());
-static COMPUTES: Mutex<Option<Weak<ComputeEvents>>> = Mutex::new(None);
-
-pub(crate) struct ComputeProbe {
-    _serialization: MutexGuard<'static, ()>,
-    events: Arc<ComputeEvents>,
-}
-impl ComputeProbe {
-    pub(crate) fn new() -> Self {
-        let serialization = TEST_SERIALIZATION.lock().unwrap_or_else(|e| e.into_inner());
-        let events = Arc::new(Mutex::new(Vec::new()));
-        *COMPUTES.lock().unwrap() = Some(Arc::downgrade(&events));
-        Self {
-            _serialization: serialization,
-            events,
-        }
-    }
-}
-impl Drop for ComputeProbe {
-    fn drop(&mut self) {
-        *COMPUTES.lock().unwrap() = None;
-        assert_eq!(Arc::strong_count(&self.events), 1, "compute has finished");
-    }
-}
-pub(crate) fn take_computes() -> Vec<(String, usize)> {
-    let events = COMPUTES.lock().unwrap().as_ref().and_then(Weak::upgrade);
-    events.map_or_else(Vec::new, |events| {
-        std::mem::take(&mut *events.lock().unwrap())
-    })
-}
+#[path = "compute_probe.rs"]
+mod compute_probe;
+pub(crate) use compute_probe::ComputeProbe;
 
 pub(crate) struct FoldExecutor;
 
@@ -68,37 +38,99 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<PhaseDomain, PhaseOperation, 
             panic!("member input is text")
         };
         let (seed, mode) = reference_executor::parse(input);
+        let count = input
+            .split(':')
+            .nth(2)
+            .map_or(17, |count| count.parse::<u64>().unwrap());
         if mode == 1 {
             return Err(computation_failure("prepare failure"));
         }
         let words = std::iter::once(mode)
-            .chain((0..17).map(|offset| seed.wrapping_add(offset)))
+            .chain((0..count).map(|offset| seed.wrapping_add(offset)))
             .collect();
-        Ok(view.task(domain::WorthQueryWorkflowStageComputePayload::Words(words)))
+        Ok(view
+            .task(domain::WorthQueryWorkflowStageComputePayload::Words(words))
+            .with_computation_limits(
+                if mode == 9 { 0 } else { count },
+                0,
+                if mode == 11 {
+                    128
+                } else if mode == 7 || mode == 9 {
+                    0
+                } else {
+                    (count + 1) * 8
+                },
+            ))
     }
 
     fn compute(
         task: domain::WorthQueryWorkflowStageTask,
+        meter: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> domain::WorthQueryWorkflowStageComputed {
         let domain::WorthQueryWorkflowStageComputePayload::Words(words) = task.payload() else {
             return task.pass_through();
         };
         let mode = words[0];
+        // This test-only probe never feeds a result: its counters and rendezvous
+        // observe and schedule computation without changing its pure value.
+        if !compute_probe::before(task.stage_identity()) {
+            return task.pass_through();
+        }
+        if mode == 9 {
+            compute_probe::completed(task.stage_identity(), 0);
+            return task.complete(Ok(domain::WorthQueryWorkflowStageComputePayload::Empty));
+        }
         let mut work = 0;
         let folded = words[1..]
             .iter()
             .enumerate()
-            .fold(0_u64, |sum, (index, word)| {
+            .try_fold(0_u64, |sum, (index, word)| {
+                meter.checkpoint(1)?;
                 work += 1;
-                sum.wrapping_add(word.wrapping_mul(index as u64 + 1))
+                if mode == 8 {
+                    compute_probe::cancel();
+                    meter.checkpoint(0)?;
+                }
+                Ok::<_, worth_execution::MapKernelStop>(
+                    sum.wrapping_add(word.wrapping_mul(index as u64 + 1)),
+                )
             });
-        // This test-only counter never feeds a result: observing computes adds no
-        // owner effect or order-dependent behavior to the stage's computation.
-        if let Some(events) = COMPUTES.lock().unwrap().as_ref().and_then(Weak::upgrade) {
-            events
-                .lock()
-                .unwrap()
-                .push((task.stage_identity().into(), work));
+        compute_probe::completed(task.stage_identity(), work);
+        let folded = match folded {
+            Ok(folded) => folded,
+            Err(stop) => return task.complete(Err(computation_failure(&format!("{stop:?}")))),
+        };
+        if mode == 6 {
+            panic!("contained fixture compute panic");
+        }
+        if mode == 10 {
+            let partitions = std::collections::BTreeMap::from([(
+                worth_foundational::PartitionIdentity::new(0),
+                worth_execution::KeylessPartition {
+                    value: 0_u64,
+                    kernel_scratch_bytes: 0,
+                    max_result_bytes: 0,
+                },
+            )]);
+            let nested =
+                worth_execution::ExecutionMap::<_, ()>::from_keyless_partitions(partitions)
+                    .unwrap()
+                    .run_owned(None, |value, _| {
+                        let _ = value;
+                        Err::<u64, _>(worth_execution::MapKernelFailure::Domain(()))
+                    });
+            assert!(matches!(
+                nested,
+                worth_execution::MapOutcome::Stopped { .. }
+            ));
+            // Serial nested domain refusal and leased admission refusal both
+            // stop the invoking meter; neither posture may panic at this door.
+        }
+        if mode == 11 {
+            return task.complete(Err(domain::WorthQueryWorkflowStageComputationFailure::new(
+                domain::WorthQueryOperationFailureClass::Domain("x".repeat(4096)),
+                "domain failure",
+            )));
         }
         if mode == 2 {
             return task.complete(Err(computation_failure("compute failure")));

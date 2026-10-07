@@ -100,7 +100,8 @@ pub(crate) fn reference_step(
 }
 
 pub(crate) fn parse(input: &str) -> (u64, u64) {
-    let (seed, mode) = input.split_once(':').unwrap();
+    let mut parts = input.split(':');
+    let (seed, mode) = (parts.next().unwrap(), parts.next().unwrap());
     (seed.parse().unwrap(), mode.parse().unwrap())
 }
 

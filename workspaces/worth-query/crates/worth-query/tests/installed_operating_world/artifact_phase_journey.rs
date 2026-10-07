@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use std::collections::BTreeMap;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use worth_foundational::facade::RetentionDeliveryProfile;
 use worth_query::facade::domain;
@@ -20,7 +22,11 @@ fn public_workflow_crosses_managed_artifact_native_evidence_and_resource_authori
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("native-integrated"), &mut workspace)
+        .reexecute(
+            move_intent("native-integrated"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
 
     assert_eq!(trace.stage_receipts().len(), 2);

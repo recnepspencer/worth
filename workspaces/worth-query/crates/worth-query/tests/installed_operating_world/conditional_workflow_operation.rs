@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use std::sync::{Arc, Mutex};
+use worth_query::facade::runtime::ExecutionRequest;
 
 use worth_proof::TransitionOutcome;
 use worth_query::facade::{domain, foundation};
@@ -181,24 +183,28 @@ fn complete_standard_workflow(
         "start",
         domain::WorthQueryWorkflowValue::NotRequired,
         workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap()
     .advance(
         "left",
         domain::WorthQueryWorkflowValue::Text("start".into()),
         workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap()
     .advance(
         "right",
         domain::WorthQueryWorkflowValue::Text("start".into()),
         workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap()
     .advance(
         "publish",
         domain::WorthQueryWorkflowValue::Text("join".into()),
         workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap()
     .complete()

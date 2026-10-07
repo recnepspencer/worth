@@ -58,6 +58,7 @@ impl WorthUiInstalledQueryTestFixture {
     }
 
     fn execute_recording_workflow(&mut self) -> (usize, usize) {
+        let request = worth_query::facade::consumer_kit::workflow_proof_execution_request();
         let installed = self
             .workspace
             .worth_ui()
@@ -81,6 +82,7 @@ impl WorthUiInstalledQueryTestFixture {
                 IDENTIFY_STAGE,
                 domain::WorthQueryWorkflowValue::Text("certification-measurement".into()),
                 &mut self.workspace,
+                worth_query::facade::runtime::ExecutionRequest::serial(&request),
             )
             .unwrap()
             .advance(
@@ -89,6 +91,7 @@ impl WorthUiInstalledQueryTestFixture {
                     CanonicalF32::from_f32(42.0).bits(),
                 )),
                 &mut self.workspace,
+                worth_query::facade::runtime::ExecutionRequest::serial(&request),
             )
             .unwrap()
             .complete()

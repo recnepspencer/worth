@@ -1,3 +1,5 @@
+use crate::workflow_request::workflow_request;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{certification, domain};
 
 use super::installed_operation_fixture::{lineage_workflow_workspace, LineageEvidenceScenario};
@@ -17,7 +19,11 @@ fn certification_replay_compares_full_lineage_output_and_stage_evidence_semantic
             &workspace,
         )
         .unwrap()
-        .reexecute(super::operation_lineage::intent(), &mut workspace)
+        .reexecute(
+            super::operation_lineage::intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let replay = certification::replay_installed_workflow(
         certification::issue_query_certification_replay_capability(),
@@ -26,6 +32,7 @@ fn certification_replay_compares_full_lineage_output_and_stage_evidence_semantic
         super::operation_lineage::intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     let original_closure = original.semantic_aspect_dependency_closure().unwrap();

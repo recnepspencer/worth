@@ -1,4 +1,6 @@
 use super::*;
+use crate::workflow_request::workflow_request;
+use worth_query::facade::runtime::ExecutionRequest;
 
 #[test]
 fn completed_workflow_closure_retains_declared_and_realized_roles_at_exact_d_cost() {
@@ -21,6 +23,7 @@ fn completed_workflow_closure_retains_declared_and_realized_roles_at_exact_d_cos
             "mutate",
             domain::WorthQueryWorkflowValue::Text("commit".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .complete()
@@ -107,7 +110,11 @@ fn certification_replay_preserves_the_compiled_workflow_closure() {
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let original_closure = original.semantic_aspect_dependency_closure().unwrap();
 
@@ -118,6 +125,7 @@ fn certification_replay_preserves_the_compiled_workflow_closure() {
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     assert_eq!(

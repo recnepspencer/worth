@@ -2,6 +2,8 @@ use super::installed_operation_fixture::{
     artifact_move_workspace, bind_artifact_workflow, move_intent, ArtifactNativeObservation,
     ArtifactNativeSuccess,
 };
+use crate::workflow_request::workflow_request;
+use worth_query::facade::runtime::ExecutionRequest;
 
 const ROWS: usize = 32;
 const TWO_FIELD_BYTES: usize = ROWS * 16;
@@ -88,7 +90,11 @@ fn execute(mode: &str) -> ArtifactNativeSuccess {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent(mode), &mut workspace)
+        .reexecute(
+            move_intent(mode),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let observations = probe.take_native_observations();
     assert_eq!(observations.len(), 1);

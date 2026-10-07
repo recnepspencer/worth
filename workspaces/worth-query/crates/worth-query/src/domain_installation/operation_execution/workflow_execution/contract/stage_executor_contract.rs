@@ -7,6 +7,10 @@ use super::{
 mod application;
 #[path = "stage_computation.rs"]
 pub(in crate::domain_installation::operation_execution) mod computation;
+#[path = "computation_declaration.rs"]
+mod computation_declaration;
+#[path = "computation_storage.rs"]
+mod computation_storage;
 #[path = "stage_preparation.rs"]
 mod preparation;
 
@@ -253,13 +257,26 @@ impl WorthQueryWorkflowStageExecutorFailure {
 /// Workspace-bound executors implement only `apply`; both inert phases default.
 /// Prepare and compute must be pure functions of their given values: no clock,
 /// static or global state, environment, interior-mutable state shared with the
-/// owner or another member, or effects. Their types remove the executor, context,
-/// and workspace, but cannot remove ambient state. Violating this obligation
+/// owner or another member, or effects. Their types remove the executor, stage
+/// execution context, and workspace; the meter exposes checkpoints only. They
+/// cannot remove ambient state. Violating this obligation
 /// makes results depend on execution order and worker count.
 /// Preparation stops at the first canonical preparation failure. Later members
 /// are neither prepared nor computed; earlier members compute exactly once.
 /// Application runs the canonical prefix through the least failure across all
 /// phases, preserving a failing application's partial owner effects.
+/// The map charges the canonical compute prefix through its least failure.
+/// A later owner-side apply failure does not refund computation already settled.
+/// Under sufficient memory, worker width changes neither results nor charged
+/// work when interruption is absent or already present at dispatch. Equality
+/// excludes cancellation arriving during compute, deadlines arriving during
+/// compute, and marginal memory admission. During interruption, application is
+/// a canonical prefix with serial-equivalent receipts and effects; the boundary
+/// is at or before the interrupting member, the cause stays cancellation or
+/// deadline, and the map charges its canonical prefix through that boundary.
+/// Real computation must checkpoint its meter; identity compute charges nothing.
+/// Compute must not start nested work at any posture, including bounded serial:
+/// the meter offers no descendant door. A nested stop is a contract failure.
 ///
 /// The combined execution method no longer exists:
 /// ```
@@ -333,7 +350,10 @@ pub trait WorthQueryDomainWorkflowStageExecutor<D, O, F>: Send + Sync + 'static 
         Ok(view.task(WorthQueryWorkflowStageComputePayload::Empty))
     }
 
-    fn compute(task: WorthQueryWorkflowStageTask) -> WorthQueryWorkflowStageComputed {
+    fn compute(
+        task: WorthQueryWorkflowStageTask,
+        _meter: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> WorthQueryWorkflowStageComputed {
         task.pass_through()
     }
 

@@ -1,3 +1,5 @@
+use crate::workflow_request::workflow_request;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{certification, domain};
 
 use super::installed_operation_fixture::{lineage_workflow_workspace, LineageEvidenceScenario};
@@ -20,6 +22,7 @@ fn certification_replay_reexecutes_the_same_lineage_semantics() {
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
 

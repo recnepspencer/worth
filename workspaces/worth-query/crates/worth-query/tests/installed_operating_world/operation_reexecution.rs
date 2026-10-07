@@ -1,5 +1,7 @@
+use crate::workflow_request::workflow_request;
 use worth_foundational::FoundationalBoundaryEvidenceContinuityAttachmentScope;
 use worth_proof::TransitionOutcome;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{certification, domain, foundation};
 
 use super::installed_operation_fixture::{
@@ -28,7 +30,11 @@ fn ordinary_reexecution_uses_installed_intent_and_mints_a_distinct_run() {
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let replay_bound = bind(&workspace);
     let reexecuted = replay_bound
@@ -37,7 +43,11 @@ fn ordinary_reexecution_uses_installed_intent_and_mints_a_distinct_run() {
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
 
     assert_ne!(original.identity(), reexecuted.identity());
@@ -66,7 +76,11 @@ fn certification_replay_is_trace_bound_and_denies_foreign_basis_before_execution
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let replay = certification::replay_installed_workflow(
         certification::issue_query_certification_replay_capability(),
@@ -75,6 +89,7 @@ fn certification_replay_is_trace_bound_and_denies_foreign_basis_before_execution
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     assert_eq!(
@@ -115,6 +130,7 @@ fn certification_replay_is_trace_bound_and_denies_foreign_basis_before_execution
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     );
     assert!(matches!(
         denial,
@@ -163,7 +179,11 @@ fn certification_replay_localizes_realized_conditional_path_drift() {
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let replay = certification::replay_installed_workflow(
         certification::issue_query_certification_replay_capability(),
@@ -172,6 +192,7 @@ fn certification_replay_localizes_realized_conditional_path_drift() {
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     );
     assert!(matches!(
         replay,
@@ -193,7 +214,11 @@ fn historical_replay_resolves_owner_evidence_for_the_exact_basis_pair() {
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let historical_bound = bind(&workspace);
     let admission = certification::admit_installed_historical_replay_basis(
@@ -218,6 +243,7 @@ fn historical_replay_resolves_owner_evidence_for_the_exact_basis_pair() {
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     assert_eq!(
@@ -242,7 +268,11 @@ fn historical_replay_refuses_to_simulate_an_unowned_reconstruction_path() {
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let bound = bind(&workspace);
 
@@ -274,7 +304,11 @@ fn historical_replay_denies_when_the_retained_execution_substrate_has_drifted() 
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let replay_bound = bind(&workspace);
     let admission = certification::admit_installed_historical_replay_basis(
@@ -298,50 +332,13 @@ fn historical_replay_denies_when_the_retained_execution_substrate_has_drifted() 
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     );
     assert!(matches!(
         denied,
         TransitionOutcome::Denied(certification::WorthQueryCertificationReplayStop::Admission(
             certification::WorthQueryCertificationReplayAdmissionDenial::HistoricalExecutionBasisDrift
         ))
-    ));
-}
-
-#[test]
-fn retry_requires_installed_idempotence_and_never_reuses_attempt_identity() {
-    let mut workspace = workflow_workspace("idempotent-stage-retry").unwrap();
-    let run = bind(&workspace)
-        .admit_workflow_resources(
-            crate::suite::installed_operation_fixture::execution_resource_request(),
-            &workspace,
-        )
-        .unwrap()
-        .start_workflow(&mut workspace)
-        .unwrap()
-        .advance(
-            "start",
-            domain::WorthQueryWorkflowValue::NotRequired,
-            &mut workspace,
-        )
-        .unwrap();
-    let first = run
-        .prepare_stage_attempt(
-            "left",
-            domain::WorthQueryWorkflowIntentValue::Text("fail-dependency".into()),
-        )
-        .unwrap();
-    let first_identity = first.identity().to_owned();
-    let failure = match first.execute(&mut workspace) {
-        domain::WorthQueryWorkflowStageAttemptOutcome::Retryable(failure) => failure,
-        _ => panic!("effect-free declared executor failure was not retryable"),
-    };
-    assert_eq!(failure.failed_attempt_identity(), first_identity);
-    assert!(failure.denial().executed_effects().is_empty());
-    let second = failure.retry();
-    assert_ne!(second.identity(), first_identity);
-    assert!(matches!(
-        second.execute(&mut workspace),
-        domain::WorthQueryWorkflowStageAttemptOutcome::Retryable(_)
     ));
 }
 
@@ -372,3 +369,5 @@ fn bind(
         .bind(&installed, WorkflowRead)
         .unwrap()
 }
+
+mod stage_retry;

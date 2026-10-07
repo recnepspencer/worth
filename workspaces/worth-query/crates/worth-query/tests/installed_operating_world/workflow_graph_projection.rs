@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use worth_query::facade::domain;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use super::installed_operation_fixture::{
     workflow_graph_projection_workspace, GeometryDomain, ReadFamily, WorkflowRead,
@@ -26,24 +28,28 @@ fn workflow_executor_consumes_execution_bound_separate_graph_projection() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let trace = run.complete().unwrap();

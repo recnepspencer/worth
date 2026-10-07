@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use worth_query::facade::domain;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use super::installed_operation_fixture::{
     provisional_workflow_workspace, GeometryDomain, ProvisionalDiscardFamily, ProvisionalWorkflow,
@@ -29,7 +31,11 @@ fn provisional_discard_consumes_only_an_effect_free_provisional_trace() {
             &workspace,
         )
         .unwrap()
-        .reexecute(discard_intent("discard"), &mut workspace)
+        .reexecute(
+            discard_intent("discard"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let trace_identity = trace.identity().to_owned();
     let discarded = trace.discard_provisional().unwrap();

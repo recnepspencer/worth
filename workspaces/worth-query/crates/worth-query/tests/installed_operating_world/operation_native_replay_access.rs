@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use worth_foundational::facade::{FieldKey, InternedString};
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{certification, domain, foundation};
 
 use super::installed_operation_fixture::{
@@ -18,7 +20,11 @@ fn ordinary_publication_consumption_converges_without_receiving_replay_authority
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let replay_bound = bind(&workspace);
     let replay = certification::replay_installed_workflow(
@@ -28,6 +34,7 @@ fn ordinary_publication_consumption_converges_without_receiving_replay_authority
         intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     let ordinary_bound = bind(&workspace);
@@ -39,7 +46,11 @@ fn ordinary_publication_consumption_converges_without_receiving_replay_authority
             &workspace,
         )
         .unwrap()
-        .reexecute(intent(), &mut workspace)
+        .reexecute(
+            intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     assert_eq!(
         domain::compare_exact_workflow_traces(

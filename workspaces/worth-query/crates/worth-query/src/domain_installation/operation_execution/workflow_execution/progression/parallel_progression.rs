@@ -16,12 +16,26 @@ use super::{
 };
 
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
+    /// Every entry carries its caller's execution request.
+    /// ```
+    /// use worth_query::facade::{domain::{WorthQueryWorkflowRun, WorthQueryWorkflowValue}, foundation::MutationPreparationLaneWitness, runtime::{WorthQueryWorkspace, ExecutionRequest}};
+    /// fn enter(run: WorthQueryWorkflowRun<(), (), (), MutationPreparationLaneWitness>, workspace: &mut WorthQueryWorkspace, request: ExecutionRequest<'_, '_>) {
+    ///     let _ = run.advance_admitted_frontier(Vec::<(String, WorthQueryWorkflowValue)>::new(), workspace , request);
+    /// }
+    /// ```
+    /// ```compile_fail
+    /// use worth_query::facade::{domain::{WorthQueryWorkflowRun, WorthQueryWorkflowValue}, foundation::MutationPreparationLaneWitness, runtime::{WorthQueryWorkspace, ExecutionRequest}};
+    /// fn enter(run: WorthQueryWorkflowRun<(), (), (), MutationPreparationLaneWitness>, workspace: &mut WorthQueryWorkspace, request: ExecutionRequest<'_, '_>) {
+    ///     let _ = run.advance_admitted_frontier(Vec::<(String, WorthQueryWorkflowValue)>::new(), workspace);
+    /// }
+    /// ```
     pub fn advance_admitted_frontier(
         mut self,
         stages: impl IntoIterator<Item = (String, WorthQueryWorkflowValue)>,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> super::workflow_progression::WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        match self.advance_frontier_once(stages, workspace) {
+        match self.advance_frontier_once(stages, workspace, request) {
             Ok(WorthQueryWorkflowAdvanceStep::Advanced) => TransitionOutcome::Success(self),
             Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional)) => {
                 TransitionOutcome::Deferred(
@@ -39,12 +53,13 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         &mut self,
         stages: impl IntoIterator<Item = (String, WorthQueryWorkflowValue)>,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let stages = self.canonical_parallel_stages(stages)?;
         self.validate_parallel_runtime_authority(workspace)?;
         let frontier = self.prepare_parallel_frontier(&stages)?;
         self.admit_parallel_frontier(frontier)?;
-        self.execute_parallel_stages(stages, workspace)
+        self.execute_parallel_stages(stages, workspace, request)
     }
 
     fn canonical_parallel_stages(
@@ -171,6 +186,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         let provider = match &self.parallel_posture {
             crate::domain_installation::operating_world::WorthQueryBoundWorkflowParallelPosture::Parallel(provider) => provider,
             crate::domain_installation::operating_world::WorthQueryBoundWorkflowParallelPosture::Sequential => {
+                // Installation seals a provider whenever the DAG has a parallel frontier.
                 unreachable!("an admitted parallel frontier carries its installed provider")
             }
         };
@@ -197,9 +213,10 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         &mut self,
         stages: Vec<(String, WorthQueryWorkflowValue)>,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let prepared = self.prepare_frontier_computation(stages);
-        let step = prepared.compute().apply(self, workspace, None)?;
+        let step = prepared.compute(request).apply(self, workspace, None)?;
         self.active_parallel_admission = None;
         Ok(step)
     }

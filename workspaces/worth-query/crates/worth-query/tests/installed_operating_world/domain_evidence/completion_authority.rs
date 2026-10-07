@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use worth_query::facade::installed::operation::WorthQueryAdmittedDirectOperation;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{domain, foundation, runtime};
 
 mod occurrence_oracle;
@@ -127,7 +129,11 @@ fn execute_workflow_completion(
         .unwrap()
         .admit_workflow_resources(execution_resource_request(), workspace)
         .unwrap()
-        .reexecute(evidence_workflow_intent(), workspace)
+        .reexecute(
+            evidence_workflow_intent(),
+            workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let receipt = trace
         .stage_receipts()

@@ -102,6 +102,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
     pub fn execute(
         mut self,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryWorkflowStageAttemptOutcome<D, O, F, L> {
         match self.run.advance_once(
             &self.stage_identity,
@@ -109,6 +110,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
                 .runtime_value()
                 .expect("stage-attempt preparation rejected managed artifact intent"),
             workspace,
+            request,
         ) {
             Ok(WorthQueryWorkflowAdvanceStep::Advanced) => {
                 WorthQueryWorkflowStageAttemptOutcome::Success(self.run)

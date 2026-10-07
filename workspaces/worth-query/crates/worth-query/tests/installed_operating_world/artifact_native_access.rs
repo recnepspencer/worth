@@ -1,6 +1,8 @@
+use crate::workflow_request::workflow_request;
 use worth_foundational::facade::CanonicalF64;
 use worth_proof::TransitionOutcome;
 use worth_query::facade::domain;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use super::installed_operation_fixture::{
     artifact_move_workspace, bind_artifact_workflow, move_intent, ArtifactNativeDenial,
@@ -19,7 +21,11 @@ fn bulk_and_scalar_lanes_preserve_semantics_basis_and_distinct_physical_work() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("native-bulk"), &mut workspace)
+        .reexecute(
+            move_intent("native-bulk"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
@@ -27,7 +33,11 @@ fn bulk_and_scalar_lanes_preserve_semantics_basis_and_distinct_physical_work() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("native-scalar"), &mut workspace)
+        .reexecute(
+            move_intent("native-scalar"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let observations = successes(&probe, 2);
     let bulk = &observations[0];
@@ -131,7 +141,11 @@ fn projection_chunk_width_controls_actual_allocated_capacity() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("native-projection-small"), &mut workspace)
+        .reexecute(
+            move_intent("native-projection-small"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
@@ -139,7 +153,11 @@ fn projection_chunk_width_controls_actual_allocated_capacity() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("native-projection-wide"), &mut workspace)
+        .reexecute(
+            move_intent("native-projection-wide"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let observations = successes(&probe, 2);
     let small = &observations[0];
@@ -291,26 +309,6 @@ fn layout_bounds_session_and_progress_denials_stop_at_the_responsible_boundary()
     }
 }
 
-#[test]
-fn native_provider_panic_unwinds_and_disposes_the_managed_artifact_once() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-native-provider-panic").unwrap();
-    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = bind_artifact_workflow(&workspace)
-            .admit_workflow_resources(
-                crate::suite::installed_operation_fixture::execution_resource_request(),
-                &workspace,
-            )
-            .unwrap()
-            .reexecute(move_intent("native-provider-panic"), &mut workspace);
-    }));
-
-    assert!(unwind.is_err());
-    assert_eq!(probe.allocations(), 1);
-    assert_eq!(probe.native_row_batches(), 1);
-    assert_eq!(probe.borrow_observations(), 0);
-    assert_eq!(probe.disposals(), 1);
-}
-
 fn run_success(mode: &str) -> (ArtifactProbe, ArtifactNativeSuccess) {
     let (mut workspace, probe) = artifact_move_workspace(&format!("artifact-{mode}")).unwrap();
     bind_artifact_workflow(&workspace)
@@ -319,7 +317,11 @@ fn run_success(mode: &str) -> (ArtifactProbe, ArtifactNativeSuccess) {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent(mode), &mut workspace)
+        .reexecute(
+            move_intent(mode),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     let mut observations = successes(&probe, 1);
     let success = observations.remove(0);
@@ -336,7 +338,11 @@ fn run_denial(mode: &str) -> (ArtifactProbe, ArtifactNativeDenial) {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent(mode), &mut workspace);
+        .reexecute(
+            move_intent(mode),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
     assert!(matches!(
         outcome,
         TransitionOutcome::Denied(_) | TransitionOutcome::Failed(_)
@@ -373,3 +379,5 @@ fn assert_candidates(values: &ArtifactNativeValues) {
         assert_eq!(candidate.score(), 0.25 + row as f64 * 0.5);
     }
 }
+
+mod panic_disposal;
