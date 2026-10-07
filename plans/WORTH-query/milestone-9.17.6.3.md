@@ -2678,7 +2678,9 @@ The next phase may trust that partition-granular reuse is exact.
     Purity of prepare and compute is a stated contract. *Completed.*
   - The compute steps of a frontier dispatch through the owned map under the
     request lease, charged by the map's law, with each stop cause distinct.
-    The serial loop is deleted.
+    The serial loop is deleted. Results are equal at every worker count
+    for an interruption present at dispatch; one that arrives while
+    members compute keeps prefix safety instead. *Completed.*
 - **7.6** Query passes the request lease from `advance` into Bridge, Relational
   and Signal. No Query seam runs without a lease; serial posture is a lease
   with a serial backing.
