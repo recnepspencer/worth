@@ -2553,38 +2553,120 @@ The next phase may trust that the touched graph alone decides what recomputes.
   - An expired equality chain fully compares its terminal's source facts and
     inherited registered output facts through the direct-row comparison
     primitive, then re-establishes it or reports Changed.
-- **6.9** Retain the canonical tree in Query with eviction and branch sharing, and apply
-  encoding cutoff per partition. *Partly completed:* the tree is retained under
-  the lineage ledger and a recomputed partition with the same canonical bits
-  replaces nothing.
-- **6.10** A neutral application proves the isolation and reuse courtroom with operation
-  counts.
+- **6.9** Why a run has no prior is a typed cause, and an input cutoff hands the
+  retained state on.
+  - The record's computation slot is either retained state or one named
+    absence, carried from completion to publication. No site stores "none"
+    and computes the reason elsewhere. `Evicted` and `NoPriorRecord` are
+    split so that each name has one cause.
+  - An input-cutoff alias takes over the origin's retained state and its
+    charge, so an edit, a no-op and a second edit reuse at the third step.
+    Stale evidence is never handed on as Current.
+  - A seeded differential between reuse on and reuse off enumerates every
+    input, including code and absence.
+- **6.10** Report the tree work that ran, apart from the charge.
+  - Charged work stays the full-build count. Every exit of a tree update
+    (completed, denied, interrupted, rebuilt) yields one report holding
+    every attempt's metrics; an exit that omits them does not compile.
+  - Partition execution and tree execution are separate dimensions of the
+    report.
+  - The test's reducer counts its own combines, and reported work must
+    reconcile with that count. An update recombines at most its root path
+    and stops at an unchanged aggregate; insert and delete recombine their
+    root path with no cutoff.
+- **6.11** A fork reuses its parent's retained state.
+  - In place already: the tree is retained under the lineage ledger with
+    eviction, and a recomputed partition with the same canonical bits
+    replaces nothing.
+  - A retained state and its reservation are one value behind one handle, so
+    no holder has the state without the charge.
+  - Custody is per state, not per node. Branches that share a state share
+    one charge. Diverged states are each charged in full, so nodes they
+    share are charged once per state: retained bytes charged are at most the
+    sum over distinct live states. This can refuse retention earlier than
+    exact accounting and can never leave data uncharged.
+  - A child's first run takes the parent's state as its prior through the
+    same comparator and basis checks as any other reuse.
+  - Two concurrent first writers of one branch cell both keep their
+    publication's marks, and a poisoned registration lock recovers the same
+    way at every acquisition.
+- **6.12** A neutral application proves the isolation and reuse courtroom. Every
+  step of a seeded sequence of edits and lifecycle events is judged twice:
+  for equivalence with reuse off (result bits, typed outcomes, charged work,
+  work boundary), and for exact call counts derived from the edit by code
+  that shares nothing with production.
 
 The next phase may trust that partition-granular reuse is exact.
 
 ### Phase 7: Parallel advancement and remaining Query lanes
 
-- Pass the request lease from `advance` into Bridge, Relational and Signal.
-  Lease carriage into Bridge, Relational and Signal keeps each cause distinct:
-  Relational's `CommitExecutionDenialKind` (`read_only_packets.rs:165`) and
-  `DerivedIndexExecutionDenialKind` (`build_execution.rs:250`) still fold
-  every lease denial into `ResourceExhausted`.
-- Run the `compute` steps of each dependency-ready wave concurrently under the
-  request lease, with nested partition work, and apply commits in canonical
-  order. Apply accepts only canonical order, by type.
-- Move the workflow frontier and derived-view reconstruction onto the
-  authority, and delete `ParallelAdmissionRoute` with its test-only executor.
-- Empty the ratchet list.
-- A neutral application and the Bank reference prove identical results, charged
-  work and commit order at one worker and many, and span strictly less than work
-  wherever independence exists.
+- **7.1** Relational keeps each execution denial cause distinct to its caller.
+  `CommitExecutionDenialKind` and `DerivedIndexExecutionDenialKind` carry
+  the cause; nothing folds a lease denial into `ResourceExhausted`. Query
+  converts a Relational cause in one exhaustive place, on commit, index
+  build and bootstrap.
+- **7.2** Delete `ParallelAdmissionRoute` with its test-only executor.
+  *Completed.*
+- **7.3** Bridge, Signal and World accept the request lease, and each cause
+  stays distinct to the crate's caller. A caller with no lease enters a
+  bounded serial scope by construction; a nested scope draws from its
+  parent. Each host declares its own named policy.
+- **7.4** Derived-view reconstruction runs as a leased map over unique roots in
+  canonical order, and its worker pool is deleted. A worker receives a
+  sealed prepared read; projection stays on the owner in entity order.
+  Empty the ratchet list.
+- **7.5** The workflow frontier runs on the authority.
+  - The execution map takes owned `Send` inputs through the one backend the
+    borrowed map uses, under every law of the borrowed map. *Completed.*
+  - A stage is three phases by type. Prepare sees only facts fixed before
+    the frontier starts. Compute is a closed inert task. Apply does every
+    read and effect on the owner, over the canonical prefix through the
+    least failure. A stage that computes on what it reads does so in apply.
+    Purity of prepare and compute is a stated contract. *Completed.*
+  - The compute steps of a frontier dispatch through the owned map under the
+    request lease, charged by the map's law, with each stop cause distinct.
+    The serial loop is deleted.
+- **7.6** Query passes the request lease from `advance` into Bridge, Relational
+  and Signal. No Query seam runs without a lease; serial posture is a lease
+  with a serial backing.
+  - The request opens before an advancement's first read and closes after
+    its final delivery. One carrier holds it for that whole scope, and a
+    seam cannot be entered without it.
+  - Relational's seams take it: query plan execution, index build and
+    commit.
+  - Bridge's, Signal's and World's seams take it.
+- **7.7** Run the `compute` steps of each dependency-ready wave concurrently
+  under the request lease, with nested partition work.
+  - A wave is admitted by the required-set owner against a basis: every
+    declared upstream of every member is committed in it.
+  - One lease covers every wave of one advancement; a member's nested work
+    descends from the member.
+  - Commits and publications apply in canonical key order, and apply accepts
+    only canonical order, by type. The least canonical failure is reported;
+    nothing after it is kept or charged.
+  - One execution report per advancement, a failed one included, lists its
+    commits and publications in order.
+  - A handler that does not compute needs no change.
+- **7.8** A neutral application and the Bank reference prove identical results,
+  charged work and commit order at one worker and many, and span strictly
+  less than work wherever independence exists.
+  - The expected-history model, the Bank journal model and the structural
+    cost calculator share nothing with production, and a serial harness
+    judges every history against them.
+  - The same harness then varies the worker count and wave order over the
+    full matrix and compares span with work.
 
 The next phase may trust that advancement exploits every declared independence.
 
 ### Phase 8: Documentation and closure
 
-- Update the public documentation listed below.
-- Run the complete certification and the mutation probes on x86-64 and wasm32.
+- **8.1** Update the public documentation listed below for the behavior that
+  is committed before Phase 7 closes. *Completed.*
+- **8.2** Complete the public documentation for partition-granular reuse,
+  parallel advancement and the workflow frontier; an independent review
+  checks every public statement against the code.
+- **8.3** Run the complete certification and the mutation probes on x86-64 and
+  wasm32.
 
 ## Verification, Review, And Documentation
 
