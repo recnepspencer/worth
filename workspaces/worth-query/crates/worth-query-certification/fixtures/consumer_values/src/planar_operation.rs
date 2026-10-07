@@ -36,6 +36,7 @@ pub enum PlanarOperation {
         replacement_target_key: String,
     },
     VerifyCurrentOutputs(Vec<PlanarCurrentOutputExpectation>),
+    VerifyFinalCurrentOutputs(Vec<PlanarCurrentOutputExpectation>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
