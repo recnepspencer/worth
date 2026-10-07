@@ -327,6 +327,7 @@ fn denial(
 }
 
 fn admission_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
+    crate::domain_computation::primary_graph::composed_output_diagnostics::required_stop(&stop);
     use CompanionPreflightStop as Stop;
     match stop {
         Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => work_denial(),

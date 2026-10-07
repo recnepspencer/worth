@@ -91,6 +91,7 @@ impl SettlementIndex {
         Ok((recorded.as_ref() == identity).then(|| Arc::clone(key)))
     }
 
+    #[track_caller]
     pub(super) fn fill_prepared(
         posting: &Posting,
         expected: &RecordedSettlementIdentity,
@@ -102,6 +103,11 @@ impl SettlementIndex {
             identity.as_ref(),
             "World performed the prepared exact settlement"
         );
+        let diagnostic = super::super::super::composed_output_diagnostics::event(
+            "publish-posting",
+            &identity,
+            Some(key.diagnostic_description()),
+        );
         assert!(
             posting
                 .lock()
@@ -110,8 +116,10 @@ impl SettlementIndex {
                 .is_none(),
             "one prepared settlement fills once"
         );
+        super::super::super::composed_output_diagnostics::record(diagnostic);
     }
 
+    #[track_caller]
     pub(super) fn remove(&mut self, identity: &RecordedSettlementIdentity) -> usize {
         let outer_before =
             tree_retained_bytes::<SemanticSource, SourcePostings>(self.sources.len())
@@ -125,7 +133,12 @@ impl SettlementIndex {
         let removed = source
             .remove(&identity.address())
             .expect("retained exact settlement address");
-        if let Some((recorded, _)) = removed
+        let mut diagnostic = super::super::super::composed_output_diagnostics::event(
+            "remove-vacancy",
+            identity,
+            None,
+        );
+        if let Some((recorded, key)) = removed
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .as_ref()
@@ -134,6 +147,11 @@ impl SettlementIndex {
                 recorded.as_ref(),
                 identity,
                 "compact posting address never replaces exact identity"
+            );
+            diagnostic = super::super::super::composed_output_diagnostics::event(
+                "remove-posting",
+                identity,
+                Some(key.diagnostic_description()),
             );
         }
         let inner_after = tree_retained_bytes::<Address, Posting>(source.len())
@@ -151,10 +169,12 @@ impl SettlementIndex {
             .and_then(|bytes| bytes.checked_add(size_of::<PendingVacancyCleanup>()))
             .unwrap();
         self.retained_bytes -= released;
+        super::super::super::composed_output_diagnostics::record(diagnostic);
         released
     }
 
     /// Point `identity`'s posting at `key`, the row that now answers for it.
+    #[track_caller]
     pub(super) fn repoint(
         &self,
         identity: &RecordedSettlementIdentity,
@@ -170,7 +190,13 @@ impl SettlementIndex {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some((recorded, answering)) = held.as_mut() {
             if recorded.as_ref() == identity {
+                let diagnostic = super::super::super::composed_output_diagnostics::event(
+                    "repoint-posting",
+                    identity,
+                    Some(key.diagnostic_description()),
+                );
                 *answering = key;
+                super::super::super::composed_output_diagnostics::record(diagnostic);
             }
         }
     }

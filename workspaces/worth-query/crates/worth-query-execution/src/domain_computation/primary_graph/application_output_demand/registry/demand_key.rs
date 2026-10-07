@@ -16,6 +16,18 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKe
 }
 
 impl WorthQueryOutputDemandKey {
+    pub(in crate::domain_computation::primary_graph) fn diagnostic_description(
+        &self,
+    ) -> crate::domain_computation::primary_graph::composed_output_diagnostics::DemandDescription
+    {
+        crate::domain_computation::primary_graph::composed_output_diagnostics::DemandDescription {
+            family: self.family,
+            source: self.source.runtime_idempotency_identity(),
+            generation: self.source.observation_generation(),
+            lifecycle: self.applicability.lifecycle() as u8,
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn new(
         family: TypeId,
         producer: String,

@@ -36,6 +36,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClai
 }
 
 impl RequiredOutputDemandContext {
+    #[track_caller]
     pub(in crate::domain_computation::primary_graph) fn prepare_prerequisites<'a>(
         self,
         inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
@@ -98,6 +99,7 @@ impl RequiredOutputDemandContext {
             source_owner,
             admission,
             &mut predecessors,
+            std::panic::Location::caller(),
         )?;
         let maximum_key_work = predecessors
             .iter()

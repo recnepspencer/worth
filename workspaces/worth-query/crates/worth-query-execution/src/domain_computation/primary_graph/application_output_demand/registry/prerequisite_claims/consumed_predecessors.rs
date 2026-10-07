@@ -16,6 +16,7 @@ pub(super) fn select<'a>(
     owner: &SourceInvalidationOwner,
     admission: &mut InvalidationEditAdmission,
     predecessors: &mut Vec<Arc<WorthQueryOutputDemandKey>>,
+    publication: &'static std::panic::Location<'static>,
 ) -> Result<Option<CheckpointPrerequisiteClaims>, WorthQueryOutputDemandDenial> {
     let maximum = inputs.len();
     let mut checkpoint_predecessors = None;
@@ -29,15 +30,25 @@ pub(super) fn select<'a>(
             // nevertheless have verified this exact root and sealed its witness.
             // Retain only that static settlement; never synthesize a source key.
             let verified = consumed.claim_verified_checkpoint_root(owner, admission)
-                .map_err(|stop| match stop {
+                .map_err(|stop| {
+                    crate::domain_computation::primary_graph::composed_output_diagnostics::missing(
+                        consumed.identity(), downstream.diagnostic_description(), publication,
+                    );
+                    match stop {
                     crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => match stop {
                         worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
                         | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => prerequisite_denials::work_denial(),
                         _ => prerequisite_denials::capacity_denial(),
                     },
                     _ => prerequisite_denials::stale_upstream_denial(),
+                    }
                 })?;
             if !verified {
+                crate::domain_computation::primary_graph::composed_output_diagnostics::missing(
+                    consumed.identity(),
+                    downstream.diagnostic_description(),
+                    publication,
+                );
                 return Err(prerequisite_denials::stale_upstream_denial());
             }
             if checkpoint_predecessors.is_none() {

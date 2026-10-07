@@ -292,7 +292,9 @@ impl IndexAdmission for InvalidationEditAdmission {
 
     fn bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
         let maximum = self.budget.maximum_preparation_bytes;
-        self.with_totals_mut(|totals| {
+        let mut current = 0;
+        let result = self.with_totals_mut(|totals| {
+            current = totals.bytes;
             let required = totals
                 .bytes
                 .checked_add(bytes)
@@ -305,7 +307,13 @@ impl IndexAdmission for InvalidationEditAdmission {
             }
             totals.bytes = required;
             Ok(())
-        })
+        });
+        if let Err(stop) = &result {
+            crate::domain_computation::primary_graph::composed_output_diagnostics::preparation_denied(
+                stop, current, bytes, maximum,
+            );
+        }
+        result
     }
 }
 

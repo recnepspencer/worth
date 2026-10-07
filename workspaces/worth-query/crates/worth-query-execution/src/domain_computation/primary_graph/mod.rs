@@ -22,6 +22,7 @@ mod authenticated_principal;
 mod authentication_clock;
 mod bootstrap;
 mod bootstrap_publication;
+mod composed_output_diagnostics;
 mod conditional_operation;
 pub(crate) use conditional_operation::classify_bridge_signal;
 mod denial;
