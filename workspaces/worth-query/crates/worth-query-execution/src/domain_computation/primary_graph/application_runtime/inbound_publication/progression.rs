@@ -1,5 +1,7 @@
+use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
@@ -83,12 +85,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         cost.cost
             .completion_candidate_prepares
             .fetch_add(1, Ordering::Relaxed);
-        let candidate = match self
-            .primary_provider
-            .prepare_inbound_completion_candidate(lease.relational_basis(), &accepted)
-        {
+        let candidate = match completion_candidate(
+            self.primary_provider
+                .prepare_inbound_completion_candidate(lease.relational_basis(), &accepted),
+        ) {
             Ok(candidate) => candidate,
-            Err(_) => return Outcome::Denied(Denial::CompletionPreparation),
+            Err(outcome) => return outcome,
         };
         let binding = lease.publication_binding();
         let recovery = binding.recovery();
@@ -136,5 +138,28 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         }
+    }
+}
+
+// Both entry routes keep HEAD's preparation-refusal posture. The complete
+// refusal travels with the publication outcome rather than becoming a string.
+pub(in crate::domain_computation::primary_graph) fn completion_candidate(
+    result: Result<PreparedRelationalCommitCandidate, Preparation>,
+) -> Result<PreparedRelationalCommitCandidate, Outcome> {
+    match result {
+        Ok(candidate) => Ok(candidate),
+        Err(
+            denial @ (Preparation::ExecutionDenied { .. }
+            | Preparation::ExecutionControlStopped { .. }
+            | Preparation::OriginalOutboxNotAnEntity
+            | Preparation::ForeignOrStaleBasis
+            | Preparation::StagingUnavailable
+            | Preparation::ValidationUnavailable
+            | Preparation::PreparationUnavailable
+            | Preparation::SnapshotUnavailable
+            | Preparation::IndexPreparationUnavailable
+            | Preparation::InstalledBindingMismatch
+            | Preparation::DispatchOwnerMismatch),
+        ) => Err(Outcome::Denied(Denial::CompletionPreparation(denial))),
     }
 }

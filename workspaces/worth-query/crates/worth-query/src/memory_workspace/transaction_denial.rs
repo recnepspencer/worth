@@ -89,6 +89,20 @@ pub(super) fn commit(
         CommitPreparationReason, TransactionCommitError as Error,
     };
     let kind = match &error {
+        Error::Execution { denial, .. } => {
+            let translated = match denial.kind {
+                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
+                    worth_query_execution::facade::primary_graph::relational_execution_kind(
+                        cause,
+                        denial.partition_identity,
+                    )
+                }
+            };
+            match translated {
+                Ok(kind) => WorthQueryWorkspaceErrorKind::ExecutionDenied(kind),
+                Err(kind) => WorthQueryWorkspaceErrorKind::ExecutionControlStopped(kind),
+            }
+        }
         Error::PublicationDeferred { deferred, .. } => match deferred {
             Deferred::PatchPositionReservationContended => {
                 WorthQueryWorkspaceErrorKind::PatchPositionReservationContended
@@ -143,10 +157,36 @@ pub(super) fn commit(
         {
             WorthQueryWorkspaceErrorKind::ProposalIdentityExhausted
         }
-        _ => WorthQueryWorkspaceErrorKind::Unclassified,
+        Error::Preparation { .. }
+        | Error::Conflict { .. }
+        | Error::Publication { .. }
+        | Error::Interrupted { .. }
+        | Error::PublicationDenied { .. }
+        | Error::PerformedButDurabilityDeferred { .. } => {
+            WorthQueryWorkspaceErrorKind::Unclassified
+        }
     };
     WorthQueryWorkspaceError::with_kind(
         kind,
         format!("workspace commit denied: {}", error.detail()),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn leased_execution_is_typed_at_the_workspace_boundary() {
+        use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+        use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
+        let observed = commit(crate::relational_execution_refusal::work_exhausted());
+        assert_eq!(
+            observed.kind(),
+            WorthQueryWorkspaceErrorKind::ExecutionDenied(Kind::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: Some(1),
+                policy_ancestor: None,
+            })
+        );
+    }
 }

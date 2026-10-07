@@ -1,3 +1,7 @@
+#[path = "leased_preparation/declared_index_ceiling.rs"]
+mod leased_preparation_declared_index_ceiling;
+#[path = "leased_preparation/denial_causes.rs"]
+mod leased_preparation_denial_causes;
 #[path = "leased_preparation/index_budget.rs"]
 mod leased_preparation_index_budget;
 #[path = "../examples/support.rs"]
@@ -27,7 +31,8 @@ use worth_relational::facade::{
     symbols::ClientKey,
     transactions::{
         AspectFieldPatch, BulkEntityCreateIntent, CommitExecutionDenialKind, CreateIntent,
-        EntitySpec, MutationIntent, TransactionCommitError, WorkerIntentBatch,
+        EntitySpec, MutationIntent, RelationalExecutionDenialCause as Cause,
+        TransactionCommitError, WorkerIntentBatch,
     },
 };
 
@@ -122,7 +127,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
             match attempt(trial, validation_only) {
                 Ok(()) => admitted = trial,
                 Err(TransactionCommitError::Execution { denial, .. })
-                    if denial.kind == CommitExecutionDenialKind::WorkExhausted =>
+                    if denial.kind == CommitExecutionDenialKind::Cause(Cause::WorkExhausted) =>
                 {
                     denied = trial;
                 }
@@ -143,7 +148,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
         attempt(validation_work, false),
         Err(TransactionCommitError::Execution {
             denial: worth_relational::facade::transactions::CommitExecutionDenial {
-                kind: CommitExecutionDenialKind::WorkExhausted,
+                kind: CommitExecutionDenialKind::Cause(Cause::WorkExhausted),
                 ..
             },
             ..
@@ -200,7 +205,7 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         .build_for_commit_with_lease(request.clone(), &cancelled_lease);
     assert_eq!(
         stopped_index.execution_denial.map(|denial| denial.kind),
-        Some(DerivedIndexExecutionDenialKind::Cancelled)
+        Some(DerivedIndexExecutionDenialKind::Cause(Cause::Cancelled))
     );
     assert!(stopped_index.generations.is_empty());
     assert_eq!(
@@ -212,19 +217,29 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         latest_generation
     );
 
+    // A zero-memory, single-worker policy refuses the first reservation;
+    // packet construction and its scratch/result ceilings cannot run first.
+    let mut small_request = lease_request(0, CancellationToken::new());
+    small_request.policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Automatic,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(NonZeroUsize::MIN, 0, 1_000_000),
+    );
     let small_lease = authority
-        .request_lease(lease_request(256, CancellationToken::new()))
-        .expect("small lease is within authority cap");
+        .request_lease(small_request)
+        .expect("zero-memory policy is admitted");
     let exhausted_index = runtime
         .index_authority()
         .build_for_commit_with_lease(request, &small_lease);
-    assert!(matches!(
-        exhausted_index.execution_denial.map(|denial| denial.kind),
-        Some(
-            DerivedIndexExecutionDenialKind::ResourceExhausted
-                | DerivedIndexExecutionDenialKind::ResultCapacityExceeded
-        )
-    ));
+    let Some(DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
+        requested,
+        admitted: 0,
+        ancestor: 0,
+    })) = exhausted_index.execution_denial.map(|denial| denial.kind)
+    else {
+        panic!("the first reservation must be refused by this request's policy");
+    };
+    assert!(requested > 0);
     assert!(exhausted_index.generations.is_empty());
 
     let identity = runtime.main_branch_identity();
@@ -253,7 +268,7 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         error,
         TransactionCommitError::Execution {
             denial: worth_relational::facade::transactions::CommitExecutionDenial {
-                kind: CommitExecutionDenialKind::Cancelled,
+                kind: CommitExecutionDenialKind::Cause(Cause::Cancelled),
                 ..
             },
             ..
@@ -320,81 +335,4 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
     assert_eq!(serial.changed_records.len(), 64);
     assert_eq!(serial.changed_records, leased.changed_records);
     assert_eq!(serial.patch(), leased.patch());
-}
-
-#[test]
-fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
-    let _serial = TEST_SERIAL.lock().unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(support::demo_schema_registry())
-        .build();
-    let identity = runtime.main_branch_identity();
-    let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
-    let mut transaction = runtime
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .expect("admitted basis");
-    let client_keys = (0..128)
-        .map(|index| ClientKey::raw(format!("index-heavy-{index}")))
-        .collect();
-    let field_patches = (0..128)
-        .map(|index| {
-            AspectFieldPatch::from_locator(
-                support::aspect_field_locator("name"),
-                AspectValue::String(format!("index-heavy-{index}").into()),
-            )
-        })
-        .collect();
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("large-index-source").push(MutationIntent::Create(
-                CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_keys,
-                    field_patches,
-                }),
-            )),
-        )
-        .expect("bulk source stages");
-    let committed = runtime
-        .commit_branch_transaction(transaction)
-        .expect("source commits");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "large.index.name".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: support::aspect_field_locator("name"),
-        },
-        branch_scoped: true,
-    });
-    let request = DerivedIndexBuildRequest {
-        source_commit_id: committed.commit.commit_id,
-        branch_id: BranchId("main".to_owned()),
-        index_ids: vec![index.index_id],
-    };
-    let serial = runtime.index_authority().build_for_commit(request.clone());
-    assert!(serial.execution_denial.is_none());
-    let published = serial.generations[0].generation_id;
-    let lease = authority()
-        .request_lease(lease_request(64 * 1024, CancellationToken::new()))
-        .expect("tight lease is admitted");
-    let stopped = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request.clone(), &lease);
-    assert!(matches!(
-        stopped.execution_denial.map(|denial| denial.kind),
-        Some(
-            DerivedIndexExecutionDenialKind::ResourceExhausted
-                | DerivedIndexExecutionDenialKind::ResultCapacityExceeded
-        )
-    ));
-    assert!(stopped.generations.is_empty());
-    assert_eq!(
-        runtime
-            .index_access()
-            .latest_generation(index.index_id, &request.branch_id)
-            .expect("prior index remains")
-            .generation_id,
-        published
-    );
 }

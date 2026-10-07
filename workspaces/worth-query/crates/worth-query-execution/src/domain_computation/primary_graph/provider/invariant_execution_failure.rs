@@ -64,7 +64,7 @@ pub(super) fn map_transaction_staging_failure(
     )
 }
 
-pub(super) fn map_validation_failure(
+pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
     failure: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> WorthQueryInvariantExecutionFailure {
     use worth_relational::facade::mvcc::{
@@ -74,6 +74,25 @@ pub(super) fn map_validation_failure(
     use worth_relational::facade::transactions::CommitPreparationReason;
     use worth_relational::facade::transactions::ConflictClass;
     let kind = match failure {
+        Error::Execution { denial, .. } => {
+            let translated = match denial.kind {
+                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
+                    super::relational_execution_denial::relational_execution_kind(
+                        cause,
+                        denial.partition_identity,
+                    )
+                }
+            };
+            return WorthQueryInvariantExecutionFailure::new(
+                match translated {
+                    Ok(kind) => WorthQueryInvariantExecutionDenialKind::ExecutionDenied(kind),
+                    Err(kind) => {
+                        WorthQueryInvariantExecutionDenialKind::ExecutionControlStopped(kind)
+                    }
+                },
+                format!("{denial:?}"),
+            );
+        }
         Error::Conflict { error, .. } => {
             let relational_detail = error.detail();
             let ConflictClass::InvariantViolation { fields, detail, .. } = error.class else {
@@ -127,7 +146,11 @@ pub(super) fn map_validation_failure(
         {
             WorthQueryInvariantExecutionDenialKind::ProposalIdentityExhausted
         }
-        _ => return owner_failure(),
+        Error::Preparation { .. }
+        | Error::Publication { .. }
+        | Error::Interrupted { .. }
+        | Error::PublicationDenied { .. }
+        | Error::PerformedButDurabilityDeferred { .. } => return owner_failure(),
     };
     exhausted_failure(
         kind,

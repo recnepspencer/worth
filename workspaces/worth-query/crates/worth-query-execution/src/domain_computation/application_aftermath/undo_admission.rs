@@ -324,6 +324,36 @@ pub(crate) fn map_recovery_denial(
         K::Expired => WorthQueryUndoDenialKind::Stale,
         K::FreshAuthorityDenied => WorthQueryUndoDenialKind::CurrentPolicyDenied,
         K::ForeignRuntime | K::ForeignPrincipal => WorthQueryUndoDenialKind::ForeignHandle,
-        _ => WorthQueryUndoDenialKind::CorrectionNotAdmitted,
+        // This mapper is called by recovery-handle authority checks. Completion
+        // execution refusals arise only from external redispatch, never here.
+        K::RecoveryNotAdmitted
+        | K::RecoveryAlreadyMinted
+        | K::SchemaMismatch
+        | K::BranchMismatch
+        | K::ApplicationBindingGenerationMismatch
+        | K::OperationMismatch
+        | K::GovernedInputMismatch
+        | K::ForeignIdempotencyRead
+        | K::CorrelationMismatch
+        | K::CompatibilityGenerationMismatch
+        | K::ForeignBranchEqualOrdinal
+        | K::AlreadyCompleted
+        | K::CompletionPublicationPending
+        | K::CompletionExecutionDenied { .. }
+        | K::CompletionExecutionControlStopped { .. }
+        | K::TerminalIndexUnavailable
+        | K::DispatchOutboxMissing
+        | K::TransportNotInstalled
+        | K::DispatchOwnerReadDenied(_)
+        | K::AttemptAdmissionDenied(_)
+        | K::CanonicalDerivationDenied
+        | K::TimeObservationDenied
+        | K::CompensationNotAdmitted
+        | K::ReconciliationNotAdmitted
+        | K::AdmissionCancelled
+        | K::AdmissionDeadlineExceeded
+        | K::AdmissionAuthenticationExpired
+        | K::DisclosureAdmissionRequired
+        | K::UnresolvedExternalPosture => WorthQueryUndoDenialKind::CorrectionNotAdmitted,
     })
 }

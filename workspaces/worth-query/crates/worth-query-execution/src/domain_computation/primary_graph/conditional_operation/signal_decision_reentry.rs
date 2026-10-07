@@ -88,55 +88,10 @@ impl WorthQueryConditionalTruthBasis {
     }
 }
 
-pub(super) enum WorthQueryRetainedConditionalDecision {
-    OperationProductStale(
-        BridgeConditionalDecisionEvidence,
-        crate::domain_computation::WorthQueryProductStaleApplication,
-    ),
-    OperationNoEffect(
-        BridgeConditionalDecisionEvidence,
-        crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause,
-    ),
-    Eligible(BridgeConditionalDecisionEvidence),
-    Suppressed(BridgeConditionalDecisionEvidence),
-    Deferred(BridgeConditionalDecisionEvidence),
-    OperationRetryable(BridgeConditionalDecisionEvidence, String),
-    OperationBackpressured(
-        BridgeConditionalDecisionEvidence,
-        WorthQueryOperationBackpressureCause,
-    ),
-    OperationControlStopped(
-        BridgeConditionalDecisionEvidence,
-        super::application_operation_reentry::WorthQueryTemporalControlStop,
-    ),
-    OperationTerminalFailure(
-        BridgeConditionalDecisionEvidence,
-        super::application_operation_reentry::WorthQueryTemporalTerminalFailure,
-    ),
-    OperationSettlementDeferred(
-        BridgeConditionalDecisionEvidence,
-        crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
-    ),
-    OperationProductUnpublished(
-        BridgeConditionalDecisionEvidence,
-        crate::domain_computation::WorthQueryProductUnpublishedRecovery,
-    ),
-    OperationIndeterminate(BridgeConditionalDecisionEvidence, String),
-    OperationCommitted(BridgeConditionalDecisionEvidence),
-    OperationAlreadyCommitted(BridgeConditionalDecisionEvidence),
-    Failed(String),
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryOperationBackpressureCause {
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
-    RetentionCapacityExhausted,
-    ProviderCommit(
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind,
-    ),
-}
+mod retained_decision;
+pub(super) use retained_decision::{
+    WorthQueryOperationBackpressureCause, WorthQueryRetainedConditionalDecision,
+};
 
 pub(super) struct WorthQueryRetainedConditionalWake {
     pub(super) lifecycle_token: std::sync::Arc<()>,
@@ -208,6 +163,25 @@ pub(super) fn retained_decision_counts(
                 let _decision = evidence.signal().class();
                 let _custody = custody;
                 counts.failed += 1;
+            }
+            WorthQueryRetainedConditionalDecision::OperationExecutionControlRetryable(
+                evidence,
+                kind,
+            ) => {
+                let _ = (evidence, kind);
+                counts.failed += 1;
+            }
+            WorthQueryRetainedConditionalDecision::OperationCommitRetryable(evidence, kind) => {
+                let _ = (evidence, kind);
+                counts.failed += 1;
+            }
+            WorthQueryRetainedConditionalDecision::OperationSettlementExecutionDenied(
+                evidence,
+                deferred,
+                kind,
+            ) => {
+                let _ = (evidence, deferred, kind);
+                counts.deferred += 1;
             }
             WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, detail)
             | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, detail) => {

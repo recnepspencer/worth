@@ -109,7 +109,7 @@ pub enum WorthQueryApplicationCommitOutcome {
     /// The candidate's basis was stale at compare. Nothing was committed; re-read and
     /// retry.
     Stale(WorthQueryApplicationStaleAttempt),
-    /// The attempt was cancelled before it landed.
+    /// The attempt was canceled before it landed.
     Cancelled,
     /// The attempt reached its deadline before it landed.
     TimedOut,
@@ -135,7 +135,17 @@ impl WorthQueryApplicationCommitOutcome {
     pub fn require_committed(self) -> Result<super::WorthQueryApplicationCommitReceipt, Self> {
         match self {
             Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => Ok(receipt),
-            other => Err(other),
+            other @ (Self::ProductStale(_)
+            | Self::ProductUnpublished(_)
+            | Self::NoEffect(_)
+            | Self::Stale(_)
+            | Self::Cancelled
+            | Self::TimedOut
+            | Self::Denied(_)
+            | Self::Aborted
+            | Self::Deferred(_)
+            | Self::SettlementDeferred(_)
+            | Self::Indeterminate(_)) => Err(other),
         }
     }
 

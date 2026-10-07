@@ -17,3 +17,10 @@ pub(in crate::domain_computation) use outcome::{
     WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
     WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
 };
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use installed_transport::InstalledTransportPublicationOutcome;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use progression::completion_candidate as authenticated_completion_candidate;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use transport_progression::completion_candidate as transport_completion_candidate;

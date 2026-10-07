@@ -51,6 +51,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempote
     /// The key's first-encoding record matches every durable part of this
     /// intent but names its operation by a seal no later runtime can confirm.
     RecordedIntentUnverifiable,
+    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     Unavailable,
     /// The commit's evidence left the declared idempotency window.
     WindowExpired,
@@ -220,22 +221,48 @@ impl WorthQueryPrimaryGraphProvider {
 fn pending_publication_denial(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
     match failure.kind() {
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::ActiveSnapshotCapacityExhausted {
+        Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted => {
+        Kind::RetentionCapacityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted
         }
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted => {
+        Kind::RetentionIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted
         }
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted => {
+        Kind::SnapshotIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted
         }
-        _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+        kind @ (Kind::ExecutionResource { .. }
+        | Kind::ExecutionNestedPatternStopped { .. }
+        | Kind::ExecutionWorkerPanicked { .. }
+        | Kind::ExecutionIdentitiesNotCanonical { .. }
+        | Kind::ExecutionUncheckedCustomKernel { .. }) => {
+            WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(kind)
+        }
+        Kind::ForeignOperationAttempt
+        | Kind::ForeignExecutionBasis
+        | Kind::ForeignGraphAuthority
+        | Kind::UndeclaredOperationScope
+        | Kind::ResourceEnvelopeMismatch
+        | Kind::CandidateIdentityExhausted
+        | Kind::PreparedRootBudgetExhausted { .. }
+        | Kind::IndexMaintenanceBudgetExceeded
+        | Kind::IndexGenerationIdentityExhausted
+        | Kind::ProviderIdentityMismatch
+        | Kind::ProviderGenerationMismatch
+        | Kind::SessionProtocolUnsupported
+        | Kind::ProviderRejected
+        | Kind::ProviderPanicked
+        | Kind::TokenNotMintedForPlan
+        | Kind::EmptyPhysicalSessionIdentity
+        | Kind::SessionIdentityExhausted => {
+            WorthQueryProviderIdempotencyResolutionDenial::Unavailable
+        }
     }
 }
 

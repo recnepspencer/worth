@@ -13,6 +13,7 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
 
 mod history_read;
+mod preparation_denial;
 mod read;
 mod transport;
 pub(in crate::domain_computation::primary_graph) use read::{
@@ -22,6 +23,14 @@ pub(in crate::domain_computation::primary_graph) use read::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryInboundCompletionPreparationDenial {
+    ExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    ExecutionControlStopped {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
     OriginalOutboxNotAnEntity,
     ForeignOrStaleBasis,
     StagingUnavailable,
@@ -155,10 +164,10 @@ impl WorthQueryPrimaryGraphProvider {
                     .map_err(|_| Denial::StagingUnavailable)?;
                 let validated = transaction
                     .validate(runtime)
-                    .map_err(|_| Denial::ValidationUnavailable)?;
+                    .map_err(|error| preparation_denial::validation_denial(&error))?;
                 let mut candidate = runtime
                     .prepare_validated_proposal(validated)
-                    .map_err(|_| Denial::PreparationUnavailable)?;
+                    .map_err(|error| preparation_denial::preparation_denial(&error))?;
                 crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(
                     runtime, &mut candidate, &self.graph.primary_index_ids, &before,
                     crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
@@ -178,3 +187,9 @@ fn string(value: impl Into<String>) -> AspectValue {
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use preparation_denial::{
+    preparation_denial as completion_preparation_denial,
+    validation_denial as completion_validation_denial,
+};

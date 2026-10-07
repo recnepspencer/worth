@@ -1,8 +1,6 @@
 use std::mem::size_of;
 
-use worth_execution::{
-    ChargedBytes, ExecutionResourceLease, ExecutionScan, MapKernelFailure, ScanDenial, ScanOutcome,
-};
+use worth_execution::{ChargedBytes, ExecutionResourceLease, MapKernelFailure, ScanOutcome};
 use worth_foundational::PartitionIdentity;
 
 use super::packet_for_definition;
@@ -43,17 +41,7 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
     work_budget: &RequestWorkBudget,
 ) -> Result<PlannedIndexPackets, PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
-    let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).map_err(
-        |denial| {
-            PacketExecutionStop::Admission(match denial {
-                ScanDenial::IdentitiesNotCanonical => {
-                    worth_execution::MapDenial::ExpectedIdentitiesNotCanonical
-                }
-                ScanDenial::CoverageMismatch => worth_execution::MapDenial::CoverageMismatch,
-                ScanDenial::MemoryOverflow => worth_execution::MapDenial::MemoryOverflow,
-            })
-        },
-    )?;
+    let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
     let ceiling = lease.policy().budget().charged_memory_bytes() / 8;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,

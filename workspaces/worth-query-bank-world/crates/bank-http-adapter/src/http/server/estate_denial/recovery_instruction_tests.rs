@@ -139,6 +139,8 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         | Kind::ForeignBranchEqualOrdinal
         | Kind::AlreadyCompleted
         | Kind::CompletionPublicationPending
+        | Kind::CompletionExecutionDenied { .. }
+        | Kind::CompletionExecutionControlStopped { .. }
         | Kind::TerminalIndexUnavailable
         | Kind::DispatchOutboxMissing
         | Kind::TransportNotInstalled
@@ -186,6 +188,14 @@ fn every_kind() -> Vec<(Kind, Denial, Next)> {
         ),
         (Kind::UnresolvedExternalPosture, settling),
         (Kind::CompletionPublicationPending, settling),
+        (Kind::CompletionExecutionDenied {
+            stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+            kind: worth_query_host::facade::installed::provider_session::WorthQueryProviderSessionDenialKind::ExecutionWorkerPanicked { partition_identity: Some(1) },
+        }, settling),
+        (Kind::CompletionExecutionControlStopped {
+            stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+            kind: worth_query_host::facade::installed::provider_session::WorthQueryProviderSessionControlStopKind::Cancelled,
+        }, settling),
         (Kind::TerminalIndexUnavailable, settling),
         (Kind::TimeObservationDenied, settling),
         (

@@ -39,6 +39,12 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
     AlreadyCommitted,
     Obsolete,
     RetryableFailure(String),
+    RetryableCommitFailure(
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+    ),
+    RetryableExecutionControlStopped(
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    ),
     SnapshotCapacityBackpressured {
         maximum_active_snapshots: usize,
     },
@@ -65,6 +71,13 @@ pub(super) enum WorthQueryTemporalTerminalFailure {
     ApplicationCommit(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
     ),
+    ApplicationExecution {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        cause: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    },
     Admission(WorthQueryTemporalAdmissionTerminalFailure),
 }
 
@@ -270,3 +283,6 @@ where
         admission_canonical_work,
     }
 }
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use sealed_commit::assert_preparation_retry;

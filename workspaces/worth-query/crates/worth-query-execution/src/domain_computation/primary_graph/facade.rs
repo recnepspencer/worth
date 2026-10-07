@@ -336,3 +336,6 @@ pub use crate::domain_computation::{
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
     WorthQueryProductUnpublishedRecovery,
 };
+
+/// Exhaustive translation of a Relational execution refusal.
+pub use super::provider::relational_execution_denial::relational_execution_kind;

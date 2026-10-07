@@ -15,6 +15,8 @@ pub enum BankEstateIdempotencyResolutionDenial {
     SnapshotIdentityExhausted,
     IdempotencyWindowExpired,
     ProviderUnavailable,
+    /// Pending publication was refused by the execution owner.
+    ExecutionDenied(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     /// The key is recorded with the same intent and that commit took effect,
     /// but the runtime no longer holds its receipt, as after a restore.
     CommittedReceiptNotRetained,
@@ -41,6 +43,9 @@ fn from_kind(
     contributing_cause_count: usize,
 ) -> BankEstateIdempotencyResolutionDenial {
     match kind {
+        WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(kind) => {
+            BankEstateIdempotencyResolutionDenial::ExecutionDenied(kind)
+        }
         WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(kind) => {
             BankEstateIdempotencyResolutionDenial::Authorization(
                 crate::BankAuthorizationDenial::from_kind(kind, contributing_cause_count),

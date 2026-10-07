@@ -1,3 +1,4 @@
+mod validation_refusal;
 use crate::ordinary::workflow::{
     WorthQueryAdmittedWorkflowEffect, WorthQueryLoweredWorkflowPlan, WorthQueryWorkflowCounters,
 };
@@ -23,6 +24,12 @@ impl WorthQueryBranchMergeRequest {
         }
         let authority = match workspace.validate_ordinary_merge_authority(self.context.authority) {
             Ok(authority) => authority,
+            Err(WorthQueryMergeAuthorityValidationError::ExecutionDenied(kind)) => {
+                return validation_refusal::execution_denied(kind, counters);
+            }
+            Err(WorthQueryMergeAuthorityValidationError::ExecutionControlStopped(kind)) => {
+                return validation_refusal::control_stopped(kind, counters);
+            }
             Err(WorthQueryMergeAuthorityValidationError::ForeignOwner) => {
                 return WorthQueryBranchMergeOutcome::Stopped(WorthQueryBranchMergeStop::denied(
                     WorthQueryBranchMergeStopSource::ForeignAuthority,

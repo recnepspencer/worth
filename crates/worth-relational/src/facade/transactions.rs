@@ -1,5 +1,7 @@
 //! Transaction vocabulary exposed to Relational consumers.
 
+pub use crate::execution::RelationalExecutionDenialCause;
+
 pub use crate::transactions::data::{
     planned_aspect_field_locator, planned_single_field_locator, ApplyEntityAspectPatchIntent,
     ApplyRelationAspectPatchIntent, AspectEmissionTrace, AspectEvaluationTrace,

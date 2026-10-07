@@ -85,6 +85,14 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ProposalIdentityExhausted,
     /// Building an installed index was rejected.
     IndexBuildRejected,
+    /// The execution owner refused commit or index preparation; the cause and partition stay typed.
+    ExecutionDenied {
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    /// Commit or index preparation was canceled or exceeded its deadline before publication.
+    ExecutionControlStopped {
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
     /// Relational rejected the schema.
     RelationalSchemaRejected,
     /// The Relational runtime was already published.

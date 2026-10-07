@@ -53,6 +53,20 @@ pub enum WorthQueryConditionalExecutionTerminal {
 /// Why processing a due wake ended as it did, when a specific cause is known.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
+    /// The original execution refusal, whether retryable or terminal.
+    ApplicationCommitDenied(
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
+    ),
+    /// Execution evidence whose HEAD application category and stage are preserved.
+    ApplicationExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        cause: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    },
+    /// Settlement remains owed after this typed publication refusal.
+    SettlementExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The product branch head changed.
     ProductHeadChanged,
     /// The operation produced no effect for this reason.

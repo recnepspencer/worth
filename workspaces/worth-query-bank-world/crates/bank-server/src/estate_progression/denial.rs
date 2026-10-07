@@ -91,6 +91,16 @@ pub enum BankRecoveryDenialKind {
     ForeignBranchEqualOrdinal,
     AlreadyCompleted,
     CompletionPublicationPending,
+    /// Completion stays pending with the Query execution refusal intact.
+    CompletionExecutionDenied {
+        stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_query_host::facade::installed::provider_session::WorthQueryProviderSessionDenialKind,
+    },
+    /// Completion stays pending after the Query control stop.
+    CompletionExecutionControlStopped {
+        stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_query_host::facade::installed::provider_session::WorthQueryProviderSessionControlStopKind,
+    },
     TerminalIndexUnavailable,
     DispatchOutboxMissing,
     TransportNotInstalled,
@@ -141,6 +151,12 @@ impl BankRecoveryDenial {
             Query::ForeignBranchEqualOrdinal => Bank::ForeignBranchEqualOrdinal,
             Query::AlreadyCompleted => Bank::AlreadyCompleted,
             Query::CompletionPublicationPending => Bank::CompletionPublicationPending,
+            Query::CompletionExecutionDenied { stage, kind } => {
+                Bank::CompletionExecutionDenied { stage, kind }
+            }
+            Query::CompletionExecutionControlStopped { stage, kind } => {
+                Bank::CompletionExecutionControlStopped { stage, kind }
+            }
             Query::TerminalIndexUnavailable => Bank::TerminalIndexUnavailable,
             Query::DispatchOutboxMissing => Bank::DispatchOutboxMissing,
             Query::TransportNotInstalled => Bank::TransportNotInstalled,

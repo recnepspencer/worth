@@ -51,6 +51,18 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
         WorthQueryTemporalReentryOutcome::Obsolete => {
             retire_obsolete(bridge, clock, candidates, wake, identity, evidence, counts)
         }
+        WorthQueryTemporalReentryOutcome::RetryableCommitFailure(kind) => {
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationCommitRetryable(evidence, kind);
+            counts.failed += 1;
+        }
+        WorthQueryTemporalReentryOutcome::RetryableExecutionControlStopped(kind) => {
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationExecutionControlRetryable(
+                    evidence, kind,
+                );
+            counts.failed += 1;
+        }
         WorthQueryTemporalReentryOutcome::RetryableFailure(detail) => {
             wake.decision =
                 WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, detail);

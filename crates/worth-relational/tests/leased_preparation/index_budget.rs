@@ -33,7 +33,9 @@ pub(super) fn assert_prep_and_map_share_work(
         .build_for_commit_with_lease(request.clone(), &one_step_lease);
     assert_eq!(
         stopped.execution_denial.map(|denial| denial.kind),
-        Some(DerivedIndexExecutionDenialKind::WorkExhausted),
+        Some(DerivedIndexExecutionDenialKind::Cause(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted
+        )),
     );
     assert!(stopped.generations.is_empty());
 }

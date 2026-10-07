@@ -8,13 +8,7 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 
-#[derive(Debug)]
-pub(super) enum DenialCause {
-    CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
-    /// The request's own authorization stopped the commit: its security
-    /// basis on the branch, or what it may do there.
-    RequestAuthority(WorthQueryOperationAuthorizationDenialKind),
-}
+use super::denial_cause::DenialCause;
 
 impl WorthQueryApplicationCommitDenial {
     /// The request was refused authorization at `stage`. The refusal is the
@@ -37,7 +31,7 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Option<WorthQueryOperationAuthorizationDenialKind> {
         match &self.cause {
             Some(DenialCause::RequestAuthority(kind)) => Some(*kind),
-            _ => None,
+            Some(DenialCause::CustomInvariant(_)) | Some(DenialCause::Execution(_)) | None => None,
         }
     }
 
@@ -46,7 +40,7 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
         match &self.cause {
             Some(DenialCause::CustomInvariant(denial)) => Some(denial),
-            _ => None,
+            Some(DenialCause::RequestAuthority(_)) | Some(DenialCause::Execution(_)) | None => None,
         }
     }
 }

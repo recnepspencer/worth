@@ -1,3 +1,4 @@
+pub use crate::execution::RelationalExecutionDenialCause;
 pub use crate::indexes::data::{
     BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenial,
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,

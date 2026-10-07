@@ -35,6 +35,16 @@ pub enum WorthQueryPublishedExternalEffectFailure {
     ),
     InitialDispatchAlreadyCompleted,
     CompletionPublicationPending,
+    /// Completion remains unresolved with the execution refusal intact.
+    CompletionExecutionDenied {
+        stage: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_query_execution::facade::installed::provider_session::WorthQueryProviderSessionDenialKind,
+    },
+    /// Completion remains unresolved after this execution control stop.
+    CompletionExecutionControlStopped {
+        stage: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_query_execution::facade::installed::provider_session::WorthQueryProviderSessionControlStopKind,
+    },
     InitialDispatchTerminalIndexUnavailable,
     InitialDispatchCanonicalDerivationDenied,
     InitialDispatchTimeObservationDenied,
@@ -123,6 +133,15 @@ const fn publish_preparation_failure(
         }
         Execution::CompletionPublicationPending => {
             WorthQueryPublishedExternalEffectFailure::CompletionPublicationPending
+        }
+        Execution::CompletionExecutionDenied { stage, kind } => {
+            WorthQueryPublishedExternalEffectFailure::CompletionExecutionDenied { stage, kind }
+        }
+        Execution::CompletionExecutionControlStopped { stage, kind } => {
+            WorthQueryPublishedExternalEffectFailure::CompletionExecutionControlStopped {
+                stage,
+                kind,
+            }
         }
         Execution::TerminalIndexUnavailable => {
             WorthQueryPublishedExternalEffectFailure::InitialDispatchTerminalIndexUnavailable
@@ -230,6 +249,31 @@ mod tests {
 
     #[test]
     fn every_initial_dispatch_preparation_denial_is_preserved_exactly() {
+        use worth_query_execution::facade::installed::provider_session::{
+            WorthQueryProviderSessionControlStopKind as Control,
+            WorthQueryProviderSessionDenialKind as Kind,
+        };
+        use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
+        let stage = Stage::ProviderCommit;
+        let kind = Kind::ExecutionWorkerPanicked {
+            partition_identity: Some(1),
+        };
+        assert_eq!(
+            publish_preparation_failure(
+                WorthQueryExternalDispatchPreparationDenial::CompletionExecutionDenied {
+                    stage,
+                    kind
+                }
+            ),
+            WorthQueryPublishedExternalEffectFailure::CompletionExecutionDenied { stage, kind },
+        );
+        for kind in [Control::Cancelled, Control::TimedOut] {
+            assert_eq!(
+                publish_preparation_failure(WorthQueryExternalDispatchPreparationDenial::CompletionExecutionControlStopped { stage, kind }),
+                WorthQueryPublishedExternalEffectFailure::CompletionExecutionControlStopped { stage, kind },
+            );
+        }
+
         let cases = [
             (
                 WorthQueryExternalDispatchPreparationDenial::OwnerReadDenied(

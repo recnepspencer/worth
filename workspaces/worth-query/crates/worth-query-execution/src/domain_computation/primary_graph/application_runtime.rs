@@ -388,3 +388,9 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
         self.remaining_live_consumers == 0
     }
 }
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use inbound_publication::{
+    authenticated_completion_candidate, transport_completion_candidate,
+    InstalledTransportPublicationOutcome,
+};

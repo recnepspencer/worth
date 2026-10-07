@@ -1,7 +1,9 @@
 use super::denial::{denial, failed, request_authority_stop};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
-use crate::domain_computation::primary_graph::{
-    HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+use crate::domain_computation::primary_graph as graph;
+use graph::{
+    HandlerResult, WorthQueryApplicationCommitDeferredKind as DeferredKind,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationNoEffectCause,
 };
 
@@ -10,21 +12,20 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum ProducerExecutionOutcome
 {
     Committed(WorthQueryApplicationCommitReceipt),
-    Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
+    Stable(graph::output_lineage::PublishedStableLineage),
 }
 
 /// A successful producer returns its original pre-effect Ready storage.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PreparedProducerExecutionOutcome
 {
     pub(super) outcome: ProducerExecutionOutcome,
-    pub(super) ready_backing:
-        crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
+    pub(super) ready_backing: graph::application_output_demand::PreparedReadyBacking,
 }
 
 impl PreparedProducerExecutionOutcome {
     pub(super) fn new(
         outcome: ProducerExecutionOutcome,
-        ready_backing: crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
+        ready_backing: graph::application_output_demand::PreparedReadyBacking,
     ) -> Self {
         Self {
             outcome,
@@ -36,7 +37,7 @@ impl PreparedProducerExecutionOutcome {
         self,
     ) -> (
         ProducerExecutionOutcome,
-        crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
+        graph::application_output_demand::PreparedReadyBacking,
     ) {
         (self.outcome, self.ready_backing)
     }
@@ -87,15 +88,14 @@ pub(super) fn commit_receipt(
         WorthQueryApplicationCommitOutcome::Deferred(deferred)
             if matches!(
                 deferred.kind(),
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind::RequiredPrerequisitePending(_)
+                DeferredKind::RequiredPrerequisitePending(_)
             ) =>
         {
-            let crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind::RequiredPrerequisitePending(kind) = deferred.kind() else {
+            let DeferredKind::RequiredPrerequisitePending(kind) = deferred.kind() else {
                 unreachable!("the guarded deferral names required prerequisite custody");
             };
-            Err(denial(kind, identity.to_owned()).with_recovery_posture(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
-            ))
+            Err(denial(kind, identity.to_owned())
+                .with_recovery_posture(graph::WorthQueryOutputDemandRecoveryPosture::Retryable))
         }
         WorthQueryApplicationCommitOutcome::Stale(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_) => Err(denial(
@@ -106,9 +106,10 @@ pub(super) fn commit_receipt(
             WorthQueryOutputDemandDenialKind::Cancelled,
             identity.to_owned(),
         )),
-        WorthQueryApplicationCommitOutcome::TimedOut => {
-            Err(denial(WorthQueryOutputDemandDenialKind::TimedOut, identity.to_owned()))
-        }
+        WorthQueryApplicationCommitOutcome::TimedOut => Err(denial(
+            WorthQueryOutputDemandDenialKind::TimedOut,
+            identity.to_owned(),
+        )),
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect)
             if no_effect.cause() == WorthQueryApplicationNoEffectCause::CapacityExhausted =>
         {
@@ -117,24 +118,68 @@ pub(super) fn commit_receipt(
                 identity.to_owned(),
             ))
         }
-        WorthQueryApplicationCommitOutcome::Denied(commit_denial)
-            if commit_denial.kind() == WorthQueryApplicationCommitDenialKind::ProductBasisStale =>
-        {
-            Err(denial(
-                WorthQueryOutputDemandDenialKind::PublicationStale,
-                identity.to_owned(),
-            ))
+        WorthQueryApplicationCommitOutcome::Denied(commit_denial) => {
+            use WorthQueryApplicationCommitDenialKind as Kind;
+            let kind = commit_denial.kind();
+            let execution = commit_denial
+                .execution_denial_cause()
+                .map(|cause| (commit_denial.stage(), cause));
+            let failure = match kind {
+                Kind::ProductBasisStale => denial(
+                    WorthQueryOutputDemandDenialKind::PublicationStale,
+                    identity.to_owned(),
+                ),
+                Kind::IdempotencyIntentDrift => denial(
+                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                    format!("{identity}: {commit_denial:?}"),
+                ),
+                Kind::ExecutionResource { .. }
+                | Kind::ExecutionNestedPatternStopped { .. }
+                | Kind::ExecutionWorkerPanicked { .. }
+                | Kind::ExecutionUncheckedCustomKernel { .. }
+                | Kind::ExecutionIdentitiesNotCanonical { .. }
+                | Kind::ProviderRejected
+                | Kind::CustomInvariantDenied
+                | Kind::CandidateValidatorWorkExceeded { .. }
+                | Kind::WorkflowSettlementDenied { .. }
+                | Kind::UniqueValueTaken
+                | Kind::UniqueIndexUnavailable
+                | Kind::ActiveSnapshotCapacityExhausted { .. }
+                | Kind::RetentionCapacityExhausted
+                | Kind::RetentionIdentityExhausted
+                | Kind::SnapshotIdentityExhausted
+                | Kind::CandidateIdentityExhausted
+                | Kind::PreparedRootBudgetExhausted { .. }
+                | Kind::IndexMaintenanceBudgetExceeded
+                | Kind::IndexGenerationIdentityExhausted
+                | Kind::IdempotencyWindowExpired
+                | Kind::IdempotencyReceiptNotRetained { .. }
+                | Kind::IdempotencyIntentUnverifiable
+                | Kind::MutationBindingMismatch
+                | Kind::MutationInputMismatch
+                | Kind::ElevationTransitionRequired
+                | Kind::ElevationRequestProgramMismatch
+                | Kind::ElevationApprovalProgramMismatch
+                | Kind::ElevationCloseProgramMismatch
+                | Kind::MandatoryReviewProgramMismatch
+                | Kind::DelegationActivationRequired
+                | Kind::CapabilityRevocationRequired
+                | Kind::ApplicationProgramRequired
+                | Kind::WorkflowAuthorityRequired
+                | Kind::ProgramNotActiveOnOccurrence { .. }
+                | Kind::ProgramSupportRetired
+                | Kind::ProgramActivationUnresolved => failed(identity, commit_denial),
+            };
+            Err(failure
+                .with_commit_denial_kind(kind)
+                .with_commit_execution_denial(execution))
         }
-        WorthQueryApplicationCommitOutcome::Denied(commit_denial)
-            if commit_denial.kind()
-                == WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift =>
-        {
-            Err(denial(
-                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                format!("{identity}: {commit_denial:?}"),
-            ))
-        }
-        outcome => Err(failed(identity, outcome)),
+        outcome @ (WorthQueryApplicationCommitOutcome::Deferred(_)
+        | WorthQueryApplicationCommitOutcome::NoEffect(_)
+        | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
+        | WorthQueryApplicationCommitOutcome::Aborted
+        | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
+        | WorthQueryApplicationCommitOutcome::Indeterminate(_)) => Err(failed(identity, outcome)),
     }
 }
 
@@ -143,7 +188,7 @@ pub(super) fn commit_receipt(
 fn refused_budget(
     outcome: &WorthQueryApplicationCommitOutcome,
 ) -> Option<WorthQueryOutputDemandDenialKind> {
-    use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferredKind as Deferred;
+    use graph::WorthQueryApplicationCommitDeferredKind as Deferred;
     use worth_relational::facade::mvcc::{
         CompanionPreflightStop as Stop, RelationalPublicationDeferred::CompanionPreflight,
     };
@@ -158,7 +203,17 @@ fn refused_budget(
             Deferred::RelationalDeferred(CompanionPreflight(stop)) => stop,
             _ => return None,
         },
-        _ => return None,
+        WorthQueryApplicationCommitOutcome::Committed(_)
+        | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+        | WorthQueryApplicationCommitOutcome::ProductStale(_)
+        | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
+        | WorthQueryApplicationCommitOutcome::Stale(_)
+        | WorthQueryApplicationCommitOutcome::Cancelled
+        | WorthQueryApplicationCommitOutcome::TimedOut
+        | WorthQueryApplicationCommitOutcome::Denied(_)
+        | WorthQueryApplicationCommitOutcome::Aborted
+        | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
+        | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
     match stop {
         Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
@@ -175,52 +230,4 @@ fn refused_budget(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain_computation::provider_session::{
-        WorthQueryProviderSessionCommitDeferred, WorthQueryProviderSessionCommitDeferredKind,
-    };
-    use worth_relational::facade::mvcc::{
-        CompanionPreflightStop as Stop, RelationalPublicationDeferred,
-    };
-
-    fn stopped(stop: Stop) -> WorthQueryOutputDemandDenialKind {
-        let deferred = WorthQueryProviderSessionCommitDeferred::new(
-            WorthQueryProviderSessionCommitDeferredKind::RelationalDeferred(
-                RelationalPublicationDeferred::CompanionPreflight(stop),
-            ),
-            "",
-        );
-        commit_receipt(
-            "producer",
-            WorthQueryApplicationCommitOutcome::Deferred(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferred::from_provider_session(deferred),
-            ),
-        )
-        .unwrap_err()
-        .kind()
-    }
-
-    #[test]
-    fn a_commit_a_companion_has_no_room_for_stops_for_that_budget() {
-        use WorthQueryOutputDemandDenialKind as Kind;
-        let retained = Stop::RetainedCompanionCapacityExhausted {
-            requested: 2,
-            retained: 1,
-            maximum: 2,
-        };
-        assert_eq!(stopped(retained), Kind::RetentionBudgetExceeded);
-        let prepared = Stop::PreparationMemoryExhausted {
-            required: 2,
-            maximum: 1,
-        };
-        assert_eq!(stopped(prepared), Kind::RetentionBudgetExceeded);
-        let work = Stop::WorkExhausted {
-            required: 2,
-            maximum: 1,
-        };
-        assert_eq!(stopped(work), Kind::WorkBudgetExceeded);
-        // A companion that is not ready is no budget of the advance.
-        assert_eq!(stopped(Stop::TopologyPending), Kind::ProducerUnavailable);
-    }
-}
+mod tests;

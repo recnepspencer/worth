@@ -1,6 +1,8 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod capacity;
+mod denial_cause;
+mod execution;
 mod lane;
 mod program_binding;
 mod recorded_idempotency;
@@ -16,7 +18,19 @@ mod workflow;
 /// as presented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
-    /// The owner refused the attempt at the denial's stage; `detail()` may say why.
+    /// The execution owner refused preparation before any commit effect.
+    ExecutionResource {
+        denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
+        partition_identity: Option<u64>,
+        policy_ancestor: Option<u32>,
+    },
+    ExecutionNestedPatternStopped { partition_identity: Option<u64> },
+    ExecutionWorkerPanicked { partition_identity: Option<u64> },
+    ExecutionUncheckedCustomKernel { partition_identity: Option<u64> },
+    ExecutionIdentitiesNotCanonical { partition_identity: Option<u64> },
+    /// The owner refused the attempt at the denial's stage. Execution evidence
+    /// is available through `WorthQueryApplicationCommitDenial::execution_denial_cause`.
+    /// Its historical category and stage do not determine the evidence's identity.
     ProviderRejected,
     /// An installed custom invariant refused the candidate; see
     /// `custom_invariant_denial()`.
@@ -184,7 +198,7 @@ pub struct WorthQueryApplicationCommitDenial {
     kind: WorthQueryApplicationCommitDenialKind,
     stage: WorthQueryApplicationCommitDenialStage,
     detail: Option<std::sync::Arc<str>>,
-    cause: Option<request_authority::DenialCause>,
+    cause: Option<denial_cause::DenialCause>,
 }
 
 impl WorthQueryApplicationCommitDenial {
@@ -245,9 +259,7 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::CustomInvariantDenied,
             stage,
             detail: Some(detail.into()),
-            cause: Some(request_authority::DenialCause::CustomInvariant(
-                custom_invariant,
-            )),
+            cause: Some(denial_cause::DenialCause::CustomInvariant(custom_invariant)),
         }
     }
 

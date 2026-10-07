@@ -1,3 +1,4 @@
+mod merge_validation_denial;
 use super::{
     WorthQueryBackendMergeAuthority, WorthQueryEffectPolicy, WorthQueryInspection,
     WorthQueryPreviewBasisAdmission, WorthQueryRuntime, WorthQueryRuntimeAuthorityIdentity,
@@ -9,6 +10,7 @@ use crate::evidence_identity::{
 };
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::session_label::WorthQuerySessionLabel;
+pub(crate) use merge_validation_denial::classify_merge_validation_kind;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryOrdinaryAuthorityFamily {
@@ -30,6 +32,12 @@ pub(crate) enum WorthQueryOrdinaryAuthorityDrift {
 pub(crate) enum WorthQueryMergeAuthorityValidationError {
     ForeignOwner,
     StaleSnapshot,
+    ExecutionDenied(
+        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+    ),
+    ExecutionControlStopped(
+        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+    ),
     RetentionBackpressure,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
@@ -235,18 +243,7 @@ impl WorthQueryRuntime {
             .ok_or(WorthQueryMergeAuthorityValidationError::StaleSnapshot)?;
         self.backend
             .validate_query_merge_authority(&backend_authority)
-            .map_err(|error| match error.kind() {
-                crate::memory_workspace::WorthQueryWorkspaceErrorKind::RetentionCapacityExhausted => {
-                    WorthQueryMergeAuthorityValidationError::RetentionBackpressure
-                }
-                crate::memory_workspace::WorthQueryWorkspaceErrorKind::RetentionIdentityExhausted => {
-                    WorthQueryMergeAuthorityValidationError::RetentionIdentityExhausted
-                }
-                crate::memory_workspace::WorthQueryWorkspaceErrorKind::SnapshotIdentityExhausted => {
-                    WorthQueryMergeAuthorityValidationError::SnapshotIdentityExhausted
-                }
-                _ => WorthQueryMergeAuthorityValidationError::StaleSnapshot,
-            })?;
+            .map_err(|error| classify_merge_validation_kind(error.kind()))?;
         Ok(WorthQueryValidatedMergeAuthority {
             backend_authority,
             snapshot_identity: admission.snapshot_identity,
