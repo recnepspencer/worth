@@ -6,6 +6,13 @@ use crate::history::data::BranchId;
 use crate::mvcc::validation::RelationalTransactionValidationInput;
 
 impl RelationalRuntime {
+    /// Read registered and retired names together, bounded by the owner's
+    /// existing branch registry and retired-name budget. This cold read copies
+    /// names only and grants no branch authority.
+    pub fn branch_names(&self) -> crate::branch::RelationalBranchNames {
+        self.history.branch_names()
+    }
+
     /// Observe every exact axis of one owner branch-reference cell. This is a
     /// read-only evidence surface; the returned state cannot mint authority or
     /// select a transaction target.

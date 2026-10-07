@@ -116,7 +116,7 @@ owner state.
 | `release_component_basis` | `RelationalBranchRetentionLease` | `Result<RelationalBranchRetentionReleaseReceipt, RelationalBranchRetentionReleaseDenial>` | issuing retention registry | runtime same name; explicit release, foreign owner returning the live lease, owner loss, and drop terminality |
 | `archive_branch` | `&RelationalBranchIdentity` | `Result<ArchivedRelationalBranch, RelationalBranchArchiveDenial>` | branch lifecycle cell | runtime same name; performed archive plus owner-unavailable, foreign-runtime, unknown, already-archived, deleting, and generation-overflow denials |
 | `delete_branch` | `&RelationalBranchIdentity` | `Result<RelationalBranchDeletionOutcome, RelationalBranchDeleteDenial>` | branch lifecycle cell and retention accounting | runtime same name; deleted or typed pending deletion plus main/unknown/lifecycle/owner-loss denial |
-| `owner_lifecycle_observation` | none | `RelationalOwnerLifecycleObservation` | weak owner lifecycle | port-only observation with no direct runtime delegate; exact `Open`, `Closing`, or `Closed` observation after root drop |
+| `owner_lifecycle_observation` | none | `RelationalOwnerLifecycleObservation` | weak owner lifecycle | port-only observation with no direct runtime delegate; exact `Open`, `Held`, `Closing`, or `Closed` observation after root drop |
 
 `observe_branch_with_control` is the operation-control counterpart used by the
 deterministic concurrency court. It has the same basis outcome and owner path as
@@ -340,36 +340,109 @@ When the owning runtime closes settlement admission, it drains every pending
 record exactly once. A later repair then answers
 `DeferredPublicationSettlementError::OwnerUnavailable` rather than a receipt.
 
-## In-place seal
+## Admission hold and in-place seal
 
-`RelationalRuntime::try_seal` seals the owner without waiting. It is one atomic
-step on the owner's lifecycle word. With any admitted operation in flight the
-call is refused as `RelationalRuntimeSealDenial::AdmissionsActive` and nothing
-changes: admission was never stopped, so a refused seal denies no concurrent
-admission. On a handle that is itself an admitted operation rather than the
-owner, the call is refused as `RelationalRuntimeSealDenial::NotOwner`.
+`RelationalRuntime::try_hold_admission` returns a
+`RelationalRuntimeAdmissionHoldOutcome`, using `worth_proof::TransitionOutcome`.
+`Success` carries one move-only `RelationalRuntimeAdmissionHold` borrowing the
+owner exclusively. `Denied` carries `RelationalRuntimeAdmissionHoldDenial`:
+`AdmissionsActive`, `NotOwner`, `AlreadySealed`, `PublicationInFlight`,
+`PerformedPublicationRequiresSettlement(CommitId)`, or
+`PreparedCandidatesOutstanding`. Quiescence refusals restore open admission
+and leave settlement custody untouched. `NotOwner` and `AlreadySealed` report
+the handle's existing tenure without changing it. The one-step seal spelling
+is removed.
 
-Otherwise admission stops for good and the owner is committed as sealed before
-pending settlement drains, exactly once, as it does at close. A sealed owner
-reports `RelationalOwnerLifecycleObservation::Closed` even while another handle
-keeps the runtime alive, and every port that admits through the owner answers
-`OwnerUnavailable`. A second call answers
-`RelationalRuntimeSealOutcome::AlreadySealed`, and dropping a sealed owner closes
-nothing again.
+The first step is one compare-and-swap from open-and-idle to held on the owner's
+lifecycle word. Existing admissions refuse immediately without changing that
+word. While held, a new admission waits rather than becoming admitted or being
+denied. The ordinary admission path remains one atomic add and one branch;
+waiting and retrying belong only to the stopped slow path. The lifecycle
+observation reports `Held` until the hold resolves. A hold tried immediately
+after release can refuse `AdmissionsActive` while a woken waiter retries; that
+waiter is real in-flight work.
 
-A sealed owner still serves reads of published state and denies everything that
-would move it:
+After that step the owner checks the checkpoint admission's own publication
+condition and an empty prepared-candidate registry. Both checks are nonblocking.
+A busy candidate registry also refuses as `PreparedCandidatesOutstanding`:
+detached cleanup may have removed its registration but still be releasing
+checkpointed reservations. Candidate discard and expiry keep the registry lock
+through that cleanup. A candidate owner must publish or drop it before close.
 
-- A transaction opened before the seal commits to
-  `TransactionCommitError::PublicationDenied` carrying
-  `RelationalPublicationDenial::OwnerUnavailable`; the branch head does not move.
-- The owner's own `fork_branch` is denied as
-  `RelationalForkDenial::OwnerUnavailable`.
-- `native_checkpoint()` succeeds. Capturing the image reads published state and
-  admits nothing, so a close path can seal first and capture afterwards.
-- `RelationalRuntime::fork()` succeeds. It reads published state and produces an
-  independent runtime that is open.
-- Snapshots taken before the seal keep reading.
+The successful hold therefore proves quiescence. It exposes exactly
+`hold.native_checkpoint()` and `hold.branch_names()`, each delegating to the
+existing read implementation. Capture reads published roots, cells, retired
+names, allocator state, lineage, definitions, live index generations, and
+symbols without admitting through the lifecycle. The hold exposes no runtime
+accessor, mutation surface, or operation that can wait on its own hold.
+
+`hold.seal()` consumes the hold infallibly, sets the closed bit and clears the
+held bit, preserving provisional increments of waiting admissions. The owner
+records sealed tenure before consuming close authority to resolve publication
+once. Quiescence means that resolution drains no pending settlement and adds no
+owner-loss releases. Waiting admissions retry and receive `OwnerUnavailable`.
+Dropping an unresolved hold, including during unwind or a quiescence refusal,
+clears only the held bit and wakes waiters to retry normally. A live hold borrows
+the owner exclusively, but forgetting the hold ends the borrow without releasing
+the held bit. Owner `Drop` therefore also clears that bit and wakes all waiters
+after closing: parked and new admissions receive `OwnerUnavailable`. Sealed
+owner `Drop` skips both admission close and publication close.
+
+The runtime owns the borrowing guard and its `Drop`. `LinearResource` requires
+a separate authority witness and terminal receipt; there is no runtime-lifecycle
+marker to supply it, and inventing one solely for this guard would duplicate the
+concrete close authority already carried by tenure. `Performed` similarly would
+need a new action/authority pair with no downstream proof consumer.
+`TransitionOutcome` supplies the fitting existing success/denial contract.
+
+### Detached cleanup and shared-access audit
+
+- Prepared-candidate Drop, explicit discard, and expiry release record identity
+  reservations, including pending and reusable slots. The empty-or-idle candidate
+  registry check excludes all three, and cleanup remains under its registry lock.
+  Prepared canonical route and unpublished snapshot-slot cleanup are part of the
+  same candidate payload, or an admitted preparation/publication operation.
+- Performed-witness Drop records abandonment only; it neither settles nor removes
+  the owner's record. The publication condition excludes an unsettled witness's
+  route. A settled witness can release retained reads without changing the image.
+- Direct settlement and repair methods require a runtime borrow and only settle
+  an existing publication. An independent service obtains an admitted runtime;
+  the exclusive hold prevents any other owner borrow, and an admitted handle
+  makes the initial compare-and-swap refuse. The hold exposes no settlement
+  method, and no settlement work exists on a successful hold.
+- Detached transactions and validated proposals own staged state and read
+  retention, not prepared record reservations. Preparation and publication enter
+  the lifecycle before allocating checkpointed state. Fork and lifecycle ports
+  likewise admit before changing branch cells or retired names.
+- Basis, snapshot, and external-retention Drop release residency/read accounting;
+  those registries are not checkpointed. Checkpoint index selection uses live
+  branch roots, so retired-reader reclamation cannot change its selected image.
+  Fork-target reservation Drop changes only the uncheckpointed reservation set.
+- Other shared mutation surfaces (index registration/build/maintenance,
+  configuration, symbols, lineage, durability, and reclamation) require a borrow
+  of the runtime or a subsystem facade borrowing it. The earlier claim that
+  borrowing alone excluded them was false while `hold.runtime()` exposed that
+  borrow: `retention().run_pass()` could change checkpointed reusable identities
+  and partitions, and owner-admitting methods could wait on the hold. Removing
+  that accessor makes those surfaces unreachable from the hold, and its exclusive
+  owner borrow excludes independent access. Native capture's cold reclamation
+  touches only retired roots and generations outside its live image.
+
+A sealed owner still serves published-state reads. Retained snapshots continue
+reading; late releases do not panic. Transactions opened before sealing and
+owner fork operations are denied as owner-unavailable. `native_checkpoint()`
+continues to capture the frozen image, and `fork()` reads it to produce an
+independent open runtime.
+
+### Branch-name read
+
+`RelationalRuntime::branch_names()` returns `RelationalBranchNames`, exported
+through `facade::branch`, from one registry read. `registered()` and `retired()`
+return sorted name slices. Registered names include archived and deleting
+references; a deleting reference's name can appear in both sets. This cold read
+copies only names, carries no branch authority, and uses the registry's existing
+bounds, including its 65,536 retired-name limit. An application recovers its
+branch ordinal from both lists after open, including checkpoint restore.
 
 ## Cancellation contract
 

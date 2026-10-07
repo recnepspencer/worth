@@ -1,5 +1,6 @@
 use super::{
-    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, RelationalRuntimeSealDenial,
+    RelationalRuntimeAdmissionHoldDenial, RelationalRuntimeOwnerBinding,
+    RelationalRuntimePublicationBinding,
 };
 
 /// The right, and the obligation, to finish one Relational runtime owner.
@@ -58,19 +59,18 @@ impl RelationalRuntimeCloseAuthority {
         crate::indexes::purge_index_query_scratch_hints(self.runtime_instance_id);
     }
 
-    /// Seal the owner's admission in place without waiting.
-    ///
-    /// Admission stops for good only when nothing is in flight; an outstanding
-    /// admission is refused and admission was never stopped. Publication
-    /// settlement is still owed its resolution, and only this authority can
-    /// give it: the owner records the returned seal as its tenure, which takes
-    /// this authority out, and spends it through
-    /// [`Self::resolve_sealed_publication`].
-    pub(super) fn try_seal(&self) -> Result<RelationalRuntimeSeal, RelationalRuntimeSealDenial> {
-        self.lifecycle.try_seal()?;
-        Ok(RelationalRuntimeSeal {
+    pub(super) fn try_hold_admission(
+        &self,
+    ) -> Result<RelationalRuntimeOwnerBinding, RelationalRuntimeAdmissionHoldDenial> {
+        self.lifecycle.try_hold_admission()?;
+        Ok(self.lifecycle.clone())
+    }
+
+    pub(super) fn seal_held(&self) -> RelationalRuntimeSeal {
+        self.lifecycle.seal_held();
+        RelationalRuntimeSeal {
             runtime_instance_id: self.runtime_instance_id,
-        })
+        }
     }
 
     /// Resolve remaining publication settlement with typed owner-loss

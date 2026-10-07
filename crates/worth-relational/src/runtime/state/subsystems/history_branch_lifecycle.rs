@@ -5,6 +5,10 @@ use super::HistorySubsystem;
 const MAX_RETIRED_BRANCH_NAMES: usize = 65_536;
 
 impl HistorySubsystem {
+    pub(crate) fn branch_names(&self) -> crate::branch::RelationalBranchNames {
+        self.branch_cells.branch_names()
+    }
+
     pub(crate) fn remove_branch_cell(
         &self,
         branch_id: &BranchId,

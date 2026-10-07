@@ -3,13 +3,15 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Condvar, Mutex};
 
-use super::RelationalRuntimeSealDenial;
+use super::RelationalRuntimeAdmissionHoldDenial;
 
 /// Admission is stopped and the owner is waiting for admitted operations.
 const CLOSING: usize = 1 << (usize::BITS - 2);
 /// Admission is stopped for good with nothing in flight.
 const CLOSED: usize = 1 << (usize::BITS - 1);
-const STOPPED: usize = CLOSING | CLOSED;
+/// Admission waits until the exclusive owner releases or seals its hold.
+const HELD: usize = 1 << (usize::BITS - 3);
+const STOPPED: usize = HELD | CLOSING | CLOSED;
 const IN_FLIGHT: usize = !STOPPED;
 
 /// Drop-governed lifecycle authority shared by every independently borrowable
@@ -29,6 +31,7 @@ pub(crate) struct RelationalRuntimeOwnerBinding {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RelationalRuntimeAdmissionPosture {
     Open,
+    Held,
     Closing,
     Closed,
 }
@@ -39,7 +42,7 @@ struct RelationalRuntimeLifecycle {
     ///
     /// Every transition is a single atomic step on this word, so an admission
     /// and a stop can never each miss the other: an admission's increment
-    /// returns the stop bits it raced, a seal exchanges the whole word and so
+    /// returns the stop bits it raced, a hold exchanges the whole word and so
     /// changes nothing when any operation is in flight, and a release's
     /// decrement returns whether a draining owner is waiting on it.
     word: AtomicUsize,
@@ -47,6 +50,12 @@ struct RelationalRuntimeLifecycle {
     close_ready: Condvar,
     #[cfg(test)]
     test_close_start_ack: Mutex<Option<Sender<()>>>,
+    #[cfg(test)]
+    test_hold_wait_ack: Mutex<Option<Sender<bool>>>,
+    #[cfg(test)]
+    test_hold_start_pause: Mutex<Option<(Sender<()>, std::sync::mpsc::Receiver<()>)>>,
+    #[cfg(test)]
+    test_stopped_admission_pause: Mutex<Option<(Sender<bool>, std::sync::mpsc::Receiver<()>)>>,
 }
 
 #[derive(Debug)]
@@ -64,6 +73,12 @@ impl RelationalRuntimeOwner {
                     close_ready: Condvar::new(),
                     #[cfg(test)]
                     test_close_start_ack: Mutex::new(None),
+                    #[cfg(test)]
+                    test_hold_wait_ack: Mutex::new(None),
+                    #[cfg(test)]
+                    test_hold_start_pause: Mutex::new(None),
+                    #[cfg(test)]
+                    test_stopped_admission_pause: Mutex::new(None),
                 }),
             },
         }
@@ -102,23 +117,46 @@ impl RelationalRuntimeOwnerBinding {
         // throughout, and with the drain bit gone an admission denied by a
         // closed owner returns without taking the drain lock.
         self.lifecycle.word.fetch_or(CLOSED, Ordering::SeqCst);
-        self.lifecycle.word.fetch_and(!CLOSING, Ordering::SeqCst);
-    }
-
-    /// Stop admission for good, in place, only when nothing is in flight.
-    ///
-    /// Unlike [`Self::close`] this never waits. The whole word is exchanged in
-    /// one step, so a refused attempt changes nothing: admission was never
-    /// stopped, and no concurrent admission is denied because of it.
-    ///
-    /// Seal and close are both owner authority reached through the owner's
-    /// exclusive handle, so the exchange can only fail on operations in flight.
-    pub(in crate::runtime) fn try_seal(&self) -> Result<(), RelationalRuntimeSealDenial> {
+        // A forgotten hold leaves HELD behind. Closing resolves it permanently,
+        // so parked and new admissions retry against CLOSED instead of waiting.
         self.lifecycle
             .word
-            .compare_exchange(0, CLOSED, Ordering::SeqCst, Ordering::SeqCst)
+            .fetch_and(!(CLOSING | HELD), Ordering::SeqCst);
+        self.lifecycle.close_ready.notify_all();
+    }
+
+    /// Hold admission without waiting, changing nothing if work is in flight.
+    pub(in crate::runtime) fn try_hold_admission(
+        &self,
+    ) -> Result<(), RelationalRuntimeAdmissionHoldDenial> {
+        self.lifecycle
+            .word
+            .compare_exchange(0, HELD, Ordering::SeqCst, Ordering::SeqCst)
             .map(drop)
-            .map_err(|_| RelationalRuntimeSealDenial::AdmissionsActive)
+            .map_err(|_| RelationalRuntimeAdmissionHoldDenial::AdmissionsActive)
+    }
+
+    pub(in crate::runtime) fn release_hold(&self) {
+        let _wait = self
+            .lifecycle
+            .close_wait
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        self.lifecycle.word.fetch_and(!HELD, Ordering::SeqCst);
+        self.lifecycle.close_ready.notify_all();
+    }
+
+    pub(in crate::runtime) fn seal_held(&self) {
+        let _wait = self
+            .lifecycle
+            .close_wait
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        // Waiting admissions may still be returning their provisional increments.
+        // Preserve those counts; they never became admitted operations.
+        self.lifecycle.word.fetch_or(CLOSED, Ordering::SeqCst);
+        self.lifecycle.word.fetch_and(!HELD, Ordering::SeqCst);
+        self.lifecycle.close_ready.notify_all();
     }
 
     pub(crate) fn admit(&self) -> Option<AdmittedRelationalRuntimeOperation> {
@@ -128,12 +166,52 @@ impl RelationalRuntimeOwnerBinding {
             "runtime operation admission overflow"
         );
         if before & STOPPED != 0 {
-            release_operation(&self.lifecycle);
-            return None;
+            return self.admit_after_stop(before);
         }
         Some(AdmittedRelationalRuntimeOperation {
             lifecycle: Arc::clone(&self.lifecycle),
         })
+    }
+
+    #[cold]
+    fn admit_after_stop(&self, mut before: usize) -> Option<AdmittedRelationalRuntimeOperation> {
+        loop {
+            #[cfg(test)]
+            self.pause_test_stopped_admission();
+            release_operation(&self.lifecycle);
+            if before & HELD == 0 {
+                return None;
+            }
+            let mut wait = self
+                .lifecycle
+                .close_wait
+                .lock()
+                .unwrap_or_else(|p| p.into_inner());
+            while self.lifecycle.word.load(Ordering::SeqCst) & HELD != 0 {
+                #[cfg(test)]
+                if let Some(ack) = self
+                    .lifecycle
+                    .test_hold_wait_ack
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner())
+                    .take()
+                {
+                    let _ = ack.send(true);
+                }
+                wait = self
+                    .lifecycle
+                    .close_ready
+                    .wait(wait)
+                    .unwrap_or_else(|p| p.into_inner());
+            }
+            drop(wait);
+            before = self.lifecycle.word.fetch_add(1, Ordering::SeqCst);
+            if before & STOPPED == 0 {
+                return Some(AdmittedRelationalRuntimeOperation {
+                    lifecycle: Arc::clone(&self.lifecycle),
+                });
+            }
+        }
     }
 
     /// Observe where this owner's admission stands without admitting any work.
@@ -145,10 +223,69 @@ impl RelationalRuntimeOwnerBinding {
         let word = self.lifecycle.word.load(Ordering::SeqCst);
         if word & CLOSED != 0 {
             RelationalRuntimeAdmissionPosture::Closed
+        } else if word & HELD != 0 {
+            RelationalRuntimeAdmissionPosture::Held
         } else if word & CLOSING != 0 {
             RelationalRuntimeAdmissionPosture::Closing
         } else {
             RelationalRuntimeAdmissionPosture::Open
+        }
+    }
+
+    /// Send true when parked; tests send false on completion on the same channel.
+    #[cfg(test)]
+    pub(crate) fn install_test_hold_wait_ack(&self, ack: Sender<bool>) {
+        *self.lifecycle.test_hold_wait_ack.lock().unwrap() = Some(ack);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn install_test_stopped_admission_pause(
+        &self,
+        ack: Sender<bool>,
+        resume: std::sync::mpsc::Receiver<()>,
+    ) {
+        *self.lifecycle.test_stopped_admission_pause.lock().unwrap() = Some((ack, resume));
+    }
+
+    #[cfg(test)]
+    fn pause_test_stopped_admission(&self) {
+        let hook = self
+            .lifecycle
+            .test_stopped_admission_pause
+            .lock()
+            .unwrap()
+            .take();
+        if let Some((ack, resume)) = hook {
+            ack.send(true).unwrap();
+            resume.recv().unwrap();
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn test_in_flight_count(&self) -> usize {
+        self.lifecycle.word.load(Ordering::SeqCst) & IN_FLIGHT
+    }
+
+    #[cfg(test)]
+    pub(crate) fn test_has_hold(&self) -> bool {
+        self.lifecycle.word.load(Ordering::SeqCst) & HELD != 0
+    }
+
+    #[cfg(test)]
+    pub(crate) fn install_test_hold_start_pause(
+        &self,
+        ack: Sender<()>,
+        resume: std::sync::mpsc::Receiver<()>,
+    ) {
+        *self.lifecycle.test_hold_start_pause.lock().unwrap() = Some((ack, resume));
+    }
+
+    #[cfg(test)]
+    pub(super) fn pause_after_test_hold_start(&self) {
+        let hook = self.lifecycle.test_hold_start_pause.lock().unwrap().take();
+        if let Some((ack, resume)) = hook {
+            ack.send(()).unwrap();
+            resume.recv().unwrap();
         }
     }
 

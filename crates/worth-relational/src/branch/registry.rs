@@ -92,6 +92,14 @@ impl RelationalBranchReferenceRegistry {
         self.read().cells.len()
     }
 
+    pub(crate) fn branch_names(&self) -> super::RelationalBranchNames {
+        let state = self.read();
+        super::RelationalBranchNames::new(
+            state.cells.keys().cloned().collect(),
+            state.retired_names.iter().cloned().collect(),
+        )
+    }
+
     pub(crate) fn keys(&self) -> Vec<BranchId> {
         self.read().cells.keys().cloned().collect()
     }

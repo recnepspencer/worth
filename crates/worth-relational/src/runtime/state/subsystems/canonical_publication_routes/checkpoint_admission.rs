@@ -28,6 +28,14 @@ impl RelationalCanonicalPublicationRoutes {
         self.performed_stream.first_unsettled_commit()
     }
 
+    /// The checkpoint owner's publication condition, also used by admission holds.
+    pub(crate) fn check_quiescent_publication(
+        &self,
+    ) -> Result<(), CanonicalCheckpointAdmissionError> {
+        let _admission = self.enter_checkpoint_selection()?;
+        self.reject_unsettled()
+    }
+
     pub(crate) fn checkpoint_selection(
         &self,
     ) -> Result<PerformedCheckpointSelection, CanonicalCheckpointAdmissionError> {

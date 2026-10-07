@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Mutex, TryLockError, Weak};
 
 /// Drop-governed publication authority owned directly by one runtime.
 #[derive(Debug)]
@@ -19,6 +19,9 @@ pub(super) struct RelationalRuntimePublicationLifecycle {
     pub(super) companion: Arc<crate::mvcc::publication::CompanionRegistry>,
     next_candidate_id: AtomicU64,
     candidates: Mutex<HashMap<u64, RegisteredCandidate>>,
+    #[cfg(test)]
+    test_candidate_cleanup_pause:
+        Mutex<Option<(std::sync::mpsc::Sender<()>, std::sync::mpsc::Receiver<()>)>>,
     pub(super) settlements: Arc<super::RelationalPublicationSettlementRegistry>,
 }
 
@@ -51,6 +54,8 @@ impl RelationalRuntimePublicationOwner {
                     companion: Arc::new(companion),
                     next_candidate_id: AtomicU64::new(1),
                     candidates: Mutex::new(HashMap::new()),
+                    #[cfg(test)]
+                    test_candidate_cleanup_pause: Mutex::new(None),
                     settlements: Arc::new(super::RelationalPublicationSettlementRegistry::default()),
                 }),
             },
@@ -133,18 +138,49 @@ impl RelationalRuntimePublicationBinding {
     }
 
     pub(crate) fn discard_candidate(&self, candidate_id: u64) {
-        let registered = self
+        // Keep the registry locked until checkpointed record reservations are
+        // released. An empty-registry observation must not miss detached cleanup.
+        let mut candidates = self
             .lifecycle
             .candidates
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .remove(&candidate_id);
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let registered = candidates.remove(&candidate_id);
+        #[cfg(test)]
+        if let Some((ack, resume)) = self
+            .lifecycle
+            .test_candidate_cleanup_pause
+            .lock()
+            .unwrap()
+            .take()
+        {
+            ack.send(()).unwrap();
+            resume.recv().unwrap();
+        }
         if let Some(payload) = registered.and_then(|entry| entry.payload.upgrade()) {
             payload
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .take();
         }
+    }
+
+    /// A busy registry can be detached cleanup; refuse rather than wait for it.
+    pub(in crate::runtime) fn candidates_are_quiescent(&self) -> bool {
+        match self.lifecycle.candidates.try_lock() {
+            Ok(candidates) => candidates.is_empty(),
+            Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner().is_empty(),
+            Err(TryLockError::WouldBlock) => false,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn install_test_candidate_cleanup_pause(
+        &self,
+        ack: std::sync::mpsc::Sender<()>,
+        resume: std::sync::mpsc::Receiver<()>,
+    ) {
+        *self.lifecycle.test_candidate_cleanup_pause.lock().unwrap() = Some((ack, resume));
     }
 
     pub(crate) fn reap_expired_candidates(&self) -> usize {

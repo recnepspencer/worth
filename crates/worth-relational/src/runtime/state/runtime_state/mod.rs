@@ -3,8 +3,8 @@ mod close_authority;
 mod configuration;
 mod core_access;
 mod merge_authority;
+mod owner_admission_hold;
 mod owner_lifecycle;
-mod owner_seal;
 mod partition_edition_access;
 mod preparation_runtime;
 mod publication_lifecycle;
@@ -26,12 +26,15 @@ pub(crate) use configuration::{
     RelationalRuntimeConfiguration, RelationalRuntimeConfigurationBinding,
     RelationalRuntimeConfigurationSnapshot,
 };
+pub use owner_admission_hold::{
+    RelationalRuntimeAdmissionHold, RelationalRuntimeAdmissionHoldDenial,
+    RelationalRuntimeAdmissionHoldOutcome,
+};
 pub(in crate::runtime) use owner_lifecycle::RelationalRuntimeOwner;
 pub(crate) use owner_lifecycle::{
     AdmittedRelationalRuntimeOperation, RelationalRuntimeAdmissionPosture,
     RelationalRuntimeOwnerBinding,
 };
-pub use owner_seal::{RelationalRuntimeSealDenial, RelationalRuntimeSealOutcome};
 pub(crate) use preparation_runtime::RelationalPreparationOwnerBinding;
 pub(crate) use preparation_runtime::RelationalPreparationRuntime;
 pub(in crate::runtime) use publication_lifecycle::RelationalRuntimePublicationOwner;

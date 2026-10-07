@@ -86,4 +86,7 @@ pub(crate) use state::{
     PerformedRelationalSettlement, RelationalPendingSettlementReservation,
     RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
-pub use state::{RelationalRuntime, RelationalRuntimeSealDenial, RelationalRuntimeSealOutcome};
+pub use state::{
+    RelationalRuntime, RelationalRuntimeAdmissionHold, RelationalRuntimeAdmissionHoldDenial,
+    RelationalRuntimeAdmissionHoldOutcome,
+};

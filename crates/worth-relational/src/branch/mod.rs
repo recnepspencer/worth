@@ -18,6 +18,7 @@ mod fork_source_basis;
 mod identity;
 mod lifecycle;
 mod materialization;
+mod names;
 mod owner_services;
 mod reference;
 mod reference_publication_cell;
@@ -75,6 +76,7 @@ pub use materialization::{
     RelationalRelationMaterialization, RelationalRematerializationCompletion,
     RelationalRematerializationFailure, SuspendRelationalMaterialization,
 };
+pub use names::RelationalBranchNames;
 pub use owner_services::{
     RelationalBranchBasisPort, RelationalBranchLifecyclePort,
     RelationalBranchTransactionAdmissionPort, RelationalMaterializationPort,

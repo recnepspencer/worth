@@ -9,6 +9,7 @@ use crate::runtime::RelationalRuntimeAdmissionPosture;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelationalOwnerLifecycleObservation {
     Open,
+    Held,
     Closing,
     Closed,
 }
@@ -49,6 +50,7 @@ impl RelationalBranchLifecyclePort {
     pub fn owner_lifecycle_observation(&self) -> RelationalOwnerLifecycleObservation {
         match self.owner.lifecycle_posture() {
             RelationalRuntimeAdmissionPosture::Open => RelationalOwnerLifecycleObservation::Open,
+            RelationalRuntimeAdmissionPosture::Held => RelationalOwnerLifecycleObservation::Held,
             RelationalRuntimeAdmissionPosture::Closing => {
                 RelationalOwnerLifecycleObservation::Closing
             }

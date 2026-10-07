@@ -3,7 +3,7 @@ use crate::branch::{
 };
 use crate::history::data::BranchId;
 use crate::mvcc::{RelationalPublicationDenial, RelationalPublicationOutcome};
-use crate::runtime::{RelationalRuntime, RelationalRuntimeSealOutcome};
+use crate::runtime::RelationalRuntime;
 use crate::tests::support::{
     batch_create, create_branch_from_main, create_entity, create_entity_outcome,
     runtime_with_test_schema, snapshot_for_owner_branch, test_owner_begin_transaction_for_main,
@@ -90,7 +90,7 @@ fn transaction_opened_before_the_seal_commits_to_owner_unavailable() {
 }
 
 #[test]
-fn seal_resolves_pending_settlement_once_and_drop_adds_none() {
+fn seal_closes_settled_publication_once_and_drop_adds_none() {
     let mut runtime = runtime_with_test_schema();
     create_entity(&runtime, "seal-settlement-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -104,11 +104,16 @@ fn seal_resolves_pending_settlement_once_and_drop_adds_none() {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("an uncontended candidate performs: {outcome:?}"),
     };
+    let commit_id = runtime.history().latest_commit().unwrap().commit_id;
     drop(performed);
     let binding = runtime.publication_binding();
     assert!(!binding.settlement_admission_is_closed());
     assert_eq!(binding.pending_settlement_count(), 1);
 
+    runtime
+        .settlement_port()
+        .repair_pending_publication_settlement(commit_id)
+        .unwrap();
     seal(&mut runtime);
 
     assert!(
@@ -118,13 +123,13 @@ fn seal_resolves_pending_settlement_once_and_drop_adds_none() {
     assert_eq!(binding.pending_settlement_count(), 0);
     assert_eq!(
         binding.pending_settlement_owner_loss_count(),
-        1,
-        "the seal resolves the pending settlement with owner-loss accounting"
+        0,
+        "quiescent sealing loses no pending settlement"
     );
     drop(runtime);
     assert_eq!(
         binding.pending_settlement_owner_loss_count(),
-        1,
+        0,
         "dropping a sealed owner resolves nothing a second time"
     );
 }
@@ -210,5 +215,5 @@ fn sealed_owner_still_forks_an_independent_open_runtime() {
 }
 
 fn seal(runtime: &mut RelationalRuntime) {
-    assert_eq!(runtime.try_seal(), Ok(RelationalRuntimeSealOutcome::Sealed));
+    runtime.try_hold_admission().unwrap().seal();
 }
