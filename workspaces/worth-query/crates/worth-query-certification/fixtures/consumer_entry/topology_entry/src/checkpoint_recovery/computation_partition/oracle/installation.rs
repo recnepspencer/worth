@@ -53,10 +53,17 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
             let mut last_value = None;
             for _ in 0..RUNS {
                 take_calls();
+                COMBINES.store(0, Ordering::Relaxed);
+                worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test();
                 let outcome = (|| {
-                    let computed = installed
-                        .prepare(reader, set)?
-                        .compute(reader.managed_computation_execution())?;
+                    let prepared = if MODE == 3 {
+                        installed.prepare_without_reuse_for_test(reader, set)?
+                    } else if super::branch_sharing::reinstallation_requested() {
+                        installed.prepare_after_reinstallation_for_test(reader, set)?
+                    } else {
+                        installed.prepare(reader, set)?
+                    };
+                    let computed = prepared.compute(reader.managed_computation_execution())?;
                     let charged_work = computed.charged_work();
                     Ok((computed.complete()?.to_bits(), charged_work))
                 })();
@@ -67,6 +74,8 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                     outcome,
                     runs: runs.collect(),
                     calls: take_calls(),
+                    tree_runs: worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test(),
+                    combines: COMBINES.swap(0, Ordering::Relaxed),
                 });
             }
             last_value

@@ -250,6 +250,7 @@ impl QueryDispatch<'_> {
         identity: R,
         combine: Combine,
         max_value_bytes: u64,
+        cause: super::partitioned_computation::WorthQueryPartitionedComputationFullCause,
     ) -> Result<Reduced<R, Combine, E>, WorkCeilingDenial>
     where
         T: Sync + ChargedBytes,
@@ -265,7 +266,7 @@ impl QueryDispatch<'_> {
         let ceiling = ExecutionWorkCeiling::new(ceiling);
         let held = tree.held.as_mut();
         let run = |lease: Option<&ExecutionResourceLease<'_>>| {
-            map.run_reduce_holding(
+            let outcome = map.run_reduce_holding(
                 lease,
                 inputs.held,
                 held,
@@ -274,7 +275,9 @@ impl QueryDispatch<'_> {
                 combine,
                 max_value_bytes,
                 0,
-            )
+            );
+            super::partitioned_computation::observe_full_tree(cause, &outcome);
+            outcome
         };
         let reduced = match &self.form {
             DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),

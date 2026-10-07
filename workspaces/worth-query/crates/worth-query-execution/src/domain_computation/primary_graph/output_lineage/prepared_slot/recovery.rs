@@ -179,6 +179,7 @@ mod tests {
                     PriorAbsence::NotProduced,
                 )),
                 computation_assigned: false,
+                computation_fork_scan_bound: lineage.prepay_computation_fork_scan_for_test(),
             }
         };
         for computation in [

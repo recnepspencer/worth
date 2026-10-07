@@ -1,6 +1,5 @@
 //! Metered composition of an original handler prefix and a fresh source suffix.
 
-use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::{mem::size_of, sync::Arc};
 
 use worth_foundational::facade::AspectFieldLocator;
@@ -155,9 +154,12 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
                 (Some(Arc::clone(&facts)))
                     .map(|facts| selected_row.computation_source.retain_facts(facts)),
                 Some(resources),
-                super::super::super::retained_computation::RecordedComputation::Absent(
-                    PriorAbsence::NotProduced,
-                ),
+                selected_row
+                    .mutable
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .computation
+                    .shared(),
             )),
         };
         Ok(PreparedStableLineagePublication {

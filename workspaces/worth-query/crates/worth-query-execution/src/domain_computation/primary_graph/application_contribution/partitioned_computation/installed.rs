@@ -35,6 +35,9 @@ use crate::domain_computation::primary_graph::{
     DecisionReader, WorthQueryApplicationOperationInvariantProjectionReader,
 };
 
+#[cfg(feature = "test-query-execution-observer")]
+mod certification;
+
 pub struct WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner> {
     pub(super) owner: Arc<Owner>,
     retention: ComputationRetention,

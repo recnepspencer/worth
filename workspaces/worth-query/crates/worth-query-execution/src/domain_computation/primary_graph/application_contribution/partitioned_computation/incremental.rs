@@ -16,6 +16,7 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
+mod carriage;
 mod deposit;
 mod next_tree;
 mod observed;
@@ -41,7 +42,16 @@ pub(in crate::domain_computation::primary_graph) use prior_absence::CompletedCom
 pub(in crate::domain_computation) use prior_absence::{
     PriorAbsence, SealedComputationRetention, Suppression,
 };
+mod tree_report;
 mod tree_update;
+pub(in super::super) use observed::observe_full_tree;
+#[cfg(feature = "test-query-execution-observer")]
+pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
+#[cfg(feature = "test-query-execution-observer")]
+pub use tree_report::{
+    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
+    WorthQueryPartitionedTreeRun,
+};
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -154,6 +164,10 @@ where
         basis: Ok(RetainedBasisToken(basis)),
         cause,
     };
+    #[cfg(feature = "test-query-execution-observer")]
+    if super::certification_reuse::disabled() {
+        return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
+    }
     let retained = match prior.retained {
         Ok(retained) => retained,
         Err(cause) => return full(basis, cause),
