@@ -32,6 +32,7 @@ use super::*;
 
 mod counts;
 mod differential;
+mod parallel_history_reuse;
 mod program;
 mod worker_axis;
 

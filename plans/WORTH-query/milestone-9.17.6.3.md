@@ -2595,6 +2595,10 @@ The next phase may trust that the touched graph alone decides what recomputes.
   for equivalence with reuse off (result bits, typed outcomes, charged work,
   work boundary), and for exact call counts derived from the edit by code
   that shares nothing with production.
+  The lifecycle events include schema and program adoption that carry
+  retained state, restoration, and eviction or refusal at the retained
+  ceiling; the reuse inventory of the 7.8 harness lists each as waiting on
+  this slice.
 
 The next phase may trust that partition-granular reuse is exact.
 
