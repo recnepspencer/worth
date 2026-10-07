@@ -39,12 +39,10 @@ fn schema_work(schema: &ErasedApplicationSchemaDeclaration) -> WorthQueryCanonic
 
 #[test]
 fn complete_schema_admits_without_repeating_prefixed_source() {
-    let small = schema_work(&schema("Large", 1_000));
-    let next = schema_work(&schema("Large", 1_001));
-    let per_member = next.canonical_encoded_bytes() - small.canonical_encoded_bytes();
-    let count = 1_000
-        + (INSTALLATION_MAXIMUM_CANONICAL_BYTES - 512 * 1_024 - small.canonical_encoded_bytes())
-            / per_member;
+    // Fixed distinct declarations keep the real child below 64 MiB while the
+    // former prefixed representation exceeds it. Do not extrapolate a small
+    // member's encoded width: decimal locus indexes grow with schema breadth.
+    let count = 165_000;
     let declaration = schema("Large", count);
     let child_work = schema_work(&declaration);
     let fixture = package().application_schema_erased(declaration.clone());
@@ -73,8 +71,8 @@ fn complete_schema_admits_without_repeating_prefixed_source() {
     .unwrap();
     assert!(matches!(
         old.derive(),
-        Err(CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { maximum, .. })
-            if maximum == INSTALLATION_MAXIMUM_CANONICAL_BYTES
+        Err(CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { maximum, attempted })
+            if maximum == INSTALLATION_MAXIMUM_CANONICAL_BYTES && attempted > maximum
     ));
 }
 
