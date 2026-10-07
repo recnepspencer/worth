@@ -155,10 +155,10 @@ pub(crate) fn run_stage_slices<'a, P: SignalPrecompute>(
     first_target: Option<NodeId>,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: TemporalLoweringContext,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
     policy: ResolvedSignalPlannerPolicy,
-    request_work: Option<&mut MapKernelContext<'_, '_>>,
-    preparation: Option<&mut SignalPreparationBudget>,
+    request_work: &mut MapKernelContext<'_, '_>,
+    preparation: &mut SignalPreparationBudget,
     progress: &mut SignalPublicationProgress,
 ) -> Result<ExecutionReport, SignalError> {
     let mut context = ExecutionContext::new(
@@ -182,56 +182,58 @@ pub(crate) fn run_stage_slices<'a, P: SignalPrecompute>(
         while offset < stage.tasks.len() {
             // The prior epoch's preparation has been consumed and published before
             // the next admission. Keep the request's planning and report storage.
-            let frame = context
-                .preparation
-                .as_deref()
-                .map(SignalPreparationBudget::checkpoint);
-            let admission = super::super::precompute::graph_batch::epoch_width(
-                context.graph,
-                &stage.tasks[offset..],
-                stage.task_offset + offset,
-                precompute.allows_bounded_inputs(),
-                context.lease,
-                context.comparator_resolver,
-                context.preparation.as_deref_mut(),
-                context.request_work.as_deref_mut(),
-            )?;
-            // Resource slices of one planned stage share its semantic readiness
-            // identity. Mint it only after the first slice has been admitted.
-            let readiness_epoch = *stage_readiness_epoch
-                .get_or_insert_with(|| context.graph.begin_invalidation_readiness_epoch());
-            let epoch = match admission {
-                super::super::precompute::graph_batch::EpochAdmission::Checked(selection) => {
-                    let lease = context
-                        .lease
-                        .expect("checked epoch selection requires its lease");
-                    AdmittedEpoch::Checked(CheckedAdmittedEpoch {
-                        stage_index: stage.index,
-                        selection,
-                        lease,
-                        readiness_epoch,
-                    })
-                }
-                super::super::precompute::graph_batch::EpochAdmission::LegacySerial => {
-                    AdmittedEpoch::LegacySerial(LegacySerialEpoch {
-                        stage_index: stage.index,
-                        task_offset: stage.task_offset + offset,
-                        tasks: &stage.tasks[offset..offset + 1],
-                        readiness_epoch,
-                    })
-                }
-            };
-            let width = epoch.tasks().len();
-            if let Err(error) = execute_stage(&mut context, epoch, progress) {
-                if let SignalError::ExecutionStopped(stop) = &error {
-                    progress.stopped_epoch(stop.disposition());
-                }
-                return Err(error);
-            }
+            let frame = context.preparation.checkpoint();
+            let width = context
+                .lease
+                .in_scope(|scoped_lease| {
+                    let admission = super::super::precompute::graph_batch::epoch_width(
+                        context.graph,
+                        &stage.tasks[offset..],
+                        stage.task_offset + offset,
+                        precompute.allows_bounded_inputs(),
+                        scoped_lease,
+                        context.comparator_resolver,
+                        Some(&mut *context.preparation),
+                        Some(&mut *context.request_work),
+                    )?;
+                    // Resource slices of one planned stage share its semantic readiness
+                    // identity. Mint it only after the first slice has been admitted.
+                    let readiness_epoch = *stage_readiness_epoch
+                        .get_or_insert_with(|| context.graph.begin_invalidation_readiness_epoch());
+                    let epoch = match admission {
+                        super::super::precompute::graph_batch::EpochAdmission::Checked(
+                            selection,
+                        ) => {
+                            let lease =
+                                scoped_lease.expect("checked epoch selection requires its lease");
+                            AdmittedEpoch::Checked(CheckedAdmittedEpoch {
+                                stage_index: stage.index,
+                                selection,
+                                lease,
+                                readiness_epoch,
+                            })
+                        }
+                        super::super::precompute::graph_batch::EpochAdmission::LegacySerial => {
+                            AdmittedEpoch::LegacySerial(LegacySerialEpoch {
+                                stage_index: stage.index,
+                                task_offset: stage.task_offset + offset,
+                                tasks: &stage.tasks[offset..offset + 1],
+                                readiness_epoch,
+                            })
+                        }
+                    };
+                    let width = epoch.tasks().len();
+                    if let Err(error) = execute_stage(&mut context, epoch, progress) {
+                        if let SignalError::ExecutionStopped(stop) = &error {
+                            progress.stopped_epoch(stop.disposition());
+                        }
+                        return Err(error);
+                    }
+                    Ok(width)
+                })
+                .map_err(SignalError::execution_scope_denied)??;
             progress.complete_epoch(width);
-            if let (Some(preparation), Some(frame)) = (context.preparation.as_deref_mut(), frame) {
-                preparation.release(frame);
-            }
+            context.preparation.release(frame);
             offset += width;
         }
     }

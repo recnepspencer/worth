@@ -79,8 +79,9 @@ pub use crate::data::conditional_execution::{
 pub use crate::data::core_profile::CORE_STORAGE_PROFILE_ID;
 pub use crate::data::dependency::DependencyEdge;
 pub use crate::data::error::{
-    SignalError, SignalExecutionFailure, SignalExecutionStop, SignalExecutionStopReason,
-    SignalPublicationDisposition, SignalPublicationProgress,
+    SignalCheckpointDenial, SignalError, SignalExecutionFailure, SignalExecutionStop,
+    SignalExecutionStopReason, SignalLeaseDenial, SignalPublicationDisposition,
+    SignalPublicationProgress,
 };
 pub use crate::data::graph::{NodeBuilder, SignalGraph, SignalGraphLifecycleProbe};
 pub use crate::data::handle::NodeId;

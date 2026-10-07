@@ -47,7 +47,7 @@ where
                 stage_task_candidates: false,
             },
             evaluator,
-            None,
+            worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
         )
     }
 }

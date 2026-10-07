@@ -244,7 +244,7 @@ impl InvalidationSink for PlanningTestSink {
     fn deliver_invalidation(
         &self,
         delivery: BridgeSignalInvalidationDelivery,
-        _lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

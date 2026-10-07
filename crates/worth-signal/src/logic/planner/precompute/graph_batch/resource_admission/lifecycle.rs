@@ -33,7 +33,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
                 deadline: None,
                 cancellation: CancellationToken::new(),
             })
-            .map_err(SignalError::ExecutionAdmissionDenied)?;
+            .map_err(SignalError::execution_admission_denied)?;
         Ok(Self {
             available: budget.remaining(),
             fixed: 0,

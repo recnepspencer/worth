@@ -15,7 +15,7 @@ use crate::budget::RuntimeWorldBudgets;
 
 pub struct MissingRuntimeWorldInput;
 
-pub struct RuntimeWorldOwnerBuilder<B, R, S, P, U, C> {
+pub struct RuntimeWorldOwnerBuilder<B, R, S, P, U, C, X = MissingRuntimeWorldInput> {
     bridge: B,
     relational: R,
     signal: S,
@@ -23,11 +23,12 @@ pub struct RuntimeWorldOwnerBuilder<B, R, S, P, U, C> {
     budgets: U,
     clock: C,
     execution_authority: Option<Arc<ExecutionAuthority>>,
-    execution_policy: Option<ExecutionRequestPolicy>,
+    execution_policy: X,
 }
 
 impl
     RuntimeWorldOwnerBuilder<
+        MissingRuntimeWorldInput,
         MissingRuntimeWorldInput,
         MissingRuntimeWorldInput,
         MissingRuntimeWorldInput,
@@ -45,16 +46,16 @@ impl
             budgets: MissingRuntimeWorldInput,
             clock: MissingRuntimeWorldInput,
             execution_authority: None,
-            execution_policy: None,
+            execution_policy: MissingRuntimeWorldInput,
         }
     }
 }
 
-impl<R, S, P, U, C> RuntimeWorldOwnerBuilder<MissingRuntimeWorldInput, R, S, P, U, C> {
+impl<R, S, P, U, C, X> RuntimeWorldOwnerBuilder<MissingRuntimeWorldInput, R, S, P, U, C, X> {
     pub fn with_bridge_correspondence(
         self,
         bridge: RuntimeWorldCorrespondencePort,
-    ) -> RuntimeWorldOwnerBuilder<RuntimeWorldCorrespondencePort, R, S, P, U, C> {
+    ) -> RuntimeWorldOwnerBuilder<RuntimeWorldCorrespondencePort, R, S, P, U, C, X> {
         RuntimeWorldOwnerBuilder {
             bridge,
             relational: self.relational,
@@ -68,11 +69,11 @@ impl<R, S, P, U, C> RuntimeWorldOwnerBuilder<MissingRuntimeWorldInput, R, S, P, 
     }
 }
 
-impl<B, S, P, U, C> RuntimeWorldOwnerBuilder<B, MissingRuntimeWorldInput, S, P, U, C> {
+impl<B, S, P, U, C, X> RuntimeWorldOwnerBuilder<B, MissingRuntimeWorldInput, S, P, U, C, X> {
     pub fn with_relational_services(
         self,
         relational: RelationalOwnerServicePorts,
-    ) -> RuntimeWorldOwnerBuilder<B, RelationalOwnerServicePorts, S, P, U, C> {
+    ) -> RuntimeWorldOwnerBuilder<B, RelationalOwnerServicePorts, S, P, U, C, X> {
         RuntimeWorldOwnerBuilder {
             bridge: self.bridge,
             relational,
@@ -86,11 +87,11 @@ impl<B, S, P, U, C> RuntimeWorldOwnerBuilder<B, MissingRuntimeWorldInput, S, P, 
     }
 }
 
-impl<B, R, P, U, C> RuntimeWorldOwnerBuilder<B, R, MissingRuntimeWorldInput, P, U, C> {
+impl<B, R, P, U, C, X> RuntimeWorldOwnerBuilder<B, R, MissingRuntimeWorldInput, P, U, C, X> {
     pub fn with_signal_services<D, I, E, Ctx, T>(
         self,
         signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
-    ) -> RuntimeWorldOwnerBuilder<B, R, SignalOwnerServicePorts<D, I, E, Ctx, T>, P, U, C>
+    ) -> RuntimeWorldOwnerBuilder<B, R, SignalOwnerServicePorts<D, I, E, Ctx, T>, P, U, C, X>
     where
         D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
         I: Copy + Ord + Send + Sync + 'static,
@@ -111,7 +112,7 @@ impl<B, R, P, U, C> RuntimeWorldOwnerBuilder<B, R, MissingRuntimeWorldInput, P, 
     }
 }
 
-impl<B, R, D, I, E, Ctx, T, U, C>
+impl<B, R, D, I, E, Ctx, T, U, C, X>
     RuntimeWorldOwnerBuilder<
         B,
         R,
@@ -119,6 +120,7 @@ impl<B, R, D, I, E, Ctx, T, U, C>
         MissingRuntimeWorldInput,
         U,
         C,
+        X,
     >
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -137,6 +139,7 @@ where
         SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
         U,
         C,
+        X,
     > {
         RuntimeWorldOwnerBuilder {
             bridge: self.bridge,
@@ -151,11 +154,11 @@ where
     }
 }
 
-impl<B, R, S, P, C> RuntimeWorldOwnerBuilder<B, R, S, P, MissingRuntimeWorldInput, C> {
+impl<B, R, S, P, C, X> RuntimeWorldOwnerBuilder<B, R, S, P, MissingRuntimeWorldInput, C, X> {
     pub fn with_budgets(
         self,
         budgets: RuntimeWorldBudgets,
-    ) -> RuntimeWorldOwnerBuilder<B, R, S, P, RuntimeWorldBudgets, C> {
+    ) -> RuntimeWorldOwnerBuilder<B, R, S, P, RuntimeWorldBudgets, C, X> {
         RuntimeWorldOwnerBuilder {
             bridge: self.bridge,
             relational: self.relational,
@@ -169,11 +172,11 @@ impl<B, R, S, P, C> RuntimeWorldOwnerBuilder<B, R, S, P, MissingRuntimeWorldInpu
     }
 }
 
-impl<B, R, S, P, U> RuntimeWorldOwnerBuilder<B, R, S, P, U, MissingRuntimeWorldInput> {
+impl<B, R, S, P, U, X> RuntimeWorldOwnerBuilder<B, R, S, P, U, MissingRuntimeWorldInput, X> {
     pub fn with_clock(
         self,
         clock: RuntimeWorldClock,
-    ) -> RuntimeWorldOwnerBuilder<B, R, S, P, U, RuntimeWorldClock> {
+    ) -> RuntimeWorldOwnerBuilder<B, R, S, P, U, RuntimeWorldClock, X> {
         RuntimeWorldOwnerBuilder {
             bridge: self.bridge,
             relational: self.relational,
@@ -187,7 +190,7 @@ impl<B, R, S, P, U> RuntimeWorldOwnerBuilder<B, R, S, P, U, MissingRuntimeWorldI
     }
 }
 
-impl<B, R, S, P, U, C> RuntimeWorldOwnerBuilder<B, R, S, P, U, C> {
+impl<B, R, S, P, U, C, X> RuntimeWorldOwnerBuilder<B, R, S, P, U, C, X> {
     /// Install the host's process authority for the World and its descendants.
     /// Requests lease from it only under a policy installed beside it.
     pub fn with_execution_authority(mut self, authority: Arc<ExecutionAuthority>) -> Self {
@@ -197,9 +200,20 @@ impl<B, R, S, P, U, C> RuntimeWorldOwnerBuilder<B, R, S, P, U, C> {
 
     /// Install the request policy every request runs under: leased from the
     /// authority when one is installed, on the calling thread otherwise.
-    pub fn with_execution_policy(mut self, policy: ExecutionRequestPolicy) -> Self {
-        self.execution_policy = Some(policy);
-        self
+    pub fn with_execution_policy(
+        self,
+        policy: ExecutionRequestPolicy,
+    ) -> RuntimeWorldOwnerBuilder<B, R, S, P, U, C, ExecutionRequestPolicy> {
+        RuntimeWorldOwnerBuilder {
+            bridge: self.bridge,
+            relational: self.relational,
+            signal: self.signal,
+            signal_definition_publication: self.signal_definition_publication,
+            budgets: self.budgets,
+            clock: self.clock,
+            execution_authority: self.execution_authority,
+            execution_policy: policy,
+        }
     }
 }
 
@@ -211,6 +225,7 @@ impl<D, I, E, Ctx, T>
         SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
         RuntimeWorldBudgets,
         RuntimeWorldClock,
+        ExecutionRequestPolicy,
     >
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -229,6 +244,7 @@ where
             self.bridge,
             self.budgets,
             self.clock,
+            execution.request_policy(),
         )
         .with_execution(execution);
         RuntimeWorldOwner::from_inputs(inputs).map_err(RuntimeWorldBuildDenial::IdentityExhaustion)

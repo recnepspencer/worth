@@ -147,7 +147,8 @@ fn restore_case_crosses_a_real_checkpoint_boundary_before_completion() {
     for case in cases {
         let mut compiled =
             compile_financial_locality_world(FinancialWorldDefinition::locality_case(41, case))
-                .unwrap();
+                .expect("the tier default admits the complete baseline read_many");
+        assert!(compiled.baseline_preparation_report().charged_work() > 0);
         let _evidence = compiled.certify_restore_locality_lifecycle().unwrap();
     }
 }

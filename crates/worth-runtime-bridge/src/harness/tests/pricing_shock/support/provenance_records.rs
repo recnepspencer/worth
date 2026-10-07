@@ -114,7 +114,9 @@ pub(in crate::harness::tests::pricing_shock) fn read_single_aspect_value_text(
 ) -> String {
     let reads = evaluation
         .observation()
-        .read_planned_packet()
+        .read_planned_packet(worth_execution::ExecutionRequest::serial(
+            &crate::snapshot::test_serial_request(),
+        ))
         .expect("truth-view read packet should materialize");
     pricing_aspect_value_text(
         reads.records()[0]
@@ -152,7 +154,9 @@ impl PricingProvenanceAspectTextPacket {
     fn from_evaluation(evaluation: &crate::facade::BridgeTruthViewEvaluation) -> Self {
         let reads = evaluation
             .observation()
-            .read_planned_packet()
+            .read_planned_packet(worth_execution::ExecutionRequest::serial(
+                &crate::snapshot::test_serial_request(),
+            ))
             .expect("truth-view read packet should materialize");
         let mut values = reads.records().iter().map(|record| {
             pricing_aspect_value_text(

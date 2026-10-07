@@ -74,3 +74,9 @@ pub(crate) fn test_execution_lease(
         })
         .unwrap()
 }
+
+#[cfg(test)]
+pub(crate) fn test_serial_request() -> worth_execution::SerialRequest {
+    crate::policy::BridgeExecutionPolicyBaseline::development()
+        .serial_request(worth_execution::CancellationToken::new(), None)
+}

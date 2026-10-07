@@ -49,12 +49,13 @@ pub(super) fn version(
     work: &mut EvaluationWork<'_, '_>,
 ) -> Result<u64, SignalError> {
     match work {
-        EvaluationWork::Ordinary | EvaluationWork::RequestCheckpoint(_) => graph
-            .node_version_for_scope(
-                dependency.source(),
-                dependency.aspect(),
-                dependency.scope_ref(),
-            ),
+        EvaluationWork::Ordinary
+        | EvaluationWork::RequestCheckpoint(_)
+        | EvaluationWork::RequestPreparation { .. } => graph.node_version_for_scope(
+            dependency.source(),
+            dependency.aspect(),
+            dependency.scope_ref(),
+        ),
         EvaluationWork::Conditional(work) => graph.conditional_node_version_for_scope(
             dependency.source(),
             dependency.aspect(),

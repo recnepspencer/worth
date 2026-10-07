@@ -199,7 +199,7 @@ where
         &mut self,
         intent: TransactionExecutionIntent<'_>,
         evaluator: &F,
-        lease: Option<&ExecutionResourceLease<'_>>,
+        lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<ExecutionReport, SignalError>
     where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,

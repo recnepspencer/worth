@@ -79,6 +79,7 @@ impl RuntimeBridge {
             snapshot_token,
             materialization_path,
             admitted,
+            self.policy().execution(),
         ))
     }
 

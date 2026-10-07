@@ -171,12 +171,11 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             graph.node_eval_config(task.node)?.comparator.as_ref(),
         );
         let mut measurement = Measurement::new(usize::MAX);
-        let maximum_visits = measurement.maximum_visits();
         let mut checkpoint = |visits: usize| {
             if let Some(request) = request.as_deref_mut() {
                 request
                     .checkpoint(visits as u64)
-                    .map_err(|_| Denial::WorkExhausted { maximum_visits })?;
+                    .map_err(|stop| Denial::ExecutionStopped(stop.into()))?;
             }
             Ok(())
         };

@@ -14,7 +14,7 @@ impl InvalidationSink for UnboundDelivery {
     fn deliver_invalidation(
         &self,
         _: BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Err(SignalBridgeSinkError::new(
             "court requires exact graph-bound delivery",

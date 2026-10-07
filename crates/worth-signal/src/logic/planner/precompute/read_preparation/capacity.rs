@@ -11,7 +11,7 @@ use crate::data::error::SignalError;
 use crate::data::proof::invalidation::progression::GraphProposalKey;
 use crate::logic::prepared::PreparedEvaluation;
 
-use super::GraphWorkItem;
+use super::map_declaration::GraphWorkItem;
 
 pub(in crate::logic::planner::precompute) struct PrecomputeMapBasis {
     capture_bytes: u64,

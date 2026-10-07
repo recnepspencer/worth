@@ -54,6 +54,7 @@ pub(in crate::tests::domains::fintech) struct CompiledFinancialLocalityWorld {
     definition: FinancialWorldDefinition,
     handles: BTreeMap<LocalitySemanticOutputId, NodeId>,
     baseline_values: BTreeMap<LocalitySemanticOutputId, i64>,
+    baseline_preparation_report: Option<worth_foundational::ExecutionReport>,
 }
 
 impl CompiledFinancialLocalityWorld {
@@ -78,7 +79,15 @@ impl CompiledFinancialLocalityWorld {
             .iter()
             .map(|output| self.handles[&output.id])
             .collect::<Vec<_>>();
-        self.runtime.read_many(&nodes, &(), &evaluator).map(|_| ())
+        self.runtime.read_many(&nodes, &(), &evaluator)?;
+        self.baseline_preparation_report = self
+            .runtime
+            .graph()
+            .observe()
+            .telemetry()
+            .execution
+            .last_execution_report;
+        Ok(())
     }
 
     pub(in crate::tests::domains::fintech) fn run_inherited_breadth_red_control(

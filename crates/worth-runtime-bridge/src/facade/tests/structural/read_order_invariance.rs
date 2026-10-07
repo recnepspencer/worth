@@ -19,6 +19,7 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
         fn read_packet(
             &self,
             request: &SnapshotReadPacket,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::snapshot::SnapshotReadPacketResult,
             crate::snapshot::BridgeSnapshotReadError,
@@ -50,6 +51,7 @@ fn runtime_branch_comparison_ignores_read_result_order_when_structure_is_equal()
         fn read_packet(
             &self,
             request: &SnapshotReadPacket,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::snapshot::SnapshotReadPacketResult,
             crate::snapshot::BridgeSnapshotReadError,

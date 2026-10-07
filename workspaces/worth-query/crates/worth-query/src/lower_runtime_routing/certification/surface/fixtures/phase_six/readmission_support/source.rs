@@ -142,6 +142,7 @@ impl TruthSnapshotReader for TestSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        _execution: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, worth_runtime_bridge::facade::BridgeSnapshotReadError>
     {
         let fixture_value = self
@@ -171,7 +172,7 @@ impl InvalidationSink for NoopSignalSink {
     fn deliver_invalidation(
         &self,
         _delivery: BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             1,

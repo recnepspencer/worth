@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use worth_execution::ExecutionResourceLease;
+
 use worth_foundational::{ExecutionObjectiveProfile, ExecutionPosture};
 
 use crate::data::graph::SignalGraph;
@@ -19,12 +19,12 @@ pub struct ResolvedSignalPlannerPolicy {
 impl ResolvedSignalPlannerPolicy {
     pub(crate) fn for_graph(
         graph: &SignalGraph,
-        lease: Option<&ExecutionResourceLease<'_>>,
+        lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Self {
         let installed = graph.installed_runtime_policy();
-        let posture = lease.map_or(ExecutionPosture::Serial, |lease| lease.resolved_posture());
+        let posture = lease.resolved_posture();
         let workers = if posture == ExecutionPosture::Automatic {
-            lease.map_or(1, |lease| lease.policy().budget().max_workers().get())
+            lease.max_workers()
         } else {
             1
         };

@@ -28,6 +28,7 @@ impl SignalRuntimePolicy {
             DiagnosticsTier::Forensic => FrontierTracingPolicy::FullForensic,
         };
         Self {
+            serial_memory_bytes: 64 << 20,
             conditional_evaluation_budget: super::SignalConditionalEvaluationBudget::PRESET,
             conditional_temporal_budget: super::SignalConditionalTemporalBudget::PRESET,
             maximum_upstream_dependency_visits:

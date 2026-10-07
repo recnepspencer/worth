@@ -8,6 +8,7 @@ fn empty_world() -> (RealReferenceFixture, RuntimeWorldOwner<(), (), (), (), ()>
         RuntimeWorldClock::from_source(FixedClock),
     );
     let owner = RuntimeWorldOwner::builder()
+        .with_execution_policy(inputs.execution.request_policy())
         .with_relational_services(inputs.relational)
         .with_signal_services(inputs.signal)
         .with_signal_definition_publication(inputs.signal_definition_publication)

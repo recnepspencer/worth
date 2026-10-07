@@ -31,6 +31,7 @@ pub(super) const fn lease_denial(denial: LeaseDenial) -> Resource {
         LeaseDenial::MemoryExhausted(denial) => memory_denial(denial),
         LeaseDenial::ChargedBytesOverflow => Resource::CapacityOverflow,
         LeaseDenial::UnrelatedNestedLease => Resource::NestedLeaseMisuse,
+        LeaseDenial::NoActiveExecutionScope => Resource::NoActiveExecutionScope,
         LeaseDenial::EquivalenceContractUnavailable => Resource::EquivalenceContractUnavailable,
     }
 }
@@ -133,6 +134,7 @@ pub(super) fn kernel_failure<Stopped>(
             | Resource::PolicyMemoryLimit
             | Resource::WorkLimit
             | Resource::NestedLeaseMisuse
+            | Resource::NoActiveExecutionScope
             | Resource::EquivalenceContractUnavailable => {
                 MapKernelFailure::Domain(PartitionRefusal::Resource(denial))
             }

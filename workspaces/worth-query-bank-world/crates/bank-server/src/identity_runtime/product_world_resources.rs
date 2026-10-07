@@ -6,6 +6,19 @@ use worth_query_host::facade::runtime::{
     WorthQueryProductWorldClock, WorthQueryProductWorldResources,
 };
 
+// Twice the 64 MiB preparation ceiling leaves framework memory headroom.
+// The 16 million work allowance bounds leases; serial requests bound memory only.
+const BANK_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            128 * 1024 * 1024,
+            16_000_000,
+        ),
+    );
+
 pub(crate) fn bank_product_world_resources() -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
@@ -44,6 +57,7 @@ pub(crate) fn bank_product_world_resources() -> WorthQueryProductWorldResources 
             ),
         )
         .expect("the Query invalidation installation is valid"),
+        BANK_EXECUTION_POLICY,
     )
     .expect("the bank Product World resources are statically valid")
 }

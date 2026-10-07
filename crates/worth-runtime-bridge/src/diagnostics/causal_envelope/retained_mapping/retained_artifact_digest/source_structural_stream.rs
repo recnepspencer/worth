@@ -85,6 +85,7 @@ fn source_failure_class_label(value: SourceFailureClass) -> &'static str {
 
 fn delivery_error_kind_label(value: BridgeDeliveryErrorKind) -> &'static str {
     match value {
+        BridgeDeliveryErrorKind::ExecutionDenied(denial) => denial.label(),
         BridgeDeliveryErrorKind::SourceContractMismatch => "source-contract-mismatch",
         BridgeDeliveryErrorKind::InvalidWideningAdmission => "invalid-widening-admission",
         BridgeDeliveryErrorKind::BulkDeliveryRejected => "bulk-delivery-rejected",
@@ -99,8 +100,6 @@ fn delivery_error_kind_label(value: BridgeDeliveryErrorKind) -> &'static str {
         }
         BridgeDeliveryErrorKind::SnapshotAcquisitionFailure => "snapshot-acquisition-failure",
         BridgeDeliveryErrorKind::SnapshotReadFailure => "snapshot-read-failure",
-        BridgeDeliveryErrorKind::ExecutionCancelled => "execution-cancelled",
-        BridgeDeliveryErrorKind::ExecutionDeadlineElapsed => "execution-deadline-elapsed",
         BridgeDeliveryErrorKind::SnapshotReadContractViolation => {
             "snapshot-read-contract-violation"
         }

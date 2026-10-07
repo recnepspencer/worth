@@ -174,9 +174,9 @@ impl SignalGraph {
                     let units = u64::try_from(units).map_err(|_| {
                         SignalError::invalid_input("reverse subscription work overflow")
                     })?;
-                    request.checkpoint(units).map_err(|_| {
-                        SignalError::invalid_input("reverse subscription work stopped")
-                    })
+                    request
+                        .checkpoint(units)
+                        .map_err(SignalError::execution_checkpoint_stopped)
                 };
                 self.prepare_reverse_subscription_replacement(
                     node,
@@ -289,7 +289,7 @@ fn checkpoint(
             u64::try_from(units)
                 .map_err(|_| SignalError::invalid_input("epoch topology work overflow"))?,
         )
-        .map_err(|_| SignalError::invalid_input("epoch topology work stopped"))?;
+        .map_err(SignalError::execution_checkpoint_stopped)?;
     }
     Ok(())
 }
@@ -303,15 +303,14 @@ pub(super) fn with_segment_work<R>(
         return operation(&mut work);
     };
     let mut checkpoint = |units: usize| {
-        let units =
-            u64::try_from(units).map_err(|_| RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits: usize::MAX,
-            })?;
+        let units = u64::try_from(units).map_err(|_| {
+            RetainedStoragePreparationDenial::ExecutionStopped(
+                worth_execution::MapKernelStop::WorkCounterOverflow.into(),
+            )
+        })?;
         request
             .checkpoint(units)
-            .map_err(|_| RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits: usize::MAX,
-            })
+            .map_err(|stop| RetainedStoragePreparationDenial::ExecutionStopped(stop.into()))
     };
     let mut observed = work.reborrow_with_checkpoint(&mut checkpoint);
     operation(&mut observed)
@@ -371,3 +370,7 @@ impl PreparedDependencyTopologyStorage {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "epoch_checkpoint_tests.rs"]
+mod checkpoint_tests;

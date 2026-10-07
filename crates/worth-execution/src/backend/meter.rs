@@ -18,6 +18,15 @@ thread_local! {
     static ACTIVE_METER: RefCell<Vec<Rc<RefCell<KernelMeter>>>> = const { RefCell::new(Vec::new()) };
 }
 
+pub(crate) fn active_serial_memory() -> Option<SerialMemoryBudget> {
+    ACTIVE_METER.with(|active| {
+        active
+            .borrow()
+            .last()
+            .and_then(|meter| meter.borrow().limits.serial_memory.clone())
+    })
+}
+
 mod activity;
 mod framework_bytes;
 mod nested;

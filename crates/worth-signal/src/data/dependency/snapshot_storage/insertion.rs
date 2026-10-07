@@ -38,7 +38,7 @@ impl DependencySnapshotStore {
             });
         }
         match work {
-            EvaluationWork::Ordinary => {
+            EvaluationWork::Ordinary | EvaluationWork::RequestPreparation { .. } => {
                 self.rebuild_interner_if_needed();
                 self.rebuild_shape_handles_if_needed(shapes);
             }

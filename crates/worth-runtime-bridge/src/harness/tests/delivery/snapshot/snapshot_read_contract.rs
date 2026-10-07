@@ -92,5 +92,8 @@ fn leased_route_surfaces_cancellation_before_snapshot_reads() {
     let error = runtime
         .deliver_invalidation_with_lease(route, &lease)
         .expect_err("cancelled lease must deny the read");
-    assert_eq!(error.kind(), BridgeDeliveryErrorKind::ExecutionCancelled);
+    assert_eq!(
+        error.kind(),
+        BridgeDeliveryErrorKind::ExecutionDenied(crate::error::BridgeExecutionDenial::Cancelled)
+    );
 }

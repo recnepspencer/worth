@@ -29,7 +29,7 @@ impl SignalGraph {
             return Ok(edit(&mut self.node_evaluation_mutation(node)?));
         }
         match work {
-            EvaluationWork::Conditional(work) => {
+            EvaluationWork::Conditional(work) | EvaluationWork::RequestPreparation { work, .. } => {
                 self.mutate_reserved_evaluation_node(node, growth, work, edit)
             }
             EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
@@ -101,13 +101,9 @@ impl SignalGraph {
 pub(in crate::data::graph) fn map_accounting(
     denial: RetainedStoragePreparationDenial,
 ) -> SignalError {
-    match denial {
-        RetainedStoragePreparationDenial::WorkExhausted { maximum_visits } => {
-            SignalError::ConditionalEvaluationWorkExhausted { maximum_visits }
-        }
-        _ => SignalError::EvaluationStorageCapacityExhausted,
-    }
+    SignalError::retained_storage_denied(denial)
 }
+
 pub(in crate::data::graph) fn map_retention(
     denial: SignalConditionalRetentionDenial,
 ) -> SignalError {

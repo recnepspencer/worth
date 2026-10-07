@@ -31,6 +31,7 @@ pub enum WorthQueryManagedComputationResourceDenial {
     WorkLimit,
     /// A pattern ran under a lease that is not its run's.
     NestedLeaseMisuse,
+    NoActiveExecutionScope,
     /// The policy names an equivalence contract the authority does not hold.
     EquivalenceContractUnavailable,
 }

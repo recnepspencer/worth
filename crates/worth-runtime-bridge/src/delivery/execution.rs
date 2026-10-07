@@ -9,7 +9,7 @@ use crate::routing::{
     BridgeBulkWorkloadPlan, BridgeExecutionCounts, BridgeParallelAdmissionClass,
     BridgePlannedRoute, BridgeRouteSourceSummary,
 };
-use crate::snapshot::{validate_snapshot_read_result_contract, BridgeSnapshotReadErrorKind};
+use crate::snapshot::validate_snapshot_read_result_contract;
 
 use super::context::{delivery_context, reject_delivery};
 use super::requests::{BridgePreparedDeliveryRequest, BridgeSignalEvaluationRequest};
@@ -28,10 +28,10 @@ pub(crate) fn deliver_planned_route_with_lease(
     route: BridgePlannedRoute,
     lease: &worth_execution::ExecutionResourceLease<'_>,
 ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
-    deliver_prepared_route_with_lease(
+    deliver_prepared_route_with_request(
         runtime,
         prepare_planned_route_for_delivery(route),
-        Some(lease),
+        worth_execution::ExecutionRequest::leased(lease),
     )
 }
 
@@ -49,12 +49,31 @@ pub(crate) fn deliver_bulk_workload_plan(
     let execution_plan = plan.execution_plan();
     validate_bulk_delivery_mode(execution_plan, execution_plan.selected_mode())?;
 
-    let route_results = plan
-        .planned_routes()
-        .iter()
-        .cloned()
-        .map(|route| deliver_planned_route(runtime, route))
-        .collect::<Result<Vec<_>, _>>()?;
+    let serial = runtime
+        .policy()
+        .execution()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let request = worth_execution::ExecutionRequest::serial(&serial);
+    let route_results = request
+        .in_scope(|_| {
+            plan.planned_routes()
+                .iter()
+                .cloned()
+                .map(|route| {
+                    deliver_prepared_route_with_request(
+                        runtime,
+                        prepare_planned_route_for_delivery(route),
+                        request,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .map_err(|denial| {
+            BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::ExecutionDenied(denial.into()),
+                "Bridge execution scope refused bulk delivery",
+            )
+        })??;
     let delivered_target_count = route_results
         .iter()
         .map(|result| result.receipt().delivered_target_count())
@@ -100,13 +119,36 @@ pub(crate) fn deliver_prepared_route(
     runtime: &RuntimeBridge,
     prepared: BridgePreparedDeliveryRequest,
 ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
-    deliver_prepared_route_with_lease(runtime, prepared, None)
+    let serial = runtime
+        .policy()
+        .execution()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    deliver_prepared_route_with_request(
+        runtime,
+        prepared,
+        worth_execution::ExecutionRequest::serial(&serial),
+    )
 }
 
-pub(crate) fn deliver_prepared_route_with_lease(
+pub(crate) fn deliver_prepared_route_with_request(
     runtime: &RuntimeBridge,
     prepared: BridgePreparedDeliveryRequest,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    request: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<BridgeRouteResult, BridgeDeliveryError> {
+    request
+        .in_scope(|_| deliver_prepared_route_in_scope(runtime, prepared, request))
+        .map_err(|denial| {
+            BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::ExecutionDenied(denial.into()),
+                "Bridge execution scope refused delivery",
+            )
+        })?
+}
+
+fn deliver_prepared_route_in_scope(
+    runtime: &RuntimeBridge,
+    prepared: BridgePreparedDeliveryRequest,
+    request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
     let failure_base = prepared.failure_source();
     let route_identity = prepared.routing_summary().route_identity().clone();
@@ -157,32 +199,22 @@ pub(crate) fn deliver_prepared_route_with_lease(
             ));
         }
     };
-    let read_result = match lease {
-        Some(lease) => snapshot.read_packet_with_lease(read_packet, lease),
-        None => snapshot.read_packet(read_packet),
-    }
-    .map_err(|error| {
-        let kind = match error.kind() {
-            BridgeSnapshotReadErrorKind::ExecutionCancelled => {
-                BridgeDeliveryErrorKind::ExecutionCancelled
-            }
-            BridgeSnapshotReadErrorKind::ExecutionDeadlineElapsed => {
-                BridgeDeliveryErrorKind::ExecutionDeadlineElapsed
-            }
-            _ => BridgeDeliveryErrorKind::SnapshotReadFailure,
-        };
-        BridgeDeliveryError::new(
-            kind,
-            format!(
-                "Bridge failed to execute packetized snapshot reads for `{}`: {error}",
-                lowering_plan.source_snapshot().as_str()
-            ),
-        )
-        .with_context(delivery_context(
-            route_identity.clone(),
-            lowering_plan.source_snapshot().clone(),
-        ))
-    })?;
+    let read_result = snapshot
+        .read_packet(read_packet, request)
+        .map_err(|error| {
+            let kind = error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadFailure);
+            BridgeDeliveryError::new(
+                kind,
+                format!(
+                    "Bridge failed to execute packetized snapshot reads for `{}`: {error}",
+                    lowering_plan.source_snapshot().as_str()
+                ),
+            )
+            .with_context(delivery_context(
+                route_identity.clone(),
+                lowering_plan.source_snapshot().clone(),
+            ))
+        })?;
     if read_result.snapshot_identity() != lowering_plan.source_snapshot() {
         let counters = counters.with_snapshot_identity_mismatch();
         let error = BridgeDeliveryError::new(
@@ -208,7 +240,7 @@ pub(crate) fn deliver_prepared_route_with_lease(
         Ok(validated_reads) => validated_reads,
         Err(error) => {
             let failure = BridgeDeliveryError::new(
-                BridgeDeliveryErrorKind::SnapshotReadContractViolation,
+                error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadContractViolation),
                 format!(
                     "Bridge snapshot read contract failed for `{}`: {error}",
                     lowering_plan.source_snapshot().as_str()
@@ -233,13 +265,13 @@ pub(crate) fn deliver_prepared_route_with_lease(
     );
     let receipt = runtime
         .signal_sink
-        .deliver_invalidation(delivery, lease)
+        .deliver_invalidation(delivery, request)
         .map_err(|error| {
             reject_delivery(
                 runtime,
                 lowered_failure_base.clone(),
                 BridgeDeliveryError::new(
-                    BridgeDeliveryErrorKind::SignalSinkRejection,
+                    error.delivery_kind(),
                     format!("Signal bridge sink rejected invalidation delivery: {error}"),
                 )
                 .with_context(

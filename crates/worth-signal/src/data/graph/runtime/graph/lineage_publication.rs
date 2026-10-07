@@ -17,10 +17,11 @@ impl SignalGraph {
             return Ok(());
         };
         let result = match work {
-            EvaluationWork::Conditional(work) => self
-                .observation
-                .diagnostics
-                .record_retained_lineage(record, &ledger, work),
+            EvaluationWork::Conditional(work) | EvaluationWork::RequestPreparation { work, .. } => {
+                self.observation
+                    .diagnostics
+                    .record_retained_lineage(record, &ledger, work)
+            }
             EvaluationWork::RequestCheckpoint(_) => {
                 return Err(SignalError::internal(
                     "request discovery checkpoint cannot prepare retained mutation",

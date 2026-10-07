@@ -95,6 +95,15 @@ impl CompositeSupplyChainCourt {
             correspondence,
         );
         let world = RuntimeWorldOwner::builder()
+            .with_execution_policy(worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                worth_foundational::DeterminismContract::CanonicalBitwise,
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    64 << 20,
+                    8_000_000,
+                ),
+            ))
             .with_bridge_correspondence(bridge_port)
             .with_relational_services(records.runtime.owner_component_services())
             .with_signal_services(services)

@@ -51,30 +51,26 @@ impl TruthSnapshotReader for RuntimePublicationSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
-        self.runtime
-            .with_runtime(|runtime| {
-                read_packet(runtime, request, &self.observation, self.partition, None)
+        execution
+            .in_scope(|lease| {
+                self.runtime.with_runtime(|runtime| {
+                    read_packet(
+                        runtime,
+                        request,
+                        &self.observation,
+                        self.partition,
+                        lease,
+                        execution,
+                    )
+                })
             })
-            .map(|records| SnapshotReadPacketResult::new(self.snapshot_identity.clone(), records))
-    }
-
-    fn read_packet_with_lease(
-        &self,
-        request: &SnapshotReadPacket,
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
-        self.runtime
-            .with_runtime(|runtime| {
-                read_packet(
-                    runtime,
-                    request,
-                    &self.observation,
-                    self.partition,
-                    Some(lease),
-                )
+            .map_err(BridgeSnapshotReadError::execution_scope_denied)?
+            .map(|(records, memory)| {
+                SnapshotReadPacketResult::new(self.snapshot_identity.clone(), records)
+                    .with_memory(memory)
             })
-            .map(|records| SnapshotReadPacketResult::new(self.snapshot_identity.clone(), records))
     }
 }
 
@@ -84,12 +80,29 @@ fn read_packet(
     observation: &RelationalBranchObservation,
     partition: Option<PartitionId>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-) -> Result<Vec<SnapshotReadRecord>, BridgeSnapshotReadError> {
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<
+    (
+        Vec<SnapshotReadRecord>,
+        worth_execution::ExecutionMemoryReservation,
+    ),
+    BridgeSnapshotReadError,
+> {
+    let bytes = request
+        .reads()
+        .len()
+        .checked_mul(std::mem::size_of::<SnapshotReadRecord>())
+        .and_then(|bytes| u64::try_from(bytes).ok())
+        .ok_or_else(|| {
+            BridgeSnapshotReadError::execution_denied(
+                worth_execution::LeaseDenial::ChargedBytesOverflow.into(),
+            )
+        })?;
+    let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
+        .map_err(|denial| BridgeSnapshotReadError::execution_denied(denial.into()))?;
     let mut records = Vec::with_capacity(request.reads().len());
     for read in request.reads() {
-        if let Some(stop) = lease.and_then(BridgeSnapshotReadError::execution_stopped) {
-            return Err(stop);
-        }
+        BridgeSnapshotReadError::checkpoint(execution)?;
         let identity_parts = read.relational_record_identity_parts().ok_or_else(|| {
             BridgeSnapshotReadError::new(
                 "relational bridge snapshot reader requires typed record identity parts",
@@ -140,7 +153,7 @@ fn read_packet(
             None => SnapshotReadRecord::absent_for_request(read),
         });
     }
-    Ok(records)
+    Ok((records, memory))
 }
 
 fn foreign_snapshot_observation(
@@ -165,4 +178,26 @@ fn require_declared_aspect(
             aspect.as_str()
         )))
     }
+}
+
+#[cfg(test)]
+pub(super) fn read_packet_for_serial_test(
+    reader: &RuntimePublicationSnapshotReader,
+    request: &SnapshotReadPacket,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), BridgeSnapshotReadError> {
+    reader
+        .runtime
+        .with_runtime(|runtime| {
+            read_packet(
+                runtime,
+                request,
+                &reader.observation,
+                reader.partition,
+                lease,
+                execution,
+            )
+        })
+        .map(|_| ())
 }

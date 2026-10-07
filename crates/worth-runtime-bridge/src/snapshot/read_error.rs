@@ -14,8 +14,7 @@ pub enum BridgeSnapshotReadErrorKind {
     ExtraRecord,
     ProjectionMaskRejected,
     AspectContractValidationDenied,
-    ExecutionCancelled,
-    ExecutionDeadlineElapsed,
+    ExecutionDenied(crate::error::BridgeExecutionDenial),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,30 +28,28 @@ pub struct BridgeSnapshotReadError {
 }
 
 impl BridgeSnapshotReadError {
-    pub(crate) fn execution_stopped(
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-    ) -> Option<Self> {
-        let (kind, message) = if lease.is_cancelled() {
-            (
-                BridgeSnapshotReadErrorKind::ExecutionCancelled,
-                "snapshot read execution was cancelled",
-            )
-        } else if lease.deadline_elapsed() {
-            (
-                BridgeSnapshotReadErrorKind::ExecutionDeadlineElapsed,
-                "snapshot read execution deadline elapsed",
-            )
-        } else {
-            return None;
-        };
-        Some(Self {
-            kind,
-            message: Arc::from(message),
+    pub(crate) fn checkpoint(
+        request: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), Self> {
+        request
+            .run(worth_execution::ExecutionWorkCeiling::new(0), |_| ())
+            .map(|_| ())
+            .map_err(Self::execution_scope_denied)
+    }
+
+    pub(crate) fn execution_denied(denial: crate::error::BridgeExecutionDenial) -> Self {
+        Self {
+            kind: BridgeSnapshotReadErrorKind::ExecutionDenied(denial),
+            message: Arc::from(denial.label()),
             correlation_id: None,
             aspect_key: None,
             mask_denial: None,
             validation_denial: None,
-        })
+        }
+    }
+
+    pub(crate) fn execution_scope_denied(denial: worth_execution::WorkCeilingDenial) -> Self {
+        Self::execution_denied(denial.into())
     }
 
     pub fn new(message: impl Into<Arc<str>>) -> Self {

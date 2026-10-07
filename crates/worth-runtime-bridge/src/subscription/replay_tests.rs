@@ -33,6 +33,7 @@ impl TruthSnapshotReader for StaticSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::snapshot::SnapshotReadPacketResult, crate::snapshot::BridgeSnapshotReadError>
     {
         Ok(crate::snapshot::SnapshotReadPacketResult::new(
@@ -109,7 +110,7 @@ impl crate::adapter::InvalidationSink for StaticSink {
     fn deliver_invalidation(
         &self,
         delivery: crate::routing::BridgeSignalInvalidationDelivery,
-        _lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::delivery::BridgeDeliveryReceipt, crate::adapter::SignalBridgeSinkError> {
         Ok(crate::delivery::BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

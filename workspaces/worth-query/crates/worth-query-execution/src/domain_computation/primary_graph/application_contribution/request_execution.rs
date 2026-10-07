@@ -69,16 +69,13 @@ impl<'a> QueryRequestExecution<'a> {
         let cancellation = request.cancellation().execution_token();
         let deadline = Some(request.deadline());
         let form = match placement {
-            RuntimeWorldExecutionPlacement::Unbounded => Form::Serial(SerialRequest {
-                memory: None,
-                deadline,
-                cancellation,
-            }),
-            RuntimeWorldExecutionPlacement::Serial(policy) => Form::Serial(SerialRequest {
-                memory: Some(SerialMemoryBudget::from_policy(&policy)),
-                deadline,
-                cancellation,
-            }),
+            RuntimeWorldExecutionPlacement::Serial(policy) => {
+                Form::Serial(SerialRequest::from_memory(
+                    SerialMemoryBudget::from_policy(&policy),
+                    cancellation,
+                    deadline,
+                ))
+            }
             RuntimeWorldExecutionPlacement::Leased { authority, policy } => Form::Leased {
                 lease: authority.request_lease(LeaseRequest {
                     policy,
@@ -89,14 +86,6 @@ impl<'a> QueryRequestExecution<'a> {
             },
         };
         Self { request, form }
-    }
-
-    /// A request's execution in a World with no policy and no authority.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn unbounded_for_test(
-        request: &'a WorthQueryRequestScope,
-    ) -> Self {
-        Self::open(RuntimeWorldExecutionPlacement::Unbounded, request)
     }
 
     pub(in crate::domain_computation::primary_graph) const fn request(
@@ -133,10 +122,7 @@ impl<'a> QueryRequestExecution<'a> {
                 .map_err(|denial| lease_denial(*denial))?
                 .reserve_memory(bytes)
                 .map(Some),
-            Form::Serial(request) => match &request.memory {
-                Some(budget) => budget.reserve(bytes).map(Some),
-                None => Ok(None),
-            },
+            Form::Serial(request) => request.memory().reserve(bytes).map(Some),
         };
         held.map(|held| QueryMemoryReservation { held, bytes })
             .map_err(memory_denial)
@@ -295,7 +281,7 @@ impl QueryDispatch<'_> {
             DispatchForm::Serial(request) => ceiling.run_serial(request, || run(None)),
         }
         .map(|(reduced, _)| reduced);
-        // An unbounded request holds nothing, but counts what the tree keeps.
+        // The request counts the memory its retained tree keeps.
         tree.bytes = match (&tree.held, &reduced) {
             (Some(held), _) => held.bytes(),
             (None, Ok(Ok((reduced, ..)))) => kept_tree_bytes(reduced).unwrap_or(u64::MAX),

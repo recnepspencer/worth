@@ -148,6 +148,7 @@ impl TruthSnapshotReader for PublicationSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, crate::facade::BridgeSnapshotReadError> {
         let records_by_key = self
             .snapshot

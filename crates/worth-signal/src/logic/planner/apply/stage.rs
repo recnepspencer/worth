@@ -26,7 +26,8 @@ pub(super) enum ApplyAdmission<'tasks, 'lease, 'authority> {
     Checked {
         metadata: EpochMetadata<'tasks>,
         batch: crate::data::proof::invalidation::progression::DisjointGraphBatch,
-        lease: &'lease ExecutionResourceLease<'authority>,
+        // Keep checked publication within the originating request borrow.
+        _lease: &'lease ExecutionResourceLease<'authority>,
         apply: crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity,
         prepared_map: PreparedSignalApplyMap<'authority>,
         candidates: crate::data::graph::PreparedCandidateEpoch<'authority>,
@@ -74,7 +75,7 @@ where
             ApplyAdmission::Checked {
                 metadata,
                 batch,
-                lease,
+                _lease: lease,
                 apply,
                 prepared_map,
                 candidates,
@@ -191,6 +192,8 @@ where
                 lowered,
                 comparator_resolver,
                 stage_record,
+                request_work.expect("serial apply carries admitted request work"),
+                preparation.expect("serial apply carries its memory owner"),
             )
         }
         lowering::LoweredStageExecutionForm::Generic(lowered) => {
@@ -206,7 +209,6 @@ where
             };
             let ApplyAdmission::Checked {
                 batch,
-                lease,
                 apply,
                 prepared_map,
                 candidates,
@@ -223,7 +225,6 @@ where
                 stage_index,
                 tasks,
                 plan,
-                lease,
                 policy,
                 &batch,
                 &apply,
@@ -246,12 +247,27 @@ fn run_serial_lowered_apply_pass<R>(
     lowered: LoweredSerialStage,
     comparator_resolver: &mut R,
     stage_record: &mut StageExecutionRecord,
+    request_work: &mut MapKernelContext<'_, '_>,
+    preparation: &mut crate::data::request_preparation::SignalPreparationBudget,
 ) -> Result<StageScratch, SignalError>
 where
     R: ComparatorPolicyResolver,
 {
     let prepared = PreparedSerialStageBatch::prepare(graph, lowered, stage_record)?;
-    let applied = prepared.apply(graph, summary, comparator_resolver)?;
+    let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX);
+    let mut checkpoint = |units: usize| {
+        request_work.checkpoint(units as u64).map_err(|stop| {
+            crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(
+                stop.into(),
+            )
+        })
+    };
+    let mut observed = retained.reborrow_with_checkpoint(&mut checkpoint);
+    let mut work = crate::logic::evaluation::EvaluationWork::RequestPreparation {
+        work: &mut observed,
+        memory: preparation,
+    };
+    let applied = prepared.apply(graph, summary, comparator_resolver, &mut work)?;
     let (applied, pending_snapshots) = applied.split_pending_snapshots();
     Ok(StageScratch::new(
         StageFinalizeWork::Serial(applied),

@@ -6,6 +6,14 @@ use crate::tests::domains::fintech::world::{
 use super::{FinancialLocalityRedObservation, FinancialRestoreLifecycleEvidence};
 
 impl super::super::CompiledFinancialWorld {
+    pub(in crate::tests::domains::fintech) fn baseline_preparation_report(
+        &self,
+    ) -> worth_foundational::ExecutionReport {
+        self.locality()
+            .baseline_preparation_report
+            .expect("completed baseline retains its request's charged-work report")
+    }
+
     pub(in crate::tests::domains::fintech) fn locality_definition(
         &self,
     ) -> &FinancialLocalityDefinition {

@@ -167,9 +167,9 @@ impl HarnessAdapter for SignalHarnessBridge {
                     lease_request.policy.determinism(),
                     lease_request.policy.budget(),
                 );
-                let lease = authority.request_lease(lease_request).map_err(|denial| {
-                    SignalError::invalid_input(format!("Signal harness lease denied: {denial:?}"))
-                })?;
+                let lease = authority
+                    .request_lease(lease_request)
+                    .map_err(SignalError::execution_admission_denied)?;
                 runtime.graph.evaluate_checked(
                     &targets,
                     EvaluationRequestMode::Default,

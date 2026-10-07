@@ -154,7 +154,12 @@ fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenan
         ),
         SnapshotReadContract::scalar(aspect_key("name"), ScalarAspectType::String),
     )]);
-    assert!(reader.read_packet(&packet).is_err());
+    assert!(reader
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request())
+        )
+        .is_err());
 }
 
 #[test]

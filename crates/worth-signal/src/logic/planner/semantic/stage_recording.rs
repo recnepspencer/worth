@@ -41,3 +41,31 @@ pub(crate) fn begin_stage_record(
         task_records: Vec::new(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture, ExecutionReport};
+
+    #[test]
+    fn stage_outcome_uses_resolved_posture_even_when_one_worker_is_observed() {
+        for (posture, expected) in [
+            (
+                ExecutionPosture::Serial,
+                StageExecutionOutcome::CompletedSerial,
+            ),
+            (
+                ExecutionPosture::Automatic,
+                StageExecutionOutcome::CompletedParallel,
+            ),
+        ] {
+            let report = ExecutionReport::new(
+                posture,
+                12,
+                12,
+                ExecutionPhysicalReport::new(1, 0, Some(0), 0, 0),
+            );
+            assert_eq!(begin_stage_record(0, 0, 0, &[report]).outcome, expected);
+        }
+    }
+}

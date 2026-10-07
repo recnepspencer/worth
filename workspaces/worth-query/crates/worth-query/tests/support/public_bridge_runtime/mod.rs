@@ -88,6 +88,16 @@ pub fn public_product_world_resources() -> WorthQueryProductWorldResources {
 pub fn public_product_world_resources_with_branch_limit(
     live_product_branches: u64,
 ) -> WorthQueryProductWorldResources {
+    // Bounds this fixture World's serial request memory and deterministic work.
+    let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            64 * 1024 * 1024,
+            8_000_000,
+        ),
+    );
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -125,6 +135,7 @@ pub fn public_product_world_resources_with_branch_limit(
             ),
         )
         .expect("the Query invalidation installation is valid"),
+        execution_policy,
     )
     .expect("the public test Product World resources are valid")
 }

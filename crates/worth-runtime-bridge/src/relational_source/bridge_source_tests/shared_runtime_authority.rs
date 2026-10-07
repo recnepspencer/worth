@@ -93,7 +93,10 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
         SnapshotReadContract::scalar(aspect_key("name"), ScalarAspectType::String),
     )]);
     let result = reader
-        .read_packet(&packet)
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
         .expect("snapshot must be read through the same shared runtime");
 
     assert_eq!(result.records().len(), 1);

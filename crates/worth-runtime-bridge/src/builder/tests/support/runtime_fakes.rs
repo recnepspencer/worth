@@ -93,6 +93,7 @@ impl TruthSnapshotReader for TestSnapshotReader {
     fn read_packet(
         &self,
         _request: &SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         unreachable!("builder tests do not read snapshots")
     }
@@ -104,7 +105,7 @@ impl InvalidationSink for TestSink {
     fn deliver_invalidation(
         &self,
         delivery: crate::routing::BridgeSignalInvalidationDelivery,
-        _lease: Option<&crate::facade::ExecutionResourceLease<'_>>,
+        _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

@@ -120,13 +120,29 @@ impl BridgeOwnedSignalRuntime {
             .map_err(|denial| denial.with_bridge_execution_counters(counters))?;
         let decision_reservation = super::retention::reserve_decision(&self.retention, &request)?;
         let context_reservation = super::retention::reserve_context(&self.retention, &request)?;
-        let execution = self.execute_installed_signal_conditional(
-            session,
-            &request,
-            compute_context,
-            &mut counters,
-            context_reservation.as_ref(),
-        );
+        let serial = self
+            .bridge
+            .policy()
+            .execution()
+            .serial_request(worth_execution::CancellationToken::new(), None);
+        let execution_request = worth_execution::ExecutionRequest::serial(&serial);
+        let execution = execution_request
+            .in_scope(|_| {
+                self.execute_installed_signal_conditional(
+                    session,
+                    &request,
+                    compute_context,
+                    &mut counters,
+                    context_reservation.as_ref(),
+                    execution_request,
+                )
+            })
+            .map_err(|denial| {
+                BridgeConditionalDenial::new(
+                    BridgeConditionalDenialKind::ExecutionDenied(denial.into()),
+                    "Bridge conditional execution scope refused admission",
+                )
+            })?;
         let (signal, observations, performed_signal_invalidation) =
             execution.map_err(|denial| denial.with_bridge_execution_counters(counters))?;
         retain_successful_observation_baseline(session, &observations);
@@ -153,6 +169,7 @@ impl BridgeOwnedSignalRuntime {
         compute_context: &mut dyn std::any::Any,
         counters: &mut BridgeConditionalExecutionCounters,
         context_reservation: Option<&std::sync::Arc<super::retention::BridgeRetentionReservation>>,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         (
             SignalConditionalDecisionEvidence,
@@ -178,6 +195,7 @@ impl BridgeOwnedSignalRuntime {
             request.snapshot_identity,
             &session.observation_baselines.ledger,
             context_reservation,
+            execution,
         );
         let mut comparator = ComparatorAdapter::new(request.lowering);
         counters.signal_execution_contacts = 1;

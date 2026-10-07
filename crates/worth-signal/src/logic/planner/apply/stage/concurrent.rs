@@ -72,9 +72,9 @@ pub(in crate::logic::planner) fn prepare_checked_apply_map<'authority>(
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
         })
-        .map_err(SignalError::ExecutionAdmissionDenied)?;
+        .map_err(SignalError::execution_admission_denied)?;
     map.prepare_run(child)
-        .map_err(SignalError::ExecutionAdmissionDenied)
+        .map_err(SignalError::execution_admission_denied)
 }
 
 pub(super) fn run_grouped_concurrent_apply_pass(
@@ -83,7 +83,6 @@ pub(super) fn run_grouped_concurrent_apply_pass(
     stage_index: u32,
     tasks: Vec<LoweredTask>,
     plan: ConcurrentApplyPlan,
-    lease: &ExecutionResourceLease<'_>,
     _policy: &ResolvedSignalPlannerPolicy,
     _batch: &DisjointGraphBatch,
     apply: &CheckedApplyCapacity,
@@ -216,8 +215,7 @@ pub(super) fn run_grouped_concurrent_apply_pass(
             )));
         }
     };
-    let apply_parallel =
-        execution.resolved_posture() == worth_foundational::ExecutionPosture::Automatic;
+    let apply_parallel = execution.physical().active_workers_high_watermark() > 1;
     if apply_parallel {
         stage_record.outcome = crate::logic::planner::StageExecutionOutcome::CompletedParallel;
         stage_record.parallel_kind =
@@ -250,9 +248,8 @@ pub(super) fn run_grouped_concurrent_apply_pass(
         packets,
         plan.reduction,
         comparator_resolver,
-        Some(lease),
         candidates,
-        request_work,
+        request_work.expect("checked apply carries request work"),
         preparation,
     )
 }

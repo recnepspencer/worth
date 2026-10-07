@@ -8,6 +8,7 @@ use super::{
 };
 
 pub(super) struct ConditionAdapter<'a> {
+    execution: worth_execution::ExecutionRequest<'a, 'a>,
     lowering: &'a BridgeInstalledConditionalLowering,
     snapshot: Option<
         &'a crate::snapshot::AdmittedSnapshotContext<Box<dyn crate::snapshot::TruthSnapshotReader>>,
@@ -41,8 +42,10 @@ impl<'a> ConditionAdapter<'a> {
         context_reservation: Option<
             &'a std::sync::Arc<super::retention::BridgeRetentionReservation>,
         >,
+        execution: worth_execution::ExecutionRequest<'a, 'a>,
     ) -> Self {
         Self {
+            execution,
             lowering,
             snapshot,
             previous,
@@ -92,6 +95,7 @@ impl worth_signal::facade::InstalledSignalConditionResolver for ConditionAdapter
             self.previous,
             self.managed_source_record,
             self.ledger,
+            self.execution,
         ) {
             Ok(observations) => observations,
             Err(denial) => {

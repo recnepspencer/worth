@@ -45,6 +45,7 @@ impl TruthSnapshotReader for PacketSource {
     fn read_packet(
         &self,
         packet: &SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         self.contacts.reads.fetch_add(1, Ordering::SeqCst);
         // Explicit adapter fault: correct record correlations and authoritative

@@ -56,9 +56,7 @@ impl ReadyInvalidationQueue {
     ) -> Result<bool, SignalError> {
         if let Some(work) = work {
             work.checkpoint(self.entries.len().checked_ilog2().unwrap_or(0) as u64 + 2)
-                .map_err(|_| {
-                    SignalError::invalid_input("ready queue work stopped before admission")
-                })?;
+                .map_err(SignalError::execution_checkpoint_stopped)?;
         }
         let key = ReadyWorkKey::from_ready(&entry.ready);
         if let Some(existing) = self.entries.get(&key) {
@@ -138,9 +136,7 @@ impl ReadyInvalidationQueue {
     ) -> Result<Option<ReadyQueueEntry>, SignalError> {
         if let Some(work) = work {
             work.checkpoint(self.entries.len().checked_ilog2().unwrap_or(0) as u64 + 2)
-                .map_err(|_| {
-                    SignalError::invalid_input("ready queue work stopped before removal")
-                })?;
+                .map_err(SignalError::execution_checkpoint_stopped)?;
         }
         let Some(key) = self.order.pop_front() else {
             return Ok(None);

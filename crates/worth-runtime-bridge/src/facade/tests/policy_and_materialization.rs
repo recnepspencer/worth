@@ -197,7 +197,9 @@ fn runtime_materializes_snapshot_bound_truth_view_observation() {
         .materialize_truth_view_observation(planned)
         .expect("snapshot-bound declaration should materialize");
     let validated_reads = observation
-        .read_planned_packet()
+        .read_planned_packet(worth_execution::ExecutionRequest::serial(
+            &crate::snapshot::test_serial_request(),
+        ))
         .expect("materialized observation should execute its planned packet");
 
     assert_eq!(

@@ -7,13 +7,13 @@ use worth_runtime_bridge::facade::{
     BridgeDiagnosticsTier, BridgeReplayMode, BridgeRuntimePolicy, BridgeSignalInvalidationDelivery,
     BridgeSnapshotReadError, BridgeSourceAdapter, BridgeSourceCapability,
     BridgeSourceCapabilitySet, BridgeTruthViewEvaluationRequest, BridgeTruthViewSelector,
-    CoarseRoutingMode, HistoricalEvaluationDeclaration, InvalidationSink,
+    CoarseRoutingMode, ExecutionRequest, HistoricalEvaluationDeclaration, InvalidationSink,
     RelationalBridgeSnapshotIdentityParts, RelationalBridgeSourceError,
     RelationalCommittedPatchRequest, RuntimeBridge, RuntimeBridgeBuilder, SignalBridgeSinkError,
-    SignalInvalidationScope, SnapshotReadContract, SnapshotReadPacketResult, SnapshotReadRecord,
-    SnapshotReadSource, SourceDeclaration, SourceDeclarationIdentity, TruthBranchHeadSource,
-    TruthBranchIdentity, TruthCommitIdentity, TruthPatchIdentity, TruthPatchScope,
-    TruthPatchTargetSelector, TruthSnapshotIdentity, TruthSnapshotReader,
+    SignalInvalidationScope, SnapshotReadContract, SnapshotReadPacket, SnapshotReadPacketResult,
+    SnapshotReadRecord, SnapshotReadSource, SourceDeclaration, SourceDeclarationIdentity,
+    TruthBranchHeadSource, TruthBranchIdentity, TruthCommitIdentity, TruthPatchIdentity,
+    TruthPatchScope, TruthPatchTargetSelector, TruthSnapshotIdentity, TruthSnapshotReader,
 };
 
 use crate::evidence_identity::{
@@ -231,7 +231,8 @@ impl TruthSnapshotReader for StaticSnapshotReader {
 
     fn read_packet(
         &self,
-        request: &worth_runtime_bridge::facade::SnapshotReadPacket,
+        request: &SnapshotReadPacket,
+        _execution: ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         Ok(SnapshotReadPacketResult::new(
             snapshot_a_identity(),
@@ -285,7 +286,7 @@ impl InvalidationSink for StaticSink {
     fn deliver_invalidation(
         &self,
         delivery: BridgeSignalInvalidationDelivery,
-        _lease: Option<&worth_runtime_bridge::facade::ExecutionResourceLease<'_>>,
+        _lease: ExecutionRequest<'_, '_>,
     ) -> Result<worth_runtime_bridge::facade::BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Ok(worth_runtime_bridge::facade::BridgeDeliveryReceipt::new(
             delivery.invalidation_targets().len(),

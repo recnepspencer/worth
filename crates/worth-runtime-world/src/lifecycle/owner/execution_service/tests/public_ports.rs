@@ -9,6 +9,7 @@ pub(super) fn public_world() -> (
     let mut fixture = reference_test_fixture::real_fixture(12, 12);
     let inputs = fixture.owner_inputs(budgets(4), RuntimeWorldClock::from_source(FixedClock));
     let owner = RuntimeWorldOwner::builder()
+        .with_execution_policy(inputs.execution.request_policy())
         .with_bridge_correspondence(inputs.bridge)
         .with_relational_services(inputs.relational)
         .with_signal_services(inputs.signal)

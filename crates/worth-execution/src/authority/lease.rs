@@ -54,6 +54,8 @@ pub enum LeaseDenial {
     /// The bytes a reservation would charge do not fit the charge counter.
     ChargedBytesOverflow,
     UnrelatedNestedLease,
+    /// A lease-free reservation was requested outside an active serial scope.
+    NoActiveExecutionScope,
     EquivalenceContractUnavailable,
 }
 

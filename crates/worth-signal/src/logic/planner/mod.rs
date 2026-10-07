@@ -18,9 +18,9 @@ pub(crate) use self::semantic::stage_recording;
 
 pub use crate::data::performance::{ResolvedExecutionStrategy, ResolvedMaintenanceStrategy};
 pub(crate) use execution::{
-    execute_evaluation_session_in_scope, execute_evaluation_session_with_policy,
-    execute_prepared_plan_in_scope, execute_prepared_plan_with_policy_and_temporal_lowering,
-    execute_prepared_plan_with_precompute, run_signal_request_scope,
+    execute_evaluation_session_in_scope, execute_prepared_plan_in_scope,
+    execute_prepared_plan_with_policy_and_temporal_lowering, execute_prepared_plan_with_precompute,
+    run_signal_execution_request_scope, run_signal_request_scope,
 };
 #[allow(unused_imports)]
 pub use execution::{execute_prepared_plan, execute_prepared_plan_with_policy};
@@ -41,7 +41,6 @@ pub use model::{
 #[allow(unused_imports)]
 pub use model::{ParallelApplyMode, ParallelExecutionKind};
 pub(crate) use plan_builder::admit_direct_task_with_policy_resolver;
-pub(crate) use plan_builder::build_evaluation_session_with_policy_resolver;
 pub use plan_builder::{build_evaluation_plan, build_evaluation_plan_with_policy_resolver};
 #[cfg(test)]
 pub(crate) use tests::{

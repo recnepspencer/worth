@@ -132,12 +132,8 @@ fn one_partition_map() -> ExecutionMap<u64, u64> {
     .unwrap()
 }
 
-fn serial_request(memory: Option<SerialMemoryBudget>) -> SerialRequest {
-    SerialRequest {
-        memory,
-        deadline: None,
-        cancellation: CancellationToken::new(),
-    }
+fn serial_request(memory: SerialMemoryBudget) -> SerialRequest {
+    SerialRequest::from_memory(memory, CancellationToken::new(), None)
 }
 
 /// `Some(true)` completed, `Some(false)` the map refused at its admission,
@@ -152,7 +148,7 @@ fn serial_run_holding(bytes: u64, hold: Option<u64>) -> Option<bool> {
     let map = one_partition_map();
     let budget = SerialMemoryBudget::from_policy(&policy(bytes));
     let held = hold.map(|hold| budget.reserve(hold).unwrap());
-    let request = serial_request(Some(budget));
+    let request = serial_request(budget);
     let ran = ExecutionWorkCeiling::new(u64::MAX).run_serial(&request, || {
         let kernel =
             |value: &u64, _: &mut MapKernelContext<'_, '_>| Ok::<_, MapKernelFailure<()>>(*value);
@@ -208,10 +204,11 @@ fn a_serial_run_with_a_policy_refuses_at_its_own_memory_boundary() {
     );
     assert_eq!(serial_run(admitted), Some(true));
 
-    let unbounded = ExecutionWorkCeiling::new(u64::MAX).run_serial(&serial_request(None), || {
-        one_partition_map().run(None, |value, _| Ok::<_, MapKernelFailure<()>>(*value))
-    });
-    assert!(matches!(unbounded, Ok((MapOutcome::Complete { .. }, _))));
+    let funded = ExecutionWorkCeiling::new(u64::MAX).run_serial(
+        &serial_request(SerialMemoryBudget::from_policy(&policy(1 << 20))),
+        || one_partition_map().run(None, |value, _| Ok::<_, MapKernelFailure<()>>(*value)),
+    );
+    assert!(matches!(funded, Ok((MapOutcome::Complete { .. }, _))));
 }
 
 #[test]

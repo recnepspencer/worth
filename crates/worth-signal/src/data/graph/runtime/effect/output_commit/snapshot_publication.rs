@@ -47,9 +47,10 @@ impl SignalGraph {
             return Ok(PreparedEffectSnapshotStorage::Ordinary(insertion));
         }
         match allowance {
-            EvaluationWork::Conditional(work) => self
-                .prepare_retained_snapshot_storage(insertion, work)
-                .map(PreparedEffectSnapshotStorage::Retained),
+            EvaluationWork::Conditional(work) | EvaluationWork::RequestPreparation { work, .. } => {
+                self.prepare_retained_snapshot_storage(insertion, work)
+                    .map(PreparedEffectSnapshotStorage::Retained)
+            }
             EvaluationWork::RequestCheckpoint(_) => Err(SignalError::internal(
                 "request discovery checkpoint cannot prepare snapshot publication",
             )),

@@ -29,7 +29,13 @@ const DECLARED: u64 = 4096;
 /// with the combines it ran.
 fn rebuilt_under(memory: Option<u64>) -> Vec<(Outcome, usize)> {
     let placements: Vec<Box<dyn Fn() -> RuntimeWorldExecutionPlacement<'static>>> = match memory {
-        None => vec![Box::new(|| RuntimeWorldExecutionPlacement::Unbounded)],
+        None => vec![Box::new(|| {
+            RuntimeWorldExecutionPlacement::Serial(
+        crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+            std::num::NonZeroUsize::MIN, 1 << 30,
+        ),
+    )
+        })],
         Some(memory) => {
             let policy = move || test_policy(NonZeroUsize::new(2).unwrap(), memory);
             vec![

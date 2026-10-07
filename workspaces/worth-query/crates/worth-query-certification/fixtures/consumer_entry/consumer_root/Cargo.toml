@@ -5,6 +5,7 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
+worth-foundational = { path = "../../../../../../../crates/worth-foundational" }
 worth-query-consumer-values.workspace = true
 worth-query-decl.workspace = true
 worth-query-host = { workspace = true, features = ["test-durability-faults", "test-output-delivery-faults"] }

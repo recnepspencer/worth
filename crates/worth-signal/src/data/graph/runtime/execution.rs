@@ -106,13 +106,14 @@ impl SignalGraph {
             fallback: crate::data::comparator::VersionComparatorPolicy::Exact,
             custom: &mut comparator,
         };
+        let serial = self.bounded_serial_request();
         execute_prepared_plan_with_precompute(
             self,
             plan,
             &LegacyPrecompute::new(precompute),
             &mut resolver,
             TemporalLoweringContext::graph_only(),
-            None,
+            worth_execution::ExecutionRequest::serial(&serial),
         )
     }
 
@@ -165,7 +166,7 @@ impl SignalGraph {
             &CheckedPrecompute::new(domain_ctx, evaluator),
             &mut resolver,
             TemporalLoweringContext::graph_only(),
-            Some(lease),
+            worth_execution::ExecutionRequest::leased(lease),
         );
         self.record_checked_execution_result(&result);
         result

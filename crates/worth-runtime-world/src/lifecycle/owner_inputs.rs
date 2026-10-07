@@ -42,6 +42,7 @@ where
         bridge: RuntimeWorldCorrespondencePort,
         budgets: RuntimeWorldBudgets,
         clock: RuntimeWorldClock,
+        policy: worth_foundational::ExecutionRequestPolicy,
     ) -> Self {
         Self {
             relational,
@@ -50,7 +51,7 @@ where
             bridge,
             budgets,
             clock,
-            execution: InstalledExecution::Unbounded,
+            execution: InstalledExecution::Serial(policy),
         }
     }
 

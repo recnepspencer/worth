@@ -160,6 +160,7 @@ impl TruthSnapshotReader for InMemorySnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, crate::snapshot::BridgeSnapshotReadError> {
         let record_lookup = self
             .snapshot

@@ -38,7 +38,7 @@ pub enum MemoryLimitLevel {
 /// at one worker, against it, beside what the caller reserves here.
 #[derive(Clone, Debug)]
 pub struct SerialMemoryBudget {
-    ledger: Arc<SerialLedger>,
+    ledgers: Arc<[Arc<SerialLedger>]>,
 }
 
 #[derive(Debug)]
@@ -57,53 +57,121 @@ pub struct ExecutionMemoryReservation {
 enum Held {
     Lease(LeaseMemory),
     Serial {
-        ledger: Arc<SerialLedger>,
+        budget: SerialMemoryBudget,
         bytes: u64,
     },
 }
 
 impl SerialMemoryBudget {
+    pub fn limit(&self) -> u64 {
+        self.ledgers[0].ceiling
+    }
+
+    /// Uses only the policy memory limit; the work ceiling belongs to leased requests.
     pub fn from_policy(policy: &ExecutionRequestPolicy) -> Self {
+        Self::new(policy.budget().charged_memory_bytes())
+    }
+
+    /// Holds the owner's required policy memory limit; serial work is metered, not bounded.
+    pub fn new(charged_memory_bytes: u64) -> Self {
         Self {
-            ledger: Arc::new(SerialLedger {
-                ceiling: policy.budget().charged_memory_bytes(),
+            ledgers: Arc::from([Arc::new(SerialLedger {
+                ceiling: charged_memory_bytes,
                 charged: Mutex::new(0),
-            }),
+            })]),
         }
     }
 
     pub fn reserve(&self, bytes: u64) -> Result<ExecutionMemoryReservation, MemoryLimitDenial> {
-        self.ledger.resize(0, bytes)?;
+        self.resize(0, bytes)?;
         Ok(ExecutionMemoryReservation {
             held: Held::Serial {
-                ledger: Arc::clone(&self.ledger),
+                budget: self.clone(),
                 bytes,
             },
         })
     }
 }
 
-impl SerialLedger {
-    fn resize(&self, from: u64, to: u64) -> Result<(), MemoryLimitDenial> {
-        let mut charged = self
-            .charged
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let others = *charged - from;
-        let admitted = self.ceiling.saturating_sub(others);
-        if to > admitted {
-            return Err(MemoryLimitDenial {
-                requested: to,
-                admitted,
-                level: MemoryLimitLevel::Policy { ancestor: 0 },
-            });
+impl SerialMemoryBudget {
+    /// Retain the child's own limit and draw every reservation from its parent.
+    pub(crate) fn within_parent(&self, parent: &Self) -> Self {
+        let mut ledgers = self.ledgers.to_vec();
+        for ledger in parent.ledgers.iter() {
+            if !ledgers.iter().any(|own| Arc::ptr_eq(own, ledger)) {
+                ledgers.push(Arc::clone(ledger));
+            }
         }
-        *charged = others + to;
+        Self {
+            ledgers: ledgers.into(),
+        }
+    }
+
+    fn same_lineage(&self, other: &Self) -> bool {
+        self.ledgers.len() == other.ledgers.len()
+            && self
+                .ledgers
+                .iter()
+                .zip(other.ledgers.iter())
+                .all(|(a, b)| Arc::ptr_eq(a, b))
+    }
+
+    fn resize(&self, from: u64, to: u64) -> Result<(), MemoryLimitDenial> {
+        // Requests can share budgets across threads. Address order keeps overlapping
+        // lineages deadlock-free; refusal order remains innermost policy first.
+        let mut order: Vec<_> = self.ledgers.iter().enumerate().collect();
+        order.sort_unstable_by_key(|(_, ledger)| Arc::as_ptr(ledger));
+        let mut charges: Vec<_> = order
+            .iter()
+            .map(|(index, ledger)| {
+                (
+                    *index,
+                    ledger
+                        .charged
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner),
+                )
+            })
+            .collect();
+        for (ancestor, ledger) in self.ledgers.iter().enumerate() {
+            let charge = charges
+                .iter()
+                .find(|(index, _)| *index == ancestor)
+                .unwrap();
+            let admitted = ledger.ceiling.saturating_sub(*charge.1 - from);
+            if to > admitted {
+                return Err(MemoryLimitDenial {
+                    requested: to,
+                    admitted,
+                    level: MemoryLimitLevel::Policy {
+                        ancestor: ancestor as u32,
+                    },
+                });
+            }
+        }
+        for (_, charge) in &mut charges {
+            **charge = **charge - from + to;
+        }
         Ok(())
     }
 }
 
 impl ExecutionMemoryReservation {
+    pub fn reserve_in_scope(
+        lease: Option<&ExecutionResourceLease<'_>>,
+        bytes: u64,
+    ) -> Result<Self, LeaseDenial> {
+        if let Some(lease) = lease {
+            return lease
+                .reserve_memory(bytes)
+                .map_err(LeaseDenial::MemoryExhausted);
+        }
+        crate::backend::active_serial_memory()
+            .ok_or(LeaseDenial::NoActiveExecutionScope)?
+            .reserve(bytes)
+            .map_err(LeaseDenial::MemoryExhausted)
+    }
+
     pub(super) const fn lease(memory: LeaseMemory) -> Self {
         Self {
             held: Held::Lease(memory),
@@ -131,12 +199,12 @@ impl ExecutionMemoryReservation {
             (Held::Lease(memory), Some(lease)) => memory.rebind(lease, bytes),
             (
                 Held::Serial {
-                    ledger,
+                    budget,
                     bytes: held,
                 },
                 None,
-            ) if serial.is_some_and(|budget| Arc::ptr_eq(ledger, &budget.ledger)) => {
-                ledger
+            ) if serial.is_some_and(|active| budget.same_lineage(active)) => {
+                budget
                     .resize(*held, bytes)
                     .map_err(LeaseDenial::MemoryExhausted)?;
                 *held = bytes;
@@ -151,10 +219,10 @@ impl ExecutionMemoryReservation {
         match &mut self.held {
             Held::Lease(memory) => memory.resize(bytes),
             Held::Serial {
-                ledger,
+                budget,
                 bytes: held,
             } => {
-                ledger.resize(*held, bytes)?;
+                budget.resize(*held, bytes)?;
                 *held = bytes;
                 Ok(())
             }
@@ -164,8 +232,8 @@ impl ExecutionMemoryReservation {
 
 impl Drop for ExecutionMemoryReservation {
     fn drop(&mut self) {
-        if let Held::Serial { ledger, bytes } = &self.held {
-            let _ = ledger.resize(*bytes, 0);
+        if let Held::Serial { budget, bytes } = &self.held {
+            let _ = budget.resize(*bytes, 0);
         }
     }
 }

@@ -70,7 +70,7 @@ where
                 stage_task_candidates: false,
             },
             evaluator,
-            None,
+            worth_execution::ExecutionRequest::serial(&self.tx.graph.bounded_serial_request()),
         )
     }
 
@@ -111,7 +111,7 @@ where
                     stage_task_candidates: false,
                 },
                 evaluator,
-                None,
+                worth_execution::ExecutionRequest::serial(&self.tx.graph.bounded_serial_request()),
             )?;
         }
         self.tx.graph.node_aspect_version(*node)
@@ -141,7 +141,7 @@ where
                     stage_task_candidates: false,
                 },
                 evaluator,
-                None,
+                worth_execution::ExecutionRequest::serial(&self.tx.graph.bounded_serial_request()),
             )?;
         }
         self.targets

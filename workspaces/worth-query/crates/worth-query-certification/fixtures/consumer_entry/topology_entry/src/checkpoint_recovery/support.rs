@@ -1,3 +1,4 @@
+mod execution_policy;
 use std::future::Future;
 use std::pin::pin;
 use std::sync::{atomic::AtomicUsize, Arc};
@@ -311,6 +312,7 @@ pub(super) fn limits_with_room(
             },
             WorthQueryProductWorldClock::start(),
             invalidation,
+            execution_policy::CHECKPOINT_EXECUTION_POLICY,
         )
         .unwrap(),
         candidates,

@@ -84,10 +84,11 @@ impl SnapshotReadRecord {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SnapshotReadPacketResult {
     snapshot_identity: super::TruthSnapshotIdentity,
-    records: Vec<SnapshotReadRecord>,
+    records: std::sync::Arc<Vec<SnapshotReadRecord>>,
+    memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl SnapshotReadPacketResult {
@@ -97,8 +98,17 @@ impl SnapshotReadPacketResult {
     ) -> Self {
         Self {
             snapshot_identity,
-            records,
+            records: std::sync::Arc::new(records),
+            memory: None,
         }
+    }
+
+    pub(crate) fn with_memory(
+        mut self,
+        memory: worth_execution::ExecutionMemoryReservation,
+    ) -> Self {
+        self.memory = Some(std::sync::Arc::new(memory));
+        self
     }
 
     pub fn snapshot_identity(&self) -> &super::TruthSnapshotIdentity {
@@ -109,25 +119,34 @@ impl SnapshotReadPacketResult {
         &self.records
     }
 
-    pub(crate) fn into_parts(self) -> (super::TruthSnapshotIdentity, Vec<SnapshotReadRecord>) {
-        (self.snapshot_identity, self.records)
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        super::TruthSnapshotIdentity,
+        std::sync::Arc<Vec<SnapshotReadRecord>>,
+        Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
+    ) {
+        (self.snapshot_identity, self.records, self.memory)
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct ValidatedSnapshotReadPacketResult {
     snapshot_identity: super::TruthSnapshotIdentity,
-    records: Vec<ValidatedSnapshotReadRecord>,
+    records: std::sync::Arc<Vec<ValidatedSnapshotReadRecord>>,
+    _memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl ValidatedSnapshotReadPacketResult {
     pub(crate) fn validated(
         snapshot_identity: super::TruthSnapshotIdentity,
         records: Vec<ValidatedSnapshotReadRecord>,
+        memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
     ) -> Self {
         Self {
             snapshot_identity,
-            records,
+            records: std::sync::Arc::new(records),
+            _memory: memory,
         }
     }
 
@@ -191,3 +210,16 @@ pub(crate) fn contract_validated_scalar_aspect_value(
         ContractValidatedAspectValueView::Struct(_) => None,
     }
 }
+
+impl PartialEq for SnapshotReadPacketResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.snapshot_identity == other.snapshot_identity && self.records == other.records
+    }
+}
+impl Eq for SnapshotReadPacketResult {}
+impl PartialEq for ValidatedSnapshotReadPacketResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.snapshot_identity == other.snapshot_identity && self.records == other.records
+    }
+}
+impl Eq for ValidatedSnapshotReadPacketResult {}

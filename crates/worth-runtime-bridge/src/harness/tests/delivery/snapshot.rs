@@ -1,3 +1,4 @@
+mod execution_denials;
 mod preplanned_snapshot;
 mod snapshot_acquisition;
 mod snapshot_identity;

@@ -67,6 +67,9 @@ pub(crate) fn historical_failure_class_for_delivery_error(
     error: &BridgeDeliveryError,
 ) -> BridgeHistoricalEvaluationFailureClass {
     match error.kind() {
+        BridgeDeliveryErrorKind::ExecutionDenied(denial) => {
+            BridgeHistoricalEvaluationFailureClass::ExecutionDenied(denial)
+        }
         BridgeDeliveryErrorKind::SourceContractMismatch => {
             BridgeHistoricalEvaluationFailureClass::UnresolvedTruthViewPolicyConflict
         }
@@ -90,8 +93,6 @@ pub(crate) fn historical_failure_class_for_delivery_error(
         | BridgeDeliveryErrorKind::HistoricalSelectorMissingCommit
         | BridgeDeliveryErrorKind::InvalidWideningAdmission
         | BridgeDeliveryErrorKind::SnapshotReadFailure
-        | BridgeDeliveryErrorKind::ExecutionCancelled
-        | BridgeDeliveryErrorKind::ExecutionDeadlineElapsed
         | BridgeDeliveryErrorKind::SnapshotReadContractViolation
         | BridgeDeliveryErrorKind::SignalSinkRejection => {
             BridgeHistoricalEvaluationFailureClass::RejectedHistoricalResolutionFailure
@@ -156,5 +157,30 @@ impl RuntimeBridge {
                 counters,
             ),
         );
+    }
+}
+
+#[cfg(test)]
+mod execution_cause_tests {
+    use super::*;
+    #[test]
+    fn historical_failure_preserves_cancellation_and_deadline() {
+        use crate::facade::BridgeExecutionDenial as Own;
+        for (stop, expected) in [
+            (worth_execution::MapKernelStop::Cancelled, Own::Cancelled),
+            (
+                worth_execution::MapKernelStop::DeadlineElapsed,
+                Own::DeadlineElapsed,
+            ),
+        ] {
+            let error = BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::ExecutionDenied(stop.into()),
+                "resource refusal",
+            );
+            assert_eq!(
+                historical_failure_class_for_delivery_error(&error),
+                BridgeHistoricalEvaluationFailureClass::ExecutionDenied(expected)
+            );
+        }
     }
 }

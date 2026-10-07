@@ -140,7 +140,7 @@ impl ReverseSubscriptionIndex {
         Ok(match &self.storage {
             ReverseSubscriptionStorage::Exclusive(flat) => {
                 work.checkpoint(ordered_lookup_steps(flat.buckets.len()) as u64)
-                    .map_err(|_| SignalError::invalid_input("candidate capacity lookup stopped"))?;
+                    .map_err(SignalError::execution_checkpoint_stopped)?;
                 flat.buckets.get(&key).map_or(0, |bucket| bucket.all.len())
             }
             ReverseSubscriptionStorage::ForkShared {
@@ -153,7 +153,7 @@ impl ReverseSubscriptionIndex {
                         .saturating_add(ordered_lookup_steps(bucket_changes.len()))
                         as u64,
                 )
-                .map_err(|_| SignalError::invalid_input("candidate capacity lookup stopped"))?;
+                .map_err(SignalError::execution_checkpoint_stopped)?;
                 base.buckets
                     .get(&key)
                     .map_or(0, |bucket| bucket.all.len())

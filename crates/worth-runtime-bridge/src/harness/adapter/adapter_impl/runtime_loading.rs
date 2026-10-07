@@ -261,9 +261,10 @@ impl crate::facade::TruthSnapshotReader for DriftFixtureSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::facade::SnapshotReadPacketResult, crate::facade::BridgeSnapshotReadError>
     {
-        self.inner.read_packet(request)
+        self.inner.read_packet(request, execution)
     }
 }
 

@@ -14,8 +14,8 @@ mod report;
 pub use authority::{
     CancellationSource, CancellationToken, ConstructionDenial, EquivalencePredicate,
     ExecutionAuthority, ExecutionAuthorityConfig, ExecutionLeaseStatus, ExecutionMemoryReservation,
-    ExecutionPolicyDenial, ExecutionResourceLease, LeaseDenial, LeaseRequest, MemoryLimitDenial,
-    MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
+    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, LeaseDenial, LeaseRequest,
+    MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 

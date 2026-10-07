@@ -1,0 +1,8 @@
+error: lifetime may not live long enough
+ --> tests/ui/escape_request_lease.rs:3:38
+  |
+3 |     let _ = request.in_scope(|lease| lease).unwrap();
+  |                               ------ ^^^^^ returning this value requires that `'1` must outlive `'2`
+  |                               |    |
+  |                               |    return type of closure is Option<&'2 ExecutionResourceLease<'_>>
+  |                               has type `Option<&'1 ExecutionResourceLease<'_>>`

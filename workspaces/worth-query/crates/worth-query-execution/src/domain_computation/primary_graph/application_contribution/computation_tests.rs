@@ -150,14 +150,24 @@ fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
         .prepare(&2)
         .expect("preparation fits")
         .compute(WorthQueryManagedComputationExecution::new(
-            &QueryRequestExecution::unbounded_for_test(&request),
+            &QueryRequestExecution::open(
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
+                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+                    std::num::NonZeroUsize::MIN, 1 << 30,
+                ),
+            ), &request),
         ))
         .expect("computation fits")
         .complete()
         .expect("completion succeeds");
     assert_eq!(output, 4);
     let denial = match installed.prepare(&5).expect("preparation fits").compute(
-        WorthQueryManagedComputationExecution::new(&QueryRequestExecution::unbounded_for_test(
+        WorthQueryManagedComputationExecution::new(&QueryRequestExecution::open(
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
+                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+                    std::num::NonZeroUsize::MIN, 1 << 30,
+                ),
+            ),
             &request,
         )),
     ) {
@@ -198,7 +208,12 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
             .prepare(&1)
             .unwrap()
             .compute(WorthQueryManagedComputationExecution::new(
-                &QueryRequestExecution::unbounded_for_test(&cancelled),
+                &QueryRequestExecution::open(
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
+                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+                    std::num::NonZeroUsize::MIN, 1 << 30,
+                ),
+            ), &cancelled),
             )) {
             Err(denial) => denial,
             Ok(_) => panic!("cancelled execution is denied at its checkpoint"),
@@ -220,7 +235,12 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
             .prepare(&1)
             .unwrap()
             .compute(WorthQueryManagedComputationExecution::new(
-                &QueryRequestExecution::unbounded_for_test(&expired),
+                &QueryRequestExecution::open(
+            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
+                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+                    std::num::NonZeroUsize::MIN, 1 << 30,
+                ),
+            ), &expired),
             )) {
             Err(denial) => denial,
             Ok(_) => panic!("expired execution is denied at its checkpoint"),

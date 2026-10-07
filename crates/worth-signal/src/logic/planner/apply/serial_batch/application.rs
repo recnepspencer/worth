@@ -56,12 +56,19 @@ impl PreparedSerialStageBatch {
         graph: &mut SignalGraph,
         summary: &PlanSummary,
         comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
     ) -> Result<AppliedSerialStageBatch, SignalError> {
         let stage_index = self.stage_index;
         let mut applied_tasks = Vec::with_capacity(self.exact_width.get());
         for input in self.apply_inputs {
-            let apply_result =
-                apply_serial_input(graph, summary, stage_index, input, comparator_resolver)?;
+            let apply_result = apply_serial_input(
+                graph,
+                summary,
+                stage_index,
+                input,
+                comparator_resolver,
+                work,
+            )?;
             if let Some(snapshot) = apply_result.pending_snapshot {
                 self.pending_snapshots.push(snapshot);
             }
@@ -108,6 +115,7 @@ fn apply_serial_input(
     stage_index: u32,
     input: SerialApplyInput,
     comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_, '_>,
 ) -> Result<SerialApplyResult, SignalError> {
     let node = input.node;
     let record_id = input.record_id;
@@ -120,7 +128,7 @@ fn apply_serial_input(
         input.dependency_updates,
         Some(input.dependency_inputs),
         false,
-        &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        work,
     )
     .inspect_err(|err| {
         record_execution_failure_if_enabled(graph, || {

@@ -19,15 +19,13 @@ pub struct WorthQueryProductWorldResources {
     execution: WorthQueryProductExecution,
 }
 
-/// How the World's requests run, handed to its builder unchanged: with no
-/// policy they run unbounded on the calling thread; with one, on the calling
-/// thread within it, or leased from the host's authority when one is
-/// installed beside it. An authority without a policy is refused at
-/// installation.
-#[derive(Clone, Default)]
+/// How the World's requests run, handed to its builder unchanged: within
+/// the required policy on the calling thread, or leased from the host's
+/// authority when installed beside it. The policy is required at construction.
+#[derive(Clone)]
 pub(crate) struct WorthQueryProductExecution {
     pub(crate) authority: Option<Arc<ExecutionAuthority>>,
-    pub(crate) policy: Option<ExecutionRequestPolicy>,
+    pub(crate) policy: ExecutionRequestPolicy,
 }
 
 impl WorthQueryProductWorldResources {
@@ -35,20 +33,26 @@ impl WorthQueryProductWorldResources {
         budgets: worth_runtime_world::facade::RuntimeWorldBudgetInstallation,
         clock: WorthQueryProductWorldClock,
         invalidation: super::super::WorthQueryInvalidationResources,
+        policy: ExecutionRequestPolicy,
     ) -> Result<Self, worth_runtime_world::facade::RuntimeWorldBudgetDenial> {
-        RuntimeWorldBudgets::install(budgets).map(|budgets| Self::new(budgets, clock, invalidation))
+        RuntimeWorldBudgets::install(budgets)
+            .map(|budgets| Self::new(budgets, clock, invalidation, policy))
     }
 
     pub fn new(
         budgets: RuntimeWorldBudgets,
         clock: WorthQueryProductWorldClock,
         invalidation: super::super::WorthQueryInvalidationResources,
+        policy: ExecutionRequestPolicy,
     ) -> Self {
         Self {
             budgets,
             clock,
             invalidation,
-            execution: WorthQueryProductExecution::default(),
+            execution: WorthQueryProductExecution {
+                authority: None,
+                policy,
+            },
         }
     }
 
@@ -61,7 +65,7 @@ impl WorthQueryProductWorldResources {
 
     /// Installs the policy every request runs under.
     pub fn with_execution_policy(mut self, policy: ExecutionRequestPolicy) -> Self {
-        self.execution.policy = Some(policy);
+        self.execution.policy = policy;
         self
     }
 
@@ -141,5 +145,14 @@ pub(crate) fn test_product_world_resources_with_history_limit(
             },
         )
         .expect("the test invalidation resources are valid"),
+        ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                64 * 1_024 * 1_024,
+                8_000_000,
+            ),
+        ),
     )
 }

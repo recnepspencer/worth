@@ -109,7 +109,7 @@ fn analysis_structural_registration() -> crate::structural::StructuralIdentityDe
     )
 }
 
-fn native_profile_mapping_registration() -> BridgeMappingRegistration {
+pub(in crate::facade::tests) fn native_profile_mapping_registration() -> BridgeMappingRegistration {
     BridgeMappingRegistration::new(
         BridgeMappingId::admit_bridge_owned("mapping"),
         TruthPatchScope::for_entity_field(

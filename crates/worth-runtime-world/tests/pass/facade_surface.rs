@@ -72,6 +72,7 @@ fn exact_generic_contract<D, I, E, Ctx, T, F>(
     budgets: worth_runtime_world::facade::RuntimeWorldBudgets,
     clock: worth_runtime_world::facade::RuntimeWorldClock,
     prepared: PreparedCompositePublicationWithSignal,
+    execution_policy: worth_foundational::ExecutionRequestPolicy,
     context: &mut Ctx,
     cancellation: &RuntimeWorldCancellationToken,
     apply: F,
@@ -85,6 +86,7 @@ where
     F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
 {
     let owner = RuntimeWorldOwner::builder()
+        .with_execution_policy(execution_policy)
         .with_bridge_correspondence(bridge)
         .with_relational_services(relational)
         .with_signal_services(signal)

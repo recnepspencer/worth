@@ -6,6 +6,7 @@ pub(crate) struct SignalPreparationBudget {
     capacity: u64,
     claimed: u64,
     retained: u64,
+    memory: worth_execution::ExecutionMemoryReservation,
 }
 
 /// An epoch boundary owned by the request coordinator. Only buffers allocated
@@ -15,11 +16,34 @@ pub(crate) struct PreparationMark {
 }
 
 impl SignalPreparationBudget {
+    pub(crate) fn for_request(
+        capacity: u64,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    ) -> Result<Self, SignalError> {
+        let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, 0)
+            .map_err(SignalError::execution_admission_denied)?;
+        Ok(Self {
+            capacity,
+            claimed: 0,
+            retained: 0,
+            memory,
+        })
+    }
+
+    #[cfg(test)]
     pub(crate) fn new(capacity: u64) -> Self {
+        let policy = worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, capacity, 10_000),
+        );
         Self {
             capacity,
             claimed: 0,
             retained: 0,
+            memory: worth_execution::SerialMemoryBudget::from_policy(&policy)
+                .reserve(0)
+                .unwrap(),
         }
     }
 
@@ -35,6 +59,11 @@ impl SignalPreparationBudget {
                 reserved: self.capacity,
             },
         )?;
+        self.memory.resize(next).map_err(|denial| {
+            SignalError::execution_admission_denied(worth_execution::LeaseDenial::MemoryExhausted(
+                denial,
+            ))
+        })?;
         self.claimed = next;
         Ok(())
     }
@@ -79,6 +108,9 @@ impl SignalPreparationBudget {
             "Signal preparation frames must be released in owner order"
         );
         self.claimed = self.retained + mark.transient;
+        self.memory
+            .resize(self.claimed)
+            .expect("releasing preparation cannot widen its reservation");
     }
 }
 

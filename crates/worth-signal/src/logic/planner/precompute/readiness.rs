@@ -107,9 +107,8 @@ fn charge_lowering(
         return Ok(());
     };
     let units = input.lowering_copy_work();
-    work.checkpoint(units).map_err(|_| {
-        SignalError::invalid_input("invalidation lowering stopped before copying authority")
-    })?;
+    work.checkpoint(units)
+        .map_err(SignalError::execution_checkpoint_stopped)?;
     if let Some(budget) = preparation {
         budget.claim(input.lowering_heap_bound()?)?;
     }

@@ -85,7 +85,12 @@ fn read_name(
         ),
         SnapshotReadContract::scalar(aspect_key("name"), ScalarAspectType::String),
     )]);
-    let result = reader.read_packet(&packet).unwrap();
+    let result = reader
+        .read_packet(
+            &packet,
+            worth_execution::ExecutionRequest::serial(&crate::snapshot::test_serial_request()),
+        )
+        .unwrap();
     match result.records()[0].scalar_aspect_value() {
         Some(AspectValue::String(InternedString::Raw(name))) => name.clone(),
         other => panic!("the name reads as a raw string: {other:?}"),

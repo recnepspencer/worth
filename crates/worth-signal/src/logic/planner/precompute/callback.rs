@@ -17,7 +17,7 @@ pub(crate) trait SignalPrecompute: Sync {
         &self,
         node: NodeId,
         view: &ExecutionReadView<'_>,
-        work: Option<&mut MapKernelContext<'_, '_>>,
+        work: &mut MapKernelContext<'_, '_>,
         capacity: Option<CheckedKernelCapacity>,
     ) -> Result<PreparedEvaluation, SignalError>;
     fn allows_bounded_inputs(&self) -> bool;
@@ -39,14 +39,16 @@ where
         &self,
         node: NodeId,
         view: &ExecutionReadView<'_>,
-        work: Option<&mut MapKernelContext<'_, '_>>,
+        work: &mut MapKernelContext<'_, '_>,
         _capacity: Option<CheckedKernelCapacity>,
     ) -> Result<PreparedEvaluation, SignalError> {
-        if work.is_some() {
+        if _capacity.is_some() {
             return Err(SignalError::invalid_input(
                 "unbounded evaluator cannot enter checked dispatch",
             ));
         }
+        work.checkpoint(1)
+            .map_err(SignalError::execution_checkpoint_stopped)?;
         (self.0)(node, view)
     }
     fn allows_bounded_inputs(&self) -> bool {
@@ -78,12 +80,9 @@ where
         &self,
         node: NodeId,
         view: &ExecutionReadView<'_>,
-        work: Option<&mut MapKernelContext<'_, '_>>,
+        work: &mut MapKernelContext<'_, '_>,
         capacity: Option<CheckedKernelCapacity>,
     ) -> Result<PreparedEvaluation, SignalError> {
-        let work = work.ok_or_else(|| {
-            SignalError::invalid_input("checked evaluator needs its work context")
-        })?;
         let capacity = capacity.ok_or_else(|| {
             SignalError::invalid_input("checked evaluator needs its admitted capacity")
         })?;

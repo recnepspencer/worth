@@ -75,33 +75,35 @@ impl SignalGraph {
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         work: &mut EvaluationWork<'_, '_>,
     ) -> Result<PreparedDirectCauseAdmission, SignalError> {
-        self.prepare_direct_output_causes_with_execution(
-            delta,
-            comparator_resolver,
-            work,
-            None,
-            None,
-        )
+        self.prepare_direct_output_causes_from_work(delta, comparator_resolver, work)
     }
 
-    pub(crate) fn prepare_direct_output_causes_with_execution(
+    pub(crate) fn prepare_direct_output_causes_from_work(
         &mut self,
         delta: &ProducedAspectDelta,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         work: &mut EvaluationWork<'_, '_>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-        request_work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
     ) -> Result<PreparedDirectCauseAdmission, SignalError> {
-        self.prepare_direct_output_causes_with_overlay(
-            delta,
-            comparator_resolver,
-            work,
-            lease,
-            request_work,
-            None,
-            None,
-            None,
-        )
+        let queries = self.collect_reverse_subscription_queries(delta, work)?;
+        match work {
+            EvaluationWork::RequestPreparation { work, memory } => self
+                .prepare_direct_output_causes_with_overlay(
+                    delta,
+                    comparator_resolver,
+                    &mut EvaluationWork::Conditional(work),
+                    None,
+                    Some(memory),
+                    queries,
+                ),
+            work => self.prepare_direct_output_causes_with_overlay(
+                delta,
+                comparator_resolver,
+                work,
+                None,
+                None,
+                queries,
+            ),
+        }
     }
 
     fn prepare_direct_output_causes_with_overlay(
@@ -109,11 +111,9 @@ impl SignalGraph {
         delta: &ProducedAspectDelta,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         work: &mut EvaluationWork<'_, '_>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-        request_work: Option<&mut worth_execution::MapKernelContext<'_, '_>>,
         overlay: Option<&epoch_admission::EpochCauseRows>,
         mut preparation: Option<&mut SignalPreparationBudget>,
-        prepared_queries: Option<Vec<ReverseSubscriptionQuery>>,
+        prepared_queries: Vec<ReverseSubscriptionQuery>,
     ) -> Result<PreparedDirectCauseAdmission, SignalError> {
         let mut subscribers = Vec::new();
         let mut counter_deltas = PreparedDirectCounterDeltas {
@@ -121,32 +121,11 @@ impl SignalGraph {
             ..Default::default()
         };
         work.reserve(Some(delta.changes.as_slice().len()))?;
-        let mut leased_queries = if let Some(queries) = prepared_queries {
-            Some(queries)
-        } else if lease.is_some() && matches!(work, EvaluationWork::Ordinary) {
-            Some(self.collect_reverse_subscription_queries(
-                delta,
-                work,
-                lease,
-                request_work,
-                preparation.as_deref_mut(),
-            )?)
-        } else {
-            None
-        }
-        .map(Vec::into_iter);
-        for change in delta.changes.as_slice() {
-            let query = match &mut leased_queries {
-                Some(queries) => queries
-                    .next()
-                    .expect("leased candidate map covers every change"),
-                None => self.query_reverse_subscriptions(
-                    delta.producer,
-                    change,
-                    delta.scope_precision,
-                    work,
-                )?,
-            };
+        let mut prepared_queries = prepared_queries.into_iter();
+        for _ in delta.changes.as_slice() {
+            let query = prepared_queries.next().ok_or_else(|| {
+                SignalError::internal("prepared candidates must cover each change")
+            })?;
             counter_deltas.bucket_probes += query.bucket_probes;
             counter_deltas.candidates_returned += query.candidates.len() as u64;
             let candidate_count = query.candidates.len() as u64;

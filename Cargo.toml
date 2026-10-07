@@ -26,6 +26,7 @@ boundary_check_manifest = "tools/boundary-check/Cargo.toml"
 boundary_check_config = "tools/boundary-check/config/road1.toml"
 
 [workspace.package]
+rust-version = "1.94"
 edition = "2021"
 version = "0.1.0"
 license = "BUSL-1.1"

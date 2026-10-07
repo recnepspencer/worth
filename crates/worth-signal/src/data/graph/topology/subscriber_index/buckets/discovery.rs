@@ -7,6 +7,7 @@ use crate::data::proof::invalidation::output_commit::{ProducedAspectChange, Scop
 use crate::logic::evaluation::EvaluationWork;
 
 impl SignalGraph {
+    #[cfg(test)]
     pub(crate) fn query_reverse_subscriptions(
         &mut self,
         producer: NodeId,

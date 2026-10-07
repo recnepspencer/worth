@@ -1,9 +1,9 @@
 use std::fmt;
 
-use worth_execution::{ChargedBytes, LeaseDenial, MapKernelFailure, MapKernelStop, MapStop};
+use worth_execution::ChargedBytes;
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
-use super::SignalError;
+use super::{SignalError, SignalLeaseDenial};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SignalPublicationDisposition {
@@ -86,7 +86,7 @@ pub enum SignalExecutionStopReason {
     WorkExhausted {
         identity: PartitionIdentity,
     },
-    Admission(LeaseDenial),
+    Admission(SignalLeaseDenial),
     PreparationMemoryExhausted {
         identity: PartitionIdentity,
         required: Option<u64>,
@@ -135,52 +135,6 @@ impl SignalExecutionStop {
 
     pub const fn execution(&self) -> ExecutionReport {
         self.execution
-    }
-}
-
-impl From<MapStop<SignalError>> for SignalExecutionStopReason {
-    fn from(stop: MapStop<SignalError>) -> Self {
-        match stop {
-            MapStop::Failure {
-                cause: MapKernelFailure::Domain(SignalError::ExecutionAdmissionDenied(denial)),
-                ..
-            } => Self::Admission(denial),
-            MapStop::Failure {
-                identity,
-                cause:
-                    MapKernelFailure::Domain(SignalError::PreparationMemoryExhausted {
-                        required,
-                        reserved,
-                    }),
-            } => Self::PreparationMemoryExhausted {
-                identity,
-                required,
-                reserved,
-            },
-            MapStop::Failure { identity, cause } => Self::Failure {
-                identity,
-                cause: cause.into(),
-            },
-            MapStop::WorkExhausted { identity } => Self::WorkExhausted { identity },
-            MapStop::Admission(denial) => Self::Admission(denial),
-        }
-    }
-}
-
-impl From<MapKernelFailure<SignalError>> for SignalExecutionFailure {
-    fn from(failure: MapKernelFailure<SignalError>) -> Self {
-        match failure {
-            MapKernelFailure::Domain(error) => Self::Domain(Box::new(error)),
-            MapKernelFailure::Stop(stop) => match stop {
-                MapKernelStop::Cancelled => Self::Cancelled,
-                MapKernelStop::DeadlineElapsed => Self::DeadlineElapsed,
-                MapKernelStop::WorkCounterOverflow => Self::WorkCounterOverflow,
-                MapKernelStop::WorkCeiling => Self::WorkCeiling,
-                MapKernelStop::NestedStopped => Self::NestedStopped,
-            },
-            MapKernelFailure::Panic => Self::Panic,
-            MapKernelFailure::ResultCapacityExceeded => Self::ResultCapacityExceeded,
-        }
     }
 }
 

@@ -176,6 +176,7 @@ where
                     cached_result.clone(),
                 );
                 let execution_start = RuntimeInstant::now();
+                let serial = self.graph.bounded_serial_request();
                 let report = match execute_targets_with_prepared_runtime_config_detailed(
                     self.graph,
                     self.config,
@@ -196,7 +197,7 @@ where
                             }))
                         },
                     ),
-                    None,
+                    worth_execution::ExecutionRequest::serial(&serial),
                 ) {
                     Ok(report) => report,
                     Err(failure) => {
@@ -224,6 +225,7 @@ where
 
         let last_result = Mutex::new(None);
         let execution_start = RuntimeInstant::now();
+        let serial = self.graph.bounded_serial_request();
         let result = match execute_targets_with_prepared_runtime_config_detailed(
             self.graph,
             self.config,
@@ -248,7 +250,7 @@ where
                     Ok(prepared)
                 },
             ),
-            None,
+            worth_execution::ExecutionRequest::serial(&serial),
         ) {
             Ok(report) => Ok(report),
             Err(failure) => {

@@ -15,6 +15,7 @@ impl TruthSnapshotReader for StaticSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
         Ok(SnapshotReadPacketResult::new(
             crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
@@ -43,7 +44,8 @@ impl TruthSnapshotReader for DriftSnapshotReader {
     fn read_packet(
         &self,
         request: &SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
-        StaticSnapshotReader.read_packet(request)
+        StaticSnapshotReader.read_packet(request, execution)
     }
 }

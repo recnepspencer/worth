@@ -82,13 +82,12 @@ where
     pub fn execution_authority(&self) -> Option<&worth_execution::ExecutionAuthority> {
         match self.execution_placement() {
             super::RuntimeWorldExecutionPlacement::Leased { authority, .. } => Some(authority),
-            super::RuntimeWorldExecutionPlacement::Serial(_)
-            | super::RuntimeWorldExecutionPlacement::Unbounded => None,
+            super::RuntimeWorldExecutionPlacement::Serial(_) => None,
         }
     }
 
     /// How this World's requests run: leased under the host's policy, within
-    /// the policy on the calling thread, or unbounded.
+    /// the policy on the calling thread.
     pub fn execution_placement(&self) -> super::RuntimeWorldExecutionPlacement<'_> {
         self.root.state.execution.placement()
     }

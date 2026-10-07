@@ -122,7 +122,7 @@ fn checkpoint(
         let units = u64::try_from(units)
             .map_err(|_| SignalError::invalid_input("dependency preflight work overflow"))?;
         work.checkpoint(units)
-            .map_err(|_| SignalError::invalid_input("dependency preflight work stopped"))?;
+            .map_err(SignalError::execution_checkpoint_stopped)?;
     }
     Ok(())
 }
