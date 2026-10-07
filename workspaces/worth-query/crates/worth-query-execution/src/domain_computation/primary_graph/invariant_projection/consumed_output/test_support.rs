@@ -31,8 +31,8 @@ impl ConsumedOutputEvidence {
             )
             .expect("test carrier has installed capacity");
         Self {
-            identity,
-            source_facts,
+            _computation: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).certify_current().unwrap(),            identity,
+            source_facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, source_facts).for_comparison().unwrap(),
             upstream: Arc::from(upstream),
             verification_requirement: requirement,
             native_output_witness: None,
@@ -40,5 +40,32 @@ impl ConsumedOutputEvidence {
             _capacity: capacity,
             backing_capacity: None,
         }
+    }
+}
+
+impl ConsumedOutputEvidence {
+    /// The same retained consumption carrier, with an actual sealed Native
+    /// witness supplied by the restored-root reader's full comparison.
+    pub(in crate::domain_computation::primary_graph) fn restored_with_witness_for_test(
+        owner: &SourceInvalidationOwner,
+        identity: Arc<RecordedSettlementIdentity>,
+        source_facts: Arc<[WorthQueryApplicationObservedFact]>,
+        selected: Arc<PositionedRelationalSnapshot>,
+        witness: Arc<
+            std::sync::OnceLock<
+                crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness,
+            >,
+        >,
+    ) -> Self {
+        let mut retained = Self::retained_for_test(
+            owner,
+            identity,
+            source_facts,
+            Vec::new(),
+            Some(FullVerificationReason::CheckpointRestore),
+            selected,
+        );
+        retained.native_output_witness = Some(witness);
+        retained
     }
 }

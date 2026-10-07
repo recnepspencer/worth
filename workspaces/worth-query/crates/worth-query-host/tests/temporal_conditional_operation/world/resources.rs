@@ -42,7 +42,7 @@ pub(crate) fn product_world_resources(
                 1_000_000,
                 64 * 1_024 * 1_024,
                 128 * 1_024 * 1_024,
-                128,
+                usize::try_from(retained_composite_commits.min(128)).unwrap(),
             ),
         )
         .expect("the Query invalidation installation is valid"),

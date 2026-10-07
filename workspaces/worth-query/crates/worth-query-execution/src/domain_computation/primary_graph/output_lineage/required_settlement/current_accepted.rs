@@ -1,7 +1,5 @@
 //! Currentness of one exact accepted output, without repeating its source query.
 
-use std::sync::Arc;
-
 use worth_relational::facade::{
     runtime::{PositionedRelationalSnapshot, RelationalRuntime},
     snapshots::SnapshotHandle,
@@ -9,7 +7,6 @@ use worth_relational::facade::{
 
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact,
     application_output_demand::ReadyCompletion,
     invariant_projection::{
         ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
@@ -17,6 +14,10 @@ use crate::domain_computation::primary_graph::{
     },
     SourceInvalidationOwner,
 };
+
+#[cfg(test)]
+mod own_write_recovery;
+mod recovery;
 
 use super::{
     super::invalidation::{
@@ -37,11 +38,12 @@ pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedResult<'bas
 /// one current output. Only the owner can mint it; the selected Query snapshot
 /// keeps it inside the admitted read callback.
 pub(in crate::domain_computation::primary_graph) struct CurrentAcceptedOutput<'basis> {
+    _computation: super::super::CurrentComputation,
     candidate: &'basis AcceptedCurrentCandidate,
     product: &'basis WorthQueryProductObservationLease,
     _snapshot: &'basis SnapshotHandle,
     _selected: &'basis PositionedRelationalSnapshot,
-    facts: Arc<[WorthQueryApplicationObservedFact]>,
+    facts: super::super::ComparableSourceFacts,
     _actor: VerifiedCurrentCleanup,
 }
 
@@ -78,10 +80,7 @@ impl<'basis> CurrentAcceptedOutput<'basis> {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let same_row = row.verification_requirement.is_none()
-            && row
-                .observed_source_facts
-                .as_ref()
-                .is_some_and(|facts| Arc::ptr_eq(facts, &self.facts));
+            && row.same_qualified_facts(&self.facts).is_some();
         drop(row);
         if !same_row {
             return Ok(None);
@@ -156,6 +155,13 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
         let recorded = self.selected.recorded();
+        let Some(qualified) = recorded
+            .observed_source_facts()
+            .and_then(|facts| facts.for_comparison())
+        else {
+            return Ok(CurrentAcceptedResult::NeedsDisclosure);
+        };
+        let computation = qualified.computation();
         if self.selected.native_output_witness().is_none() {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
@@ -166,12 +172,28 @@ impl AcceptedCurrentCandidate {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             (
                 row.verification_requirement,
-                row.observed_source_facts.as_ref().map(Arc::clone),
+                row.same_qualified_facts(&qualified),
             )
         };
         // A restored output has a mark row only once it was compared in full
         // on this runtime. A clean row therefore discharges the restore
         // requirement below; without one this read needs source disclosure.
+        if let (Some(FullVerificationReason::RegistrationIncomplete), Some(facts)) =
+            (requirement, facts.as_ref())
+        {
+            if recorded.consumed_outputs.is_empty() {
+                return self.recover_registration(
+                    computation,
+                    owner,
+                    runtime,
+                    product,
+                    snapshot,
+                    selected,
+                    facts.clone(),
+                    admission,
+                );
+            }
+        }
         let restored = requirement == Some(FullVerificationReason::CheckpointRestore);
         if restored && facts.is_none() {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
@@ -246,11 +268,7 @@ impl AcceptedCurrentCandidate {
             .mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if row.verification_requirement != requirement
-            || !row
-                .observed_source_facts
-                .as_ref()
-                .is_some_and(|current| Arc::ptr_eq(current, &facts))
+        if row.verification_requirement != requirement || row.same_qualified_facts(&facts).is_none()
         {
             drop(row);
             drop(prepared);
@@ -263,6 +281,7 @@ impl AcceptedCurrentCandidate {
         drop(row);
         match installed {
             Ok(cleanup) => Ok(CurrentAcceptedResult::Current(CurrentAcceptedOutput {
+                _computation: computation,
                 candidate: self,
                 product,
                 _snapshot: snapshot,

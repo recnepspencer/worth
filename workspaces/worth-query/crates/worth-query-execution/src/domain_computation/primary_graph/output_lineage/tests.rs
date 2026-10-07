@@ -50,10 +50,10 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-        source_facts(),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
-    );
+        );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
@@ -65,10 +65,10 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         sibling_partition,
         Some([0x52; 32]),
         [0x42; 32],
-        source_facts(),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
-    );
+        );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
@@ -80,10 +80,10 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-        source_facts(),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
-    );
+        );
 
     let source = SemanticSource {
         runtime_authority,
@@ -281,10 +281,10 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-        Arc::from([]),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([])),
         None,
         None,
-    );
+        );
 
     assert!(
         lineage
@@ -312,10 +312,10 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-        source_facts(),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
-    );
+        );
 
     assert!(lineage
         .qualified_output::<RestoredOutputBinding>(

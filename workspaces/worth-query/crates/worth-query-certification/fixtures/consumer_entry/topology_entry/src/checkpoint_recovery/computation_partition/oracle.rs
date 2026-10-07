@@ -37,9 +37,9 @@ mod worker_axis;
 
 use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_RETAINED_BYTES, TOTALS_WORK};
 
-/// What one entry may cost the computation: its key's encoding and routing,
-/// its kernel and its share of the combines.
-const WORK_PER_ENTRY: usize = 256;
+/// What one entry may cost the computation: its digest, its key's encoding
+/// and routing, its kernel and its share of the combines.
+const WORK_PER_ENTRY: usize = 512;
 /// The input's digest.
 const WORK_BESIDE_ENTRIES: usize = 4_096;
 /// The width every other operation of the program fits, the host's default.
@@ -276,8 +276,10 @@ fn install(seed: impl FnOnce(&mut Graph)) -> Application {
         )
         .and_then(|candidates| candidates.with_maximum_operation_width(width))
         .unwrap();
-    let invalidation = support::invalidation(128 * 1_024 * 1_024, 1_000_000, 128);
-    let limits = support::limits_with_room(32, 16, 64, invalidation, candidates);
+    const RETAINED_COMMITS: u64 = 32;
+    let invalidation =
+        support::invalidation(128 * 1_024 * 1_024, 1_000_000, RETAINED_COMMITS as usize);
+    let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation, candidates);
     support::install_program_with_limits::<OracleProgram>(
         None,
         Default::default(),
@@ -331,7 +333,7 @@ fn edit(request: &Request<'_, '_, '_>, application: &Application, edit: EntryEdi
         .expect("the edit's source is readable");
     let made = format!("{edit:?}");
     let outcome = request
-        .mutate(edit)
+        .mutate(edit.commanded(command))
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&command)
         .execute_in_program::<OracleProgram>(application);

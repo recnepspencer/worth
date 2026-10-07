@@ -182,7 +182,7 @@ fn rebase_within_width(
             rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                PreparedSourceFactRebase::admit(vec![selection]).unwrap(),
+                PreparedSourceFactRebase::admit(vec![selection], [].into()).unwrap(),
                 &BTreeSet::new(),
                 producer_output,
                 indexed_width,

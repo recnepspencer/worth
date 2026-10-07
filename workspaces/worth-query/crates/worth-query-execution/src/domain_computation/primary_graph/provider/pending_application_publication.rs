@@ -322,6 +322,7 @@ fn publish_with_snapshot(
         let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(
             owner,
             &completed,
+            recorded.as_ref().expect("performed lineage was recorded").computation_source,
             &consumed_outputs,
             runtime,
             after,

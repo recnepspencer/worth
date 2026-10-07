@@ -6,7 +6,9 @@ mod compare_and_commit;
 mod delegation_activation_program;
 mod denial;
 mod dependency_identity;
-pub(in crate::domain_computation::primary_graph) use dependency_identity::WorthQueryProducerIdentityDenial;
+pub(in crate::domain_computation::primary_graph) use dependency_identity::{
+    OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
+};
 mod effect_program;
 mod effect_validation;
 mod elevation_approval_outcome;

@@ -60,10 +60,10 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         [0x72; 32],
         None,
         [0x73; 32],
-        Arc::clone(&retained_fact),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&retained_fact)),
         None,
         None,
-    );
+        );
     let identity = Arc::clone(
         &lineage
             .resolve_current_family(
@@ -124,7 +124,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let result = handle.with_runtime(|runtime| {
         ConsumedOutputEvidence::verify_candidate_with_admission(
             &candidate.settlement_identity,
-            &candidate.observed_source_facts,
+            &candidate.observed_source_facts.for_comparison().unwrap(),
             &candidate.consumed_outputs,
             candidate.verification_requirement,
             &before,

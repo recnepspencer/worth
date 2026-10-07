@@ -123,3 +123,20 @@ Each plugs into the existing backend port.
 Bring a backend back when a real workload needs it: browser parallelism for a
 shipped web product, a computation that outgrows one machine, or a kernel that
 needs an accelerator.
+
+### Components (islands) plan shape in Query
+
+Spec: [milestone-9.17.6.3.md](WORTH-query/milestone-9.17.6.3.md), Slice 6.8
+and the isolation-and-reuse requirements.
+
+The Components partitioner, which groups items into islands named by their
+least member, keeps island identity stable under merges, splits and
+least-member removal, and that claim is proven in worth-execution. Query
+plans route items by key only, so no Query declaration reaches islands, and
+Query makes no island claim. Deferred:
+
+- a Components plan shape in Query, with its incremental maintenance;
+- the topology entry's differential extended with island merges and splits.
+
+Bring it back when a Query declaration needs connectivity-shaped partitions,
+such as islands of a topology.

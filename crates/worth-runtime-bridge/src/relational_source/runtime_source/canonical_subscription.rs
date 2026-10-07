@@ -7,7 +7,7 @@ use worth_relational::facade::mvcc::{
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
     RelationalPublicationCompanion,
 };
-use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::{branch::RelationalBranchIdentity, runtime::RelationalRuntime};
 
 use super::RuntimeBridgeRelationalSource;
 
@@ -56,12 +56,17 @@ impl RuntimeBridgeRelationalSource {
 }
 
 impl PendingRelationalBridgeCanonicalSubscription {
-    pub fn mint_branch_cell<T: Send + Sync + 'static>(
+    /// Forward Native head selection and its publication exclusion unchanged.
+    /// Reserve lookup custody before entry; the callback only installs it.
+    pub fn with_branch_cell_at_head<T: Send + Sync + 'static, R>(
         &self,
-        selected: &PositionedRelationalSnapshot,
+        runtime: &RelationalRuntime,
+        branch: &RelationalBranchIdentity,
         initial: Arc<T>,
-    ) -> Result<CompanionBranchCell<T>, PublicationCompanionRegistrationStop> {
-        self.pending.mint_branch_cell(selected, initial)
+        install: impl FnOnce(CompanionBranchCell<T>) -> R,
+    ) -> Result<R, PublicationCompanionRegistrationStop> {
+        self.pending
+            .with_branch_cell_at_head(runtime, branch, initial, install)
     }
 
     pub fn activate(
@@ -82,12 +87,17 @@ impl PendingRelationalBridgeCanonicalSubscription {
 }
 
 impl RelationalBridgeCanonicalSubscription {
-    pub fn mint_branch_cell<T: Send + Sync + 'static>(
+    /// Forward Native head selection and its publication exclusion unchanged.
+    /// Reserve lookup custody before entry; the callback only installs it.
+    pub fn with_branch_cell_at_head<T: Send + Sync + 'static, R>(
         &self,
-        selected: &PositionedRelationalSnapshot,
+        runtime: &RelationalRuntime,
+        branch: &RelationalBranchIdentity,
         initial: Arc<T>,
-    ) -> Result<CompanionBranchCell<T>, PublicationCompanionRegistrationStop> {
-        self.registration.mint_branch_cell(selected, initial)
+        install: impl FnOnce(CompanionBranchCell<T>) -> R,
+    ) -> Result<R, PublicationCompanionRegistrationStop> {
+        self.registration
+            .with_branch_cell_at_head(runtime, branch, initial, install)
     }
 
     pub fn close(&self) -> Result<(), PublicationCompanionRegistrationStop> {
@@ -110,3 +120,6 @@ impl RelationalPublicationCompanion for CanonicalEnvelopeDelivery {
         self.consumer.prepare(context)
     }
 }
+
+#[cfg(test)]
+mod head_cell_tests;

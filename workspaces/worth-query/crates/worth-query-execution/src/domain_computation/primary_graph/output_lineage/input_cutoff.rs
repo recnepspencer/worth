@@ -32,10 +32,7 @@ use super::{
     PreparedInputReuseKey, ProductCoordinate, RecordedOutput, RecordedSettlementIdentity,
     SealedNativeOutputWitness, SemanticSource, WorthQueryApplicationOutputLineage,
 };
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact,
-    invariant_projection::ConsumedOutputEvidence,
-};
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 
 /// Pins the exact owner-selected record, including its retained capacity and
 /// source evidence. A restored row may lack the proofs needed for input reuse.
@@ -95,6 +92,12 @@ impl RetainedInputCutoffCandidate {
         self.originating_recorded()?.native_output_witness()
     }
 
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn native_output_witness_cell(
+        &self,
+    ) -> Option<&Arc<std::sync::OnceLock<SealedNativeOutputWitness>>> {
+        self.originating_recorded()?.native_output_witness_cell()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn settlement_identity(
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
@@ -118,9 +121,12 @@ impl RetainedInputCutoffCandidate {
     pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
         &self,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<Arc<[WorthQueryApplicationObservedFact]>>, CompanionPreflightStop> {
+    ) -> Result<Option<super::ComparableSourceFacts>, CompanionPreflightStop> {
         admission.charge_external_work(1)?;
-        Ok(self.recorded().observed_source_facts())
+        Ok(self
+            .recorded()
+            .observed_source_facts()
+            .and_then(|facts| facts.for_comparison()))
     }
 }
 

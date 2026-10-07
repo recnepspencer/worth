@@ -65,9 +65,9 @@ fn recorded_settlements(
         *partition,
         None,
         [0x73; 32],
-        Arc::from([crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity {
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: entity,
-        }]),
+        }])),
         None,
             None,
         );

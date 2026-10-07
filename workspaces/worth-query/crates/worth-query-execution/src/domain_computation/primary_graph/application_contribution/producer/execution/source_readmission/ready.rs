@@ -68,7 +68,8 @@ pub(super) fn ready_currentness_denial(
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Edit(_)) => {
             WorthQueryOutputDemandDenialKind::PublicationStale
         }
-        CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(_)) => {
+        CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::CapacityExhausted)
+        | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(_)) => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
     };

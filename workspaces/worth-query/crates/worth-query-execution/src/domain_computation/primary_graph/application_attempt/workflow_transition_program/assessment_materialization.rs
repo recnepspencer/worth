@@ -289,7 +289,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(std::sync::Arc::from(currentness)),
+            output_currentness_facts: Some(std::sync::Arc::<[_]>::from(currentness).into()),
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,

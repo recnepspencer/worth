@@ -9,7 +9,8 @@ pub enum WorthQueryInvariantProjectionDenialKind {
     ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
-    /// No capacity remains to retain a basis.
+    /// No capacity remains to retain a basis, or the evidence a read of a
+    /// current output retains.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.
     RetentionIdentityExhausted,

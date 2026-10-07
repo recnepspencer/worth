@@ -115,7 +115,7 @@ impl SourceInvalidationOwner {
         // Native image lifetime differs from the payload's. Even a shared
         // payload needs one new ticket for this newly allocated native image.
         let bytes = CompanionBranchCell::<BranchMarkRoot>::derived_root_cost().retained_image_bytes;
-        let ticket = retention::reserve(&self.resources, bytes, admission)?;
+        let ticket = retention::reserve_live_image(bytes, &self.resources, admission)?;
         let retention = CompanionDerivedImageRetention::from_prepared_owner(ticket);
         let native = cell
             .prepare_derived_root_at_same_position(image, root, retention, admission)

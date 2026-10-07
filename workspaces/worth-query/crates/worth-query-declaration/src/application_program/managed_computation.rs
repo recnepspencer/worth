@@ -74,14 +74,16 @@ pub trait ApplicationComputationInput: 'static {
     const IDENTITY: &'static str;
 }
 
-/// A computation partition key.
+/// A value with a canonical encoding under a declared identity: a computation
+/// partition key, or an item a partitioned computation partitions.
 ///
-/// Two keys are the same key exactly when their canonical encodings are the
-/// same bytes: the declaration's prefix-free canonical encoding of the key's
-/// `Serialize` form, the encoding that already identifies structured operation
-/// inputs. A key carries no ordering of its own. Computation partitions are
-/// ordered by partition identity, which
-/// `application_computation_partition_identity` derives from that encoding.
+/// Two values are the same value exactly when their canonical encodings are
+/// the same bytes: the declaration's prefix-free canonical encoding of the
+/// value's `Serialize` form, the encoding that already identifies structured
+/// operation inputs. A key carries no ordering of its own. Computation
+/// partitions are ordered by partition identity, which
+/// `application_computation_partition_identity` derives from that encoding;
+/// `application_computation_item_digest` derives an item's digest from it.
 pub trait ApplicationComputationPartition: Serialize + Send + Sync + 'static {
     const IDENTITY: &'static str;
 }

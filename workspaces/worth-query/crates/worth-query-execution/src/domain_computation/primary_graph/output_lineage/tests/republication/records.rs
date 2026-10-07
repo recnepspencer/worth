@@ -56,6 +56,7 @@ pub(super) fn performed(
         )
         .unwrap();
     RecordedOutput {
+        computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
         consumed_outputs: Arc::clone(consumed),
         completed_handler_facts: Some(boundary),
         completed_decision_reuse: Some(completed),

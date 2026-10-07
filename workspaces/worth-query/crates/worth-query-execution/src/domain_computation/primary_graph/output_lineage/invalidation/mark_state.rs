@@ -31,6 +31,8 @@ pub(in crate::domain_computation::primary_graph) enum FullVerificationReason {
     /// A stop ended this row's registration after its World effect, which
     /// stays authoritative, so the row holds no complete marks.
     RegistrationIncomplete,
+    /// Original computation inputs were changed by its own publication.
+    ComputationSuperseded,
 }
 
 impl FullVerificationReason {
@@ -78,7 +80,7 @@ pub(super) struct SettlementMarks {
     pub(super) posting_payload_bytes: u64,
     pub(super) posting_ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
     pub(super) consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
-    pub(super) facts: Arc<[WorthQueryApplicationObservedFact]>,
+    pub(super) facts: super::super::RetainedSourceFacts,
     pub(super) output_facts: Option<super::output_facts::RegisteredOutputFacts>,
     pub(super) output_coverage: OutputFactCoverage,
     pub(super) read_basis: Arc<PositionedRelationalSnapshot>,
@@ -106,7 +108,8 @@ impl OutputFactCoverage {
 
 impl SettlementMarks {
     pub(super) fn fact_at(&self, ordinal: usize) -> Option<&WorthQueryApplicationObservedFact> {
-        self.facts.get(ordinal).or_else(|| {
+        self.facts.for_comparison()?;
+        self.facts.postconditions().get(ordinal).or_else(|| {
             self.output_facts
                 .as_ref()?
                 .facts

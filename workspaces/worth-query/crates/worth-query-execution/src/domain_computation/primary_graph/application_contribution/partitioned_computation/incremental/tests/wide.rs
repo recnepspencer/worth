@@ -55,7 +55,7 @@ impl WideOwner {
 
 impl WorthQueryPartitionedComputationOwner<Schema, Feature, Wide> for WideOwner {
     type Operation = TouchAccountOperation;
-    type Item = u64;
+    type Item = Number;
     type Gathered = u64;
     type PartitionResult = u64;
     type Output = u64;
@@ -65,12 +65,12 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Wide> for WideOwner 
         &self,
         _: &mut Reader<'_, '_, '_>,
         _: &Root,
-    ) -> Result<WorthQueryComputationPartitionPlan<u64>, WorthQueryComputationInputDenial<u32>>
+    ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
         self.membership.fetch_add(1, Ordering::SeqCst);
         Ok(WorthQueryComputationPartitionPlan::keyed(
-            1..=PARTITIONS,
-            |item| PartitionItemId(*item),
+            (1..=PARTITIONS).map(Number),
+            |item| PartitionItemId(item.0),
         ))
     }
 
@@ -78,24 +78,24 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Wide> for WideOwner 
         &self,
         _: &mut Reader<'_, '_, '_>,
         _: &Root,
-        item: &u64,
+        item: &Number,
     ) -> Result<Slot, WorthQueryComputationInputDenial<u32>> {
         self.keys.fetch_add(1, Ordering::SeqCst);
-        Ok(Slot(*item))
+        Ok(Slot(item.0))
     }
 
     fn gather(
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-        partition: WorthQueryComputationPartitionMembers<'_, Slot, u64>,
+        partition: WorthQueryComputationPartitionMembers<'_, Slot, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         let slot = partition.key().0;
         if slot == 1 {
             reader.field(account, AccountStatus::reference())?;
         }
         self.gathered.lock().unwrap().push(slot);
-        Ok(partition.items().map(|(_, item)| *item).sum())
+        Ok(partition.items().map(|(_, item)| item.0).sum())
     }
 
     fn compute_partition(

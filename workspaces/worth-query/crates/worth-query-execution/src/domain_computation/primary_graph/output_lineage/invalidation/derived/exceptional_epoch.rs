@@ -27,6 +27,12 @@ impl SourceInvalidationOwner {
         {
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
-        Ok(image.payload().current.delivery_epoch.commit_id())
+        // An evicted index has no delivery record. The native image header is
+        // the exact discontinuity identity; no retained row claims continuity.
+        Ok(if image.payload().last_native_marking.is_none() {
+            image.commit_id()
+        } else {
+            image.payload().current.delivery_epoch.commit_id()
+        })
     }
 }

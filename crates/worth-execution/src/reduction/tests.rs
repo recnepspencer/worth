@@ -45,6 +45,32 @@ fn a_leaf_reads_the_value_its_partition_holds() {
     assert_eq!(*tree.result(), 127, "the result reduces the leaves read");
 }
 
+#[test]
+fn a_plans_build_work_is_the_work_its_checked_build_charges() {
+    let mut state = 0x2545_f491_4f6c_dd1d_u64;
+    let mut next = move || {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        state
+    };
+    for case in 0..200 {
+        let count = usize::try_from(case % 40).unwrap();
+        let mut identities = (0..count)
+            .map(|_| if case % 2 == 0 { next() % 64 } else { next() })
+            .collect::<Vec<_>>();
+        identities.sort_unstable();
+        identities.dedup();
+        let values = identities.iter().map(|value| value % 7).collect();
+        let (_, metrics) = from_plan(plan(&identities), values, 0, sum).unwrap();
+        assert_eq!(
+            plan(&identities).checked_build_work(),
+            Some(metrics.charged_work),
+            "{identities:?}"
+        );
+    }
+}
+
 fn oracle(values: &[(PartitionIdentity, f64)]) -> f64 {
     if values.is_empty() {
         return 0.0;

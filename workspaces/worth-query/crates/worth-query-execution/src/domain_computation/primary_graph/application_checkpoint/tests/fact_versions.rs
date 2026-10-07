@@ -38,7 +38,7 @@ fn body_with_facts(format: u16, fact_version: u16, bytes: &[u8]) -> Vec<u8> {
 fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     let fact = source_entity();
     let bytes = facts::encode(std::slice::from_ref(&fact)).unwrap();
-    let body = body_with_facts(8, WIRE_VERSION, &bytes);
+    let body = body_with_facts(super::super::FORMAT_VERSION, WIRE_VERSION, &bytes);
     let decoded = checkpoint_from_body(body.clone()).decode().unwrap();
     assert_eq!(
         decoded.accepted_outputs[0].producer_facts.as_deref(),
@@ -59,7 +59,7 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
 }
 
 #[test]
-fn v8_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
+fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
     use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture;
 
     let mut stable = accepted_without_roles(b"producer", 0);
@@ -67,7 +67,7 @@ fn v8_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
     stable[posture_at] = 1;
     let decoded = checkpoint_from_body(checkpoint_body(1, stable.clone()))
         .decode()
-        .expect("v8 stable posture is descriptive and readable");
+        .expect("current stable posture is descriptive and readable");
     assert_eq!(
         decoded.accepted_outputs[0].posture,
         WorthQueryAcceptedOutputCheckpointPosture::StableReused,
@@ -81,28 +81,34 @@ fn v8_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
     );
 }
 
-/// Facts captured at an older wire version were kept for every output, one
-/// that consumed other outputs included. Whatever they say, the row readmits
-/// without them and starts Fresh; a version this build does not know is
-/// refused.
+/// No earlier export can claim the current producer-fact exclusion rule.
 #[test]
 fn facts_of_an_older_wire_version_are_never_read() {
     let bytes = facts::encode(&[source_entity()]).unwrap();
-    for (format, fact_version) in [(5, 5), (6, 6), (7, 7), (8, 5), (8, 6), (8, 7)] {
-        for payload in [bytes.as_slice(), &[0xff; 9]] {
-            let decoded = checkpoint_from_body(body_with_facts(format, fact_version, payload))
-                .decode()
-                .expect("the checkpoint is readable without its older facts");
-            assert!(
-                decoded.accepted_outputs[0].producer_facts.is_none(),
-                "format {format}, fact wire version {fact_version}"
-            );
-            assert_eq!(decoded.accepted_outputs[0].producer_fact_wire_version, 0);
-            assert_eq!(decoded.accepted_outputs[0].posture, Posture::Performed);
-        }
+    for version in 3..=8 {
+        assert_denied(
+            body_with_facts(version, version, &bytes),
+            &format!("Query application checkpoint format {version} is unsupported"),
+        );
+    }
+    for fact_version in 5..=8 {
+        assert_denied(
+            body_with_facts(super::super::FORMAT_VERSION, fact_version, &bytes),
+            "checkpoint producer fact wire version is unsupported",
+        );
     }
     assert_denied(
-        body_with_facts(8, WIRE_VERSION + 1, &bytes),
-        "producer fact wire version is unsupported",
+        body_with_facts(super::super::FORMAT_VERSION, WIRE_VERSION + 1, &bytes),
+        "checkpoint producer fact wire version is unsupported",
+    );
+}
+
+#[test]
+fn a_version_eight_checkpoint_without_own_write_exclusion_is_refused() {
+    let bytes = facts::encode(&[source_entity()]).unwrap();
+    let checkpoint = checkpoint_from_body(body_with_facts(8, 8, &bytes));
+    assert_eq!(
+        checkpoint.decode().err().as_deref(),
+        Some("Query application checkpoint format 8 is unsupported")
     );
 }

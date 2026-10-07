@@ -104,6 +104,16 @@ impl<Schema, Operation, Input, Scope, Phase>
             }
             None => (None, None),
         };
+        // `facts` keeps the decision facts in key order, ahead of the source
+        // facts.
+        let computation_fact_ordinals =
+            computation_facts
+                .as_ref()
+                .map_or_else(Box::default, |sealed| {
+                    let keys = self.facts.keys().enumerate();
+                    keys.filter_map(|(ordinal, key)| sealed.fact(key).map(|_| ordinal))
+                        .collect()
+                });
         self.admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
             retained,
@@ -114,7 +124,9 @@ impl<Schema, Operation, Input, Scope, Phase>
             installed_read_scopes: self.installed_read_scopes.into_values().collect(),
             facts: self.facts.into_values().chain(self.source_facts).collect(),
             consumed_outputs: self.consumed_outputs,
+            #[cfg(test)]
             computation_facts,
+            computation_fact_ordinals,
             workflow_authority_binding: None,
             mutation_handler_binding: None,
             workflow_deadline: None,
@@ -130,7 +142,7 @@ impl<Schema, Operation, Input, Scope, Phase>
     /// The facts the owner calls read and which calls read each, when the
     /// handler ran one partitioned computation.
     // Retention takes its own copy at seal; tests read this one.
-    #[cfg_attr(not(test), allow(dead_code))]
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn computation_facts(
         &self,
     ) -> Option<&SealedComputationFacts> {

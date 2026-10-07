@@ -6,7 +6,6 @@ use worth_execution::{
     ChargedBytes, MapKernelStop, ReductionPlan, ReductionRunStop, ReductionTree,
 };
 use worth_foundational::facade::PartitionIdentity;
-use worth_proof::CanonicalUniqueVec;
 
 use super::super::super::request_execution::{QueryMemoryReservation, QueryRequestExecution};
 use super::super::super::WorthQueryManagedComputationResourceDenial as Resource;
@@ -15,20 +14,26 @@ use super::retained::RetainedPartitions;
 
 type Tree<Reduced> = ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>;
 
-/// The retained tree with `results` in place of their partitions' leaves.
+/// The tree over `plan`'s partitions: the retained tree with each partition
+/// the run no longer has deleted, and `results` in place of their
+/// partitions' leaves, a new partition's inserted.
 ///
-/// When the combines a full build charges fit, the tree is the retained one
-/// with each changed path recombined. Otherwise, or when recombining a path
-/// runs out of room, the tree is built again from every leaf the way a full
-/// run builds it, so the run fails where and as a full run fails. Every
-/// combine is a safe point of the request: an interruption stops the run at
-/// that tree node and is never retried as a rebuild.
+/// When `reduction_work`, the combines a full build of `plan` charges, fits,
+/// the tree is the retained one with each changed path recombined, edit by
+/// edit in ascending partition order. Otherwise, or when an edit runs out of
+/// room, the tree is built again from every leaf the way a full run builds
+/// it, so the run fails where and as a full run fails. Every combine is a
+/// safe point of the request: an interruption stops the run at that tree
+/// node and is never retried as a rebuild.
 ///
 /// `memory` holds the results. Each way of building holds its declared bound
-/// beside them before it builds, as a full run holds its tree's, so no node
+/// beside them before it builds, as a full run holds its tree's, and each
+/// edit holds its own bound on the tree it edits before it edits, so no node
 /// exists unreserved; the caller then settles the hold to the tree it keeps.
 pub(super) fn next_tree<Key, Item, Reduced, Stopped>(
     retained: &RetainedPartitions<Key, Item, Reduced>,
+    plan: ReductionPlan,
+    reduction_work: Option<u64>,
     mut results: BTreeMap<PartitionIdentity, Reduced>,
     remaining: u64,
     declared_bytes: u64,
@@ -41,58 +46,17 @@ where
 {
     let results_bytes = memory.bytes();
     let overflow = || WorthQueryPartitionedComputationDenial::Resource(Resource::CapacityOverflow);
-    if retained.reduction_work <= remaining {
-        // The copy shares the retained tree; each changed path is new, and
-        // so is each result's copy in its leaf.
-        let copy = inline::<Tree<Reduced>>().ok_or_else(overflow)?;
-        let paths = results.iter().try_fold(copy, |sum, (identity, value)| {
-            sum.checked_add(
-                retained
-                    .tree
-                    .checked_update_memory_bound(*identity, declared_bytes)?,
-            )?
-            .checked_add(value.additional_charged_bytes())
-        });
-        let held = paths
-            .and_then(|paths| results_bytes.checked_add(paths))
-            .ok_or_else(overflow)?;
-        // A path that finds no room falls to the rebuild, which refuses as a
-        // full run's build refuses.
-        if memory.resize(held).is_ok() {
-            let mut tree = retained.tree.clone();
-            let mut recombined = true;
-            for (identity, value) in &results {
-                match tree.update_checked(*identity, value.clone(), declared_bytes, || {
-                    execution.checkpoint()
-                }) {
-                    Ok(_) => {}
-                    Err(failure) => match failure.reason {
-                        ReductionRunStop::Hook(stop) => {
-                            return Err(WorthQueryPartitionedComputationDenial::from_kernel_stop(
-                                stop,
-                            ));
-                        }
-                        ReductionRunStop::Panic
-                        | ReductionRunStop::Denial(_)
-                        | ReductionRunStop::ResultCapacityExceeded
-                        | ReductionRunStop::WorkCounterOverflow => {
-                            recombined = false;
-                            break;
-                        }
-                    },
-                }
-            }
-            if recombined {
-                return Ok(tree);
-            }
+    if reduction_work.is_some_and(|work| work <= remaining) {
+        if let Some(tree) = edited(retained, &plan, &results, declared_bytes, execution, memory)? {
+            return Ok(tree);
         }
     }
     // A full run's build over every leaf, beside the leaves: the results
     // the hold already counts, and a copy of each retained leaf.
-    let count = retained.partitions.len();
-    let copies = retained
-        .partitions
-        .keys()
+    let count = plan.identities().len();
+    let copies = plan
+        .identities()
+        .iter()
         .filter(|identity| !results.contains_key(identity))
         .try_fold(0_u64, |sum, identity| {
             sum.checked_add(
@@ -115,22 +79,19 @@ where
     memory
         .resize(held)
         .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-    let leaves = retained
-        .partitions
-        .keys()
+    let leaves = plan
+        .identities()
+        .iter()
         .map(|identity| {
             let leaf = results
                 .remove(identity)
                 .or_else(|| retained.tree.leaf(*identity).cloned());
             (
                 *identity,
-                leaf.expect("every retained partition has a leaf"),
+                leaf.expect("every partition has a result or a retained leaf"),
             )
         })
         .collect::<Vec<_>>();
-    let plan = ReductionPlan::from_canonical(CanonicalUniqueVec::from_btree_set(
-        retained.partitions.keys().copied().collect(),
-    ));
     let mut left = remaining;
     ReductionTree::try_from_declared_checked(
         plan,
@@ -146,6 +107,81 @@ where
     )
     .map(|(tree, _)| tree)
     .map_err(WorthQueryPartitionedComputationDenial::from_reduction)
+}
+
+/// The retained tree edited to `plan`'s partitions, or `None` when an edit
+/// finds no room: deletes each retained partition `plan` does not have,
+/// updates each retained partition with a result and inserts each new one.
+fn edited<Key, Item, Reduced, Stopped>(
+    retained: &RetainedPartitions<Key, Item, Reduced>,
+    plan: &ReductionPlan,
+    results: &BTreeMap<PartitionIdentity, Reduced>,
+    declared_bytes: u64,
+    execution: &QueryRequestExecution<'_>,
+    memory: &mut QueryMemoryReservation,
+) -> Result<Option<Tree<Reduced>>, WorthQueryPartitionedComputationDenial<Stopped>>
+where
+    Reduced: Clone + ChargedBytes + worth_execution::CanonicalBits,
+{
+    let overflow = || WorthQueryPartitionedComputationDenial::Resource(Resource::CapacityOverflow);
+    // `None` deletes the partition; a result puts it.
+    let mut edits = retained
+        .partitions
+        .keys()
+        .filter(|identity| plan.identities().binary_search(identity).is_err())
+        .map(|identity| (*identity, None))
+        .collect::<BTreeMap<_, _>>();
+    edits.extend(
+        results
+            .iter()
+            .map(|(identity, value)| (*identity, Some(value))),
+    );
+    // The copy shares the retained tree; each edited path is new, and so is
+    // each result's copy in its leaf.
+    let mut held = inline::<Tree<Reduced>>()
+        .and_then(|copy| memory.bytes().checked_add(copy))
+        .ok_or_else(overflow)?;
+    let mut tree = retained.tree.clone();
+    for (identity, edit) in edits {
+        let present = tree.leaf(identity).is_some();
+        let bound = match edit {
+            None => tree.checked_delete_memory_bound(identity, declared_bytes),
+            Some(value) => if present {
+                tree.checked_update_memory_bound(identity, declared_bytes)
+            } else {
+                tree.checked_insert_memory_bound(identity, declared_bytes)
+            }
+            .and_then(|path| path.checked_add(value.additional_charged_bytes())),
+        };
+        held = bound
+            .and_then(|bound| held.checked_add(bound))
+            .ok_or_else(overflow)?;
+        // An edit that finds no room falls to the rebuild, which refuses as
+        // a full run's build refuses.
+        if memory.resize(held).is_err() {
+            return Ok(None);
+        }
+        let checkpoint = || execution.checkpoint();
+        let outcome = match edit {
+            None => tree.delete_checked(identity, declared_bytes, checkpoint),
+            Some(value) if present => {
+                tree.update_checked(identity, value.clone(), declared_bytes, checkpoint)
+            }
+            Some(value) => tree.insert_checked(identity, value.clone(), declared_bytes, checkpoint),
+        };
+        if let Err(failure) = outcome {
+            return match failure.reason {
+                ReductionRunStop::Hook(stop) => Err(
+                    WorthQueryPartitionedComputationDenial::from_kernel_stop(stop),
+                ),
+                ReductionRunStop::Panic
+                | ReductionRunStop::Denial(_)
+                | ReductionRunStop::ResultCapacityExceeded
+                | ReductionRunStop::WorkCounterOverflow => Ok(None),
+            };
+        }
+    }
+    Ok(Some(tree))
 }
 
 /// The bytes a value of `T` takes in place.

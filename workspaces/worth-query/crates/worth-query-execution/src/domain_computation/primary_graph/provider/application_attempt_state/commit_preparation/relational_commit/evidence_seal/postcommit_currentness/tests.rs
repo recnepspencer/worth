@@ -314,7 +314,7 @@ pub(super) fn rebase_result_within(
             rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                PreparedSourceFactRebase::admit(facts).unwrap(),
+                PreparedSourceFactRebase::admit(facts, [].into()).unwrap(),
                 &BTreeSet::new(),
                 true,
                 64,

@@ -13,8 +13,6 @@ pub use bisection::{Bisection, BisectionDenial, BisectionQuality, WeightedEdge, 
 pub use components::{ComponentDenial, ComponentPartitioner};
 pub use keyed::{KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner};
 
-use worth_foundational::PartitionIdentity;
-
 use crate::{
     authority::LeaseDenial,
     backend::{KernelContext, KernelStop},
@@ -30,18 +28,9 @@ pub enum PartitionUpdateDenial {
     ResultCapacityExceeded,
 }
 
-/// Stable item and originating fact identities are independent of partition identity.
+/// A stable item identity, independent of the partition it routes to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PartitionItemId(pub u64);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SourceFactId(pub u64);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PartitionRoute {
-    pub partition: PartitionIdentity,
-    pub source_fact: SourceFactId,
-}
 
 /// Structural work in one update. Counts exclude BTree lookup comparisons.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

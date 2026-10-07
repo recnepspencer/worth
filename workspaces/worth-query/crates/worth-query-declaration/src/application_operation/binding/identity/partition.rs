@@ -8,7 +8,9 @@
 //!
 //! A partitioned computation's input value has the same canonical encoding,
 //! under its own domain and the input's declared identity: its digest is what
-//! makes two input values the same input.
+//! makes two input values the same input. An item a computation partitions is
+//! encoded the same way under the item domain: its digest is what makes two
+//! values of one item the same value.
 
 use std::fmt::Debug;
 
@@ -26,6 +28,7 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 const PARTITION_KEY_DOMAIN: &str = "worth-query.computation-partition-key.v1";
 const INPUT_VALUE_DOMAIN: &str = "worth-query.computation-input-value.v1";
+const ITEM_VALUE_DOMAIN: &str = "worth-query.computation-item-value.v1";
 
 /// One partition key's digest, its partition identity and the work that
 /// derived them.
@@ -103,6 +106,22 @@ where
 {
     admitted(INPUT_VALUE_DOMAIN, Input::IDENTITY, value, admission)
         .map(|identity| identity.identity())
+}
+
+/// Derives the digest of one item a partitioned computation partitions,
+/// requesting every work and scratch charge from `admission` as a partition
+/// key does. Two values of one item are the same value exactly when their
+/// digests are equal.
+pub fn application_computation_item_digest<Item, F, E>(
+    item: &Item,
+    admission: &mut F,
+) -> Result<[u8; 32], ApplicationComputationPartitionIdentityDenial<E>>
+where
+    Item: ApplicationComputationPartition,
+    F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
+    E: Debug,
+{
+    admitted(ITEM_VALUE_DOMAIN, Item::IDENTITY, item, admission).map(|identity| identity.identity())
 }
 
 fn admitted<T, F, E>(

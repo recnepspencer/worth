@@ -9,8 +9,6 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-
 use super::super::{RecordedSettlementIdentity, SealedNativeOutputWitness};
 use super::{
     admission::IndexAdmission,
@@ -32,7 +30,7 @@ impl SourceInvalidationOwner {
         &self,
         read_basis: &PositionedRelationalSnapshot,
         identity: &Arc<RecordedSettlementIdentity>,
-        facts: &Arc<[WorthQueryApplicationObservedFact]>,
+        facts: &super::super::ComparableSourceFacts,
         witness: &SealedNativeOutputWitness,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, SettlementRegistrationStop> {
@@ -52,7 +50,7 @@ impl SourceInvalidationOwner {
             SettlementRegistration {
                 work_membership: None,
                 identity: Arc::clone(identity),
-                facts: Arc::clone(facts),
+                facts: facts.retained(),
                 output_facts: Some(output_facts),
                 read_basis: read_basis.clone(),
                 stale_at_read_basis: im::OrdSet::new(),
@@ -64,11 +62,41 @@ impl SourceInvalidationOwner {
         Ok(true)
     }
 
-    /// The caller compared every source fact and the output witness of this
-    /// row at `selected`. That proof replaces whatever delivery the row could
-    /// not account for: its read basis moves to the live image and its epoch
-    /// to the live one. A row whose postings are incomplete, or whose consumed
-    /// outputs are not themselves clean, keeps requiring verification.
+    /// A fresh consumer compared this missing upstream's original sources and
+    /// sealed output after its own effect. Its upstream rows were established
+    /// first; their exact identities are preserved in this new posting.
+    pub(in crate::domain_computation::primary_graph) fn establish_verified_consumed(
+        &self,
+        selected: &PositionedRelationalSnapshot,
+        identity: &Arc<RecordedSettlementIdentity>,
+        facts: &super::super::ComparableSourceFacts,
+        witness: &SealedNativeOutputWitness,
+        upstream: im::OrdSet<Arc<RecordedSettlementIdentity>>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), SettlementRegistrationStop> {
+        let output_facts = self
+            .prepare_performed_output_facts(witness, admission)?
+            .ok_or(SettlementRegistrationStop::SourceUnavailable)?;
+        self.register_settlement(
+            SettlementRegistration {
+                work_membership: None,
+                identity: Arc::clone(identity),
+                facts: facts.retained(),
+                output_facts: Some(output_facts),
+                read_basis: selected.clone(),
+                stale_at_read_basis: im::OrdSet::new(),
+                requirement: None,
+                upstream,
+            },
+            admission,
+        )
+    }
+
+    /// The caller fully compared this row's original source facts and its
+    /// registered output facts or sealed witness at `selected`. For a
+    /// delivery-only gap, that proof and clean consumed upstreams supersede
+    /// both dirty ordinals and pending edges. Incomplete postings or unclean
+    /// upstreams keep requiring verification.
     /// Returns whether the row is marked-clean at `selected`.
     pub(in crate::domain_computation::primary_graph) fn reestablish_verified(
         &self,
@@ -76,7 +104,7 @@ impl SourceInvalidationOwner {
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
         identity: &Arc<RecordedSettlementIdentity>,
-        verified_facts: &[WorthQueryApplicationObservedFact],
+        verified_facts: &super::super::ComparableSourceFacts,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, SettlementVerificationStop> {
         let branch_bytes = selected.branch_id().0.len() as u64;
@@ -104,6 +132,13 @@ impl SourceInvalidationOwner {
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
         admission.ordered_read(aligned.settlement_count())?;
+        admission.ordered_read(image.payload().current.settlements.len())?;
+        let Some(current_row) = image.payload().current.settlements.get(identity) else {
+            return Ok(false);
+        };
+        if current_row.facts.for_comparison().is_none() {
+            return Ok(false);
+        }
         match aligned.currentness(identity) {
             SettlementCurrentness::Clean => {
                 // Compared in full here, so the clean row is verified through
@@ -117,7 +152,8 @@ impl SourceInvalidationOwner {
             SettlementCurrentness::FullVerificationRequired(_) => {}
             // A row read in another runtime is never re-established here.
             SettlementCurrentness::Foreign => return Err(SettlementVerificationStop::Alignment),
-            // Dirty and pending rows keep their own exact reverification.
+            // Exact in-window dirty/pending rows use their own reverification;
+            // only a fully compared delivery gap follows the recovery below.
             SettlementCurrentness::Dirty(_) | SettlementCurrentness::PendingUpstream(_) => {
                 return Ok(false)
             }
@@ -135,8 +171,9 @@ impl SourceInvalidationOwner {
             )
         );
         if !delivery_only
-            || !row.pending_upstream.is_empty()
-            || !std::ptr::eq(row.facts.as_ref(), verified_facts)
+            || !row.facts.for_comparison().is_some_and(|facts| {
+                std::ptr::eq(facts.facts().as_ref(), verified_facts.facts().as_ref())
+            })
         {
             return Ok(false);
         }
@@ -169,11 +206,13 @@ impl SourceInvalidationOwner {
         )?;
         let mut replacement = (**row).clone();
         replacement.dirty_ordinals = im::OrdSet::new();
+        replacement.pending_upstream = im::OrdSet::new();
         replacement.read_basis = Arc::new(selected.clone());
         replacement.verification_requirement = None;
         let mut next = (**state).clone();
         replacement.delivery_epoch = next.delivery_epoch;
         next.dirty_ordinal_count -= row.dirty_ordinals.len();
+        next.pending_edge_count -= row.pending_upstream.len();
         admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
             next.settlements.len(),
         )?;

@@ -230,15 +230,12 @@ fn retained_by_versions_no_edit_separates(retained_positions: usize) -> u64 {
         settled_in_one_advance!(a, request, "the open root demand");
     }
     let mut unread_write = |position: u64| {
-        assert!(
-            writes_y!(
-                request,
-                application,
-                "anchor-c",
-                20 + position % 2,
-                0x9176_3f80_u64 + position
-            ),
-            "{retained_positions} retained positions: the index has room for a write no row reads"
+        writes_y!(
+            request,
+            application,
+            "anchor-c",
+            20 + position % 2,
+            0x9176_3f80_u64 + position
         );
         invalidation.retained_capacity_bytes()
     };

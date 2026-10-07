@@ -133,7 +133,10 @@ impl SourceInvalidationOwner {
                 )
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
         )?;
-        Ok(branches.cells.get(selected.branch_id()).cloned())
+        Ok(branches
+            .cells
+            .get(selected.branch_id())
+            .and_then(|slot| slot.admitted()))
     }
 
     /// The source snapshot is selected by the native reader before this method
@@ -300,7 +303,7 @@ impl SourceInvalidationOwner {
         )?;
         let mut state = (*image.payload().current).clone();
         let fact_capacity = super::fact_retention::reserve(
-            &registration.facts,
+            registration.facts.postconditions(),
             &registration.read_basis,
             &self.resources,
             admission,
@@ -339,14 +342,13 @@ impl SourceInvalidationOwner {
             .then(|| row.work_membership.as_ref().map(Arc::clone))
             .flatten()
         });
-        retention::admit_replacement(&mut state, before, &self.resources, admission)?;
-        admission.bytes(
-            index_capacity::arc_bytes::<BranchMarkRoot>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        let root = retention::admit_live_replacement(
+            image.payload(),
+            state,
+            before,
+            &self.resources,
+            admission,
         )?;
-        let mut root = (**image.payload()).clone();
-        root.current = Arc::new(state);
-        retention::admit_root(&mut root, None, &self.resources, admission)?;
         let mut prepared = self.prepare_root_replacement(cell, image, Arc::new(root), admission)?;
         if let Some(membership) = work_cue {
             prepared.retain_work_cue(membership, registered_identity);

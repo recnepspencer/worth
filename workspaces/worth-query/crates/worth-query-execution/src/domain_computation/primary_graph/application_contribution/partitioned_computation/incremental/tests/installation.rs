@@ -10,7 +10,7 @@ struct Doubling(Owner);
 
 impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Doubling {
     type Operation = TouchAccountOperation;
-    type Item = u64;
+    type Item = Number;
     type Gathered = u64;
     type PartitionResult = u64;
     type Output = u64;
@@ -20,7 +20,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Dou
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-    ) -> Result<WorthQueryComputationPartitionPlan<u64>, WorthQueryComputationInputDenial<u32>>
+    ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
         self.0.partitions(reader, account)
     }
@@ -29,7 +29,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Dou
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-        item: &u64,
+        item: &Number,
     ) -> Result<Parity, WorthQueryComputationInputDenial<u32>> {
         self.0.partition_key(reader, account, item)
     }
@@ -38,7 +38,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Dou
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-        partition: WorthQueryComputationPartitionMembers<'_, Parity, u64>,
+        partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         self.0.gather(reader, account, partition)
     }

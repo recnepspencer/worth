@@ -95,6 +95,17 @@ pub(super) struct Stopped;
 impl ApplicationComputationStopped for Stopped {
     const IDENTITY: &'static str = "worth.query.tests.attribution-owner-stopped.v1";
 }
+/// One test item: a number, which its digest encodes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub(super) struct Number(pub(super) u64);
+impl ApplicationComputationPartition for Number {
+    const IDENTITY: &'static str = "worth.query.tests.attribution-number.v1";
+}
+impl worth_execution::ChargedBytes for Number {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}
 /// Odd and even items are the two partitions.
 #[derive(Serialize)]
 pub(super) struct Parity(pub(super) u64);
@@ -136,7 +147,7 @@ type Root = WorthQueryInvariantEntityIdentity<Schema, Account>;
 
 impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Owner {
     type Operation = TouchAccountOperation;
-    type Item = u64;
+    type Item = Number;
     type Gathered = u64;
     type PartitionResult = u64;
     type Output = u64;
@@ -146,14 +157,14 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-    ) -> Result<WorthQueryComputationPartitionPlan<u64>, WorthQueryComputationInputDenial<u32>>
+    ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
         if matches!(self.status, StatusReadBy::Membership) {
             reader.field(account, AccountStatus::reference())?;
         }
         Ok(WorthQueryComputationPartitionPlan::keyed(
-            [3, 1, 2],
-            |item| PartitionItemId(*item),
+            [3, 1, 2].map(Number),
+            |item| PartitionItemId(item.0),
         ))
     }
 
@@ -161,23 +172,23 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-        item: &u64,
+        item: &Number,
     ) -> Result<Parity, WorthQueryComputationInputDenial<u32>> {
         if matches!(self.status, StatusReadBy::ItemKeys) {
             reader.field(account, AccountStatus::reference())?;
         }
-        Ok(Parity(item % 2))
+        Ok(Parity(item.0 % 2))
     }
 
     fn gather(
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-        partition: WorthQueryComputationPartitionMembers<'_, Parity, u64>,
+        partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         reader.field(account, AccountLabel::reference())?;
         self.gathered.lock().unwrap().push(partition.identity());
-        Ok(partition.items().map(|(_, item)| *item).sum())
+        Ok(partition.items().map(|(_, item)| item.0).sum())
     }
 
     fn compute_partition(

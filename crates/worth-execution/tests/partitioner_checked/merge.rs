@@ -3,10 +3,10 @@ use super::*;
 fn two_component_islands() -> ComponentPartitioner {
     let mut components = ComponentPartitioner::new();
     for id in [1, 2, 100] {
-        components.upsert_item(item(id), fact(id));
+        components.upsert_item(item(id));
     }
     for id in 10..=21 {
-        components.upsert_item(item(id), fact(id));
+        components.upsert_item(item(id));
     }
     components.add_edge(item(1), item(2)).unwrap();
     for id in 10..21 {
@@ -39,12 +39,7 @@ fn checked_merge_denial_preserves_both_islands_and_success_moves_only_loser() {
     });
     assert!(matches!(outcome, MapOutcome::Stopped { .. }));
     assert_eq!(
-        components
-            .lock()
-            .unwrap()
-            .route(item(21))
-            .unwrap()
-            .partition,
+        components.lock().unwrap().route(item(21)).unwrap(),
         PartitionIdentity::new(10)
     );
 
@@ -77,12 +72,7 @@ fn checked_merge_denial_preserves_both_islands_and_success_moves_only_loser() {
         }
     ));
     assert_eq!(
-        components
-            .lock()
-            .unwrap()
-            .route(item(21))
-            .unwrap()
-            .partition,
+        components.lock().unwrap().route(item(21)).unwrap(),
         PartitionIdentity::new(10)
     );
 
@@ -104,21 +94,11 @@ fn checked_merge_denial_preserves_both_islands_and_success_moves_only_loser() {
         MapOutcome::Stopped { reason, .. } => panic!("checked merge stopped: {reason:?}"),
     }
     assert_eq!(
-        components
-            .lock()
-            .unwrap()
-            .route(item(21))
-            .unwrap()
-            .partition,
+        components.lock().unwrap().route(item(21)).unwrap(),
         PartitionIdentity::new(1)
     );
     assert_eq!(
-        components
-            .lock()
-            .unwrap()
-            .route(item(100))
-            .unwrap()
-            .partition,
+        components.lock().unwrap().route(item(100)).unwrap(),
         PartitionIdentity::new(100)
     );
 }
@@ -133,7 +113,7 @@ fn checked_item_and_edge_edits_run_under_the_lease() {
     let outcome = map().run(Some(&admitted), |_, context| {
         let mut components = components.lock().unwrap();
         let work = components
-            .upsert_item_checked(&admitted, context, item(7), fact(7))
+            .upsert_item_checked(&admitted, context, item(7))
             .unwrap();
         assert_eq!(work.items_rerouted, 1);
         let mut bisection = bisection.lock().unwrap();
@@ -163,13 +143,8 @@ fn checked_item_and_edge_edits_run_under_the_lease() {
     });
     assert!(matches!(outcome, MapOutcome::Complete { .. }));
     assert_eq!(
-        components
-            .lock()
-            .unwrap()
-            .route(item(7))
-            .unwrap()
-            .source_fact,
-        fact(7)
+        components.lock().unwrap().route(item(7)),
+        Some(PartitionIdentity::new(7))
     );
 }
 
@@ -185,7 +160,7 @@ fn unrelated_and_cancelled_child_leases_cannot_edit_retained_routes() {
             components
                 .lock()
                 .unwrap()
-                .upsert_item_checked(&unrelated, context, item(1), fact(1)),
+                .upsert_item_checked(&unrelated, context, item(1)),
             Err(PartitionUpdateDenial::Admission(
                 worth_execution::LeaseDenial::UnrelatedNestedLease
             ))
@@ -213,7 +188,7 @@ fn unrelated_and_cancelled_child_leases_cannot_edit_retained_routes() {
             components
                 .lock()
                 .unwrap()
-                .upsert_item_checked(&child, context, item(2), fact(2)),
+                .upsert_item_checked(&child, context, item(2)),
             Err(PartitionUpdateDenial::Stop(
                 worth_execution::MapKernelStop::Cancelled
             ))
@@ -233,12 +208,11 @@ fn persistent_graph_charge_stops_growth_and_shrinks_after_removal() {
     let outcome = map().run(Some(&tight), |_, context| {
         let mut count = 0_u64;
         for id in 1..=1_000 {
-            match components.lock().unwrap().upsert_item_checked(
-                &tight,
-                context,
-                item(id),
-                fact(id),
-            ) {
+            match components
+                .lock()
+                .unwrap()
+                .upsert_item_checked(&tight, context, item(id))
+            {
                 Ok(_) => count += 1,
                 Err(PartitionUpdateDenial::Admission(
                     worth_execution::LeaseDenial::MemoryExhausted(_),
@@ -262,7 +236,7 @@ fn persistent_graph_charge_stops_growth_and_shrinks_after_removal() {
         }
         for id in 20..=30 {
             components
-                .upsert_item_checked(&roomy, context, item(id), fact(id))
+                .upsert_item_checked(&roomy, context, item(id))
                 .unwrap();
         }
         Ok::<_, MapKernelFailure<()>>(0_u64)
@@ -283,12 +257,12 @@ fn report_peak_includes_two_simultaneously_retained_graphs() {
             first
                 .lock()
                 .unwrap()
-                .upsert_item_checked(&admitted, context, item(id), fact(id))
+                .upsert_item_checked(&admitted, context, item(id))
                 .unwrap();
             second
                 .lock()
                 .unwrap()
-                .upsert_item_checked(&admitted, context, item(id + 100), fact(id + 100))
+                .upsert_item_checked(&admitted, context, item(id + 100))
                 .unwrap();
         }
         Ok::<_, MapKernelFailure<()>>(0_u64)
@@ -311,19 +285,19 @@ fn pure_component_mutation_cannot_bypass_a_live_kernel_or_owned_charge() {
     let outcome = map().run(Some(&admitted), |_, context| {
         let mut graph = components.lock().unwrap();
         let bypass = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            graph.upsert_item(item(1), fact(1));
+            graph.upsert_item(item(1));
         }));
         assert!(bypass.is_err());
         assert!(graph.route(item(1)).is_none());
         graph
-            .upsert_item_checked(&admitted, context, item(1), fact(1))
+            .upsert_item_checked(&admitted, context, item(1))
             .unwrap();
         Ok::<_, MapKernelFailure<()>>(0_u64)
     });
     assert!(matches!(outcome, MapOutcome::Complete { .. }));
     let mut graph = components.lock().unwrap();
     let bypass = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        graph.upsert_item(item(2), fact(2));
+        graph.upsert_item(item(2));
     }));
     assert!(bypass.is_err());
     assert!(graph.route(item(2)).is_none());

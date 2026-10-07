@@ -88,6 +88,7 @@ pub(super) fn verify(
                     PrecommitOutputStop::Verification(
                         ConsumedOutputVerificationStop::WorkExhausted,
                     ) => "consumed output currentness exceeded publication work",
+                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted) => "consumed output currentness exceeded publication capacity",
                     PrecommitOutputStop::Verification(
                         ConsumedOutputVerificationStop::PendingUpstream,
                     ) => "consumed output has pending upstream source",

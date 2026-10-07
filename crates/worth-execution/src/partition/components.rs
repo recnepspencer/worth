@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::PartitionIdentity;
 
-use super::{PartitionItemId, PartitionRoute, PartitionWork, SourceFactId};
+use super::{PartitionItemId, PartitionWork};
 
 mod checked;
 mod retained;
@@ -18,7 +18,6 @@ pub enum ComponentDenial {
 /// identity is the least current item identity in that component.
 #[derive(Default)]
 pub struct ComponentPartitioner {
-    facts: BTreeMap<PartitionItemId, SourceFactId>,
     adjacent: BTreeMap<PartitionItemId, BTreeSet<PartitionItemId>>,
     routes: BTreeMap<PartitionItemId, PartitionIdentity>,
     members: BTreeMap<PartitionIdentity, BTreeSet<PartitionItemId>>,
@@ -31,28 +30,18 @@ impl ComponentPartitioner {
         Self::default()
     }
 
-    pub fn route(&self, item: PartitionItemId) -> Option<PartitionRoute> {
-        Some(PartitionRoute {
-            partition: *self.routes.get(&item)?,
-            source_fact: *self.facts.get(&item)?,
-        })
+    pub fn route(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
+        self.routes.get(&item).copied()
     }
 
     pub fn members(&self, identity: PartitionIdentity) -> Option<&BTreeSet<PartitionItemId>> {
         self.members.get(&identity)
     }
 
-    pub fn upsert_item(&mut self, item: PartitionItemId, fact: SourceFactId) -> PartitionWork {
+    pub fn upsert_item(&mut self, item: PartitionItemId) -> PartitionWork {
         super::checked_scope::assert_offline_structural_edit(self.retained_charge.is_bound());
-        if let Some(previous) = self.facts.insert(item, fact) {
-            return if previous == fact {
-                PartitionWork::default()
-            } else {
-                PartitionWork {
-                    members_visited: 1,
-                    ..PartitionWork::default()
-                }
-            };
+        if self.routes.contains_key(&item) {
+            return PartitionWork::default();
         }
         let identity = PartitionIdentity::new(item.0);
         self.adjacent.insert(item, BTreeSet::new());
@@ -126,7 +115,6 @@ impl ComponentPartitioner {
         let Some(identity) = self.routes.remove(&item) else {
             return PartitionWork::default();
         };
-        self.facts.remove(&item);
         let neighbors = self.adjacent.remove(&item).unwrap();
         self.edge_count -= neighbors.len();
         for neighbor in neighbors {
@@ -143,10 +131,10 @@ impl ComponentPartitioner {
         if a == b {
             return Err(ComponentDenial::SelfEdge(a));
         }
-        if !self.facts.contains_key(&a) {
+        if !self.routes.contains_key(&a) {
             return Err(ComponentDenial::UnknownItem(a));
         }
-        if !self.facts.contains_key(&b) {
+        if !self.routes.contains_key(&b) {
             return Err(ComponentDenial::UnknownItem(b));
         }
         Ok(())

@@ -56,7 +56,7 @@ macro_rules! change_root_input {
     }};
 }
 
-/// Writes the Y of `$key`, and answers whether the index had room for it.
+/// Writes the Y of `$key`; every legal source write must be performed.
 macro_rules! writes_y {
     ($request:expr, $application:expr, $key:expr, $y:expr, $idempotency:expr) => {{
         let selected = $request
@@ -73,10 +73,11 @@ macro_rules! writes_y {
             .expect_source(selected.observed_sources()[0].clone())
             .idempotency(&$idempotency)
             .execute_performed::<program::ChainProgram, program::ChainRoot>(&$application);
-        matches!(
-            changed,
-            Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(_))
-        )
+        match changed {
+            Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(_)) => (),
+            Err(stop) => panic!("a legal source write must commit: {stop:?}"),
+            Ok(_) => panic!("a legal source write was not performed"),
+        }
     }};
 }
 

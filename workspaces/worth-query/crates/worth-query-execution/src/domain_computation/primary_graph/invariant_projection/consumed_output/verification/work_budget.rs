@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub(in super::super) fn map_admission_stop(
+pub(in crate::domain_computation::primary_graph::invariant_projection) fn map_admission_stop(
     stop: CompanionPreflightStop,
 ) -> ConsumedOutputVerificationStop {
     match stop {
@@ -21,12 +21,14 @@ pub(in super::super) fn map_admission_stop(
         CompanionPreflightStop::SelectedSourceMismatch
         | CompanionPreflightStop::SelectedPositionUnavailable { .. }
         | CompanionPreflightStop::ForeignCell
-        | CompanionPreflightStop::RegistrationChanged
-        | CompanionPreflightStop::CellCapacityExhausted { .. }
+        | CompanionPreflightStop::RegistrationChanged => {
+            ConsumedOutputVerificationStop::Unavailable
+        }
+        CompanionPreflightStop::CellCapacityExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
-            ConsumedOutputVerificationStop::Unavailable
+            ConsumedOutputVerificationStop::CapacityExhausted
         }
         CompanionPreflightStop::Interrupted(event) => {
             ConsumedOutputVerificationStop::Interrupted(event)
@@ -71,21 +73,21 @@ pub(super) fn reserve_pending<T>(
     let needed = pending
         .len()
         .checked_add(additional)
-        .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
+        .ok_or(ConsumedOutputVerificationStop::CapacityExhausted)?;
     if needed <= pending.capacity() {
         return Ok(());
     }
     let bytes = needed
         .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
+        .ok_or(ConsumedOutputVerificationStop::CapacityExhausted)?;
     admission
         .admit_read_scratch(bytes)
         .map_err(map_admission_stop)?;
     charge_external(admission, pending.len())?;
     pending
         .try_reserve_exact(additional)
-        .map_err(|_| ConsumedOutputVerificationStop::Unavailable)
+        .map_err(|_| ConsumedOutputVerificationStop::CapacityExhausted)
 }
 
 pub(super) fn fact_is_current(
@@ -115,6 +117,28 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn capacity_stops_are_not_missing_output_evidence() {
+        for stop in [
+            CompanionPreflightStop::CellCapacityExhausted { maximum_bytes: 1 },
+            CompanionPreflightStop::PreparationMemoryCounterOverflow,
+            CompanionPreflightStop::RetainedCompanionCapacityExhausted {
+                requested: 1,
+                retained: 1,
+                maximum: 1,
+            },
+        ] {
+            assert_eq!(
+                map_admission_stop(stop),
+                ConsumedOutputVerificationStop::CapacityExhausted
+            );
+            assert_eq!(
+                map_verification_stop(SettlementVerificationStop::Admission(stop)),
+                ConsumedOutputVerificationStop::CapacityExhausted
+            );
+        }
+    }
 
     /// An interrupted verification is the request's interruption. Read as
     /// `Unavailable`, it would send a caller to disclose sources or to

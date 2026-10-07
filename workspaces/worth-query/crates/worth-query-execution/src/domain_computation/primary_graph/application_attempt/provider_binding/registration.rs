@@ -33,9 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
-    output_currentness_facts: Option<
-        std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
-    >,
+    output_currentness_facts: Option<super::super::OutputCurrentnessFacts>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
 }
 

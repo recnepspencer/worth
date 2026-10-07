@@ -5,7 +5,6 @@ use worth_relational::facade::{
     mvcc::CompanionPreflightStop, runtime::PositionedRelationalSnapshot,
 };
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
 use super::super::RecordedSettlementIdentity;
@@ -32,8 +31,7 @@ pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
     pub(in crate::domain_computation::primary_graph) work_membership:
         Option<Arc<RequiredWorkMembership>>,
     pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts:
-        Arc<[WorthQueryApplicationObservedFact]>,
+    pub(in crate::domain_computation::primary_graph) facts: super::super::RetainedSourceFacts,
     pub(in crate::domain_computation::primary_graph) output_facts: Option<RegisteredOutputFacts>,
     pub(in crate::domain_computation::primary_graph) read_basis: PositionedRelationalSnapshot,
     /// Fact ordinals the registrant already knows are not current at
@@ -77,7 +75,7 @@ pub(super) fn insert(
     remove(state, identity, admission)?;
     let mut verification_requirement = requirement;
     let prepared = postings::PreparedPostingOrdinals::prepare(
-        &facts,
+        facts.postconditions(),
         output_facts.as_ref().map(|set| set.facts.as_ref()),
         &mut verification_requirement,
         admission,

@@ -11,6 +11,7 @@ use worth_query_installation::facade::{
 
 mod computation_calls;
 mod current_output;
+pub(super) use current_output::CertifiedOutputCorrespondence;
 mod decision_plan;
 mod decision_reads;
 mod prior_output;

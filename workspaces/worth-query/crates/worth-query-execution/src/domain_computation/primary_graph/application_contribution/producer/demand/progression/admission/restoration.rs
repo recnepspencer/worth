@@ -69,12 +69,12 @@ where
         let Some(fact_bytes) = readmitted.checkpoint.producer_facts.as_deref() else {
             return Ok(None);
         };
-        let observed_source_facts =
-            crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts_for_wire_version(
+        let (observed_source_facts, computation_source) =
+            crate::domain_computation::primary_graph::application_checkpoint::decode_checkpoint_computation(
                 fact_bytes,
                 readmitted.checkpoint.producer_fact_wire_version,
             )
-            .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error))?;
+            .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error))?.into_parts();
         // The checkpoint's expected output revisions are original facts, not
         // revisions projected from the recovered root. Select the disclosed
         // source's current Product and verify both the original revisions and
@@ -227,6 +227,7 @@ where
             .charge_external_work(witness_moves)
             .map_err(restoration_resource_denial)?;
         Ok(Some(ReadmittedOutput {
+            computation_source,
             restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput {
                 checkpoint: readmitted.checkpoint.clone(),
                 correspondence: std::sync::Arc::clone(&readmitted.correspondence),
@@ -273,10 +274,11 @@ where
                 restored.checkpoint.source_partition,
                 restored.checkpoint.producer_dependency,
                 restored.checkpoint.idempotency_key,
-                std::sync::Arc::clone(&restored.observed_source_facts),
+                readmitted.computation_source.retain_facts(std::sync::Arc::clone(&restored.observed_source_facts)),
                 restored.checkpoint.resources,
                 restored.native_output_witness.as_ref().map(std::sync::Arc::clone),
-            );
+
+        );
         let witness = restored
             .native_output_witness
             .as_ref()
@@ -288,11 +290,24 @@ where
             // as marks lets the next clean demand read them instead; a stop
             // here leaves the output requiring verification.
             let source_owner = &self.primary_provider.graph.source_owner;
-            if source_owner.mint_mark_cell_at_head(head, admission).is_ok() {
+            if let Some(facts) = recorded.facts.for_comparison().filter(|_| {
+                use crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop;
+                use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as NativeStop;
+                match source_owner.mint_mark_cell_at_head(head.branch_id(), admission) {
+                    Ok(()) => true,
+                    Err(HeadCellRegistrationStop::Admission(_) | HeadCellRegistrationStop::LookupChanged) => false,
+                    Err(HeadCellRegistrationStop::Native(NativeStop::HeadCellPublicationContended)) => false,
+                    Err(HeadCellRegistrationStop::Native(
+                        NativeStop::OwnerUnavailable | NativeStop::PublicationPending
+                        | NativeStop::RebindRequired | NativeStop::Superseded
+                        | NativeStop::IdentityExhausted | NativeStop::ForeignRuntime
+                        | NativeStop::HeadUnavailable | NativeStop::CellCapacityExhausted { .. })) => false,
+                }
+            }) {
                 let _ = source_owner.invalidation_owner.establish_verified_root(
                     head,
                     &recorded.identity,
-                    &recorded.facts,
+                    &facts,
                     witness,
                     admission,
                 );
@@ -305,6 +320,7 @@ where
 /// A checkpoint output whose facts and output were compared in full at
 /// `verified_at`, the head of its branch.
 pub(super) struct ReadmittedOutput {
+    computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence,
     pub(super) restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,
     pub(super) settlement: std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,

@@ -1,4 +1,5 @@
 //! Stable preparation cannot reinterpret a cutoff at an older source root.
+use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop;
@@ -54,7 +55,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     let registration = |identity| SettlementRegistration {
         work_membership: None,
         identity,
-        facts: Arc::clone(&facts),
+        facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),
         output_facts: None,
         read_basis: before.clone(),
         stale_at_read_basis: OrdSet::new(),

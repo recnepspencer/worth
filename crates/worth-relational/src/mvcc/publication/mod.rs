@@ -17,15 +17,16 @@ pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
 };
 pub use companion::{
-    CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop,
+    CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
     CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
     CompanionDerivedRootStopped, CompanionPreflightBudget, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    PendingCompanionRegistration, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
-    PublicationCompanionPreflight, PublicationCompanionRegistration,
-    PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
-    RelationalPublicationCompanion, ReservedCompanionBranchCell,
+    PendingCompanionRegistration, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
+    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
+    PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
+    PublicationCompanionRegistrationStop, RelationalPublicationCompanion,
+    ReservedCompanionBranchCell,
 };
 pub use outcome::{
     PerformedRelationalCommit, PublishRelationalCommit, RelationalPublicationDeferred,

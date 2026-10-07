@@ -9,16 +9,20 @@
 //! ceiling and reduces them over the canonical tree.
 //!
 //! When a producer runs the computation, the run leaves its state on the
-//! record its attempt published, and the producer's next run gathers and
-//! computes again only the partitions whose facts changed, under the same
-//! input value, membership and keys. Every other run recomputes every
-//! partition, for a cause the test observer is shown.
+//! record its attempt published, and the producer's next run under the same
+//! input value names and keys again only what changed: the membership when a
+//! fact it read moved, and an item when it is new, its value's digest
+//! changed or a fact its key read moved. It routes only those items again,
+//! and gathers and computes again only the partitions whose members or
+//! facts changed. Every other run recomputes every partition, for a cause
+//! the test observer is shown.
 
 mod compute;
 mod denial;
 mod gather_memory;
 mod incremental;
 mod installed;
+mod items;
 mod plan;
 mod reader;
 mod remaining_work;
@@ -54,7 +58,8 @@ pub use reader::{
 
 use worth_execution::{CanonicalBits, ChargedBytes};
 use worth_query_declaration::facade::application_program::{
-    ApplicationComputationInput, ApplicationFeature, ApplicationManagedComputation,
+    ApplicationComputationInput, ApplicationComputationPartition, ApplicationFeature,
+    ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -98,8 +103,10 @@ where
     type Operation;
     /// One item of the input as `partitions` hands it to `partition_key` and
     /// `gather`: what the owner reads the item by. A producer's run keeps its
-    /// items for the next run, charged at their bytes.
-    type Item: Send + Sync + ChargedBytes + 'static;
+    /// items for the next run, charged at their bytes, and knows each by the
+    /// digest of its canonical encoding, as a partition key is known: an item
+    /// whose digest changed is a new item to the next run.
+    type Item: ApplicationComputationPartition + ChargedBytes;
     /// One partition's data, gathered on the owner thread for its kernel.
     type Gathered: Send + Sync + ChargedBytes;
     /// One partition's result, and the reduced result of them all. Its

@@ -63,7 +63,7 @@ struct Stage<'world> {
 struct Continued {
     identity: Arc<RecordedSettlementIdentity>,
     predecessor: Arc<RecordedSettlementIdentity>,
-    facts: Arc<[Fact]>,
+    facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts,
     consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     witness: Witness,
 }
@@ -218,12 +218,8 @@ impl Stage<'_> {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
-            mutable: Mutex::new(RecordedOutputMutable {
-                computation: None,
-                verification_requirement: None,
-                observed_source_facts: Some(Arc::clone(facts)),
-                resources: None,
-            }),
+            computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
+            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| super::super::ComputationSourceEvidence::for_test(false).retain_facts(facts)), None, None)),
             settlement_identity: RecordedSettlementIdentity::retain(
                 &self.source,
                 ProductCoordinate {
@@ -269,7 +265,7 @@ impl Stage<'_> {
             suspended_generation,
             PARTITION,
             &self.correspondence,
-            facts,
+            &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(facts)),
             Arc::clone(witness),
             admission,
         )?;
@@ -284,7 +280,10 @@ impl Stage<'_> {
             PARTITION,
             None,
             IDEMPOTENCY_KEY,
-            Arc::clone(facts),
+            crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(
+                false,
+                Arc::clone(facts),
+            ),
             None,
             republished,
         );

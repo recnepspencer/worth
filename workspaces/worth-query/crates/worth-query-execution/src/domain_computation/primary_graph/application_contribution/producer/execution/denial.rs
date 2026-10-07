@@ -110,6 +110,11 @@ pub(super) fn execution_failed(
             return request_authority_denied(subject, authority.clone());
         }
     }
+    if let MutationHandlerExecutionDenial::Projection(projection) = &error {
+        if let Some(kind) = projection_budget(projection.kind()) {
+            return denial(kind, format!("{subject}: {projection}")).into();
+        }
+    }
     if matches!(
         error,
         MutationHandlerExecutionDenial::Attempt(ref denial)
@@ -126,6 +131,26 @@ pub(super) fn execution_failed(
         .into()
     } else {
         failed(subject, error).into()
+    }
+}
+
+/// The budget of the advance a decision projection ran out of, if any. Its
+/// stop stays with the advance and leaves the shared row for a later claim.
+fn projection_budget(
+    kind: crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind,
+) -> Option<WorthQueryOutputDemandDenialKind> {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryInvariantProjectionDenialKind as Invariant,
+        WorthQueryOperationProjectionDenialKind as Projection,
+    };
+    match kind {
+        Projection::WorkBudgetExceeded => {
+            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
+        }
+        Projection::InvariantAdmission(Invariant::RetentionCapacityExhausted) => {
+            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+        }
+        _ => None,
     }
 }
 
@@ -152,4 +177,44 @@ pub(super) fn denial(
     subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain_computation::primary_graph::{
+        WorthQueryInvariantProjectionDenialKind as Invariant,
+        WorthQueryOperationProjectionDenialKind as Projection,
+    };
+
+    #[test]
+    fn projection_budget_stops_belong_to_the_caller_not_the_shared_output() {
+        assert_eq!(
+            projection_budget(Projection::WorkBudgetExceeded),
+            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
+        );
+        assert_eq!(
+            projection_budget(Projection::InvariantAdmission(
+                Invariant::RetentionCapacityExhausted
+            )),
+            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+        );
+    }
+
+    #[test]
+    fn a_projection_capacity_stop_is_not_a_failed_producer_output() {
+        let (handler, projection) = crate::domain_computation::primary_graph::tests::fixture::retained_output_capacity::project_at_full_ledger();
+        assert_eq!(handler, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted);
+        let stopped = execution_failed(
+            "full ledger",
+            MutationHandlerExecutionDenial::Projection(projection),
+        );
+        let ProducerExecutionStop::ExecutionStopped(denial) = stopped else {
+            panic!("this is the caller's stop");
+        };
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+        );
+    }
 }

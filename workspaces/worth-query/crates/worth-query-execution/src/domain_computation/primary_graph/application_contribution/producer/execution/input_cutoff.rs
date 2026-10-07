@@ -238,7 +238,8 @@ fn cutoff_basis_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDem
         InputCutoffVerificationStop::Admission(Admission::Interrupted(event)) => {
             WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
         }
-        InputCutoffVerificationStop::Admission(_) => {
+        InputCutoffVerificationStop::CapacityExhausted
+        | InputCutoffVerificationStop::Admission(_) => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
         InputCutoffVerificationStop::SelectedSourceUnavailable => {
@@ -270,6 +271,7 @@ fn cutoff_admission_denial(
 fn cutoff_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDemandDenial {
     match stop {
         InputCutoffVerificationStop::Admission(stop) => cutoff_admission_denial(stop),
+        InputCutoffVerificationStop::CapacityExhausted => denial(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded, String::new()),
         InputCutoffVerificationStop::WorkExhausted => denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, String::new()),
         InputCutoffVerificationStop::PendingUpstream => denial(WorthQueryOutputDemandDenialKind::SchedulingDeferred, "producer input cutoff awaits upstream outputs")
             .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),

@@ -4,20 +4,15 @@ use std::sync::{Arc, Mutex};
 use im::OrdMap;
 use worth_relational::facade::{
     history::BranchId,
-    mvcc::{
-        CompanionBranchCell, CompanionPreflightStop, CompanionPublicationCompletionObserver,
-        PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-        RelationalPublicationCompanion,
-    },
+    mvcc::{CompanionBranchCellSlot, CompanionPreflightStop, PublicationCompanionPreflight},
 };
 
 use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
-use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
 use super::admission::IndexAdmission;
 use super::index_capacity;
-use super::source_alignment::{BranchMarkRoot, HistoricalMarkState, RetainedTouchDelivery};
-use super::{delivery, retention};
+use super::retention;
+use super::source_alignment::BranchMarkRoot;
 
 /// Callback custody contains derived cells and capacity only. It cannot enter
 /// the runtime mutex, retain a source provider, or create a registration cycle.
@@ -30,8 +25,10 @@ pub(in crate::domain_computation) struct SourceInvalidationOwner {
 }
 
 pub(super) struct BranchCells {
-    pub(super) cells: OrdMap<BranchId, CompanionBranchCell<BranchMarkRoot>>,
+    pub(super) cells: OrdMap<BranchId, CompanionBranchCellSlot<BranchMarkRoot>>,
     pub(super) branch_name_bytes: u64,
+    /// Shared, pre-admitted empty image used when publication evicts derived state.
+    pub(super) vacant: Option<Arc<BranchMarkRoot>>,
     pub(super) retained_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
 }
 
@@ -54,16 +51,30 @@ impl SourceInvalidationOwner {
             branches: Mutex::new(BranchCells {
                 cells: OrdMap::new(),
                 branch_name_bytes: 0,
+                vacant: None,
                 retained_capacity: None,
             }),
             released: Mutex::new(Vec::new()),
         }
     }
 
-    fn selected_cell(
+    /// Fund the empty publication image at source installation, before any
+    /// computation can exhaust the derived ledger.
+    pub(in crate::domain_computation) fn admit_publication_fallback(
+        &self,
+    ) -> Result<(), CompanionPreflightStop> {
+        let mut branches = self
+            .branches
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.vacant_root(&mut branches, &mut self.edit_admission())
+            .map(|_| ())
+    }
+
+    pub(super) fn selected_cell(
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
-    ) -> Result<CompanionBranchCell<BranchMarkRoot>, CompanionPreflightStop> {
+    ) -> Result<super::publication_cell::SelectedPublicationCell, CompanionPreflightStop> {
         // The writer waits for the map like readers do. Every holder only
         // looks up, or mints and inserts one cell through atomic capacity
         // counters and non-blocking registration probes; none waits on
@@ -81,49 +92,38 @@ impl SourceInvalidationOwner {
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
         )?;
         context.ordered_read(branches.cells.len())?;
-        if let Some(cell) = branches.cells.get(context.branch_id()) {
-            return Ok(cell.clone());
+        if let Some(cell) = branches
+            .cells
+            .get(context.branch_id())
+            .and_then(CompanionBranchCellSlot::admitted)
+        {
+            return Ok(super::publication_cell::SelectedPublicationCell::Admitted(
+                cell,
+            ));
         }
-        let initial = self.initial_root(context)?;
+        let initial = self.vacant_root(&mut branches, context)?;
         let cell = context.mint_selected_branch_cell(initial)?;
         let branch = context.branch_id().clone();
-        self.retain_cell(&mut branches, branch, &cell, context)?;
-        Ok(cell)
+        let slot = cell.lookup_slot();
+        match self.retain_slot(&mut branches, branch, slot, context) {
+            Ok(()) | Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => Ok(
+                super::publication_cell::SelectedPublicationCell::Prepared(cell),
+            ),
+            Err(stop) => Err(stop),
+        }
     }
 
-    /// A branch gets its mark cell from its first publication. An output
-    /// compared in full at the head of a branch nothing has published to yet
-    /// gets the cell here, so that comparison can be recorded as marks.
-    /// `head` is the branch's current head: every publication mints, so a
-    /// branch without a cell has not moved since this owner registered.
-    pub(in crate::domain_computation) fn mint_cell_at_head(
+    pub(super) fn vacant_root(
         &self,
-        registration: &worth_runtime_bridge::facade::RelationalBridgeCanonicalSubscription,
-        head: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
-        admission: &mut super::InvalidationEditAdmission,
-    ) -> Result<(), CompanionPreflightStop> {
-        use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Stop;
-        if head.runtime_instance_id() != self.runtime_instance_id {
-            return Err(CompanionPreflightStop::ForeignCell);
+        branches: &mut BranchCells,
+        admission: &mut impl IndexAdmission,
+    ) -> Result<Arc<BranchMarkRoot>, CompanionPreflightStop> {
+        if let Some(vacant) = &branches.vacant {
+            return Ok(Arc::clone(vacant));
         }
-        let mut branches = self
-            .branches
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        admission.ordered_read(branches.cells.len())?;
-        if branches.cells.contains_key(head.branch_id()) {
-            return Ok(());
-        }
-        let initial = self.initial_root(admission)?;
-        let cell = registration
-            .mint_branch_cell(head, initial)
-            .map_err(|stop| match stop {
-                Stop::CellCapacityExhausted { maximum_bytes } => {
-                    CompanionPreflightStop::CellCapacityExhausted { maximum_bytes }
-                }
-                _ => CompanionPreflightStop::RegistrationChanged,
-            })?;
-        self.retain_cell(&mut branches, head.branch_id().clone(), &cell, admission)
+        let vacant = self.initial_root(admission)?;
+        branches.vacant = Some(Arc::clone(&vacant));
+        Ok(vacant)
     }
 
     fn initial_root(
@@ -148,176 +148,19 @@ impl SourceInvalidationOwner {
         Ok(Arc::new(initial))
     }
 
-    fn retain_cell(
+    fn retain_slot(
         &self,
         branches: &mut BranchCells,
         branch: BranchId,
-        cell: &CompanionBranchCell<BranchMarkRoot>,
+        slot: CompanionBranchCellSlot<BranchMarkRoot>,
         context: &mut impl IndexAdmission,
     ) -> Result<(), CompanionPreflightStop> {
-        let branch_bytes = branch.0.len() as u64;
-        context.bytes(branch_bytes)?;
-        context.work(branch_bytes)?;
-        let next_name_bytes = branches
-            .branch_name_bytes
-            .checked_add(branch_bytes)
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        let next_count = branches
-            .cells
-            .len()
-            .checked_add(1)
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        let bound = index_capacity::retained_map_bytes::<
-            BranchId,
-            CompanionBranchCell<BranchMarkRoot>,
-        >(next_count)
-        .and_then(|n| n.checked_add(next_name_bytes))
-        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        let capacity = retention::reserve(&self.resources, bound, context)?;
-        context
-            .ordered_edit::<BranchId, CompanionBranchCell<BranchMarkRoot>>(branches.cells.len())?;
-        branches.cells.insert(branch, cell.clone());
-        branches.branch_name_bytes = next_name_bytes;
-        branches.retained_capacity = Some(capacity);
+        let prepared = super::head_cell::PreparedBranchLookupInsertion::reserve(
+            self, branches, &branch, context,
+        )?;
+        branches.cells.insert(branch, slot);
+        branches.branch_name_bytes = prepared.name_bytes;
+        branches.retained_capacity = Some(prepared.capacity);
         Ok(())
-    }
-}
-
-impl RelationalPublicationCompanion for SourceInvalidationOwner {
-    fn prepare(
-        &self,
-        context: &mut PublicationCompanionPreflight<'_>,
-    ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        if context.runtime_instance_id() != self.runtime_instance_id {
-            return Err(CompanionPreflightStop::ForeignCell);
-        }
-        let cell = self.selected_cell(context)?;
-        let reserved = cell.reserve_preflight(context)?;
-        let observed = reserved.current();
-        let budget = self.resources.preflight_budget();
-        let delivered = delivery::selectors(context, budget)?;
-        let commit = context.canonical_commit().commit.commit_id;
-        let delivery::MarkedDelivery {
-            state,
-            report,
-            selected,
-            mut hint_allowance,
-            keys,
-            retained_key_bytes,
-        } = delivery::mark(
-            &observed.payload().current,
-            delivered,
-            commit,
-            (budget, &self.resources),
-            context,
-        )?;
-        #[cfg(feature = "test-query-execution-observer")]
-        super::delivery_observation::record_delivery(&report);
-        let delivery_bytes = index_capacity::arc_bytes::<RetainedTouchDelivery>()
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        context.bytes(delivery_bytes)?;
-        let key_bytes = retained_key_bytes
-            .checked_add(delivery_bytes)
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        // Retained keys only sharpen late settlement replay. Without room for
-        // them, replay through this commit is a declared-change discontinuity.
-        let (keys, key_capacity) = match retention::reserve(&self.resources, key_bytes, context) {
-            Ok(capacity) => (keys, capacity),
-            Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. })
-                if keys.is_some() =>
-            {
-                (
-                    None,
-                    retention::reserve(&self.resources, delivery_bytes, context)?,
-                )
-            }
-            Err(stop) => return Err(stop),
-        };
-        let delivered = Arc::new(RetainedTouchDelivery {
-            keys,
-            _capacity: key_capacity,
-        });
-        context.bytes(
-            index_capacity::arc_bytes::<BranchMarkRoot>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
-        let mut root = (**observed.payload()).clone();
-        context.ordered_edit::<Option<worth_relational::facade::publication::PatchStreamPosition>, HistoricalMarkState>(root.past.len())?;
-        root.past.insert(
-            observed.position(),
-            HistoricalMarkState {
-                root_id: observed.root_id(),
-                commit_id: observed.commit_id(),
-                state: Arc::clone(&observed.payload().current),
-                next_delivery: delivered,
-            },
-        );
-        let mut left = None;
-        if root.past.len() > self.resources.installation().maximum_retained_positions {
-            context.ordered_remove::<Option<worth_relational::facade::publication::PatchStreamPosition>, HistoricalMarkState>(root.past.len())?;
-            if let Some(oldest) = root.past.get_min().map(|(position, _)| *position) {
-                left = root.past.remove(&oldest);
-            }
-        }
-        root.current = Arc::new(state);
-        root.last_native_marking = Some(report);
-        let left = left.as_ref().map(|left| &*left.state);
-        retention::admit_root(&mut root, left, &self.resources, context)?;
-        let mut effect = context.seal_replacement(reserved, Arc::new(root))?;
-        if !selected.is_empty() {
-            let retained = retention::reserve(
-                &self.resources,
-                CompanionPublicationCompletionObserver::retained_bytes(),
-                context,
-            )?;
-            let observer = effect.attach_completion_observer(context, retained)?;
-            // Each hint's preparation was admitted with the marking that
-            // selected it; construction draws down exactly that allowance.
-            let prepared_bytes = u64::try_from(selected.len())
-                .ok()
-                .and_then(|count| count.checked_mul((2 * std::mem::size_of::<usize>()) as u64))
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            hint_allowance.bytes(prepared_bytes)?;
-            let mut prepared = Vec::with_capacity(selected.len());
-            for membership in selected {
-                let branch_bytes = u64::try_from(context.branch_id().0.len())
-                    .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-                let hint_bytes = RequiredWorkMembership::native_hint_bytes();
-                let retained_branch_bytes = RequiredWorkMembership::native_branch_retained_bytes(
-                    context.branch_id().0.len(),
-                )
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-                hint_allowance.bytes(hint_bytes)?;
-                hint_allowance.bytes(retained_branch_bytes)?;
-                hint_allowance.work(
-                    branch_bytes
-                        .checked_add(7)
-                        .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-                )?;
-                let hint_capacity =
-                    retention::reserve(&self.resources, hint_bytes, &mut hint_allowance)?;
-                let branch_capacity = retention::reserve(
-                    &self.resources,
-                    retained_branch_bytes,
-                    &mut hint_allowance,
-                )?;
-                let branch = RequiredWorkMembership::prepared_native_branch(
-                    context.branch_id().clone(),
-                    branch_capacity,
-                );
-                let hint = RequiredWorkMembership::prepared_native_hint(
-                    observer.clone(),
-                    branch,
-                    hint_capacity,
-                );
-                prepared.push((membership, hint));
-            }
-            // Every Box and Vec slot is already owned. A later preflight
-            // denial cannot leave a partial set of published token hints.
-            for (membership, hint) in prepared {
-                membership.prepare_hint(hint);
-            }
-        }
-        Ok(effect)
     }
 }
