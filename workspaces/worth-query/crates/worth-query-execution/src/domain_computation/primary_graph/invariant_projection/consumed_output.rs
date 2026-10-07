@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::{
 #[cfg(feature = "certification-invalidation-equivalence")]
 mod equivalence;
 mod pending_dependency;
+mod requested_read;
 #[cfg(test)]
 mod test_support;
 mod verification;
@@ -129,6 +130,31 @@ impl ConsumedOutputEvidence {
             witness,
             admission,
         )
+    }
+
+    /// Only the recovered root actually verified by a native reader may be
+    /// retained without an executable source row. This is static settlement
+    /// custody, never permission to reconstruct or refresh a source query.
+    pub(in crate::domain_computation::primary_graph) fn claim_verified_checkpoint_root(
+        &self,
+        owner: &SourceInvalidationOwner,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, SettlementRegistrationStop> {
+        if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore)
+            || !self.upstream.is_empty()
+            || self
+                .native_output_witness
+                .as_ref()
+                .and_then(|witness| witness.get())
+                .is_none()
+            || !self.establish_restored(owner, admission)?
+        {
+            return Ok(false);
+        }
+        Ok(matches!(
+            owner.currentness(&self.selected_native_root, &self.identity, admission)?,
+            crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness::Clean
+        ))
     }
 
     /// Record a consumed restored output's mark row before the commit that

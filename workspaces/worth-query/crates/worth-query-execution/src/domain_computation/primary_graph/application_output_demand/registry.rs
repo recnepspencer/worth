@@ -159,6 +159,7 @@ pub(in crate::domain_computation::primary_graph) use admission::SelectedOutputAd
 pub(in crate::domain_computation::primary_graph) use held_successor::HeldRequiredSuccessor;
 pub(in crate::domain_computation::primary_graph) use required_work::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use required_work::ReplacedRequiredWorkHint;
+pub(in crate::domain_computation::primary_graph) use required_work::RequestedOutputReadClaims;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedReadyReadmission;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;
@@ -231,6 +232,7 @@ struct DemandRecord {
     performed_obligations: Vec<PerformedOutputObligation>,
     framework_required_count: usize,
     prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+    checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
     prepared_prerequisite_claims: usize,
     pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
     pending_cleanup_queued: bool,

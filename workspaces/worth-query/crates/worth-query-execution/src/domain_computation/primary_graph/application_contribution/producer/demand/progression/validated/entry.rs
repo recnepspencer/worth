@@ -122,7 +122,7 @@ where
             request_admission,
         )? {
             OwnStages::Answer(advance) => return Ok(CallerPass::Answer(advance)),
-            OwnStages::Refreshed => return Ok(CallerPass::Refreshed),
+            OwnStages::Refreshed => return Ok(CallerPass::RetryDisclosure),
             OwnStages::Checkpoint => {}
         }
         // The checkpoint this call published or moved is its own to finish.

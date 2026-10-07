@@ -23,6 +23,9 @@ mod marking_ceiling;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 #[cfg(not(feature = "certification-invalidation-equivalence"))]
+#[path = "native_journey_tests/pending_own_evidence.rs"]
+mod pending_own_evidence;
+#[cfg(not(feature = "certification-invalidation-equivalence"))]
 #[path = "native_journey_tests/precommit_chain.rs"]
 mod precommit_chain;
 #[path = "native_journey_tests/replay_propagation.rs"]

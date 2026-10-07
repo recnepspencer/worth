@@ -32,6 +32,27 @@ handles, and pending cleanup are memory-resident. Process loss releases those
 capabilities. Restart durability belongs to Store and requires fresh owner
 readmission; Query does not serialize live authority.
 
+Required output progression rechecks native consumer decision facts before
+following its previously consumed dependencies. Sealed child entity/field content
+is excluded from the independent-fact check. Changed consumer fields or
+consumer-anchored membership can disclose a fresh decision that drops an old edge. If that fresh handler
+still reads a pending output, its native read carries the exact settlement and
+selected source basis into the required wave. An initial producer without an
+accepted consumer output uses the same handoff: the requested chain must become
+Current before the caller retries its frozen disclosure. A requested chain never
+settles or promotes its parent demand. A reusable cached Ready keeps its original
+admitted source and installed producer under the source's existing capacity ticket
+until eviction. An exact failed read can claim that cached row temporarily and use
+the ordinary installed-executor wave. Caller-owned custody survives disclosure
+retry and Pending, then releases after actual caller settlement, refusal or close.
+No source is reconstructed from an output identity. If the source or exact row is
+absent, the original read denial remains. Its `readmission_failure()` diagnostic
+distinguishes basis, settlement, lineage and required-owner lookup misses without
+changing the typed denial kind or recovery posture. A child's native content stays child evidence; neither
+this disclosure nor the scheduling handoff certifies an output Current. This
+proof covers native read refusals; it does not establish recovery when native
+publication is Current but managed readiness delivery is still deferred.
+
 Use the smallest package that owns the change. Declaration work does not build
 installation, execution, publication, replay, or certification:
 

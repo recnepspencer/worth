@@ -311,6 +311,14 @@ impl ConsumedOutputEvidence {
                     marked.push(Arc::clone(evidence.identity));
                 }
                 SourceSettlementCurrentness::PendingUpstream(_) => {
+                    // A changed own fact or output already disproves this
+                    // candidate, even while its upstream remains unresolved.
+                    // Unchanged own evidence cannot certify that upstream.
+                    if let Some(changed) =
+                        Self::compare_own(evidence, direct, runtime, snapshot, admission)?
+                    {
+                        return Ok(changed);
+                    }
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
                 }
                 SourceSettlementCurrentness::Dirty(_)

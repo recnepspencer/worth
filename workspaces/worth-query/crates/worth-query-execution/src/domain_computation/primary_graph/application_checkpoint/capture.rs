@@ -1,6 +1,7 @@
 use super::super::application_output_demand::AcceptedCheckpointFactSource;
 use super::{facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes};
 
+mod native_priors;
 mod output_facts;
 
 pub(super) fn merge_accepted_outputs(
@@ -50,11 +51,25 @@ where
         ),
         worth_relational::facade::durability::DurabilityError,
     > {
+        let occurrence = self.product_runtime.default_occurrence;
+        let lane = self
+            .primary_provider
+            .application_branch_commit_lane_for_occurrence(occurrence)
+            .map_err(|_| {
+                native_priors::capture_denial("checkpoint branch coordination is unavailable")
+            })?;
+        let _coordination = lane.enter();
+        let lease = self
+            .product_runtime
+            .admit_product_occurrence(occurrence)
+            .map_err(|_| {
+                native_priors::capture_denial("checkpoint product occurrence cannot be admitted")
+            })?;
         self.primary_provider.graph.with_runtime(|runtime| {
             runtime
                 .durability_authority()
                 .native_checkpoint()
-                .map(|checkpoint| {
+                .and_then(|checkpoint| {
                     let mut accepted = self.output_demands.accepted_checkpoint_records();
                     let mut admission = self
                         .primary_provider
@@ -68,7 +83,23 @@ where
                         .output_lineage
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
-                    for (identity, source) in &mut accepted {
+                    // Native prior custody is required; cached reuse facts are
+                    // best effort. Admit the locators before optional encoding
+                    // can consume this checkpoint's remaining allowance.
+                    let priors = lineage
+                        .checkpoint_prior_outputs(
+                            self.runtime.authority_identity().as_u64(),
+                            &self.installed_schema.binding_identity(),
+                            occurrence,
+                            lease.observation().reference_generation().get(),
+                            &mut admission,
+                        )
+                        .map_err(|_| {
+                            native_priors::capture_denial(
+                                "checkpoint native output heads cannot be selected",
+                            )
+                        })?;
+                    for (identity, source, _) in &mut accepted {
                         let Some(source) = source else {
                             continue;
                         };
@@ -91,18 +122,30 @@ where
                             0
                         };
                     }
+                    let accepted_outputs = native_priors::merge(
+                        &lineage,
+                        accepted
+                            .into_iter()
+                            .map(|(identity, _, binding)| (identity, binding)),
+                        self.recovered_outputs.iter().map(|accepted| {
+                            (
+                                accepted.checkpoint.clone(),
+                                accepted.correspondence.binding_type(),
+                            )
+                        }),
+                        priors,
+                    )
+                    .map_err(|_| {
+                        native_priors::capture_denial(
+                            "checkpoint output family binding is ambiguous",
+                        )
+                    })?;
                     drop(lineage);
-                    let accepted_outputs = merge_accepted_outputs(
-                        accepted.into_iter().map(|(identity, _)| identity).collect(),
-                        self.recovered_outputs
-                            .iter()
-                            .map(|accepted| accepted.checkpoint.clone()),
-                    );
-                    WorthQueryApplicationCheckpoint::encode(
+                    Ok(WorthQueryApplicationCheckpoint::encode(
                         checkpoint,
                         self.publication(),
                         &accepted_outputs,
-                    )
+                    ))
                 })
         })
     }

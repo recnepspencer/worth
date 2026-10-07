@@ -506,6 +506,14 @@ Other constructors on `application_installation`:
 `in_memory_rostered_program_with_authorization_time_source`, and the
 `*_from_checkpoint` variants.
 
+A reopened downstream demand may consume a checkpoint root before any separate
+root demand. Query first verifies the complete retained producer facts and native
+output witness, then retains bounded custody of that exact settlement through
+downstream publication. This static custody contains no executable source query:
+changing the root invalidates the old result and requires genuine typed source
+admission before it can refresh. Ordinary missing or retired managed settlements
+continue to refuse publication.
+
 ### 4.3 What the runtime gives you
 
 `WorthQueryProgramApplicationRuntime` dereferences to the primary-graph

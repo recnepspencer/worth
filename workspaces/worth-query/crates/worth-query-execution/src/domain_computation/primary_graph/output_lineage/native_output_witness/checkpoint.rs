@@ -21,6 +21,38 @@ impl SealedNativeOutputWitness {
         }
         for fact in facts {
             admission.charge_external_work(1)?;
+            if matches!(fact, Fact::IndexedEntitySelection { .. }) {
+                let available = admission.remaining_work();
+                let mut remaining = available;
+                let current = crate::domain_computation::primary_graph::application_attempt::indexed_selection_currentness(
+                    fact, relational, snapshot, &mut remaining,
+                );
+                // Debit native examination even on lookup denial. The owner
+                // narrows the probe before executing it, so this stays bounded.
+                admission.charge_external_work(
+                    u64::try_from(available - remaining).map_err(|_| overflow())?,
+                )?;
+                match current {
+                    Ok(current) => {
+                        if !current {
+                            return Ok(false);
+                        }
+                    }
+                    Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
+                        // A complete lookup requires at least one more unit
+                        // than this admission can supply.
+                        let maximum = admission.charged_work()
+                            .checked_add(u64::try_from(admission.remaining_work()).map_err(|_| overflow())?)
+                            .ok_or_else(overflow)?;
+                        return Err(CompanionPreflightStop::WorkExhausted {
+                            required: maximum.checked_add(1).ok_or_else(overflow)?,
+                            maximum,
+                        });
+                    }
+                    Err(_) => return Ok(false),
+                }
+                continue;
+            }
             let work = match fact {
                 Fact::SourceEntity { .. }
                 | Fact::SourceFieldRevision { .. }
@@ -30,10 +62,6 @@ impl SealedNativeOutputWitness {
                     admission.charge_external_work(1)?;
                     aspect.as_str().len().checked_add(1).ok_or_else(overflow)?
                 }
-                // The lookup examines at most its recorded candidate limit.
-                Fact::IndexedEntitySelection {
-                    candidate_limit, ..
-                } => candidate_limit.checked_add(1).ok_or_else(overflow)?,
                 _ => return Ok(false),
             };
             admission.charge_external_work(u64::try_from(work).map_err(|_| overflow())?)?;

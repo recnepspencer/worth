@@ -78,6 +78,9 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .map_err(FullVerificationReason::MarkingAdmissionDenied)?;
     let requirement = evidence.source_fact_verification_requirement().map(|reason| match reason {
         crate::domain_computation::primary_graph::provider::RebaseVerificationReason::NativeRevisionUnavailable => FullVerificationReason::NativeRevisionUnavailable,
+        crate::domain_computation::primary_graph::provider::RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal) => FullVerificationReason::NativeFactRevisionUnavailable(ordinal),
+        crate::domain_computation::primary_graph::provider::RebaseVerificationReason::IndexedSelectionDenied(denial) => FullVerificationReason::IndexedSelectionDenied(denial),
+        crate::domain_computation::primary_graph::provider::RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial) => FullVerificationReason::IndexedSelectionFactDenied(ordinal, denial),
         crate::domain_computation::primary_graph::provider::RebaseVerificationReason::UnsupportedDecisionFact => FullVerificationReason::UnsupportedFact,
         crate::domain_computation::primary_graph::provider::RebaseVerificationReason::AdmissionDenied(stop) => FullVerificationReason::MarkingAdmissionDenied(stop),
     });

@@ -26,6 +26,7 @@ impl DemandRegistryState {
             || record.prepared_prerequisite_claims != 0
             || record.pending_cleanup_queued
             || (record.prerequisites.capacity() == 0
+                && record.checkpoint_prerequisites.is_none()
                 && record.settlements.capacity() == 0
                 && record.performed_obligations.capacity() == 0)
         {
@@ -127,6 +128,8 @@ impl DemandRegistryState {
         }
         let edges = record.prerequisites.len();
         let identities = record.settlements.len();
+        // Static checkpoint destruction was prepaid at admission; detach it
+        // below without charging that per-identity work a second time.
         let selected_slots = edges.checked_add(identities).ok_or_else(work_denial)?;
         admission
             .charge_external_work(selected_slots as u64)
@@ -223,10 +226,10 @@ impl DemandRegistryState {
         let release = record.terminal()
             && record.framework_required_count == 0
             && record.prepared_prerequisite_claims == 0;
-        let (released, settlements, release_refund) = if release {
+        let (released, settlements, checkpoint, release_refund) = if release {
             self.release_record_prerequisites_detached(head.as_ref(), &mut retired_members)
         } else {
-            (Vec::new(), Vec::new(), 0)
+            (Vec::new(), Vec::new(), None, 0)
         };
         let (obligations, refund_obligation_bytes, own_member) = if release_obligations {
             let record = self.records.get_mut(head.as_ref()).unwrap();
@@ -259,6 +262,7 @@ impl DemandRegistryState {
         Ok(Some(RetiredTerminalCleanup {
             _released: released,
             _settlements: settlements,
+            _checkpoint: checkpoint,
             _retired_members: retired_members,
             _obligations: obligations,
             _own_member: own_member,
@@ -275,6 +279,7 @@ impl DemandRegistryState {
 /// destruction before the retained membership can refund its capacity.
 struct RetiredTerminalCleanup {
     _released: Vec<Arc<WorthQueryOutputDemandKey>>,
+    _checkpoint: Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
     _settlements: Vec<(
         Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
         usize,

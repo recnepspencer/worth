@@ -26,6 +26,9 @@ pub(super) enum RebasedSourceFacts {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
     NativeRevisionUnavailable,
+    NativeFactRevisionUnavailable(usize),
+    IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
+    IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     UnsupportedDecisionFact,
     AdmissionDenied(worth_relational::facade::mvcc::CompanionPreflightStop),
 }
@@ -160,7 +163,7 @@ fn rebase(
         mut superseded,
     } = prepared;
     let mut indexed_work = maximum_indexed_rebase_work;
-    for fact in &facts {
+    for (ordinal, fact) in facts.iter().enumerate() {
         if let Some(meter) = admission.as_mut() {
             if let Err(stop) = meter.charge_external_work(1) {
                 return RebasedSourceFacts::VerificationRequired {
@@ -200,6 +203,15 @@ fn rebase(
         ) {
             Ok(action) => actions.push(action),
             Err(reason) => {
+                let reason = match reason {
+                    RebaseVerificationReason::NativeRevisionUnavailable => {
+                        RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal)
+                    }
+                    RebaseVerificationReason::IndexedSelectionDenied(denial) => {
+                        RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial)
+                    }
+                    reason => reason,
+                };
                 return RebasedSourceFacts::VerificationRequired {
                     reason,
                     facts: facts.into(),

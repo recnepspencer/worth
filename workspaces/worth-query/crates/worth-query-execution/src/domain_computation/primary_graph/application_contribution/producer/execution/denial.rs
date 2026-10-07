@@ -110,6 +110,12 @@ pub(super) fn execution_failed(
     subject: &str,
     error: MutationHandlerExecutionDenial,
 ) -> ProducerExecutionStop {
+    let error = match error {
+        MutationHandlerExecutionDenial::Handler(error) => {
+            return handler_execution_failed(subject, error).into()
+        }
+        error => error,
+    };
     if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
         if let Some(authority) = attempt.request_authority() {
             return request_authority_denied(subject, authority.clone());
@@ -131,6 +137,27 @@ pub(super) fn execution_failed(
         .into()
     } else {
         failed(subject, error).into()
+    }
+}
+
+/// Preserve an exact native output read through a producer suspension.
+pub(super) fn handler_execution_failed(
+    subject: &str,
+    error: crate::domain_computation::primary_graph::HandlerExecutionDenial,
+) -> WorthQueryOutputDemandDenial {
+    match error
+        .downcast::<crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial>()
+    {
+        Ok(mut read) => {
+            let requested = read.requested_output.take();
+            let mut denial = failed(subject, &read);
+            if let Some(requested) = requested {
+                denial.requested_output = Some(requested);
+                denial.recovery_posture = crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable;
+            }
+            denial
+        }
+        Err(error) => failed(subject, error),
     }
 }
 

@@ -47,6 +47,10 @@ where
     /// recorded correspondence is read under the output role its producer
     /// binding declares, so the read cannot name a role no producer of the
     /// family outputs.
+    /// For a bound role, native publication order selects its latest head across
+    /// bindings sharing the same source partition and entity before verifying
+    /// currentness. Equal-position competing settlements are unavailable. An
+    /// unbound optional role supplies no entity for this cross-binding join.
     #[allow(clippy::type_complexity)]
     pub fn current_output<Family, Producer>(
         &mut self,
@@ -173,14 +177,20 @@ where
                     Family::IDENTITY,
                 )
             })?;
-        self.require_current_output_budget(resolution.source_lookups, Family::IDENTITY)?;
-        self.reader.work_budget.consume(resolution.source_lookups);
+        self.require_current_output_budget(resolution.selection_work, Family::IDENTITY)?;
+        self.reader.work_budget.consume(resolution.selection_work);
         self.reader
             .work
-            .record_output_lineage_selection(resolution.source_lookups);
+            .record_output_lineage_selection(resolution.selection_work);
         if !resolution.family_installed {
             return Err(WorthQueryCurrentOutputDenial::new(
                 WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
+                Family::IDENTITY,
+            ));
+        }
+        if resolution.ambiguous_publication {
+            return Err(WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::OutputUnavailable,
                 Family::IDENTITY,
             ));
         }
@@ -201,6 +211,7 @@ where
         let mut current = Vec::new();
         let mut retained_selected_native_root = None;
         let mut stale = false;
+        let mut requested_output = None;
         let mut obsolete = false;
         for candidate in resolution.candidates {
             self.require_current_output_budget(1, Family::IDENTITY)?;
@@ -272,9 +283,21 @@ where
                         obsolete = true;
                     } else {
                         stale = true;
+                        requested_output = Some(self.retain_requested_output(
+                            &candidate,
+                            &selected_native_root,
+                            Family::IDENTITY,
+                        )?);
                     }
                 }
-                ConsumedOutputVerification::ChangedUpstream => stale = true,
+                ConsumedOutputVerification::ChangedUpstream => {
+                    stale = true;
+                    requested_output = Some(self.retain_requested_output(
+                        &candidate,
+                        &selected_native_root,
+                        Family::IDENTITY,
+                    )?);
+                }
             }
         }
         if current.is_empty() && obsolete {
@@ -284,10 +307,12 @@ where
             ));
         }
         if current.is_empty() && stale {
-            return Err(WorthQueryCurrentOutputDenial::new(
+            let mut denial = WorthQueryCurrentOutputDenial::new(
                 WorthQueryCurrentOutputDenialKind::StaleSource,
                 Family::IDENTITY,
-            ));
+            );
+            denial.requested_output = requested_output;
+            return Err(denial);
         }
         self.reader
             .current_output_families

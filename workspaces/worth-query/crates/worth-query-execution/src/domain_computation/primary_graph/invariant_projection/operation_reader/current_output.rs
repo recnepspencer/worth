@@ -27,7 +27,8 @@ pub enum WorthQueryCurrentOutputDenialKind {
     /// A recorded output entity is not of the family's entity kind.
     EntityMismatch,
     /// A recorded output entity is no longer live, the producer changed after
-    /// its outputs were recorded, or a recorded source fact could not be read.
+    /// its outputs were recorded, a recorded source fact could not be read,
+    /// or distinct publication heads compete at the same native position.
     OutputUnavailable,
     /// A consumed upstream output is pending source-aligned revalidation.
     PendingUpstream,
@@ -51,6 +52,8 @@ pub enum WorthQueryCurrentOutputDenialKind {
 pub struct WorthQueryCurrentOutputDenial {
     kind: WorthQueryCurrentOutputDenialKind,
     subject: String,
+    pub(in crate::domain_computation::primary_graph) requested_output:
+        Option<super::super::RequestedOutputRead>,
 }
 
 impl WorthQueryCurrentOutputDenial {
@@ -66,6 +69,7 @@ impl WorthQueryCurrentOutputDenial {
         Self {
             kind,
             subject: subject.into(),
+            requested_output: None,
         }
     }
 }

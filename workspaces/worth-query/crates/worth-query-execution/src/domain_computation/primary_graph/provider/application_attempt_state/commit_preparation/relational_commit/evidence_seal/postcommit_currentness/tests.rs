@@ -20,6 +20,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+#[path = "tests/indexed_denial.rs"]
+mod indexed_denial;
+
 #[test]
 fn producer_decision_field_uses_native_revision_after_value_aba() {
     let world = installed_authorization_world(true);
@@ -171,7 +174,7 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
     assert!(matches!(
         rebased,
         RebasedSourceFacts::VerificationRequired {
-            reason: RebaseVerificationReason::NativeRevisionUnavailable,
+            reason: RebaseVerificationReason::NativeFactRevisionUnavailable(0),
             ..
         }
     ));

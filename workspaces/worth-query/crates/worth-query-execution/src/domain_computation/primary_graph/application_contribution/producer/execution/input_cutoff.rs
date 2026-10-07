@@ -191,10 +191,8 @@ where
     let publication = address.prepare_record(fresh, operation, resources, admission)?;
     // Registry preparation is outside both lineage and Product guards.
     let mut prerequisites = required_output.prepare_prerequisites(
-        publication
-            .consumed_outputs()
-            .iter()
-            .map(|consumed| consumed.identity()),
+        publication.consumed_outputs().iter(),
+        source_owner,
         admission,
     )?;
     prerequisites.reserve_identity(publication.identity(), admission)?;

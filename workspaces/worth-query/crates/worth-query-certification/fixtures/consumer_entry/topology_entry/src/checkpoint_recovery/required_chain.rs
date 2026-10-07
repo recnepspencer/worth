@@ -15,10 +15,12 @@ mod diamond;
     feature = "test-invalidation-equivalence"
 ))]
 mod exact_invalidation;
+mod mixed_mode;
 mod performed_head_movement;
 mod producer;
 mod program;
 mod readiness;
+mod reopened_consumer;
 #[cfg(feature = "test-query-execution-observer")]
 mod required_queue;
 mod restored_currentness;

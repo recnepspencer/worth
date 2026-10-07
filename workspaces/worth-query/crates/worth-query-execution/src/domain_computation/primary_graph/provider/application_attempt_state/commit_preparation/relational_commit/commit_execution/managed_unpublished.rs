@@ -112,6 +112,8 @@ impl ManagedUnpublishedAttempt {
                 &mut self.publication_admission,
             )?;
         if let Some(required) = self.required_prerequisites.as_mut() {
+            let (producer, source) = required.native_prior_checkpoint_input();
+            slot.retain_native_prior_checkpoint(producer, source, &mut self.publication_admission)?;
             required.replace_reserved_identity_for_recovery(
                 slot.identity(),
                 &mut self.publication_admission,

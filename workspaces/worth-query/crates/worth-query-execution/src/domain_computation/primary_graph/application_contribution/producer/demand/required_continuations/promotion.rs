@@ -2,7 +2,7 @@
 
 use super::super::WorthQueryOutputDemandDenialKind;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
+use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerEdition;
 
 const FAMILY_SUBJECT: &str = "required successor family differs from caller demand";
 
@@ -66,7 +66,6 @@ where
         caller_ready: &SelectedReadyReadmission,
         selected_ready: &SelectedReadyReadmission,
         continues_caller: bool,
-        supplied_mode: &WorthQueryProducerCommitAuthority,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<WorthQueryAdmittedOutputDemand<Schema, Family>>, WorthQueryOutputDemandDenial>
     where
@@ -99,9 +98,7 @@ where
         if !selected_ready.matches_interest(progress.interest(), admission)? {
             return Ok(None);
         }
-        progress
-            .successor
-            .validate_for_promotion(supplied_mode, admission)?;
+        progress.successor.validate_for_current_handoff(admission)?;
         admission
             .charge_external_work(1)
             .map_err(|_| empty_work())?;
@@ -121,6 +118,10 @@ where
                     std::mem::size_of::<RequiredContinuations<Schema>>().checked_mul(2)?,
                 )
             })
+            .and_then(|work| {
+                work.checked_add(std::mem::size_of::<DemandProgressionProvenance>().checked_mul(2)?)
+            })
+            .and_then(|work| work.checked_add(std::mem::size_of::<InstalledProducerEdition>()))
             .and_then(|work| u64::try_from(work).ok())
             .ok_or_else(empty_work)?;
         admission
@@ -147,6 +148,7 @@ where
         };
         debug_assert!(typed.required_continuations.entries.is_empty());
         debug_assert!(typed.required_continuations.capacity.is_none());
+        debug_assert!(typed.required_continuations.requested.is_empty());
         Ok(Some(typed))
     }
 }

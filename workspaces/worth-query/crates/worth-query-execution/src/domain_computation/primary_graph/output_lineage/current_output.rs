@@ -23,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnes
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The facts and the witness are everything this output depends on.
     pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
+    pub(in crate::domain_computation::primary_graph) verification_requirement:
+        Option<super::invalidation::FullVerificationReason>,
     pub(in crate::domain_computation::primary_graph) work: usize,
 }
 
@@ -60,12 +62,21 @@ impl WorthQueryApplicationOutputLineage {
                 return Err(());
             }
             if let Some(recorded) = recorded {
+                let origin = recorded
+                    .performed_origin
+                    .as_ref()
+                    .and_then(|cell| cell.get())
+                    .unwrap_or(recorded);
                 return Ok((
                     Some(WorthQueryProducerLineageHead {
                         occurrence: coordinate.occurrence,
                         dependency_identity: recorded.producer_dependency_identity,
                         idempotency_key_identity: recorded.idempotency_key_identity,
                         settlement: Arc::clone(&recorded.settlement_identity),
+                        may_replay_idempotency: matches!(
+                            origin.source_identity,
+                            Some(RecordedSourceIdentity::Runtime(_))
+                        ),
                         claims_upstream: !recorded.consumed_outputs.is_empty(),
                     }),
                     work,
@@ -289,6 +300,7 @@ fn retained_currentness_read(
         native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
         consumed_nothing: recorded.consumed_outputs.is_empty()
             && recorded.performed_origin.is_none(),
+        verification_requirement: recorded.verification_requirement(),
         work,
     }))
 }

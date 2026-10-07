@@ -86,12 +86,27 @@ fn chain_application() -> application_installation::WorthQueryProgramApplication
 > {
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    support::install_program_with_seed::<program::ChainProgram>(
+    chain_application_with_marking_work(
         None,
+        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+    )
+}
+
+fn chain_application_with_marking_work(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    maximum_marking_work: u64,
+) -> application_installation::WorthQueryProgramApplicationRuntime<
+    CheckpointSchema,
+    program::ChainProgram,
+> {
+    let profile =
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
+    support::install_program_with_seed::<program::ChainProgram>(
+        checkpoint,
         profile,
         4_096,
         128 * 1_024 * 1_024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        maximum_marking_work,
         source_world::seed,
     )
 }
@@ -130,7 +145,40 @@ macro_rules! chain_with_unrelated {
 #[test]
 fn an_unrelated_required_advance_progresses_the_dirty_required_set() {
     let _guard = checkpoint_recovery_test_guard();
+    run_unrelated_required_advance(chain_application());
+}
+
+#[test]
+fn restored_required_demands_reenter_source_query_under_small_marking_work() {
+    let _guard = checkpoint_recovery_test_guard();
+    let checkpoint = ready_chain_checkpoint();
+    // Keep the ordinary Query profile and reduce only invalidation marking.
+    // Retained source re-entry must use Query's own admitted preparation
+    // allowance, not this independent marking ceiling.
+    run_unrelated_required_advance(chain_application_with_marking_work(
+        Some(checkpoint),
+        65_536,
+    ));
+}
+
+fn ready_chain_checkpoint() -> application_installation::WorthQueryApplicationCheckpoint {
     let application = chain_application();
+    {
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let _demands = chain_with_unrelated!(application, request);
+    }
+    application
+        .capture_application_checkpoint()
+        .expect("the settled required chain is checkpointable")
+}
+
+fn run_unrelated_required_advance(
+    application: application_installation::WorthQueryProgramApplicationRuntime<
+        CheckpointSchema,
+        program::ChainProgram,
+    >,
+) {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);

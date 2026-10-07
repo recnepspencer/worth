@@ -137,7 +137,7 @@ mod handler_installation;
 mod operation_contracts;
 #[path = "fixture/optional_output_binding.rs"]
 mod optional_output_binding;
-pub(super) use optional_output_binding::{
+pub(in crate::domain_computation::primary_graph) use optional_output_binding::{
     OptionalCompanion, OptionalOutputInput, OptionalOutputMutationBinding, OptionalOutputOperation,
     OptionalOutputPlan, OptionalOutputs, OptionalSubject,
 };
@@ -150,8 +150,11 @@ pub(in crate::domain_computation::primary_graph) use program_required_binding::{
 pub(super) use program_required_binding::{
     ProgramRequiredOperation, ProgramRequiredSiblingBinding,
 };
+#[path = "fixture/program_activation.rs"]
+mod program_activation;
 #[path = "fixture/program_roster.rs"]
 mod program_roster;
+pub(in crate::domain_computation::primary_graph) use program_activation::seed_program_activation;
 pub(in crate::domain_computation::primary_graph) use program_roster::{
     installed_program_support, rostered_program_revision, unadmitted_program_revision,
 };

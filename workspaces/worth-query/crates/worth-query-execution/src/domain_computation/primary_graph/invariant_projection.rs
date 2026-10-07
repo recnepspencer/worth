@@ -1,6 +1,8 @@
 mod admission_denial;
 mod aggregate;
 mod consumed_output;
+mod pending_output_read;
+pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;
 mod inventory;
 mod locked_reader;
 mod operation_projection_denial;

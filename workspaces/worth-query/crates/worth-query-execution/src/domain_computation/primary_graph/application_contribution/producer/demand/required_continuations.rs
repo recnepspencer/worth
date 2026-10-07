@@ -23,8 +23,9 @@ mod promotion;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::registry::InstalledProducerProvider,
     application_output_demand::{
-        RequiredOutputCustodyCapacity, SelectedReadyReadmission, SelectedRequiredRefreshClaim,
-        WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
+        RequestedOutputReadClaims, RequiredOutputCustodyCapacity, SelectedReadyReadmission,
+        SelectedRequiredRefreshClaim, WorthQueryOutputDemandInterest,
+        WorthQueryOutputDemandRegistry,
     },
     output_lineage::invalidation::InvalidationEditAdmission,
     WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
@@ -48,14 +49,14 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn family_type(&self) -> TypeId;
     fn concrete_type(&self) -> TypeId;
     fn progression(&self) -> &RequiredSuccessorProvenance;
-    fn validate_for_promotion(
+    fn validate_for_current_handoff(
         &self,
-        mode: &WorthQueryProducerCommitAuthority,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial>;
     fn predecessor(&self) -> &SelectedReadyReadmission;
     fn producer_contacts(&self) -> usize;
     fn continuations_empty(&self) -> bool;
+    fn retain_requested(&mut self, claims: &mut RequestedOutputReadClaims);
     /// Move to the newest row of the occurrence once this one is superseded.
     fn follow_refresh(
         &mut self,
@@ -137,17 +138,19 @@ where
             .expect("installed required successor retains its exact predecessor Ready")
     }
 
-    fn validate_for_promotion(
+    fn validate_for_current_handoff(
         &self,
-        mode: &WorthQueryProducerCommitAuthority,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let demand = self
             .demand
             .as_ref()
             .expect("installed successor owns its demand");
-        self.progression()
-            .validate_for_execution(mode, &demand.installed_entry.edition, admission)
+        self.progression().validate_for_execution(
+            self.progression().commit_authority(),
+            &demand.installed_entry.edition,
+            admission,
+        )
     }
 
     fn producer_contacts(&self) -> usize {
@@ -161,7 +164,17 @@ where
         self.demand.as_ref().is_some_and(|demand| {
             demand.required_continuations.entries.is_empty()
                 && demand.required_continuations.capacity.is_none()
+                && demand.required_continuations.requested.is_empty()
         })
+    }
+
+    fn retain_requested(&mut self, claims: &mut RequestedOutputReadClaims) {
+        self.demand
+            .as_mut()
+            .expect("installed successor owns its demand")
+            .required_continuations
+            .requested
+            .absorb(claims);
     }
 
     fn follow_refresh(
@@ -257,6 +270,7 @@ where
     Schema: ApplicationSchema,
 {
     entries: Vec<RequiredFreshProgress<Schema>>,
+    pub(super) requested: RequestedOutputReadClaims,
     capacity: Option<RequiredOutputCustodyCapacity>,
 }
 
@@ -267,6 +281,7 @@ where
     fn default() -> Self {
         Self {
             entries: Vec::new(),
+            requested: Default::default(),
             capacity: None,
         }
     }

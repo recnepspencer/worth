@@ -122,6 +122,25 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 &mut owner.edit_admission(),
             )
             .unwrap());
+        let index = layout.equality_field(status_ref.entity(), status_ref.aspect(), status_ref.field())
+            .unwrap().equality_index_id.unwrap();
+        let indexed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
+            runtime, &before, index,
+            runtime.read_truth().exact_snapshot_live_entity_kind(&before, entity).unwrap(),
+            planned_status.clone(), AspectValue::String("open".into()), 100_001,
+        ).expect("the actual installed sparse selection supplies the checkpoint fact");
+        let witness = restored.get().unwrap();
+        let mut witness_only = owner.read_admission(4_096);
+        assert!(witness.unchanged_in(runtime, &before, &mut witness_only).unwrap());
+        let witness_work = usize::try_from(witness_only.charged_work()).unwrap();
+        let mut sparse = owner.read_admission(witness_work + 6);
+        assert!(witness.checkpoint_facts_current_in(runtime, &before,
+            &[indexed.clone(), indexed.clone()], &mut sparse).unwrap());
+        assert_eq!(sparse.remaining_work(), 0, "two one-row selections spend six units beyond the witness");
+        let mut exhausted = owner.read_admission(witness_work + 2);
+        assert!(matches!(witness.checkpoint_facts_current_in(runtime, &before,
+            std::slice::from_ref(&indexed), &mut exhausted),
+            Err(CompanionPreflightStop::WorkExhausted { .. })));
         // Producer selection reads both halves of the retained fact set.
         let mut selection_work = 4_096;
         assert!(matches!(

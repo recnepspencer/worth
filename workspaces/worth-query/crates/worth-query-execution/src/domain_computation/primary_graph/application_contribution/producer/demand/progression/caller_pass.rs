@@ -1,15 +1,14 @@
-//! One caller advance over its own row: a pass, and a second one when the
-//! first replaced its Ready with a row admitted under the disclosed source.
+//! One caller advance, with one disclosure retry after its source is replaced
+//! or an exactly requested upstream output finishes.
 
 use super::*;
 
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass {
     Answer(WorthQueryOutputDemandAdvance),
-    /// The pass replaced a Ready that no longer proves its output with a row
-    /// admitted under the disclosed source. Nothing outside this call has to
-    /// happen before that row runs: its stages need the next disclosure.
-    Refreshed,
+    /// A source replacement or a completed requested dependency made progress.
+    /// Retry the caller's own frozen disclosure; no external work is awaited.
+    RetryDisclosure,
 }
 
 type Disclosed<Schema, Family> =
@@ -27,7 +26,7 @@ where
 {
     /// `disclosure` answers `None` once the caller has no further source to
     /// disclose in this call. A caller that reads its retained source again
-    /// settles a refreshed row in the same advance; one that handed over its
+    /// retries after source replacement or upstream completion; one that handed over its
     /// only disclosure answers `Pending` and discloses on its next advance.
     pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_prepared_source<
         Family,
@@ -53,7 +52,7 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         for _ in 0..2 {
-            if let CallerPass::Answer(advance) = self.advance_caller_pass(
+            let result = self.advance_caller_pass(
                 demand,
                 principal,
                 request_scope,
@@ -61,11 +60,22 @@ where
                 &mut disclosure,
                 commit_authority.clone(),
                 request_admission,
-            )? {
-                return Ok(advance);
+            );
+            match result {
+                Ok(CallerPass::Answer(advance)) => {
+                    if matches!(advance, WorthQueryOutputDemandAdvance::Settled(_)) {
+                        demand.required_continuations.requested.clear();
+                    }
+                    return Ok(advance);
+                }
+                Ok(CallerPass::RetryDisclosure) => {}
+                Err(stop) => {
+                    demand.required_continuations.requested.clear();
+                    return Err(stop);
+                }
             }
         }
-        // The refreshed row met another replacement of its source.
+        // The second pass made progress that needs another source disclosure.
         Ok(WorthQueryOutputDemandAdvance::Pending)
     }
 
@@ -169,8 +179,24 @@ where
             delivery_branch,
             disclosure,
             entry,
-            commit_authority,
+            commit_authority.clone(),
             request_admission,
         )
+        .or_else(|mut stop| {
+            match required_wave::advance_requested_output(
+                self,
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                &commit_authority,
+                &mut stop,
+                request_admission,
+            )? {
+                Some(WorthQueryOutputDemandAdvance::Settled(_)) => Ok(CallerPass::RetryDisclosure),
+                Some(advance) => Ok(CallerPass::Answer(advance)),
+                None => Err(stop),
+            }
+        })
     }
 }

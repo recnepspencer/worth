@@ -210,13 +210,16 @@ fn prepare_lineage_slot(
         )
         .map_err(lineage_pending)?;
     if let Some(required) = required {
+        let (producer, source) = required.native_prior_checkpoint_input();
+        slot.retain_native_prior_checkpoint(producer, source, admission)
+            .map_err(lineage_pending)?;
         // Move already declared resources through the prepared owner record.
         // This also pays its final fixed-width copy before World publication.
         admission
             .charge_external_work((4 * std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>() + 4) as u64)
             .map_err(|_| crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-                crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-                    crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RequiredPrerequisitePending(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
+                crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""),
                     "",
                 ),
             ))?;
@@ -243,8 +246,8 @@ fn lineage_pending(
     denial: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-        crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-            crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RequiredPrerequisitePending(denial.kind()),
+        crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+            denial,
             "exact output lineage and required settlement could not reserve before World publication",
         ),
     )

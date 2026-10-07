@@ -54,7 +54,9 @@ mod preimage_retention;
 mod producer_invariant_publication;
 #[path = "application_attempt/program_fixture.rs"]
 mod program_fixture;
-pub(super) use program_fixture::admitted_operation;
+pub(in crate::domain_computation::primary_graph) use program_fixture::admitted_operation;
+#[path = "application_attempt/program_lane.rs"]
+mod program_lane;
 #[path = "application_attempt/program_occurrence_gate.rs"]
 mod program_occurrence_gate;
 #[path = "application_attempt/provider_terminal_evidence.rs"]
@@ -214,97 +216,6 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
         crate::execution_digest::test_hash_parts_call_count(),
         after_commit,
         "idempotent retry or recovery derived a legacy execution digest"
-    );
-}
-
-#[test]
-fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(ProgramRequiredOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            worth_query_declaration::facade::application_schema::TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-        })
-        .unwrap()
-        .into_parts();
-    let reads = world
-        .application
-        .begin_projected_application_read_attempt(admission, projection)
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies()
-        .unwrap()
-        .begin_effect_program();
-    let account = effects.existing_entity(&account).unwrap();
-    effects
-        .write_field(
-            &account,
-            AccountStatus::reference(),
-            ProgramRequiredInput::new("program-owned").status,
-        )
-        .unwrap();
-    let program = effects.finish().unwrap();
-
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(program, idempotency(37, 37))
-    else {
-        panic!("a declaration-required program must deny the raw commit entry");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
-    );
-}
-
-#[test]
-fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
-    let mut world = installed_authorization_world(true);
-    assert!(!world
-        .application
-        .program_required_operations
-        .contains(&std::any::TypeId::of::<TouchAccountOperation>()));
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
-    ));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let predecessor = world.selected_product().product().selected_commit().clone();
-    let program = admitted_program(&world, &principal, &account, &request, "program-owned");
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(program, idempotency(38, 38))
-    else {
-        panic!("an installed program must deny every raw commit entry");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
-    );
-    assert_eq!(
-        world.selected_product().product().selected_commit(),
-        &predecessor
     );
 }
 
