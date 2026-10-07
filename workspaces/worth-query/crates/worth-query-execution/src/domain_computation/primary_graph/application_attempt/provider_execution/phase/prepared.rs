@@ -1,6 +1,6 @@
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::super::provider_binding::{installed_preimage_demand, prepare_provider_attempt};
+use super::super::super::provider_binding::installed_preimage_demand;
 use super::super::super::{
     provider_recomparison::recover_equivalent_commit_evidence,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
@@ -25,6 +25,8 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod local_workflow_settlement;
+mod provider_attempt;
+use provider_attempt::prepare_application_provider_attempt;
 pub(super) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
@@ -276,7 +278,12 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     let provider_attempt = match prepare_application_provider_attempt(provider, mutation_partition)
     {
         Ok(prepared) => prepared,
-        Err(_) => return terminal(denied(DenialStage::ProposalBinding)),
+        Err(denial) => {
+            return terminal(denied_with_detail(
+                DenialStage::ProposalBinding,
+                format!("{denial:?}"),
+            ))
+        }
     };
     WorthQueryApplicationCommitPreparation::Ready(WorthQueryPreparedApplicationCommit {
         admission,
@@ -289,30 +296,6 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         idempotency,
         aftermath_causality,
     })
-}
-
-fn prepare_application_provider_attempt(
-    preparation: WorthQueryProviderAttemptPreparation,
-    mutation_partition: worth_relational::facade::identity::PartitionId,
-) -> Result<WorthQueryPreparedApplicationProviderAttempt, ()> {
-    prepare_provider_attempt(
-        mutation_partition,
-        preparation.application_effect_count,
-        preparation.installed_read_scopes,
-        preparation.facts,
-        preparation.effects,
-        preparation.emission_retained_bytes,
-        preparation.emission_retained_bytes_ceiling,
-        preparation.preimage_demand,
-        preparation.conditional_definition,
-        preparation.validator_work_admission,
-        preparation.output_correspondence,
-        preparation.retain_output_demand_observation,
-        preparation.retain_client_observation,
-        preparation.producer_required_invariants,
-        preparation.output_currentness_facts,
-    )
-    .map_err(|_| ())
 }
 
 fn validate_operation_currentness<Schema, Operation, Input, Scope>(
