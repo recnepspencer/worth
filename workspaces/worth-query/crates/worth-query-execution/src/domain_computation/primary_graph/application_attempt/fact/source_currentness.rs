@@ -67,15 +67,35 @@ impl WorthQueryApplicationObservedFact {
                     .read_truth()
                     .project_snapshot(snapshot)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
-                let comparison = view
-                    .bounded_adjacency_structural_revision(
-                        *anchor,
-                        *relation_kind,
-                        *direction,
-                        (*comparison_work_limit).min(maximum_work),
-                    )
-                    .map_err(|_| WorthQuerySourceCurrentnessFailure::Unavailable)?;
-                Ok((comparison.revision() == *native_revision, comparison.work_units()))
+                match view.bounded_adjacency_structural_revision(
+                    *anchor,
+                    *relation_kind,
+                    *direction,
+                    (*comparison_work_limit).min(maximum_work),
+                ) {
+                    Ok(comparison) => Ok((
+                        comparison.revision() == *native_revision,
+                        comparison.work_units(),
+                    )),
+                    Err(_) => {
+                        // A retired source anchor is a stale observation, not
+                        // an unavailable truth service. Admit the extra lookup.
+                        if maximum_work < 2 {
+                            return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
+                        }
+                        let live = view.entity_record_with_projection_scope(
+                            *anchor,
+                            worth_relational::facade::runtime::ProjectionAspectScope::empty(),
+                            |record| Some(record.lifecycle()
+                                == worth_relational::facade::storage::RecordLifecycleState::Live),
+                        ) == Some(true);
+                        if live {
+                            Err(WorthQuerySourceCurrentnessFailure::Unavailable)
+                        } else {
+                            Ok((false, 2))
+                        }
+                    }
+                }
             }
             Self::Entity { .. } => Ok((self.remains_equal_in(runtime, snapshot), 1)),
             Self::IndexedEntitySelection { .. } =>

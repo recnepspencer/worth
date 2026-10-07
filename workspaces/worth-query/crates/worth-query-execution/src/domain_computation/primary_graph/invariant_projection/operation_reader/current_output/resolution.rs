@@ -196,7 +196,7 @@ where
                         crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Unavailable => {
                             WorthQueryCurrentOutputDenial::new(
                                 WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                                Family::IDENTITY,
+                                format!("{}: {}", Family::IDENTITY, fact.dependency_locator_identity()),
                             )
                         }
                     })?;
@@ -211,6 +211,9 @@ where
                     } else {
                         stale = true;
                     }
+                    // A rejected candidate cannot become current by reading
+                    // more of its superseded source packet.
+                    break;
                 }
             }
             if candidate_current {

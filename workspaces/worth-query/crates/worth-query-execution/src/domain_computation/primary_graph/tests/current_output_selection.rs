@@ -245,3 +245,72 @@ fn admitted_touch_parts(
         .unwrap();
     (request, principal, scope, operation)
 }
+
+#[test]
+fn current_output_source_adjacency_tracks_actual_anchor_retirement_and_budget() {
+    use super::fixture::AccountOwner;
+    use crate::domain_computation::primary_graph::application_attempt::{
+        WorthQueryApplicationObservedFact as Fact, WorthQuerySourceCurrentnessFailure,
+    };
+    use worth_relational::facade::runtime::RelationalAdjacencyDirection;
+
+    let world = installed_authorization_world(true);
+    let (_, _, account, _) = admitted_touch_parts(&world);
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let kind = graph
+        .layout
+        .relation(AccountOwner::reference().name())
+        .unwrap()
+        .kind;
+    let original = world.selected_product();
+    let fact = graph.integration_handle().with_runtime(|runtime| {
+        let revision = runtime
+            .read_truth()
+            .project_snapshot(original.application_basis().snapshot_handle())
+            .unwrap()
+            .bounded_adjacency_structural_revision(
+                account.entity_id(),
+                kind,
+                RelationalAdjacencyDirection::Outgoing,
+                1,
+            )
+            .unwrap();
+        Fact::SourceAdjacencyRevision {
+            relation_kind: kind,
+            anchor: account.entity_id(),
+            direction: RelationalAdjacencyDirection::Outgoing,
+            native_revision: revision.revision(),
+            comparison_work_limit: 1,
+            endpoints: Vec::new(),
+        }
+    });
+    graph.integration_handle().with_runtime(|runtime| {
+        let snapshot = original.application_basis().snapshot_handle();
+        assert_eq!(
+            fact.source_currentness_in(runtime, snapshot, 1),
+            Ok((true, 1))
+        );
+        assert_eq!(
+            fact.source_currentness_in(runtime, snapshot, 0),
+            Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
+        );
+    });
+    retire_open_account(&world);
+    let retired = world.selected_product();
+    graph.integration_handle().with_runtime(|runtime| {
+        let snapshot = retired.application_basis().snapshot_handle();
+        assert_eq!(
+            fact.source_currentness_in(runtime, snapshot, 2),
+            Ok((false, 2))
+        );
+        assert_eq!(
+            fact.source_currentness_in(runtime, snapshot, 1),
+            Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
+        );
+        // Retirement in a later basis does not rewrite the old source basis.
+        assert_eq!(
+            fact.source_currentness_in(runtime, original.application_basis().snapshot_handle(), 1),
+            Ok((true, 1))
+        );
+    });
+}
