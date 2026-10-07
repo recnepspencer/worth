@@ -31,6 +31,31 @@ fn package() -> WorthQueryPortableDomainPackage {
     ))
 }
 
+#[test]
+fn finite_installation_policy_preserves_explicit_sixteen_mib_refusal() {
+    const NARROW: usize = 16 * 1_024 * 1_024;
+    assert_eq!(INSTALLATION_MAXIMUM_CANONICAL_BYTES, 32 * 1_024 * 1_024);
+    let small = schema_work(&schema("FinitePolicy", 1_000));
+    let next = schema_work(&schema("FinitePolicy", 1_001));
+    let per_member = next.canonical_encoded_bytes() - small.canonical_encoded_bytes();
+    let count = 1_000 + (19 * 1_024 * 1_024 - small.canonical_encoded_bytes()) / per_member;
+    let fixture = package().application_schema_erased(schema("FinitePolicy", count));
+    let admitted = fixture.clone().validate().unwrap();
+    let work = admitted.canonical_work();
+    assert!(work.canonical_encoded_bytes() > NARROW);
+    assert!(work.canonical_encoded_bytes() < INSTALLATION_MAXIMUM_CANONICAL_BYTES);
+    assert_eq!(work.digest_derivations(), 2);
+    let denial = fixture
+        .validate_with_canonical_work_limit(NARROW as u64)
+        .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        crate::package::WorthQueryPortablePackageValidationDenialKind::CanonicalEncodedByteBudgetExceeded,
+    );
+    assert_eq!(denial.maximum_canonical_bytes(), Some(NARROW));
+    assert!(denial.attempted_canonical_bytes().unwrap() > NARROW);
+}
+
 fn schema_work(schema: &ErasedApplicationSchemaDeclaration) -> WorthQueryCanonicalWorkEvidence {
     crate::application_schema::derive_installed_schema_identity(schema.identity())
         .unwrap()

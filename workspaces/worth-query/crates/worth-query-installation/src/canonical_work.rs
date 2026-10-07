@@ -1,10 +1,13 @@
 use worth_foundational::facade::CanonicalDigestWorkEvidence;
 use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
 
-// Complete application installation includes package and schema meaning. Keep
-// this finite while admitting the measured House composition that first
-// crossed the former 8 MiB ceiling through ordinary typed catalog pages.
-pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 16 * 1_024 * 1_024;
+// Package identity derivation charges fresh child schema meaning and the v4 package
+// root against one finite allowance. The combined finite House package measures
+// 19,406,995 bytes (19,298,956 child + 108,039 root); 16 MiB refuses that actual
+// composition. This fixed 32 MiB policy admits it without changing canonical
+// meaning or resetting child work. Explicit narrower caller allowances,
+// including 16 MiB, continue to refuse overflow.
+pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 32 * 1_024 * 1_024;
 
 /// Deterministic counts of the canonical work Query performed for one phase.
 ///
