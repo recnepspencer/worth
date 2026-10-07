@@ -1,5 +1,5 @@
 //! Typed create effects for a sealed, pre-World checkpoint installation.
-use super::{denial, WorthQueryOpenAdoptionResources};
+use super::WorthQueryOpenAdoptionResources;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
@@ -71,16 +71,22 @@ impl<'installation, Schema: ApplicationSchema> WorthQueryOpenAdoptionWriter<'ins
             || self.bytes > self.resources.maximum_authored_bytes
         {
             self.failed = true;
-            return Err(denial(
-                "checkpoint migration authoring resources exceeded or previously refused",
-            ));
+            return Err(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint migration authoring resources exceeded or previously refused",
+                ),
+            );
         }
         Ok(())
     }
 
     pub(super) fn finish(self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         if self.failed {
-            Err(denial("checkpoint migration authoring previously refused"))
+            Err(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint migration authoring previously refused",
+                ),
+            )
         } else {
             Ok(())
         }

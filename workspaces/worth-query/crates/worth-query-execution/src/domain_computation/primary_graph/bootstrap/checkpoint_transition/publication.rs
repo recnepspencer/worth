@@ -1,7 +1,6 @@
 //! One target-validation candidate and its acknowledged native successor.
 use super::{
-    denial, selection, WorthQueryOpenAdoption, WorthQueryOpenAdoptionRecovery,
-    WorthQueryOpenAdoptionWriter,
+    selection, WorthQueryOpenAdoption, WorthQueryOpenAdoptionRecovery, WorthQueryOpenAdoptionWriter,
 };
 use crate::domain_computation::primary_graph::application_installation::{
     OpenFailure, WorthQueryApplicationOpenDenial,
@@ -15,6 +14,7 @@ use crate::domain_computation::primary_graph::{
     },
     program_occurrence::{program_revision_rendering, WorthQueryProgramActivationCell},
     WorthQueryApplicationCheckpoint, WorthQueryPrimaryGraphBootstrap,
+    WorthQueryPrimaryGraphInstallationDenial,
 };
 use std::collections::BTreeMap;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
@@ -45,7 +45,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 .read_truth()
                 .project_observation(&basis.observation())
                 .map_err(|error| {
-                    denial(format!(
+                    WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(format!(
                         "checkpoint transition source unreadable: {error:?}"
                     ))
                 })?;
@@ -72,9 +72,11 @@ fn prepare_transition<Schema: ApplicationSchema>(
         .finish()
         .map_err(WorthQueryApplicationOpenDenial::Graph)?;
     cell.bind_checkpoint_candidate(identity).map_err(|_| {
-        WorthQueryApplicationOpenDenial::Graph(denial(
-            "checkpoint activation candidate was already bound",
-        ))
+        WorthQueryApplicationOpenDenial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                "checkpoint activation candidate was already bound",
+            ),
+        )
     })?;
     let mut batch = WorkerIntentBatch::new("application-checkpoint-program-transition").push(
         MutationIntent::Entity(EntityMutationIntent::UpdateFields(
@@ -98,9 +100,11 @@ fn prepare_transition<Schema: ApplicationSchema>(
         )));
     }
     let recovered = graph.recovered_relational_authority.take().ok_or_else(|| {
-        WorthQueryApplicationOpenDenial::Graph(denial(
-            "checkpoint transition has no recovered native authority",
-        ))
+        WorthQueryApplicationOpenDenial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                "checkpoint transition has no recovered native authority",
+            ),
+        )
     })?;
     let successor = graph
         .graph
@@ -118,7 +122,9 @@ fn prepare_transition<Schema: ApplicationSchema>(
             let candidate = runtime
                 .prepare_branch_transaction(transaction)
                 .map_err(|error| {
-                    denial(format!("checkpoint target validation refused: {error:?}"))
+                    WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(format!(
+                        "checkpoint target validation refused: {error:?}"
+                    ))
                 })?;
             Ok(runtime
                 .durability_recovery()
@@ -144,10 +150,12 @@ fn prepare_transition<Schema: ApplicationSchema>(
             ))
         }
         Err(RecoveredCheckpointTransitionError::Refused(refusal)) => {
-            Err(WorthQueryApplicationOpenDenial::Graph(denial(format!(
-                "checkpoint native transition refused without performance: {:?}",
-                refusal.denial()
-            )))
+            Err(WorthQueryApplicationOpenDenial::Graph(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(format!(
+                    "checkpoint native transition refused without performance: {:?}",
+                    refusal.denial()
+                )),
+            )
             .into())
         }
         Err(RecoveredCheckpointTransitionError::SettlementFailed(error)) => {
@@ -205,9 +213,11 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     if cell.confirm_checkpoint_candidate().is_err() {
         return Err(OpenFailure::successor(
             image,
-            WorthQueryApplicationOpenDenial::Graph(denial(
-                "checkpoint activation confirmation refused",
-            )),
+            WorthQueryApplicationOpenDenial::Graph(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint activation confirmation refused",
+                ),
+            ),
         ));
     }
     Ok(image)

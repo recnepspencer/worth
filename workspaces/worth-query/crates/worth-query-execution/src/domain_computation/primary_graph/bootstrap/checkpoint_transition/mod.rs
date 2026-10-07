@@ -3,9 +3,7 @@ mod authoring;
 mod publication;
 mod repair;
 mod selection;
-use super::{
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use super::WorthQueryPrimaryGraphInstallationDenial;
 pub use authoring::WorthQueryOpenAdoptionWriter;
 pub(in crate::domain_computation::primary_graph) use publication::transition_checkpoint;
 pub use repair::WorthQueryOpenAdoptionRecovery;
@@ -22,7 +20,7 @@ impl WorthQueryOpenAdoptionPredecessor {
                 .bytes()
                 .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
         {
-            return Err(denial("checkpoint program predecessor requires exactly 64 lowercase hexadecimal characters"));
+            return Err(WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected("checkpoint program predecessor requires exactly 64 lowercase hexadecimal characters"));
         }
         Ok(Self(rendering.to_owned()))
     }
@@ -60,9 +58,11 @@ impl WorthQueryOpenAdoptionResources {
         .into_iter()
         .any(|bound| bound == 0 || bound == usize::MAX)
         {
-            return Err(denial(
-                "checkpoint transition resources must be finite and nonzero",
-            ));
+            return Err(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint transition resources must be finite and nonzero",
+                ),
+            );
         }
         Ok(Self {
             maximum_selection_work,
@@ -126,11 +126,4 @@ impl<'open, Schema> WorthQueryOpenAdoption<'open, Schema> {
     ) -> bool {
         *rendering == self.predecessor.rendering()
     }
-}
-
-fn denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {
-    WorthQueryPrimaryGraphInstallationDenial::new(
-        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-        subject,
-    )
 }

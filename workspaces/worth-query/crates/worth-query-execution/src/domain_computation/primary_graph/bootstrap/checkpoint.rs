@@ -12,7 +12,7 @@ use crate::domain_computation::execution_runtime::{
 use super::super::{
     application_checkpoint::DecodedApplicationCheckpoint, WorthQueryApplicationInvariantFactories,
     WorthQueryPrimaryGraph, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+    WorthQueryPrimaryGraphInstallationDenial,
 };
 use super::WorthQueryPrimaryGraphPublication;
 
@@ -40,7 +40,7 @@ pub(super) fn primary_graph_for_installation(
         relational_runtime,
         invalidation_resources,
     )
-    .map_err(checkpoint_denial)
+    .map_err(WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected)
 }
 
 impl DecodedApplicationCheckpoint {
@@ -53,14 +53,19 @@ impl DecodedApplicationCheckpoint {
                 .replay()
                 .canonical_commit_envelope(self.bootstrap_commit_id)
         });
-        let envelope = envelope
-            .ok_or_else(|| checkpoint_denial("checkpoint omitted its claimed bootstrap commit"))?;
+        let envelope = envelope.ok_or_else(|| {
+            WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                "checkpoint omitted its claimed bootstrap commit",
+            )
+        })?;
         if envelope.branch_context != super::super::primary_relational_branch_id()
             || envelope.authority_kind() != CanonicalCommitAuthorityKind::VersionedTransaction
         {
-            return Err(checkpoint_denial(
-                "checkpoint bootstrap commit has incompatible authority",
-            ));
+            return Err(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint bootstrap commit has incompatible authority",
+                ),
+            );
         }
         let (principal_binding_count, policy_entity_count, policy_relation_count) =
             publication_row_counts(graph, &envelope.merged_plan.merged_intents)?;
@@ -103,9 +108,11 @@ fn publication_row_counts(
             MutationIntent::Create(CreateIntent::Entity(entity)) => entities.push(entity),
             MutationIntent::Create(CreateIntent::Relation(relation)) => relations.push(relation),
             _ => {
-                return Err(checkpoint_denial(
-                    "checkpoint bootstrap commit contains non-bootstrap mutation intent",
-                ))
+                return Err(
+                    WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                        "checkpoint bootstrap commit contains non-bootstrap mutation intent",
+                    ),
+                )
             }
         }
     }
@@ -147,14 +154,18 @@ fn publication_row_counts(
         })
         .count();
     if principal_binding_count == 0 {
-        return Err(checkpoint_denial(
-            "checkpoint bootstrap commit contains no principal binding",
-        ));
+        return Err(
+            WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                "checkpoint bootstrap commit contains no principal binding",
+            ),
+        );
     }
     if principal_entities.len() != principal_binding_count.saturating_mul(2) {
-        return Err(checkpoint_denial(
-            "checkpoint bootstrap reuses principal row endpoints",
-        ));
+        return Err(
+            WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                "checkpoint bootstrap reuses principal row endpoints",
+            ),
+        );
     }
     Ok((
         principal_binding_count,
@@ -183,20 +194,15 @@ fn verify_bootstrap_indexes(
             let generation =
                 indexes.latest_generation(index_id, &super::super::primary_relational_branch_id());
             if generation.is_none() {
-                return Err(checkpoint_denial(
-                    "checkpoint omitted a bootstrap identity-index generation",
-                ));
+                return Err(
+                    WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                        "checkpoint omitted a bootstrap identity-index generation",
+                    ),
+                );
             }
         }
         Ok(())
     })
-}
-
-fn checkpoint_denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {
-    WorthQueryPrimaryGraphInstallationDenial::new(
-        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-        subject,
-    )
 }
 
 impl WorthQueryExecutionInstallationAuthority {

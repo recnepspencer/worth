@@ -6,7 +6,6 @@ use super::publication::PublishedInstallation;
 use crate::domain_computation::primary_graph::{
     application_output_demand::{WorthQueryReadmittedAcceptedOutput, WorthQueryRecoveredOutputs},
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -31,7 +30,7 @@ pub(super) fn readmit<Schema: ApplicationSchema>(
                     let correspondence = application
                         .installed_producers
                         .readmit_checkpoint_output(&application.installed_schema, &accepted)
-                        .map_err(|detail| Denial::Graph(recovery_rejected(detail)))?;
+                        .map_err(|detail| Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(detail)))?;
                     Ok(WorthQueryReadmittedAcceptedOutput {
                         checkpoint: accepted,
                         correspondence,
@@ -48,11 +47,4 @@ pub(super) fn readmit<Schema: ApplicationSchema>(
         }),
         Err(denial) => Err(started.refused(denial)),
     }
-}
-
-fn recovery_rejected(detail: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {
-    WorthQueryPrimaryGraphInstallationDenial::new(
-        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-        detail,
-    )
 }

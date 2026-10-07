@@ -16,7 +16,6 @@ use crate::domain_computation::primary_graph::program_occurrence::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
 /// The entry after its admission step ran against the installed schema.
@@ -87,21 +86,29 @@ pub(super) fn resume<Schema: ApplicationSchema>(
             .map(|entry| *entry.revision())
             .find(|revision| program_revision_rendering(revision) == recorded.rendering)
             .ok_or_else(|| {
-                Denial::Graph(denial(
-                    "recovered program activation is not in the admitted roster",
-                ))
+                Denial::Graph(
+                    WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                        "recovered program activation is not in the admitted roster",
+                    ),
+                )
             })?;
         activation.publish(recorded.identity).map_err(|_| {
-            Denial::Graph(denial("recovered program activation was already published"))
+            Denial::Graph(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "recovered program activation was already published",
+                ),
+            )
         })?;
         return Ok(HomeStarted::ProgramResumed {
             installed: installed_revision,
         });
     };
     if image_retains_outputs {
-        return Err(Denial::Graph(denial(
-            "checkpoint transition requires accepted-output migration support",
-        ))
+        return Err(Denial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                "checkpoint transition requires accepted-output migration support",
+            ),
+        )
         .into());
     }
     let from = adoption.predecessor.clone();
@@ -111,11 +118,4 @@ pub(super) fn resume<Schema: ApplicationSchema>(
         installed: support.initial_revision,
         successor,
     })
-}
-
-fn denial(subject: &str) -> WorthQueryPrimaryGraphInstallationDenial {
-    WorthQueryPrimaryGraphInstallationDenial::new(
-        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-        subject,
-    )
 }

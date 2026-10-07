@@ -175,6 +175,14 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         }
     }
 
+    /// A checkpoint image or its recorded facts refused recovery.
+    pub(super) fn checkpoint_recovery_rejected(subject: impl Into<String>) -> Self {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            subject,
+        )
+    }
+
     /// Maps failure to resolve a declaration-required installed binding while
     /// constructing an unpublished application root.
     #[doc(hidden)]

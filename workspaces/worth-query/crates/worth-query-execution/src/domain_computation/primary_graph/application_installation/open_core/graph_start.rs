@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::{
     application_contribution::{PendingConditionalRegistry, PendingProducerRegistry},
     application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
     program_occurrence::WorthQueryProgramActivationCell,
-    WorthQueryPrimaryGraphBootstrap,
+    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
@@ -68,9 +68,11 @@ pub(super) fn start<Schema: ApplicationSchema>(
             (graph, HomeStarted::Empty, Vec::new())
         }
         HomeStart::Resume { image, adoption } => {
-            let image = image
-                .decode()
-                .map_err(|detail| Denial::Graph(recovery_rejected(detail)))?;
+            let image = image.decode().map_err(|detail| {
+                Denial::Graph(
+                    WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(detail),
+                )
+            })?;
             let mut graph = authority
                 .prepare_primary_graph_from_native_checkpoint_with_invariants(
                     &runtime,
@@ -105,16 +107,4 @@ pub(super) fn start<Schema: ApplicationSchema>(
         started,
         accepted_outputs,
     })
-}
-
-fn recovery_rejected(
-    detail: impl Into<String>,
-) -> crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-    };
-    WorthQueryPrimaryGraphInstallationDenial::new(
-        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-        detail,
-    )
 }

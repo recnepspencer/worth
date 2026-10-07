@@ -122,7 +122,10 @@ let app = application_installation::declaration(declaration, configuration, limi
       a prepared commit candidate is outstanding (its `Drop` changes record-identity state the
       image reads, `mvcc/publication/candidate.rs:296`). A hold that is returned is therefore
       quiescent and stays so: while it lives, a new admission waits, neither admitted nor denied,
-      and nothing the image reads can change. The owner reads through the hold.
+      and nothing the image reads can change. The hold gives only the reads a close needs, the
+      native checkpoint and the branch names, never the runtime itself: an unadmitted mutator
+      (a retention pass) would change the image after capture, and an owner-admitting call would
+      wait on its own hold.
     - The hold then either seals or is released. `seal` cannot fail, and never drains a live
       settlement, because the hold proved there is none. Dropping the hold, including on unwind,
       releases it and the waiting admissions proceed.
@@ -415,7 +418,9 @@ minutes is split by target and filter first. The old constructors live from D.2.
   public checkpoint surface. Application publication becomes an internal phase that only the
   builder can reach: the direct routes in `E/application_runtime/publication_entry.rs:35,63,88,117`
   and `E/conditional_operation/installation.rs:339` leave the public facade, and their fixture
-  callers move to the builder. Refresh `facades.toml`. BM `-p bank-server`, UM `-p
+  callers move to the builder. With the four public spellings gone, the open publication phase
+  (`E/application_installation/open_core/publication.rs`) calls two internal routes, plain and
+  conditional, that each take the optional time source. Refresh `facades.toml`. BM `-p bank-server`, UM `-p
   worth-ui-query-binding`, QM `-p worth-query-host`, QM `-p worth-query-execution --lib`, QM `-p
   worth-query-certification --all-targets` (check), FX both packages `--all-targets
   --all-features`, BC run. Bank-server gate.

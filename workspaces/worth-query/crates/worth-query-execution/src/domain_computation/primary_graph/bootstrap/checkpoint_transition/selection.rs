@@ -1,5 +1,4 @@
 //! Complete bounded entity revalidation; unsupported retained meaning refuses.
-use super::denial;
 use crate::domain_computation::primary_graph::{
     schema_layout::WorthQueryPrimaryGraphLayout, WorthQueryPrimaryGraphInstallationDenial,
 };
@@ -21,9 +20,11 @@ pub(super) fn select<Schema: ApplicationSchema>(
             .iter()
             .any(|scope| matches!(scope, ApplicationInvariantScopeTarget::Relation(_)))
     }) {
-        return Err(denial(
-            "checkpoint transition does not support relation-scoped invariants",
-        ));
+        return Err(
+            WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                "checkpoint transition does not support relation-scoped invariants",
+            ),
+        );
     }
     let workflow = layout.workflow();
     for kind in [
@@ -41,19 +42,29 @@ pub(super) fn select<Schema: ApplicationSchema>(
     ] {
         let read = branch
             .bounded_entities_of_kind(kind, maximum_work.saturating_sub(work))
-            .map_err(|_| denial("checkpoint transition workflow selection exceeded its bound"))?;
+            .map_err(|_| {
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint transition workflow selection exceeded its bound",
+                )
+            })?;
         work = work.saturating_add(read.work_units());
         if !read.into_records().is_empty() {
-            return Err(denial(
-                "checkpoint transition requires workflow migration dispositions",
-            ));
+            return Err(
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint transition requires workflow migration dispositions",
+                ),
+            );
         }
     }
     let mut entities = Vec::new();
     for kind in layout.application_entity_kinds() {
         let read = branch
             .bounded_entities_of_kind(kind, maximum_work.saturating_sub(work))
-            .map_err(|_| denial("checkpoint transition entity selection exceeded its bound"))?;
+            .map_err(|_| {
+                WorthQueryPrimaryGraphInstallationDenial::checkpoint_recovery_rejected(
+                    "checkpoint transition entity selection exceeded its bound",
+                )
+            })?;
         work = work.saturating_add(read.work_units());
         entities.extend(
             read.into_records()
