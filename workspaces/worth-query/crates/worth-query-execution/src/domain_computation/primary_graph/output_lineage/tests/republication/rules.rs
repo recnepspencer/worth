@@ -61,7 +61,10 @@ fn a_republication_continues_the_suspended_performed_record() {
             &continued.predecessor,
             &suspended.settlement_identity
         ));
-        assert!(Arc::ptr_eq(&continued.facts, &facts));
+        assert!(Arc::ptr_eq(
+            continued.facts.for_comparison().unwrap().facts(),
+            &facts
+        ));
         assert!(Arc::ptr_eq(&continued.consumed_outputs, &consumed));
         assert!(Arc::ptr_eq(&continued.witness, &restored_witness));
 
@@ -72,7 +75,12 @@ fn a_republication_continues_the_suspended_performed_record() {
         ));
         assert!(Arc::ptr_eq(&restored.consumed_outputs, &consumed));
         assert!(Arc::ptr_eq(
-            &restored.observed_source_facts().unwrap(),
+            restored
+                .observed_source_facts()
+                .unwrap()
+                .for_comparison()
+                .unwrap()
+                .facts(),
             &facts
         ));
         // The row is an origin of its own over the re-created entities.
@@ -135,7 +143,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             PARTITION,
             None,
             IDEMPOTENCY_KEY,
-            Arc::clone(&facts),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&facts)),
             None,
             None,
         );
@@ -185,6 +193,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         stage.retain(
             suspended_generation,
             |row| RecordedOutput {
+                computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
                 performed_origin: Some(Arc::clone(&origin)),
                 consumed_outputs: Arc::clone(&consumed),
                 prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
@@ -223,14 +232,19 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
             .expect("an alias continues its origin's proof")
             .expect("the restoration's address takes the republication");
         assert_eq!(continued.facts.len(), 2);
-        assert!(selects(&continued.facts[0], 1));
-        assert!(selects(&continued.facts[1], 3));
+        assert!(selects(&continued.facts.for_comparison().unwrap()[0], 1));
+        assert!(selects(&continued.facts.for_comparison().unwrap()[1], 3));
         assert!(Arc::ptr_eq(&continued.consumed_outputs, &consumed));
 
         let restored = stage.restored();
         assert!(Arc::ptr_eq(
-            &restored.observed_source_facts().unwrap(),
-            &continued.facts
+            restored
+                .observed_source_facts()
+                .unwrap()
+                .for_comparison()
+                .unwrap()
+                .facts(),
+            continued.facts.for_comparison().unwrap().facts()
         ));
         assert!(Arc::ptr_eq(
             restored.native_output_witness_cell().unwrap(),
@@ -262,6 +276,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         stage.retain(
             alias_generation,
             |row| RecordedOutput {
+                computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
                 performed_origin: Some(Arc::clone(&origin)),
                 consumed_outputs: Arc::clone(&consumed),
                 prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
@@ -287,7 +302,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
             panic!("the partition retains one latest output");
         };
         assert!(Arc::ptr_eq(
-            candidate.observed_source_facts.as_ref().unwrap(),
+            candidate.observed_source_facts.as_ref().unwrap().facts(),
             &alias_facts
         ));
         // Selection compares the output half of the alias's fact set, so a

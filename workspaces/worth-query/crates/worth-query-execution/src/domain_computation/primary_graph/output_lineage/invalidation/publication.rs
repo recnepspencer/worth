@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
 pub(in crate::domain_computation::primary_graph) fn register_completed(
     owner: &SourceInvalidationOwner,
     application: &WorthQueryPrimaryGraphCommittedApplication,
+    computation_source: super::super::ComputationSourceEvidence,
     consumed_outputs: &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
@@ -52,6 +53,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .commit_evidence()
         .rebased_source_facts()
         .map_err(|failed| failed.reason)?;
+    let facts = super::super::RetainedSourceFacts::retain(computation_source, facts);
     let read_basis = runtime
         .read_truth()
         .positioned_snapshot(snapshot)
@@ -63,17 +65,12 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
     let upstream =
         collect_consumed_output_upstream(consumed_outputs, admission).map_err(stopped)?;
-    for consumed in consumed_outputs {
-        // The reader compared a restored output in full at the basis it read.
-        // That output gets its row first: a consumer registered over a missing
-        // row would stay pending behind it.
-        if !consumed
-            .establish_restored(owner, admission)
-            .map_err(registration_reason)?
-        {
-            return Err(FullVerificationReason::MissingSettlement);
-        }
-    }
+    // A publication may have evicted its full index. The consumed Native
+    // evidence remains authoritative: compare it after the effect, then
+    // establish its missing rows upstream-first before posting this consumer.
+    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::establish_missing(
+        owner, consumed_outputs, runtime, snapshot, &read_basis, admission,
+    )?;
     let stale_at_read_basis = own_effect_stale_ordinals(application, admission).map_err(stopped)?;
     owner
         .register_settlement(
@@ -103,7 +100,7 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
     owner: &SourceInvalidationOwner,
     predecessor: &RecordedSettlementIdentity,
     identity: Arc<RecordedSettlementIdentity>,
-    facts: Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+    facts: super::super::RetainedSourceFacts,
     consumed_outputs: &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
     output_witness: &super::super::SealedNativeOutputWitness,
     read_basis: worth_relational::facade::runtime::PositionedRelationalSnapshot,

@@ -291,7 +291,7 @@ fn normal_rebase(world: &AuthorizationWorld, facts: Vec<Fact>) -> std::sync::Arc
             exact(super::super::rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                super::super::PreparedSourceFactRebase::admit(facts).unwrap(),
+                super::super::PreparedSourceFactRebase::admit(facts, [].into()).unwrap(),
                 &BTreeSet::new(),
                 true,
                 64,

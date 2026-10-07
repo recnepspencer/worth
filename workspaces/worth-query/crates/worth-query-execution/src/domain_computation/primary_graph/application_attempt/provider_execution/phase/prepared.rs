@@ -127,7 +127,7 @@ struct WorthQueryProviderAttemptPreparation {
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
-    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
+    output_currentness_facts: Option<super::super::super::OutputCurrentnessFacts>,
     workflow_settlement: Option<
         crate::domain_computation::primary_graph::application_attempt::read_set::WorkflowOperationBindingProof,
     >,

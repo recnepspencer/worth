@@ -1,6 +1,6 @@
 use worth_query::facade::{domain, foundation, read, runtime};
 
-use super::super::executors::WorkflowStageExecutor;
+use super::super::executors::materialize_owned_workflow_stage;
 use super::super::{GeometryDomain, ReadFamily, WorkflowRead};
 use super::LineageEvidenceScenario;
 use std::sync::{Arc, OnceLock};
@@ -42,15 +42,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         super::super::execution_resource_support()
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (input, _computed, context, workspace) = application.into_parts();
         let publishes = context.stage().identity() == "publish";
         if publishes {
             let outcomes = self
@@ -98,20 +97,10 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
                 .into_iter()
                 .flatten()
                 .collect();
-            let material = domain::WorthQueryDomainWorkflowStageExecutor::execute_stage(
-                &WorkflowStageExecutor,
-                input,
-                context,
-                workspace,
-            )?;
+            let material = materialize_owned_workflow_stage(input, context, workspace)?;
             Ok(material.with_lineage_outcomes(outcomes))
         } else {
-            domain::WorthQueryDomainWorkflowStageExecutor::execute_stage(
-                &WorkflowStageExecutor,
-                input,
-                context,
-                workspace,
-            )
+            materialize_owned_workflow_stage(input, context, workspace)
         }
     }
 }

@@ -70,13 +70,8 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactReaders {
 }
 
 impl ComputationFactReaders {
-    /// Whether the membership or an item's key read the fact: a change to it
-    /// can change which partitions there are.
-    pub(in crate::domain_computation::primary_graph) fn partitioner(&self) -> bool {
-        self.membership || !self.item_keys.as_slice().is_empty()
-    }
-
     /// The partitions whose gathering read the fact.
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn partitions(&self) -> &[PartitionIdentity] {
         self.partitions.as_slice()
     }
@@ -102,20 +97,6 @@ impl ComputationFactReaders {
                     .copied()
                     .map(ComputationRead::Partition),
             )
-    }
-
-    /// Whether a call a run carried read the fact: the membership, an item's
-    /// key, or a gathering of one of the `skipped` partitions.
-    pub(in crate::domain_computation::primary_graph) fn read_by_carried(
-        &self,
-        skipped: &BTreeSet<PartitionIdentity>,
-    ) -> bool {
-        self.partitioner()
-            || self
-                .partitions
-                .as_slice()
-                .iter()
-                .any(|partition| skipped.contains(partition))
     }
 
     #[cfg(test)]

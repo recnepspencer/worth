@@ -11,7 +11,7 @@ use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 use worth_query_declaration::facade::application_program::ApplicationManagedComputation;
 
-use super::super::attribution_tests::{Computation, Feature, Input, Parity};
+use super::super::attribution_tests::{Computation, Feature, Input, Number, Parity};
 use super::super::{
     ComputationRetention, WorthQueryComputationInputDenial, WorthQueryComputationPartitionMembers,
     WorthQueryComputationPartitionPlan, WorthQueryComputationPartitionView,
@@ -19,12 +19,14 @@ use super::super::{
     WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationDenial,
     WorthQueryPartitionedComputationOwner,
 };
-use super::retained::partitioned_computation_runs_on_this_thread_for_test as runs;
+use super::observed::partitioned_computation_runs_on_this_thread_for_test as runs;
 use super::{
     ComputationPrior, SealedComputationRun, WorthQueryPartitionedComputationFullCause as Cause,
     WorthQueryPartitionedComputationRun as Run,
 };
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_attempt::{
+    ComputationRead, WorthQueryApplicationObservedFact,
+};
 use crate::domain_computation::primary_graph::application_contribution::{
     InstalledProducerEdition, QueryRequestExecution,
 };
@@ -70,7 +72,7 @@ struct Owner {
 
 impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Owner {
     type Operation = TouchAccountOperation;
-    type Item = u64;
+    type Item = Number;
     type Gathered = u64;
     type PartitionResult = u64;
     type Output = u64;
@@ -80,11 +82,11 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         &self,
         _: &mut Reader<'_, '_, '_>,
         _: &Root,
-    ) -> Result<WorthQueryComputationPartitionPlan<u64>, WorthQueryComputationInputDenial<u32>>
+    ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
         Ok(WorthQueryComputationPartitionPlan::keyed(
-            [1, 2, 3, 4],
-            |item| PartitionItemId(*item),
+            [1, 2, 3, 4].map(Number),
+            |item| PartitionItemId(item.0),
         ))
     }
 
@@ -92,23 +94,23 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-        item: &u64,
+        item: &Number,
     ) -> Result<Parity, WorthQueryComputationInputDenial<u32>> {
         if matches!(self.status, StatusRead::ItemKeys) {
             reader.field(account, AccountStatus::reference())?;
         }
-        Ok(Parity(item % self.modulus))
+        Ok(Parity(item.0 % self.modulus))
     }
 
     fn gather(
         &self,
         reader: &mut Reader<'_, '_, '_>,
         account: &Root,
-        partition: WorthQueryComputationPartitionMembers<'_, Parity, u64>,
+        partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         reader.field(account, AccountLabel::reference())?;
         let parity = partition.key().0;
-        let mut sum = partition.items().map(|(_, item)| *item).sum::<u64>();
+        let mut sum = partition.items().map(|(_, item)| item.0).sum::<u64>();
         if matches!(self.status, StatusRead::Gather(status) if status == parity) {
             reader.field(account, AccountStatus::reference())?;
             sum += *self.bump.lock().unwrap();
@@ -164,6 +166,8 @@ fn edition() -> InstalledProducerEdition {
 /// parities it gathered, and the run seal kept, or the seal's refusal.
 struct Attempt {
     outcome: Outcome,
+    /// The work the projection's reader charged.
+    work: crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork,
     runs: Vec<(Run, Option<ExecutionReport>)>,
     gathered: Vec<u64>,
     sealed: Result<Option<SealedComputationRun>, ()>,
@@ -177,7 +181,7 @@ trait TestOwner<Tested: ApplicationManagedComputation<Schema, Feature> = Computa
     Feature,
     Tested,
     Operation = TouchAccountOperation,
-    Item = u64,
+    Item = Number,
     Gathered = u64,
     PartitionResult = u64,
     Output = u64,
@@ -259,7 +263,7 @@ where
     runs();
     ComputationPrior::hand_in_test(prior);
     SealedComputationRun::keep_in_test(None);
-    let (outcome, projection, _) = world
+    let (outcome, projection, work) = world
         .invariant
         .project_admitted_operation(&admission, |reader, root| -> Outcome {
             let execution = QueryRequestExecution::open(placement, request);
@@ -288,6 +292,7 @@ where
     gathered.sort_unstable();
     Attempt {
         outcome,
+        work,
         runs: runs(),
         gathered,
         sealed,
@@ -306,7 +311,12 @@ fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
         let (key, fact) = state
             .facts
             .facts()
-            .find(|(_, _, readers)| readers.partitioner() || readers.partitions().len() == 1)
+            .find(|(_, _, readers)| {
+                let partitioner = readers
+                    .reads()
+                    .any(|read| !matches!(read, ComputationRead::Partition(_)));
+                partitioner || readers.partitions().len() == 1
+            })
             .map(|(key, fact, _)| (key.clone(), fact.clone()))
             .expect("one owner call reads the status");
         let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact else {
@@ -340,9 +350,11 @@ fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
 
 mod carrying;
 mod certified;
+mod collision;
 mod installation;
 mod interruption;
 mod request_memory;
+mod reroute;
 mod tree_memory;
 mod unobservable;
 mod wide;

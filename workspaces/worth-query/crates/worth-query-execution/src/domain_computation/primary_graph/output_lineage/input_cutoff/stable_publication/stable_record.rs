@@ -133,6 +133,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         let facts: Arc<[Fact]> = Arc::from(combined.into_boxed_slice());
         let performed_origin = origin_cell(candidate);
         let recorded = RecordedOutput {
+            computation_source: selected_row.computation_source,
             _retained_capacity: None,
             performed_origin: Some(performed_origin),
             consumed_outputs: Arc::clone(&origin.consumed_outputs),
@@ -148,12 +149,13 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             source_partition_identity: Some(bound.partition_identity()),
             producer_dependency_identity: origin.producer_dependency_identity,
             idempotency_key_identity: origin.idempotency_key_identity,
-            mutable: std::sync::Mutex::new(RecordedOutputMutable {
-                computation: None,
-                verification_requirement: None,
-                observed_source_facts: Some(Arc::clone(&facts)),
-                resources: Some(resources),
-            }),
+            mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
+                None,
+                (Some(Arc::clone(&facts)))
+                    .map(|facts| selected_row.computation_source.retain_facts(facts)),
+                Some(resources),
+                None,
+            )),
         };
         Ok(PreparedStableLineagePublication {
             address: self,

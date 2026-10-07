@@ -1,13 +1,9 @@
-use crate::execution::{execute_parallel_admission_route, execute_preflight_bundle};
 use crate::live::promote_preflight_bundle_to_live;
 use crate::planning::{
-    admit_ordered_collection_frontier_preflight, lower_execution_preflight_to_frontier_plan,
-    lower_frontier_planning_bundle, lower_live_plan_to_frontier_plan,
-    lower_preflight_bundle_to_parallel_admission_routes,
-    lower_preflight_to_parallel_admission_route, FrontierDisjointnessClass, FrontierPlanFamily,
-    FrontierPlanningError, FrontierPlanningInput, FrontierPredictionDriftOutcome,
-    FrontierSurfaceDigest, PacketMergeContract, ParallelAdmissionBundleEvidence,
-    ParallelAdmissionEvidence, PlannedWorkPacketFamily,
+    lower_execution_preflight_to_frontier_plan, lower_frontier_planning_bundle,
+    lower_live_plan_to_frontier_plan, FrontierPlanFamily, FrontierPlanningError,
+    FrontierPlanningInput, FrontierPredictionDriftOutcome, PacketMergeContract,
+    PlannedWorkPacketFamily,
 };
 #[test]
 fn ordered_collection_preflight_lowers_to_stable_frontier_plan() {
@@ -19,6 +15,11 @@ fn ordered_collection_preflight_lowers_to_stable_frontier_plan() {
     let second = lower_execution_preflight_to_frontier_plan(&preflight)
         .expect("repeat lowering should stay stable");
 
+    assert_eq!(
+        first.query_digest(),
+        preflight.plan().query().validated_query_digest(),
+        "ordered preflight lowering must preserve validated query identity exactly"
+    );
     assert_eq!(first.family(), &FrontierPlanFamily::OrderedCollection);
     assert_eq!(
         first.packet_set().packets()[0].family(),
@@ -210,125 +211,4 @@ fn unsupported_bundle_composition_is_distinguishable_from_mixed_basis_denial() {
     .expect_err("mixed execution/live bundle should be rejected as unsupported composition");
 
     assert_eq!(error, FrontierPlanningError::UnsupportedBundleComposition);
-}
-
-#[test]
-fn ordered_collection_lowers_into_parallel_route_with_typed_executor_entrypoint() {
-    let preflight =
-        crate::harness::fixtures::execution_preflights::ordered_collection_without_traversal_preflight();
-    let admitted = admit_ordered_collection_frontier_preflight(preflight.clone())
-        .expect("ordered collection should admit on the ordered frontier lane");
-    let evidence = ParallelAdmissionEvidence::from_surface(
-        preflight.basis().proof().digest().as_str(),
-        FrontierSurfaceDigest::from_label("ordered-collection-disjoint"),
-        FrontierDisjointnessClass::CollectionWindowSurface,
-    );
-
-    let route = lower_preflight_to_parallel_admission_route(&admitted, &evidence)
-        .expect("ordered collection should admit the parallel route");
-    let typed =
-        execute_parallel_admission_route(&route).expect("parallel route entrypoint should execute");
-    let baseline = execute_preflight_bundle(&preflight).expect("baseline execution should succeed");
-
-    assert_eq!(typed.rows(), baseline.rows());
-    assert_eq!(
-        typed.report().result_digest(),
-        baseline.report().result_digest()
-    );
-    assert_eq!(
-        route.query_digest(),
-        preflight.plan().query().validated_query_digest()
-    );
-    assert_eq!(
-        route.report().route_surface_digest(),
-        evidence.surface_digest()
-    );
-    assert_eq!(
-        route.report().disjointness_class(),
-        Some(&FrontierDisjointnessClass::CollectionWindowSurface)
-    );
-    assert_eq!(route.counters().route_parallel_admission_count(), 1);
-}
-
-#[test]
-fn same_basis_parallel_bundle_lowers_into_parallel_admission_routes() {
-    let first =
-        crate::harness::fixtures::execution_preflights::ordered_collection_without_traversal_preflight();
-    let second =
-        crate::harness::fixtures::execution_preflights::ordered_collection_without_traversal_preflight();
-    let first_admitted = admit_ordered_collection_frontier_preflight(first.clone())
-        .expect("first ordered collection should admit");
-    let second_admitted = admit_ordered_collection_frontier_preflight(second.clone())
-        .expect("second ordered collection should admit");
-    let evidence = ParallelAdmissionBundleEvidence::from_routes(
-        FrontierSurfaceDigest::from_label("parallel-bundle-surface"),
-        vec![
-            ParallelAdmissionEvidence::from_surface(
-                first.basis().proof().digest().as_str(),
-                FrontierSurfaceDigest::from_label("parallel-bundle-route-a"),
-                FrontierDisjointnessClass::CollectionWindowSurface,
-            ),
-            ParallelAdmissionEvidence::from_surface(
-                second.basis().proof().digest().as_str(),
-                FrontierSurfaceDigest::from_label("parallel-bundle-route-b"),
-                FrontierDisjointnessClass::CollectionWindowSurface,
-            ),
-        ],
-    )
-    .expect("parallel bundle evidence should carry one shared basis");
-
-    let bundle = lower_preflight_bundle_to_parallel_admission_routes(
-        &[first_admitted, second_admitted],
-        &evidence,
-    )
-    .expect("parallel bundle should lower");
-
-    assert_eq!(bundle.routes().len(), 2);
-    assert_eq!(
-        bundle.bundle_basis_digest(),
-        first.basis().proof().digest().as_str()
-    );
-    assert!(bundle
-        .routes()
-        .iter()
-        .all(|route| route.report().disjointness_class().is_some()));
-}
-
-#[test]
-fn parallel_bundle_rejects_mixed_basis_evidence() {
-    let first =
-        crate::harness::fixtures::execution_preflights::ordered_collection_without_traversal_preflight();
-    let second =
-        crate::harness::fixtures::execution_preflights::alternate_basis_ordered_collection_preflight();
-
-    let error = ParallelAdmissionBundleEvidence::from_routes(
-        FrontierSurfaceDigest::from_label("parallel-bundle-mixed-basis"),
-        vec![
-            ParallelAdmissionEvidence::from_surface(
-                first.basis().proof().digest().as_str(),
-                FrontierSurfaceDigest::from_label("parallel-bundle-mixed-a"),
-                FrontierDisjointnessClass::CollectionWindowSurface,
-            ),
-            ParallelAdmissionEvidence::from_surface(
-                second.basis().proof().digest().as_str(),
-                FrontierSurfaceDigest::from_label("parallel-bundle-mixed-b"),
-                FrontierDisjointnessClass::CollectionWindowSurface,
-            ),
-        ],
-    )
-    .expect_err("mixed-basis parallel bundle evidence must reject");
-
-    match error {
-        crate::frontier_planning::ParallelAdmissionBundleEvidenceError::MixedBasisDigest {
-            expected_basis_digest,
-            found_basis_digest,
-        } => {
-            assert_eq!(
-                expected_basis_digest,
-                first.basis().proof().digest().as_str()
-            );
-            assert_eq!(found_basis_digest, second.basis().proof().digest().as_str());
-        }
-        other => panic!("expected mixed-basis parallel bundle denial, got {other:?}"),
-    }
 }

@@ -45,10 +45,18 @@ pub enum WorthQueryPartitionedComputationDenial<Stopped> {
     /// Two different keys derive this one partition identity. Every run is
     /// denied while both keys are in the input.
     PartitionIdentityCollision { partition: PartitionIdentity },
-    /// The plan named one item identity twice.
+    /// The plan named one item identity twice. When several are, this is
+    /// the least.
     DuplicateItem { item: PartitionItemId },
     /// The input value refused to encode, so it has no digest to name it.
     InputNotEncodable(ApplicationValueEncodeDenial),
+    /// This item refused to encode, so a producer's run has no digest to
+    /// know it by. When several do, this is the one with the least item
+    /// identity.
+    ItemNotEncodable {
+        item: PartitionItemId,
+        denial: ApplicationValueEncodeDenial,
+    },
     /// This item's partition key refused to encode. When several do, this is
     /// the one with the least item identity.
     KeyNotEncodable {
@@ -94,7 +102,6 @@ impl<Stopped> From<ComputationPartitionRoutingDenial>
     fn from(denial: ComputationPartitionRoutingDenial) -> Self {
         match denial {
             ComputationPartitionRoutingDenial::Resource(denial) => Self::Resource(denial),
-            ComputationPartitionRoutingDenial::DuplicateItem(item) => Self::DuplicateItem { item },
             ComputationPartitionRoutingDenial::IdentityCollision(partition) => {
                 Self::PartitionIdentityCollision { partition }
             }

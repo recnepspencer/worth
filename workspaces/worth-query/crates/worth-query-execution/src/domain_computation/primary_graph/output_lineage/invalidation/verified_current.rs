@@ -10,8 +10,6 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-
 use super::super::RecordedSettlementIdentity;
 use super::{
     admission::IndexAdmission,
@@ -113,7 +111,7 @@ impl SourceInvalidationOwner {
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
         identity: &Arc<RecordedSettlementIdentity>,
-        expected_facts: &Arc<[WorthQueryApplicationObservedFact]>,
+        expected_facts: &super::super::ComparableSourceFacts,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<PreparedVerifiedCurrent>, SettlementRegistrationStop> {
         let branch_work = u64::try_from(selected.branch_id().0.len())
@@ -151,7 +149,12 @@ impl SourceInvalidationOwner {
         let Some(row) = state.settlements.get(identity) else {
             return Ok(None);
         };
-        if !row.output_coverage.complete() || !Arc::ptr_eq(&row.facts, expected_facts) {
+        if !row.output_coverage.complete()
+            || !row
+                .facts
+                .for_comparison()
+                .is_some_and(|facts| Arc::ptr_eq(facts.facts(), expected_facts.facts()))
+        {
             return Ok(None);
         }
 
@@ -195,14 +198,13 @@ impl SourceInvalidationOwner {
         if has_pending {
             equality::discharge_selected_downstream(&mut next, identity, admission)?;
         }
-        retention::admit_replacement(&mut next, before, &self.resources, admission)?;
-        admission.bytes(
-            index_capacity::arc_bytes::<BranchMarkRoot>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        let root = retention::admit_live_replacement(
+            image.payload(),
+            next,
+            before,
+            &self.resources,
+            admission,
         )?;
-        let mut root = (**image.payload()).clone();
-        root.current = Arc::new(next);
-        retention::admit_root(&mut root, None, &self.resources, admission)?;
         self.prepare_root_replacement(cell, image, Arc::new(root), admission)
             .map(|prepared| Some(PreparedVerifiedCurrent::LiveEdit(prepared)))
     }

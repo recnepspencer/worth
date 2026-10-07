@@ -112,16 +112,21 @@ fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
         ),
     };
     assert_eq!(
-        super::output_postcondition::complete_output_currentness_facts(vec![
-            comparable.clone(),
-            selection.clone()
-        ],)
+        super::output_postcondition::complete_output_currentness_facts(
+            vec![comparable.clone(), selection.clone()],
+            Vec::new()
+        )
+        .facts()
         .as_ref(),
         &[comparable.clone(), selection]
     );
     assert_eq!(
-        super::output_postcondition::complete_output_currentness_facts(vec![comparable.clone()])
-            .as_ref(),
+        super::output_postcondition::complete_output_currentness_facts(
+            vec![comparable.clone()],
+            Vec::new()
+        )
+        .facts()
+        .as_ref(),
         &[comparable],
     );
 }

@@ -3,6 +3,23 @@ use super::{
     WorthQueryWorkflowStageExecutionContext, WorthQueryWorkflowStageWorkspace,
 };
 
+#[path = "stage_application.rs"]
+mod application;
+#[path = "stage_computation.rs"]
+pub(in crate::domain_installation::operation_execution) mod computation;
+#[path = "stage_preparation.rs"]
+mod preparation;
+
+pub use application::WorthQueryWorkflowStageApplication;
+pub use computation::{
+    WorthQueryWorkflowStageComputationFailure, WorthQueryWorkflowStageComputePayload,
+    WorthQueryWorkflowStageComputed, WorthQueryWorkflowStageTask,
+};
+pub use preparation::{
+    WorthQueryWorkflowPreparationPredecessor, WorthQueryWorkflowStageInputFacts,
+    WorthQueryWorkflowStagePreparation,
+};
+
 #[derive(Debug)]
 pub enum WorthQueryWorkflowValue {
     NotRequired,
@@ -232,6 +249,66 @@ impl WorthQueryWorkflowStageExecutorFailure {
     }
 }
 
+/// One staged contract: inert preparation/computation, then canonical owner application.
+/// Workspace-bound executors implement only `apply`; both inert phases default.
+/// Prepare and compute must be pure functions of their given values: no clock,
+/// static or global state, environment, interior-mutable state shared with the
+/// owner or another member, or effects. Their types remove the executor, context,
+/// and workspace, but cannot remove ambient state. Violating this obligation
+/// makes results depend on execution order and worker count.
+/// Preparation stops at the first canonical preparation failure. Later members
+/// are neither prepared nor computed; earlier members compute exactly once.
+/// Application runs the canonical prefix through the least failure across all
+/// phases, preserving a failing application's partial owner effects.
+///
+/// The combined execution method no longer exists:
+/// ```
+/// use worth_query::facade::domain::*;
+/// fn old<E: WorthQueryDomainWorkflowStageExecutor<(), (), ()>>(
+///     executor: &E, input: WorthQueryWorkflowValue,
+///     context: &WorthQueryWorkflowStageExecutionContext<'_>,
+///     workspace: &mut WorthQueryWorkflowStageWorkspace<'_>,
+///     application: WorthQueryWorkflowStageApplication<'_, '_, '_>,
+/// ) { let _ = executor.apply(application); }
+/// ```
+/// ```compile_fail
+/// use worth_query::facade::domain::*;
+/// fn old<E: WorthQueryDomainWorkflowStageExecutor<(), (), ()>>(
+///     executor: &E, input: WorthQueryWorkflowValue,
+///     context: &WorthQueryWorkflowStageExecutionContext<'_>,
+///     workspace: &mut WorthQueryWorkflowStageWorkspace<'_>,
+///     application: WorthQueryWorkflowStageApplication<'_, '_, '_>,
+/// ) { let _ = executor.execute_stage(input, context, workspace); }
+/// ```
+/// Preparation cannot receive execution authority:
+/// ```
+/// use worth_query::facade::domain::*;
+/// fn leak<E: WorthQueryDomainWorkflowStageExecutor<(), (), ()>>(
+///     executor: &E, context: &WorthQueryWorkflowStageExecutionContext<'_>,
+///     view: WorthQueryWorkflowStagePreparation<'_>,
+/// ) { let _ = E::prepare(view); }
+/// ```
+/// ```compile_fail
+/// use worth_query::facade::domain::*;
+/// fn leak<E: WorthQueryDomainWorkflowStageExecutor<(), (), ()>>(
+///     executor: &E, context: &WorthQueryWorkflowStageExecutionContext<'_>,
+///     view: WorthQueryWorkflowStagePreparation<'_>,
+/// ) { let _ = E::prepare(context); }
+/// ```
+/// The preparation function cannot receive an executor instance (including its
+/// interior state); registration captures the associated function directly.
+/// ```
+/// use worth_query::facade::domain::*;
+/// fn prepare_from_instance<E: WorthQueryDomainWorkflowStageExecutor<(), (), ()>>(
+///     executor: &E, view: WorthQueryWorkflowStagePreparation<'_>,
+/// ) { let _ = E::prepare(view); }
+/// ```
+/// ```compile_fail
+/// use worth_query::facade::domain::*;
+/// fn prepare_from_instance<E: WorthQueryDomainWorkflowStageExecutor<(), (), ()>>(
+///     executor: &E, view: WorthQueryWorkflowStagePreparation<'_>,
+/// ) { let _ = executor.prepare(view); }
+/// ```
 pub trait WorthQueryDomainWorkflowStageExecutor<D, O, F>: Send + Sync + 'static {
     const LOWERING_FAMILY: &'static str;
     const DETERMINISTIC: bool;
@@ -250,11 +327,19 @@ pub trait WorthQueryDomainWorkflowStageExecutor<D, O, F>: Send + Sync + 'static 
         &self,
     ) -> crate::domain_installation::WorthQueryExecutionResourceSupport;
 
-    fn execute_stage(
+    fn prepare(
+        view: WorthQueryWorkflowStagePreparation<'_>,
+    ) -> Result<WorthQueryWorkflowStageTask, WorthQueryWorkflowStageComputationFailure> {
+        Ok(view.task(WorthQueryWorkflowStageComputePayload::Empty))
+    }
+
+    fn compute(task: WorthQueryWorkflowStageTask) -> WorthQueryWorkflowStageComputed {
+        task.pass_through()
+    }
+
+    fn apply(
         &self,
-        input: WorthQueryWorkflowValue,
-        context: &WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut WorthQueryWorkflowStageWorkspace<'_>,
+        application: WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<WorthQueryWorkflowStageMaterial, WorthQueryWorkflowStageExecutorFailure>;
 }
 

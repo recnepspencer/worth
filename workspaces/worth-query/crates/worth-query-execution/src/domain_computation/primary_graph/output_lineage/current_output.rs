@@ -15,10 +15,10 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnessRead {
+    pub(in crate::domain_computation::primary_graph) _computation: super::CurrentComputation,
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) facts:
-        Arc<[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact]>,
+    pub(in crate::domain_computation::primary_graph) facts: super::ComparableSourceFacts,
     pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The facts and the witness are everything this output depends on.
@@ -276,14 +276,17 @@ fn retained_currentness_read(
         .ok_or(())?;
     let facts = recorded
         .observed_source_facts()
+        .and_then(|facts| facts.for_comparison())
         .filter(|facts| !facts.is_empty());
     let Some(facts) = facts else { return Ok(None) };
+    let computation = facts.computation();
     let origin = recorded
         .performed_origin
         .as_ref()
         .and_then(|cell| cell.get())
         .unwrap_or(recorded);
     Ok(Some(RetainedOutputCurrentnessRead {
+        _computation: computation,
         identity: Arc::clone(&recorded.settlement_identity),
         facts,
         native_output_witness: origin.native_output_witness_cell().map(Arc::clone),

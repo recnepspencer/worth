@@ -1,12 +1,14 @@
-//! The mutation that edits one fact of the entry sets: a set's weight, or an
-//! entry's region, value or fault.
+//! The mutation that edits the entry sets: one fact of them, a set's weight
+//! or an entry's region, value or fault; or their entries, made, deleted or
+//! trading numbers.
 
 use std::marker::PhantomData;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_operation_creates, worth_query_operation_deletes, worth_query_operation_links,
+    worth_query_operation_reads, worth_query_operation_unlinks, worth_query_operation_writes,
     worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
@@ -15,10 +17,12 @@ use worth_query_host::facade::primary_graph::{
 };
 
 use super::facts::{
-    EntryFault, EntryNumber, EntryRegion, EntrySet, EntrySetKey, EntrySetWeight, EntryValueBits,
-    SetEntry,
+    EntryFault, EntryNumber, EntryRegion, EntrySet, EntrySetKey, EntrySetMember, EntrySetWeight,
+    EntryValueBits, EntryWork, SetEntry,
 };
 use super::*;
+
+mod membership;
 
 /// Which fact an edit changes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -30,6 +34,13 @@ pub(super) enum EntryFact {
     Value,
     /// The entry's fault, to the code the edit holds.
     Fault,
+    /// A new entry of the edit's number, value, region and work, in each of
+    /// the edit's sets.
+    Create,
+    /// The entry, and its place in every set.
+    Delete,
+    /// The entry's number, traded with the entry numbered `other`.
+    Swap,
 }
 
 impl EntryFact {
@@ -40,6 +51,9 @@ impl EntryFact {
             Self::Region => 1,
             Self::Value => 2,
             Self::Fault => 3,
+            Self::Create => 4,
+            Self::Delete => 5,
+            Self::Swap => 6,
         }
     }
 
@@ -49,7 +63,10 @@ impl EntryFact {
             1 => Self::Region,
             2 => Self::Value,
             3 => Self::Fault,
-            _ => unreachable!("an edit holds one of the four fact codes"),
+            4 => Self::Create,
+            5 => Self::Delete,
+            6 => Self::Swap,
+            _ => unreachable!("an edit holds one of the seven fact codes"),
         }
     }
 }
@@ -63,6 +80,14 @@ pub(super) struct EntryEdit {
     pub(super) entry: u64,
     fact: u64,
     pub(super) value: u64,
+    /// A created entry's region, or the number a swap trades with.
+    other: u64,
+    /// A created entry's work.
+    work: u64,
+    /// The sets a created entry joins.
+    sets: Vec<String>,
+    /// The command that makes the edit, which names the entry it creates.
+    command: u64,
 }
 
 #[cfg(feature = "test-query-execution-observer")]
@@ -74,6 +99,37 @@ impl EntryEdit {
             entry,
             fact: fact.code(),
             value,
+            other: 0,
+            work: 0,
+            sets: Vec::new(),
+            command: 0,
+        }
+    }
+
+    /// The edit as the command numbered `command` makes it.
+    pub(super) fn commanded(self, command: u64) -> Self {
+        Self { command, ..self }
+    }
+
+    /// A new entry numbered `entry` in each of `sets`.
+    pub(super) fn create(sets: &[&str], entry: u64, region: u32, value: u64, work: u64) -> Self {
+        Self {
+            other: u64::from(region),
+            work,
+            sets: sets.iter().map(|set| (*set).to_owned()).collect(),
+            ..Self::new("", entry, EntryFact::Create, value)
+        }
+    }
+
+    pub(super) fn delete(entry: u64) -> Self {
+        Self::new("", entry, EntryFact::Delete, 0)
+    }
+
+    /// The entries numbered `entry` and `other` trade numbers.
+    pub(super) fn swap(entry: u64, other: u64) -> Self {
+        Self {
+            other,
+            ..Self::new("", entry, EntryFact::Swap, 0)
         }
     }
 }
@@ -83,10 +139,16 @@ worth_query_structured_value_binding!(pub(super) EntryEditInputBinding for Entry
 });
 worth_query_operation!(pub(super) EditEntry for Schema: TopologySchemaBinding, input EntryEditInputBinding);
 worth_query_operation_reads!(EditEntry => [
-    Body, BodyKey, EntrySet, EntrySetKey, EntrySetWeight, SetEntry, EntryNumber, EntryRegion,
-    EntryValueBits, EntryFault,
+    Body, BodyKey, EntrySet, EntrySetKey, EntrySetWeight, EntrySetMember, SetEntry, EntryNumber,
+    EntryRegion, EntryValueBits, EntryFault,
 ]);
-worth_query_operation_writes!(EditEntry => [EntrySetWeight, EntryRegion, EntryValueBits, EntryFault]);
+worth_query_operation_writes!(EditEntry => [
+    EntrySetWeight, EntryNumber, EntryRegion, EntryValueBits, EntryWork, EntryFault,
+]);
+worth_query_operation_creates!(EditEntry => [SetEntry]);
+worth_query_operation_deletes!(EditEntry => [SetEntry]);
+worth_query_operation_links!(EditEntry => [EntrySetMember]);
+worth_query_operation_unlinks!(EditEntry => [EntrySetMember]);
 
 pub(super) struct EntryEditBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -102,10 +164,19 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for EntryE
     }
 }
 
-/// The entity an edit changes.
+/// The entities an edit changes.
 pub(super) enum EditTarget<Schema> {
     Set(WorthQueryInvariantMutationTarget<Schema, EntrySet>),
     Entry(WorthQueryInvariantMutationTarget<Schema, SetEntry>),
+    /// The sets a new entry joins.
+    Create(Vec<WorthQueryInvariantMutationTarget<Schema, EntrySet>>),
+    /// The entry, and the sets it leaves.
+    Delete(
+        WorthQueryInvariantMutationTarget<Schema, SetEntry>,
+        Vec<WorthQueryInvariantMutationTarget<Schema, EntrySet>>,
+    ),
+    /// The entries that trade numbers, each with the number it takes.
+    Swap([(WorthQueryInvariantMutationTarget<Schema, SetEntry>, u64); 2]),
 }
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
@@ -134,7 +205,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.entry-edit-command.v1";
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 1, 0, 0, 1, 0),
+            ApplicationCandidateCardinalityCeiling::fixed(1, 1, 2, 2, 5, 0),
             ApplicationCandidateResourceCeiling::bounded(1024, 4096),
         );
 
@@ -179,6 +250,12 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
             // observed, and one nothing read is refused at proposal binding,
             // so the edit reads the fact it writes.
             let fact = EntryFact::of_code(input.fact);
+            if matches!(
+                fact,
+                EntryFact::Create | EntryFact::Delete | EntryFact::Swap
+            ) {
+                return membership::decide(input, fact, reader);
+            }
             if fact == EntryFact::Weight {
                 let set = reader.resolve_entity(EntrySetKey::reference(), input.set.clone())?;
                 reader.field(&set, EntrySetWeight::reference())?;
@@ -190,8 +267,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
                 EntryFact::Value => reader
                     .field(&entry, EntryValueBits::reference())
                     .map(|_| ())?,
-                EntryFact::Fault => reader.field(&entry, EntryFault::reference()).map(|_| ())?,
-                EntryFact::Weight => {}
+                _ => reader.field(&entry, EntryFault::reference()).map(|_| ())?,
             }
             Ok(EditTarget::Entry(reader.mutation_target(&entry)?))
         })();
@@ -230,9 +306,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
                     EntryFact::Fault => {
                         writer.write_field(&entry, EntryFault::reference(), input.value)
                     }
-                    EntryFact::Weight => unreachable!("a weight edit targets its set"),
+                    _ => unreachable!("an entry edit changes one of its facts"),
                 }
             }),
+            membership => return membership::build(input, membership, writer),
         };
         match written {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
@@ -263,14 +340,21 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
         .operation_read_entity(operation, EntrySet::reference())
         .operation_read_field(operation, EntrySetKey::reference())
         .operation_read_field(operation, EntrySetWeight::reference())
+        .operation_read_relation(operation, EntrySetMember::reference())
         .operation_read_entity(operation, SetEntry::reference())
         .operation_read_field(operation, EntryNumber::reference())
         .operation_read_field(operation, EntryRegion::reference())
         .operation_read_field(operation, EntryValueBits::reference())
         .operation_read_field(operation, EntryFault::reference())
         .operation_write(operation, EntrySetWeight::reference())
+        .operation_write(operation, EntryNumber::reference())
         .operation_write(operation, EntryRegion::reference())
         .operation_write(operation, EntryValueBits::reference())
+        .operation_write(operation, EntryWork::reference())
         .operation_write(operation, EntryFault::reference())
+        .operation_create(operation, SetEntry::reference())
+        .operation_delete(operation, SetEntry::reference())
+        .operation_link(operation, EntrySetMember::reference())
+        .operation_unlink(operation, EntrySetMember::reference())
         .application_mutation_binding::<EntryEditBinding<Schema>>()
 }

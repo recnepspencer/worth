@@ -41,7 +41,7 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
                 1_000_000,
                 64 * 1_024 * 1_024,
                 128 * 1_024 * 1_024,
-                128,
+                64,
             ),
         )
         .expect("the Query invalidation installation is valid"),

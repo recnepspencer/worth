@@ -9,7 +9,7 @@ use super::ComponentPartitioner;
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::KernelContext,
-    partition::{PartitionItemId, PartitionUpdateDenial, PartitionWork, SourceFactId},
+    partition::{PartitionItemId, PartitionUpdateDenial, PartitionWork},
 };
 
 // Candidate parent links, new routes, and rebuilt membership sets coexist
@@ -31,24 +31,19 @@ impl ComponentPartitioner {
         lease: &ExecutionResourceLease<'_>,
         context: &mut KernelContext<'_, '_>,
         item: PartitionItemId,
-        fact: SourceFactId,
     ) -> Result<PartitionWork, PartitionUpdateDenial> {
         context.checkpoint(0).map_err(PartitionUpdateDenial::Stop)?;
-        if self.facts.get(&item) == Some(&fact) {
+        if self.routes.contains_key(&item) {
             return Ok(PartitionWork::default());
         }
-        let bytes = if self.facts.contains_key(&item) {
-            0
-        } else {
-            u64::try_from(MEMBER_SCRATCH_BYTES)
-                .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ChargedBytesOverflow))?
-        };
+        let bytes = u64::try_from(MEMBER_SCRATCH_BYTES)
+            .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ChargedBytesOverflow))?;
         let _reservation = lease
             .reserve_retained_memory(bytes)
             .map_err(PartitionUpdateDenial::Admission)?;
         let _activity = crate::backend::enter_retained_memory(bytes);
         context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
-        Ok(self.upsert_item(item, fact))
+        Ok(self.upsert_item(item))
     }
 
     /// Checked incremental merge. Every losing-island member is admitted
@@ -163,7 +158,6 @@ impl ComponentPartitioner {
             self.adjacent.get_mut(&neighbor).unwrap().remove(&item);
         }
         self.routes.remove(&item);
-        self.facts.remove(&item);
         work.items_rerouted += 1;
         Ok(work)
     }

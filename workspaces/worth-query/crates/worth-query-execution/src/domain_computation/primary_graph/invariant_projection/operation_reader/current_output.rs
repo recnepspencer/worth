@@ -1,5 +1,7 @@
 use super::super::WorthQueryInvariantEntityIdentity;
 
+mod certified_correspondence;
+pub(in crate::domain_computation::primary_graph::invariant_projection) use certified_correspondence::CertifiedOutputCorrespondence;
 mod resolution;
 
 /// Which current entity a producer's output family holds for a producer.
@@ -41,6 +43,8 @@ pub enum WorthQueryCurrentOutputDenialKind {
     ForeignIdentity,
     /// The selection exceeded the projection's work budget.
     WorkBudgetExceeded,
+    /// The read could not retain its evidence within the installed capacity.
+    RetentionCapacityExhausted,
     /// The request was cancelled or ran out of time while a recorded
     /// output's consumed evidence was verified.
     Interrupted(worth_relational::facade::mvcc::RelationalOperationInterruption),

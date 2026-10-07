@@ -17,7 +17,7 @@ impl ConsumedOutputEvidence {
     /// has changed.
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn verify_restored_root_at(
         correspondence: &WorthQueryApplicationOutputCorrespondence,
-        source_facts: &[WorthQueryApplicationObservedFact],
+        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         layout: &WorthQueryPrimaryGraphLayout,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,

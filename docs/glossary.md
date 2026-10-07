@@ -9,11 +9,18 @@ explained). Rust names are given where a type embodies the term.
 
 **Jump to:** [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) ·
 [H](#h) · [I](#i) · [L](#l) · [M](#m) · [O](#o) · [P](#p) · [R](#r) ·
-[S](#s) · [T](#t) · [W](#w)
+[S](#s) · [T](#t) · [V](#v) · [W](#w)
 
 ---
 
 ## A
+
+**Admission**
+: The owner's check that a request or value may proceed *now*, against
+  current facts. For a Query request it runs in order: select the branch,
+  resolve the principal, resolve the scope, authorize, bind the source and
+  idempotency. Admission is never carried between executions.
+  **Not** performance: *admitted* does not mean *performed*.
 
 **Adoption**
 : Moving one exact product branch from the program revision it runs to a
@@ -24,13 +31,6 @@ explained). Rust names are given where a type embodies the term.
   **Not** an automatic upgrade when the host changes.
   **See** [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch)
   and [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption).
-
-**Admission**
-: The owner's check that a request or value may proceed *now*, against
-  current facts. For a Query request it runs in order: select the branch,
-  resolve the principal, resolve the scope, authorize, bind the source and
-  idempotency. Admission is never carried between executions.
-  **Not** performance: *admitted* does not mean *performed*.
 
 **Aftermath**
 : What can happen to a committed change afterward. Every operation declares a
@@ -164,6 +164,11 @@ explained). Rust names are given where a type embodies the term.
 : The most an operation may change, as declared (`WorthQueryOperationTouchContract`).
   **Not** a record of what changed. **See** *Touched records*.
 
+**Decomposition**
+: An execution-layer pattern that solves partition interiors, reduces their
+  interface contributions, solves the interface, and substitutes its solution
+  back into the interiors. Each stage has a distinct failure and cost boundary.
+
 **Demand (output demand)**
 : A request that a declared program output be produced. It is advanced by
   fresh requests until it settles.
@@ -180,6 +185,12 @@ explained). Rust names are given where a type embodies the term.
   a fork source. Copying it weakens freshness. A descriptor carries no
   authority and cannot act by itself.
 
+**Determinism contract**
+: The declared comparison rule under which an execution result is independent
+  of placement. The default is canonical bitwise equality; an installed
+  equivalence contract supplies a predicate. Charged work follows canonical
+  settlement, independent of worker count. Physical metrics can differ.
+
 **Digest**
 : A SHA-256 identity derived from a canonical basis through Foundational
   (`CanonicalDigestId`). A digest is an address, never permission.
@@ -195,6 +206,11 @@ explained). Rust names are given where a type embodies the term.
   comes in strengths, for example planning receipt, then executed receipt,
   then completed receipt. A weaker claim never passes as a stronger one.
   Evidence is not authority.
+
+**Execution authority**
+: The process owner of computation workers and the charged-memory ledger.
+  It admits execution policy and issues request leases. A second authority
+  cannot be constructed in the same process.
 
 **External effect**
 : A consequence outside WORTH, such as sending an email or calling a payment
@@ -254,7 +270,18 @@ explained). Rust names are given where a type embodies the term.
 : A rule that must hold over committed state. An installed invariant is
   checked on the candidate before commit.
 
+**Island**
+: At the execution layer, a connected component of items under a declared
+  coupling relation. A component partitioner groups it into a partition and
+  uses its least item identity as the component identity.
+
 ## L
+
+**Lease**
+: A runtime hold issued by an owner. An execution lease carries worker,
+  charged-memory, and work ceilings from admitted policy; descendants can
+  narrow them and share ancestor and process accounting. A residency lease
+  instead keeps a selected basis available. Neither grants mutation authority.
 
 **Lineage**
 : (1) A continuity claim about evidence (attested, replay-derived, restored,
@@ -304,6 +331,18 @@ explained). Rust names are given where a type embodies the term.
   application meaning.
 
 ## P
+
+**Partition (execution)**
+: A data-identified unit dispatched to one kernel and settled in canonical
+  order. Its identity does not depend on the worker. It is distinct from a
+  Signal observation scope selected by `whole_partition`, which matches a
+  subtree of scope paths.
+
+**Partitioner**
+: The owner of the rule assigning stable item identities to execution
+  partitions. An application computation plan offers keyed grouping. The
+  execution layer also offers a component partitioner for connected items.
+  Worker placement does not define partition membership.
 
 **Performed**
 : The action ran. For a commit, the branch reference moved. Performed evidence
@@ -369,9 +408,10 @@ explained). Rust names are given where a type embodies the term.
 
 **Required set**
 : The outputs still owed: those with an open demand, and those a performed
-  operation requires (`start_required_outputs`). One `advance` progresses the
-  dirty and pending-upstream members of the set, in dependency order, within
-  its budget. Closing a demand removes its outputs.
+  operation requires (`start_required_outputs`). An `advance` progresses the
+  caller's dependency chain and queued required work within its budget.
+  Membership can have several holders; closing one demand does not remove
+  an output still required by another.
 
 **Residency (retention)**
 : Keeping a basis available in memory under a lease. A resident basis is not
@@ -380,8 +420,8 @@ explained). Rust names are given where a type embodies the term.
 **Reverse index**
 : Query's index from consumed facts (field revisions, index keys, selection
   and absence facts) to the settlements that read them. It is filled when a
-  settlement is recorded and consulted by *marking*, so a commit's cost follows
-  what it touched, never the number of settlements.
+  settlement is recorded and consulted by *marking*, so marking selects matched
+  settlements and their downstream closure without scanning every settlement.
 
 ## S
 
@@ -393,6 +433,12 @@ explained). Rust names are given where a type embodies the term.
   **Not** `WorthQueryRequestScope`, which carries only a request's deadline
   and cancellation token.
   **See** [Build an Application §5](build-an-application.md#5-run-the-program).
+
+**Scope path**
+: A hierarchical address that refines an affected region. Signal subscriptions
+  can select an exact path or its subtree. A whole-partition subscription
+  selects the subtree under one partition segment; this observation scope is
+  distinct from an execution partition.
 
 **Settled**
 : Performed, and also made durable and published by Query. A commit that
@@ -406,13 +452,15 @@ explained). Rust names are given where a type embodies the term.
 : A placement unit for storage or execution. Its placement does not determine
   which facts changed or which consumers require recomputation.
 
-**Scope path**
-: A precision granule within a touched record. The record supplies the cause;
-  its scope path narrows the affected region.
-
 **Signal**
 : The runtime for deterministic, incremental derived computation. Signal
   decides whether an output changed meaningfully. It is never truth.
+
+**Span**
+: An execution-layer cost measuring the structural length of charged dependent
+  computation. Sequential stages add span; independent branches take their
+  maximum; nested work adds to its calling branch. Span is not wall-clock
+  duration. **See** [work and span](how-it-works.md#99-resources-execution-and-cost).
 
 **Stale**
 : The basis an operation relied on is no longer current. In Relational, any
@@ -460,6 +508,11 @@ explained). Rust names are given where a type embodies the term.
 : A zero-sized value proving the caller is in an authorized lane
   (`AuthorityWitness`). A witness proves the lane, not which runtime
   instance.
+
+**Work**
+: Charged operation units accumulated in canonical settlement order. Failed
+  execution charges its accepted canonical prefix; discarded later work does
+  not change that total. Work is not elapsed time or total process memory.
 
 **Workflow**
 : A branch-local, versioned graph of steps (operations, assessments,

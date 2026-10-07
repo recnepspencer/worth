@@ -19,11 +19,7 @@ pub(super) fn encode_profile(
 
 pub(super) fn decode_profile(
     cursor: &mut super::CheckpointCursor<'_>,
-    version: u16,
 ) -> Result<Option<WorthQueryProducerDemandResources>, String> {
-    if version == 3 {
-        return Ok(None);
-    }
     let posture = cursor.next_byte()?;
     let work = cursor.next_u64()?;
     let bytes = cursor.next_u64()?;

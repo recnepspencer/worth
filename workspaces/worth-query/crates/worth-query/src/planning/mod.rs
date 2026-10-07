@@ -33,20 +33,16 @@ pub(crate) use selection::{
 
 #[cfg(test)]
 pub(crate) use frontier_lowering::{
-    FrontierBundleRoutePlanningError, FrontierCounterSnapshot, FrontierDisjointnessClass,
-    FrontierParityBundle, FrontierPlanFamily, FrontierPlanningError, FrontierPlanningInput,
-    FrontierPredictionDriftOutcome, FrontierPreflightAdmissionError, FrontierRoutePlanningError,
-    FrontierSurfaceDigest, PacketMergeContract, ParallelAdmissionBundleEvidence,
-    ParallelAdmissionEvidence, ParallelAdmissionRoute, PlannedRouteFamily, PlannedWorkPacketFamily,
-    SerialFallbackBundleEvidence, SerialFallbackEvidence, SerialFallbackReason,
-    SerialFallbackRoute,
+    FrontierBundleRoutePlanningError, FrontierCounterSnapshot, FrontierParityBundle,
+    FrontierPlanFamily, FrontierPlanningError, FrontierPlanningInput,
+    FrontierPredictionDriftOutcome, FrontierRoutePlanningError, FrontierSurfaceDigest,
+    PacketMergeContract, PlannedRouteFamily, PlannedWorkPacketFamily, SerialFallbackBundleEvidence,
+    SerialFallbackEvidence, SerialFallbackReason, SerialFallbackRoute,
 };
 
 #[cfg(test)]
 pub(crate) use frontier_lowering::{
-    admit_bounded_materialization_frontier_preflight, admit_ordered_collection_frontier_preflight,
-    lower_execution_preflight_to_frontier_plan, lower_frontier_planning_bundle,
-    lower_live_plan_to_frontier_plan, lower_preflight_bundle_to_parallel_admission_routes,
-    lower_preflight_bundle_to_serial_fallback_routes, lower_preflight_to_parallel_admission_route,
-    lower_preflight_to_serial_fallback_route,
+    admit_bounded_materialization_frontier_preflight, lower_execution_preflight_to_frontier_plan,
+    lower_frontier_planning_bundle, lower_live_plan_to_frontier_plan,
+    lower_preflight_bundle_to_serial_fallback_routes, lower_preflight_to_serial_fallback_route,
 };

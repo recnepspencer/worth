@@ -11,10 +11,14 @@
 //! enters through it.
 //!
 //! An outcome never depends on reuse. Carried charges replay in a full run's
-//! order, membership, item keys, gathers and kernels by identity, then the
-//! combines, so a ceiling names the partition a full run would name.
+//! order among the calls made again, membership, item keys, gathers and
+//! kernels by identity over the run's own items and partitions, then the
+//! combines of the run's own tree, so a ceiling names the partition a full
+//! run would name.
 
 mod next_tree;
+mod observed;
+mod prepare;
 mod recording;
 mod retained;
 mod tree_update;
@@ -24,15 +28,11 @@ use std::sync::Arc;
 
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
-use worth_query_declaration::facade::application_program::{
-    ApplicationFeature, ApplicationManagedComputation,
-};
-use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) use next_tree::{ComputedIncremental, PreparedIncremental};
-pub(super) use recording::{observe_unretained, FullRecording};
 #[cfg(feature = "test-query-execution-observer")]
-pub use retained::partitioned_computation_runs_on_this_thread_for_test;
+pub use observed::partitioned_computation_runs_on_this_thread_for_test;
+pub(super) use recording::{observe_unretained, FullRecording};
 pub use retained::WorthQueryPartitionedComputationFullCause;
 #[cfg(any(test, feature = "test-query-execution-observer"))]
 pub use retained::WorthQueryPartitionedComputationRun;
@@ -44,14 +44,7 @@ pub(in crate::domain_computation) use retained::{
 };
 
 use self::retained::{RetainedBasis, RetainedPartitions, TypedPrior};
-use super::super::request_execution::QueryRequestExecution;
-use super::compute::Denial;
-use super::gather_memory::GatheredMemory;
 use super::remaining_work::RemainingWork;
-use super::{
-    InputValue, WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
-    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
-};
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationRead, FactMovement, Movement, WorthQueryApplicationFactKey,
 };
@@ -92,10 +85,16 @@ pub(super) enum Begun<Key, Item, Reduced> {
 /// The basis a full run retains its state under, opaque outside this module.
 pub(super) struct RetainedBasisToken(RetainedBasis);
 
-/// A comparison that found the membership and every key unchanged.
+/// A comparison of a retained run under the same basis: which of its calls
+/// read a fact that moved, and the facts each call read.
 pub(super) struct IncrementalRun<Key, Item, Reduced> {
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
+    /// Whether a fact the membership read moved.
+    membership_moved: bool,
+    /// The items a fact their key read moved for.
+    moved_items: BTreeSet<PartitionItemId>,
+    /// The partitions a fact their gathering read moved for.
     marked: BTreeSet<PartitionIdentity>,
     membership: Vec<WorthQueryApplicationFactKey>,
     item_keys: BTreeMap<PartitionItemId, Vec<WorthQueryApplicationFactKey>>,
@@ -164,6 +163,8 @@ where
             state: Arc::clone(&retained),
             typed,
         },
+        membership_moved: false,
+        moved_items: BTreeSet::new(),
         marked: BTreeSet::new(),
         membership: Vec::new(),
         item_keys: BTreeMap::new(),
@@ -177,16 +178,19 @@ where
             },
             Err(_) => KeyMovement::NotObservable,
         };
-        if movement != KeyMovement::Unchanged {
-            if readers.partitioner() {
-                return full(
-                    run.basis,
-                    WorthQueryPartitionedComputationFullCause::PartitionerRebuilt,
-                );
-            }
-            run.marked.extend(readers.partitions().iter().copied());
-        }
+        let moved = movement != KeyMovement::Unchanged;
         for read in readers.reads() {
+            if moved {
+                match read {
+                    ComputationRead::Membership => run.membership_moved = true,
+                    ComputationRead::ItemKey(item) => {
+                        run.moved_items.insert(item);
+                    }
+                    ComputationRead::Partition(partition) => {
+                        run.marked.insert(partition);
+                    }
+                }
+            }
             let keys = match read {
                 ComputationRead::Membership => &mut run.membership,
                 ComputationRead::ItemKey(item) => run.item_keys.entry(item).or_default(),
@@ -198,101 +202,6 @@ where
         }
     }
     Begun::Incremental(run)
-}
-
-impl<Key, Item, Reduced> IncrementalRun<Key, Item, Reduced>
-where
-    Key: Send + Sync + 'static,
-{
-    /// Replays the membership, every item's key and every unmarked gathering
-    /// from the retained run, and gathers the marked partitions again.
-    ///
-    /// A carried call charges what it charged, where it charged it, and its
-    /// facts and reached entities enter the attempt as its reads. A call the
-    /// remaining work would not pass is made instead, and fails as a full run
-    /// fails. `remaining_work` is what the digest left of the declared work.
-    pub(super) fn prepare<Schema, Feature, Computation, Owner>(
-        self,
-        owner: &Owner,
-        reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
-        execution: &QueryRequestExecution<'_>,
-        input: &InputValue<Schema, Feature, Computation>,
-        mut remaining_work: RemainingWork,
-        declared_bytes: u64,
-    ) -> Result<
-        PreparedIncremental<Key, Item, Reduced, Owner::Gathered>,
-        Denial<Schema, Feature, Computation, Owner>,
-    >
-    where
-        Schema: ApplicationSchema,
-        Feature: ApplicationFeature<Schema>,
-        Computation: ApplicationManagedComputation<Schema, Feature, Partition = Key>,
-        Owner: WorthQueryPartitionedComputationOwner<
-            Schema,
-            Feature,
-            Computation,
-            Item = Item,
-            PartitionResult = Reduced,
-        >,
-    {
-        let retained = Arc::clone(&self.prior.typed);
-        if reader.carry(&COMPARATOR, &retained.membership) {
-            enter(reader, &self.membership, ComputationRead::Membership);
-        } else {
-            reader.attributed(ComputationRead::Membership, |reader| {
-                owner.partitions(&mut WorthQueryComputationReader::lend(reader), input)
-            })?;
-        }
-        for (item, call) in retained.item_keys.iter() {
-            let read = ComputationRead::ItemKey(*item);
-            if reader.carry(&COMPARATOR, &call.charge) {
-                enter(reader, self.item_keys.get(item).into_iter().flatten(), read);
-            } else {
-                reader.attributed(read, |reader| {
-                    owner.partition_key(
-                        &mut WorthQueryComputationReader::lend(reader),
-                        input,
-                        &retained.items[item],
-                    )
-                })?;
-            }
-            remaining_work
-                .spend(Some(call.declared_units))
-                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-        }
-        let mut prepared =
-            PreparedIncremental::new(remaining_work, declared_bytes, self.basis, self.prior);
-        for (identity, partition) in &retained.partitions {
-            let read = ComputationRead::Partition(*identity);
-            if !self.marked.contains(identity) && reader.carry(&COMPARATOR, &partition.gather) {
-                enter(
-                    reader,
-                    self.partitions.get(identity).into_iter().flatten(),
-                    read,
-                );
-                continue;
-            }
-            let mut memory = GatheredMemory::new(execution, declared_bytes)?;
-            memory.before_gather(execution)?;
-            let (gathered, charge) = reader.measured(read, |reader| {
-                owner.gather(
-                    &mut WorthQueryComputationReader::lend(reader),
-                    input,
-                    WorthQueryComputationPartitionMembers::new(
-                        *identity,
-                        &partition.key,
-                        &partition.members,
-                        &retained.items,
-                    ),
-                )
-            });
-            let gathered = gathered.map_err(|denial| {
-                WorthQueryPartitionedComputationDenial::gathering(*identity, denial)
-            })?;
-            prepared.gathered(*identity, partition, gathered, charge, memory)?;
-        }
-        Ok(prepared)
-    }
 }
 
 #[cfg(test)]

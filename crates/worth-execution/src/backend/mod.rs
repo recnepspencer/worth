@@ -1,12 +1,16 @@
 mod admission;
+mod custody;
+mod evaluation;
+mod input;
 mod meter;
 mod native;
 mod ordered;
+mod panic_boundary;
 mod perturbation;
 mod port;
 mod prepared;
+mod run;
 mod scope;
-mod serial;
 mod settlement;
 
 pub(crate) use admission::execution_memory_requirement;
@@ -22,7 +26,7 @@ pub(crate) use ordered::{run_ordered, run_ordered_until, OrderedOutcome, Ordered
 pub use port::BatchStop;
 pub(crate) use port::{
     run_checked_batch, run_checked_batch_prepared, run_checked_batch_taking,
-    run_checked_batch_with_charge, BackendKind, BatchOutcome,
+    run_checked_batch_with_charge, run_owned_batch_taking, BackendKind, BatchOutcome,
 };
 pub(crate) use prepared::{prepare_batch_resources, PreparedBatchResources};
 pub(crate) use scope::{

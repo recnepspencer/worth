@@ -21,15 +21,16 @@ impl InvalidationRetentionLedger {
         self.retained_bytes.load(Ordering::Acquire)
     }
 
+    /// Reserves only against capacity whose custody has actually ended.
+    /// Pinned or prepared predecessor images still count against the ceiling.
     pub(super) fn reserve(
         self: &Arc<Self>,
         bytes: u64,
     ) -> Result<RetainedInvalidationCapacity, WorthQueryInvalidationResourceDenial> {
+        let maximum = self.maximum_bytes;
         self.retained_bytes
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |retained| {
-                retained
-                    .checked_add(bytes)
-                    .filter(|next| *next <= self.maximum_bytes)
+                retained.checked_add(bytes).filter(|next| *next <= maximum)
             })
             .map_err(|retained| {
                 WorthQueryInvalidationResourceDenial::RetentionCapacityExhausted {
@@ -102,6 +103,19 @@ mod tests {
         assert_eq!(resources.retained_capacity_bytes(), 6);
         drop(second);
         assert_eq!(resources.retained_capacity_bytes(), 0);
+    }
+
+    #[test]
+    fn a_pinned_predecessor_is_not_release_credit() {
+        let ledger = Arc::new(InvalidationRetentionLedger::new(10));
+        let predecessor = ledger.reserve(10).unwrap();
+        assert!(ledger.reserve(10).is_err());
+        assert_eq!(ledger.retained_bytes(), 10);
+        drop(predecessor);
+        let replacement = ledger.reserve(10).unwrap();
+        assert_eq!(ledger.retained_bytes(), 10);
+        drop(replacement);
+        assert_eq!(ledger.retained_bytes(), 0);
     }
 
     #[test]

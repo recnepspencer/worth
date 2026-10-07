@@ -1,4 +1,5 @@
 //! A request that compares a retained output in full pays to record its row.
+use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
 use std::{num::NonZeroUsize, sync::OnceLock};
 
@@ -30,8 +31,9 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
         let snapshot = selected.application_basis().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
         let read = RetainedOutputCurrentnessRead {
+            _computation: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).certify_current().unwrap(),
             identity: Arc::clone(&identity),
-            facts: Arc::from([]),
+            facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison().unwrap(),
             native_output_witness: Some(account_witness(&world, runtime, snapshot, entity)),
             consumed_nothing: true,
             work: 0,
@@ -80,7 +82,7 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
                 SettlementRegistration {
                     work_membership: None,
                     identity: Arc::clone(&identity),
-                    facts: Arc::clone(&facts),
+                    facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),
                     output_facts: None,
                     read_basis: positioned.clone(),
                     stale_at_read_basis: OrdSet::new(),
@@ -93,7 +95,7 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
         let verify = |admission: &mut InvalidationEditAdmission| {
             ConsumedOutputEvidence::verify_at_observation(
                 &identity,
-                &facts,
+                &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
                 &[],
                 None,
                 &witness,
@@ -166,7 +168,7 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
 }
 
 /// The account's sealed native output witness at `snapshot`.
-fn account_witness(
+pub(super) fn account_witness(
     world: &AuthorizationWorld,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,

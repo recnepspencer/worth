@@ -82,6 +82,9 @@ pub(super) fn pending_equalities_replaced(
         roots, &replaced, owner, runtime, snapshot, selected, admission,
     ) {
         Ok(_) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),
+        Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+            Err(InputCutoffVerificationStop::CapacityExhausted)
+        }
         Err(ConsumedOutputVerificationStop::PendingUpstream) => Ok(false),
         Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
             Err(InputCutoffVerificationStop::CurrentnessRaced)

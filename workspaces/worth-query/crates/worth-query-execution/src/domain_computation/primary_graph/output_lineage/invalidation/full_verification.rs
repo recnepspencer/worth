@@ -25,6 +25,7 @@ use crate::domain_computation::primary_graph::{
 
 mod equality;
 mod image_fence;
+mod native_evidence;
 mod root_source;
 use crate::domain_computation::primary_graph::invariant_projection::EvidenceView;
 
@@ -57,6 +58,7 @@ impl From<CompanionPreflightStop> for FullVerificationStop {
 /// scheduling, equality, or publication authority.
 pub(in crate::domain_computation::primary_graph) struct FullVerificationImage<'selected> {
     state: Arc<MarkState>,
+    native_only: bool,
     selected: &'selected PositionedRelationalSnapshot,
     runtime: &'selected RelationalRuntime,
     snapshot: &'selected SnapshotHandle,
@@ -92,18 +94,28 @@ impl SourceInvalidationOwner {
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
             return Err(FullVerificationStop::Foreign);
         }
-        let cell =
-            self.cell_for_read(selected, admission)?
-                .ok_or(FullVerificationStop::Alignment(
-                    FullVerificationReason::MissingSettlement,
-                ))?;
-        admission.work(3)?;
-        let image = cell.read_image();
-        admission.ordered_read(image.payload().past.len())?;
-        let aligned = SnapshotAlignedMarkState::select_image(image, selected)
-            .map_err(FullVerificationStop::Alignment)?;
+        let cell = self.cell_for_read(selected, admission)?;
+        let aligned = if let Some(cell) = cell {
+            admission.work(3)?;
+            let image = cell.read_image();
+            admission.ordered_read(image.payload().past.len())?;
+            SnapshotAlignedMarkState::select_image(image, selected).ok()
+        } else {
+            None
+        };
+        let native_only = aligned.is_none();
+        let state = if let Some(aligned) = aligned {
+            aligned.into_full_verification_state()
+        } else {
+            admission.bytes(
+                super::index_capacity::arc_bytes::<MarkState>()
+                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+            )?;
+            Arc::new(MarkState::initial())
+        };
         Ok(FullVerificationImage {
-            state: aligned.into_full_verification_state(),
+            state,
+            native_only,
             selected,
             runtime,
             snapshot,
@@ -118,6 +130,14 @@ impl FullVerificationImage<'_> {
         root: EvidenceView<'_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
+        admission.ordered_read(self.state.settlements.len())?;
+        admission.ordered_read(self.state.equal_links.len())?;
+        if self.native_only
+            || (!self.state.settlements.contains_key(root.identity())
+                && !self.state.equal_links.contains_key(root.identity()))
+        {
+            return self.verify_native_evidence(root, admission);
+        }
         self.verify_root_evidence(
             root.identity(),
             root.native_output_witness(),
@@ -200,7 +220,10 @@ impl FullVerificationImage<'_> {
             {
                 return Err(FullVerificationStop::Foreign);
             }
-            for fact in row.facts.iter() {
+            let Some(facts) = row.facts.for_comparison() else {
+                return Ok(FullVerificationDecision::Changed);
+            };
+            for fact in facts.iter() {
                 if !fact_is_current(fact, self.runtime, self.snapshot, admission)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
@@ -244,8 +267,8 @@ fn fact_is_current(
     Ok(movement.movement() == Movement::Unmoved)
 }
 
-fn reserve_pending(
-    pending: &mut Vec<(Arc<RecordedSettlementIdentity>, bool)>,
+fn reserve_pending<T>(
+    pending: &mut Vec<T>,
     additional: usize,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), FullVerificationStop> {
@@ -257,7 +280,7 @@ fn reserve_pending(
         return Ok(());
     }
     let bytes = needed
-        .checked_mul(size_of::<(Arc<RecordedSettlementIdentity>, bool)>())
+        .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     admission.bytes(bytes)?;

@@ -11,8 +11,10 @@ mod retirement;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum RebasedSourceFacts {
     Exact(Arc<[WorthQueryApplicationObservedFact]>),
-    /// Every fact is exact, and the committed effect moved the source facts at
-    /// these ordinals past the revision their source query read.
+    /// Every fact is exact, and the committed effect moved the facts at these
+    /// ordinals past what was read: a source query's read past its revision,
+    /// or a field an owner call of the producer's partitioned computation
+    /// read before the effect replaced it.
     SupersededByOwnEffect {
         facts: Arc<[WorthQueryApplicationObservedFact]>,
         ordinals: Arc<[usize]>,
@@ -37,9 +39,10 @@ pub(in crate::domain_computation::primary_graph) struct OwnEffectOnReads(OwnEffe
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum OwnEffect {
     /// No read the walk asked about moved. It asks about a producer
-    /// commit's source reads only: every other fact is observed again at
-    /// the committed snapshot, and a non-producer's source reads are not its
-    /// question.
+    /// commit's source reads, and the facts an owner call read that the
+    /// effect replaced are moved before it asks: every other fact is
+    /// observed again at the committed snapshot, and a non-producer's source
+    /// reads are not its question.
     Unmoved,
     /// The comparison of a read the walk asked about could not answer.
     Undecidable,
@@ -82,6 +85,9 @@ pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
 /// already allocated action and result buffers.
 pub(in crate::domain_computation::primary_graph::provider) struct PreparedSourceFactRebase {
     facts: Vec<WorthQueryApplicationObservedFact>,
+    /// The ordinals, ascending, of the facts an owner call read that the
+    /// commit's own effect replaced.
+    moved_by_own_effect: Arc<[usize]>,
     actions: Vec<resolution::PreparedFactRebase>,
     rebased: Vec<WorthQueryApplicationObservedFact>,
     superseded: Vec<usize>,
@@ -90,6 +96,7 @@ pub(in crate::domain_computation::primary_graph::provider) struct PreparedSource
 impl PreparedSourceFactRebase {
     pub(in crate::domain_computation::primary_graph::provider) fn admit(
         facts: Vec<WorthQueryApplicationObservedFact>,
+        moved_by_own_effect: Arc<[usize]>,
     ) -> Result<Self, std::collections::TryReserveError> {
         let mut actions = Vec::new();
         actions.try_reserve_exact(facts.len())?;
@@ -99,6 +106,7 @@ impl PreparedSourceFactRebase {
         superseded.try_reserve_exact(facts.len())?;
         Ok(Self {
             facts,
+            moved_by_own_effect,
             actions,
             rebased,
             superseded,
@@ -219,6 +227,7 @@ fn rebase(
 ) -> RebasedSourceFacts {
     let PreparedSourceFactRebase {
         facts,
+        moved_by_own_effect,
         mut actions,
         mut rebased,
         mut superseded,
@@ -233,6 +242,9 @@ fn rebase(
     );
     let mut failure = None;
     let mut own_effect = OwnEffectOnReads::NONE_ASKED;
+    if !moved_by_own_effect.is_empty() {
+        own_effect = own_effect.join(OwnEffect::Moved);
+    }
     for (ordinal, fact) in facts.iter().enumerate() {
         // Past a failure the walk decides one thing: what the effect did to
         // each fact a source query read.
@@ -275,7 +287,9 @@ fn rebase(
         return RebasedSourceFacts::VerificationRequired { reason, own_effect };
     }
     for (ordinal, (fact, action)) in facts.into_iter().zip(actions).enumerate() {
-        if matches!(action, resolution::PreparedFactRebase::KeepSuperseded) {
+        if matches!(action, resolution::PreparedFactRebase::KeepSuperseded)
+            || moved_by_own_effect.binary_search(&ordinal).is_ok()
+        {
             superseded.push(ordinal);
         }
         rebased.push(action.apply(fact));

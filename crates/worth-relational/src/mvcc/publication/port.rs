@@ -103,7 +103,10 @@ impl RelationalPublicationPort {
             );
         }
         // The read epoch spans the entire publication attempt. Registration and
-        // removal cannot pass a direct writer while its companion is prepared.
+        // removal and true-head cell installation cannot pass a direct writer
+        // while its companion is prepared or cutting over. Query preflight
+        // takes its branch lookup only after this epoch; cutover installs the
+        // prepaid Native payload and invokes no Query lookup or sink.
         let companion_epoch = match self.publication_binding.companion_epoch() {
             Ok(epoch) => epoch,
             Err(_) => {

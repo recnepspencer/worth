@@ -10,6 +10,7 @@ use worth_runtime_bridge::facade::{
 pub enum WorthQueryRelationalSourceInstallationDenial {
     BridgeConfiguration(RelationalBridgeSourceConfigurationError),
     CompanionRegistration(worth_relational::facade::mvcc::PublicationCompanionRegistrationStop),
+    CompanionPreparation(worth_relational::facade::mvcc::CompanionPreflightStop),
 }
 
 /// Shared custody of one installed Relational owner and its exact Bridge registry.
@@ -44,6 +45,9 @@ impl WorthQueryRelationalSourceOwner {
                 runtime_instance_id,
             ),
         );
+        invalidation_owner
+            .admit_publication_fallback()
+            .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionPreparation)?;
         let pending = source
             .begin_canonical_envelope_subscription()
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
@@ -62,15 +66,22 @@ impl WorthQueryRelationalSourceOwner {
         })
     }
 
-    /// The registration stays here: the invalidation owner is its callback
-    /// and must not retain it.
+    /// Resolve only a branch identity here; Native alone selects the current
+    /// head while excluding publication through the prepaid lookup install.
     pub(in crate::domain_computation) fn mint_mark_cell_at_head(
         &self,
-        head: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        branch: &worth_relational::facade::history::BranchId,
         admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
-    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
-        self.invalidation_owner
-            .mint_cell_at_head(&self.canonical_subscription, head, admission)
+    ) -> Result<
+        (),
+        crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop,
+    > {
+        self.with_runtime(|runtime| {
+            let identity = runtime.branch_identity(branch).map_err(|_|
+                crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop::Native(
+                    worth_relational::facade::mvcc::PublicationCompanionRegistrationStop::HeadUnavailable))?;
+            self.invalidation_owner.mint_cell_at_head(&self.canonical_subscription, runtime, &identity, admission)
+        })
     }
 
     pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {

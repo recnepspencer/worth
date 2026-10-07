@@ -1,4 +1,7 @@
 #![forbid(unsafe_code)]
+// Query's public denials are deliberately rich, so its workspace allows large
+// error variants; this consumer returns them unchanged.
+#![allow(clippy::result_large_err)]
 
 mod application_invariant_acceptance;
 mod application_program;

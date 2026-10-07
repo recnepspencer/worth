@@ -51,9 +51,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
-    output_currentness_facts: Option<
-        std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
-    >,
+    output_currentness_facts: Option<super::super::super::OutputCurrentnessFacts>,
     consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
     /// The request's meter from the consumed edges' backing to the commit
     /// that takes it.
@@ -90,15 +88,16 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
         &self,
-    ) -> Vec<super::super::super::WorthQueryApplicationObservedFact> {
+    ) -> (
+        Vec<super::super::super::WorthQueryApplicationObservedFact>,
+        std::sync::Arc<[usize]>,
+    ) {
         if let Some(facts) = &self.output_currentness_facts {
-            return facts.to_vec();
+            return (facts.facts().to_vec(), facts.moved_by_own_effect());
         }
-        self.decision_facts
-            .facts()
-            .values()
-            .filter_map(|fact| fact.observed_source_fact().cloned())
-            .collect()
+        let decision_facts = self.decision_facts.facts().values();
+        let facts = decision_facts.filter_map(|fact| fact.observed_source_fact().cloned());
+        (facts.collect(), std::sync::Arc::from([]))
     }
 
     pub(in crate::domain_computation::primary_graph) fn consumed_outputs(

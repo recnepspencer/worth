@@ -2,6 +2,8 @@
 //! the primary graph, how a test seeds them and how an owner reads them
 //! through the reader it is lent.
 
+use serde::Serialize;
+use worth_query_decl::facade::application_program::ApplicationComputationPartition;
 use worth_query_decl::facade::application_schema::{
     ApplicationRelationIntegrity, ApplicationRelationRef, ApplicationSchemaDeclarationBuilder,
     OperationReads, StringApplicationValueBinding, U64ApplicationValueBinding,
@@ -46,7 +48,7 @@ worth_query_field!(
 
 // Every fact of an entry is one unsigned value. The number is the entry's own
 // identity, the value is a float's bits and the fault is `RegionFault`'s code.
-// The region, value and fault are edited after seeding.
+// The number, region, value and fault are edited after seeding.
 macro_rules! entry_facts {
     ($posture:ident: $($field:ident),+) => {$(
         worth_query_field!(
@@ -55,8 +57,8 @@ macro_rules! entry_facts {
         );
     )+};
 }
-entry_facts!(read_only: EntryNumber, EntryWork);
-entry_facts!(read_write: EntryRegion, EntryValueBits, EntryFault);
+entry_facts!(read_only: EntryWork);
+entry_facts!(read_write: EntryNumber, EntryRegion, EntryValueBits, EntryFault);
 
 /// A set holds its entries.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -221,10 +223,16 @@ pub(super) type InputDenial = WorthQueryComputationInputDenial<u32>;
 type Read<Value> = Result<Value, WorthQueryComputationReadDenial>;
 
 /// One entry as an owner holds it between its calls: its number, and where
-/// its other facts are read.
+/// its other facts are read. It encodes both, so an entry made again under
+/// the same number is a changed entry.
+#[derive(Serialize)]
 pub(super) struct Entry {
     pub(super) number: u64,
     entity: WorthQueryInvariantEntityIdentity<CheckpointSchema, SetEntry>,
+}
+
+impl ApplicationComputationPartition for Entry {
+    const IDENTITY: &'static str = "checkpoint-region-entry";
 }
 
 /// An entry is held inline; its identity shares its entity's name and owns

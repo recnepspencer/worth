@@ -11,6 +11,10 @@ mod displaced_generation;
 mod equal_field_write;
 #[path = "native_journey_tests/equality.rs"]
 mod equality;
+#[path = "native_journey_tests/equality_expiration.rs"]
+mod equality_expiration;
+#[path = "native_journey_tests/full_ledger.rs"]
+mod full_ledger;
 #[cfg(feature = "certification-invalidation-equivalence")]
 #[path = "native_journey_tests/full_verification.rs"]
 mod full_verification;
@@ -20,6 +24,8 @@ mod local_requirement;
 mod logical_work_scale;
 #[path = "native_journey_tests/marking_ceiling.rs"]
 mod marking_ceiling;
+#[path = "native_journey_tests/reestablishment.rs"]
+mod reestablishment;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 #[cfg(not(feature = "certification-invalidation-equivalence"))]
@@ -160,7 +166,7 @@ fn register(
             SettlementRegistration {
                 work_membership: None,
                 identity,
-                facts,
+                facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, facts),
                 output_facts: None,
                 read_basis: basis.clone(),
                 stale_at_read_basis: im::OrdSet::new(),
@@ -314,3 +320,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         }
     });
 }
+
+#[cfg(feature = "certification-invalidation-equivalence")]
+#[path = "native_journey_tests/retired_image.rs"]
+mod retired_image;

@@ -9,11 +9,19 @@ use crate::report::ChargedBytes;
 use super::meter::RunLimits;
 use super::port::TaskOutcome;
 
+#[cfg(test)]
+mod destruction_tests;
+
 /// Admission binds checked identities, values, and declared capacities. The
 /// map pattern holds the separate checked access-family proof.
 pub(crate) struct AdmittedBatch<T> {
-    identities: CanonicalUniqueVec<PartitionIdentity>,
+    declaration: BatchDeclaration,
     values: Vec<T>,
+}
+
+/// Immutable identity and capacity truth shared by both input modes.
+pub(crate) struct BatchDeclaration {
+    identities: CanonicalUniqueVec<PartitionIdentity>,
     max_result_bytes: Vec<u64>,
     kernel_scratch_bytes: u64,
     declared_result_bytes: u64,
@@ -31,7 +39,7 @@ impl<T> AdmittedBatch<T> {
         let slots = self.len().checked_mul(size_of::<R>())?;
         u64::try_from(slots)
             .ok()?
-            .checked_add(self.declared_result_bytes)
+            .checked_add(self.declaration.declared_result_bytes)
     }
     pub(crate) fn try_admit(
         entries: Vec<(PartitionIdentity, T, u64, u64)>,
@@ -69,13 +77,30 @@ impl<T> AdmittedBatch<T> {
                 })?;
         let max_result_bytes = capacities.into_iter().map(|(_, result)| result).collect();
         Some(Self {
-            identities,
+            declaration: BatchDeclaration {
+                identities,
+                max_result_bytes,
+                kernel_scratch_bytes,
+                declared_result_bytes,
+                access_memory_bytes,
+            },
             values,
-            max_result_bytes,
-            kernel_scratch_bytes,
-            declared_result_bytes,
-            access_memory_bytes,
         })
+    }
+
+    pub(crate) fn declaration(&self) -> &BatchDeclaration {
+        &self.declaration
+    }
+
+    pub(crate) fn values(&self) -> &[T] {
+        &self.values
+    }
+
+    pub(crate) fn into_parts(mut self) -> (BatchDeclaration, Vec<T>) {
+        (
+            std::mem::take(&mut self.declaration),
+            std::mem::take(&mut self.values),
+        )
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -83,11 +108,41 @@ impl<T> AdmittedBatch<T> {
     }
 
     pub(crate) fn identities(&self) -> &[PartitionIdentity] {
-        self.identities.as_slice()
+        self.declaration.identities()
+    }
+}
+
+impl<T> Drop for AdmittedBatch<T> {
+    fn drop(&mut self) {
+        // Release identities, then the complete values Vec, then capacities.
+        // A value's destructor must run while its declared capacities exist.
+        drop(std::mem::replace(
+            &mut self.declaration.identities,
+            CanonicalUniqueVec::from_btree_set(Default::default()),
+        ));
+        drop(std::mem::take(&mut self.values));
+    }
+}
+
+impl Default for BatchDeclaration {
+    fn default() -> Self {
+        Self {
+            identities: CanonicalUniqueVec::from_btree_set(Default::default()),
+            max_result_bytes: Vec::new(),
+            kernel_scratch_bytes: 0,
+            declared_result_bytes: 0,
+            access_memory_bytes: 0,
+        }
+    }
+}
+
+impl BatchDeclaration {
+    pub(crate) fn len(&self) -> usize {
+        self.identities.as_slice().len()
     }
 
-    pub(crate) fn value(&self, index: usize) -> &T {
-        &self.values[index]
+    pub(crate) fn identities(&self) -> &[PartitionIdentity] {
+        self.identities.as_slice()
     }
 
     pub(crate) fn result_capacity(&self, index: usize) -> u64 {
@@ -99,7 +154,17 @@ impl<T: ChargedBytes> AdmittedBatch<T> {
     /// Reserve all declared kernel/result bytes and framework-owned buffers
     /// before either a result slot or native scheduling order is allocated.
     pub(crate) fn execution_memory_bytes<R, E>(&self) -> Option<u64> {
-        let input_heap = self.values.iter().try_fold(0_u64, |sum, item| {
+        self.declaration
+            .execution_memory_bytes::<T, R, E>(&self.values)
+    }
+}
+
+impl BatchDeclaration {
+    pub(super) fn execution_memory_bytes<T: ChargedBytes, R, E>(
+        &self,
+        values: &[T],
+    ) -> Option<u64> {
+        let input_heap = values.iter().try_fold(0_u64, |sum, item| {
             sum.checked_add(item.additional_charged_bytes())
         })?;
         execution_memory_requirement::<T, R, E>(

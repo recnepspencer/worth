@@ -11,13 +11,13 @@ pub use crate::runtime::{
 pub use observation::RelationalBranchObservation;
 pub(crate) use publication::PreparedCanonicalBranchMovement;
 pub use publication::{
-    CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop,
+    CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
     CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
     CompanionDerivedRootStopped, CompanionPreflightBudget, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, PendingCompanionRegistration, PerformedRelationalCommit,
-    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
     PublicationCompanionRegistrationStop, PublishRelationalCommit, RelationalPublicationCompanion,

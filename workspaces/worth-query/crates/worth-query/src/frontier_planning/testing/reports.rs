@@ -1,10 +1,9 @@
 use crate::identity::PlanDigest;
 
 use super::{
-    BundleResolvedBasisDigest, FrontierAwarePlan, FrontierBreadthPrediction,
-    FrontierDisjointnessClass, FrontierPlanFamily, FrontierPostureDigest,
-    FrontierPredictionDriftOutcome, FrontierRouteEvidence, FrontierSurfaceDigest,
-    PacketMergeContract, PlannedWorkPacketSet, SerialFallbackReason,
+    BundleResolvedBasisDigest, FrontierAwarePlan, FrontierBreadthPrediction, FrontierPlanFamily,
+    FrontierPostureDigest, FrontierPredictionDriftOutcome, FrontierSurfaceDigest,
+    PacketMergeContract, PlannedWorkPacketSet, SerialFallbackEvidence, SerialFallbackReason,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -81,8 +80,7 @@ pub struct FrontierRouteReport {
     route_surface_digest: FrontierSurfaceDigest,
     predicted_breadth: FrontierBreadthPrediction,
     drift_outcome: FrontierPredictionDriftOutcome,
-    disjointness_class: Option<FrontierDisjointnessClass>,
-    serial_fallback_reason: Option<SerialFallbackReason>,
+    serial_fallback_reason: SerialFallbackReason,
 }
 
 impl FrontierRouteReport {
@@ -106,44 +104,22 @@ impl FrontierRouteReport {
         &self.drift_outcome
     }
 
-    pub fn disjointness_class(&self) -> Option<&FrontierDisjointnessClass> {
-        self.disjointness_class.as_ref()
-    }
-
-    pub fn serial_fallback_reason(&self) -> Option<&SerialFallbackReason> {
-        self.serial_fallback_reason.as_ref()
-    }
-
-    pub(in crate::frontier_planning::testing) fn from_parallel_route(
-        posture_digest: FrontierPostureDigest,
-        frontier_plan: &FrontierAwarePlan,
-        evidence: &FrontierRouteEvidence,
-    ) -> Self {
-        Self {
-            posture_digest,
-            source_plan_digest: frontier_plan.source_plan_digest().clone(),
-            route_surface_digest: evidence.surface_digest.clone(),
-            predicted_breadth: frontier_plan.predicted_breadth().clone(),
-            drift_outcome: evidence.drift_outcome.clone(),
-            disjointness_class: evidence.disjointness_class.clone(),
-            serial_fallback_reason: None,
-        }
+    pub fn serial_fallback_reason(&self) -> &SerialFallbackReason {
+        &self.serial_fallback_reason
     }
 
     pub(in crate::frontier_planning::testing) fn from_serial_route(
         posture_digest: FrontierPostureDigest,
         frontier_plan: &FrontierAwarePlan,
-        reason: SerialFallbackReason,
-        evidence: &FrontierRouteEvidence,
+        evidence: &SerialFallbackEvidence,
     ) -> Self {
         Self {
             posture_digest,
             source_plan_digest: frontier_plan.source_plan_digest().clone(),
-            route_surface_digest: evidence.surface_digest.clone(),
+            route_surface_digest: evidence.surface_digest().clone(),
             predicted_breadth: frontier_plan.predicted_breadth().clone(),
-            drift_outcome: evidence.drift_outcome.clone(),
-            disjointness_class: None,
-            serial_fallback_reason: Some(reason),
+            drift_outcome: evidence.drift_outcome().clone(),
+            serial_fallback_reason: evidence.reason().clone(),
         }
     }
 }

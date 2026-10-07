@@ -247,15 +247,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         super::super::execution_resource_support()
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (input, _computed, context, workspace) = application.into_parts();
         match context.stage().identity() {
             "produce" => self.execute_producer(input, context, workspace),
             "consume" | "observe-a" | "observe-b" => {

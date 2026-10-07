@@ -135,7 +135,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(currentness_facts),
+            output_currentness_facts: Some(currentness_facts.into()),
         };
         let assessment = Some(projection(&self.layout, meaning));
         let replays = self.replays;
@@ -249,7 +249,7 @@ fn validate<Schema, Operation, Input, Scope, Query>(
     settlement: &WorthQueryOutputDemandSettlement,
     source: &WorthQueryObservedSource<Query>,
 ) -> Result<
-    std::sync::Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+    crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
     WorthQueryApplicationAttemptDenial,
 >
 where

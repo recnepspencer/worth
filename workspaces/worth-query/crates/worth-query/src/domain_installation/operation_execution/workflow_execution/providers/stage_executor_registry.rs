@@ -8,18 +8,29 @@ use crate::runtime::WorthQueryWorkspace;
 
 use super::{
     WorthQueryDomainWorkflowStageExecutor, WorthQueryExecutableDomainOperation,
-    WorthQueryWorkflowOperation, WorthQueryWorkflowStageExecutionContext,
+    WorthQueryWorkflowOperation, WorthQueryWorkflowStageComputationFailure,
+    WorthQueryWorkflowStageComputed, WorthQueryWorkflowStageExecutionContext,
     WorthQueryWorkflowStageExecutorFailure, WorthQueryWorkflowStageMaterial,
-    WorthQueryWorkflowStageWorkspace, WorthQueryWorkflowValue,
+    WorthQueryWorkflowStagePreparation, WorthQueryWorkflowStageTask,
 };
 
-type WorkflowExecutorMarker<D, O, F> = fn() -> (D, O, F);
+#[path = "stage_executor_registry/phase_dispatch.rs"]
+mod phase_dispatch;
+use super::workflow_parallel_progression::frontier::CanonicalWorkflowStageResult;
+use phase_dispatch::TypedWorkflowStageExecutor;
+
+type StagePreparation =
+    for<'a> fn(
+        WorthQueryWorkflowStagePreparation<'a>,
+    )
+        -> Result<WorthQueryWorkflowStageTask, WorthQueryWorkflowStageComputationFailure>;
+type StageComputation = fn(WorthQueryWorkflowStageTask) -> WorthQueryWorkflowStageComputed;
 
 trait ErasedWorkflowStageExecutor: Send + Sync {
     fn idempotent_stage_retry(&self) -> bool;
-    fn execute(
+    fn apply(
         &self,
-        input: WorthQueryWorkflowValue,
+        slot: CanonicalWorkflowStageResult,
         context: &WorthQueryWorkflowStageExecutionContext<'_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowStageMaterial, WorthQueryWorkflowStageExecutorFailure>;
@@ -34,68 +45,10 @@ pub(crate) trait ErasedReplaySemanticComparator: Send + Sync {
     ) -> super::WorthQueryReplayComparison;
 }
 
-struct TypedWorkflowStageExecutor<D, O, F, E> {
-    executor: Arc<E>,
-    marker: PhantomData<WorkflowExecutorMarker<D, O, F>>,
-}
-
-impl<D, O, F, E: WorthQueryDomainWorkflowStageExecutor<D, O, F>> ErasedWorkflowStageExecutor
-    for TypedWorkflowStageExecutor<D, O, F, E>
-where
-    O: WorthQueryExecutableDomainOperation<D, F, Execution = WorthQueryWorkflowOperation>,
-{
-    fn idempotent_stage_retry(&self) -> bool {
-        E::IDEMPOTENT_STAGE_RETRY
-    }
-
-    fn execute(
-        &self,
-        input: WorthQueryWorkflowValue,
-        context: &WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut WorthQueryWorkspace,
-    ) -> Result<WorthQueryWorkflowStageMaterial, WorthQueryWorkflowStageExecutorFailure> {
-        let mut workspace = WorthQueryWorkflowStageWorkspace::new(
-            workspace,
-            context.artifact_production_authority(),
-            context.artifact_access_authority(),
-        );
-        let mut material = match self.executor.execute_stage(input, context, &mut workspace) {
-            Ok(material) => material,
-            Err(failure) => {
-                return Err(failure.with_executed_effects(workspace.into_executed_effects()));
-            }
-        };
-        if workspace.installed_read_executions() != usize::from(context.requires_primary_read()) {
-            return Err(WorthQueryWorkflowStageExecutorFailure::new(
-                crate::domain_installation::WorthQueryOperationFailureClass::Indeterminate,
-                "workflow stage did not use its installed primary read exactly once",
-            )
-            .with_executed_effects(workspace.into_executed_effects()));
-        }
-        material.retain_query_executed_effects(workspace.into_executed_effects());
-        Ok(material)
-    }
-}
-
-impl<D, O, F, E> ErasedReplaySemanticComparator for TypedWorkflowStageExecutor<D, O, F, E>
-where
-    E: WorthQueryDomainWorkflowStageExecutor<D, O, F>
-        + super::WorthQueryDomainReplaySemanticComparator<D, O, F>,
-    O: WorthQueryExecutableDomainOperation<D, F, Execution = WorthQueryWorkflowOperation>,
-{
-    fn compare(
-        &self,
-        original: &super::WorthQueryWorkflowTraceSemantics,
-        replay: &super::WorthQueryWorkflowTraceSemantics,
-        noise: super::WorthQueryReplayNoiseContract,
-    ) -> super::WorthQueryReplayComparison {
-        self.executor
-            .compare_replay_semantics(original, replay, noise)
-    }
-}
-
 pub(crate) struct WorthQueryInstalledWorkflowStageExecutor {
     executor: Arc<dyn ErasedWorkflowStageExecutor>,
+    preparation: StagePreparation,
+    computation: StageComputation,
     replay_comparator: Option<Arc<dyn ErasedReplaySemanticComparator>>,
     pub(crate) installed_read: Option<crate::ordinary::read::WorthQueryReadDeclaration>,
     pub(crate) resource_support: super::WorthQueryExecutionResourceSupport,
@@ -103,6 +56,8 @@ pub(crate) struct WorthQueryInstalledWorkflowStageExecutor {
 
 struct WorkflowStageExecutorRegistration {
     executor: Arc<dyn ErasedWorkflowStageExecutor>,
+    preparation: StagePreparation,
+    computation: StageComputation,
     replay_comparator: Option<Arc<dyn ErasedReplaySemanticComparator>>,
     lowering_family: &'static str,
     deterministic: bool,
@@ -114,17 +69,30 @@ struct WorkflowStageExecutorRegistration {
 }
 
 impl WorthQueryInstalledWorkflowStageExecutor {
+    pub(crate) fn prepare(
+        &self,
+        view: WorthQueryWorkflowStagePreparation<'_>,
+    ) -> Result<WorthQueryWorkflowStageTask, WorthQueryWorkflowStageComputationFailure> {
+        (self.preparation)(view)
+    }
+
+    pub(crate) fn computation(
+        &self,
+    ) -> fn(WorthQueryWorkflowStageTask) -> WorthQueryWorkflowStageComputed {
+        self.computation
+    }
+
     pub(crate) fn idempotent_stage_retry(&self) -> bool {
         self.executor.idempotent_stage_retry()
     }
 
-    pub(crate) fn execute(
+    pub(in crate::domain_installation::operation_execution) fn apply(
         &self,
-        input: WorthQueryWorkflowValue,
+        slot: CanonicalWorkflowStageResult,
         context: &WorthQueryWorkflowStageExecutionContext<'_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowStageMaterial, WorthQueryWorkflowStageExecutorFailure> {
-        self.executor.execute(input, context, workspace)
+        self.executor.apply(slot, context, workspace)
     }
 
     pub(crate) fn replay_comparator(&self) -> Option<Arc<dyn ErasedReplaySemanticComparator>> {
@@ -162,6 +130,8 @@ impl WorthQueryPendingWorkflowStageExecutors {
         });
         self.insert_registration::<D, O, F>(WorkflowStageExecutorRegistration {
             installed_read,
+            preparation: E::prepare,
+            computation: E::compute,
             executor: typed,
             replay_comparator: None,
             lowering_family: E::LOWERING_FAMILY,
@@ -198,6 +168,8 @@ impl WorthQueryPendingWorkflowStageExecutors {
         });
         self.insert_registration::<D, O, F>(WorkflowStageExecutorRegistration {
             installed_read,
+            preparation: E::prepare,
+            computation: E::compute,
             executor: typed.clone(),
             replay_comparator: Some(typed),
             lowering_family: E::LOWERING_FAMILY,
@@ -292,6 +264,8 @@ impl WorthQueryPendingWorkflowStageExecutors {
                         key,
                         Arc::new(WorthQueryInstalledWorkflowStageExecutor {
                             executor: registration.executor,
+                            preparation: registration.preparation,
+                            computation: registration.computation,
                             replay_comparator: registration.replay_comparator,
                             installed_read: registration.installed_read,
                             resource_support: registration.resource_support,

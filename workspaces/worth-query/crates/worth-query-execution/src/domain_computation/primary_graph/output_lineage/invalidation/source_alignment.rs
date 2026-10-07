@@ -43,6 +43,16 @@ pub(super) struct RetainedTouchDelivery {
     pub(super) _capacity: Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>,
 }
 
+/// Whether a row's read basis must still be in the retained history.
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum ReadBasis {
+    Retained,
+    /// The row is the origin of an authentic equality chain. Its output was
+    /// proved equal to its successor while its basis was retained, so a basis
+    /// that has since left the window leaves the chain's terminal to decide.
+    Superseded,
+}
+
 /// Only exact native source selection can construct this observation.
 pub(super) struct SnapshotAlignedMarkState<'selected> {
     state: Arc<MarkState>,
@@ -66,6 +76,9 @@ impl BranchMarkRoot {
 }
 
 impl<'selected> SnapshotAlignedMarkState<'selected> {
+    pub(super) fn recovery_state(&self) -> Arc<MarkState> {
+        Arc::clone(&self.state)
+    }
     #[cfg(feature = "certification-invalidation-equivalence")]
     pub(super) fn into_full_verification_state(self) -> Arc<MarkState> {
         self.state
@@ -123,11 +136,24 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         &self,
         settlement: &RecordedSettlementIdentity,
     ) -> SettlementCurrentness<'_> {
+        self.row_currentness(settlement, ReadBasis::Retained)
+    }
+
+    fn row_currentness(
+        &self,
+        settlement: &RecordedSettlementIdentity,
+        read_basis: ReadBasis,
+    ) -> SettlementCurrentness<'_> {
         let Some(row) = self.state.settlements.get(settlement) else {
             return SettlementCurrentness::FullVerificationRequired(
                 FullVerificationReason::MissingSettlement,
             );
         };
+        if row.facts.for_comparison().is_none() {
+            return SettlementCurrentness::FullVerificationRequired(
+                FullVerificationReason::ComputationSuperseded,
+            );
+        }
         let basis = &row.read_basis;
         if basis.runtime_instance_id() != self.selected.runtime_instance_id() {
             return SettlementCurrentness::Foreign;
@@ -141,6 +167,12 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
             return SettlementCurrentness::FullVerificationRequired(
                 FullVerificationReason::BeforeReadBasis,
             );
+        }
+        if read_basis == ReadBasis::Superseded {
+            // Authentic paired equality replaces this row's source proof.
+            // Its old delivery epoch and requirements cannot veto the
+            // terminal; provenance still precedes this consequence.
+            return SettlementCurrentness::Clean;
         }
         let retained_at_current = basis.position() == self.current_position
             && basis.root_id() == self.current_root_id
@@ -196,7 +228,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         admission.ordered_read(self.state.settlements.len())?;
         admission.ordered_read(self.retained.past.len())?;
         if let SettlementCurrentness::FullVerificationRequired(_) | SettlementCurrentness::Foreign =
-            self.currentness(identity)
+            self.row_currentness(identity, ReadBasis::Superseded)
         {
             return Ok(EqualOutputCurrentness::FullVerificationRequired);
         }

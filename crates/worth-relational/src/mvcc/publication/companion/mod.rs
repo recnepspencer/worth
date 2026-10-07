@@ -3,10 +3,11 @@ mod preflight;
 mod registration;
 
 pub use cell::{
-    CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop,
+    CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
     CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
-    CompanionDerivedRootStopped, PreparedCompanionDerivedRoot, ReservedCompanionBranchCell,
+    CompanionDerivedRootStopped, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
+    ReservedCompanionBranchCell,
 };
 pub(crate) use preflight::CandidateCompanionBinding;
 pub use preflight::{

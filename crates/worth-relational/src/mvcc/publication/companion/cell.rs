@@ -9,6 +9,8 @@ use crate::runtime::PositionedRelationalSnapshot;
 
 use super::preflight::{CompanionPreflightStop, PublicationCompanionPreflight};
 
+pub(super) mod publication_admission;
+pub use publication_admission::{CompanionBranchCellSlot, PreparedCompanionBranchCell};
 mod derived_replacement;
 pub use derived_replacement::{
     CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
@@ -106,6 +108,7 @@ pub struct ReservedCompanionBranchCell<T: Send + Sync + 'static> {
     pub(super) observed: CompanionBranchImage<T>,
     pub(super) candidate_id: u64,
     armed: bool,
+    pub(super) publication_admission: Option<Arc<publication_admission::PublicationCellAdmission>>,
 }
 
 impl<T: Send + Sync + 'static> ReservedCompanionBranchCell<T> {
@@ -248,6 +251,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
             core: Arc::clone(&self.core),
             observed,
             candidate_id: context.candidate_id(),
+            publication_admission: None,
             armed: true,
         })
     }

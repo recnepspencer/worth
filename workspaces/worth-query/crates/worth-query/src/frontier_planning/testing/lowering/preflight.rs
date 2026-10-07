@@ -2,26 +2,12 @@ use crate::basis::ExecutionPreflightBundle;
 
 use super::super::{
     BoundedMaterializationFrontierPreflight, BundleResolvedBasisDigest, FrontierAwarePlan,
-    FrontierBreadthPrediction, FrontierComplexityContract, FrontierDisjointnessClass,
-    FrontierPerformanceStatus, FrontierPlanFamily, FrontierPlanningCounters, FrontierPlanningError,
-    FrontierPlanningReport, FrontierPredictionDriftOutcome, FrontierPreflightAdmissionError,
-    OrderedCollectionFrontierPreflight, PacketEquivalenceContract, PacketMergeBoundary,
-    PacketMergeContract, PlannedWorkPacket, PlannedWorkPacketFamily, PlannedWorkPacketSet,
+    FrontierBreadthPrediction, FrontierComplexityContract, FrontierPerformanceStatus,
+    FrontierPlanFamily, FrontierPlanningCounters, FrontierPlanningError, FrontierPlanningReport,
+    FrontierPredictionDriftOutcome, FrontierPreflightAdmissionError, PacketEquivalenceContract,
+    PacketMergeBoundary, PacketMergeContract, PlannedWorkPacket, PlannedWorkPacketFamily,
+    PlannedWorkPacketSet,
 };
-
-pub fn admit_ordered_collection_frontier_preflight(
-    preflight: ExecutionPreflightBundle,
-) -> Result<OrderedCollectionFrontierPreflight, FrontierPreflightAdmissionError> {
-    let collection = preflight
-        .plan()
-        .collection()
-        .ok_or(FrontierPreflightAdmissionError::UnsupportedFrontierFamily)?;
-    if collection.traversal_bound().edge_classes().is_empty() {
-        Ok(OrderedCollectionFrontierPreflight::new(preflight))
-    } else {
-        Err(FrontierPreflightAdmissionError::OrderedCollectionRequired)
-    }
-}
 
 pub fn admit_bounded_materialization_frontier_preflight(
     preflight: ExecutionPreflightBundle,
@@ -51,7 +37,6 @@ pub(crate) fn lower_preflight_to_frontier_plan(
         packet_family,
         equivalence_contract,
         merge_contract,
-        disjointness_class,
         complexity_contract,
         performance_status,
         scope_summary,
@@ -62,7 +47,6 @@ pub(crate) fn lower_preflight_to_frontier_plan(
             PlannedWorkPacketFamily::OrderedCollectionRoot,
             PacketEquivalenceContract::CollectionDigestAndBasis,
             PacketMergeContract::OrderedCollectionResultBoundary,
-            FrontierDisjointnessClass::CollectionWindowSurface,
             FrontierComplexityContract::ordered_collection(),
             FrontierPerformanceStatus::Verified,
             format!(
@@ -84,7 +68,6 @@ pub(crate) fn lower_preflight_to_frontier_plan(
             PlannedWorkPacketFamily::BoundedMaterializationRoot,
             PacketEquivalenceContract::BoundedTraversalDigestAndBasis,
             PacketMergeContract::BoundedMaterializationResultBoundary,
-            FrontierDisjointnessClass::TraversalScopeSurface,
             FrontierComplexityContract::bounded_materialization(),
             FrontierPerformanceStatus::Debt,
             format!(
@@ -124,7 +107,6 @@ pub(crate) fn lower_preflight_to_frontier_plan(
     let counters = FrontierPlanningCounters::single_route(
         predicted_breadth.value(),
         packet_set.packets().len(),
-        packet_set.packets().len(),
     );
 
     Ok(FrontierAwarePlan {
@@ -135,7 +117,6 @@ pub(crate) fn lower_preflight_to_frontier_plan(
         packet_set,
         predicted_breadth,
         drift_outcome: FrontierPredictionDriftOutcome::WithinBudget,
-        disjointness_class,
         complexity_contract,
         performance_status,
         report,

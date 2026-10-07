@@ -7,8 +7,11 @@ use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
 use worth_foundational::facade::{ExecutionReport, PartitionIdentity};
 
 use super::super::super::request_execution::QueryMemoryReservation;
+use super::super::items::{ItemDigests, Items};
+use super::super::routing::ComputationPartitionRouting;
+use super::observed::observe;
 use super::retained::{
-    observe, CompletedComputationRun, RetainedCall, RetainedPartition, RetainedPartitions,
+    CompletedComputationRun, RetainedCall, RetainedPartition, RetainedPartitions,
     WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
 };
 use super::RetainedBasisToken;
@@ -16,30 +19,47 @@ use crate::domain_computation::primary_graph::invariant_projection::ComputationC
 
 /// The calls, charges and partitions of one full run, recorded as it runs.
 /// A charge that did not measure leaves the run with nothing to retain.
-pub(in super::super) struct FullRecording<Key> {
+pub(in super::super) struct FullRecording<Key, Item> {
     basis: RetainedBasisToken,
-    membership: Option<ComputationCallCharge>,
+    membership: Option<(RetainedCall, Items<Item>, ItemDigests)>,
     item_keys: BTreeMap<PartitionItemId, RetainedCall>,
-    partitions:
-        BTreeMap<PartitionIdentity, (Arc<Key>, u64, Arc<[PartitionItemId]>, ComputationCallCharge)>,
+    routing: Option<(ComputationPartitionRouting, QueryMemoryReservation)>,
+    partitions: BTreeMap<PartitionIdentity, (Arc<Key>, u64, ComputationCallCharge)>,
     measured: bool,
 }
 
-impl<Key: Send + Sync + 'static> FullRecording<Key> {
+impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// Records a full run that retains under `basis`, when a producer runs it.
     pub(in super::super) fn new(basis: Option<RetainedBasisToken>) -> Option<Self> {
         basis.map(|basis| Self {
             basis,
             membership: None,
             item_keys: BTreeMap::new(),
+            routing: None,
             partitions: BTreeMap::new(),
             measured: true,
         })
     }
 
-    pub(in super::super) fn membership(&mut self, charge: Option<ComputationCallCharge>) {
-        self.measured &= charge.is_some();
-        self.membership = charge;
+    /// The membership's call and the declared work its items' digests
+    /// spent, or `None` when either did not measure, with the items and
+    /// their digests.
+    pub(in super::super) fn membership(
+        &mut self,
+        call: Option<(ComputationCallCharge, u64)>,
+        items: &Items<Item>,
+        digests: ItemDigests,
+    ) {
+        match call {
+            Some((charge, declared_units)) => {
+                let call = RetainedCall {
+                    charge,
+                    declared_units,
+                };
+                self.membership = Some((call, Arc::clone(items), digests));
+            }
+            None => self.measured = false,
+        }
     }
 
     /// One item's key call and the declared work spent deriving and routing
@@ -63,31 +83,37 @@ impl<Key: Send + Sync + 'static> FullRecording<Key> {
         }
     }
 
+    /// The routing every item was routed into, and the request memory that
+    /// holds it until the record that keeps it is charged.
+    pub(in super::super) fn routing(
+        &mut self,
+        routing: ComputationPartitionRouting,
+        memory: QueryMemoryReservation,
+    ) {
+        self.routing = Some((routing, memory));
+    }
+
     pub(in super::super) fn partition(
         &mut self,
         identity: PartitionIdentity,
         key: &Arc<Key>,
         key_bytes: u64,
-        members: &Arc<[PartitionItemId]>,
         charge: Option<ComputationCallCharge>,
     ) {
         match charge {
             Some(charge) => {
-                self.partitions.insert(
-                    identity,
-                    (Arc::clone(key), key_bytes, Arc::clone(members), charge),
-                );
+                self.partitions
+                    .insert(identity, (Arc::clone(key), key_bytes, charge));
             }
             None => self.measured = false,
         }
     }
 
-    /// The completed run: its items, each kernel's work and the tree, when
-    /// every charge measured and the kernels and combines account for all of
-    /// execution's work. `tree_memory` holds the tree until it is charged.
-    pub(in super::super) fn complete<Item, Reduced>(
+    /// The completed run: each kernel's work and the tree, when every charge
+    /// measured and the kernels and combines account for all of execution's
+    /// work. `tree_memory` holds the tree until it is charged.
+    pub(in super::super) fn complete<Reduced>(
         self,
-        items: Arc<BTreeMap<PartitionItemId, Item>>,
         mut kernel_units: BTreeMap<PartitionIdentity, u64>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         tree_memory: QueryMemoryReservation,
@@ -110,12 +136,11 @@ impl<Key: Send + Sync + 'static> FullRecording<Key> {
         let partitions = self
             .partitions
             .into_iter()
-            .map(|(identity, (key, key_bytes, members, gather))| {
+            .map(|(identity, (key, key_bytes, gather))| {
                 kernel_units.remove(&identity).map(|kernel_units| {
                     let partition = RetainedPartition {
                         key,
                         key_bytes,
-                        members,
                         gather,
                         kernel_units,
                     };
@@ -123,15 +148,19 @@ impl<Key: Send + Sync + 'static> FullRecording<Key> {
                 })
             })
             .collect::<Option<BTreeMap<_, _>>>();
-        let typed = match (self.membership, partitions) {
-            (Some(membership), Some(partitions)) if self.measured && accounted => {
+        let (routing, routing_memory) = self.routing.unzip();
+        let typed = match (self.membership, routing, partitions) {
+            (Some((membership, items, digests)), Some(routing), Some(partitions))
+                if self.measured && accounted =>
+            {
                 Some(RetainedPartitions {
                     items,
+                    digests,
                     membership,
                     item_keys: Arc::new(self.item_keys),
+                    routing: Arc::new(routing),
                     partitions,
                     tree,
-                    reduction_work,
                 })
             }
             _ => None,
@@ -143,6 +172,7 @@ impl<Key: Send + Sync + 'static> FullRecording<Key> {
             typed_bytes,
             carried: None,
             tree_memory,
+            routing_memory,
         }
     }
 }

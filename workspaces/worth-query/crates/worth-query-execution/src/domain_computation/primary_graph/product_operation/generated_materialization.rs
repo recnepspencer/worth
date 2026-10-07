@@ -41,6 +41,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) struct ProducerQualification {
+
     binding_type: TypeId,
     output_binding_type: TypeId,
     binding_identity: &'static str,
@@ -60,7 +61,7 @@ pub(super) struct ProducerQualification {
     output_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     output_generation: u64,
     observed_source_facts:
-        Arc<[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact]>,
+        crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts,
     resources: Option<crate::domain_computation::primary_graph::WorthQueryProducerDemandResources>,
 }
 

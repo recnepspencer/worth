@@ -21,6 +21,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationFactKey,
 };
 use crate::domain_computation::primary_graph::application_contribution::Comparator;
+use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget;
 use crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork;
 
 /// The work one owner call charged and the entities it reached.
@@ -44,9 +45,40 @@ impl ComputationCallCharge {
     }
 }
 
+/// The work the reader had charged when a computation's run began, so a run
+/// abandoned before any result can be made again from its start.
+#[derive(Clone, Copy)]
+pub(in crate::domain_computation::primary_graph) struct ComputationRunStart {
+    work: WorthQueryInvariantProjectionWork,
+    work_budget: WorthQueryInvariantProjectionWorkBudget,
+}
+
 impl<Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    /// Where a computation's run begins.
+    pub(in crate::domain_computation::primary_graph) const fn run_start(
+        &self,
+        _: &Comparator,
+    ) -> ComputationRunStart {
+        ComputationRunStart {
+            work: self.reader.work,
+            work_budget: self.reader.work_budget,
+        }
+    }
+
+    /// Takes the reader back to `start`, so the calls made again charge as a
+    /// fresh run's do. What the abandoned calls read stays read: the same
+    /// calls are made again over the same snapshot, and read it all again.
+    pub(in crate::domain_computation::primary_graph) fn restart(
+        &mut self,
+        _: &Comparator,
+        start: ComputationRunStart,
+    ) {
+        self.reader.work = start.work;
+        self.reader.work_budget = start.work_budget;
+    }
+
     /// Makes one owner call, recording every fact key it reads as that call's,
     /// and what it charged. The charge is `None` only when its arithmetic
     /// fails, and then the call cannot be carried.

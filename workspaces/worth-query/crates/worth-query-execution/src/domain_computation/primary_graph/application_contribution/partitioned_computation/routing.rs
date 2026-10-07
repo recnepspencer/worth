@@ -3,7 +3,6 @@
 
 use worth_execution::{
     KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId, PartitionWork,
-    SourceFactId,
 };
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_operation::ApplicationComputationPartitionIdentity;
@@ -15,8 +14,6 @@ use super::super::WorthQueryManagedComputationResourceDenial;
 pub(super) enum ComputationPartitionRoutingDenial {
     /// The request's memory refused what the partitioner would retain.
     Resource(WorthQueryManagedComputationResourceDenial),
-    /// The plan named this item identity twice.
-    DuplicateItem(PartitionItemId),
     /// A different key digest already owns this partition identity.
     IdentityCollision(PartitionIdentity),
 }
@@ -30,25 +27,25 @@ pub(super) struct ComputationPartitionRouting {
 }
 
 impl ComputationPartitionRouting {
-    /// Routes one item and returns its partition with the partitioner's work.
-    /// Before the partitioner grows, `admit` is offered all it would retain.
+    /// Routes one item and returns its partition with the work of routing it
+    /// into a partitioner that did not hold it: an item routed again leaves
+    /// its last partition first, uncharged, so every route charges what a
+    /// fresh build's route of it charges. Before the partitioner grows,
+    /// `admit` is offered all it would retain.
     pub(super) fn route(
         &mut self,
         item: PartitionItemId,
         digest: [u8; 32],
         admit: impl FnOnce(u64) -> Result<(), WorthQueryManagedComputationResourceDenial>,
     ) -> Result<(PartitionIdentity, PartitionWork), ComputationPartitionRoutingDenial> {
-        if self.partitioner.route(item).is_some() {
-            return Err(ComputationPartitionRoutingDenial::DuplicateItem(item));
-        }
         let partition = ApplicationComputationPartitionIdentity::partition_of(&digest);
+        // The identity `item` leaves, when no other item holds it, is free
+        // again for another digest.
+        self.partitioner.remove(item);
         self.partitioner
             .upsert(
                 KeyedItem {
                     item,
-                    // Every run recomputes every partition, so nothing reads the
-                    // fact an item came from yet.
-                    source_fact: SourceFactId(item.0),
                     key: digest,
                     partition,
                 },
@@ -72,6 +69,39 @@ impl ComputationPartitionRouting {
             })
     }
 
+    /// A copy holding only the items `keep` names, in their partitions,
+    /// after `admit` takes what the copy retains.
+    pub(super) fn kept(
+        &self,
+        keep: impl FnMut(PartitionItemId) -> bool,
+        admit: impl FnOnce(u64) -> Result<(), WorthQueryManagedComputationResourceDenial>,
+    ) -> Result<Self, WorthQueryManagedComputationResourceDenial> {
+        self.partitioner
+            .kept(keep, admit)
+            .map(|partitioner| Self { partitioner })
+            .map_err(|denial| match denial {
+                KeyedEditDenial::Admission(denial) => denial,
+                KeyedEditDenial::Keyed(_) | KeyedEditDenial::BoundOverflow => {
+                    WorthQueryManagedComputationResourceDenial::CapacityOverflow
+                }
+            })
+    }
+
+    /// The partition `item` routes to, when it is routed.
+    pub(super) fn partition_of(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
+        self.partitioner.route(item)
+    }
+
+    /// The full digest that owns a compact partition identity.
+    pub(super) fn digest(&self, partition: PartitionIdentity) -> Option<&[u8; 32]> {
+        self.partitioner.key(partition)
+    }
+
+    /// Every partition in ascending identity order.
+    pub(super) fn partitions(&self) -> impl Iterator<Item = PartitionIdentity> + '_ {
+        self.partitioner.partitions()
+    }
+
     /// A partition's items in ascending item identity order.
     pub(super) fn members(
         &self,
@@ -81,5 +111,11 @@ impl ComputationPartitionRouting {
             .members(partition)
             .into_iter()
             .flat_map(|members| members.iter().copied())
+    }
+
+    /// What the routing holds, as the partitioner charges it, or `None` when
+    /// the count overflows.
+    pub(super) fn charged_bytes(&self) -> Option<u64> {
+        self.partitioner.charged_bytes()
     }
 }

@@ -1,9 +1,9 @@
 //! The compute and complete phases of a prepared partitioned computation.
 
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
-use worth_execution::{ExecutionMap, MapKernelContext, MapKernelStop, PartitionItemId};
+use worth_execution::{ExecutionMap, MapKernelContext, MapKernelStop};
 use worth_query_declaration::facade::application_program::{
     ApplicationFeature, ApplicationManagedComputation,
 };
@@ -75,8 +75,7 @@ where
         /// admission takes it over.
         memory: GatheredMemory,
         remaining_work: u64,
-        items: Arc<BTreeMap<PartitionItemId, Owner::Item>>,
-        recording: Option<FullRecording<Computation::Partition>>,
+        recording: Option<FullRecording<Computation::Partition, Owner::Item>>,
         cause: WorthQueryPartitionedComputationFullCause,
     },
     Incremental(
@@ -164,7 +163,6 @@ where
                 map,
                 memory,
                 remaining_work,
-                items,
                 recording,
                 cause,
             } => {
@@ -203,7 +201,6 @@ where
                 let completed = match recording {
                     Some(recording) => Some(
                         recording.complete(
-                            items,
                             kernel_units
                                 .into_inner()
                                 .unwrap_or_else(std::sync::PoisonError::into_inner),

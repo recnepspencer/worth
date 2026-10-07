@@ -49,16 +49,17 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
     let runtime = runtime_with_test_schema();
     create_entity(&runtime, "same-head-anchor");
     let handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
-    let selected = runtime
-        .read_truth()
-        .positioned_snapshot(&handle)
-        .expect("owner snapshot has its canonical position");
     let pending = runtime
         .publication_companion_port()
         .begin_required_registration()
         .expect("required registration begins");
     let cell = pending
-        .mint_branch_cell(&selected, Arc::new(0_u64))
+        .with_branch_cell_at_head(
+            &runtime,
+            &runtime.main_branch_identity(),
+            Arc::new(0_u64),
+            |cell| cell,
+        )
         .expect("the cell belongs to the selected source");
     let calls = Arc::new(AtomicUsize::new(0));
     let _registration = pending

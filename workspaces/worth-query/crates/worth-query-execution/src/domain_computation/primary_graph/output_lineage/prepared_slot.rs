@@ -90,6 +90,8 @@ impl CancelledLineageSlot {
 
 /// What filling a prepared slot hands its publication.
 pub(in crate::domain_computation::primary_graph) struct RecordedLineageSlot {
+    pub(in crate::domain_computation::primary_graph) computation_source:
+        super::ComputationSourceEvidence,
     pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
@@ -191,6 +193,11 @@ impl PreparedOutputLineageSlot {
         };
         self.filled = true;
         RecordedLineageSlot {
+            computation_source: self
+                .record_cell
+                .get()
+                .expect("performed slot is filled")
+                .computation_source,
             identity,
             output_witness,
             displaced,

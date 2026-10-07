@@ -7,7 +7,7 @@ pub(super) fn install(
 ) -> worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationBuilder<
     IdentityExecutionSchema,
 > {
-    schema
+    retained_output_capacity::declare(own_write_computation::declare(schema))
         .operation(
             ProgramRequiredOperation::reference()
                 .definition()

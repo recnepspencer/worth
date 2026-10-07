@@ -3,15 +3,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::mvcc::{
-    CompanionBranchCell, CompanionDerivedImageRetention, CompanionDerivedRootAdmission,
-    CompanionDerivedRootCost, CompanionPreflightBudget, CompanionPreflightStop,
-    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
+    CompanionBranchCell, CompanionBranchCellSlot, CompanionDerivedImageRetention,
+    CompanionDerivedRootAdmission, CompanionDerivedRootCost, CompanionPreflightBudget,
+    CompanionPreflightStop, PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
     RelationalPublicationCompanion, RelationalPublicationDeferred, RelationalPublicationOutcome,
 };
 use crate::tests::support::*;
 
 mod completion_observer;
 mod concurrent_head;
+mod head_cell;
 mod positioned_admission;
 mod preflight_overflow;
 
@@ -60,7 +61,7 @@ impl RelationalPublicationCompanion for CountingCompanion {
 }
 
 struct FirstWriteCompanion {
-    cell: Mutex<Option<CompanionBranchCell<u64>>>,
+    cell: Mutex<Option<CompanionBranchCellSlot<u64>>>,
     selected_position: Mutex<Option<Option<PatchStreamPosition>>>,
 }
 
@@ -79,14 +80,21 @@ impl RelationalPublicationCompanion for FirstWriteCompanion {
             .cell
             .try_lock()
             .map_err(|_| CompanionPreflightStop::TopologyPending)?;
-        if cell.is_none() {
-            *self.selected_position.lock().unwrap() = Some(context.expected_position());
-            *cell = Some(context.mint_selected_branch_cell(Arc::new(0_u64))?);
-        }
-        let reserved = cell
-            .as_ref()
-            .expect("the native factory minted this selected branch")
-            .reserve_preflight(context)?;
+        let reserved = match cell.as_ref().and_then(CompanionBranchCellSlot::admitted) {
+            Some(admitted) => admitted.reserve_preflight(context)?,
+            None => {
+                *self.selected_position.lock().unwrap() = Some(context.expected_position());
+                let prepared = context.mint_selected_branch_cell(Arc::new(0_u64))?;
+                let slot = prepared.lookup_slot();
+                assert!(
+                    slot.admitted().is_none(),
+                    "candidate expectation is not head proof"
+                );
+                let reserved = prepared.reserve_preflight(context)?;
+                *cell = Some(slot);
+                reserved
+            }
+        };
         drop(cell);
         context.seal_replacement(reserved, Arc::new(1_u64))
     }
@@ -125,6 +133,7 @@ fn first_write_companion_mints_from_selected_source_without_runtime_reentry() {
     let cell = participant.cell.lock().unwrap();
     let image = cell
         .as_ref()
+        .and_then(CompanionBranchCellSlot::admitted)
         .expect("first write installed its branch cell")
         .read_image();
     assert_eq!(**image.payload(), 1);
@@ -149,7 +158,12 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
         .begin_required_registration()
         .expect("registration orders behind publications");
     let cell = pending
-        .mint_branch_cell(&selected, Arc::new(7_u64))
+        .with_branch_cell_at_head(
+            &runtime,
+            &runtime.main_branch_identity(),
+            Arc::new(7_u64),
+            |cell| cell,
+        )
         .expect("initial cell belongs to the selected source");
     let calls = Arc::new(AtomicUsize::new(0));
     let registration = pending
@@ -234,16 +248,17 @@ fn prepared_derived_image_keeps_conflict_and_retired_drop_custody() {
     let runtime = runtime_with_test_schema();
     create_entity(&runtime, "derived-image-anchor");
     let selected_handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
-    let selected = runtime
-        .read_truth()
-        .positioned_snapshot(&selected_handle)
-        .expect("registered branch has a selected image");
     let pending = runtime
         .publication_companion_port()
         .begin_required_registration()
         .expect("required registration begins");
     let cell = pending
-        .mint_branch_cell(&selected, Arc::new(7_u64))
+        .with_branch_cell_at_head(
+            &runtime,
+            &runtime.main_branch_identity(),
+            Arc::new(7_u64),
+            |cell| cell,
+        )
         .expect("the owner mints a real branch cell");
     let _registration = pending
         .activate(

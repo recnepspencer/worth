@@ -4,23 +4,16 @@ use crate::planning::{FrontierCounterSnapshot, FrontierParityBundle, PlannedRout
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum FrontierPerturbationClass {
     SerialControlParity,
-    ParallelAdmittedParity,
     SerialFallbackParity,
-    PredictedRealizedBreadth,
-    BundleRoutePostureParity,
     ExactBasisBundleParity,
-    WorkAvoidedCounterParity,
     UnsupportedFrontierFamilyRejection,
     UnsupportedBundleCompositionRejection,
     MixedBasisBundleRejection,
-    HiddenSerialFallbackRejection,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum FrontierRouteClass {
     SerialControl,
-    ParallelAdmitted,
-    ParallelAdmittedBundle,
     SerialFallback,
     SerialFallbackBundle,
 }
@@ -29,8 +22,6 @@ impl FrontierRouteClass {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::SerialControl => "serial_control",
-            Self::ParallelAdmitted => "parallel_admitted",
-            Self::ParallelAdmittedBundle => "parallel_admitted_bundle",
             Self::SerialFallback => "serial_fallback",
             Self::SerialFallbackBundle => "serial_fallback_bundle",
         }
@@ -41,8 +32,6 @@ impl From<&PlannedRouteFamily> for FrontierRouteClass {
     fn from(value: &PlannedRouteFamily) -> Self {
         match value {
             PlannedRouteFamily::FrontierSerialControl => Self::SerialControl,
-            PlannedRouteFamily::FrontierParallelAdmitted => Self::ParallelAdmitted,
-            PlannedRouteFamily::FrontierParallelAdmittedBundle => Self::ParallelAdmittedBundle,
             PlannedRouteFamily::FrontierSerialFallback => Self::SerialFallback,
             PlannedRouteFamily::FrontierSerialFallbackBundle => Self::SerialFallbackBundle,
         }
@@ -54,7 +43,6 @@ pub enum FrontierFailureClass {
     UnsupportedFrontierFamily,
     UnsupportedBundleComposition,
     MixedBasisBundleDenied,
-    HiddenSerialFallbackDenied,
 }
 
 impl FrontierFailureClass {
@@ -63,7 +51,6 @@ impl FrontierFailureClass {
             Self::UnsupportedFrontierFamily => "unsupported-frontier-family",
             Self::UnsupportedBundleComposition => "unsupported-bundle-composition",
             Self::MixedBasisBundleDenied => "mixed-basis-bundle-denied",
-            Self::HiddenSerialFallbackDenied => "hidden-serial-fallback-denied",
         }
     }
 }
@@ -92,11 +79,6 @@ impl FrontierCertificationLane {
                 .route_posture_digest()
                 .as_str()
                 .is_empty()
-            && self
-                .parity_bundle
-                .counter_snapshot()
-                .frontier_lookup_count()
-                > 0
     }
 }
 
@@ -104,12 +86,11 @@ impl FrontierCertificationLane {
 pub struct FrontierCertificationRejection {
     pub failure_class: FrontierFailureClass,
     pub failure_digest: String,
-    pub counter_snapshot: FrontierCounterSnapshot,
 }
 
 impl FrontierCertificationRejection {
     pub fn has_required_outputs(&self) -> bool {
-        !self.failure_digest.is_empty() && self.counter_snapshot.frontier_lookup_count() > 0
+        !self.failure_digest.is_empty()
     }
 }
 
@@ -124,7 +105,6 @@ pub struct MilestoneFivePointThreeFrontierCertificationArtifact {
     pub suite_name: &'static str,
     pub certification_bundle_digest: String,
     pub coverage_matrix_digest: String,
-    pub counter_snapshot: FrontierCounterSnapshot,
     pub matrix: FrontierCertificationMatrix,
 }
 
@@ -145,7 +125,7 @@ impl FrontierCloseoutStatus {
 pub struct FrontierCloseoutRequirement {
     pub requirement_name: &'static str,
     pub status: FrontierCloseoutStatus,
-    pub production_artifacts: &'static [&'static str],
+    pub proof_artifacts: &'static [&'static str],
     pub certification_rows: &'static [&'static str],
     pub notes: &'static str,
 }
@@ -162,7 +142,7 @@ pub struct MilestoneFivePointThreeFrontierCloseoutArtifact {
 }
 
 impl MilestoneFivePointThreeFrontierCloseoutArtifact {
-    pub fn is_full_spec_ready(&self) -> bool {
+    pub fn all_requirements_marked_satisfied(&self) -> bool {
         self.must_ship
             .iter()
             .chain(self.must_preserve.iter())
@@ -178,30 +158,13 @@ impl FrontierCertificationMatrix {
     ) -> MilestoneFivePointThreeFrontierCertificationArtifact {
         let certification_bundle_digest = digest_parts(&bundle_digest_parts(&self));
         let coverage_matrix_digest = digest_parts(&coverage_digest_parts(&self));
-        let counter_snapshot = self.aggregate_counters();
 
         MilestoneFivePointThreeFrontierCertificationArtifact {
             suite_name: self.suite_name,
             certification_bundle_digest,
             coverage_matrix_digest,
-            counter_snapshot,
             matrix: self,
         }
-    }
-
-    fn aggregate_counters(&self) -> FrontierCounterSnapshot {
-        let mut aggregate = FrontierCounterSnapshot::default();
-        for row in &self.rows {
-            aggregate.absorb(row.control_lane.counter_snapshot());
-            aggregate.absorb(row.hostile_lane.counter_snapshot());
-            aggregate.absorb(row.parity_lane.counter_snapshot());
-        }
-        for row in &self.rejection_rows {
-            aggregate.absorb(row.control_lane.counter_snapshot());
-            aggregate.absorb(&row.hostile_lane.counter_snapshot);
-            aggregate.absorb(row.parity_lane.counter_snapshot());
-        }
-        aggregate
     }
 }
 
@@ -270,8 +233,10 @@ fn lane_digest_parts(bundle: &FrontierCertificationLane, label: &str) -> Vec<Str
             bundle.parity_bundle.predicted_breadth().value()
         ),
         format!(
-            "{label}.realized_breadth:{}",
-            bundle.parity_bundle.realized_breadth()
+            "{label}.reported_execution_records_examined_count:{}",
+            bundle
+                .parity_bundle
+                .reported_execution_records_examined_count()
         ),
     ];
     parts.extend(bundle.parity_bundle.counter_snapshot().digest_parts(label));
@@ -279,12 +244,10 @@ fn lane_digest_parts(bundle: &FrontierCertificationLane, label: &str) -> Vec<Str
 }
 
 fn rejection_digest_parts(bundle: &FrontierCertificationRejection, label: &str) -> Vec<String> {
-    let mut parts = vec![
+    vec![
         format!("{label}.failure_class:{}", bundle.failure_class.as_str()),
         format!("{label}.failure_digest:{}", bundle.failure_digest),
-    ];
-    parts.extend(bundle.counter_snapshot.digest_parts(label));
-    parts
+    ]
 }
 
 pub fn closeout_matrix_digest_parts(
@@ -299,7 +262,7 @@ pub fn closeout_matrix_digest_parts(
         for requirement in *requirements {
             parts.push(format!("requirement:{}", requirement.requirement_name));
             parts.push(format!("status:{}", requirement.status.as_str()));
-            for artifact in requirement.production_artifacts {
+            for artifact in requirement.proof_artifacts {
                 parts.push(format!("artifact:{artifact}"));
             }
             for row in requirement.certification_rows {

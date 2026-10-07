@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::input_cutoff::StableEqualityConsequence;
+use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 use worth_relational::facade::mvcc::CompanionCellEditStop;
 
 #[test]
@@ -68,7 +69,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                 SettlementRegistration {
                     work_membership: None,
                     identity: Arc::clone(&current),
-                    facts: Arc::clone(&facts),
+                    facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),
                     output_facts: None,
                     read_basis: basis.clone(),
                     stale_at_read_basis: OrdSet::new(),
@@ -120,7 +121,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                         &snapshot,
                         &basis,
                         &current,
-                        &facts,
+                        &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
                         &mut owner.edit_admission(),
                     )
                     .unwrap()
@@ -147,7 +148,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                 &snapshot,
                 &basis,
                 &current,
-                &facts,
+                &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
                 &mut owner.edit_admission(),
             )
             .unwrap()

@@ -10,6 +10,14 @@ use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryCurrentOutputCandidate,
 };
 
+pub(super) enum VerifiedCandidate {
+    Current {
+        facts: crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+        witness: Arc<OnceLock<SealedNativeOutputWitness>>,
+    },
+    Changed(ConsumedOutputVerification),
+}
+
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
 where
@@ -21,19 +29,17 @@ where
     /// A restored output no demand has verified carries no witness yet. Its
     /// reader compares the checkpoint facts and the output in full, and the
     /// lineage row keeps the witness that comparison built.
-    #[allow(clippy::type_complexity)]
     pub(super) fn verify_current_candidate(
         &mut self,
         candidate: &WorthQueryCurrentOutputCandidate,
         selected: &PositionedRelationalSnapshot,
         subject: &str,
-    ) -> Result<
-        Option<(
-            Arc<OnceLock<SealedNativeOutputWitness>>,
-            ConsumedOutputVerification,
-        )>,
-        WorthQueryCurrentOutputDenial,
-    > {
+    ) -> Result<Option<VerifiedCandidate>, WorthQueryCurrentOutputDenial> {
+        let Some(facts) = candidate.observed_source_facts.for_comparison() else {
+            return Ok(Some(VerifiedCandidate::Changed(
+                ConsumedOutputVerification::ChangedUpstream,
+            )));
+        };
         let sealed = candidate
             .native_output_witness
             .as_ref()
@@ -60,23 +66,30 @@ where
             .invalidation_owner
             .edit_admission_within(maximum_work);
         let verification = match sealed {
-            Some(witness) => ConsumedOutputEvidence::verify_candidate_at(
+            Some(witness) => ConsumedOutputEvidence::verify_at_observation(
                 &candidate.settlement_identity,
-                &candidate.observed_source_facts,
+                &facts,
                 &candidate.consumed_outputs,
                 candidate.verification_requirement,
                 witness,
-                selected,
                 &self.reader.invalidation_owner,
                 self.reader.runtime,
                 self.reader.snapshot,
                 selected,
                 &mut admission,
             )
-            .map(|verification| Some((Arc::clone(witness), verification))),
+            .map(|verification| {
+                Some(match verification {
+                    ConsumedOutputVerification::Current => VerifiedCandidate::Current {
+                        facts,
+                        witness: Arc::clone(witness),
+                    },
+                    changed => VerifiedCandidate::Changed(changed),
+                })
+            }),
             None => ConsumedOutputEvidence::verify_restored_root_at(
                 &candidate.correspondence,
-                &candidate.observed_source_facts,
+                &facts,
                 self.reader.layout,
                 &self.reader.invalidation_owner,
                 self.reader.runtime,
@@ -90,7 +103,7 @@ where
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
                     .retain_restored_witness(&candidate.settlement_identity, witness?);
-                Some((witness, ConsumedOutputVerification::Current))
+                Some(VerifiedCandidate::Current { facts, witness })
             }),
         };
         let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
@@ -100,26 +113,9 @@ where
             if stop == ConsumedOutputVerificationStop::WorkExhausted {
                 self.reader.work_budget.mark_exceeded();
             }
-            WorthQueryCurrentOutputDenial::new(
-                match stop {
-                    ConsumedOutputVerificationStop::WorkExhausted => {
-                        WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
-                    }
-                    ConsumedOutputVerificationStop::PendingUpstream => {
-                        WorthQueryCurrentOutputDenialKind::PendingUpstream
-                    }
-                    ConsumedOutputVerificationStop::RetryCurrentness(stop) => {
-                        WorthQueryCurrentOutputDenialKind::CurrentnessRaced(stop)
-                    }
-                    ConsumedOutputVerificationStop::Unavailable => {
-                        WorthQueryCurrentOutputDenialKind::OutputUnavailable
-                    }
-                    ConsumedOutputVerificationStop::Interrupted(event) => {
-                        WorthQueryCurrentOutputDenialKind::Interrupted(event.interruption())
-                    }
-                },
-                subject,
-            )
+            self.reader.retention_exhausted |=
+                stop == ConsumedOutputVerificationStop::CapacityExhausted;
+            super::verification_denial::from_stop(stop, subject)
         })
     }
 }

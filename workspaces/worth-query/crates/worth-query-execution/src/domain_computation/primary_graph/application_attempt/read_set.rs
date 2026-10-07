@@ -106,7 +106,10 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
+    #[cfg(test)]
     pub(super) computation_facts: Option<SealedComputationFacts>,
+    /// The ordinals in `facts`, ascending, of the facts an owner call read.
+    pub(super) computation_fact_ordinals: Box<[usize]>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps

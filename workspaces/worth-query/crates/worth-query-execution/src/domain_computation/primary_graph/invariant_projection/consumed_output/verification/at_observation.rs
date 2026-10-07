@@ -30,7 +30,27 @@ impl ConsumedOutputEvidence {
         snapshot: &SnapshotHandle,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
-        for (ordinal, fact) in evidence.source_facts.iter().enumerate() {
+        Self::compare_facts(
+            evidence.source_facts,
+            None,
+            evidence.native_output_witness.map(Arc::as_ref),
+            direct,
+            runtime,
+            snapshot,
+            admission,
+        )
+    }
+
+    pub(super) fn compare_facts(
+        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+        output_facts: Option<&[WorthQueryApplicationObservedFact]>,
+        witness: Option<&OnceLock<SealedNativeOutputWitness>>,
+        direct: bool,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
+        for (ordinal, fact) in source_facts.iter().enumerate() {
             if !fact_is_current(fact, runtime, snapshot, admission)? {
                 return Ok(Some(if direct {
                     ConsumedOutputVerification::ChangedDirectFact(ordinal)
@@ -39,7 +59,13 @@ impl ConsumedOutputEvidence {
                 }));
             }
         }
-        if let Some(witness) = evidence.native_output_witness {
+        if let Some(output_facts) = output_facts {
+            for fact in output_facts {
+                if !fact_is_current(fact, runtime, snapshot, admission)? {
+                    return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
+                }
+            }
+        } else if let Some(witness) = witness {
             let witness = witness
                 .get()
                 .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
@@ -60,7 +86,7 @@ impl ConsumedOutputEvidence {
     /// marked and the full comparison are paid from the reader's meter.
     pub(in crate::domain_computation::primary_graph) fn verify_at_observation(
         identity: &Arc<RecordedSettlementIdentity>,
-        source_facts: &[WorthQueryApplicationObservedFact],
+        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         upstream: &[ConsumedOutputEvidence],
         verification_requirement: Option<FullVerificationReason>,
         native_output_witness: &Arc<OnceLock<SealedNativeOutputWitness>>,
@@ -103,7 +129,7 @@ impl ConsumedOutputEvidence {
         )
     }
 
-    fn compare_in_full<'a>(
+    pub(super) fn compare_in_full<'a>(
         root: EvidenceView<'a>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,

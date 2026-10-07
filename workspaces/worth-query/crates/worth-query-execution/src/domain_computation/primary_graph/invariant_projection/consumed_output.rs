@@ -6,7 +6,6 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact,
     output_lineage::{
         invalidation::{
             FullVerificationReason, InvalidationEditAdmission, RetainedConsumedOutputCapacity,
@@ -20,11 +19,12 @@ use crate::domain_computation::primary_graph::{
 #[cfg(feature = "certification-invalidation-equivalence")]
 mod equivalence;
 mod pending_dependency;
+mod publication_recovery;
 #[cfg(test)]
 mod test_support;
 mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
-use verification::map_admission_stop;
+pub(in crate::domain_computation::primary_graph::invariant_projection) use verification::map_admission_stop;
 #[cfg(feature = "certification-invalidation-equivalence")]
 pub(in crate::domain_computation::primary_graph) use verification::EvidenceView;
 pub(in crate::domain_computation::primary_graph) use verification::{
@@ -36,8 +36,9 @@ pub(in crate::domain_computation::primary_graph) use verification::{
 /// This runtime-only record is never serialized through a TypeId-bearing key.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct ConsumedOutputEvidence {
+    _computation: crate::domain_computation::primary_graph::output_lineage::CurrentComputation,
     identity: Arc<RecordedSettlementIdentity>,
-    source_facts: Arc<[WorthQueryApplicationObservedFact]>,
+    source_facts: crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
     upstream: Arc<[ConsumedOutputEvidence]>,
     verification_requirement: Option<FullVerificationReason>,
     native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
@@ -65,8 +66,9 @@ impl Eq for ConsumedOutputEvidence {}
 
 impl ConsumedOutputEvidence {
     pub(super) fn new(
+        computation: crate::domain_computation::primary_graph::output_lineage::CurrentComputation,
         identity: Arc<RecordedSettlementIdentity>,
-        source_facts: Arc<[WorthQueryApplicationObservedFact]>,
+        source_facts: crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         upstream: Arc<[ConsumedOutputEvidence]>,
         verification_requirement: Option<FullVerificationReason>,
         native_output_witness: Arc<OnceLock<SealedNativeOutputWitness>>,
@@ -74,6 +76,7 @@ impl ConsumedOutputEvidence {
         capacity: RetainedConsumedOutputCapacity,
     ) -> Self {
         Self {
+            _computation: computation,
             identity,
             source_facts,
             upstream,
@@ -152,14 +155,10 @@ impl ConsumedOutputEvidence {
         )
     }
 
-    /// Record a consumed restored output's mark row before the commit that
-    /// consumed it is checked. Its reader compared it in full at the basis it
-    /// read; on a branch nothing has published to, that basis is the head and
-    /// the branch gets its mark cell there, as a demand's readmission mints
-    /// one. The commit's meter pays for it, because the commit's answer reads
-    /// the row: an admission stop, in work, in bytes or at the source, stops
-    /// the commit as verification would. A row the owner will not establish
-    /// leaves the output without one, compared in full again.
+    /// Record the restored root on the commit's meter. The read basis supplies
+    /// only a branch identity to minting; Native selects its true head. A
+    /// contended Native publication or changed lookup declines this derived
+    /// registration, leaving the commit to compare the root in full again.
     pub(in crate::domain_computation::primary_graph) fn establish_restored_before_commit(
         &self,
         source_owner: &WorthQueryRelationalSourceOwner,
@@ -168,10 +167,30 @@ impl ConsumedOutputEvidence {
         if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
             return Ok(());
         }
-        let established = source_owner
-            .mint_mark_cell_at_head(&self.selected_native_root, admission)
-            .map_err(SettlementRegistrationStop::Admission)
-            .and_then(|()| self.establish_restored(&source_owner.invalidation_owner, admission));
+        use crate::domain_computation::primary_graph::output_lineage::invalidation::HeadCellRegistrationStop;
+        match source_owner.mint_mark_cell_at_head(self.selected_native_root.branch_id(), admission)
+        {
+            Ok(()) => {}
+            Err(HeadCellRegistrationStop::Admission(stop)) => return Err(map_admission_stop(stop)),
+            Err(HeadCellRegistrationStop::Native(stop)) => {
+                use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop;
+                return match stop {
+                    PublicationCompanionRegistrationStop::CellCapacityExhausted { .. } => {
+                        Err(ConsumedOutputVerificationStop::CapacityExhausted)
+                    }
+                    PublicationCompanionRegistrationStop::HeadCellPublicationContended => Ok(()),
+                    PublicationCompanionRegistrationStop::OwnerUnavailable
+                    | PublicationCompanionRegistrationStop::PublicationPending
+                    | PublicationCompanionRegistrationStop::RebindRequired
+                    | PublicationCompanionRegistrationStop::Superseded
+                    | PublicationCompanionRegistrationStop::IdentityExhausted
+                    | PublicationCompanionRegistrationStop::ForeignRuntime
+                    | PublicationCompanionRegistrationStop::HeadUnavailable => Ok(()),
+                };
+            }
+            Err(HeadCellRegistrationStop::LookupChanged) => return Ok(()),
+        }
+        let established = self.establish_restored(&source_owner.invalidation_owner, admission);
         match established {
             Err(SettlementRegistrationStop::Admission(stop)) => Err(map_admission_stop(stop)),
             Ok(_)

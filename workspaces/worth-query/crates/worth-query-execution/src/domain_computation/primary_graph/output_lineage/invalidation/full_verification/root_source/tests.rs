@@ -64,7 +64,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
                     super::super::super::SettlementRegistration {
                         work_membership: None,
                         identity,
-                        facts: Arc::from([]),
+                        facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([])),
                         output_facts: None,
                         read_basis: (*selected).clone(),
                         stale_at_read_basis: im::OrdSet::new(),

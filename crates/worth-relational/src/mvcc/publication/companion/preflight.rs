@@ -1,16 +1,18 @@
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, MutexGuard, TryLockError};
+use std::sync::Arc;
 
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::{
-    PositionedRelationalSnapshot, RelationalInterruptionBoundary, RelationalInterruptionEvent,
-    RelationalOperationControl,
+    RelationalInterruptionBoundary, RelationalInterruptionEvent, RelationalOperationControl,
 };
 
+use super::cell::publication_admission::PublicationCellAdmission;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
-use super::{CompanionBranchCell, CompanionRegistry, ReservedCompanionBranchCell};
+use super::{CompanionRegistry, PreparedCompanionBranchCell, ReservedCompanionBranchCell};
+mod cutover;
+pub use cutover::PreparedPublicationCompanionEffect;
 
 mod observer;
 pub use observer::{CompanionPublicationCompletion, CompanionPublicationCompletionObserver};
@@ -163,49 +165,17 @@ impl<'a> PublicationCompanionPreflight<'a> {
         Ok(())
     }
 
-    /// Mint an initial cell only for this candidate's currently selected root.
-    pub fn mint_branch_cell<T: Send + Sync + 'static>(
-        &mut self,
-        selected: &PositionedRelationalSnapshot,
-        initial: Arc<T>,
-    ) -> Result<CompanionBranchCell<T>, CompanionPreflightStop> {
-        if selected.runtime_instance_id() != self.binding.runtime_instance_id
-            || selected.branch_id() != &self.binding.branch_id
-            || selected.root_id() != self.binding.expected_root_id
-            || selected.commit_id() != self.binding.expected_commit_id
-            || selected.position() != self.binding.expected_position
-        {
-            return Err(CompanionPreflightStop::SelectedSourceMismatch);
-        }
-        self.claim_work(1)?;
-        self.claim_bytes(
-            arc_allocation_bound::<CompanionRootImage>()
-                .saturating_add(arc_allocation_bound::<CompanionBranchCellCore>()),
-        )?;
-        let retention = self.cells.reserve_cell().map_err(|stop| match stop {
-            super::PublicationCompanionRegistrationStop::CellCapacityExhausted {
-                maximum_bytes,
-            } => CompanionPreflightStop::CellCapacityExhausted { maximum_bytes },
-            _ => CompanionPreflightStop::RegistrationChanged,
-        })?;
-        Ok(CompanionBranchCell::new(
-            selected,
-            self.binding.registration_generation,
-            initial,
-            retention,
-        ))
-    }
-
-    /// Mint the first cell from the exact owner-admitted selected root.
+    /// Prepare an unpublished cell from the candidate expectation, verified only at cutover.
     /// The caller supplies only its prepared Query payload, never source identity.
     pub fn mint_selected_branch_cell<T: Send + Sync + 'static>(
         &mut self,
         initial: Arc<T>,
-    ) -> Result<CompanionBranchCell<T>, CompanionPreflightStop> {
+    ) -> Result<PreparedCompanionBranchCell<T>, CompanionPreflightStop> {
         self.claim_work(1)?;
         self.claim_bytes(
             arc_allocation_bound::<CompanionRootImage>()
-                .saturating_add(arc_allocation_bound::<CompanionBranchCellCore>()),
+                .saturating_add(arc_allocation_bound::<CompanionBranchCellCore>())
+                .saturating_add(arc_allocation_bound::<PublicationCellAdmission>()),
         )?;
         let retention = self.cells.reserve_cell().map_err(|stop| match stop {
             super::PublicationCompanionRegistrationStop::CellCapacityExhausted {
@@ -213,7 +183,7 @@ impl<'a> PublicationCompanionPreflight<'a> {
             } => CompanionPreflightStop::CellCapacityExhausted { maximum_bytes },
             _ => CompanionPreflightStop::RegistrationChanged,
         })?;
-        Ok(CompanionBranchCell::new_selected(
+        Ok(PreparedCompanionBranchCell::new_selected(
             &self.binding,
             initial,
             retention,
@@ -237,7 +207,7 @@ impl<'a> PublicationCompanionPreflight<'a> {
 
     pub fn seal_replacement<T: Send + Sync + 'static>(
         &mut self,
-        reserved: ReservedCompanionBranchCell<T>,
+        mut reserved: ReservedCompanionBranchCell<T>,
         prepared: Arc<T>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
         self.validate_cell(&reserved.core)?;
@@ -267,6 +237,7 @@ impl<'a> PublicationCompanionPreflight<'a> {
             _derived_retention: None,
         });
         let pinned_image = Arc::clone(&reserved.current().image);
+        let publication_admission = reserved.publication_admission.take();
         let core = reserved.into_core();
         Ok(PreparedPublicationCompanionEffect {
             binding: self.binding.clone(),
@@ -277,117 +248,11 @@ impl<'a> PublicationCompanionPreflight<'a> {
             retired: None,
             next_topology_generation,
             completion: None,
+            publication_admission,
         })
-    }
-}
-
-/// Non-cloneable, candidate-bound successor image. Only Relational installs it.
-pub struct PreparedPublicationCompanionEffect {
-    binding: CandidateCompanionBinding,
-    pinned_topology_generation: u64,
-    pinned_image: Arc<CompanionRootImage>,
-    cell: Arc<CompanionBranchCellCore>,
-    next: Arc<CompanionRootImage>,
-    retired: Option<Arc<CompanionRootImage>>,
-    next_topology_generation: u64,
-    completion: Option<CompanionPublicationCompletionObserver>,
-}
-
-impl PreparedPublicationCompanionEffect {
-    /// The caller funds this scheduling observer before native publication.
-    /// It never changes the authority or selected-image checks of the effect.
-    pub fn attach_completion_observer(
-        &mut self,
-        context: &mut PublicationCompanionPreflight<'_>,
-        retained: Arc<dyn Send + Sync>,
-    ) -> Result<CompanionPublicationCompletionObserver, CompanionPreflightStop> {
-        assert!(
-            self.completion.is_none(),
-            "one observer per prepared cutover"
-        );
-        context.claim_work(2)?;
-        context.claim_bytes(CompanionPublicationCompletionObserver::retained_bytes())?;
-        let observer = CompanionPublicationCompletionObserver::new(retained);
-        self.completion = Some(observer.clone());
-        Ok(observer)
-    }
-
-    pub(crate) fn matches(
-        &self,
-        binding: &CandidateCompanionBinding,
-    ) -> Result<(), CompanionPreflightStop> {
-        if self.binding != *binding
-            || self.cell.registration_generation != binding.registration_generation
-        {
-            return Err(CompanionPreflightStop::RegistrationChanged);
-        }
-        if !self.cell.reservation_live.load(Ordering::Acquire)
-            || self.cell.topology_generation.load(Ordering::Acquire)
-                != self.pinned_topology_generation
-            || self.pinned_topology_generation.checked_add(1) != Some(self.next_topology_generation)
-        {
-            return Err(CompanionPreflightStop::TopologyPending);
-        }
-        Ok(())
-    }
-
-    /// Acquire the fixed swap cell before any branch movement.
-    pub(crate) fn enter_cutover(
-        &mut self,
-    ) -> Result<PreparedCompanionCutover<'_>, CompanionPreflightStop> {
-        let current = match self.cell.current.try_lock() {
-            Ok(current) => current,
-            Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
-            Err(TryLockError::WouldBlock) => return Err(CompanionPreflightStop::TopologyPending),
-        };
-        if self.cell.topology_generation.load(Ordering::Acquire) != self.pinned_topology_generation
-            || !Arc::ptr_eq(&*current, &self.pinned_image)
-        {
-            return Err(CompanionPreflightStop::TopologyPending);
-        }
-        Ok(PreparedCompanionCutover {
-            cell: &self.cell,
-            next: &self.next,
-            retired: &mut self.retired,
-            next_topology_generation: self.next_topology_generation,
-            current,
-            completion: self.completion.as_ref(),
-        })
-    }
-}
-
-pub(crate) struct PreparedCompanionCutover<'a> {
-    cell: &'a Arc<CompanionBranchCellCore>,
-    next: &'a Arc<CompanionRootImage>,
-    retired: &'a mut Option<Arc<CompanionRootImage>>,
-    next_topology_generation: u64,
-    current: MutexGuard<'a, Arc<CompanionRootImage>>,
-    completion: Option<&'a CompanionPublicationCompletionObserver>,
-}
-
-impl PreparedCompanionCutover<'_> {
-    /// No callbacks, allocation, failure, or retired-payload Drop occur here.
-    pub(crate) fn install_at(&mut self, position: PatchStreamPosition) {
-        self.next.position.store(position.0, Ordering::Release);
-        *self.retired = Some(std::mem::replace(&mut *self.current, Arc::clone(self.next)));
-        self.cell
-            .topology_generation
-            .store(self.next_topology_generation, Ordering::Release);
-        if let Some(completion) = self.completion {
-            completion.installed();
-        }
     }
 }
 
 pub(super) const fn arc_allocation_bound<T>() -> u64 {
     (std::mem::size_of::<T>() + 2 * std::mem::size_of::<usize>() + std::mem::align_of::<T>()) as u64
-}
-
-impl Drop for PreparedPublicationCompanionEffect {
-    fn drop(&mut self) {
-        if let Some(completion) = &self.completion {
-            completion.abort_uninstalled();
-        }
-        self.cell.reservation_live.store(false, Ordering::Release);
-    }
 }

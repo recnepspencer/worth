@@ -99,9 +99,11 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
+    // The invalidation window keeps no more positions than the World retains.
+    let kept = usize::try_from(retained_composite_commits.min(128)).unwrap();
     let limits = limits(
         retained_composite_commits,
-        invalidation(retained_invalidation_bytes, maximum_invalidation_work, 128),
+        invalidation(retained_invalidation_bytes, maximum_invalidation_work, kept),
     );
     install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
 }

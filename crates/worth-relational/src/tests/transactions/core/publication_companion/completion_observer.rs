@@ -38,15 +38,15 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
         let runtime = runtime_with_test_schema();
         create_entity(&runtime, "observer-anchor");
         let before = test_owner_main_basis(&runtime).expect("main branch has owner basis");
-        let selected_handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
-        let selected = runtime
-            .read_truth()
-            .positioned_snapshot(&selected_handle)
-            .expect("owner snapshot has a canonical position");
         let port = runtime.publication_companion_port();
         let pending = port.begin_required_registration().unwrap();
         let cell = pending
-            .mint_branch_cell(&selected, Arc::new(7_u64))
+            .with_branch_cell_at_head(
+                &runtime,
+                &runtime.main_branch_identity(),
+                Arc::new(7_u64),
+                |cell| cell,
+            )
             .unwrap();
         let retained_drops = Arc::new(AtomicUsize::new(0));
         let participant = Arc::new(ObservedCompanion {

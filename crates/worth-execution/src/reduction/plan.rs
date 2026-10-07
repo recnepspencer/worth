@@ -49,6 +49,35 @@ impl ReductionPlan {
     pub fn identities(&self) -> &[PartitionIdentity] {
         self.identities.as_slice()
     }
+
+    /// The work a checked build of this plan's tree charges when it
+    /// completes, from its shape alone: `9n - L - R` for `n` partitions,
+    /// where `L` and `R` are the lengths of the tree's left and right spines.
+    /// Placing the leaves costs `n` visits, the monotone-stack pass `n` plus
+    /// one per pop (`n - R`) and one per stop (`n - L`), the split plan `n`,
+    /// and evaluation two visits and two combines per node. `None` when it
+    /// does not fit.
+    pub fn checked_build_work(&self) -> Option<u64> {
+        let identities = self.identities();
+        let spine = |priorities: &mut dyn Iterator<Item = (u64, PartitionIdentity)>| {
+            let mut least = None;
+            priorities.fold(0_u64, |count, priority| {
+                if least.is_none_or(|least| priority < least) {
+                    least = Some(priority);
+                    count + 1
+                } else {
+                    count
+                }
+            })
+        };
+        let left = spine(&mut identities.iter().copied().map(priority));
+        let right = spine(&mut identities.iter().rev().copied().map(priority));
+        u64::try_from(identities.len())
+            .ok()?
+            .checked_mul(9)?
+            .checked_sub(left)?
+            .checked_sub(right)
+    }
 }
 
 /// SplitMix64 finalizer over the identity's portable numeric representation.

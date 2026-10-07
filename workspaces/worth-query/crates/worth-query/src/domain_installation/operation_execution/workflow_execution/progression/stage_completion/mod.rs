@@ -2,7 +2,9 @@ use crate::basis_lifecycle::BasisOperationLane;
 use crate::runtime::WorthQueryWorkspace;
 
 pub(in crate::domain_installation::operation_execution) mod evidence_validation;
+mod execution_context;
 mod outcome_routing;
+use super::workflow_parallel_progression::frontier::CanonicalWorkflowStageResult;
 
 use super::workflow_graph_execution::invoke_stage_graphs;
 use super::workflow_progression_state::{
@@ -101,15 +103,18 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
-        let runtime_admission = self.admit_stage_runtime_authority(workspace)?;
-        self.advance_once_with_runtime_admission(
-            stage_identity,
-            input,
-            workspace,
-            runtime_admission,
-        )
+        let admission = self.admit_stage_runtime_authority(workspace)?;
+        self.advance_once_with_runtime_admission(stage_identity, input, workspace, admission)
     }
-
+    pub(super) fn advance_once_with_computation(
+        &mut self,
+        slot: CanonicalWorkflowStageResult,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
+        let runtime_admission = self.admit_stage_runtime_authority(workspace)?;
+        let admitted = self.admit_stage(slot.stage_identity(), slot.input(), runtime_admission)?;
+        self.advance_once_with_admitted_computation(admitted, slot, workspace)
+    }
     fn advance_once_with_runtime_admission(
         &mut self,
         stage_identity: &str,
@@ -147,6 +152,16 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         input: WorthQueryWorkflowValue,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
+        let prepared =
+            self.prepare_frontier_computation(vec![(admitted.stage.identity().into(), input)]);
+        prepared.compute().apply(self, workspace, Some(admitted))
+    }
+    pub(super) fn advance_once_with_admitted_computation(
+        &mut self,
+        admitted: WorthQueryAdmittedWorkflowStage,
+        slot: CanonicalWorkflowStageResult,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let WorthQueryAdmittedWorkflowStage {
             stage,
             counters_before,
@@ -160,7 +175,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                     self.counters,
                 )
             })?;
-        let semantic_input = input.semantic_value();
+        let semantic_input = slot.input().semantic_value();
         let graph_snapshot = workspace.snapshot_identity();
         let conditional = match self.admit_stage_condition(
             stage.identity(),
@@ -190,7 +205,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             &stage,
             &resources,
             &resource_evidence,
-            input,
+            slot,
             &graph_receipts,
             workspace,
         )?;
@@ -245,7 +260,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         stage: &worth_query_installation::facade::WorthQueryPortableWorkflowStage,
         resources: &super::WorthQueryAdmittedExecutionResourcePlan,
         resource_evidence: &super::WorthQueryExecutionResourceAttemptEvidence,
-        input: WorthQueryWorkflowValue,
+        slot: CanonicalWorkflowStageResult,
         graph_receipts: &[WorthQueryBoundGraphExecutionReceipt],
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryExecutedWorkflowStage, WorthQueryWorkflowAdvanceDenial> {
@@ -268,7 +283,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         )?;
         let material = self
             .executor
-            .execute(input, &context, workspace)
+            .apply(slot, &context, workspace)
             .map_err(|failure| {
                 let class = failure.class().clone();
                 let kind = if stage.semantics().failure_classes.contains(&class) {
@@ -294,92 +309,5 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             material: material.into_parts(),
             effect_workflow_binding,
         })
-    }
-
-    fn stage_effect_workflow_binding(
-        &self,
-        stage: &worth_query_installation::facade::WorthQueryPortableWorkflowStage,
-        snapshot: crate::memory_workspace::WorthQuerySnapshotIdentity,
-    ) -> crate::workflow::WorkflowContextBinding {
-        let effect_binding_scope = format!(
-            "{}:{}:{}",
-            self.bound.binding_identity(),
-            self.identity,
-            stage.identity()
-        );
-        crate::workflow::synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
-            self.bound.definition().canonical_identity(),
-            &effect_binding_scope,
-            snapshot,
-        )
-    }
-
-    fn stage_execution_context<'a>(
-        &'a self,
-        stage: &'a worth_query_installation::facade::WorthQueryPortableWorkflowStage,
-        predecessor_receipts: &'a [&'a WorthQueryWorkflowStageReceipt],
-        graph_receipts: &'a [WorthQueryBoundGraphExecutionReceipt],
-        resources: &'a super::WorthQueryAdmittedExecutionResourcePlan,
-        resource_evidence: &'a super::WorthQueryExecutionResourceAttemptEvidence,
-        effect_workflow_binding: crate::workflow::WorkflowContextBinding,
-    ) -> Result<WorthQueryWorkflowStageExecutionContext<'a>, WorthQueryWorkflowAdvanceDenial> {
-        let artifact_production_authority = self
-            .managed_run()
-            .artifacts()
-            .production_authority(stage.identity())
-            .map_err(|denial| {
-                WorthQueryWorkflowAdvanceDenial::new(
-                    WorthQueryWorkflowAdvanceDenialKind::ArtifactCarriage(denial),
-                    self.counters,
-                )
-            })?;
-        let artifact_access_authority = self
-            .managed_run()
-            .artifacts()
-            .access_authority(stage.identity())
-            .map_err(|denial| {
-                WorthQueryWorkflowAdvanceDenial::new(
-                    WorthQueryWorkflowAdvanceDenialKind::ArtifactCarriage(denial),
-                    self.counters,
-                )
-            })?;
-        Ok(WorthQueryWorkflowStageExecutionContext::new(
-            WorthQueryWorkflowStageExecutionScope {
-                operation_identity: self.bound.definition().canonical_identity(),
-                binding_identity: self.bound.binding_identity(),
-                run_identity: &self.identity,
-                stage,
-                predecessor_receipts,
-            },
-            WorthQueryWorkflowStageExecutionAuthority {
-                effect_workflow_binding,
-                basis: self.bound.basis().normalized().family(),
-                installed_read: self.executor.installed_read.as_ref(),
-                operation_graph_reads: self
-                    .bound
-                    .definition()
-                    .semantics()
-                    .graph_reads
-                    .domain_roles(),
-                graph_receipts,
-                resources,
-                resource_evidence,
-                provider_session_identity: self.provider_session_identity(),
-                query_authority: self
-                    .bound
-                    .definition()
-                    .semantics()
-                    .canonical_query
-                    .query()
-                    .authority(),
-                identity_evolution_basis_identity: self
-                    .bound
-                    .basis()
-                    .capability_digest()
-                    .to_owned(),
-                artifact_access_authority,
-                artifact_production_authority,
-            },
-        ))
     }
 }

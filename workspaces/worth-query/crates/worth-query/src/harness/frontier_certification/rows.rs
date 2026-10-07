@@ -3,8 +3,8 @@ use crate::harness::certification::{
 };
 
 use super::rejections::{
-    hidden_serial_fallback_rejection, mixed_basis_bundle_rejection,
-    unsupported_bundle_composition_rejection, unsupported_frontier_family_rejection,
+    mixed_basis_bundle_rejection, unsupported_bundle_composition_rejection,
+    unsupported_frontier_family_rejection,
 };
 use super::row_catalog;
 use super::{
@@ -15,15 +15,11 @@ use super::{
 pub(super) fn canonical_row(
     spec: &row_catalog::FrontierCanonicalRowSpec,
     serial_control: &FrontierCertificationLane,
-    parallel_admitted: &FrontierCertificationLane,
-    parallel_bundle: &FrontierCertificationLane,
     serial_fallback: &FrontierCertificationLane,
     bundle_lane: &FrontierCertificationLane,
 ) -> CanonicalCertificationRow<FrontierPerturbationClass, FrontierCertificationLane> {
     let lane = match spec.route_class {
         FrontierRouteClass::SerialControl => serial_control.clone(),
-        FrontierRouteClass::ParallelAdmitted => parallel_admitted.clone(),
-        FrontierRouteClass::ParallelAdmittedBundle => parallel_bundle.clone(),
         FrontierRouteClass::SerialFallback => serial_fallback.clone(),
         FrontierRouteClass::SerialFallbackBundle => bundle_lane.clone(),
     };
@@ -41,7 +37,6 @@ pub(super) fn canonical_row(
 pub(super) fn rejection_row(
     spec: &row_catalog::FrontierRejectionRowSpec,
     serial_control: &FrontierCertificationLane,
-    parallel_admitted: &FrontierCertificationLane,
 ) -> RejectionCertificationRow<
     FrontierPerturbationClass,
     FrontierCertificationLane,
@@ -51,7 +46,6 @@ pub(super) fn rejection_row(
         "unsupported-frontier-family" => unsupported_frontier_family_rejection(),
         "unsupported-bundle-composition" => unsupported_bundle_composition_rejection(),
         "mixed-basis-bundle-denied" => mixed_basis_bundle_rejection(),
-        "forbidden-hidden-serial-fallback" => hidden_serial_fallback_rejection(),
         other => panic!("unknown frontier rejection row {other}"),
     };
 
@@ -60,6 +54,6 @@ pub(super) fn rejection_row(
         perturbation_class: spec.perturbation_class,
         control_lane: serial_control.clone(),
         hostile_lane,
-        parity_lane: parallel_admitted.clone(),
+        parity_lane: serial_control.clone(),
     }
 }

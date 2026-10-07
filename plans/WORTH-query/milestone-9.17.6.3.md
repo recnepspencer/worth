@@ -271,7 +271,8 @@ Required:
 - An edit that inserts a partition, one that deletes a partition, and one that
   moves an item between partitions.
 - An edit that merges two islands, one that splits an island, and one that
-  removes an island's least member.
+  removes an island's least member, proven on the Components partitioner in
+  worth-execution; Query plans are Keyed only.
 - A result that changes from `0.0` to `-0.0`.
 - A commit racing a partition's settlement.
 - A leaf change deep in a scope hierarchy with 10^5 sibling subtrees.
@@ -283,7 +284,8 @@ Required:
   their items.
 - The combine recomputes only the reduction-tree nodes on the affected root
   paths.
-- Unaffected islands keep their identity and results.
+- Unaffected islands keep their identity, proven in worth-execution, and
+  unaffected Keyed partitions in Query keep their results.
 - A changed encoding always propagates; an identical encoding always stops.
 - Sibling-disjoint scope subtrees contribute zero candidate and zero ready work.
 - A branch switch reuses the retained nodes both branches share.
@@ -2330,28 +2332,30 @@ The next phase may trust that the touched graph alone decides what recomputes.
   partitions gathering and computing only the one whose fact moved, with exact
   owner call counts and the full run's charged work. The topology entry proves
   through the public facade a demanded producer's live output at 100 and 160
-  partitions gathering and computing one partition after a one-entry edit, and
-  a producer writing a fact its own partition gathered recomputing that
-  partition next run. Partition reuse is proven exact by the differential
-  test, and later skip paths (membership edits, branch sharing, parallel) must
+  partitions gathering and computing one partition after a one-entry edit. A
+  producer's commit that writes a fact its own partition gathered is born
+  stale, so the same demand runs the producer again over the written value,
+  reusing every other partition, and settles; a demand after an edit that
+  moved no fact runs nothing and keeps its output. Partition reuse is proven
+  exact by the differential test, and later skip paths (membership edits,
+  branch sharing, parallel) must
   extend that test's edit alphabet. Its alphabet today is an entry's value, a
   set's shared weight, an entry's region, the producer's own write read first,
-  the producer's own write without reading it, the input, a no-op write and a
-  fault. A write lowers to the replacement of a fact the attempt observed
+  the producer's own write without reading it, the input, a no-op write, a
+  fault and its repair, a new entry, a deleted entry, a region emptied, an
+  entry moved to a new region, an entry deleted and made again under its
+  number, two entries trading numbers, and a work ceiling and its relief. A
+  write lowers to the replacement of a fact the attempt observed
   (`effect_lowering.rs:169`, `observed_fact_index.rs:70-80`), so a blind write
   is admitted only when another read of the attempt, here the gather's,
   observed the fact.
-  Re-routing only the items a membership edit touches is the next item: it
-  compares each item's key fact on its own and edits the partitions' members in
-  place.
   *Limitations:* the topology entry does not reach 10,000 partitions; only the
   unit test does. A set of 200 is refused at
   seeding, because the topology's planar turn invariant pays one unit of its
   1,024 for every entity the bootstrap touches, of any kind
   (`planar_invariant.rs:77`, `worth-relational` `structural_views.rs:118`,
   `planar_topology.rs:123`). An unobservable retained fact is proven by the
-  unit test only: the differential deletes nothing, and deleting an entry
-  unlinks its membership, so that run is full either way. Only a producer
+  unit test and by the differential's deletes. Only a producer
   whose operation runs a retained partitioned computation selects a prior
   state, and the selection charges the request's invalidation-edit admission
   for the partition index entries and the record it reads. The scratch of
@@ -2498,42 +2502,171 @@ The next phase may trust that the touched graph alone decides what recomputes.
     incremental map is not certified.
   - The incremental path maps one partition per run, so it is serial in
     effect; only a full run spreads partitions across workers.
-- **6.8** Maintain partitioner output incrementally and keep island identity stable.
-  Retained structure equals what a fresh build of the current inputs produces;
-  the differential test gains membership inserts, deletes, island merges and
-  splits.
-- **6.9** Retain the canonical tree in Query with eviction and branch sharing, and apply
-  encoding cutoff per partition. *Partly completed:* the tree is retained under
-  the lineage ledger and a recomputed partition with the same canonical bits
-  replaces nothing.
-- **6.10** A neutral application proves the isolation and reuse courtroom with operation
-  counts.
+- **6.8** Maintain partitioner output incrementally: retained structure equals what
+  a fresh build of the current inputs produces. *Completed:*
+  - A membership or item-key edit re-keys and re-routes only the items it
+    touched, in place in the retained Keyed routing, and marks the partitions
+    they left and joined. An item is identified by a digest of its value, so
+    an item whose digest changed counts as new.
+  - The combine is charged from the new tree's shape, as a fresh build charges
+    it.
+  - A seeded unit differential compares every retained field a later run
+    reads with a fresh full run's: item digests, routing, partitions, the
+    tree, the fact-to-readers table, outcome and charged work. The topology
+    entry's differential compares outcome, charged work and the partition a
+    work ceiling names.
+  - Island identity (least member, merge, split, least-member removal) is a
+    property of the Components partitioner and is proven in worth-execution.
+    A Components plan shape in Query is deferred.
+  - An item routed again into a partition identity another key digest holds
+    makes the run again in full from its start, so the collision is named
+    where a fresh build names it. Full key digests must match before either
+    a typed key or a result is retained, including an emptied partition.
+  - Only a producer's run digests its input and items; an unretained run
+    does neither and is charged for neither.
+  - Invalidation keeps no more positions than the World keeps commits,
+    refused at installation otherwise. Pinned and prepared versions count
+    until custody ends; every install stays within the retained-byte ceiling.
+    Source publication retains the cache only when another whole current
+    index fits for its same-position replacement.
+    A full index evicts to its pre-admitted empty image so legal source
+    writes keep publishing and derived registrations can recover.
+  - An output whose own commit changed an input must remain stale through
+    every verification and record derivation until it is recomputed.
+    Its retained postconditions have custody without a comparison projection;
+    only the computation-current certification door admits comparable facts.
+    Checkpoint version 9 alone carries the own-write exclusion promise; earlier
+    checkpoints and producer-fact wire versions must be refused.
+  - Missing branch cells are installed at Native's true head under publication
+    exclusion after ledger reservation; contention declines registration and
+    never refuses a source write. Caller-observed positions cannot mint cells.
+    Preflight custody exposes no branch cell until Native verifies and completes
+    its cutover; a stale candidate cannot populate the readable lookup.
+  - An incomplete committed root can recover through full comparison only
+    if it consumed no outputs and carries no known own-write staleness.
+    Outputs that consumed outputs settle by fresh recomputation once capacity
+    returns; missing upstream rows are compared from their original sealed
+    evidence after the consumer's effect and registered upstream-first.
+  - Full comparison of original source and output evidence, with complete
+    postings and clean consumed upstreams, clears dirty ordinals and pending
+    edges only for a delivery-only gap, then advances the row's read basis.
+  - An expired equality chain fully compares its terminal's source facts and
+    inherited registered output facts through the direct-row comparison
+    primitive, then re-establishes it or reports Changed.
+- **6.9** Why a run has no prior is a typed cause, and an input cutoff hands the
+  retained state on.
+  - The record's computation slot is either retained state or one named
+    absence, carried from completion to publication. No site stores "none"
+    and computes the reason elsewhere. `Evicted` and `NoPriorRecord` are
+    split so that each name has one cause.
+  - An input-cutoff alias takes over the origin's retained state and its
+    charge, so an edit, a no-op and a second edit reuse at the third step.
+    Stale evidence is never handed on as Current.
+  - A seeded differential between reuse on and reuse off enumerates every
+    input, including code and absence.
+- **6.10** Report the tree work that ran, apart from the charge.
+  - Charged work stays the full-build count. Every exit of a tree update
+    (completed, denied, interrupted, rebuilt) yields one report holding
+    every attempt's metrics; an exit that omits them does not compile.
+  - Partition execution and tree execution are separate dimensions of the
+    report.
+  - The test's reducer counts its own combines, and reported work must
+    reconcile with that count. An update recombines at most its root path
+    and stops at an unchanged aggregate; insert and delete recombine their
+    root path with no cutoff.
+- **6.11** A fork reuses its parent's retained state.
+  - In place already: the tree is retained under the lineage ledger with
+    eviction, and a recomputed partition with the same canonical bits
+    replaces nothing.
+  - A retained state and its reservation are one value behind one handle, so
+    no holder has the state without the charge.
+  - Custody is per state, not per node. Branches that share a state share
+    one charge. Diverged states are each charged in full, so nodes they
+    share are charged once per state: retained bytes charged are at most the
+    sum over distinct live states. This can refuse retention earlier than
+    exact accounting and can never leave data uncharged.
+  - A child's first run takes the parent's state as its prior through the
+    same comparator and basis checks as any other reuse.
+  - Two concurrent first writers of one branch cell both keep their
+    publication's marks, and a poisoned registration lock recovers the same
+    way at every acquisition.
+- **6.12** A neutral application proves the isolation and reuse courtroom. Every
+  step of a seeded sequence of edits and lifecycle events is judged twice:
+  for equivalence with reuse off (result bits, typed outcomes, charged work,
+  work boundary), and for exact call counts derived from the edit by code
+  that shares nothing with production.
 
 The next phase may trust that partition-granular reuse is exact.
 
 ### Phase 7: Parallel advancement and remaining Query lanes
 
-- Pass the request lease from `advance` into Bridge, Relational and Signal.
-  Lease carriage into Bridge, Relational and Signal keeps each cause distinct:
-  Relational's `CommitExecutionDenialKind` (`read_only_packets.rs:165`) and
-  `DerivedIndexExecutionDenialKind` (`build_execution.rs:250`) still fold
-  every lease denial into `ResourceExhausted`.
-- Run the `compute` steps of each dependency-ready wave concurrently under the
-  request lease, with nested partition work, and apply commits in canonical
-  order. Apply accepts only canonical order, by type.
-- Move the workflow frontier and derived-view reconstruction onto the
-  authority, and delete `ParallelAdmissionRoute` with its test-only executor.
-- Empty the ratchet list.
-- A neutral application and the Bank reference prove identical results, charged
-  work and commit order at one worker and many, and span strictly less than work
-  wherever independence exists.
+- **7.1** Relational keeps each execution denial cause distinct to its caller.
+  `CommitExecutionDenialKind` and `DerivedIndexExecutionDenialKind` carry
+  the cause; nothing folds a lease denial into `ResourceExhausted`. Query
+  converts a Relational cause in one exhaustive place, on commit, index
+  build and bootstrap.
+- **7.2** Delete `ParallelAdmissionRoute` with its test-only executor.
+  *Completed.*
+- **7.3** Bridge, Signal and World accept the request lease, and each cause
+  stays distinct to the crate's caller. A caller with no lease enters a
+  bounded serial scope by construction; a nested scope draws from its
+  parent. Each host declares its own named policy.
+- **7.4** Derived-view reconstruction runs as a leased map over unique roots in
+  canonical order, and its worker pool is deleted. A worker receives a
+  sealed prepared read; projection stays on the owner in entity order.
+  Empty the ratchet list.
+- **7.5** The workflow frontier runs on the authority.
+  - The execution map takes owned `Send` inputs through the one backend the
+    borrowed map uses, under every law of the borrowed map. *Completed.*
+  - A stage is three phases by type. Prepare sees only facts fixed before
+    the frontier starts. Compute is a closed inert task. Apply does every
+    read and effect on the owner, over the canonical prefix through the
+    least failure. A stage that computes on what it reads does so in apply.
+    Purity of prepare and compute is a stated contract. *Completed.*
+  - The compute steps of a frontier dispatch through the owned map under the
+    request lease, charged by the map's law, with each stop cause distinct.
+    The serial loop is deleted.
+- **7.6** Query passes the request lease from `advance` into Bridge, Relational
+  and Signal. No Query seam runs without a lease; serial posture is a lease
+  with a serial backing.
+  - The request opens before an advancement's first read and closes after
+    its final delivery. One carrier holds it for that whole scope, and a
+    seam cannot be entered without it.
+  - Relational's seams take it: query plan execution, index build and
+    commit.
+  - Bridge's, Signal's and World's seams take it.
+- **7.7** Run the `compute` steps of each dependency-ready wave concurrently
+  under the request lease, with nested partition work.
+  - A wave is admitted by the required-set owner against a basis: every
+    declared upstream of every member is committed in it.
+  - One lease covers every wave of one advancement; a member's nested work
+    descends from the member.
+  - Commits and publications apply in canonical key order, and apply accepts
+    only canonical order, by type. The least canonical failure is reported;
+    nothing after it is kept or charged.
+  - One execution report per advancement, a failed one included, lists its
+    commits and publications in order.
+  - A handler that does not compute needs no change.
+- **7.8** A neutral application and the Bank reference prove identical results,
+  charged work and commit order at one worker and many, and span strictly
+  less than work wherever independence exists.
+  - The expected-history model, the Bank journal model and the structural
+    cost calculator share nothing with production, and a serial harness
+    judges every history against them.
+  - The same harness then varies the worker count and wave order over the
+    full matrix and compares span with work.
 
 The next phase may trust that advancement exploits every declared independence.
 
 ### Phase 8: Documentation and closure
 
-- Update the public documentation listed below.
-- Run the complete certification and the mutation probes on x86-64 and wasm32.
+- **8.1** Update the public documentation listed below for the behavior that
+  is committed before Phase 7 closes. *Completed.*
+- **8.2** Complete the public documentation for partition-granular reuse,
+  parallel advancement and the workflow frontier; an independent review
+  checks every public statement against the code.
+- **8.3** Run the complete certification and the mutation probes on x86-64 and
+  wasm32.
 
 ## Verification, Review, And Documentation
 

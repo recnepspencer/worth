@@ -50,7 +50,7 @@ pub(super) fn assert_closures_share_the_meter(
         ),
         (
             meter(two_closures_work, two_bytes - 1),
-            ConsumedOutputVerificationStop::Unavailable,
+            ConsumedOutputVerificationStop::CapacityExhausted,
         ),
     ] {
         assert_eq!(verify(&mut short), Ok(ConsumedOutputVerification::Current));

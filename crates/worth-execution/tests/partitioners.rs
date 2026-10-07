@@ -4,7 +4,7 @@ use worth_execution::{
     Bisection, BisectionDenial, CancellationToken, ChargedBytes, ComponentPartitioner,
     ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap, KeyedDenial, KeyedEditDenial,
     KeyedItem, KeyedPartitioner, LeaseRequest, MapKernelFailure, MapOutcome, MapPartition, MapStop,
-    PartitionItemId, SourceFactId, WeightedEdge, WeightedItem,
+    PartitionItemId, WeightedEdge, WeightedItem,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -14,19 +14,15 @@ use worth_foundational::{
 fn item(id: u64) -> PartitionItemId {
     PartitionItemId(id)
 }
-fn fact(id: u64) -> SourceFactId {
-    SourceFactId(id)
-}
 fn admit(_: u64) -> Result<(), ()> {
     Ok(())
 }
 
 #[test]
-fn keyed_routes_source_facts_and_denies_identity_aliases_without_mutation() {
+fn keyed_routes_items_and_denies_identity_aliases_without_mutation() {
     let mut keyed = KeyedPartitioner::new();
     let first = KeyedItem {
         item: item(1),
-        source_fact: fact(51),
         key: "east",
         partition: PartitionIdentity::new(7),
     };
@@ -38,12 +34,7 @@ fn keyed_routes_source_facts_and_denies_identity_aliases_without_mutation() {
         keyed.upsert(first.clone(), admit).unwrap().members_visited,
         0
     );
-    let fact_only = KeyedItem {
-        source_fact: fact(52),
-        ..first
-    };
-    assert_eq!(keyed.upsert(fact_only, admit).unwrap().items_rerouted, 0);
-    assert_eq!(keyed.route(item(1)).unwrap().source_fact, fact(52));
+    assert_eq!(keyed.route(item(1)), Some(PartitionIdentity::new(7)));
     assert_eq!(
         keyed.members(PartitionIdentity::new(7)).unwrap(),
         &std::collections::BTreeSet::from([item(1)])
@@ -52,7 +43,6 @@ fn keyed_routes_source_facts_and_denies_identity_aliases_without_mutation() {
     let denied = keyed.upsert(
         KeyedItem {
             item: item(2),
-            source_fact: fact(60),
             key: "west",
             partition: PartitionIdentity::new(7),
         },
@@ -75,7 +65,6 @@ fn keyed_offers_the_retained_bound_before_an_edit_and_a_refusal_changes_nothing(
     let mut keyed = KeyedPartitioner::new();
     let first = KeyedItem {
         item: item(1),
-        source_fact: fact(51),
         key: "east",
         partition: PartitionIdentity::new(7),
     };
@@ -92,7 +81,6 @@ fn keyed_offers_the_retained_bound_before_an_edit_and_a_refusal_changes_nothing(
         item: item(2),
         key: "west",
         partition: PartitionIdentity::new(8),
-        ..first
     };
     let two = KeyedPartitioner::<&str>::retained_bytes(2, 2, 0).unwrap();
     assert!(two > one);
@@ -124,7 +112,6 @@ impl ChargedBytes for OwnsHeap {
 fn keyed_charges_the_heap_each_retained_key_owns() {
     let entry = |id, key| KeyedItem {
         item: item(id),
-        source_fact: fact(id),
         key: OwnsHeap(key),
         partition: PartitionIdentity::new(if key == "east" { 7 } else { 8 }),
     };
@@ -154,6 +141,56 @@ fn keyed_charges_the_heap_each_retained_key_owns() {
         })
         .unwrap();
     assert_eq!(offered.last().copied(), Some(bound(2, 1, 400)));
+}
+
+/// A kept copy is the partitioner that upserting only the kept items
+/// leaves, offered first at what that partitioner charges; a refusal builds
+/// nothing.
+#[test]
+fn keyed_keeps_a_copy_of_the_named_items_at_their_own_bound() {
+    let entry = |id, key| KeyedItem {
+        item: item(id),
+        key: OwnsHeap(key),
+        partition: PartitionIdentity::new(if key == "east" { 7 } else { 8 }),
+    };
+    let mut keyed = KeyedPartitioner::new();
+    let mut fresh = KeyedPartitioner::new();
+    for (id, key) in [(1, "east"), (2, "west"), (3, "east"), (4, "west")] {
+        keyed.upsert(entry(id, key), admit).unwrap();
+        if id != 2 {
+            fresh.upsert(entry(id, key), admit).unwrap();
+        }
+    }
+    assert_eq!(
+        keyed.kept(|item| item.0 != 2, |_| Err("refused")).err(),
+        Some(KeyedEditDenial::Admission("refused"))
+    );
+    let mut offered = 0;
+    let kept = keyed
+        .kept(
+            |item| item.0 != 2,
+            |bound| {
+                offered = bound;
+                admit(bound)
+            },
+        )
+        .unwrap();
+    assert_eq!(Some(offered), fresh.charged_bytes());
+    assert_eq!(kept.charged_bytes(), fresh.charged_bytes());
+    assert_eq!(
+        kept.partitions().collect::<Vec<_>>(),
+        fresh.partitions().collect::<Vec<_>>()
+    );
+    for id in 1..=4 {
+        assert_eq!(kept.route(item(id)), fresh.route(item(id)));
+    }
+    for partition in [7, 8] {
+        let partition = PartitionIdentity::new(partition);
+        assert_eq!(kept.members(partition), fresh.members(partition));
+    }
+    let none = keyed.kept(|_| false, admit).unwrap();
+    assert_eq!(none.partitions().count(), 0);
+    assert_eq!(none.charged_bytes(), Some(0));
 }
 
 #[test]
@@ -193,7 +230,6 @@ fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
                 .upsert(
                     KeyedItem {
                         item: item(*value),
-                        source_fact: fact(40),
                         key: 7_u64,
                         partition: PartitionIdentity::new(7),
                     },
@@ -201,7 +237,7 @@ fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
                 )
                 .unwrap();
             work.charge(context)?;
-            Ok::<_, MapKernelFailure<()>>(candidate.route(item(*value)).unwrap().partition.value())
+            Ok::<_, MapKernelFailure<()>>(candidate.route(item(*value)).unwrap().value())
         });
         match (accepted, outcome) {
             (true, MapOutcome::Complete { values, report }) => {
@@ -227,25 +263,25 @@ fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
 fn components_merge_and_split_only_the_affected_island() {
     let mut components = ComponentPartitioner::new();
     for id in [1, 2, 10, 11, 100] {
-        components.upsert_item(item(id), fact(id + 1000));
+        components.upsert_item(item(id));
     }
     components.add_edge(item(1), item(2)).unwrap();
     components.add_edge(item(10), item(11)).unwrap();
     let merge = components.add_edge(item(2), item(10)).unwrap();
     assert_eq!(merge.items_rerouted, 2);
     assert_eq!(
-        components.route(item(11)).unwrap().partition,
+        components.route(item(11)).unwrap(),
         PartitionIdentity::new(1)
     );
     let split = components.remove_edge(item(2), item(10)).unwrap();
     assert_eq!(split.members_visited, 4);
     assert_eq!(split.items_rerouted, 2);
     assert_eq!(
-        components.route(item(10)).unwrap().partition,
+        components.route(item(10)).unwrap(),
         PartitionIdentity::new(10)
     );
     assert_eq!(
-        components.route(item(100)).unwrap().partition,
+        components.route(item(100)).unwrap(),
         PartitionIdentity::new(100)
     );
     assert_eq!(
@@ -258,7 +294,7 @@ fn components_merge_and_split_only_the_affected_island() {
     let removal = components.remove_item(item(1));
     assert_eq!(removal.members_visited, 2);
     assert_eq!(
-        components.route(item(2)).unwrap().partition,
+        components.route(item(2)).unwrap(),
         PartitionIdentity::new(2)
     );
 }
@@ -270,23 +306,19 @@ fn bisection_retains_cut_paths_and_reports_local_recuts_and_interface_quality() 
         bisection
             .upsert_item(WeightedItem {
                 item: item(id),
-                source_fact: fact(id + 20),
                 weight: 1,
             })
             .unwrap();
     }
-    let unaffected_path = bisection.route(item(3)).unwrap().partition;
+    let unaffected_path = bisection.route(item(3)).unwrap();
     assert_eq!(unaffected_path, PartitionIdentity::new(3));
-    let fact_change = bisection
+    let unchanged = bisection
         .upsert_item(WeightedItem {
             item: item(3),
-            source_fact: fact(99),
             weight: 1,
         })
         .unwrap();
-    assert_eq!(fact_change.subtrees_recut, 0);
-    assert_eq!(fact_change.items_rerouted, 0);
-    assert_eq!(bisection.route(item(3)).unwrap().source_fact, fact(99));
+    assert_eq!(unchanged, worth_execution::PartitionWork::default());
     let edge_work = bisection
         .upsert_edge(WeightedEdge {
             a: item(1),
@@ -301,12 +333,11 @@ fn bisection_retains_cut_paths_and_reports_local_recuts_and_interface_quality() 
     let recut = bisection
         .upsert_item(WeightedItem {
             item: item(5),
-            source_fact: fact(25),
             weight: 1,
         })
         .unwrap();
     assert_eq!(recut.subtrees_recut, 1);
-    assert_eq!(bisection.route(item(3)).unwrap().partition, unaffected_path);
+    assert_eq!(bisection.route(item(3)).unwrap(), unaffected_path);
     assert_eq!(
         bisection
             .leaves()
@@ -315,11 +346,11 @@ fn bisection_retains_cut_paths_and_reports_local_recuts_and_interface_quality() 
             .sum::<usize>(),
         5
     );
-    assert_eq!(bisection.route(item(5)).unwrap().source_fact, fact(25));
+    assert!(bisection.route(item(5)).is_some());
 
     let removal = bisection.remove_item(item(5)).unwrap();
     assert_eq!(removal.subtrees_recut, 0);
-    assert_eq!(bisection.route(item(3)).unwrap().partition, unaffected_path);
+    assert_eq!(bisection.route(item(3)).unwrap(), unaffected_path);
     assert!(bisection.route(item(5)).is_none());
     assert_eq!(
         bisection
@@ -337,7 +368,6 @@ fn bisection_denies_invalid_edges_before_changing_routes() {
     bisection
         .upsert_item(WeightedItem {
             item: item(1),
-            source_fact: fact(9),
             weight: 1,
         })
         .unwrap();
@@ -353,7 +383,6 @@ fn bisection_denies_invalid_edges_before_changing_routes() {
     assert_eq!(
         bisection.upsert_item(WeightedItem {
             item: item(2),
-            source_fact: fact(10),
             weight: 0
         }),
         Err(BisectionDenial::ZeroWeight)
