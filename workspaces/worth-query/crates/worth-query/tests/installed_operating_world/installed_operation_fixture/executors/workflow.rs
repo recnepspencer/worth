@@ -26,55 +26,15 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         Some(installed_read_declaration())
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
-        if context.stage().identity() == "left" {
-            match &input {
-                domain::WorthQueryWorkflowValue::Text(value) if value == "fail-dependency" => {
-                    return Err(domain::WorthQueryWorkflowStageExecutorFailure::new(
-                        domain::WorthQueryOperationFailureClass::Dependency,
-                        "declared dependency failure",
-                    ));
-                }
-                domain::WorthQueryWorkflowValue::Text(value) if value == "fail-unsupported" => {
-                    return Err(domain::WorthQueryWorkflowStageExecutorFailure::new(
-                        domain::WorthQueryOperationFailureClass::Unsupported,
-                        "undeclared unsupported failure",
-                    ));
-                }
-                domain::WorthQueryWorkflowValue::Text(value) if value == "read-undeclared" => {
-                    let _ = context.execute_installed_read("model", workspace)?;
-                    unreachable!("stage-local admission must deny before the read")
-                }
-                _ => {}
-            }
-        }
-        let material = if context.stage().identity() == "publish"
-            && matches!(&input, domain::WorthQueryWorkflowValue::Text(value) if value == "skip-read")
-        {
-            domain::WorthQueryWorkflowStageMaterial::new(domain::WorthQueryWorkflowValue::Text(
-                "dishonest-publication".into(),
-            ))
-            .with_result_state(domain::WorthQueryOperationResultState::Ready)
-        } else if context.stage().identity() == "publish" {
-            domain::WorthQueryWorkflowStageMaterial::projection(
-                "model",
-                context.execute_installed_read("model", workspace)?,
-            )
-            .with_result_state(domain::WorthQueryOperationResultState::Ready)
-        } else {
-            domain::WorthQueryWorkflowStageMaterial::new(domain::WorthQueryWorkflowValue::Text(
-                context.stage().identity().into(),
-            ))
-        };
-        Ok(material)
+        let (input, _computed, context, workspace) = application.into_parts();
+        materialize_owned_workflow_stage(input, context, workspace)
     }
 }
 
@@ -116,21 +76,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         Some(installed_read_declaration())
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
-        domain::WorthQueryDomainWorkflowStageExecutor::execute_stage(
-            &WorkflowStageExecutor,
-            input,
-            context,
-            workspace,
-        )
+        domain::WorthQueryDomainWorkflowStageExecutor::apply(&WorkflowStageExecutor, application)
     }
 }
 
@@ -165,21 +118,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         Some(installed_read_declaration())
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
-        domain::WorthQueryDomainWorkflowStageExecutor::execute_stage(
-            &WorkflowStageExecutor,
-            input,
-            context,
-            workspace,
-        )
+        domain::WorthQueryDomainWorkflowStageExecutor::apply(&WorkflowStageExecutor, application)
     }
 }
 
@@ -194,4 +140,52 @@ impl domain::WorthQueryDomainReplaySemanticComparator<GeometryDomain, WorkflowRe
     ) -> domain::WorthQueryReplayComparison {
         domain::compare_exact_workflow_traces(original, replay, noise)
     }
+}
+
+pub(crate) fn materialize_owned_workflow_stage(
+    input: domain::WorthQueryWorkflowValue,
+    context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
+    workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+) -> Result<domain::WorthQueryWorkflowStageMaterial, domain::WorthQueryWorkflowStageExecutorFailure>
+{
+    if context.stage().identity() == "left" {
+        match &input {
+            domain::WorthQueryWorkflowValue::Text(value) if value == "fail-dependency" => {
+                return Err(domain::WorthQueryWorkflowStageExecutorFailure::new(
+                    domain::WorthQueryOperationFailureClass::Dependency,
+                    "declared dependency failure",
+                ));
+            }
+            domain::WorthQueryWorkflowValue::Text(value) if value == "fail-unsupported" => {
+                return Err(domain::WorthQueryWorkflowStageExecutorFailure::new(
+                    domain::WorthQueryOperationFailureClass::Unsupported,
+                    "undeclared unsupported failure",
+                ));
+            }
+            domain::WorthQueryWorkflowValue::Text(value) if value == "read-undeclared" => {
+                let _ = context.execute_installed_read("model", workspace)?;
+                unreachable!("stage-local admission must deny before the read")
+            }
+            _ => {}
+        }
+    }
+    let material = if context.stage().identity() == "publish"
+        && matches!(&input, domain::WorthQueryWorkflowValue::Text(value) if value == "skip-read")
+    {
+        domain::WorthQueryWorkflowStageMaterial::new(domain::WorthQueryWorkflowValue::Text(
+            "dishonest-publication".into(),
+        ))
+        .with_result_state(domain::WorthQueryOperationResultState::Ready)
+    } else if context.stage().identity() == "publish" {
+        domain::WorthQueryWorkflowStageMaterial::projection(
+            "model",
+            context.execute_installed_read("model", workspace)?,
+        )
+        .with_result_state(domain::WorthQueryOperationResultState::Ready)
+    } else {
+        domain::WorthQueryWorkflowStageMaterial::new(domain::WorthQueryWorkflowValue::Text(
+            context.stage().identity().into(),
+        ))
+    };
+    Ok(material)
 }

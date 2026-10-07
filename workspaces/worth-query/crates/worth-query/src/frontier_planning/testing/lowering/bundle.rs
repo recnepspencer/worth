@@ -51,12 +51,7 @@ pub(crate) fn lower_frontier_bundle(
         bundle_basis_digest: route_plans[0].bundle_basis_digest().clone(),
         counters: FrontierPlanningCounters {
             frontier_planning_invocation_count: 1,
-            planned_packet_count: route_plans
-                .iter()
-                .map(|route| route.packet_set().packets().len())
-                .sum(),
             planned_bundle_route_count: route_plans.len(),
-            mixed_basis_denial_count: 0,
             predicted_breadth: route_plans
                 .iter()
                 .map(|route| route.predicted_breadth().value())

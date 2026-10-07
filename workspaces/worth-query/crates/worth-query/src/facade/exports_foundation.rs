@@ -183,13 +183,11 @@ pub use crate::frontier_planning::FrontierSurfaceDigest;
 pub use crate::frontier_planning::{
     BoundedMaterializationFrontierPreflight, FrontierAwarePlan, FrontierBreadthPrediction,
     FrontierBundleRoutePlanningError, FrontierComplexityContract, FrontierCounterSnapshot,
-    FrontierDisjointnessClass, FrontierParityBundle, FrontierParityBundleError,
-    FrontierPerformanceStatus, FrontierPlanningCounters, FrontierPlanningReport,
-    FrontierPostureDigest, FrontierPredictionDriftOutcome, FrontierPreflightAdmissionError,
-    FrontierRouteCounters, FrontierRoutePlanningError, FrontierRouteReport, FrontierSurfaceDigest,
-    OrderedCollectionFrontierPreflight, ParallelAdmissionDecision, ParallelAdmissionRoute,
-    ParallelAdmissionRouteSet, PlannedRouteFamily, SerialFallbackBundleRoutes,
-    SerialFallbackReason, SerialFallbackRoute,
+    FrontierParityBundle, FrontierParityBundleError, FrontierPerformanceStatus,
+    FrontierPlanningCounters, FrontierPlanningReport, FrontierPostureDigest,
+    FrontierPredictionDriftOutcome, FrontierPreflightAdmissionError, FrontierRouteCounters,
+    FrontierRoutePlanningError, FrontierRouteReport, FrontierSurfaceDigest, PlannedRouteFamily,
+    SerialFallbackBundleRoutes, SerialFallbackReason, SerialFallbackRoute,
 };
 pub use crate::frontier_signal_adapter::{
     SignalAdmissionEvidenceError, SignalFrontierSurfaceEvidence,

@@ -40,15 +40,14 @@ impl
         super::execution_resource_support()
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        _input: domain::WorthQueryWorkflowValue,
-        _context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        _workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (_input, _computed, _context, _workspace) = application.into_parts();
         Ok(
             domain::WorthQueryWorkflowStageMaterial::new(domain::WorthQueryWorkflowValue::Text(
                 "provisional-result".into(),

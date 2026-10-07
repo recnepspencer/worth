@@ -20,10 +20,7 @@ pub(crate) use row_catalog::{
     FRONTIER_REQUIRED_CANONICAL_ROW_NAMES, FRONTIER_REQUIRED_REJECTION_ROW_NAMES,
 };
 
-use self::lanes::{
-    parallel_admitted_bundle_lane, parallel_admitted_lane, serial_control_lane,
-    serial_fallback_bundle_lane, serial_fallback_lane,
-};
+use self::lanes::{serial_control_lane, serial_fallback_bundle_lane, serial_fallback_lane};
 use self::requirements::{
     acceptance_evidence_requirements, must_preserve_requirements, must_ship_requirements,
     proof_obligation_requirements,
@@ -33,44 +30,33 @@ use self::rows::{canonical_row, rejection_row};
 pub struct MilestoneFivePointThreeFrontierCertificationAdapter;
 
 impl MilestoneFivePointThreeFrontierCertificationAdapter {
-    pub fn frontier_planning_and_parallel_admission_parity_test() -> FrontierCertificationMatrix {
+    pub fn frontier_planning_and_serial_fallback_parity_test() -> FrontierCertificationMatrix {
         let serial_control = serial_control_lane();
-        let parallel_admitted = parallel_admitted_lane();
-        let parallel_bundle = parallel_admitted_bundle_lane();
         let serial_fallback = serial_fallback_lane();
         let bundle_lane = serial_fallback_bundle_lane();
 
         FrontierCertificationMatrix {
-            suite_name: "Frontier Planning And Parallel Admission Parity Test",
+            suite_name: "Frontier Planning And Serial Fallback Parity Test",
             rows: FRONTIER_CANONICAL_ROW_SPECS
                 .iter()
-                .map(|spec| {
-                    canonical_row(
-                        spec,
-                        &serial_control,
-                        &parallel_admitted,
-                        &parallel_bundle,
-                        &serial_fallback,
-                        &bundle_lane,
-                    )
-                })
+                .map(|spec| canonical_row(spec, &serial_control, &serial_fallback, &bundle_lane))
                 .collect(),
             rejection_rows: FRONTIER_REJECTION_ROW_SPECS
                 .iter()
-                .map(|spec| rejection_row(spec, &serial_control, &parallel_admitted))
+                .map(|spec| rejection_row(spec, &serial_control))
                 .collect(),
         }
     }
 
-    pub fn frontier_planning_and_parallel_admission_parity_artifact(
+    pub fn frontier_planning_and_serial_fallback_parity_artifact(
     ) -> MilestoneFivePointThreeFrontierCertificationArtifact {
-        Self::frontier_planning_and_parallel_admission_parity_test()
+        Self::frontier_planning_and_serial_fallback_parity_test()
             .into_milestone_five_point_three_artifact()
     }
 
     pub fn frontier_planning_closeout_artifact() -> MilestoneFivePointThreeFrontierCloseoutArtifact
     {
-        let certification = Self::frontier_planning_and_parallel_admission_parity_artifact();
+        let certification = Self::frontier_planning_and_serial_fallback_parity_artifact();
         let must_ship = must_ship_requirements();
         let must_preserve = must_preserve_requirements();
         let proof_obligations = proof_obligation_requirements();

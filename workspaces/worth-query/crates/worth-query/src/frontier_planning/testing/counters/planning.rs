@@ -126,9 +126,7 @@ impl PlannedWorkPacketSet {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FrontierPlanningCounters {
     pub(in crate::frontier_planning::testing) frontier_planning_invocation_count: usize,
-    pub(in crate::frontier_planning::testing) planned_packet_count: usize,
     pub(in crate::frontier_planning::testing) planned_bundle_route_count: usize,
-    pub(in crate::frontier_planning::testing) mixed_basis_denial_count: usize,
     pub(in crate::frontier_planning::testing) predicted_breadth: usize,
     pub(in crate::frontier_planning::testing) planned_packet_merge_boundary_count: usize,
 }
@@ -138,16 +136,8 @@ impl FrontierPlanningCounters {
         self.frontier_planning_invocation_count
     }
 
-    pub fn planned_packet_count(&self) -> usize {
-        self.planned_packet_count
-    }
-
     pub fn planned_bundle_route_count(&self) -> usize {
         self.planned_bundle_route_count
-    }
-
-    pub fn mixed_basis_denial_count(&self) -> usize {
-        self.mixed_basis_denial_count
     }
 
     pub fn predicted_breadth(&self) -> usize {
@@ -160,14 +150,11 @@ impl FrontierPlanningCounters {
 
     pub(in crate::frontier_planning::testing) fn single_route(
         predicted_breadth: usize,
-        packet_count: usize,
         merge_boundary_count: usize,
     ) -> Self {
         Self {
             frontier_planning_invocation_count: 1,
-            planned_packet_count: packet_count,
             planned_bundle_route_count: 1,
-            mixed_basis_denial_count: 0,
             predicted_breadth,
             planned_packet_merge_boundary_count: merge_boundary_count,
         }

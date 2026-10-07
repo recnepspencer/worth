@@ -12,7 +12,6 @@ mod routes;
 pub(crate) use digests::BundleResolvedBasisDigest;
 pub use digests::FrontierBreadthPrediction;
 pub use digests::FrontierComplexityContract;
-pub use digests::FrontierDisjointnessClass;
 pub use digests::FrontierPerformanceStatus;
 pub use digests::FrontierPostureDigest;
 pub use digests::FrontierPredictionDriftOutcome;
@@ -42,11 +41,6 @@ pub(crate) use plan::FrontierBundlePlan;
 pub(crate) use plan::FrontierPlanningError;
 pub(crate) use plan::FrontierPlanningInput;
 
-pub(crate) use admission_evidence::FrontierRouteEvidence;
-pub use admission_evidence::ParallelAdmissionBundleEvidence;
-pub(crate) use admission_evidence::ParallelAdmissionBundleEvidenceError;
-pub use admission_evidence::ParallelAdmissionDecision;
-pub use admission_evidence::ParallelAdmissionEvidence;
 pub use admission_evidence::SerialFallbackBundleEvidence;
 pub(crate) use admission_evidence::SerialFallbackBundleEvidenceError;
 pub use admission_evidence::SerialFallbackEvidence;
@@ -54,23 +48,17 @@ pub use admission_evidence::SerialFallbackReason;
 
 pub use preflight::BoundedMaterializationFrontierPreflight;
 pub use preflight::FrontierPreflightAdmissionError;
-pub use preflight::OrderedCollectionFrontierPreflight;
 
 pub use routes::FrontierBundleRoutePlanningError;
 pub use routes::FrontierRoutePlanningError;
-pub use routes::ParallelAdmissionRoute;
-pub use routes::ParallelAdmissionRouteSet;
 pub use routes::SerialFallbackBundleRoutes;
 pub use routes::SerialFallbackRoute;
 
 pub use lowering::admit_bounded_materialization_frontier_preflight;
-pub use lowering::admit_ordered_collection_frontier_preflight;
 pub(crate) use lowering::lower_frontier_bundle;
 pub(crate) use lowering::lower_live_plan_to_frontier_plan;
-pub use lowering::lower_preflight_bundle_to_parallel_admission_routes;
 pub use lowering::lower_preflight_bundle_to_serial_fallback_routes;
 pub(crate) use lowering::lower_preflight_to_frontier_plan;
-pub use lowering::lower_preflight_to_parallel_admission_route;
 pub use lowering::lower_preflight_to_serial_fallback_route;
 
 pub(in crate::frontier_planning::testing) use input_kind::frontier_input_kind;

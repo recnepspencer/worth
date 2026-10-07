@@ -40,15 +40,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowMutat
         super::execution_resource_support()
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (input, _computed, context, workspace) = application.into_parts();
         execute_mutation_stage(input, context, workspace, false)
     }
 }
@@ -71,15 +70,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowMutat
         Some(super::executors::installed_read_declaration())
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (input, _computed, context, workspace) = application.into_parts();
         execute_mutation_stage(input, context, workspace, true)
     }
 }

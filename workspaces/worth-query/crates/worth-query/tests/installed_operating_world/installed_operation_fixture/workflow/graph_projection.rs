@@ -60,15 +60,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         Some(super::super::executors::installed_read_declaration())
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        _input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (_input, _computed, context, workspace) = application.into_parts();
         if context.stage().identity() != "publish" {
             return Ok(domain::WorthQueryWorkflowStageMaterial::new(
                 domain::WorthQueryWorkflowValue::Text(context.stage().identity().into()),

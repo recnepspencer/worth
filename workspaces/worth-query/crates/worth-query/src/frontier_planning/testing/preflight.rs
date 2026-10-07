@@ -1,21 +1,6 @@
 use crate::basis::ExecutionPreflightBundle;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OrderedCollectionFrontierPreflight {
-    preflight: ExecutionPreflightBundle,
-}
-
-impl OrderedCollectionFrontierPreflight {
-    pub(in crate::frontier_planning::testing) fn new(preflight: ExecutionPreflightBundle) -> Self {
-        Self { preflight }
-    }
-
-    pub(crate) fn as_preflight(&self) -> &ExecutionPreflightBundle {
-        &self.preflight
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BoundedMaterializationFrontierPreflight {
     preflight: ExecutionPreflightBundle,
 }
@@ -33,6 +18,5 @@ impl BoundedMaterializationFrontierPreflight {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FrontierPreflightAdmissionError {
     UnsupportedFrontierFamily,
-    OrderedCollectionRequired,
     BoundedMaterializationRequired,
 }

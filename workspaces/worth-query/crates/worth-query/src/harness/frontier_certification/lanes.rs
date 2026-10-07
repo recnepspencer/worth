@@ -1,17 +1,13 @@
-use crate::execution::{
-    execute_parallel_admission_route, execute_preflight_bundle, execute_serial_fallback_route,
-};
+use crate::execution::{execute_preflight_bundle, execute_serial_fallback_route};
 use crate::frontier_planning::FrontierSurfaceDigest;
 use crate::harness::fixtures::execution_preflights::{
     ordered_collection_preflight, ordered_collection_without_traversal_preflight,
 };
 use crate::planning::{
-    admit_bounded_materialization_frontier_preflight, admit_ordered_collection_frontier_preflight,
-    lower_execution_preflight_to_frontier_plan,
-    lower_preflight_bundle_to_parallel_admission_routes,
-    lower_preflight_bundle_to_serial_fallback_routes, lower_preflight_to_parallel_admission_route,
-    lower_preflight_to_serial_fallback_route, FrontierDisjointnessClass, FrontierParityBundle,
-    FrontierPredictionDriftOutcome, ParallelAdmissionBundleEvidence, ParallelAdmissionEvidence,
+    admit_bounded_materialization_frontier_preflight, lower_execution_preflight_to_frontier_plan,
+    lower_live_plan_to_frontier_plan, lower_preflight_bundle_to_serial_fallback_routes,
+    lower_preflight_to_serial_fallback_route, FrontierParityBundle, FrontierPlanFamily,
+    FrontierPredictionDriftOutcome, PacketMergeContract, PlannedWorkPacketFamily,
     SerialFallbackBundleEvidence, SerialFallbackEvidence, SerialFallbackReason,
 };
 
@@ -21,6 +17,63 @@ pub(super) fn serial_control_lane() -> FrontierCertificationLane {
     let preflight = ordered_collection_without_traversal_preflight();
     let frontier_plan =
         lower_execution_preflight_to_frontier_plan(&preflight).expect("serial control plan");
+    assert_eq!(
+        frontier_plan.family(),
+        &FrontierPlanFamily::OrderedCollection
+    );
+    assert_eq!(
+        frontier_plan.packet_set().packets()[0].family(),
+        &PlannedWorkPacketFamily::OrderedCollectionRoot
+    );
+    assert_eq!(
+        frontier_plan.report().packet_merge_contract(),
+        &PacketMergeContract::OrderedCollectionResultBoundary
+    );
+    let repeat =
+        lower_execution_preflight_to_frontier_plan(&preflight).expect("repeat ordered plan");
+    assert_eq!(
+        frontier_plan.packet_set().packets()[0].digest(),
+        repeat.packet_set().packets()[0].digest()
+    );
+    assert_eq!(
+        frontier_plan.report().posture_digest(),
+        repeat.report().posture_digest()
+    );
+    let descending =
+        crate::harness::fixtures::execution_preflights::descending_collection_preflight();
+    let descending_plan =
+        lower_execution_preflight_to_frontier_plan(&descending).expect("descending ordered plan");
+    assert_ne!(
+        preflight.plan().query().plan_digest(),
+        descending.plan().query().plan_digest()
+    );
+    assert_ne!(
+        frontier_plan.packet_set().packets()[0].digest(),
+        descending_plan.packet_set().packets()[0].digest()
+    );
+    let live = crate::live::promote_preflight_bundle_to_live(&preflight).expect("live promotion");
+    let live_plan = lower_live_plan_to_frontier_plan(&live).expect("live frontier plan");
+    assert_eq!(
+        live_plan.source_plan_digest(),
+        live.descriptor().plan_digest()
+    );
+    assert_eq!(live_plan.query_digest(), live.descriptor().query_digest());
+    assert_eq!(
+        live_plan.family(),
+        &FrontierPlanFamily::LiveOrderedCollection
+    );
+    assert_eq!(
+        live_plan.packet_set().packets()[0].family(),
+        &PlannedWorkPacketFamily::LiveOrderedCollectionRoot
+    );
+    assert_eq!(
+        live_plan.bundle_basis_digest().as_str(),
+        live.progress_basis()
+            .current_basis()
+            .proof()
+            .digest()
+            .as_str()
+    );
     let execution = execute_preflight_bundle(&preflight).expect("serial control execution");
 
     FrontierCertificationLane {
@@ -32,24 +85,6 @@ pub(super) fn serial_control_lane() -> FrontierCertificationLane {
     }
 }
 
-pub(super) fn parallel_admitted_lane() -> FrontierCertificationLane {
-    let preflight = ordered_collection_without_traversal_preflight();
-    let admitted =
-        admit_ordered_collection_frontier_preflight(preflight.clone()).expect("ordered admitted");
-    let evidence = ParallelAdmissionEvidence::from_surface(
-        preflight.basis().proof().digest().as_str(),
-        FrontierSurfaceDigest::from_label("frontier-certification-parallel"),
-        FrontierDisjointnessClass::CollectionWindowSurface,
-    );
-    let route =
-        lower_preflight_to_parallel_admission_route(&admitted, &evidence).expect("parallel route");
-    let execution =
-        execute_parallel_admission_route(&route).expect("parallel execution should succeed");
-    FrontierCertificationLane {
-        parity_bundle: FrontierParityBundle::from_parallel_admission(&route, &execution),
-    }
-}
-
 pub(super) fn serial_fallback_lane() -> FrontierCertificationLane {
     let preflight = ordered_collection_preflight();
     let admitted = admit_bounded_materialization_frontier_preflight(preflight.clone())
@@ -57,11 +92,20 @@ pub(super) fn serial_fallback_lane() -> FrontierCertificationLane {
     let evidence = SerialFallbackEvidence::from_surface(
         preflight.basis().proof().digest().as_str(),
         FrontierSurfaceDigest::from_label("frontier-certification-serial-fallback"),
-        SerialFallbackReason::DeterministicAdmissionDenied,
-        FrontierPredictionDriftOutcome::WithinBudget,
+        SerialFallbackReason::PredictionDriftRequiresSerialRoute,
+        FrontierPredictionDriftOutcome::SerialFallbackRequired,
     );
     let route =
         lower_preflight_to_serial_fallback_route(&admitted, &evidence).expect("serial route");
+    assert_eq!(
+        route.report().drift_outcome(),
+        &FrontierPredictionDriftOutcome::SerialFallbackRequired
+    );
+    assert_eq!(
+        route.reason(),
+        &SerialFallbackReason::PredictionDriftRequiresSerialRoute
+    );
+    assert_eq!(route.report().serial_fallback_reason(), evidence.reason());
     let execution =
         execute_serial_fallback_route(&route).expect("serial fallback execution should succeed");
     FrontierCertificationLane {
@@ -97,47 +141,29 @@ pub(super) fn serial_fallback_bundle_lane() -> FrontierCertificationLane {
         &bundle_evidence,
     )
     .expect("serial fallback bundle should lower");
+    assert_eq!(bundle.routes().len(), 2);
+    assert_eq!(
+        bundle.bundle_basis_digest(),
+        first.as_preflight().basis().proof().digest().as_str()
+    );
+    for route in bundle.routes() {
+        assert_eq!(
+            route.preflight().basis().proof().digest().as_str(),
+            bundle.bundle_basis_digest()
+        );
+        assert_eq!(
+            route.query_digest(),
+            first.as_preflight().plan().query().validated_query_digest()
+        );
+        assert_eq!(
+            route.source_plan_digest(),
+            first.as_preflight().plan().query().plan_digest()
+        );
+    }
     let route = &bundle.routes()[0];
     let execution = execute_serial_fallback_route(route).expect("bundle execution");
     FrontierCertificationLane {
         parity_bundle: FrontierParityBundle::from_serial_fallback_bundle(&bundle, 0, &execution)
             .expect("bundle parity bundle should resolve first route"),
-    }
-}
-
-pub(super) fn parallel_admitted_bundle_lane() -> FrontierCertificationLane {
-    let first = admit_ordered_collection_frontier_preflight(
-        ordered_collection_without_traversal_preflight(),
-    )
-    .expect("first ordered frontier preflight admitted");
-    let second = admit_ordered_collection_frontier_preflight(
-        ordered_collection_without_traversal_preflight(),
-    )
-    .expect("second ordered frontier preflight admitted");
-    let bundle_evidence = ParallelAdmissionBundleEvidence::from_routes(
-        FrontierSurfaceDigest::from_label("frontier-certification-parallel-bundle"),
-        vec![
-            ParallelAdmissionEvidence::from_surface(
-                first.as_preflight().basis().proof().digest().as_str(),
-                FrontierSurfaceDigest::from_label("frontier-certification-parallel-bundle-a"),
-                FrontierDisjointnessClass::CollectionWindowSurface,
-            ),
-            ParallelAdmissionEvidence::from_surface(
-                second.as_preflight().basis().proof().digest().as_str(),
-                FrontierSurfaceDigest::from_label("frontier-certification-parallel-bundle-b"),
-                FrontierDisjointnessClass::CollectionWindowSurface,
-            ),
-        ],
-    )
-    .expect("parallel bundle evidence should carry one shared basis");
-    let bundle =
-        lower_preflight_bundle_to_parallel_admission_routes(&[first, second], &bundle_evidence)
-            .expect("parallel bundle should lower");
-    let route = &bundle.routes()[0];
-    let execution = execute_parallel_admission_route(route).expect("parallel bundle execution");
-
-    FrontierCertificationLane {
-        parity_bundle: FrontierParityBundle::from_parallel_admission_bundle(&bundle, 0, &execution)
-            .expect("parallel bundle parity bundle should resolve first route"),
     }
 }
