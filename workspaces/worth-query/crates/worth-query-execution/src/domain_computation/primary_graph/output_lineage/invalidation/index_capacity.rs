@@ -30,11 +30,26 @@ fn ordered_node_bytes<K, V>() -> Option<u64> {
     u64::try_from(bytes).ok()
 }
 
-/// Conservative retained capacity: every nonempty node owns at least one
-/// entry. The allocation that owns the nodes holds the bound, so whatever
-/// shares them shares it.
+/// One stable pinned im 15.1 tree, including its root allocation. Splitting
+/// produces 32-key children; removal repairs a child below 32 keys before
+/// descending, so retained nonroot nodes have at least 31 keys. The root may
+/// have just one key (or be empty). This is an allocation upper bound, not a
+/// measured node count. Transient edit paths use their separate forecast.
 pub(super) fn retained_map_bytes<K, V>(entries: usize) -> Option<u64> {
-    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(entries.checked_add(1)?).ok()?)
+    let nodes = entries.saturating_sub(1).checked_div(31)?.checked_add(1)?;
+    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
+}
+
+/// Independently rooted stable trees whose individual lengths need not be
+/// traversed. Charge every root, including empty/singleton trees, and bound
+/// their combined nonroot nodes by the combined entry count. Applying the
+/// one-tree bound to summed lengths would lose these independent roots.
+pub(super) fn retained_forest_bytes<K, V>(entries: usize, trees: usize) -> Option<u64> {
+    if trees == 0 && entries != 0 {
+        return None;
+    }
+    let nodes = trees.checked_add(entries.checked_div(31)?)?;
+    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
 
 /// One selected edit copies a search path. Minimum branching two bounds its
@@ -96,3 +111,6 @@ pub(super) fn ordered_removal_work(entries: usize) -> Option<u64> {
 
 #[cfg(test)]
 mod navigation_tests;
+
+#[cfg(test)]
+mod retention_tests;

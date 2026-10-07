@@ -15,7 +15,7 @@ use crate::domain_computation::execution_runtime::source_invalidation::{
 use super::super::RecordedSettlementIdentity;
 use super::admission::IndexAdmission;
 use super::fact_key::FactPostingKey;
-use super::index_capacity::{arc_bytes, retained_map_bytes};
+use super::index_capacity::{arc_bytes, retained_forest_bytes, retained_map_bytes};
 use super::mark_state::{EqualOutputLink, FactPosting, MarkState, SettlementMarks};
 use super::source_alignment::{BranchMarkRoot, HistoricalMarkState};
 use super::InvalidationEditAdmission;
@@ -57,11 +57,12 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
     arc_bytes::<MarkState>()?
         .checked_add(state.key_payload_bytes)?
         .checked_add(state.settlement_key_payload_bytes)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .downstream_edge_count
-                .checked_add(state.settlements.len())?,
-        )?)?
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.downstream_edge_count,
+                state.settlements.len(),
+            )?,
+        )?
         .checked_add(retained_map_bytes::<
             Arc<RecordedSettlementIdentity>,
             Arc<EqualOutputLink>,
@@ -78,20 +79,24 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
                     .checked_add(state.settlements.len())? as u64,
             )?,
         )?
-        .checked_add(
-            retained_map_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(
-                state.posting_count.checked_add(state.settlements.len())?,
-            )?,
-        )?
-        .checked_add(retained_map_bytes::<usize, ()>(
-            state.posting_count.checked_add(state.settlements.len())?,
+        .checked_add(retained_forest_bytes::<
+            Arc<FactPostingKey>,
+            im::OrdSet<usize>,
+        >(state.posting_count, state.settlements.len())?)?
+        // Each local posting group owns an ordinal set. Its count is at most
+        // posting_count, not settlements.len(): one settlement may read many
+        // distinct keys. Preserve that conservative root count without a scan.
+        .checked_add(retained_forest_bytes::<usize, ()>(
+            state.posting_count,
+            state.posting_count,
         )?)?
         .checked_add(retained_map_bytes::<
             Arc<FactPostingKey>,
             im::OrdSet<FactPosting>,
         >(state.postings.len())?)?
-        .checked_add(retained_map_bytes::<FactPosting, ()>(
-            state.posting_count.checked_add(state.postings.len())?,
+        .checked_add(retained_forest_bytes::<FactPosting, ()>(
+            state.posting_count,
+            state.postings.len(),
         )?)?
         .checked_add(retained_map_bytes::<
             Arc<RecordedSettlementIdentity>,
@@ -101,21 +106,22 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
             Arc<RecordedSettlementIdentity>,
             im::OrdSet<Arc<RecordedSettlementIdentity>>,
         >(state.downstream.len())?)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .downstream_edge_count
-                .checked_add(state.downstream.len())?,
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.downstream_edge_count,
+                state.downstream.len(),
+            )?,
+        )?
+        .checked_add(retained_forest_bytes::<usize, ()>(
+            state.dirty_ordinal_count,
+            state.settlements.len(),
         )?)?
-        .checked_add(retained_map_bytes::<usize, ()>(
-            state
-                .dirty_ordinal_count
-                .checked_add(state.settlements.len())?,
-        )?)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .pending_edge_count
-                .checked_add(state.settlements.len())?,
-        )?)?
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.pending_edge_count,
+                state.settlements.len(),
+            )?,
+        )?
         .checked_add(arc_bytes::<SettlementMarks>()?.checked_mul(state.settlements.len() as u64)?)
 }
 
@@ -228,3 +234,6 @@ pub(super) fn admit_root(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod budget_tests;
