@@ -191,26 +191,40 @@ fn admit(
     Ok(())
 }
 
-/// A root owns its retained positions, and what its oldest version shares
+/// Reserve a newly edited history map beside every pinned predecessor. Edited
+/// maps keep the conservative whole-map bound; unchanged replacements retain
+/// their existing allocation owner's ticket instead.
+pub(super) fn admit_edited_history(
+    root: &mut BranchMarkRoot,
+    resources: &WorthQueryInvalidationResources,
+    admission: &mut impl IndexAdmission,
+) -> Result<(), CompanionPreflightStop> {
+    use worth_relational::facade::publication::PatchStreamPosition;
+    let bytes =
+        retained_map_bytes::<Option<PatchStreamPosition>, HistoricalMarkState>(root.past.len())
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    root.history_capacity = Some(reserve(resources, bytes, admission)?);
+    Ok(())
+}
+
+/// A root owns its object, and what its oldest version shares
 /// with versions that have left. `left` is the version leaving with this
 /// root: its successor still shares what it had reserved, and with its own
-/// reservation never needs more than its whole index.
+/// reservation never needs more than its whole index. Its history ticket is
+/// shared with unchanged replacements; the delivery owner separately admits
+/// every insertion/removal before calling this function.
 pub(super) fn admit_root(
     root: &mut BranchMarkRoot,
     left: Option<&MarkState>,
     resources: &WorthQueryInvalidationResources,
     admission: &mut impl IndexAdmission,
 ) -> Result<(), CompanionPreflightStop> {
-    use worth_relational::facade::publication::PatchStreamPosition;
     let bytes = arc_bytes::<BranchMarkRoot>()
-        .and_then(|n| {
-            n.checked_add(retained_map_bytes::<
-                Option<PatchStreamPosition>,
-                HistoricalMarkState,
-            >(root.past.len())?)
-        })
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     root.retained_capacity = Some(reserve(resources, bytes, admission)?);
+    if root.history_capacity.is_none() {
+        admit_edited_history(root, resources, admission)?;
+    }
     let overflow = CompanionPreflightStop::PreparationMemoryCounterOverflow;
     let oldest = root
         .past
