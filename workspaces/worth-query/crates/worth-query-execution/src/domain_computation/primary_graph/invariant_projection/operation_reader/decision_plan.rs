@@ -7,6 +7,7 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 mod indexed_selection;
+mod predecode_admission;
 use crate::domain_computation::application_contract_admission::graph_reads_admit_target;
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey},

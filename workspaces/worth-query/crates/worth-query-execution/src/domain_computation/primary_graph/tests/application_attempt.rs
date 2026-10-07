@@ -46,6 +46,8 @@ mod optional_field_mutation;
 mod optional_output_role;
 #[path = "application_attempt/post_commit_recovery.rs"]
 mod post_commit_recovery;
+#[path = "application_attempt/predecode_admission.rs"]
+mod predecode_admission;
 #[path = "application_attempt/preimage_evidence.rs"]
 pub(in crate::domain_computation::primary_graph) mod preimage_evidence;
 #[path = "application_attempt/preimage_retention.rs"]

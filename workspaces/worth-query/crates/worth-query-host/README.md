@@ -344,6 +344,12 @@ phase boundary through `DecisionReader::mutation_target` and
 `CandidateWriter::projected_entity`; Query checks the installed projection
 authority and completed attempt read set before returning a program-affine target.
 
+For a variable prior carrier, `DecisionReader::field_with_predecode_admission`
+admits owner work/storage on its original borrowed scalar before the declared
+decoder runs. Its callback also borrows the same request checkpoint. See
+[Tracked scalar predecode admission](docs/scalar-predecode-admission.md) for the
+typed outcomes, allocation responsibility and staging complexity contracts.
+
 Invariant factories resolve installed typed field and relation bindings. Their
 proposed and committed views expose decoded fields and complete bounded relation
 traversals while enforcing binding, prepared scope, entity kind, declared access,
