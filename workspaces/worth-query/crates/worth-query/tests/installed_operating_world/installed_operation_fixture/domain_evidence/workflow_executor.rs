@@ -101,15 +101,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         super::super::execution_resource_support()
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        _input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
+        let (_input, _computed, context, workspace) = application.into_parts();
         let stage = context.stage().identity();
         if stage == "publish" {
             return Ok(domain::WorthQueryWorkflowStageMaterial::projection(
@@ -167,16 +166,14 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<GeometryDomain, WorkflowRead,
         self.0.execution_resource_support()
     }
 
-    fn execute_stage(
+    fn apply(
         &self,
-        input: domain::WorthQueryWorkflowValue,
-        context: &domain::WorthQueryWorkflowStageExecutionContext<'_>,
-        workspace: &mut domain::WorthQueryWorkflowStageWorkspace<'_>,
+        application: domain::WorthQueryWorkflowStageApplication<'_, '_, '_>,
     ) -> Result<
         domain::WorthQueryWorkflowStageMaterial,
         domain::WorthQueryWorkflowStageExecutorFailure,
     > {
-        self.0.execute_stage(input, context, workspace)
+        self.0.apply(application)
     }
 }
 

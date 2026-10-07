@@ -5,6 +5,9 @@ use crate::basis_lifecycle::BasisOperationLane;
 use crate::runtime::WorthQueryWorkspace;
 use worth_proof::TransitionOutcome;
 
+#[path = "frontier/mod.rs"]
+pub(super) mod frontier;
+
 use super::workflow_progression_state::WorthQueryWorkflowAdvanceStep;
 use super::{
     WorthQueryWorkflowAdvanceDenial, WorthQueryWorkflowAdvanceDenialKind,
@@ -135,7 +138,8 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             let identity = self
                 .receipt_index
                 .get(predecessor)
-                .map(|index| self.receipts[*index].identity())
+                .and_then(|index| self.receipts.get(*index))
+                .map(|receipt| receipt.identity())
                 .ok_or_else(|| {
                     self.denial(
                         WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(
@@ -194,16 +198,10 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         stages: Vec<(String, WorthQueryWorkflowValue)>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
-        for (stage_identity, input) in stages {
-            if let WorthQueryWorkflowAdvanceStep::Deferred(conditional) =
-                self.advance_once(&stage_identity, input, workspace)?
-            {
-                self.active_parallel_admission = None;
-                return Ok(WorthQueryWorkflowAdvanceStep::Deferred(conditional));
-            }
-        }
+        let prepared = self.prepare_frontier_computation(stages);
+        let step = prepared.compute().apply(self, workspace, None)?;
         self.active_parallel_admission = None;
-        Ok(WorthQueryWorkflowAdvanceStep::Advanced)
+        Ok(step)
     }
 
     fn validate_frontier_requirements(
