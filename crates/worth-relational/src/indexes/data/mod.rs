@@ -210,13 +210,7 @@ impl DerivedIndexDefinition {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DerivedIndexExecutionDenialKind {
-    Admission,
-    ResourceExhausted,
-    Cancelled,
-    DeadlineElapsed,
-    WorkExhausted,
-    ResultCapacityExceeded,
-    WorkerFailed,
+    Cause(crate::execution::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

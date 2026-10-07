@@ -3,6 +3,8 @@
 /// The commit was already performed; recovery only completes its settlement.
 #[derive(Debug)]
 pub enum WorthQueryApplicationSettlementRecoveryError {
+    /// The execution owner refused settlement publication before effects.
+    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// Relational could not make the settlement durable.
     Durability(worth_relational::facade::publication::DeferredPublicationSettlementError),
     /// The settlement does not match its performed publication, or publication

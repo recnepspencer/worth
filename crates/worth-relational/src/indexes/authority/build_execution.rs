@@ -14,8 +14,7 @@ use crate::execution::{
     PacketKernelContext, ReadOnlyPacket, RequestWorkBudget,
 };
 use crate::indexes::data::{
-    DerivedIndexEntries, DerivedIndexExecutionDenial, DerivedIndexExecutionDenialKind,
-    DerivedIndexId, DerivedIndexKind,
+    DerivedIndexEntries, DerivedIndexExecutionDenial, DerivedIndexId, DerivedIndexKind,
 };
 use crate::runtime::RelationalRuntime;
 
@@ -235,45 +234,5 @@ fn index_packet_result(
 }
 
 pub(super) fn index_execution_denial(stop: PacketExecutionStop) -> DerivedIndexExecutionDenial {
-    use worth_execution::{MapKernelFailure, MapKernelStop, MapStop};
-    let (kind, partition_identity) = match stop {
-        PacketExecutionStop::Admission(denial) => (
-            if denial == worth_execution::MapDenial::MemoryOverflow {
-                DerivedIndexExecutionDenialKind::ResourceExhausted
-            } else {
-                DerivedIndexExecutionDenialKind::Admission
-            },
-            None,
-        ),
-        PacketExecutionStop::Execution { boundary, reason } => {
-            let kind = match reason {
-                MapStop::Admission(_) => DerivedIndexExecutionDenialKind::ResourceExhausted,
-                MapStop::WorkExhausted { .. } => DerivedIndexExecutionDenialKind::WorkExhausted,
-                MapStop::Failure { cause, .. } => match cause {
-                    MapKernelFailure::Stop(MapKernelStop::Cancelled) => {
-                        DerivedIndexExecutionDenialKind::Cancelled
-                    }
-                    MapKernelFailure::Stop(MapKernelStop::DeadlineElapsed) => {
-                        DerivedIndexExecutionDenialKind::DeadlineElapsed
-                    }
-                    MapKernelFailure::Stop(_) => DerivedIndexExecutionDenialKind::WorkExhausted,
-                    MapKernelFailure::ResultCapacityExceeded => {
-                        DerivedIndexExecutionDenialKind::ResultCapacityExceeded
-                    }
-                    MapKernelFailure::Domain(
-                        crate::execution::PacketBudgetDenial::ScratchCapacityExceeded,
-                    ) => DerivedIndexExecutionDenialKind::ResourceExhausted,
-                    MapKernelFailure::Domain(
-                        crate::execution::PacketBudgetDenial::UncheckedCustomKernel,
-                    ) => DerivedIndexExecutionDenialKind::Admission,
-                    MapKernelFailure::Panic => DerivedIndexExecutionDenialKind::WorkerFailed,
-                },
-            };
-            (kind, boundary.map(PartitionIdentity::value))
-        }
-    };
-    DerivedIndexExecutionDenial {
-        kind,
-        partition_identity,
-    }
+    stop.into()
 }

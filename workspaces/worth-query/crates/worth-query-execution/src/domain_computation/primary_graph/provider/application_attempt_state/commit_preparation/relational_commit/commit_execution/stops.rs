@@ -1,6 +1,7 @@
 use super::{
     provider_failure, WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
+use crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop;
 
 pub(super) fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
     provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
@@ -60,7 +61,19 @@ pub(super) fn index_preparation_stop(
         Kind::GenerationIdentityExhausted => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexGenerationIdentityExhausted
         }
-        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        Kind::Basis(_)
+        | Kind::SnapshotUnavailable
+        | Kind::CommitMismatch
+        | Kind::BeforeRootMismatch
+        | Kind::IndexUnavailable(_)
+        | Kind::GenerationKindMismatch(_)
+        | Kind::PriorEntryMismatch
+        | Kind::ForeignCandidate
+        | Kind::CandidateLifetimeExpired { .. }
+        | Kind::CandidateUnavailable
+        | Kind::CandidateIndexesAlreadyPrepared => {
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected
+        }
     };
     crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
         WorthQueryProviderSessionFailure::new(
@@ -77,6 +90,11 @@ pub(super) fn transaction_commit_stop(
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use worth_relational::facade::mvcc::TransactionCommitError as Error;
     match error {
+        Error::Execution { denial, .. } => match denial.kind {
+            worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
+                relational_execution_stop(cause, denial.partition_identity)
+            }
+        },
         Error::Interrupted { interruption, .. } => {
             crate::domain_computation::WorthQueryProviderSessionCommitStop::ControlStopped(
                 interruption_control_stopped(interruption),
@@ -100,9 +118,14 @@ pub(super) fn transaction_commit_stop(
                 settlement,
             ),
         ),
-        _ => crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure(
-            "Relational rejected application commit preparation",
-        )),
+        Error::Conflict { .. }
+        | Error::Publication { .. }
+        | Error::Preparation { .. }
+        | Error::PublicationDenied { .. } => {
+            crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure(
+                "Relational rejected application commit preparation",
+            ))
+        }
     }
 }
 
@@ -172,7 +195,16 @@ fn publication_failure(
             maximum_bytes: *maximum_bytes,
             required_bytes: *required_bytes,
         },
-        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        Failure::PreparedRootMismatch
+        | Failure::PreparedBasisDescriptor(_)
+        | Failure::NextBasisAdmission(_)
+        | Failure::SelectedRootUnavailable
+        | Failure::BranchObservation(_)
+        | Failure::PatchPositionCapacityExhausted
+        | Failure::RetentionOwner
+        | Failure::PendingSettlementIdentityConflict => {
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected
+        }
     };
     WorthQueryProviderSessionFailure::new(
         kind,
@@ -181,3 +213,8 @@ fn publication_failure(
         crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
     )
 }
+
+#[cfg(test)]
+mod leased_requests;
+#[cfg(test)]
+mod tests;

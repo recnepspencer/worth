@@ -173,7 +173,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicat
     TerminalIndexUnavailable,
     CorrelationAlreadyOwned,
     ProductAdmission,
-    CompletionPreparation,
+    CompletionPreparation(crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial),
 }
 
 #[must_use = "retain actual dispatch evidence and any World recovery custody"]

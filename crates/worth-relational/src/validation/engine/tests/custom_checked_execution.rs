@@ -184,7 +184,9 @@ fn checked_custom_rule_stops_mid_scan_when_work_is_exhausted() {
         Err(
             crate::transactions::data::TransactionCommitError::Execution {
                 denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::WorkExhausted,
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::WorkExhausted
+                    ),
                     ..
                 },
                 ..
@@ -274,7 +276,9 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
         Err(
             crate::transactions::data::TransactionCommitError::Execution {
                 denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cancelled,
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::Cancelled
+                    ),
                     ..
                 },
                 ..
@@ -317,7 +321,9 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
         Err(
             crate::transactions::data::TransactionCommitError::Execution {
                 denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::ResourceExhausted,
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::ScratchCapacityExceeded
+                    ),
                     ..
                 },
                 ..
@@ -365,7 +371,9 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
         Err(
             crate::transactions::data::TransactionCommitError::Execution {
                 denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cancelled,
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::Cancelled
+                    ),
                     ..
                 },
                 ..

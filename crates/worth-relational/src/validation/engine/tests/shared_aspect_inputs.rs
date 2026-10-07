@@ -292,7 +292,9 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
             denial,
             crate::transactions::data::TransactionCommitError::Execution {
                 denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Admission,
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel
+                    ),
                     ..
                 },
                 ..

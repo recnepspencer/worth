@@ -52,6 +52,16 @@ pub enum WorthQueryInboundAdmissionDenial {
     TerminalCleanupUnavailable,
     PublicationInProgress,
     PublicationRetryRequired,
+    /// Publication remains retryable; the execution owner retains its cause.
+    PublicationExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    /// Cancellation or deadline during preparation remains retryable.
+    PublicationExecutionControlStopped {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
     RecoveryStaleProduct,
     RecoveryUnavailable,
     SourceRetired,
@@ -62,6 +72,7 @@ pub enum WorthQueryInboundAdmissionDenial {
 mod admit;
 mod denial;
 mod phases;
+mod progress_error;
 mod receipt;
 pub use denial::{
     WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundPermanentDenialKind,
@@ -212,21 +223,7 @@ where
         if !retained {
             return Err(denial);
         }
-        let reason = match denial {
-            WorthQueryInboundAdmissionDenial::SourceRevoked => {
-                WorthQueryInboundPendingReason::SourceRevoked
-            }
-            WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable => {
-                WorthQueryInboundPendingReason::TerminalCleanupUnavailable
-            }
-            WorthQueryInboundAdmissionDenial::RecoveryUnavailable => {
-                WorthQueryInboundPendingReason::RecoveryUnavailable
-            }
-            WorthQueryInboundAdmissionDenial::CorrelationAlreadyOwned => {
-                WorthQueryInboundPendingReason::CorrelationConflict
-            }
-            _ => WorthQueryInboundPendingReason::OwnerRetryRequired,
-        };
+        let reason = denial.pending_reason();
         Ok(WorthQueryInboundReceipt::pending(
             accepted,
             envelope,

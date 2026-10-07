@@ -6,6 +6,7 @@ use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 mod maintenance;
+mod publication_retry;
 mod recovery;
 
 use super::installed_transport::{
@@ -29,6 +30,14 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingR
     UnknownCompletion,
     ConcurrentContinuation,
     PublicationRetryRequired,
+    ExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    ExecutionControlStopped {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
     PublicationAtCapacity,
     ProductRecoveryRequired,
     RecoveryStaleProduct,
@@ -256,15 +265,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         );
                         return Resume::Pending(Pending::ProductRecoveryRequired);
                     }
-                    InstalledTransportPublicationOutcome::Denied(
-                        evidence,
-                        super::installed_transport::InstalledTransportPublicationDenial::PublicationPermit,
-                    ) => {
+                    InstalledTransportPublicationOutcome::Denied(evidence, denial) => {
                         entry.state = RetainedCompletion::Ready(evidence);
-                        return Resume::Pending(Pending::PublicationAtCapacity);
+                        return Resume::Pending(denial.pending_reason());
                     }
-                    InstalledTransportPublicationOutcome::NoEffect(evidence)
-                    | InstalledTransportPublicationOutcome::Denied(evidence, _) => {
+                    InstalledTransportPublicationOutcome::NoEffect(evidence) => {
                         entry.state = RetainedCompletion::Ready(evidence);
                         return Resume::Pending(Pending::PublicationRetryRequired);
                     }

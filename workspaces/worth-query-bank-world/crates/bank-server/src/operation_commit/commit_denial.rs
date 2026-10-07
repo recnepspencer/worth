@@ -8,6 +8,8 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
     ProviderRejected,
+    /// The execution worker panicked before publication.
+    ProviderPanicked,
     CustomInvariantDenied,
     CandidateValidatorWorkExceeded {
         maximum_work: usize,
@@ -79,6 +81,11 @@ pub(crate) const fn denial_kind(
 ) -> BankCommitDenialKind {
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
+        Query::ExecutionResource { .. } => BankCommitDenialKind::ProviderRejected,
+        Query::ExecutionNestedPatternStopped { .. } => BankCommitDenialKind::ProviderRejected,
+        Query::ExecutionWorkerPanicked { .. } => BankCommitDenialKind::ProviderPanicked,
+        Query::ExecutionUncheckedCustomKernel { .. } => BankCommitDenialKind::ProviderRejected,
+        Query::ExecutionIdentitiesNotCanonical { .. } => BankCommitDenialKind::ProviderRejected,
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
         Query::CustomInvariantDenied => BankCommitDenialKind::CustomInvariantDenied,
         Query::CandidateValidatorWorkExceeded {
@@ -166,5 +173,21 @@ pub(crate) const fn denial_stage(
         Query::ProvisionalState => BankCommitDenialStage::ProvisionalState,
         Query::InvariantExecution => BankCommitDenialStage::InvariantExecution,
         Query::ProviderCommit => BankCommitDenialStage::ProviderCommit,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn packet_panic_is_panicked_before_effects() {
+        let query = WorthQueryApplicationCommitDenialKind::ExecutionWorkerPanicked {
+            partition_identity: Some(7),
+        };
+        assert_eq!(denial_kind(query), BankCommitDenialKind::ProviderPanicked);
+        assert_eq!(
+            denial_kind(WorthQueryApplicationCommitDenialKind::ProviderRejected),
+            BankCommitDenialKind::ProviderRejected
+        );
     }
 }

@@ -68,6 +68,9 @@ fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttp
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
     let (denial, next) = match denial {
+        Idempotency::ExecutionDenied(kind) => {
+            return super::mutation_application::pending_execution_denial(kind)
+        }
         Idempotency::Authorization(denial) => return authorization_denial(denial.kind()),
         // The key's earlier commit took effect; reading current state shows it.
         Idempotency::CommittedReceiptNotRetained | Idempotency::IdempotencyWindowExpired => {
@@ -128,6 +131,8 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         // request succeeds or answers already-completed once it has.
         Kind::UnresolvedExternalPosture
         | Kind::CompletionPublicationPending
+        | Kind::CompletionExecutionDenied { .. }
+        | Kind::CompletionExecutionControlStopped { .. }
         | Kind::TerminalIndexUnavailable
         | Kind::TimeObservationDenied => (Denial::Unavailable, Next::Retry),
         Kind::TransportNotInstalled => (Denial::Unavailable, Next::ContactOperator),

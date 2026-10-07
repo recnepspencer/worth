@@ -29,7 +29,7 @@ pub(super) const fn lease_denial(denial: LeaseDenial) -> Resource {
         LeaseDenial::MemoryLimitExceedsParent => Resource::PolicyMemoryLimit,
         LeaseDenial::WorkLimitExceedsParent => Resource::WorkLimit,
         LeaseDenial::MemoryExhausted(denial) => memory_denial(denial),
-        LeaseDenial::ChargedBytesOverflow => Resource::CapacityOverflow,
+        LeaseDenial::ChargedBytesOverflow => Resource::ChargedBytesOverflow,
         LeaseDenial::UnrelatedNestedLease => Resource::NestedLeaseMisuse,
         LeaseDenial::EquivalenceContractUnavailable => Resource::EquivalenceContractUnavailable,
     }
@@ -126,6 +126,8 @@ pub(super) fn kernel_failure<Stopped>(
                 MapKernelFailure::Stop(MapKernelStop::WorkCounterOverflow)
             }
             Resource::RetainedBytesExhausted
+            | Resource::ScratchCapacityExceeded
+            | Resource::ChargedBytesOverflow
             | Resource::ResultCapacityExceeded
             | Resource::CapacityOverflow
             | Resource::MemoryLimit { .. }

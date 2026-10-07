@@ -145,7 +145,18 @@ where
                     Some(prepared),
                 ))
             }
-            outcome => Ok((outcome, None)),
+            outcome @ (crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductStale(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Stale(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Cancelled
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::TimedOut
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Aborted
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Deferred(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::NoEffect(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
+            | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Indeterminate(_)) => Ok((outcome, None)),
         }
     }
 }

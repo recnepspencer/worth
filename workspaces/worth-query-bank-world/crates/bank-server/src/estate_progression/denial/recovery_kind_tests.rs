@@ -125,3 +125,26 @@ fn every_attempt_refusal_keeps_its_own_bank_cause() {
         assert_eq!(BankAttempt::from(query), expected);
     }
 }
+
+#[test]
+fn completion_execution_refusals_keep_the_cause_and_pending_category() {
+    use worth_query_host::facade::installed::provider_session::{
+        WorthQueryProviderSessionControlStopKind as Control,
+        WorthQueryProviderSessionDenialKind as Session,
+    };
+    use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
+    let stage = Stage::ProviderCommit;
+    let kind = Session::ExecutionWorkerPanicked {
+        partition_identity: Some(1),
+    };
+    assert_eq!(
+        bank(Query::CompletionExecutionDenied { stage, kind }),
+        Bank::CompletionExecutionDenied { stage, kind }
+    );
+    for kind in [Control::Cancelled, Control::TimedOut] {
+        assert_eq!(
+            bank(Query::CompletionExecutionControlStopped { stage, kind }),
+            Bank::CompletionExecutionControlStopped { stage, kind }
+        );
+    }
+}

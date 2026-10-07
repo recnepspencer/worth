@@ -152,7 +152,34 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         report.advanced += 1;
                     }
                 }
-                Err(_) => report.blocked += 1,
+                // This report counts blocked work; it does not translate denials.
+                Err(
+                    Denial::ForeignVerifier
+                    | Denial::Oversized
+                    | Denial::Verification(_)
+                    | Denial::IncompatibleMeaning
+                    | Denial::Expired
+                    | Denial::ValidityWindowExceeded
+                    | Denial::TimeUnavailable
+                    | Denial::UnknownCorrelation
+                    | Denial::RetryBeforeAcceptance
+                    | Denial::ForeignOwner
+                    | Denial::OriginalDispatchHasNoInboundSupport
+                    | Denial::UnsupportedOutbox
+                    | Denial::MessageIdentityConflict
+                    | Denial::CorrelationAlreadyOwned
+                    | Denial::AuthenticatedPermanent(_)
+                    | Denial::CapacityExhausted
+                    | Denial::TerminalCleanupUnavailable
+                    | Denial::PublicationInProgress
+                    | Denial::PublicationRetryRequired
+                    | Denial::PublicationExecutionDenied { .. }
+                    | Denial::PublicationExecutionControlStopped { .. }
+                    | Denial::RecoveryUnavailable
+                    | Denial::SourceRetired
+                    | Denial::SourceRevoked
+                    | Denial::OwnerReadDenied(_),
+                ) => report.blocked += 1,
             }
         }
         for correlation in transport_candidates {
@@ -164,7 +191,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     report.blocked += 1;
                     report.advanced += 1;
                 }
-                InstalledTransportResumeOutcome::Pending(_) => report.blocked += 1,
+                InstalledTransportResumeOutcome::Pending(
+                    InstalledTransportPendingReason::UnknownCompletion
+                    | InstalledTransportPendingReason::ConcurrentContinuation
+                    | InstalledTransportPendingReason::PublicationRetryRequired
+                    | InstalledTransportPendingReason::PublicationAtCapacity
+                    | InstalledTransportPendingReason::ProductRecoveryRequired
+                    | InstalledTransportPendingReason::TerminalProtectionUnavailable
+                    | InstalledTransportPendingReason::TerminalReleaseUnavailable
+                    | InstalledTransportPendingReason::ExecutionDenied { .. }
+                    | InstalledTransportPendingReason::ExecutionControlStopped { .. },
+                ) => report.blocked += 1,
             }
         }
         match self.cleanup_completed_inbound_occurrences(

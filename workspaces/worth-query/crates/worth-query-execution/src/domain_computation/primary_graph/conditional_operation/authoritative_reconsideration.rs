@@ -191,6 +191,9 @@ fn retained_decision_evidence_mut(
         | Decision::OperationIndeterminate(evidence, _)
         | Decision::OperationCommitted(evidence)
         | Decision::OperationAlreadyCommitted(evidence) => Some(evidence),
+        Decision::OperationCommitRetryable(evidence, _)
+        | Decision::OperationExecutionControlRetryable(evidence, _) => Some(evidence),
+        Decision::OperationSettlementExecutionDenied(evidence, _, _) => Some(evidence),
         Decision::Failed(_) => None,
     }
 }

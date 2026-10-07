@@ -1,16 +1,19 @@
-use crate::domain_computation::primary_graph::application_attempt::{
+use super::commit_resolution::{finish_authorized_compare, WorthQueryAuthorizedCompareContext};
+use crate::domain_computation::primary_graph as graph;
+use graph::application_attempt::provider_compare_denial::provider_session_kind_denied;
+use graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
+use graph::application_attempt::provider_execution::outcome::{
+    progression_denied, progression_from_authorization_denial, WorthQueryProviderProgressionOutcome,
+};
+use graph::application_attempt::{
     provider_recomparison::recover_equivalent_commit_evidence,
     WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
     WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitReceipt,
     WorthQueryCommittedReceiptProjection,
 };
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::{
-    progression_denied, progression_from_authorization_denial,
-    WorthQueryProviderProgressionOutcome,
-};
-use super::commit_resolution::{finish_authorized_compare, WorthQueryAuthorizedCompareContext};
-use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
+use graph::provider::WorthQueryProviderIdempotencyResolution;
+use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
+use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryManagedEquivalentCommitReceiptPermit
 {
@@ -20,7 +23,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 
 impl WorthQueryManagedEquivalentCommitReceiptPermit {
     fn mint(
-        provider_session: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
+        provider_session: crate::domain_computation::provider_session::
+            WorthQueryProviderSessionTerminalBinding,
     ) -> Self {
         Self { provider_session }
     }
@@ -178,7 +182,7 @@ where
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
+        Err(IdempotencyDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         }) => {
             candidate.discard();
@@ -189,29 +193,37 @@ where
                 ),
             )
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::Unavailable) => {
+        Err(IdempotencyDenial::ExecutionDenied(kind)) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(provider_session_kind_denied(
+                kind,
+                ExecutionDenialStage::Idempotency,
+                "pending publication execution refused",
+            ))
+        }
+        Err(IdempotencyDenial::Unavailable) => {
             candidate.discard();
             progression_denied(DenialStage::Idempotency)
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::WindowExpired) => {
+        Err(IdempotencyDenial::WindowExpired) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_window_expired(),
             )
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { commit }) => {
+        Err(IdempotencyDenial::CommittedReceiptNotRetained { commit }) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
             )
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RecordedIntentUnverifiable) => {
+        Err(IdempotencyDenial::RecordedIntentUnverifiable) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_unverifiable(),
             )
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted) => {
+        Err(IdempotencyDenial::RetentionCapacityExhausted) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
@@ -219,7 +231,7 @@ where
                 ),
             )
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::RetentionIdentityExhausted) => {
+        Err(IdempotencyDenial::RetentionIdentityExhausted) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::retention_identity_exhausted(
@@ -227,7 +239,7 @@ where
                 ),
             )
         }
-        Err(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted) => {
+        Err(IdempotencyDenial::SnapshotIdentityExhausted) => {
             candidate.discard();
             WorthQueryProviderProgressionOutcome::Denied(
                 WorthQueryApplicationCommitDenial::snapshot_identity_exhausted(
@@ -239,7 +251,7 @@ where
 }
 
 fn resolve_equivalent_commit<Schema, Operation, Input, Scope>(
-    receipt: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication,
+    receipt: graph::provider::WorthQueryPrimaryGraphCommittedApplication,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
         '_,
         '_,
@@ -248,7 +260,8 @@ fn resolve_equivalent_commit<Schema, Operation, Input, Scope>(
         Input,
         Scope,
     >,
-    provider_session: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
+    provider_session: crate::domain_computation::provider_session::
+        WorthQueryProviderSessionTerminalBinding,
 ) -> WorthQueryProviderProgressionOutcome
 where
     Input: Clone + Send + Sync + 'static,

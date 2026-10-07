@@ -1,8 +1,7 @@
 use std::mem::size_of;
 
 use worth_execution::{
-    ChargedBytes, ExecutionResourceLease, ExecutionScan, MapKernelFailure, MapKernelStop,
-    ScanDenial, ScanOutcome,
+    ChargedBytes, ExecutionResourceLease, MapKernelFailure, MapKernelStop, ScanOutcome,
 };
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
@@ -30,17 +29,7 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
     lease: &ExecutionResourceLease<'_>,
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
-    let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).map_err(
-        |denial| {
-            PacketExecutionStop::Admission(match denial {
-                ScanDenial::IdentitiesNotCanonical => {
-                    worth_execution::MapDenial::ExpectedIdentitiesNotCanonical
-                }
-                ScanDenial::CoverageMismatch => worth_execution::MapDenial::CoverageMismatch,
-                ScanDenial::MemoryOverflow => worth_execution::MapDenial::MemoryOverflow,
-            })
-        },
-    )?;
+    let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
     let ceiling = lease.policy().budget().charged_memory_bytes() / 8;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,

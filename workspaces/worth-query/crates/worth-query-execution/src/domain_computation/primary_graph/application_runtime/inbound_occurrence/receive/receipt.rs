@@ -23,6 +23,16 @@ pub enum WorthQueryInboundPendingReason {
     RetainedUnpublished,
     SourceRevoked,
     OwnerRetryRequired,
+    /// Accepted custody remains pending; the execution owner refused preparation.
+    ExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    /// Accepted custody remains pending after a preparation control stop.
+    ExecutionControlStopped {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
     TerminalCleanupUnavailable,
     RecoveryUnavailable,
     CorrelationConflict,

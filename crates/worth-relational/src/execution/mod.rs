@@ -1,3 +1,9 @@
+mod denial;
+mod denial_cause;
+pub(crate) use denial::kernel_failure;
+mod ordered_scan;
+pub use denial_cause::RelationalExecutionDenialCause;
+pub(crate) use ordered_scan::admit_ordered_scan;
 mod read_only_packets;
 mod request_work;
 

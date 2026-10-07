@@ -9,6 +9,8 @@ use crate::domain_computation::primary_graph::{
 /// nothing took effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
+    /// Execution refused to finish the pending publication used by this read.
+    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The admission's current authority no longer holds, or inspecting the key was
     /// not authorized, for the named reason. The authorization denial has the
     /// contributing causes.
@@ -49,7 +51,9 @@ pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationIdempotencyResolutionDenial {
     kind: WorthQueryApplicationIdempotencyResolutionDenialKind,
-    authorization: Option<WorthQueryOperationAuthorizationDenial>,
+    // Authorization detail is present only on that refusal. Keep its owned
+    // causes out of every downstream error's stack representation.
+    authorization: Option<Box<WorthQueryOperationAuthorizationDenial>>,
 }
 
 impl WorthQueryApplicationIdempotencyResolutionDenial {
@@ -62,7 +66,16 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
             } => Some(super::WorthQueryHistoricalApplicationCommit::observed(
                 commit,
             )),
-            _ => None,
+            WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(_)
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(_)
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted { .. }
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionIdentityExhausted
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable
+            | WorthQueryApplicationIdempotencyResolutionDenialKind::IdempotencyWindowExpired => None,
         }
     }
 
@@ -71,7 +84,10 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
     }
 
     pub const fn authorization(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
-        self.authorization.as_ref()
+        match &self.authorization {
+            Some(denial) => Some(denial),
+            None => None,
+        }
     }
 
     pub(super) fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
@@ -79,7 +95,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
                 denial.kind(),
             ),
-            authorization: Some(denial),
+            authorization: Some(Box::new(denial)),
         }
     }
 
@@ -104,8 +120,9 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
-    pub(super) fn from_provider(denial: Provider) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn from_provider(denial: Provider) -> Self {
         let kind = match denial {
+            Provider::ExecutionDenied(kind) => WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(kind),
             Provider::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             } => WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted {

@@ -8,13 +8,7 @@ use super::{CommitConflict, CommitPreparationError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommitExecutionDenialKind {
-    Admission,
-    ResourceExhausted,
-    Cancelled,
-    DeadlineElapsed,
-    WorkExhausted,
-    ResultCapacityExceeded,
-    WorkerFailed,
+    Cause(crate::execution::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

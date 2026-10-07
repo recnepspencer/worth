@@ -72,7 +72,9 @@ impl<'runtime> InvariantEngine<'runtime> {
             return Err(
                 crate::transactions::data::TransactionCommitError::execution(
                     crate::transactions::data::CommitExecutionDenial {
-                        kind: crate::transactions::data::CommitExecutionDenialKind::Admission,
+                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                            crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel,
+                        ),
                         partition_identity: None,
                     },
                 ),

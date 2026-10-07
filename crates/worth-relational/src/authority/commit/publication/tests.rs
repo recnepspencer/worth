@@ -134,7 +134,9 @@ fn leased_publication_stops_inside_large_packet_without_publishing() {
         Err(
             crate::transactions::data::TransactionCommitError::Execution {
                 denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::WorkExhausted,
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::WorkExhausted
+                    ),
                     ..
                 },
                 ..

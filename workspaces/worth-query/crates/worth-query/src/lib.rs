@@ -100,3 +100,6 @@ pub(crate) use session_label::WorthQuerySessionLabel;
 
 #[cfg(test)]
 mod harness;
+
+#[cfg(test)]
+mod relational_execution_refusal;
