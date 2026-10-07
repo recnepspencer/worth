@@ -28,6 +28,7 @@ mod mandatory_review_program;
 mod mandatory_review_replay;
 mod migration;
 mod observation;
+pub(in crate::domain_computation::primary_graph) use observation::observe_field_value_borrowed;
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
