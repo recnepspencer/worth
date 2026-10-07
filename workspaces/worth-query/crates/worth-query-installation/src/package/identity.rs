@@ -316,7 +316,7 @@ mod tests {
     fn raising_work_ceiling_does_not_change_package_identity() {
         let fixture = package_with_semantics(1024);
         let (old_identity, _) =
-            canonical_identity_with_maximum_bytes(&fixture, 4 * 1_024 * 1_024).unwrap();
+            canonical_identity_with_maximum_bytes(&fixture, 16 * 1_024 * 1_024).unwrap();
         let (new_identity, _) =
             canonical_identity_with_maximum_bytes(&fixture, INSTALLATION_MAXIMUM_CANONICAL_BYTES)
                 .unwrap();
