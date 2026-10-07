@@ -8,7 +8,12 @@ use crate::runtime::{
 
 use super::{CompanionPreflightBudget, RelationalPublicationCompanion};
 
+#[cfg(test)]
+mod guard_fault;
 mod head_cell;
+#[cfg(test)]
+mod poison_recovery;
+mod registry_guard;
 
 #[derive(Debug)]
 pub(crate) enum CompanionRegistrationState {
@@ -56,7 +61,13 @@ impl CompanionRegistry {
     }
 
     pub(crate) fn fork(&self) -> Self {
-        let state = self.state.read().unwrap_or_else(|p| p.into_inner());
+        let state = registry_guard::acquire(
+            self.state.read().map_err(std::sync::TryLockError::Poisoned),
+            PublicationCompanionRegistrationStop::PublicationPending,
+        )
+        .expect("blocking read has no contention stop");
+        #[cfg(test)]
+        guard_fault::after_acquisition(guard_fault::Door::Fork);
         let next = match &*state {
             CompanionRegistrationState::Standalone => CompanionRegistrationState::Standalone,
             CompanionRegistrationState::RequiredRebind { .. }
@@ -98,10 +109,12 @@ impl CompanionRegistry {
     pub(crate) fn enter(
         &self,
     ) -> Result<CompanionRegistrationEpoch<'_>, PublicationCompanionRegistrationStop> {
-        let state = self
-            .state
-            .try_read()
-            .map_err(|_| PublicationCompanionRegistrationStop::PublicationPending)?;
+        let state = registry_guard::acquire(
+            self.state.try_read(),
+            PublicationCompanionRegistrationStop::PublicationPending,
+        )?;
+        #[cfg(test)]
+        guard_fault::after_acquisition(guard_fault::Door::Enter);
         let client = match &*state {
             CompanionRegistrationState::RequiredActive { client, .. } => client.upgrade(),
             _ => None,
@@ -202,10 +215,12 @@ impl PublicationCompanionRegistrationPort {
             .admit()
             .ok_or(PublicationCompanionRegistrationStop::OwnerUnavailable)?;
         let registry = self.publication.companion_registry();
-        let mut state = registry
-            .state
-            .try_write()
-            .map_err(|_| PublicationCompanionRegistrationStop::PublicationPending)?;
+        let mut state = registry_guard::acquire(
+            registry.state.try_write(),
+            PublicationCompanionRegistrationStop::PublicationPending,
+        )?;
+        #[cfg(test)]
+        guard_fault::after_acquisition(guard_fault::Door::Begin);
         let generation = match &*state {
             CompanionRegistrationState::Standalone => 1,
             CompanionRegistrationState::RequiredRebind { generation }
@@ -235,12 +250,12 @@ impl PublicationCompanionRegistrationPort {
             .owner
             .admit()
             .ok_or(PublicationCompanionRegistrationStop::OwnerUnavailable)?;
-        let mut state = self
-            .publication
-            .companion_registry()
-            .state
-            .try_write()
-            .map_err(|_| PublicationCompanionRegistrationStop::PublicationPending)?;
+        let mut state = registry_guard::acquire(
+            self.publication.companion_registry().state.try_write(),
+            PublicationCompanionRegistrationStop::PublicationPending,
+        )?;
+        #[cfg(test)]
+        guard_fault::after_acquisition(guard_fault::Door::Remove);
         match &*state {
             CompanionRegistrationState::RequiredActive { generation, .. }
                 if *generation == registration.generation =>
@@ -284,13 +299,12 @@ impl PendingCompanionRegistration {
             .owner
             .admit()
             .ok_or(PublicationCompanionRegistrationStop::OwnerUnavailable)?;
-        let mut state = self
-            .port
-            .publication
-            .companion_registry()
-            .state
-            .try_write()
-            .map_err(|_| PublicationCompanionRegistrationStop::PublicationPending)?;
+        let mut state = registry_guard::acquire(
+            self.port.publication.companion_registry().state.try_write(),
+            PublicationCompanionRegistrationStop::PublicationPending,
+        )?;
+        #[cfg(test)]
+        guard_fault::after_acquisition(guard_fault::Door::Activate);
         match &*state {
             CompanionRegistrationState::RequiredRebind { generation }
                 if *generation == self.generation =>

@@ -1,8 +1,10 @@
+use crate::workflow_request::workflow_request;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
 };
 use worth_foundational::facade::{FieldKey, InternedString};
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{domain, foundation};
 
 #[path = "workflow_projection_lifecycle/projection_lifecycle_assertions.rs"]
@@ -245,24 +247,28 @@ pub(super) fn settle_workflow(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .complete()

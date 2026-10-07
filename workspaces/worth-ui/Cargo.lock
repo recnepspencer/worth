@@ -4571,6 +4571,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "syn 2.0.119",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query-admission",

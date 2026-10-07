@@ -13,6 +13,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         stage_identity: &str,
         predecessor_stage: &str,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
         let runtime_admission = match self.admit_stage_runtime_authority(workspace) {
             Ok(admission) => admission,
@@ -45,7 +46,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                     let denial = self.artifact_carriage_denial(denial);
                     return self.outcome_from_denial(denial);
                 }
-                self.advance_with_admitted_stage(admitted, input, workspace)
+                self.advance_with_admitted_stage(admitted, input, workspace, request)
             }
             Err(denial) => {
                 let stop = self.artifact_carriage_denial(denial);
@@ -60,6 +61,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         predecessor_stage: &str,
         lease_role: impl Into<String>,
         workspace: &mut WorthQueryWorkspace,
+        request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
         let runtime_admission = match self.admit_stage_runtime_authority(workspace) {
             Ok(admission) => admission,
@@ -97,7 +99,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                     let denial = self.artifact_carriage_denial(denial);
                     return self.outcome_from_denial(denial);
                 }
-                self.advance_with_admitted_stage(admitted, input, workspace)
+                self.advance_with_admitted_stage(admitted, input, workspace, request)
             }
             Err(denial) => {
                 let stop = self.artifact_carriage_denial(denial);

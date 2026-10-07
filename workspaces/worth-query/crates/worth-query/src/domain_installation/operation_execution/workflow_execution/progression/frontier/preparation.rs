@@ -16,13 +16,18 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         &self,
         stages: Vec<(String, WorthQueryWorkflowValue)>,
     ) -> PreparedWorkflowFrontier {
-        let order = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(
+        let (order, shape_denial) = match worth_proof::CanonicalUniqueVec::try_from_sorted_unique(
             stages
                 .iter()
                 .map(|(identity, _)| identity.clone())
                 .collect(),
-        )
-        .expect("admitted frontier membership is canonical and unique");
+        ) {
+            Ok(order) => (order, None),
+            Err(_) => (
+                worth_proof::CanonicalUniqueVec::from_btree_set(Default::default()),
+                Some(WorthQueryWorkflowAdvanceDenialKind::ParallelFrontierShape),
+            ),
+        };
         let identity = if stages.len() == 1 {
             // A singleton is canonical by construction; HEAD paid no batch hash.
             format!(
@@ -39,19 +44,20 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 format!("admission:{}", self.counters.stage_admission_checks),
             ])
         };
-        let mut stopped = false;
+
         let mut members = HashMap::with_capacity(stages.len());
-        for (stage, input) in stages {
-            let preparation = if stopped {
-                WorkflowStagePreparation::Unstarted
-            } else {
-                let preparation = self.prepare_frontier_member(&identity, &stage, &input);
-                stopped = !matches!(&preparation, WorkflowStagePreparation::Ready(_));
-                preparation
-            };
+        for (rank, (stage, input)) in stages.into_iter().enumerate() {
+            if shape_denial.is_some() {
+                break;
+            }
+            let preparation = self.prepare_frontier_member(&identity, &stage, &input);
+            let stopped = !matches!(&preparation, WorkflowStagePreparation::Ready(_));
             // Membership and input are paired at this sole constructor. The
             // canonical proof owns the keys; no parallel sequence is zipped.
-            members.insert(stage, PreparedWorkflowStage { input, preparation });
+            members.insert(rank, PreparedWorkflowStage { input, preparation });
+            if stopped {
+                break;
+            }
         }
         PreparedWorkflowFrontier {
             identity,
@@ -59,6 +65,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             order,
             members,
             compute: self.executor.computation(),
+            shape_denial,
         }
     }
 

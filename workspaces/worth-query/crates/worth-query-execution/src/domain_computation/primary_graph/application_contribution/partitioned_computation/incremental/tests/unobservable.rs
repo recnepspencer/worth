@@ -34,7 +34,7 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
         locator,
     };
     state.facts.rename_key(&key, undeclared);
-    let prior = ComputationPrior::new(edition(), Ok(Arc::new(state)), None);
+    let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
@@ -76,7 +76,7 @@ fn more_retained_keys_than_the_declared_work_runs_in_full_uncompared() {
         };
         state.facts.copy_key(&key, undeclared);
     }
-    let prior = ComputationPrior::new(edition(), Ok(Arc::new(state)), None);
+    let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(
@@ -120,7 +120,7 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_declared_work_run_in_full() 
         };
         state.facts.copy_key(&key, adjacency);
     }
-    let prior = ComputationPrior::new(edition(), Ok(Arc::new(state)), None);
+    let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(

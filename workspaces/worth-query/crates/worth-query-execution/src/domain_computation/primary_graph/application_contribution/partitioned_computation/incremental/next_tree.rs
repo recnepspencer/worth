@@ -24,7 +24,7 @@ use super::super::{
     WorthQueryComputationPartitionStop, WorthQueryDeterministicReducer,
     WorthQueryPartitionedComputationDenial,
 };
-use super::observed::observe;
+use super::observed::{observe, observe_tree};
 use super::retained::{
     CarriedCalls, CompletedComputationRun, RetainedBasis, RetainedCall, RetainedPartition,
     RetainedPartitions, TypedPrior, WorthQueryPartitionedComputationRun,
@@ -325,7 +325,12 @@ where
             reducer,
             execution,
             &mut results_memory,
-        )?;
+        );
+        observe_tree(
+            WorthQueryPartitionedComputationRun::Incremental,
+            tree.report,
+        );
+        let tree = tree.outcome?;
         // The results are the tree's now: the hold settles to what the tree
         // keeps, as a full run's tree is handed over when its run ends.
         kept_tree_bytes(&tree)

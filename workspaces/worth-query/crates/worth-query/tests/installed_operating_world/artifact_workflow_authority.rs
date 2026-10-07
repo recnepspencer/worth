@@ -1,5 +1,7 @@
+use crate::workflow_request::workflow_request;
 use worth_proof::TransitionOutcome;
 use worth_query::facade::domain;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use super::installed_operation_fixture::{
     artifact_controlled_workspace, artifact_move_workspace, artifact_workspace_without_support,
@@ -27,7 +29,11 @@ fn foreign_provider_is_denied_and_its_resource_is_disposed_exactly_once() {
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("reject-provider"), &mut workspace);
+        .reexecute(
+            move_intent("reject-provider"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
 
     assert!(matches!(
         outcome,
@@ -51,7 +57,11 @@ fn retained_production_admission_denies_in_a_later_run_before_provider_projectio
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("retain-admission"), &mut workspace);
+        .reexecute(
+            move_intent("retain-admission"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
     assert!(matches!(
         retained,
         TransitionOutcome::Denied(_) | TransitionOutcome::Failed(_)
@@ -63,7 +73,11 @@ fn retained_production_admission_denies_in_a_later_run_before_provider_projectio
             &workspace,
         )
         .unwrap()
-        .reexecute(move_intent("reuse-retained-admission"), &mut workspace);
+        .reexecute(
+            move_intent("reuse-retained-admission"),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        );
     assert!(matches!(
         rejected,
         TransitionOutcome::Denied(_) | TransitionOutcome::Failed(_)
@@ -99,11 +113,17 @@ fn stale_installation_generation_denies_artifact_transfer_before_consumer_access
             "produce",
             domain::WorthQueryWorkflowValue::Text("produce".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     workspace.advance_domain_installation_generation().unwrap();
 
-    let denial = match run.advance_with_artifact("consume", "produce", &mut workspace) {
+    let denial = match run.advance_with_artifact(
+        "consume",
+        "produce",
+        &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
+    ) {
         TransitionOutcome::Stale(denial) => denial,
         _ => panic!("stale artifact transfer did not return stale authority evidence"),
     };
@@ -139,11 +159,17 @@ fn foreign_runtime_denies_artifact_progression_before_consumer_access() {
             "produce",
             domain::WorthQueryWorkflowValue::Text("retain-observer-lease".into()),
             &mut owner,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let (mut foreign, foreign_probe) = artifact_move_workspace("artifact-runtime-foreign").unwrap();
 
-    let denial = match run.advance_with_artifact("consume", "produce", &mut foreign) {
+    let denial = match run.advance_with_artifact(
+        "consume",
+        "produce",
+        &mut foreign,
+        ExecutionRequest::serial(&workflow_request()),
+    ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("foreign runtime did not deny artifact progression"),
     };
@@ -192,10 +218,16 @@ fn undeclared_predecessor_denies_before_artifact_transfer_or_consumer_access() {
             "produce",
             domain::WorthQueryWorkflowValue::Text("produce".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
 
-    let denial = match run.advance_with_artifact("consume", "other-producer", &mut workspace) {
+    let denial = match run.advance_with_artifact(
+        "consume",
+        "other-producer",
+        &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
+    ) {
         TransitionOutcome::Failed(denial) => denial,
         _ => panic!("undeclared predecessor did not deny artifact transfer"),
     };

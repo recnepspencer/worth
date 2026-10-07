@@ -1,6 +1,8 @@
 //! An invisible lineage address prepared before the World owner is contacted.
 
 mod cancellation;
+#[cfg(test)]
+mod cancellation_custody;
 mod capacity;
 mod preparation;
 mod recovery;
@@ -41,6 +43,8 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     /// came from. World recovery carries both unchanged to its replacement slot.
     pub(super) computation: Option<SealedComputationRetention>,
     pub(super) computation_assigned: bool,
+    /// A pre-publication work allowance; a larger current fork set is not scanned.
+    computation_fork_scan_bound: usize,
     pub(super) prior_computation: Option<super::PriorComputationRecord>,
     filled: bool,
 }
@@ -191,6 +195,7 @@ impl PreparedOutputLineageSlot {
                     sealed,
                     self.prior_computation.as_ref(),
                     displaced.as_ref(),
+                    self.computation_fork_scan_bound,
                 ),
                 SealedComputationRetention::Absent(absence) => {
                     super::retained_computation::RecordedComputation::Absent(absence)

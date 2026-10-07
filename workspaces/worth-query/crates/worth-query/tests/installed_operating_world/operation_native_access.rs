@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use worth_foundational::facade::{FieldKey, InternedString};
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{domain, foundation, read};
 
 use super::installed_operation_fixture::{
@@ -198,24 +200,28 @@ fn workflow_publication_uses_the_same_bound_native_access_contract() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .complete()

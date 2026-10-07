@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use worth_proof::TransitionOutcome;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{certification, domain, foundation, runtime};
 
 use super::super::installed_operation_fixture::{
@@ -18,8 +20,11 @@ fn workflow_run_ledger_denies_a_locally_valid_counter_regression_atomically() {
             &workspace,
         )
         .unwrap()
-        .reexecute(evidence_workflow_intent(), &mut workspace)
-    {
+        .reexecute(
+            evidence_workflow_intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        ) {
         TransitionOutcome::Denied(domain::WorthQueryWorkflowReexecutionStop::Advance(denial)) => {
             denial
         }
@@ -53,8 +58,11 @@ fn claimed_output_mismatch_denies_before_a_stage_receipt_exists() {
             &workspace,
         )
         .unwrap()
-        .reexecute(evidence_workflow_intent(), &mut workspace)
-    {
+        .reexecute(
+            evidence_workflow_intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        ) {
         TransitionOutcome::Denied(domain::WorthQueryWorkflowReexecutionStop::Advance(denial)) => {
             denial
         }
@@ -81,7 +89,11 @@ fn replay_compares_mandatory_core_and_ignores_policy_omitted_sidecars() {
             &workspace,
         )
         .unwrap()
-        .reexecute(evidence_workflow_intent(), &mut workspace)
+        .reexecute(
+            evidence_workflow_intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     probe.set(EvidenceWorkflowMode::OmitSidecars);
     let candidate = bind(&workspace)
@@ -90,7 +102,11 @@ fn replay_compares_mandatory_core_and_ignores_policy_omitted_sidecars() {
             &workspace,
         )
         .unwrap()
-        .reexecute(evidence_workflow_intent(), &mut workspace)
+        .reexecute(
+            evidence_workflow_intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
 
     for stage in ["start", "left"] {
@@ -137,6 +153,7 @@ fn replay_compares_mandatory_core_and_ignores_policy_omitted_sidecars() {
         evidence_workflow_intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     assert_eq!(
@@ -156,7 +173,11 @@ fn certification_replay_cannot_waive_exact_mandatory_core_drift() {
             &workspace,
         )
         .unwrap()
-        .reexecute(evidence_workflow_intent(), &mut workspace)
+        .reexecute(
+            evidence_workflow_intent(),
+            &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap();
     probe.set(EvidenceWorkflowMode::ReplayCoreDrift);
 
@@ -167,6 +188,7 @@ fn certification_replay_cannot_waive_exact_mandatory_core_drift() {
         evidence_workflow_intent(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     )
     .unwrap();
     assert_eq!(

@@ -1,11 +1,11 @@
 //! The state a partitioned computation keeps on the record its attempt
 //! published, and the ledger custody that pays for it.
 //!
-//! A record holds the state only while the lineage ledger holds its bytes. A
-//! state the ledger refuses is evicted: the record keeps only that it was.
-//! An incremental run builds its state from its prior record's, so its
-//! publication moves that record's reservation to the new record, but only
-//! when that record still holds exactly the state the run built from.
+//! Every holder retains the same state and ledger ticket through one Arc.
+//! A sole displaced state can yield its ticket only after its final prior is
+//! consumed. A fork horizon or another holder preserves the old custody and
+//! the successor reserves its distinct state in full. Refusal evicts only
+//! the incoming state.
 
 use std::any::TypeId;
 use std::sync::{Arc, OnceLock};
@@ -16,21 +16,18 @@ use worth_runtime_world::facade::ProductBranchObservation;
 use super::invalidation::InvalidationEditAdmission;
 use super::recorded_output::RecordedOutput;
 use super::retained_capacity::RetainedLineageCapacity;
+use super::CustodiedComputation;
 use super::{
     ProductCoordinate, RecordedSettlementIdentity, SemanticSource,
     WorthQueryApplicationOutputLineage,
 };
 use crate::domain_computation::primary_graph::application_contribution::{
-    ComputationPrior, InstalledProducerEdition, PriorAbsence, RetainedComputation,
-    SealedComputationRun,
+    ComputationPrior, InstalledProducerEdition, PriorAbsence, SealedComputationRun,
 };
 
 /// What a record holds of its computation's state.
 pub(super) enum RecordedComputation {
-    Retained {
-        state: Arc<RetainedComputation>,
-        capacity: RetainedLineageCapacity,
-    },
+    Retained(Arc<CustodiedComputation>),
     Absent(PriorAbsence),
 }
 
@@ -41,34 +38,63 @@ pub(in crate::domain_computation::primary_graph) struct PriorComputationRecord {
 }
 
 impl PriorComputationRecord {
-    /// Takes the reservation of the record's state when the record is the
-    /// one being `displaced` and still holds exactly `cloned_from`. The
-    /// record keeps no state after.
+    #[cfg(test)]
+    pub(super) fn from_recorded_cell_for_test(cell: Arc<OnceLock<RecordedOutput>>) -> Self {
+        assert!(
+            cell.get().is_some(),
+            "the test prior has a real published record"
+        );
+        Self { cell }
+    }
+
+    /// The sealed prior is consumed before exclusivity is established. A fork
+    /// horizon or another holder leaves the existing state and ticket intact.
     fn take_capacity(
         &self,
-        cloned_from: &Arc<RetainedComputation>,
+        cloned_from: Arc<CustodiedComputation>,
         displaced: &Arc<RecordedSettlementIdentity>,
-    ) -> Option<RetainedLineageCapacity> {
-        let recorded = self.cell.get()?;
-        if !Arc::ptr_eq(&recorded.settlement_identity, displaced) {
-            return None;
+        lineage: &WorthQueryApplicationOutputLineage,
+        bytes: u64,
+        prepaid_fork_scan: usize,
+    ) -> Result<Option<RetainedLineageCapacity>, super::super::WorthQueryOutputDemandDenial> {
+        let Some(recorded) = self.cell.get() else {
+            return Ok(None);
+        };
+        if !Arc::ptr_eq(&recorded.settlement_identity, displaced)
+            || lineage.origins.len() > prepaid_fork_scan
+            || lineage.fork_pins_computation(recorded)
+        {
+            return Ok(None);
         }
         let mut row = recorded
             .mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let holds = matches!(
-            &row.computation,
-            RecordedComputation::Retained { state, .. } if Arc::ptr_eq(state, cloned_from)
-        );
-        if !holds {
-            return None;
+        let exclusive = matches!(&row.computation, RecordedComputation::Retained(handle)
+            if Arc::ptr_eq(handle, &cloned_from) && Arc::strong_count(handle) == 2);
+        if !exclusive {
+            return Ok(None);
         }
-        match std::mem::replace(
+        drop(cloned_from);
+        let RecordedComputation::Retained(handle) = &mut row.computation else {
+            unreachable!();
+        };
+        // Refusal preserves the sole prior record and its original ticket.
+        let Some(owned) = Arc::get_mut(handle) else {
+            return Ok(None);
+        };
+        owned.admit_successor_growth(bytes)?;
+        let held = std::mem::replace(
             &mut row.computation,
             RecordedComputation::Absent(PriorAbsence::Moved),
-        ) {
-            RecordedComputation::Retained { capacity, .. } => Some(capacity),
+        );
+        match held {
+            RecordedComputation::Retained(handle) => match Arc::try_unwrap(handle) {
+                Ok(owned) => Ok(Some(owned.into_capacity())),
+                Err(_) => unreachable!(
+                    "the row lock and consumed sealed prior establish exclusive custody"
+                ),
+            },
             RecordedComputation::Absent(_) => {
                 unreachable!("the pointer check established retained custody")
             }
@@ -77,12 +103,11 @@ impl PriorComputationRecord {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    /// What the live record at a demand's own address retained for the
-    /// producer's next run: the latest record of the source partition in the
-    /// observed occurrence, the one the demand's publication replaces. No
-    /// ancestor occurrence is followed, so a run never takes the state of a
-    /// record it does not replace. A stable alias is its own record here.
-    /// Every lookup is charged to `admission` before it reads.
+    /// The latest local record is authoritative, including a typed absence.
+    /// With no local record, follow exact captured fork horizons recursively.
+    /// Sharing supplies a prior only; the ordinary basis and snapshot checks
+    /// still establish whether its calls can be carried. Every lookup is
+    /// charged to `admission` before it reads.
     pub(in crate::domain_computation::primary_graph) fn computation_prior_at_address<
         Binding: 'static,
     >(
@@ -103,7 +128,7 @@ impl WorthQueryApplicationOutputLineage {
             occurrence: observation.lifecycle_incarnation(),
             generation: observation.reference_generation().get(),
         };
-        let Some((generation, slot)) = self.partition_index.latest_admitted(
+        let Some(cell) = self.computation_cell_in_ancestry(
             &source,
             coordinate,
             source_partition_identity,
@@ -116,14 +141,6 @@ impl WorthQueryApplicationOutputLineage {
                 None,
             ));
         };
-        let cell = self.recorded_cell_at_partition_slot_admitted(
-            &source,
-            coordinate.occurrence,
-            generation,
-            source_partition_identity,
-            slot,
-            admission,
-        )?;
         let retained = match &cell
             .get()
             .expect("a partition locator references a published record")
@@ -132,7 +149,7 @@ impl WorthQueryApplicationOutputLineage {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .computation
         {
-            RecordedComputation::Retained { state, .. } => Ok(Arc::clone(state)),
+            RecordedComputation::Retained(handle) => Ok(Arc::clone(handle)),
             RecordedComputation::Absent(absence) => Err(absence.full_cause()),
         };
         Ok(ComputationPrior::new(
@@ -142,49 +159,48 @@ impl WorthQueryApplicationOutputLineage {
         ))
     }
 
-    /// Charges a sealed run's state on the ledger for the record about to
-    /// publish it. The reservation moves only from the record this one
-    /// displaces, and only when it is the prior the run built from and still
-    /// holds that state; the difference is reserved or released. Any other
-    /// run reserves afresh. A refusal evicts the state. The request memory
-    /// the run's tree held is released only once the state is charged here
-    /// or evicted, so the tree is never unheld while it lives.
+    /// A sole, unpinned, exact displaced prior transfers its ticket after
+    /// growth is admitted and the old state is consumed. Shared and pinned
+    /// priors preserve custody; their successor is charged in full. Refusal
+    /// or an unmeasured incoming state leaves existing holders intact. Run
+    /// memory remains held until the incoming state is charged or discarded.
     pub(super) fn retain_computation(
         &self,
         sealed: SealedComputationRun,
         prior: Option<&PriorComputationRecord>,
         displaced: Option<&Arc<RecordedSettlementIdentity>>,
+        prepaid_fork_scan: usize,
     ) -> RecordedComputation {
         let SealedComputationRun {
             state,
             cloned_from,
             tree_memory,
         } = sealed;
-        let moved = prior.zip(cloned_from.as_ref()).zip(displaced).and_then(
-            |((prior, cloned_from), displaced)| prior.take_capacity(cloned_from, displaced),
-        );
-        drop(cloned_from);
-        let Some(bytes) = state.retained_bytes() else {
+        let Some(bytes) = CustodiedComputation::retained_bytes_for(&state) else {
             drop(state);
             return RecordedComputation::Absent(PriorAbsence::Unmeasured);
         };
+        let moved = prior.zip(cloned_from).zip(displaced).map_or(
+            Ok(None),
+            |((prior, cloned_from), displaced)| {
+                prior.take_capacity(cloned_from, displaced, self, bytes, prepaid_fork_scan)
+            },
+        );
         let capacity = match moved {
-            Some(mut capacity) => {
+            Ok(Some(mut capacity)) => {
                 let held = capacity.bytes();
-                if bytes >= held {
-                    capacity.reserve_additional(bytes - held).map(|()| capacity)
-                } else {
+                if bytes < held {
                     capacity.release_part(held - bytes);
-                    Ok(capacity)
                 }
+                Ok(capacity)
             }
-            None => self.retention.reserve(bytes),
+            Ok(None) => self.retention.reserve(bytes),
+            Err(refusal) => Err(refusal),
         };
         let recorded = match capacity {
-            Ok(capacity) => RecordedComputation::Retained {
-                state: Arc::new(state),
-                capacity,
-            },
+            Ok(capacity) => {
+                RecordedComputation::Retained(CustodiedComputation::new(state, capacity))
+            }
             Err(_refusal) => {
                 drop(state);
                 RecordedComputation::Absent(PriorAbsence::Evicted)
@@ -194,6 +210,17 @@ impl WorthQueryApplicationOutputLineage {
         recorded
     }
 }
+
+impl RecordedComputation {
+    pub(super) fn shared(&self) -> Self {
+        match self {
+            Self::Retained(handle) => Self::Retained(Arc::clone(handle)),
+            Self::Absent(reason) => Self::Absent(reason.clone()),
+        }
+    }
+}
+
+mod ancestry;
 
 #[cfg(test)]
 mod tests;

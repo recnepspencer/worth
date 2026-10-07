@@ -132,6 +132,7 @@ pub fn replay_installed_workflow_historical<
     intent: WorthQueryNormalizedWorkflowIntent,
     resources: worth_query_declaration::facade::domain_computation::WorthQueryExecutionResourceRequest,
     workspace: &mut WorthQueryWorkspace,
+    request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryCertificationReplayOutcome<D, O, F, LR>
 where
     O: WorthQueryExecutableDomainOperation<D, F, Execution = WorthQueryWorkflowOperation> + 'static,
@@ -174,5 +175,6 @@ where
             basis_checks: 1,
             ..Default::default()
         },
+        request,
     )
 }

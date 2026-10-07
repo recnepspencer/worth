@@ -1,8 +1,10 @@
+use crate::workflow_request::workflow_request;
 use worth_foundational::{
     FoundationalBoundaryEvidenceContinuityAttachmentScope,
     FoundationalBoundaryEvidenceLineageOutcomeKind,
 };
 use worth_proof::TransitionOutcome;
+use worth_query::facade::runtime::ExecutionRequest;
 use worth_query::facade::{domain, foundation, runtime};
 
 use super::installed_operation_fixture::{
@@ -226,7 +228,7 @@ fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
     )
     .unwrap();
     assert!(matches!(
-        bind(&missing).admit_workflow_resources(crate::suite::installed_operation_fixture::execution_resource_request(), &missing).unwrap().reexecute(intent(), &mut missing),
+        bind(&missing).admit_workflow_resources(crate::suite::installed_operation_fixture::execution_resource_request(), &missing).unwrap().reexecute(intent(), &mut missing, ExecutionRequest::serial(&workflow_request())),
         TransitionOutcome::Denied(domain::WorthQueryWorkflowReexecutionStop::Completion(denial))
             if denial.kind() == domain::WorthQueryWorkflowCompletionDenialKind::LineageEvidence
                 && denial.executed_effects().len() == 1
@@ -240,7 +242,7 @@ fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
     )
     .unwrap();
     assert!(matches!(
-        bind(&preserve).admit_workflow_resources(crate::suite::installed_operation_fixture::execution_resource_request(), &preserve).unwrap().reexecute(intent(), &mut preserve),
+        bind(&preserve).admit_workflow_resources(crate::suite::installed_operation_fixture::execution_resource_request(), &preserve).unwrap().reexecute(intent(), &mut preserve, ExecutionRequest::serial(&workflow_request())),
         TransitionOutcome::Denied(domain::WorthQueryWorkflowReexecutionStop::Advance(denial))
             if denial.kind() == &domain::WorthQueryWorkflowAdvanceDenialKind::LineageEvidence
     ));
@@ -341,7 +343,11 @@ pub(super) fn execute(
             &*workspace,
         )
         .unwrap()
-        .reexecute(intent(), workspace)
+        .reexecute(
+            intent(),
+            workspace,
+            ExecutionRequest::serial(&workflow_request()),
+        )
         .unwrap()
 }
 

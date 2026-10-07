@@ -1,5 +1,7 @@
+use crate::workflow_request::workflow_request;
 use worth_proof::TransitionOutcome;
 use worth_query::facade::domain;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use super::installed_operation_fixture::{
     mutation_workflow_workspace, workflow_workspace, GeometryDomain, MutationFamily, ReadFamily,
@@ -49,6 +51,7 @@ fn workflow_effect_uses_real_mutation_authority_and_retains_its_receipt() {
             "mutate",
             domain::WorthQueryWorkflowValue::Text("commit".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let trace = run.complete().unwrap();
@@ -94,6 +97,7 @@ fn failure_after_effect_retains_the_query_executed_partial_outcome() {
         "mutate",
         domain::WorthQueryWorkflowValue::Text("fail-after-effect".into()),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Failed(denial) => denial,
         _ => panic!("post-effect executor did not produce an execution failure"),
@@ -164,24 +168,28 @@ fn workflow_stage_cannot_skip_its_declared_primary_read() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("left".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("right".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     let denial = match run.advance(
         "publish",
         domain::WorthQueryWorkflowValue::Text("skip-read".into()),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Failed(denial) => denial,
         _ => panic!("skipped primary read did not produce an execution failure"),
@@ -231,12 +239,14 @@ fn failing_stage_denial(name: &str, input: &str) -> domain::WorthQueryWorkflowAd
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap();
     match run.advance(
         "left",
         domain::WorthQueryWorkflowValue::Text(input.into()),
         &mut workspace,
+        ExecutionRequest::serial(&workflow_request()),
     ) {
         TransitionOutcome::Failed(denial) => denial,
         _ => panic!("failing stage did not produce an execution failure"),

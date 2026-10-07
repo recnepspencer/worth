@@ -1,4 +1,6 @@
+use crate::workflow_request::workflow_request;
 use std::sync::atomic::Ordering;
+use worth_query::facade::runtime::ExecutionRequest;
 
 use worth_query::facade::{domain, installed};
 
@@ -142,24 +144,28 @@ fn workflow_stage_receipts_retain_stage_local_plans_and_one_attempt_session() {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "left",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "right",
             domain::WorthQueryWorkflowValue::Text("start".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .advance(
             "publish",
             domain::WorthQueryWorkflowValue::Text("join".into()),
             &mut workspace,
+            ExecutionRequest::serial(&workflow_request()),
         )
         .unwrap()
         .complete()

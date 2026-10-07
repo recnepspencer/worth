@@ -51,6 +51,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     lineage.drain_cancelled_slots(admission)?;
+    let computation_fork_scan_bound = lineage.prepay_computation_fork_scan(admission)?;
     // History no retained reader selects is freed before this address extends it.
     lineage.retire_unselected_generations(&source, coordinate.occurrence, admission)?;
     // Charge each selected lookup before performing it. No accumulated
@@ -242,6 +243,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
             PriorAbsence::NotProduced,
         )),
         computation_assigned: false,
+        computation_fork_scan_bound,
         prior_computation: None,
         filled: false,
     })

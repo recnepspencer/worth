@@ -1,3 +1,6 @@
+mod request {
+    pub(super) use worth_query::facade::consumer_kit::workflow_proof_execution_request as workflow_request;
+}
 use super::super::super::WorthQueryWorkflowRun;
 use worth_query::facade::{domain, foundation, runtime};
 
@@ -39,6 +42,7 @@ fn start(workspace: &mut runtime::WorthQueryWorkspace) -> Run {
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
             workspace,
+            worth_query::facade::runtime::ExecutionRequest::serial(&request::workflow_request()),
         )
         .unwrap()
 }
@@ -73,57 +77,6 @@ fn effects(run: &Run) -> Vec<String> {
 }
 
 #[test]
-fn reversed_and_shuffled_computes_apply_the_reference_effect_sequence() {
-    let _probe = phased_workflow::fold_executor::ComputeProbe::new();
-    let mut reference = phased_workflow::reference_workspace("phase-order-reference");
-    let reference_outcome =
-        member_by_member_frontier(start(&mut reference), inputs(), &mut reference).unwrap();
-    let expected = effects(&reference_outcome);
-    for permutation in [[2, 1, 0], [1, 0, 2]] {
-        phased_workflow::fold_executor::take_computes();
-        let mut workspace = phased_workflow::phased_workspace("phase-order-computed");
-        let mut run = start(&mut workspace);
-        let stages = run.canonical_parallel_stages(inputs()).unwrap();
-        run.validate_parallel_runtime_authority(&workspace).unwrap();
-        let frontier = run.prepare_parallel_frontier(&stages).unwrap();
-        run.admit_parallel_frontier(frontier).unwrap();
-        let prepared = run.prepare_frontier_computation(stages);
-        let computed = prepared.map_tasks(|tasks, compute| {
-            let mut tasks = tasks.into_iter().map(Some).collect::<Vec<_>>();
-            permutation
-                .into_iter()
-                .map(|index| {
-                    let (index, task) = tasks[index].take().unwrap();
-                    (index, compute(task))
-                })
-                .collect()
-        });
-        let probe = phased_workflow::fold_executor::take_computes();
-        assert_eq!(
-            probe
-                .iter()
-                .map(|(stage, _)| stage.as_str())
-                .collect::<Vec<_>>(),
-            permutation.map(|index| phased_workflow::MEMBERS[index])
-        );
-        assert_eq!(
-            probe.iter().map(|(_, work)| *work).collect::<Vec<_>>(),
-            [17; 3]
-        );
-        computed.apply(&mut run, &mut workspace, None).unwrap();
-        assert_eq!(effects(&run), expected);
-        assert_eq!(
-            run.receipts()
-                .iter()
-                .map(|receipt| receipt.stage_identity())
-                .collect::<Vec<_>>(),
-            ["start", "left", "middle", "right"]
-        );
-        assert_eq!(run.counters(), reference_outcome.counters());
-    }
-}
-
-#[test]
 fn earlier_apply_failure_wins_over_later_preparation_or_compute_failure() {
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     for later_mode in [1, 2] {
@@ -143,13 +96,19 @@ fn earlier_apply_failure_wins_over_later_preparation_or_compute_failure() {
             worth_proof::TransitionOutcome::Failed(denial) => denial,
             _ => panic!("expected member-by-member reference failure"),
         };
-        let actual = match start(&mut workspace).advance_admitted_frontier(members, &mut workspace)
-        {
+        let actual = match start(&mut workspace).advance_admitted_frontier(
+            members,
+            &mut workspace,
+            worth_query::facade::runtime::ExecutionRequest::serial(&request::workflow_request()),
+        ) {
             worth_proof::TransitionOutcome::Failed(denial) => denial,
             _ => panic!("expected phased failure"),
         };
         assert_eq!(actual.kind(), reference_outcome.kind());
-        assert_eq!(actual.counters(), reference_outcome.counters());
+        assert_eq!(
+            owner_counters(actual.counters()),
+            owner_counters(reference_outcome.counters())
+        );
         assert_eq!(
             actual.completed_stage_receipts().len(),
             reference_outcome.completed_stage_receipts().len()
@@ -177,7 +136,7 @@ fn member_by_member_frontier(
     let frontier = run.prepare_parallel_frontier(&members).unwrap();
     run.admit_parallel_frontier(frontier).unwrap();
     for (stage, input) in members {
-        match run.advance_once(&stage, input, workspace) {
+        match run.advance_once(&stage, input, workspace, worth_query::facade::runtime::ExecutionRequest::serial(&request::workflow_request())) {
             Ok(super::super::super::workflow_progression_state::WorthQueryWorkflowAdvanceStep::Advanced) => (),
             Ok(_) => panic!("reference fixture never defers"),
             Err(denial) => return run.outcome_from_denial(denial),
@@ -204,6 +163,7 @@ fn a_frontier_member_cannot_supply_another_members_predecessor_receipt() {
             ),
         ],
         &mut workspace,
+        worth_query::facade::runtime::ExecutionRequest::serial(&request::workflow_request()),
     );
     let denial = match outcome {
         worth_proof::TransitionOutcome::Denied(denial) => denial,
@@ -223,36 +183,30 @@ fn computed_results_cannot_cross_stage_or_frontier_identities() {
     for foreign_frontier in [false, true] {
         let mut workspace = phased_workflow::phased_workspace("phase-binding");
         let mut run = start(&mut workspace);
-        let prepared = run.prepare_frontier_computation(inputs());
-        let computed = if foreign_frontier {
+        let mut computed = run.prepare_frontier_computation(inputs()).compute(
+            worth_execution::ExecutionRequest::serial(&request::workflow_request()),
+        );
+        if foreign_frontier {
             let mut other_workspace = phased_workflow::phased_workspace("phase-foreign-binding");
             let other = start(&mut other_workspace);
-            let mut foreign = other.prepare_frontier_computation(inputs()).compute();
-            prepared.map_tasks(|tasks, _compute| {
-                drop(tasks);
-                foreign
-                    .order
-                    .into_keys()
-                    .into_iter()
-                    .map(|stage| foreign.members.remove(&stage).unwrap())
-                    .enumerate()
-                    .map(|(index, member)| {
-                        let super::WorkflowStageComputation::Ready(result) = member.computation
-                        else {
-                            panic!("successful foreign compute")
-                        };
-                        (index, result)
-                    })
-                    .collect()
-            })
+            let foreign = other.prepare_frontier_computation(inputs()).compute(
+                worth_execution::ExecutionRequest::serial(&request::workflow_request()),
+            );
+            for (member, foreign_member) in computed.prefix.iter_mut().zip(foreign.prefix) {
+                member.computed = foreign_member.computed;
+            }
         } else {
-            prepared.map_tasks(|tasks, compute| {
-                tasks
-                    .into_iter()
-                    .map(|(index, task)| ((index + 1) % 3, compute(task)))
-                    .collect()
-            })
-        };
+            let middle = computed.prefix.remove(1).computed;
+            let left = std::mem::replace(&mut computed.prefix[0].computed, middle);
+            computed.prefix.insert(
+                1,
+                super::ComputedWorkflowStage {
+                    rank: 1,
+                    input: domain::WorthQueryWorkflowValue::Text("8:0".into()),
+                    computed: left,
+                },
+            );
+        }
         let denial = computed
             .apply(&mut run, &mut workspace, None)
             .err()
@@ -267,3 +221,14 @@ fn computed_results_cannot_cross_stage_or_frontier_identities() {
         assert!(denial.executed_effects().is_empty());
     }
 }
+
+fn owner_counters(
+    mut counters: domain::WorthQueryWorkflowRunCounters,
+) -> domain::WorthQueryWorkflowRunCounters {
+    // HEAD had no metered compute. Only the new billing field is compared by
+    // the dispatch differential; every prior owner counter remains exact.
+    counters.computation_charged_work = 0;
+    counters
+}
+#[path = "tests/dispatch.rs"]
+mod dispatch;

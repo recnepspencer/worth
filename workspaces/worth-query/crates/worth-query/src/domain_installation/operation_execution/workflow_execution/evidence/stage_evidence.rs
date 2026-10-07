@@ -73,6 +73,8 @@ pub struct WorthQueryWorkflowRunCounters {
     pub invariant_checks: usize,
     pub parallel_admission_checks: usize,
     pub stage_executor_contacts: usize,
+    /// Compute work settled by the execution authority, never refunded by apply.
+    pub computation_charged_work: u64,
     pub output_contract_checks: usize,
     pub terminal_contract_checks: usize,
     pub consumption_contacts: usize,
@@ -120,6 +122,8 @@ impl WorthQueryWorkflowRunCounters {
             parallel_admission_checks: self.parallel_admission_checks
                 - before.parallel_admission_checks,
             stage_executor_contacts: self.stage_executor_contacts - before.stage_executor_contacts,
+            computation_charged_work: self.computation_charged_work
+                - before.computation_charged_work,
             output_contract_checks: self.output_contract_checks - before.output_contract_checks,
             terminal_contract_checks: self.terminal_contract_checks
                 - before.terminal_contract_checks,
