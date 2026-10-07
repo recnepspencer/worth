@@ -2634,13 +2634,13 @@ The next phase may trust that partition-granular reuse is exact.
   `CommitExecutionDenialKind` and `DerivedIndexExecutionDenialKind` carry
   the cause; nothing folds a lease denial into `ResourceExhausted`. Query
   converts a Relational cause in one exhaustive place, on commit, index
-  build and bootstrap.
+  build and bootstrap. *Completed.*
 - **7.2** Delete `ParallelAdmissionRoute` with its test-only executor.
   *Completed.*
 - **7.3** Bridge, Signal and World accept the request lease, and each cause
   stays distinct to the crate's caller. A caller with no lease enters a
   bounded serial scope by construction; a nested scope draws from its
-  parent. Each host declares its own named policy.
+  parent. Each host declares its own named policy. *Completed.*
 - **7.4** Derived-view reconstruction runs as a leased map over unique roots in
   canonical order, and its worker pool is deleted. A worker receives a
   sealed prepared read; projection stays on the owner in entity order.
@@ -2682,7 +2682,7 @@ The next phase may trust that partition-granular reuse is exact.
   less than work wherever independence exists.
   - The expected-history model, the Bank journal model and the structural
     cost calculator share nothing with production, and a serial harness
-    judges every history against them.
+    judges every history against them. *Completed.*
   - The same harness then varies the worker count and wave order over the
     full matrix and compares span with work.
 
