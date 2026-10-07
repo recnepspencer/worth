@@ -775,6 +775,7 @@ name = "worth-query-topology-entry"
 version = "0.0.0"
 dependencies = [
  "serde",
+ "worth-execution",
  "worth-foundational",
  "worth-query-consumer-values",
  "worth-query-decl",

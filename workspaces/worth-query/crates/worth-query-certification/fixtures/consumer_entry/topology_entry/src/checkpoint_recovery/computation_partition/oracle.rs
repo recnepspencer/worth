@@ -43,6 +43,7 @@ use installation::{
     install, install_with_reuse, Application, OracleProgram, Request, EVEN_Y, ODD_Y, SCOPE,
 };
 mod differential;
+mod parallel_history_reuse;
 mod program;
 mod worker_axis;
 

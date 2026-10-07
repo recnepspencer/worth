@@ -391,3 +391,6 @@ fn bisection_denies_invalid_edges_before_changing_routes() {
     assert!(bisection.route(item(2)).is_none());
     assert!(bisection.cut_interfaces().is_empty());
 }
+
+#[path = "partitioners/fresh_route.rs"]
+mod fresh_route;
