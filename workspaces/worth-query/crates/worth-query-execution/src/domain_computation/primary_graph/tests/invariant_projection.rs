@@ -258,5 +258,12 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
         denial.kind(),
         WorthQueryOperationProjectionDenialKind::WorkBudgetExceeded
     );
+    let work = denial
+        .projection_work()
+        .expect("the exhausted reader retains actual work");
+    assert_eq!(work.equality_lookups(), 1);
+    assert_eq!(work.index_candidates_examined(), 1);
+    assert_eq!(work.field_reads(), 30);
+    assert_eq!(work.provider_work_units(), 32);
     assert_eq!(world.invariant.active_snapshot_count(), baseline);
 }

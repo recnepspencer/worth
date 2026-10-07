@@ -1,6 +1,7 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod capacity;
+mod invariant_execution;
 mod program_binding;
 mod recorded_idempotency;
 mod request_authority;
@@ -228,21 +229,6 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn custom_invariant_denied(
-        stage: WorthQueryApplicationCommitDenialStage,
-        custom_invariant: crate::domain_computation::WorthQueryCustomInvariantDenial,
-        detail: impl Into<std::sync::Arc<str>>,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::CustomInvariantDenied,
-            stage,
-            detail: Some(detail.into()),
-            cause: Some(request_authority::DenialCause::CustomInvariant(
-                custom_invariant,
-            )),
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn provider_rejected(
         stage: WorthQueryApplicationCommitDenialStage,
     ) -> Self {
@@ -262,17 +248,6 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
             stage,
             detail: Some(detail.into()),
-            cause: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn product_basis_stale(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ProductBasisStale,
-            stage,
-            detail: None,
             cause: None,
         }
     }

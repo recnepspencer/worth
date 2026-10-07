@@ -14,6 +14,8 @@ use crate::domain_computation::primary_graph::application_entry::mutation::{
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitOutcome, WorthQueryAuthenticatedPrincipal,
+    WorthQueryInvariantProjectionWork, WorthQueryMutationHandlerExecutionReport,
+    WorthQueryMutationHandlerWork,
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
 use worth_query_installation::facade::{
@@ -25,15 +27,9 @@ type Principal = WorthQueryAuthenticatedPrincipal<
     super::super::fixture::Principal,
     u64,
 >;
-type TouchHandlerOutcome = Result<
-    HandlerResult<
-        WorthQueryCompletedMutationCandidate<
-            IdentityExecutionSchema,
-            CapabilityTouchMutationBinding,
-        >,
-        CapabilityTouchInput,
-    >,
-    MutationHandlerExecutionDenial,
+type TouchHandlerOutcome = WorthQueryMutationHandlerExecutionReport<
+    WorthQueryCompletedMutationCandidate<IdentityExecutionSchema, CapabilityTouchMutationBinding>,
+    CapabilityTouchInput,
 >;
 
 #[test]
@@ -112,7 +108,16 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
 #[test]
 fn the_handler_runs_on_exactly_the_input_its_capability_admitted() {
     let (world, principal) = capability_world();
-    match execute_touch_handler(&world, &principal, capability_input(100)) {
+    let report = execute_touch_handler(&world, &principal, capability_input(100));
+    let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
+        panic!("the installed zero-read handler executed");
+    };
+    assert!(work.handler_contacted());
+    assert_eq!(
+        work.projection_work(),
+        WorthQueryInvariantProjectionWork::default()
+    );
+    match report.into_outcome() {
         Ok(HandlerResult::Completed(_)) => {}
         Ok(_) => panic!("the handler accepts the input it is given"),
         Err(denial) => panic!("the admitted input must reach its installed handler: {denial:?}"),
@@ -124,7 +129,12 @@ fn a_request_whose_input_differs_from_the_admitted_input_is_refused() {
     let (world, principal) = capability_world();
     let mut other = capability_input(100);
     other.amount -= 1;
-    let outcome = execute_touch_handler(&world, &principal, other);
+    let report = execute_touch_handler(&world, &principal, other);
+    assert_eq!(
+        *report.decision_work(),
+        WorthQueryMutationHandlerWork::NotStarted
+    );
+    let outcome = report.into_outcome();
     assert!(
         matches!(
             outcome,
@@ -169,7 +179,7 @@ fn execute_touch_handler(
     .expect("the request encodes");
     world
         .application
-        .execute_mutation_handler::<CapabilityTouchMutationBinding>(
+        .execute_mutation_handler_report::<CapabilityTouchMutationBinding>(
             &identities,
             principal.principal_identity(),
             admission,

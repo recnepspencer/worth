@@ -22,6 +22,7 @@ pub enum WorthQueryInvariantProjectionDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantProjectionDenial {
     kind: WorthQueryInvariantProjectionDenialKind,
+    projection_work: Option<super::WorthQueryInvariantProjectionWork>,
 }
 
 impl WorthQueryInvariantProjectionDenial {
@@ -29,19 +30,31 @@ impl WorthQueryInvariantProjectionDenial {
         self.kind
     }
 
+    /// Actual reader work before refusal; absent when no reader executed.
+    pub const fn projection_work(&self) -> Option<super::WorthQueryInvariantProjectionWork> {
+        self.projection_work
+    }
+
     pub(super) const fn basis_unavailable() -> Self {
         Self {
             kind: WorthQueryInvariantProjectionDenialKind::BasisUnavailable,
+            projection_work: None,
         }
     }
 
     pub(super) const fn from_kind(kind: WorthQueryInvariantProjectionDenialKind) -> Self {
-        Self { kind }
+        Self {
+            kind,
+            projection_work: None,
+        }
     }
 
-    pub(super) const fn work_budget_exceeded() -> Self {
+    pub(super) const fn work_budget_exceeded(
+        work: super::WorthQueryInvariantProjectionWork,
+    ) -> Self {
         Self {
             kind: WorthQueryInvariantProjectionDenialKind::WorkBudgetExceeded,
+            projection_work: Some(work),
         }
     }
 }

@@ -1,10 +1,10 @@
 use worth_foundational::facade::CanonicalDigestWorkEvidence;
 use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
 
-// Complete application installation includes package and schema meaning. Keep
-// this finite while admitting the measured House composition that first
-// crossed the former 8 MiB ceiling through ordinary typed catalog pages.
-pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 16 * 1_024 * 1_024;
+// Complete application installation includes package and schema meaning. Its
+// finite 64 MiB ceiling matches portable package export and reconstruction
+// capacity; callers may still narrow canonical work below this platform limit.
+pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 64 * 1_024 * 1_024;
 
 /// Deterministic counts of the canonical work Query performed for one phase.
 ///

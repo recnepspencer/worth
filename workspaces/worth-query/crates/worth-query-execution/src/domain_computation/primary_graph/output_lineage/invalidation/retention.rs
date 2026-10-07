@@ -15,7 +15,7 @@ use crate::domain_computation::execution_runtime::source_invalidation::{
 use super::super::RecordedSettlementIdentity;
 use super::admission::IndexAdmission;
 use super::fact_key::FactPostingKey;
-use super::index_capacity::{arc_bytes, retained_map_bytes};
+use super::index_capacity::{arc_bytes, retained_forest_bytes, retained_map_bytes};
 use super::mark_state::{EqualOutputLink, FactPosting, MarkState, SettlementMarks};
 use super::source_alignment::{BranchMarkRoot, HistoricalMarkState};
 use super::InvalidationEditAdmission;
@@ -54,14 +54,18 @@ pub(super) fn reserve(
 /// traversal: logical cardinalities are changed with their selected
 /// posting/mark edits.
 pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
+    let rows = state.settlements.len();
+    let postings = state.posting_count;
     arc_bytes::<MarkState>()?
         .checked_add(state.key_payload_bytes)?
         .checked_add(state.settlement_key_payload_bytes)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .downstream_edge_count
-                .checked_add(state.settlements.len())?,
-        )?)?
+        // Each row owns a consumed_upstream set, even when empty.
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.downstream_edge_count,
+                rows,
+            )?,
+        )?
         .checked_add(retained_map_bytes::<
             Arc<RecordedSettlementIdentity>,
             Arc<EqualOutputLink>,
@@ -79,19 +83,20 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
             )?,
         )?
         .checked_add(
-            retained_map_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(
-                state.posting_count.checked_add(state.settlements.len())?,
-            )?,
+            // One posting_ordinals map per row; each distinct key has at
+            // least one ordinal, so posting_count bounds their total keys.
+            retained_forest_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(postings, rows)?,
         )?
-        .checked_add(retained_map_bytes::<usize, ()>(
-            state.posting_count.checked_add(state.settlements.len())?,
-        )?)?
+        // Each row/key pair owns its own ordinal set. Their root count is
+        // at most posting_count; combining them into one tree undercounts.
+        .checked_add(retained_forest_bytes::<usize, ()>(postings, postings)?)?
         .checked_add(retained_map_bytes::<
             Arc<FactPostingKey>,
             im::OrdSet<FactPosting>,
         >(state.postings.len())?)?
-        .checked_add(retained_map_bytes::<FactPosting, ()>(
-            state.posting_count.checked_add(state.postings.len())?,
+        .checked_add(retained_forest_bytes::<FactPosting, ()>(
+            postings,
+            state.postings.len(),
         )?)?
         .checked_add(retained_map_bytes::<
             Arc<RecordedSettlementIdentity>,
@@ -101,21 +106,22 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
             Arc<RecordedSettlementIdentity>,
             im::OrdSet<Arc<RecordedSettlementIdentity>>,
         >(state.downstream.len())?)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .downstream_edge_count
-                .checked_add(state.downstream.len())?,
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.downstream_edge_count,
+                state.downstream.len(),
+            )?,
+        )?
+        .checked_add(retained_forest_bytes::<usize, ()>(
+            state.dirty_ordinal_count,
+            rows,
         )?)?
-        .checked_add(retained_map_bytes::<usize, ()>(
-            state
-                .dirty_ordinal_count
-                .checked_add(state.settlements.len())?,
-        )?)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .pending_edge_count
-                .checked_add(state.settlements.len())?,
-        )?)?
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.pending_edge_count,
+                rows,
+            )?,
+        )?
         .checked_add(arc_bytes::<SettlementMarks>()?.checked_mul(state.settlements.len() as u64)?)
 }
 
