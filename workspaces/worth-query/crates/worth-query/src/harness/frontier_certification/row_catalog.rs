@@ -25,40 +25,16 @@ pub const FRONTIER_CANONICAL_ROW_SPECS: &[FrontierCanonicalRowSpec] = &[
         route_class: FrontierRouteClass::SerialControl,
     },
     FrontierCanonicalRowSpec {
-        row_name: "parallel-admitted-parity",
-        perturbation_class: FrontierPerturbationClass::ParallelAdmittedParity,
-        hostile_expectation: HostileExpectation::EquivalentToControl,
-        route_class: FrontierRouteClass::ParallelAdmitted,
-    },
-    FrontierCanonicalRowSpec {
         row_name: "serial-fallback-parity",
         perturbation_class: FrontierPerturbationClass::SerialFallbackParity,
         hostile_expectation: HostileExpectation::EquivalentToControl,
         route_class: FrontierRouteClass::SerialFallback,
     },
     FrontierCanonicalRowSpec {
-        row_name: "predicted-vs-realized-breadth",
-        perturbation_class: FrontierPerturbationClass::PredictedRealizedBreadth,
-        hostile_expectation: HostileExpectation::EquivalentToControl,
-        route_class: FrontierRouteClass::ParallelAdmitted,
-    },
-    FrontierCanonicalRowSpec {
-        row_name: "bundle-route-posture-parity",
-        perturbation_class: FrontierPerturbationClass::BundleRoutePostureParity,
-        hostile_expectation: HostileExpectation::EquivalentToControl,
-        route_class: FrontierRouteClass::ParallelAdmittedBundle,
-    },
-    FrontierCanonicalRowSpec {
         row_name: "exact-basis-bundle-parity",
         perturbation_class: FrontierPerturbationClass::ExactBasisBundleParity,
         hostile_expectation: HostileExpectation::EquivalentToControl,
         route_class: FrontierRouteClass::SerialFallbackBundle,
-    },
-    FrontierCanonicalRowSpec {
-        row_name: "work-avoided-counter-parity",
-        perturbation_class: FrontierPerturbationClass::WorkAvoidedCounterParity,
-        hostile_expectation: HostileExpectation::EquivalentToControl,
-        route_class: FrontierRouteClass::ParallelAdmitted,
     },
 ];
 
@@ -78,26 +54,16 @@ pub const FRONTIER_REJECTION_ROW_SPECS: &[FrontierRejectionRowSpec] = &[
         perturbation_class: FrontierPerturbationClass::MixedBasisBundleRejection,
         failure_class: FrontierFailureClass::MixedBasisBundleDenied,
     },
-    FrontierRejectionRowSpec {
-        row_name: "forbidden-hidden-serial-fallback",
-        perturbation_class: FrontierPerturbationClass::HiddenSerialFallbackRejection,
-        failure_class: FrontierFailureClass::HiddenSerialFallbackDenied,
-    },
 ];
 
 pub const FRONTIER_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
     "frontier-serial-control",
-    "parallel-admitted-parity",
     "serial-fallback-parity",
-    "predicted-vs-realized-breadth",
-    "bundle-route-posture-parity",
     "exact-basis-bundle-parity",
-    "work-avoided-counter-parity",
 ];
 
 pub const FRONTIER_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
     "unsupported-frontier-family",
     "unsupported-bundle-composition",
     "mixed-basis-bundle-denied",
-    "forbidden-hidden-serial-fallback",
 ];

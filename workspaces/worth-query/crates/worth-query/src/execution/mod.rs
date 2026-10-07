@@ -5,7 +5,7 @@ mod preflight;
 
 pub(crate) use preflight::execute_preflight_bundle;
 #[cfg(test)]
-pub(crate) use preflight::{execute_parallel_admission_route, execute_serial_fallback_route};
+pub(crate) use preflight::execute_serial_fallback_route;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ExecutionCounters {

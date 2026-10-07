@@ -115,7 +115,7 @@ pub fn milestone_five_point_two_requirements() -> SuiteRequirements {
 
 pub fn milestone_five_point_three_requirements() -> SuiteRequirements {
     SuiteRequirements {
-        suite_name: "Frontier Planning And Parallel Admission Parity Test",
+        suite_name: "Frontier Planning And Serial Fallback Parity Test",
         required_canonical_rows:
             crate::harness::frontier_certification::FRONTIER_REQUIRED_CANONICAL_ROW_NAMES,
         required_rejection_rows:

@@ -1,7 +1,6 @@
 #[cfg(test)]
 use crate::frontier_planning::{
-    FrontierDisjointnessClass, FrontierPredictionDriftOutcome, ParallelAdmissionEvidence,
-    SerialFallbackEvidence, SerialFallbackReason,
+    FrontierPredictionDriftOutcome, SerialFallbackEvidence, SerialFallbackReason,
 };
 #[cfg(test)]
 use worth_signal::facade::adapters::{
@@ -11,11 +10,10 @@ use worth_signal::facade::adapters::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SignalAdmissionEvidenceError {
     MissingSerialFallbackReason,
-    ParallelAdmissionRouteUnsupported,
+    ParallelStageUnsupported,
     RouteCountMismatch {
         surfaces: usize,
         route_receipts: usize,
-        disjointness_classes: usize,
     },
 }
 
@@ -24,19 +22,6 @@ use super::frontier_surface_model::SignalFrontierSurfaceEvidence;
 
 #[cfg(test)]
 impl SignalFrontierSurfaceEvidence {
-    #[cfg(test)]
-    pub(crate) fn to_parallel_admission_evidence(
-        &self,
-        basis_digest: &str,
-        disjointness_class: FrontierDisjointnessClass,
-    ) -> ParallelAdmissionEvidence {
-        ParallelAdmissionEvidence::from_surface(
-            basis_digest,
-            self.surface_digest().clone(),
-            disjointness_class,
-        )
-    }
-
     #[cfg(test)]
     pub(crate) fn to_serial_fallback_evidence(
         &self,
@@ -57,10 +42,9 @@ impl SignalFrontierSurfaceEvidence {
         &self,
         basis_digest: &str,
         route_receipt: &FrontierRouteEvidenceReceipt,
-        _disjointness_class: FrontierDisjointnessClass,
     ) -> Result<SerialFallbackEvidence, SignalAdmissionEvidenceError> {
         if route_receipt.is_parallel_admitted() {
-            return Err(SignalAdmissionEvidenceError::ParallelAdmissionRouteUnsupported);
+            return Err(SignalAdmissionEvidenceError::ParallelStageUnsupported);
         }
         let reason = route_receipt
             .serial_fallback_reason()

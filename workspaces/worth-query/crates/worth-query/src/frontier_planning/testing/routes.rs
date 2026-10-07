@@ -4,85 +4,13 @@ use crate::identity::{PlanDigest, ValidatedQueryDigest};
 use super::{
     BundleResolvedBasisDigest, FrontierAwarePlan, FrontierPlanningCounters, FrontierPlanningError,
     FrontierPostureDigest, FrontierRouteCounters, FrontierRouteReport,
-    ParallelAdmissionBundleEvidence, ParallelAdmissionDecision, ParallelAdmissionEvidence,
     SerialFallbackBundleEvidence, SerialFallbackEvidence, SerialFallbackReason,
 };
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ParallelAdmissionRoute {
-    preflight: ExecutionPreflightBundle,
-    frontier_plan: FrontierAwarePlan,
-    decision: ParallelAdmissionDecision,
-    report: FrontierRouteReport,
-    planning_counters: FrontierPlanningCounters,
-    counters: FrontierRouteCounters,
-    route_posture_digest: FrontierPostureDigest,
-}
-
-impl ParallelAdmissionRoute {
-    pub fn query_digest(&self) -> &ValidatedQueryDigest {
-        self.frontier_plan.query_digest()
-    }
-
-    pub fn source_plan_digest(&self) -> &PlanDigest {
-        self.frontier_plan.source_plan_digest()
-    }
-
-    pub fn posture_digest(&self) -> &FrontierPostureDigest {
-        &self.route_posture_digest
-    }
-
-    pub fn decision(&self) -> &ParallelAdmissionDecision {
-        &self.decision
-    }
-
-    pub fn report(&self) -> &FrontierRouteReport {
-        &self.report
-    }
-
-    pub(crate) fn planning_counters(&self) -> &FrontierPlanningCounters {
-        &self.planning_counters
-    }
-
-    pub fn counters(&self) -> &FrontierRouteCounters {
-        &self.counters
-    }
-
-    pub(crate) fn preflight(&self) -> &ExecutionPreflightBundle {
-        &self.preflight
-    }
-
-    pub(in crate::frontier_planning::testing) fn new(
-        preflight: ExecutionPreflightBundle,
-        frontier_plan: FrontierAwarePlan,
-        evidence: &ParallelAdmissionEvidence,
-    ) -> Self {
-        let route_evidence = evidence.route_evidence();
-        let decision = ParallelAdmissionDecision::from_frontier_plan(&frontier_plan);
-        let route_posture_digest = route_evidence.route_posture_digest(&frontier_plan);
-        let report = FrontierRouteReport::from_parallel_route(
-            route_posture_digest.clone(),
-            &frontier_plan,
-            route_evidence,
-        );
-        let counters = FrontierRouteCounters::parallel(route_evidence.drift_outcome());
-        Self {
-            preflight,
-            planning_counters: frontier_plan.counters().clone(),
-            frontier_plan,
-            decision,
-            report,
-            counters,
-            route_posture_digest,
-        }
-    }
-}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SerialFallbackRoute {
     preflight: ExecutionPreflightBundle,
     frontier_plan: FrontierAwarePlan,
-    reason: SerialFallbackReason,
     report: FrontierRouteReport,
     planning_counters: FrontierPlanningCounters,
     counters: FrontierRouteCounters,
@@ -103,7 +31,7 @@ impl SerialFallbackRoute {
     }
 
     pub fn reason(&self) -> &SerialFallbackReason {
-        &self.reason
+        self.report.serial_fallback_reason()
     }
 
     pub fn report(&self) -> &FrontierRouteReport {
@@ -125,23 +53,19 @@ impl SerialFallbackRoute {
     pub(in crate::frontier_planning::testing) fn new(
         preflight: ExecutionPreflightBundle,
         frontier_plan: FrontierAwarePlan,
-        reason: SerialFallbackReason,
         evidence: &SerialFallbackEvidence,
     ) -> Self {
-        let route_evidence = evidence.route_evidence();
-        let route_posture_digest = route_evidence.route_posture_digest(&frontier_plan);
+        let route_posture_digest = evidence.route_posture_digest(&frontier_plan);
         let report = FrontierRouteReport::from_serial_route(
             route_posture_digest.clone(),
             &frontier_plan,
-            reason.clone(),
-            route_evidence,
+            evidence,
         );
-        let counters = FrontierRouteCounters::serial(route_evidence.drift_outcome());
+        let counters = FrontierRouteCounters::serial(evidence.drift_outcome());
         Self {
             preflight,
             planning_counters: frontier_plan.counters().clone(),
             frontier_plan,
-            reason,
             report,
             counters,
             route_posture_digest,
@@ -203,65 +127,8 @@ impl SerialFallbackBundleRoutes {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ParallelAdmissionRouteSet {
-    bundle_basis_digest: BundleResolvedBasisDigest,
-    bundle_posture_digest: FrontierPostureDigest,
-    planning_counters: FrontierPlanningCounters,
-    routes: Vec<ParallelAdmissionRoute>,
-}
-
-impl ParallelAdmissionRouteSet {
-    pub fn bundle_basis_digest(&self) -> &str {
-        self.bundle_basis_digest.as_str()
-    }
-
-    pub fn bundle_posture_digest(&self) -> &FrontierPostureDigest {
-        &self.bundle_posture_digest
-    }
-
-    pub fn routes(&self) -> &[ParallelAdmissionRoute] {
-        &self.routes
-    }
-
-    pub(crate) fn planning_counters(&self) -> &FrontierPlanningCounters {
-        &self.planning_counters
-    }
-
-    pub(in crate::frontier_planning::testing) fn new(
-        bundle_basis_digest: BundleResolvedBasisDigest,
-        planning_counters: FrontierPlanningCounters,
-        bundle_evidence: &ParallelAdmissionBundleEvidence,
-        routes: Vec<ParallelAdmissionRoute>,
-    ) -> Self {
-        let mut parts = vec![
-            format!("bundle_basis:{}", bundle_basis_digest.as_str()),
-            format!(
-                "bundle_surface:{}",
-                bundle_evidence.bundle_surface_digest().as_str()
-            ),
-        ];
-        for (index, route) in routes.iter().enumerate() {
-            parts.push(format!(
-                "route[{index}]:{}",
-                route.posture_digest().as_str()
-            ));
-        }
-        Self {
-            bundle_basis_digest,
-            bundle_posture_digest: FrontierPostureDigest::from_parts(&parts),
-            planning_counters,
-            routes,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FrontierRoutePlanningError {
     UnsupportedFrontierFamily,
-    ParallelAdmissionDenied {
-        reason: SerialFallbackReason,
-        posture_digest: FrontierPostureDigest,
-    },
     PredictionDriftDenied {
         posture_digest: FrontierPostureDigest,
     },

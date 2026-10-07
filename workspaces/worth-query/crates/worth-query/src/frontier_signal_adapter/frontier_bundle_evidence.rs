@@ -1,7 +1,7 @@
 #[cfg(test)]
 use crate::frontier_planning::{
-    FrontierDisjointnessClass, FrontierSurfaceDigest, SerialFallbackBundleEvidence,
-    SerialFallbackBundleEvidenceError, SerialFallbackEvidence,
+    FrontierSurfaceDigest, SerialFallbackBundleEvidence, SerialFallbackBundleEvidenceError,
+    SerialFallbackEvidence,
 };
 #[cfg(test)]
 use worth_signal::facade::adapters::FrontierRouteEvidenceReceipt;
@@ -50,29 +50,18 @@ impl SignalFrontierBundleEvidence {
         basis_digest: &str,
         route_surfaces: &[SignalFrontierSurfaceEvidence],
         route_receipts: &[FrontierRouteEvidenceReceipt],
-        disjointness_classes: &[FrontierDisjointnessClass],
     ) -> Result<Self, SignalAdmissionEvidenceError> {
-        if route_surfaces.len() != route_receipts.len()
-            || route_receipts.len() != disjointness_classes.len()
-        {
+        if route_surfaces.len() != route_receipts.len() {
             return Err(SignalAdmissionEvidenceError::RouteCountMismatch {
                 surfaces: route_surfaces.len(),
                 route_receipts: route_receipts.len(),
-                disjointness_classes: disjointness_classes.len(),
             });
         }
 
         let mut route_evidences = Vec::with_capacity(route_receipts.len());
-        for ((surface, route_receipt), class) in route_surfaces
-            .iter()
-            .zip(route_receipts.iter())
-            .zip(disjointness_classes.iter())
-        {
-            route_evidences.push(surface.to_route_evidence_from_stage_record(
-                basis_digest,
-                route_receipt,
-                class.clone(),
-            )?);
+        for (surface, route_receipt) in route_surfaces.iter().zip(route_receipts.iter()) {
+            route_evidences
+                .push(surface.to_route_evidence_from_stage_record(basis_digest, route_receipt)?);
         }
 
         Ok(Self::from_route_evidences(route_evidences))

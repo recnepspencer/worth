@@ -1,9 +1,10 @@
-use crate::frontier_signal_adapter::{SignalFrontierBundleEvidence, SignalFrontierSurfaceEvidence};
+use crate::frontier_signal_adapter::{
+    SignalAdmissionEvidenceError, SignalFrontierBundleEvidence, SignalFrontierSurfaceEvidence,
+};
 use crate::planning::{
-    admit_bounded_materialization_frontier_preflight, admit_ordered_collection_frontier_preflight,
-    lower_preflight_bundle_to_serial_fallback_routes, lower_preflight_to_parallel_admission_route,
-    lower_preflight_to_serial_fallback_route, FrontierBundleRoutePlanningError,
-    FrontierDisjointnessClass, FrontierPredictionDriftOutcome, FrontierRoutePlanningError,
+    admit_bounded_materialization_frontier_preflight,
+    lower_preflight_bundle_to_serial_fallback_routes, lower_preflight_to_serial_fallback_route,
+    FrontierBundleRoutePlanningError, FrontierPredictionDriftOutcome, FrontierRoutePlanningError,
     SerialFallbackEvidence, SerialFallbackReason,
 };
 use worth_signal::facade::adapters::FrontierRouteEvidenceReason;
@@ -12,32 +13,6 @@ use super::fixtures::{
     runtime_signal_stage_execution_record, sample_signal_execution_receipt,
     sample_stage_execution_record,
 };
-
-#[test]
-fn signal_stage_record_admitted_reason_maps_to_parallel_route_evidence() {
-    let preflight =
-        crate::harness::fixtures::execution_preflights::ordered_collection_without_traversal_preflight();
-    let admitted = admit_ordered_collection_frontier_preflight(preflight.clone())
-        .expect("ordered collection should admit on the ordered frontier lane");
-    let signal_surface =
-        SignalFrontierSurfaceEvidence::from_execution_receipt(&sample_signal_execution_receipt());
-    let stage = sample_stage_execution_record(
-        FrontierRouteEvidenceReason::AdmittedProofSafeGroupedConcurrent,
-    );
-    let evidence = signal_surface.to_parallel_admission_evidence(
-        preflight.basis().proof().digest().as_str(),
-        FrontierDisjointnessClass::CollectionWindowSurface,
-    );
-    assert!(stage.is_parallel_admitted());
-
-    let route = lower_preflight_to_parallel_admission_route(&admitted, &evidence)
-        .expect("admitted stage evidence should admit the query route");
-
-    assert_eq!(
-        route.decision().disjointness_class(),
-        &FrontierDisjointnessClass::CollectionWindowSurface
-    );
-}
 
 #[test]
 fn signal_stage_record_serial_reason_maps_to_serial_fallback_evidence() {
@@ -58,7 +33,7 @@ fn signal_stage_record_serial_reason_maps_to_serial_fallback_evidence() {
     assert_eq!(route.reason(), &SerialFallbackReason::SerialExecutor);
     assert_eq!(
         route.report().serial_fallback_reason(),
-        Some(&SerialFallbackReason::SerialExecutor)
+        &SerialFallbackReason::SerialExecutor
     );
 }
 
@@ -94,22 +69,42 @@ fn signal_stage_record_preserves_specific_serial_admission_reasons() {
     ];
 
     for (signal_reason, query_reason) in cases {
-        let _stage = sample_stage_execution_record(signal_reason);
-        let evidence = signal_surface.to_serial_fallback_evidence(
-            preflight.basis().proof().digest().as_str(),
-            query_reason.clone(),
-            FrontierPredictionDriftOutcome::WithinBudget,
-        );
+        let stage = sample_stage_execution_record(signal_reason);
+        let evidence = signal_surface
+            .to_route_evidence_from_stage_record(
+                preflight.basis().proof().digest().as_str(),
+                &stage,
+            )
+            .expect("serial Signal receipt should preserve its admission reason");
         let route = lower_preflight_to_serial_fallback_route(&admitted, &evidence)
             .expect("specific serial reason should lower into fallback route");
 
         assert_eq!(route.reason(), &query_reason);
-        assert_eq!(route.report().serial_fallback_reason(), Some(&query_reason));
+        assert_eq!(route.report().serial_fallback_reason(), &query_reason);
         assert_eq!(
             route.report().drift_outcome(),
             &FrontierPredictionDriftOutcome::WithinBudget
         );
     }
+}
+
+#[test]
+fn signal_parallel_stage_is_rejected_as_serial_fallback_evidence() {
+    let preflight = crate::harness::fixtures::execution_preflights::ordered_collection_preflight();
+    let surface =
+        SignalFrontierSurfaceEvidence::from_execution_receipt(&sample_signal_execution_receipt());
+    let stage = sample_stage_execution_record(
+        FrontierRouteEvidenceReason::AdmittedProofSafeGroupedConcurrent,
+    );
+    assert!(stage.is_parallel_admitted());
+
+    assert_eq!(
+        surface.to_route_evidence_from_stage_record(
+            preflight.basis().proof().digest().as_str(),
+            &stage,
+        ),
+        Err(SignalAdmissionEvidenceError::ParallelStageUnsupported)
+    );
 }
 
 #[test]
@@ -197,7 +192,6 @@ fn signal_backed_serial_bundle_rejects_evidence_count_mismatch() {
         preflight.as_preflight().basis().proof().digest().as_str(),
         &[signal_surface],
         &[runtime_stage],
-        &[FrontierDisjointnessClass::TraversalScopeSurface],
     )
     .expect("single-route signal bundle evidence should compose");
 

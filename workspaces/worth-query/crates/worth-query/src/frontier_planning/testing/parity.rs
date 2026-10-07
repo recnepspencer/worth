@@ -4,15 +4,12 @@ use crate::identity::{PlanDigest, ResultDigest, ValidatedQueryDigest};
 
 use super::{
     FrontierAwarePlan, FrontierBreadthPrediction, FrontierCounterSnapshot, FrontierPostureDigest,
-    ParallelAdmissionRoute, ParallelAdmissionRouteSet, SerialFallbackBundleRoutes,
-    SerialFallbackRoute,
+    SerialFallbackBundleRoutes, SerialFallbackRoute,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum PlannedRouteFamily {
     FrontierSerialControl,
-    FrontierParallelAdmitted,
-    FrontierParallelAdmittedBundle,
     FrontierSerialFallback,
     FrontierSerialFallbackBundle,
 }
@@ -21,8 +18,6 @@ impl PlannedRouteFamily {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::FrontierSerialControl => "frontier_serial_control",
-            Self::FrontierParallelAdmitted => "frontier_parallel_admitted",
-            Self::FrontierParallelAdmittedBundle => "frontier_parallel_admitted_bundle",
             Self::FrontierSerialFallback => "frontier_serial_fallback",
             Self::FrontierSerialFallbackBundle => "frontier_serial_fallback_bundle",
         }
@@ -46,7 +41,7 @@ pub struct FrontierParityBundle {
     route_family: PlannedRouteFamily,
     route_posture_digest: FrontierPostureDigest,
     predicted_breadth: FrontierBreadthPrediction,
-    realized_breadth: usize,
+    reported_execution_records_examined_count: usize,
     counter_snapshot: FrontierCounterSnapshot,
 }
 
@@ -79,8 +74,8 @@ impl FrontierParityBundle {
         &self.predicted_breadth
     }
 
-    pub fn realized_breadth(&self) -> usize {
-        self.realized_breadth
+    pub fn reported_execution_records_examined_count(&self) -> usize {
+        self.reported_execution_records_examined_count
     }
 
     pub fn counter_snapshot(&self) -> &FrontierCounterSnapshot {
@@ -100,68 +95,14 @@ impl FrontierParityBundle {
             route_family: PlannedRouteFamily::FrontierSerialControl,
             route_posture_digest: frontier_plan.report().posture_digest().clone(),
             predicted_breadth: frontier_plan.predicted_breadth().clone(),
-            realized_breadth: execution.counters().execution_records_examined_count(),
+            reported_execution_records_examined_count: execution
+                .counters()
+                .execution_records_examined_count(),
             counter_snapshot: FrontierCounterSnapshot::serial_control(
                 frontier_plan.counters(),
                 execution.counters(),
             ),
         }
-    }
-
-    pub fn from_parallel_admission(
-        route: &ParallelAdmissionRoute,
-        execution: &ExecutionResultEnvelope,
-    ) -> Self {
-        Self {
-            query_digest: route.query_digest().clone(),
-            plan_digest: route.source_plan_digest().clone(),
-            result_digest: execution.report().result_digest().clone(),
-            basis_digest: route
-                .preflight()
-                .basis()
-                .proof()
-                .digest()
-                .as_str()
-                .to_string(),
-            route_family: PlannedRouteFamily::FrontierParallelAdmitted,
-            route_posture_digest: route.posture_digest().clone(),
-            predicted_breadth: route.decision().predicted_breadth().clone(),
-            realized_breadth: execution.counters().execution_records_examined_count(),
-            counter_snapshot: FrontierCounterSnapshot::parallel_admission(
-                route.planning_counters(),
-                route.counters(),
-                execution.counters(),
-            ),
-        }
-    }
-
-    pub fn from_parallel_admission_bundle(
-        bundle: &ParallelAdmissionRouteSet,
-        route_index: usize,
-        execution: &ExecutionResultEnvelope,
-    ) -> Result<Self, FrontierParityBundleError> {
-        let route = bundle.routes().get(route_index).ok_or(
-            FrontierParityBundleError::BundleRouteIndexOutOfRange {
-                route_count: bundle.routes().len(),
-                route_index,
-            },
-        )?;
-        Ok(Self {
-            query_digest: route.query_digest().clone(),
-            plan_digest: route.source_plan_digest().clone(),
-            result_digest: execution.report().result_digest().clone(),
-            basis_digest: bundle.bundle_basis_digest().to_string(),
-            route_family: PlannedRouteFamily::FrontierParallelAdmittedBundle,
-            route_posture_digest: bundle.bundle_posture_digest().clone(),
-            predicted_breadth: route.decision().predicted_breadth().clone(),
-            realized_breadth: execution.counters().execution_records_examined_count(),
-            counter_snapshot: FrontierCounterSnapshot::parallel_admission_bundle(
-                bundle.planning_counters(),
-                route.counters(),
-                execution.counters(),
-                bundle.routes().len(),
-            ),
-        })
     }
 
     pub fn from_serial_fallback(
@@ -182,7 +123,9 @@ impl FrontierParityBundle {
             route_family: PlannedRouteFamily::FrontierSerialFallback,
             route_posture_digest: route.posture_digest().clone(),
             predicted_breadth: route.report().predicted_breadth().clone(),
-            realized_breadth: execution.counters().execution_records_examined_count(),
+            reported_execution_records_examined_count: execution
+                .counters()
+                .execution_records_examined_count(),
             counter_snapshot: FrontierCounterSnapshot::serial_fallback(
                 route.planning_counters(),
                 route.counters(),
@@ -210,7 +153,9 @@ impl FrontierParityBundle {
             route_family: PlannedRouteFamily::FrontierSerialFallbackBundle,
             route_posture_digest: bundle.bundle_posture_digest().clone(),
             predicted_breadth: route.report().predicted_breadth().clone(),
-            realized_breadth: execution.counters().execution_records_examined_count(),
+            reported_execution_records_examined_count: execution
+                .counters()
+                .execution_records_examined_count(),
             counter_snapshot: FrontierCounterSnapshot::serial_fallback_bundle(
                 bundle.planning_counters(),
                 route.counters(),
