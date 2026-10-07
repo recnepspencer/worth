@@ -2,9 +2,8 @@
 
 > **The application story, end to end:** declare the program and its
 > features, install the application graph, run it, author and run workflows,
-> and adopt a new program on a branch. Every code block here is real code
-> from this repository, or is marked as a shape with a pointer to its compiled
-> counterpart.
+> and adopt a new program on a branch. Code blocks are source-backed
+> excerpts, identified shapes, or complete examples using the public facades.
 
 This is the centerpiece guide for building on WORTH. Other public documents
 explain *why* the platform works the way it does
@@ -435,6 +434,223 @@ pub(crate) fn validated_bank_application() -> Result<
   `DanglingFeature`, `MissingRequiredInput`, `UndeclaredOutput`,
   `UnexportedCrossInstanceConnection`, `CyclicConnection`, `DuplicateRule`,
   `IncompleteActionChangeContract`, and `UngovernedDerivedOutput`.
+
+### 3.6 Declare and install a partitioned managed computation
+
+A managed computation declares its input, output artifact, partition key,
+execution posture, determinism contract, and finite resource ceiling. Add it
+with `managed_computation::<Computation>()` beside its `derived_artifact` in the
+feature specification. Install its owner with
+`setup.partitioned_computation::<Feature, Computation, _>(owner)` and retain the
+returned handle in the handler that uses it.
+
+The owner separates reads from computation. `partitions`, `partition_key`, and
+`gather` receive an operation-scoped reader on the caller thread. They can read
+only what the operation declares. `compute_partition` receives gathered data
+and a checkpoint, with no graph reader. `partition_key`, `gather`, and
+`compute_partition` must be pure in the declared input, partition key, and
+facts read through the reader: no ambient clocks, mutable globals, changing
+owner state, or effects. A completed producer run keeps its partition state.
+The next run of the same installed producer, on an equal input value, reuses
+an unchanged partition without gathering or computing it again. An impure
+function can therefore yield a stale reused result. `complete` receives the reduced result
+back on the caller thread. Preparation precedes kernel dispatch; completion
+follows successful computation and reduction.
+
+The example groups warehouse quantities by storage zone and sums them. Stable
+item IDs identify inventory lines; the zone key defines partition membership.
+Neither depends on worker assignment. The generic schema, feature, artifact,
+and operation parameters stand for your application's declarations. The
+`Reuse` marker names declaration vocabulary; partition reuse depends on the
+state kept from the previous run and the purity contract above.
+
+```rust
+use std::marker::PhantomData;
+use serde::Serialize;
+use worth_query_host::facade::{
+    application_contribution::*,
+    declaration::{
+        application_operation::ApplicationMutationBinding,
+        application_program::*,
+        application_schema::ApplicationSchema,
+    },
+    primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
+};
+
+#[derive(Clone, Serialize)]
+pub struct InventoryLine {
+    id: u64,
+    zone: u64,
+    quantity: f64,
+}
+impl ChargedBytes for InventoryLine {
+    fn additional_charged_bytes(&self) -> u64 { 0 }
+}
+
+pub struct InventoryInput;
+impl ApplicationComputationInput for InventoryInput {
+    type Value = Vec<InventoryLine>;
+    const IDENTITY: &'static str = "inventory.input.v1";
+}
+#[derive(Serialize)]
+pub struct Zone(u64);
+impl ApplicationComputationPartition for Zone {
+    const IDENTITY: &'static str = "inventory.zone.v1";
+}
+pub struct InventoryReuse;
+impl ApplicationComputationReuse for InventoryReuse {
+    const IDENTITY: &'static str = "inventory.reuse.v1";
+}
+pub struct InventoryStopped;
+impl ApplicationComputationStopped for InventoryStopped {
+    const IDENTITY: &'static str = "inventory.stopped.v1";
+}
+
+pub struct InventoryTotal<A>(PhantomData<fn() -> A>);
+impl<S, F, A> ApplicationManagedComputation<S, F> for InventoryTotal<A>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+{
+    type Input = InventoryInput;
+    type Output = A;
+    type Partition = Zone;
+    type Reuse = InventoryReuse;
+    type Stopped = InventoryStopped;
+    const IDENTITY: &'static str = "inventory.total.v1";
+    const EXECUTION: ApplicationComputationExecution =
+        ApplicationComputationExecution::DeterministicPartitioned;
+    const RESOURCES: ApplicationComputationResourceCeiling =
+        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
+    // DETERMINISM defaults to canonical bitwise equality.
+}
+
+pub struct InventoryOwner<Op>(PhantomData<fn() -> Op>);
+impl<S, F, A, Op> WorthQueryPartitionedComputationOwner<S, F, InventoryTotal<A>>
+    for InventoryOwner<Op>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+    Op: 'static,
+{
+    type Operation = Op;
+    type Item = InventoryLine;
+    type Gathered = Vec<f64>;
+    type PartitionResult = f64;
+    type Output = f64;
+    type Stopped = u32;
+
+    fn partitions(
+        &self,
+        _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
+        input: &Vec<InventoryLine>,
+    ) -> Result<WorthQueryComputationPartitionPlan<InventoryLine>,
+                WorthQueryComputationInputDenial<u32>> {
+        Ok(WorthQueryComputationPartitionPlan::keyed(
+            input.iter().cloned(), |line| PartitionItemId(line.id),
+        ))
+    }
+
+    fn partition_key(
+        &self,
+        _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
+        _input: &Vec<InventoryLine>,
+        item: &InventoryLine,
+    ) -> Result<Zone, WorthQueryComputationInputDenial<u32>> {
+        Ok(Zone(item.zone))
+    }
+
+    fn gather(
+        &self,
+        _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
+        _input: &Vec<InventoryLine>,
+        partition: WorthQueryComputationPartitionMembers<'_, Zone, InventoryLine>,
+    ) -> Result<Vec<f64>, WorthQueryComputationInputDenial<u32>> {
+        Ok(partition.items().map(|(_, line)| line.quantity).collect())
+    }
+
+    fn compute_partition(
+        &self,
+        partition: WorthQueryComputationPartitionView<'_, Zone, Vec<f64>>,
+        checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
+    ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
+        let mut total = 0.0;
+        for quantity in partition.gathered() {
+            checkpoint.advance(1)?;
+            total += quantity;
+        }
+        Ok(total)
+    }
+
+    fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {
+        WorthQueryDeterministicReducer::canonical(|| 0.0, |left, right| left + right)
+    }
+
+    fn complete(&self, reduced: f64) -> Result<f64, u32> { Ok(reduced) }
+}
+
+pub fn declare_inventory<S, F, A>() -> ApplicationFeatureSpec
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+{
+    ApplicationFeatureSpec::root::<S, F>()
+        .derived_artifact::<A>()
+        .managed_computation::<InventoryTotal<A>>()
+        .finish()
+}
+
+pub fn install_inventory<S, F, A, Op>(
+    setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
+) -> Result<
+    WorthQueryInstalledPartitionedComputation<S, F, InventoryTotal<A>, InventoryOwner<Op>>,
+    WorthQueryPrimaryGraphInstallationDenial,
+>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+    Op: 'static,
+{
+    setup.partitioned_computation::<F, InventoryTotal<A>, _>(InventoryOwner(PhantomData))
+}
+
+pub fn run_inventory<S, F, A, Op, B>(
+    installed: &WorthQueryInstalledPartitionedComputation<
+        S, F, InventoryTotal<A>, InventoryOwner<Op>,
+    >,
+    reader: &mut DecisionReader<'_, '_, '_, S, B>,
+    input: &Vec<InventoryLine>,
+) -> Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+    Op: 'static,
+    B: ApplicationMutationBinding<S, Operation = Op>,
+{
+    let computed = installed.prepare(reader, input)?
+        .compute(reader.managed_computation_execution())?;
+    let charged_work = computed.charged_work();
+    Ok((computed.complete()?, charged_work))
+}
+```
+
+The feature builder also needs the input, output, action, and policy declarations
+of its enclosing application; this computation does not supply them. Supply a
+unique, stable ID for every line: duplicate item identities are denied. Keys
+use canonical encoding, and partitions are ordered by the identity derived
+from that encoding, not by the numeric order of zones. The reducer fixes its
+association tree, so floating-point reduction preserves the same result bits
+at every admitted worker count.
+
+`checkpoint.advance` charges kernel work and checks interruption. Framework
+planning and reduction also contribute charged work; `charged_work()` reports
+the computation's total. Handle the typed denial before authoring a candidate
+from the result. Computing and completing a value do not commit it.
 
 ---
 
