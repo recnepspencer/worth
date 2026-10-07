@@ -530,7 +530,7 @@ inside the World's order, after Relational settlement.
 |---|---|
 | One Relational branch-cell move | A combined Relational-plus-Signal publication |
 | One Signal branch advance (it rolls back cleanly before commit) | The sequence of owners as a whole: it is *ordered*, not atomic |
-| One World product-head compare-and-swap | Invalidation, which follows the commit as a separate delivery step |
+| One World product-head compare-and-swap | Signal delivery, which follows the commit as a separate delivery step |
 
 If the product compare-and-swap loses after a component has moved, the result
 is `ProductUnpublished`. A stale product head after an owner effect is kept as
@@ -795,24 +795,24 @@ descriptive history.
   batches were missed. Updates are never dropped silently. Close with
   `close()`.
 - **Output demand.** `request.demand(d).controls(c).start()` opens a demand.
-  `advance(&fresh_request)` returns `Pending` or `Settled`. One call
-  progresses every dirty and pending-upstream output in the *required set*, in
-  dependency-ready waves, until it settles or its budget runs out. When the
-  budget runs out first, the typed `Pending` outcome names the remaining work.
-  The application neither re-demands its output tree nor polls, and no
-  background sweeper runs: the authenticated request stays the principal.
+  `advance(&fresh_request)` returns `Pending` or `Settled`, or a typed denial.
+  One call can settle a dependency chain and progress other queued required
+  outputs within its budget. `Pending` means work remains for a further
+  admitted call. No background sweeper runs: the authenticated request stays
+  the principal.
 - **Required outputs.** After `execute_performed`, `start_required_outputs`
-  produces the outputs the operation requires, and `recover_required_outputs`
-  resumes that work. Those outputs join the required set until their demand
-  closes.
-- **Reuse.** An output whose settlement is unmarked on a continuous basis is
-  reused without contacting its producer or re-running its source query. A
-  dirty output re-verifies only its marked facts; when the value its producer
-  would receive is unchanged, the producer is not called (input cutoff), and
-  when a recomputed value encodes identically, its consumers stay current
-  (output cutoff). [§10.5](#105-marking-and-currentness) gives the rules.
+  opens the outputs the operation requires, and `recover_required_outputs`
+  resumes that work. Open demands contribute membership to the required set;
+  closing one demand does not remove another demand's obligation.
+- **Reuse.** An output whose settlement is unmarked on a continuous basis can
+  be reused without contacting its producer or re-running its source query.
+  Reuse also requires the producer's reader and context contracts to permit it.
+  A dirty output re-verifies its marked facts. Equal declared input can avoid
+  producer execution (input cutoff). Stable republication of that retained
+  output can clear pending marks below the producer without calling consumers.
+  [§10.5](#105-marking-and-currentness) gives the rules.
 
-### 9.9 Resources and budgets
+### 9.9 Resources, execution, and cost
 
 Every resource is bounded, and caller limits can only restrict installed policy.
 
@@ -834,9 +834,57 @@ The governed controls include:
 - history-selection budgets;
 - candidate reservations.
 
+**Execution authority.** A process constructs one execution authority. It owns
+its computation workers and the process memory ledger. An installed execution
+policy admits request leases with worker, charged-memory, and work ceilings.
+Child leases share ancestor worker and memory limits. Nested work inherits
+its caller's remaining work. Under leased placement, managed partition
+execution draws a child from the handler's request lease; nested partition
+work must descend from the active lease. An unrelated lease, or a run without
+a lease nested under a leased parent, is denied. Under serial placement,
+execution runs on the caller thread without a lease.
+
+Admission checks capacity before dispatching kernels. A memory refusal means
+the run could not reserve its declared bytes within the applicable limit; it
+is not a domain result. A managed computation reports memory refusals as
+policy, process, or declared-capacity limits; ancestor refusals are policy
+refusals at this application boundary. Work exhaustion, cancellation, deadline,
+kernel panic, domain failure, and result capacity remain distinguishable. A
+busy worker pool can admit inline execution without creating another worker.
+
+**Determinism.** For the same admitted inputs and declared computation, results
+and charged work do not depend on worker count or scheduling. The default
+contract preserves canonical result bits; an explicitly installed equivalence
+contract supplies its comparison predicate. Partition identity comes from the
+data, never the worker. Results are settled and published in canonical
+partition order. If several partitions fail, the least failing identity is
+reported. Only the canonical prefix through that failure contributes charged
+work; results and work beyond it are discarded. A work ceiling stops at its
+canonical prefix boundary. Cancellation and deadlines are live controls, so
+changing when they arrive can change how far a run progresses. Worker use,
+queue activity, and peak memory are physical metrics, not invariant results.
+
+**Work and span.** Work is the sum of charged operation units. Span is the
+structural length of the dependent computation: sequential stages add span,
+independent branches take their maximum, and nested work contributes to its
+calling branch. These are cost measures, not elapsed time. Three independent
+partitions costing 2, 3, and 5 units have 10 units of work and 5 of span, even
+when placement executes them serially. Coordination and sequential reduction
+also contribute their own charged costs. The execution layer exposes work and
+span in its execution report. A managed partitioned computation exposes
+charged work; its application-facing result does not expose span.
+
+**Partition execution and advancement.** Kernels within one partitioned managed
+computation can run concurrently. A completed producer run keeps its partition
+state with the output it recorded. The next run of the same installed producer,
+on an equal input value, gathers and computes only the partitions whose facts
+changed. A first run, a restored record, a reinstalled owner, a changed input
+value, a changed fact behind partition membership or a key, or state too large
+to keep computes every partition. Reuse requires the [owner's purity contract](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+The advancement driver runs producer handlers synchronously.
+
 Sessions, runs, subscriptions, continuations, leases, checkpoints, recovery
-handles, and admitted capacity are *managed resources*. Close them
-explicitly.
+handles, and admitted capacity are *managed resources*. Close them explicitly.
 
 ---
 
@@ -934,43 +982,42 @@ an `Approval`.
 
 ### 10.5 Marking and currentness
 
-The touched graph is also the cause of invalidation. Query owns one Bridge
-subscription that receives every committed patch envelope on a branch, in
-commit order and synchronously with commit visibility, whoever the writer was.
+The touched graph causes invalidation. Native commit publication carries
+Query's marking state with the source image, so visible source changes and
+their marks agree, whoever the writer was.
 
-- **Reverse index.** When an output settles, Query records the facts it
-  consumed (field revisions, index keys, selection and absence facts) in a
-  reverse index from fact to settlement. A settlement recorded against an
-  older read replays the deliveries since that read before it is indexed.
-  Facts come from native query, adjacency or indexed-selection evidence at
-  the smallest sound scope.
-- **Marking.** A delivered commit looks up only its touched keys. Each match
-  marks that settlement dirty. Every settlement that consumed a marked
-  output is marked pending-upstream, transitively. No commit scans
-  settlements or waiting work, and marks are per branch lineage. A wake or
-  touched set narrows which deliveries reach a settlement, but never
-  replaces admission's currentness proof.
-- **Clean reuse.** On a continuous basis (same lineage, read basis still
-  inside the retained commit window, demand at or after that basis), an
-  unmarked settlement is current. Nothing is re-read or hashed.
-- **Dirty recompute.** A dirty settlement re-verifies only its marked facts.
-  If they changed, it recomputes, subject to input cutoff. When an upstream
-  republishes an equal value, the pending marks below it clear without any
-  producer contact.
-- **Full-verification fallback.** Revision comparison of every consumed fact
-  remains only where marking cannot be trusted: checkpoint restore or reopen,
-  a read basis outside the retained window, a switch of branch lineage, a
-  foreign basis, program or schema installation, a contract-revision or
-  index-definition change, or a delivery gap. It runs once per affected
-  output and is counted and reported.
-- **Commit-time checks.** A commit still re-compares its own attempt's read
-  facts. Marking replaces only demand-time re-verification.
-- **Equivalence mode.** A certification feature runs full verification beside
-  marking and fails on any difference.
+- **Reverse index.** When an output settles, Query indexes its consumed facts:
+  field revisions, index keys, selection and absence facts, and consumed
+  upstream outputs. A settlement recorded against an older read replays
+  retained deliveries since that read. Facts come from native query,
+  adjacency, or indexed-selection evidence at the smallest sound scope.
+- **Marking.** Delivery looks up the touched fact keys and marks matched
+  settlements dirty. Settlements that consumed their outputs become
+  pending-upstream, transitively. The index selects affected settlements and
+  downstream edges; delivery does not scan all settlements or waiting work.
+  Marks belong to a branch lineage. Their maintenance is counted and bounded.
+  If retained marking cannot cover a delivery, currentness requires full
+  verification rather than treating missing marks as clean.
+- **Clean reuse.** On a continuous retained basis, an unmarked settlement can
+  certify currentness without re-reading its consumed facts, subject to the
+  [producer reuse contracts](#98-publication-live-reads-and-output-demand).
+- **Cutoff.** Dirty verification compares marked facts. Unchanged facts can
+  establish currentness without recomputation. Equal declared input can avoid
+  calling a producer. Stable republication of the retained output then clears
+  pending marks below it without calling those consumers. For a staffing
+  schedule, a fetched annotation omitted from the declared schedule input can
+  change while that input stays equal. Stable republication then lets a
+  dependent summary reuse its result without calling its producer.
+- **Full verification.** When marking cannot certify the selected basis,
+  currentness compares all consumed facts. Checkpoint restore
+  can require this path. Verification is counted and budgeted.
+- **Commit checks.** A commit re-compares its attempt's consumed read facts.
+  Demand-time marking does not replace that check.
+- **Certification.** An optional certification mode compares marking with
+  full verification and rejects disagreement.
 
-Work budgets charge marking and dirty verification, never a scan of clean
-state. Live queries are not invalidated: they are caused by committed
-application emissions and re-read at the cause's observation.
+Query's native marking is distinct from Signal delivery after product
+publication.
 
 ---
 

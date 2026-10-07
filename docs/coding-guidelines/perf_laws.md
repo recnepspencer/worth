@@ -4,7 +4,7 @@
 
 Execution breadth must be bounded by semantic delta plus the smallest honest physical or algorithmic granule. Every resulting read, write, invalidation, recomputation, retention, or flush amplification must be named, measured, and policy-bounded.
 
-The touched graph is the commit's sealed semantic delta. Consumed dependency contracts intersect that delta to bound recomputation; scope paths refine the precision of touched records, and declared widening remains counted and reported.
+The touched graph is the commit's sealed semantic delta and the cause of invalidation. Consumed dependency facts intersect that delta through the reverse index: matched settlements become dirty, and their downstream consumers become pending-upstream. This affected closure bounds verification and recomputation on a continuous basis. Scope paths refine touched precision; declared widening and bounded fallback to full verification remain counted. An unrelated laboratory record must not induce a scan of every retained analysis.
 
 Authoritative commit cost may scale only with declared synchronous invariants, never with arbitrary projections, diagnostics, explanations, or consumer count. Every derived structure must declare whether it participates synchronously in correctness or updates asynchronously, together with its write amplification and staleness contract.
 
@@ -32,7 +32,9 @@ Mechanical layout may co-locate data evaluated together without collapsing seman
 
 Allocation must have a named lifecycle and bounded hot-path budget. General-purpose allocation, fragmentation, reclamation, initialization, and cross-thread ownership are coordination costs; operational paths use preallocated, pooled, arena-scoped, or explicitly budgeted storage matched to the dominant lifetime.
 
-Parallel throughput is bounded by structural independence and coordination depth, not core count alone. Shared mutation, cross-thread reference counting, atomics, locks, barriers, and queue handoffs are explicit costs; scalable plans carry disjointness, partitioning, or a measured synchronization budget.
+Parallel throughput is bounded by structural independence and coordination depth, not core count alone. At the execution layer, work sums charged operations; span adds dependent stages and takes the maximum of independent branches. Nested computation contributes both measures to its calling branch. Placement must preserve results and charged work. Structural span describes the computation even when placement is serial; it is not elapsed time. Shared mutation, cross-thread reference counting, atomics, locks, barriers, and queue handoffs are explicit costs; scalable plans carry disjointness, partitioning, or a measured synchronization budget.
+
+Threads must be created by the execution authority or at a production site listed by category in the boundary-check configuration. The check rejects unlisted production thread creation, pool construction, and Rayon use outside the authority. Each listed site declares its category, reason, source item, and exact count; growth or a stale declaration fails the check.
 
 Rejection must precede expensive construction. Evaluate the cheapest, most restrictive disqualifying constraints before allocation, topology traversal, coordination, or rich intermediate construction.
 
