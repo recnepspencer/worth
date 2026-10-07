@@ -1579,6 +1579,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "stats_alloc",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query-admission",

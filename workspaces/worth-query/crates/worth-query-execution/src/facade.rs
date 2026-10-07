@@ -39,6 +39,10 @@ pub mod runtime {
         WorthQueryWorkflowGraphStepOutcome, WorthQueryWorkflowRunCleanupOutcome,
         WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal,
     };
+    pub use worth_execution::{
+        CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+        ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial, LeaseRequest,
+    };
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
         ProductUnpublishedCause, RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,

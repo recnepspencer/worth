@@ -7,5 +7,5 @@ pub use equivalence::EquivalencePredicate;
 pub(crate) use lease::ResourceReservation;
 pub use lease::{
     ConstructionDenial, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionLeaseStatus,
-    ExecutionResourceLease, LeaseDenial, LeaseRequest,
+    ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial, LeaseRequest,
 };

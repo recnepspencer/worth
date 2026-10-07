@@ -142,14 +142,11 @@ impl<Schema, Operation, Input, Scope>
         let reservation = WorthQueryCandidateReservation::admit(
             requested,
             ceiling,
-            self.admission
-                .allowed_graph_contract()
-                .candidate_validator_work(),
             envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
             envelope.resource_ceiling(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
             ),
-            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
+            envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
         )?;
         let capacity = reservation.total_items();
         let layout = Arc::clone(&self.lease.layout);

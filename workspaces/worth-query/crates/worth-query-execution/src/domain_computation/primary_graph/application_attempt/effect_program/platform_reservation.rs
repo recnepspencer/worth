@@ -86,11 +86,10 @@ fn admit_query_owned_effects(
     let reservation = WorthQueryCandidateReservation::admit(
         requirements,
         declared,
-        u64::try_from(validator_work).map_err(|_| overflow())?,
         envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
         envelope
             .resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),
-        envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
+        envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
     )?;
     Ok(PlatformEffectReservation { reservation })
 }

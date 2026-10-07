@@ -106,22 +106,20 @@ impl WorthQueryProviderAttemptPreparation {
             .materialize(&settlement_effects)?
             .maximum_work()
             .ok_or_else(work_denial)?;
-        let handler_work = self
-            .validator_work_admission
-            .maximum_work()
-            .ok_or_else(work_denial)?;
         let envelope = admission
             .allowed_graph_contract()
             .execution_strategy()
             .expect("installed application operation has one execution strategy")
             .envelope();
-        let combined_work = combined_work_within_ceiling(
-            handler_work,
-            platform_work,
-            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
-        )?;
-        self.validator_work_admission = WorthQueryCandidateValidatorWorkAdmission::Reserved {
-            maximum_work: combined_work,
+        self.validator_work_admission = match self.validator_work_admission.maximum_work() {
+            Some(handler_work) => WorthQueryCandidateValidatorWorkAdmission::Reserved {
+                maximum_work: combined_work_within_ceiling(
+                    handler_work,
+                    platform_work,
+                    envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
+                )?,
+            },
+            None => WorthQueryCandidateValidatorWorkAdmission::NoAggregateLimit,
         };
         self.effects.extend(settlement_effects);
         self.effect_posture =
@@ -153,12 +151,12 @@ fn work_denial() -> WorthQueryApplicationAttemptDenial {
 fn combined_work_within_ceiling(
     handler_work: usize,
     platform_work: usize,
-    ceiling: u64,
+    ceiling: Option<u64>,
 ) -> Result<usize, WorthQueryApplicationAttemptDenial> {
     let combined = handler_work
         .checked_add(platform_work)
         .ok_or_else(work_denial)?;
-    if !u64::try_from(combined).is_ok_and(|work| work <= ceiling) {
+    if !u64::try_from(combined).is_ok_and(|work| ceiling.is_none_or(|maximum| work <= maximum)) {
         return Err(work_denial());
     }
     Ok(combined)
@@ -174,8 +172,11 @@ mod tests {
 
     #[test]
     fn guarded_work_combines_handler_and_settlement_and_denies_one_over() {
-        assert_eq!(combined_work_within_ceiling(512, 13, 525).unwrap(), 525);
-        let denial = combined_work_within_ceiling(512, 13, 524).unwrap_err();
+        assert_eq!(
+            combined_work_within_ceiling(512, 13, Some(525)).unwrap(),
+            525
+        );
+        let denial = combined_work_within_ceiling(512, 13, Some(524)).unwrap_err();
         assert_eq!(
             denial.kind(),
             WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded
@@ -191,6 +192,6 @@ mod tests {
             commit_denial.stage(),
             WorthQueryApplicationCommitDenialStage::ResourceAdmission
         );
-        assert!(combined_work_within_ceiling(usize::MAX, 1, u64::MAX).is_err());
+        assert!(combined_work_within_ceiling(usize::MAX, 1, None).is_err());
     }
 }

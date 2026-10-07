@@ -2784,6 +2784,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d3922ac07e168376bc6799e7896fc737ddb9538be7533ca44bc3463091db1ad"
 
 [[package]]
+name = "worth-execution"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
@@ -2860,6 +2869,7 @@ name = "worth-query-execution"
 version = "0.1.0"
 dependencies = [
  "sha2",
+ "worth-execution",
  "worth-foundational",
  "worth-proof",
  "worth-query-admission",

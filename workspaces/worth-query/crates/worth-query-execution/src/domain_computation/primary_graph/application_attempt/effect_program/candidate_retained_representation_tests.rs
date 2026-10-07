@@ -61,7 +61,7 @@ fn external_encoded_width_participates_in_candidate_denial() {
 fn multi_unlink_preflight_preserves_effects_and_reservation_on_denial() {
     let requirement = requirements(0, 0, 0, 1, 0, 0, 0);
     let mut reservation =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, 1, 0, 1).unwrap();
+        WorthQueryCandidateReservation::admit(requirement, requirement, 1, 0, Some(1)).unwrap();
     let effects: Vec<()> = Vec::new();
 
     let denial = reservation
@@ -145,10 +145,9 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
     let mut denied = WorthQueryCandidateReservation::admit(
         insufficient,
         insufficient,
-        1,
         2,
         u64::try_from(exact_capacity - 1).unwrap(),
-        1,
+        Some(1),
     )
     .unwrap();
     denied
@@ -166,10 +165,9 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
     let mut admitted = WorthQueryCandidateReservation::admit(
         exact,
         exact,
-        1,
         2,
         u64::try_from(exact_capacity).unwrap(),
-        1,
+        Some(1),
     )
     .unwrap();
     admitted

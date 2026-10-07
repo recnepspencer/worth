@@ -13,8 +13,8 @@ mod report;
 
 pub use authority::{
     CancellationToken, ConstructionDenial, EquivalencePredicate, ExecutionAuthority,
-    ExecutionAuthorityConfig, ExecutionLeaseStatus, ExecutionResourceLease, LeaseDenial,
-    LeaseRequest,
+    ExecutionAuthorityConfig, ExecutionLeaseStatus, ExecutionMemoryReservation,
+    ExecutionResourceLease, LeaseDenial, LeaseRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 

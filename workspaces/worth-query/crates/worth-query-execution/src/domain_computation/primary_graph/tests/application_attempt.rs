@@ -76,6 +76,8 @@ mod touched_graph_closure;
 #[cfg(feature = "test-world-operation-control")]
 #[path = "application_attempt/unwind_custody.rs"]
 mod unwind_custody;
+#[path = "application_attempt/validation_interruption.rs"]
+mod validation_interruption;
 
 use program_fixture::{
     admitted_mutation_free_program, admitted_program, admitted_program_on_selected,

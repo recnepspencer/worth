@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_operation::{
 fn capacity_denies_before_a_reservation_exists() {
     let ceiling = requirements(1, 1, 64, 8);
     let denial =
-        WorthQueryCandidateReservation::admit(requirements(2, 1, 64, 8), ceiling, 8, 16, 64, 8)
+        WorthQueryCandidateReservation::admit(requirements(2, 1, 64, 8), ceiling, 16, 64, Some(8))
             .err()
             .expect("the binding ceiling must deny excess creation");
     assert_eq!(
@@ -25,7 +25,7 @@ fn admitted_reservation_charges_each_effect_family_exactly() {
         ApplicationCandidateResourceCeiling::bounded(64, 8),
     );
     let mut reservation =
-        WorthQueryCandidateReservation::admit(requirements, requirements, 8, 6, 64, 8)
+        WorthQueryCandidateReservation::admit(requirements, requirements, 6, 64, Some(8))
             .expect("the exact finite reservation is admitted");
     for kind in [
         CandidateItemKind::Create,
@@ -57,7 +57,7 @@ fn equal_cardinality_payload_twin_denies_bytes_without_consuming_reservation() {
     let requirement = requirements(0, 1, candidate_bytes, 8);
     let runtime_bytes = u64::try_from(candidate_bytes).unwrap();
     let mut small =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 8, 1, runtime_bytes, 8)
+        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes, Some(8))
             .expect("the small candidate reservation is admitted");
     small
         .charge_retained_representation(
@@ -68,7 +68,7 @@ fn equal_cardinality_payload_twin_denies_bytes_without_consuming_reservation() {
         .expect("the equal-cardinality small value fits");
 
     let mut oversized =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 8, 1, runtime_bytes, 8)
+        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes, Some(8))
             .expect("the oversized twin starts from the same reservation");
     let denial = oversized
         .charge_retained_representation(
@@ -103,10 +103,9 @@ fn coalesced_write_replaces_its_retained_semantic_width() {
     let mut reservation = WorthQueryCandidateReservation::admit(
         requirement,
         requirement,
-        8,
         2,
         u64::try_from(bytes).unwrap(),
-        8,
+        Some(8),
     )
     .expect("both writes share one retained field slot");
     reservation
@@ -134,53 +133,29 @@ fn requirements(
 }
 
 #[test]
-fn derived_validator_work_obeys_host_and_deliberate_caps() {
+fn omitted_aggregate_work_remains_absent_without_derived_fallback() {
     let automatic = ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
         ApplicationCandidateResourceCeiling::representation_bytes(64),
     );
-    let admit = |request, ceiling, derived, host| {
-        WorthQueryCandidateReservation::admit(request, ceiling, derived, 1, 64, host)
-    };
-    let first = admit(automatic, automatic, 33, 40).unwrap();
-    assert_eq!(first.validator_work_admission().maximum_work(), Some(33));
-    // An installed invariant can increase its bound without editing the caller.
-    let revised = admit(automatic, automatic, 39, 40).unwrap();
-    assert_eq!(revised.validator_work_admission().maximum_work(), Some(39));
-    assert!(admit(automatic, automatic, 41, 40).is_err());
+    let admitted =
+        WorthQueryCandidateReservation::admit(automatic, automatic, 1, 64, None).unwrap();
+    assert_eq!(admitted.validator_work_admission().maximum_work(), None);
     let restricted = requirements(0, 1, 64, 7);
-    assert_eq!(
-        admit(automatic, restricted, 33, 40)
-            .unwrap()
-            .validator_work_admission()
-            .maximum_work(),
-        Some(7)
-    );
-    assert_eq!(
-        admit(restricted, automatic, 33, 40)
-            .unwrap()
-            .validator_work_admission()
-            .maximum_work(),
-        Some(7)
-    );
-    assert!(admit(requirements(0, 1, 64, 8), restricted, 33, 40).is_err());
-}
-
-#[test]
-fn handler_caps_cannot_inflate_the_installed_validator_allowance() {
-    let automatic = ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-        ApplicationCandidateResourceCeiling::representation_bytes(64),
-    );
-    let requested = requirements(0, 1, 64, 50);
-    for binding in [automatic, requirements(0, 1, 64, 100)] {
-        let admitted = WorthQueryCandidateReservation::admit(requested, binding, 33, 1, 64, 33)
-            .expect("a cap above installed need neither widens nor wastes host capacity");
-        assert_eq!(admitted.validator_work_admission().maximum_work(), Some(33));
+    for (requested, binding) in [(automatic, restricted), (restricted, automatic)] {
+        let admitted =
+            WorthQueryCandidateReservation::admit(requested, binding, 1, 64, None).unwrap();
+        assert_eq!(admitted.validator_work_admission().maximum_work(), Some(7));
     }
-    assert!(
-        WorthQueryCandidateReservation::admit(requested, requirements(0, 1, 64, 40), 33, 1, 64, 33)
-            .is_err(),
-        "an explicit request still cannot exceed the binding cap"
-    );
+    assert!(WorthQueryCandidateReservation::admit(
+        requirements(0, 1, 64, 8),
+        restricted,
+        1,
+        64,
+        None
+    )
+    .is_err());
+    let hosted =
+        WorthQueryCandidateReservation::admit(automatic, automatic, 1, 64, Some(5)).unwrap();
+    assert_eq!(hosted.validator_work_admission().maximum_work(), Some(5));
 }

@@ -4,7 +4,7 @@ use worth_query_declaration::facade::domain_computation::{
 };
 
 use super::compiled_contract::WorthQueryCompiledApplicationOperationContracts;
-use super::invariant_compilation::{candidate_validator_work, mutation_contracts};
+use super::invariant_compilation::mutation_contracts;
 use crate::application_operation::WorthQueryApplicationCandidateDemand;
 use crate::application_operation::WorthQuerySealedOperationContractCompilation;
 use crate::domain_computation::{
@@ -59,8 +59,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             candidate_demand,
             &invariant_invocations,
         )?;
-        let candidate_validator_work = candidate_validator_work(&invariant_execution)?;
-        let candidate_demand = candidate_demand.resolve_validator_work(candidate_validator_work)?;
         let overlap_index = WorthQueryOperationReadTouchOverlapIndex::new(
             graph_reads
                 .roles()
@@ -86,7 +84,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             invariants,
             decision_facts,
             invariant_execution,
-            candidate_validator_work,
             resources,
             decision_fact_budget,
             projection_work_budget,
@@ -133,16 +130,22 @@ fn application_resource_contract(
     candidate_demand: WorthQueryApplicationCandidateDemand,
 ) -> WorthQueryExecutionResourceContract {
     let semantic_width = decision_fact_budget.saturating_add(program_width).max(1) as u64;
+    let scale = WorthQuerySemanticScaleRequest::bounded(semantic_width).with(
+        WorthQuerySemanticScaleAxis::CandidateItems,
+        semantic_width.max(candidate_demand.candidate_items()),
+    );
+    let scale = match candidate_demand
+        .candidate_ceiling()
+        .and_then(|c| c.resources().maximum_validator_work())
+    {
+        Some(_) => scale.with(
+            WorthQuerySemanticScaleAxis::WorkItems,
+            candidate_demand.validator_work(),
+        ),
+        None => scale.without_work_budget(),
+    };
     let envelope = WorthQueryExecutionResourceEnvelope::new(
-        WorthQuerySemanticScaleRequest::bounded(semantic_width)
-            .with(
-                WorthQuerySemanticScaleAxis::CandidateItems,
-                semantic_width.max(candidate_demand.candidate_items()),
-            )
-            .with(
-                WorthQuerySemanticScaleAxis::WorkItems,
-                semantic_width.max(candidate_demand.validator_work()),
-            ),
+        scale,
         WorthQueryResourceLimitRequest::bounded(semantic_width)
             .with(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,

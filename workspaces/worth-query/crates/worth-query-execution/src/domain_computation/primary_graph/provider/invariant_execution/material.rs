@@ -6,6 +6,7 @@ use crate::domain_computation::{
 use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 
 pub(super) struct ApplicationInvariantCandidateMaterial {
+    pub(super) request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     pub(super) producer_required_invariants:
@@ -38,6 +39,7 @@ impl ApplicationInvariantCandidateMaterial {
         staged: &WorthQueryStagedApplicationAttempt<'_>,
     ) -> Result<Self, WorthQueryInvariantExecutionFailure> {
         Ok(Self {
+            request: staged.validation_request().clone(),
             semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
             requirements: staged.invariant_requirements().to_vec(),
             producer_required_invariants: staged.producer_required_invariants(),

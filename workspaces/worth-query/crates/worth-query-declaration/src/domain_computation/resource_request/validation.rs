@@ -5,10 +5,9 @@ use super::{
 pub(super) fn validate_resource_request(
     request: &WorthQueryExecutionResourceRequest,
 ) -> Result<(), &'static str> {
-    if WorthQuerySemanticScaleAxis::ALL
-        .iter()
-        .any(|axis| request.scale().get(*axis).is_none())
-    {
+    if WorthQuerySemanticScaleAxis::ALL.iter().any(|axis| {
+        *axis != WorthQuerySemanticScaleAxis::WorkItems && request.scale().get(*axis).is_none()
+    }) {
         return Err("incomplete-semantic-scale-request");
     }
     if WorthQueryResourceDimension::ALL

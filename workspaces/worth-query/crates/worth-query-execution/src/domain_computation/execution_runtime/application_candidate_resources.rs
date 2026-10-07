@@ -6,7 +6,7 @@ use std::num::NonZeroU64;
 pub struct WorthQueryApplicationCandidateResourceProfile {
     maximum_items: NonZeroU64,
     maximum_retained_representation_bytes: NonZeroU64,
-    maximum_validator_work: NonZeroU64,
+    maximum_validator_work: Option<NonZeroU64>,
     maximum_operation_width: NonZeroU64,
     maximum_producer_dependency_bytes: NonZeroU64,
 }
@@ -26,6 +26,19 @@ impl WorthQueryApplicationCandidateResourceProfile {
         maximum_retained_representation_bytes: u64,
         maximum_validator_work: u64,
     ) -> Result<Self, WorthQueryApplicationCandidateResourceProfileDenial> {
+        let mut profile =
+            Self::physical_resources(maximum_items, maximum_retained_representation_bytes)?;
+        profile.maximum_validator_work = Some(
+            NonZeroU64::new(maximum_validator_work)
+                .ok_or(WorthQueryApplicationCandidateResourceProfileDenial::ZeroValidatorWork)?,
+        );
+        Ok(profile)
+    }
+
+    fn physical_resources(
+        maximum_items: u64,
+        maximum_retained_representation_bytes: u64,
+    ) -> Result<Self, WorthQueryApplicationCandidateResourceProfileDenial> {
         use WorthQueryApplicationCandidateResourceProfileDenial as Denial;
         Ok(Self {
             maximum_items: NonZeroU64::new(maximum_items).ok_or(Denial::ZeroItems)?,
@@ -33,8 +46,7 @@ impl WorthQueryApplicationCandidateResourceProfile {
                 maximum_retained_representation_bytes,
             )
             .ok_or(Denial::ZeroRetainedRepresentationBytes)?,
-            maximum_validator_work: NonZeroU64::new(maximum_validator_work)
-                .ok_or(Denial::ZeroValidatorWork)?,
+            maximum_validator_work: None,
             maximum_operation_width: NonZeroU64::new(4_096)
                 .expect("the default operation width ceiling is nonzero"),
             maximum_producer_dependency_bytes: NonZeroU64::new(4 * 1_024 * 1_024)
@@ -70,8 +82,17 @@ impl WorthQueryApplicationCandidateResourceProfile {
         self.maximum_retained_representation_bytes.get()
     }
 
-    pub const fn maximum_validator_work(self) -> u64 {
-        self.maximum_validator_work.get()
+    /// Removes the host aggregate execution-work budget; physical capacities remain.
+    pub const fn without_validator_work_budget(mut self) -> Self {
+        self.maximum_validator_work = None;
+        self
+    }
+
+    pub const fn maximum_validator_work(self) -> Option<u64> {
+        match self.maximum_validator_work {
+            Some(value) => Some(value.get()),
+            None => None,
+        }
     }
 
     pub const fn maximum_operation_width(self) -> u64 {
@@ -85,7 +106,7 @@ impl WorthQueryApplicationCandidateResourceProfile {
 
 impl Default for WorthQueryApplicationCandidateResourceProfile {
     fn default() -> Self {
-        Self::bounded(4096, 4096, 4096).expect("default candidate limits are nonzero")
+        Self::physical_resources(4096, 4096).expect("default candidate capacities are nonzero")
     }
 }
 

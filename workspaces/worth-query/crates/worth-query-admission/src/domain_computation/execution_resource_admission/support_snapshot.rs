@@ -177,7 +177,7 @@ fn covers(
     admitted
         .scale_ceilings()
         .iter()
-        .all(|(axis, value)| value <= support.scale_ceiling(axis))
+        .all(|(axis, value)| support.admits_scale(axis, value))
         && admitted
             .resource_ceilings()
             .iter()

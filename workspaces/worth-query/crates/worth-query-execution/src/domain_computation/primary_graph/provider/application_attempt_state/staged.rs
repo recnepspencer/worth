@@ -1,6 +1,12 @@
 use super::{WorthQueryProposedFact, WorthQueryStagedApplicationAttempt};
 
 impl WorthQueryStagedApplicationAttempt<'_> {
+    pub(in crate::domain_computation::primary_graph::provider) fn validation_request(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        self.attempt.affinity().publication_request()
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn overlay_identity(&self) -> &str {
         self.overlay.identity()
     }

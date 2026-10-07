@@ -1,7 +1,9 @@
 #[path = "../examples/product_workflow_support/mod.rs"]
 pub mod product_workflow_support;
 
+mod execution_memory;
 mod mutation_attempt_report;
+mod optional_validator_work;
 mod transaction_staging;
 
 use product_workflow_support::adapters::ClockSource;

@@ -120,26 +120,6 @@ impl WorthQueryApplicationCandidateDemand {
         self.validator_work
     }
 
-    pub(in crate::application_operation) fn resolve_validator_work(
-        mut self,
-        derived_work: u64,
-    ) -> Result<Self, ()> {
-        if self
-            .candidate_ceiling
-            .is_some_and(|ceiling| ceiling.resources().maximum_validator_work().is_none())
-        {
-            let settlement = if self.workflow_settlement_ceiling.is_some() {
-                WORKFLOW_SETTLEMENT_VALIDATOR_WORK
-            } else {
-                0
-            };
-            self.validator_work = self
-                .validator_work
-                .max(derived_work.checked_add(settlement).ok_or(())?);
-        }
-        Ok(self)
-    }
-
     pub(in crate::application_operation) const fn candidate_ceiling(
         self,
     ) -> Option<ApplicationCandidateRequirements> {
@@ -203,43 +183,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn automatic_closure_reserves_workflow_sidecar_without_widening_explicit_caps() {
-        let requirements = ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(64),
-        );
-        let automatic = WorthQueryApplicationCandidateDemand {
-            candidate_ceiling: Some(requirements),
-            workflow_settlement_ceiling: Some(workflow_settlement_ceiling()),
-            ..Default::default()
-        };
-        assert_eq!(
-            automatic
-                .resolve_validator_work(33)
-                .unwrap()
-                .validator_work(),
-            46
-        );
-        assert!(automatic.resolve_validator_work(u64::MAX).is_err());
-        let explicit = WorthQueryApplicationCandidateDemand {
-            candidate_ceiling: Some(ApplicationCandidateRequirements::fixed_shape(
-                requirements.cardinality(),
-                ApplicationCandidateResourceCeiling::bounded(64, 7),
-            )),
-            validator_work: 20,
-            ..automatic
-        };
-        assert_eq!(
-            explicit
-                .resolve_validator_work(33)
-                .unwrap()
-                .validator_work(),
-            20
-        );
-    }
-
-    #[test]
-    fn any_automatic_binding_keeps_shared_operation_derivation_enabled() {
+    fn any_omitted_binding_keeps_shared_operation_work_budget_absent() {
         let automatic = ApplicationCandidateResourceCeiling::representation_bytes(16);
         let explicit = ApplicationCandidateResourceCeiling::bounded(32, 7);
         for resources in [

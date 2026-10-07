@@ -12,6 +12,7 @@ pub struct WorthQueryProductWorldResources {
     budgets: RuntimeWorldBudgets,
     clock: WorthQueryProductWorldClock,
     invalidation: super::super::WorthQueryInvalidationResources,
+    execution_authority: Option<std::sync::Arc<worth_execution::ExecutionAuthority>>,
 }
 
 impl WorthQueryProductWorldResources {
@@ -32,7 +33,18 @@ impl WorthQueryProductWorldResources {
             budgets,
             clock,
             invalidation,
+            execution_authority: None,
         }
+    }
+
+    /// Supplies the host's existing process authority to this World. Cloned
+    /// resources share that authority; Query constructs no replacement pool.
+    pub fn with_execution_authority(
+        mut self,
+        authority: std::sync::Arc<worth_execution::ExecutionAuthority>,
+    ) -> Self {
+        self.execution_authority = Some(authority);
+        self
     }
 
     pub fn invalidation_resources(&self) -> super::super::WorthQueryInvalidationResources {
@@ -45,8 +57,14 @@ impl WorthQueryProductWorldResources {
         RuntimeWorldBudgets,
         WorthQueryProductWorldClock,
         super::super::WorthQueryInvalidationResources,
+        Option<std::sync::Arc<worth_execution::ExecutionAuthority>>,
     ) {
-        (self.budgets, self.clock, self.invalidation)
+        (
+            self.budgets,
+            self.clock,
+            self.invalidation,
+            self.execution_authority,
+        )
     }
 
     #[cfg(test)]

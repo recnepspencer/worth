@@ -22,6 +22,16 @@ pub struct WorthQueryInMemoryApplicationLimits {
 }
 
 impl WorthQueryInMemoryApplicationLimits {
+    /// Installs the caller's process execution authority in the application's
+    /// World on fresh installation or checkpoint reopen, without changing policy.
+    pub fn with_execution_authority(
+        mut self,
+        authority: std::sync::Arc<worth_execution::ExecutionAuthority>,
+    ) -> Self {
+        self.world = self.world.with_execution_authority(authority);
+        self
+    }
+
     pub const fn new(
         world: WorthQueryProductWorldResources,
         candidates: WorthQueryApplicationCandidateResourceProfile,

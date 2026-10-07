@@ -16,8 +16,10 @@ use super::{equivalence::EquivalenceRegistry, CancellationToken, EquivalencePred
 static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
 mod limits;
+mod memory_reservation;
 mod retained;
 mod worker_context;
+pub use memory_reservation::ExecutionMemoryReservation;
 thread_local! {
     static ACTIVE_WORKER: RefCell<Vec<(usize, u64)>> = const { RefCell::new(Vec::new()) };
 }
