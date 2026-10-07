@@ -94,6 +94,16 @@ producer must read and revalidate its inputs before current delivery. Capturing 
 stored output does not establish that it is current. Family publication order
 selects the active output, so an older Initial row cannot displace its Preserve
 successor or a distinct output family.
+Capture keeps accepted payloads only for that selected native family head, across
+both newly accepted and recovered records. Canonical checkpoint row order is not
+publication order. After fresh installation, an ordinary `current_output` read
+can verify the retained head before any output demand. Its source facts and
+native output witness must still agree with the selected observation; changed
+tracked source facts or native output evidence deny the stale publication rather
+than reviving an older Initial row.
+Earlier checkpoints that retained competing bindings without their publication
+order do not acquire ordering proof from a new reader. This capture rule does not
+retrospectively reconstruct lost lineage or guarantee repair of those archives.
 Capture admits the required native prior locators before best-effort reuse facts.
 If those optional facts exhaust their remaining allowance, the checkpoint retains
 prior custody and the output starts fresh after reopening.

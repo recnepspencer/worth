@@ -23,6 +23,7 @@ use super::*;
 mod cached_locator_checkpoint;
 #[cfg(feature = "test-query-execution-observer")]
 mod clean_reuse;
+mod current_family_output;
 mod current_output;
 mod demand_contact;
 mod demand_policy;
