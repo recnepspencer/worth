@@ -4,7 +4,12 @@ on:
   push:
     branches: [ master, main ]
   pull_request:
-    branches: [ master, main ]
+    branches:
+      - master
+      - main
+      # SDK increments target these branches while their prerequisites await CI.
+      - codex/query-bounded-package-identity-2026-10-07
+      - codex/query-retired-output-readiness-2026-10-07
   workflow_dispatch:
 
 permissions:
@@ -54,6 +59,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      # Admitted canonical preparation requires the audited std-sort implementation
+      # selected by worth-foundational/build.rs. Other compilers remain refused.
+      - uses: dtolnay/rust-toolchain@1.94.0
+      - name: Record the audited compiler identity
+        run: rustc --version --verbose
       # The default run proves the shipped build. The featured run is not a
       # superset of it: test-invalidation-equivalence also runs a full
       # verification under the same admission, so exhaustion behaves
