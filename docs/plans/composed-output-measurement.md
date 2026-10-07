@@ -86,3 +86,28 @@ optimization level two. Formatting, dirty Rust line caps, context and whitespace
 checks passed. Boundary checking reproduced the same six existing UI source
 reachability findings as the baseline, with no diagnostic-scope finding.
 Receiving-host measurements and any behavioral repair remain separate gates.
+
+## Bounded attribution refinement
+
+Recoverable byte denials can consume all four dumps before the final
+required-wave mapper or a missing prerequisite is reached. Reserve one dump for
+byte denial, one for the required-wave mapper, and two for missing prerequisites,
+while preserving the four-dump process maximum and the same ring/trace bounds.
+The private diagnostic module alone owns these observational counters.
+
+The removal event currently identifies the shared obligation helper, which has
+several cleanup and lifecycle callers. Propagate `track_caller` through both
+release wrappers, their inner helper and the matching-release helper to expose
+the original immediate caller in the existing event. Do not add new events or
+change release conditions, custody or accounting. Verify the revised source with
+independent review, focused existing admission/prerequisite/posting controls and
+the same guards before a local diagnostic-only commit. Current integration-cut
+phase attribution must come from its own completed receiving trace; an earlier
+whole-tree test failure does not establish which settlement phase failed.
+
+Refinement source review accepted the fixed per-class counters and caller
+propagation. The same seven focused test runs passed, including zero diagnostic
+output when disabled and during successful posting controls. Formatting, dirty
+line caps, context and whitespace checks passed. The combined byte/mapper/missing
+quota sequence remains a receiving-runtime measurement gate, rather than a claim
+derived from these separate focused processes.

@@ -13,11 +13,21 @@ use super::output_lineage::RecordedSettlementIdentity;
 
 const EVENTS: usize = 128;
 const DUMPS: usize = 4;
+const CLASS_DUMPS: [usize; 3] = [1, 1, 2];
+
+#[derive(Clone, Copy)]
+enum DumpClass {
+    Bytes,
+    RequiredWave,
+    Missing,
+}
+
 static ENABLED: OnceLock<bool> = OnceLock::new();
 static TRACE: Mutex<Trace> = Mutex::new(Trace {
     events: [const { None }; EVENTS],
     sequence: 0,
     dumps: 0,
+    class_dumps: [0; 3],
 });
 
 fn enabled() -> bool {
@@ -47,6 +57,7 @@ struct Trace {
     events: [Option<(u64, Event)>; EVENTS],
     sequence: u64,
     dumps: usize,
+    class_dumps: [usize; 3],
 }
 
 /// Prepare before a posting transfers its existing inputs; record after success.
@@ -82,9 +93,10 @@ pub(super) fn missing(
     publication: &'static Location<'static>,
 ) {
     record(event("missing-prerequisite", identity, Some(downstream)));
-    dump(format_args!(
-        "missing exact prerequisite; publication={publication}"
-    ));
+    dump(
+        DumpClass::Missing,
+        format_args!("missing exact prerequisite; publication={publication}"),
+    );
 }
 
 /// Called outside the meter lock; all totals and the original stop are unchanged.
@@ -97,7 +109,7 @@ pub(super) fn preparation_denied(
     if !enabled() {
         return;
     }
-    dump(format_args!(
+    dump(DumpClass::Bytes, format_args!(
         "preparation stop={stop:?}; current={current}; charge={charge}; required={:?}; maximum={maximum}",
         current.checked_add(charge),
     ));
@@ -105,23 +117,26 @@ pub(super) fn preparation_denied(
 
 pub(super) fn required_stop(stop: &CompanionPreflightStop) {
     if enabled() {
-        dump(format_args!(
-            "required-wave original admission stop={stop:?}"
-        ));
+        dump(
+            DumpClass::RequiredWave,
+            format_args!("required-wave original admission stop={stop:?}"),
+        );
     }
 }
 
-fn dump(reason: fmt::Arguments<'_>) {
+fn dump(class: DumpClass, reason: fmt::Arguments<'_>) {
     if !enabled() {
         return;
     }
     let mut trace = TRACE
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if trace.dumps == DUMPS {
+    let class = class as usize;
+    if trace.dumps == DUMPS || trace.class_dumps[class] == CLASS_DUMPS[class] {
         return;
     }
     trace.dumps += 1;
+    trace.class_dumps[class] += 1;
     eprintln!(
         "WQ-COMPOSED dump={} events={} overwritten={} {reason}",
         trace.dumps,

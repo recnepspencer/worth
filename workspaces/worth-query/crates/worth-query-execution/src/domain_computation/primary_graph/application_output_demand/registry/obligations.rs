@@ -36,6 +36,7 @@ impl DemandRecord {
 impl DemandRegistryState {
     /// Release one terminal output's framework claims while the registry lock
     /// is held. Return the old Arc pointers for destruction after that lock.
+    #[track_caller]
     pub(super) fn release_record_prerequisites(
         &mut self,
         key: &WorthQueryOutputDemandKey,
@@ -61,6 +62,7 @@ impl DemandRegistryState {
         std::iter::once(upstream.clone()).chain(newest)
     }
 
+    #[track_caller]
     pub(super) fn release_record_prerequisites_detached(
         &mut self,
         key: &WorthQueryOutputDemandKey,
@@ -74,6 +76,7 @@ impl DemandRegistryState {
         self.release_record_prerequisites_inner(key, Some(retired_members))
     }
 
+    #[track_caller]
     fn release_record_prerequisites_inner(
         &mut self,
         key: &WorthQueryOutputDemandKey,
@@ -140,6 +143,7 @@ impl DemandRegistryState {
     /// A branch-wide retirement already visits its records. Move the retired
     /// prerequisite vectors out in that walk, then release their upstream
     /// claims in a second pass so no record is mutably aliased with another.
+    #[track_caller]
     pub(super) fn release_matching_prerequisites(
         &mut self,
         retired: impl Fn(&WorthQueryOutputDemandKey, &DemandRecord) -> bool,
