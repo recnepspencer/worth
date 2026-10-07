@@ -185,16 +185,18 @@ fn partitions_whose_declared_bytes_do_not_sum_are_denied_and_the_next_demand_is_
     let one_region = [entry(1, 1, 2.0), entry(2, 1, 3.0)];
     let sets: facts::Sets<'_> = &[("two-regions", &two_regions), ("one-region", &one_region)];
     with_totals::<UnboundedBytesOwner>(sets, |demand| {
-        let unsummable = || -> RegionOutcome {
-            Err(WorthQueryPartitionedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::CapacityOverflow,
-            ))
+        let refused = |denial| -> RegionOutcome {
+            Err(WorthQueryPartitionedComputationDenial::Resource(denial))
         };
+        let unsummable = || refused(WorthQueryManagedComputationResourceDenial::CapacityOverflow);
         assert_eq!(demand("two-regions"), unsummable());
         // One partition's capacity is a sum of its own, and the reduction's
-        // bound over that many bytes is not: execution refuses the run with
-        // that same cause.
-        assert_eq!(demand("one-region"), unsummable());
+        // bound over that many bytes is not: the authority cannot add that
+        // reservation to its byte counter, and execution names that cause.
+        assert_eq!(
+            demand("one-region"),
+            refused(WorthQueryManagedComputationResourceDenial::ChargedBytesOverflow)
+        );
         assert_eq!(demand("two-regions"), unsummable());
     });
 }

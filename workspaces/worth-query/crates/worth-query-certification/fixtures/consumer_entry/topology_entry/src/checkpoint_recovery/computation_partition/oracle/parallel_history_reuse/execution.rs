@@ -51,15 +51,18 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
                 )
             });
             let runs = observations.into_iter().map(|(run, _)| run);
+            let value = outcome.as_ref().ok().map(|(bits, _)| *bits);
             room().push(OracleRun {
+                published: Vec::new(),
                 outcome,
                 runs: runs.collect(),
                 calls: take_calls(),
             });
+            value
         });
         setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(
-            RegionTotalsHandler::idle(),
+            super::super::super::demand::RegionTotalsHandler::idle(),
         )?;
         setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
         setup.producer::<RegionOutputProducer<CheckpointSchema>>(RegionOutputProvider)?;
@@ -110,7 +113,8 @@ pub(super) fn install_after_authority_issuances(
     let candidates =
         worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
             host.maximum_items().max(width),
-            host.maximum_retained_representation_bytes().max(width),
+            host.maximum_retained_representation_bytes()
+                .max((1024 * LARGEST_SET + 320 * 256) as u64),
             host.maximum_validator_work().max(width),
         )
         .and_then(|candidates| candidates.with_maximum_operation_width(width))
@@ -171,16 +175,10 @@ pub(super) fn edit(
     edit: EntryEdit,
     command: u64,
 ) {
-    let observed = request
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .expect("the edit's source is readable");
     let made = format!("{edit:?}");
     let outcome = request
         .mutate(edit.commanded(command))
-        .expect_source(observed.observed_sources()[0].clone())
+        .without_source()
         .idempotency(&command)
         .execute_in_program::<HistoryProgram>(application);
     assert!(

@@ -102,7 +102,7 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
             WorthQueryPartitionedComputationFullCause as Cause,
             WorthQueryPartitionedComputationRun as Run,
         };
-        let [(Run::Full(Cause::NoPriorRecord), Some(report))] = reports.as_slice() else {
+        let [(Run::Full(Cause::Unretained), Some(report))] = reports.as_slice() else {
             panic!("exactly one full computation run per completed member: {reports:?}");
         };
         let reduction = super::structural_cost::reduction_work(&super::computation::identities(
