@@ -77,35 +77,6 @@ impl<T> Run<T> {
         self.cursor.set(index + 1);
         self.slots[index].borrow_mut().take().unwrap()
     }
-    /// Only the bounded author chunk is sorted in place; no N-wide shifting.
-    pub(in crate::domain_computation::primary_graph) fn sort_chunk(
-        &self,
-        policy: super::StorageControl<'_, '_>,
-    ) -> Result<(), StoreDenial> {
-        for index in 1..self.used {
-            let mut at = index;
-            while at > 0 {
-                policy.check_live()?;
-                let out_of_order = self.slots[at - 1]
-                    .borrow()
-                    .as_ref()
-                    .unwrap()
-                    .key
-                    .compare(&self.slots[at].borrow().as_ref().unwrap().key, policy)?
-                    .is_gt();
-                if !out_of_order {
-                    break;
-                }
-                std::mem::swap(
-                    &mut *self.slots[at - 1].borrow_mut(),
-                    &mut *self.slots[at].borrow_mut(),
-                );
-                at -= 1;
-            }
-        }
-        policy.check_live()?;
-        Ok(())
-    }
     pub(in crate::domain_computation::primary_graph) fn merge(
         left: Self,
         right: Self,

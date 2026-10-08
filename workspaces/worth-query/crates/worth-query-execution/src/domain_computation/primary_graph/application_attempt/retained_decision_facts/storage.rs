@@ -78,7 +78,7 @@ impl<T> RetainedFactStore<T> {
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
     ) -> Result<(), StoreDenial> {
         policy.check_live()?;
-        let Some(value) = self.resolve_existing(&key, value, duplicate, policy)? else {
+        let Some((value, position)) = self.resolve_existing(&key, value, duplicate, policy)? else {
             policy.check_live()?;
             return Ok(());
         };
@@ -89,13 +89,25 @@ impl<T> RetainedFactStore<T> {
         if self.chunk.is_none() {
             self.chunk = Some(Run::empty(AUTHOR_CHUNK, policy)?);
         }
-        let chunk = self.chunk.as_mut().unwrap();
-        *chunk.slots[chunk.used].borrow_mut() = Some(RetainedFact {
+        // Stamp arrival order before moving any complete records in the chunk.
+        let record = RetainedFact {
             key,
             value,
             #[cfg(test)]
             ordinal: self.count,
-        });
+        };
+        let chunk = self.chunk.as_mut().unwrap();
+        // Move the vacant tail slot toward the admitted insertion position.
+        // A stop between moves poisons insert(), so partial state cannot finish.
+        for index in (position..chunk.used).rev() {
+            policy.check_live()?;
+            std::mem::swap(
+                &mut *chunk.slots[index].borrow_mut(),
+                &mut *chunk.slots[index + 1].borrow_mut(),
+            );
+        }
+        policy.check_live()?;
+        *chunk.slots[position].borrow_mut() = Some(record);
         chunk.used += 1;
         self.count = count;
         policy.check_live()?;
@@ -111,26 +123,20 @@ impl<T> RetainedFactStore<T> {
         value: T,
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
         policy: super::StorageControl<'_, '_>,
-    ) -> Result<Option<T>, StoreDenial> {
+    ) -> Result<Option<(T, usize)>, StoreDenial> {
         let mut value = Some(value);
         let mut duplicate = Some(duplicate);
-        for slot in self
-            .chunk
-            .iter()
-            .flat_map(|chunk| chunk.slots.iter().take(chunk.used))
-        {
-            if slot
-                .borrow()
-                .as_ref()
-                .unwrap()
-                .key
-                .compare(key, policy)?
-                .is_eq()
-            {
-                Self::resolve_slot(slot, value.take().unwrap(), duplicate.take().unwrap())?;
+        let position = match self.author_position(key, policy)? {
+            Ok(index) => {
+                Self::resolve_slot(
+                    &self.chunk.as_ref().unwrap().slots[index],
+                    value.take().unwrap(),
+                    duplicate.take().unwrap(),
+                )?;
                 return Ok(None);
             }
-        }
+            Err(position) => position,
+        };
         if let Some(slot) = self
             .seed
             .as_ref()
@@ -155,7 +161,36 @@ impl<T> RetainedFactStore<T> {
                 return Ok(None);
             }
         }
-        Ok(value)
+        Ok(value.map(|value| (value, position)))
+    }
+    /// Binary-search the sorted, bounded author chunk. An absent key carries its
+    /// insertion position through the remaining seed/directory absence checks.
+    fn author_position(
+        &self,
+        key: &AdmittedFactKey,
+        policy: super::StorageControl<'_, '_>,
+    ) -> Result<Result<usize, usize>, StoreDenial> {
+        policy.check_live()?;
+        let Some(chunk) = &self.chunk else {
+            return Ok(Err(0));
+        };
+        let mut low = 0;
+        let mut high = chunk.used;
+        while low < high {
+            let middle = low + (high - low) / 2;
+            match chunk.slots[middle]
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .key
+                .compare(key, policy)?
+            {
+                std::cmp::Ordering::Less => low = middle + 1,
+                std::cmp::Ordering::Greater => high = middle,
+                std::cmp::Ordering::Equal => return Ok(Ok(middle)),
+            }
+        }
+        Ok(Err(low))
     }
     fn resolve_slot(
         slot: &Slot<T>,
@@ -169,7 +204,6 @@ impl<T> RetainedFactStore<T> {
     fn flush(&mut self, policy: super::StorageControl<'_, '_>) -> Result<(), StoreDenial> {
         let next = Run::empty(AUTHOR_CHUNK, policy)?;
         let mut carry = self.chunk.replace(next).unwrap();
-        carry.sort_chunk(policy)?;
         let mut level = 0;
         loop {
             if self.directory.is_none() {
@@ -194,9 +228,6 @@ impl<T> RetainedFactStore<T> {
     ) -> Result<ExecutionArray<RetainedFact<T>>, StoreDenial> {
         if let Some(denial) = &self.failure {
             return Err(denial.clone());
-        }
-        if let Some(chunk) = &self.chunk {
-            chunk.sort_chunk(policy)?;
         }
         policy.check_live()?;
         let mut output = ExecutionArrayBuilder::allocate(self.count, policy.policy())?;

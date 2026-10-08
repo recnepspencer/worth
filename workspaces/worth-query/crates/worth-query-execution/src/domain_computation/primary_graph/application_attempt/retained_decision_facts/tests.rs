@@ -3,6 +3,7 @@
 //! test targets' process authority; linking/runtime remain root-owned.
 use super::{restore_authored_order, AdmittedFactKey, RetainedFactStore, StoreDenial};
 use worth_execution::ExecutionAllocationPolicy as Policy;
+mod author_chunk;
 mod capture;
 mod custody;
 mod endpoints;
