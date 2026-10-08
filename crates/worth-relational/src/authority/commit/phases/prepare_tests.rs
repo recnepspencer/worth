@@ -40,7 +40,9 @@ fn sparse_entity_slots_accepts_multi_partition_update_batches() {
         update_intent(3, 9),
     ]);
 
-    let sparse = sparse_entity_slots_for_plan(PartitionCloneMode::EntityOnly, &plan, None)
+    let selection = sparse_entity_slots_for_plan(PartitionCloneMode::EntityOnly, &plan, None);
+    let sparse = selection
+        .selected_slots()
         .expect("multi-partition entity batch should stay on sparse path");
 
     assert_eq!(sparse.len(), 3);
@@ -73,7 +75,9 @@ fn sparse_layout_selection_uses_sparse_slot_count_not_full_partition_clone_width
 fn sparse_entity_slots_keep_updates_and_revalidation_demands_on_the_narrow_path() {
     let plan = merged_plan(vec![update_intent(1, 3), revalidation_intent(1, 11)]);
 
-    let sparse = sparse_entity_slots_for_plan(PartitionCloneMode::EntityOnly, &plan, None)
+    let selection = sparse_entity_slots_for_plan(PartitionCloneMode::EntityOnly, &plan, None);
+    let sparse = selection
+        .selected_slots()
         .expect("an update plus an unchanged-record demand remains sparse");
 
     assert_eq!(
