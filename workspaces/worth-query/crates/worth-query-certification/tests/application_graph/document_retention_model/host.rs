@@ -27,6 +27,7 @@ mod world_resources;
 use world_resources::world_resources;
 
 use super::assessment_output::{
+    OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,
     RetentionAssessmentBinding, RetentionAssessmentHandler, RetentionAssessmentProducer,
     RetentionAssessmentProvider,
 };
@@ -109,6 +110,11 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
             })
             .and_then(|()| {
                 setup.handler::<RetentionAssessmentBinding, _>(RetentionAssessmentHandler)
+            })
+            .and_then(|()| {
+                setup.handler::<OrdinaryRetentionAssessmentBinding, _>(
+                    OrdinaryRetentionAssessmentHandler,
+                )
             })
             .and_then(|()| {
                 setup.producer::<RetentionAssessmentProducer>(RetentionAssessmentProvider)

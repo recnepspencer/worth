@@ -1,4 +1,7 @@
 use std::sync::Arc;
+mod native_denial;
+use native_denial::NativeDenial;
+use worth_execution::ExecutionAllocationDenial;
 
 /// Why an installed custom invariant refused a candidate.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -26,6 +29,8 @@ pub enum WorthQueryCustomInvariantDenial {
 /// amount the attempt needed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantExecutionDenialKind {
+    /// Physical backing refusal; the original owner cause is retained separately.
+    AllocationDenied,
     /// No installed invariant requirement exists for the requested slot.
     InvariantNotInstalled,
     /// The requirement's executor role is not the role of the provider running
@@ -151,6 +156,7 @@ pub struct WorthQueryInvariantExecutionFailure {
     posture: WorthQueryInvariantExecutionFailurePosture,
     detail: Arc<str>,
     custom_invariant: Option<WorthQueryCustomInvariantDenial>,
+    native: Option<NativeDenial>,
 }
 
 impl WorthQueryInvariantExecutionFailure {
@@ -161,6 +167,7 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Denied,
             detail: detail.into(),
             custom_invariant: None,
+            native: None,
         }
     }
 
@@ -173,6 +180,7 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Exhausted,
             detail: detail.into(),
             custom_invariant: None,
+            native: None,
         }
     }
 
@@ -185,9 +193,45 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Denied,
             detail: detail.into(),
             custom_invariant: Some(custom_invariant),
+            native: None,
         }
     }
 
+    pub(crate) fn native_staging(
+        denial: worth_relational::facade::mvcc::RelationalTransactionStagingDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Staging(denial), detail)
+    }
+    pub(crate) fn physical_allocation(
+        denial: ExecutionAllocationDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Allocation(denial), detail)
+    }
+    fn native_denied(native: NativeDenial, detail: impl Into<Arc<str>>) -> Self {
+        let (kind, posture) = native.classification();
+        Self {
+            kind,
+            posture,
+            detail: detail.into(),
+            custom_invariant: None,
+            native: Some(native),
+        }
+    }
+    /// Exact physical owner cause, including its original checked quote.
+    pub fn allocation_denial(&self) -> Option<&ExecutionAllocationDenial> {
+        self.native.as_ref().and_then(NativeDenial::allocation)
+    }
+    /// Original native staging refusal, including input-directory/count failures.
+    pub fn relational_staging_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalTransactionStagingDenial> {
+        match self.native.as_ref() {
+            Some(NativeDenial::Staging(denial)) => Some(denial),
+            _ => None,
+        }
+    }
     /// Why execution stopped.
     pub fn kind(&self) -> WorthQueryInvariantExecutionDenialKind {
         self.kind

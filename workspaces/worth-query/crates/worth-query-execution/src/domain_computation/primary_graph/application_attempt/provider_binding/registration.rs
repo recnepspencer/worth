@@ -32,6 +32,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    source_fact_rebase: crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase,
     output_currentness_facts: Option<
         std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
     >,
@@ -71,6 +72,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     authorization: crate::domain_computation::authorization::WorthQueryProviderAuthorizationDecisionFacts,
     attempt_basis: super::super::provider_execution::WorthQueryApplicationAttemptBasis,
     context: WorthQueryProviderAttemptRegistrationContext<'_, Schema, Operation, Input, Scope>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryRegisteredProviderAttempt<'run>, WorthQueryProviderProgressionOutcome> {
     let inspection = WorthQueryProviderRegistrationInspectionPermit::mint();
     let WorthQueryPreparedApplicationProviderAttempt {
@@ -105,6 +107,27 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             );
         }
     };
+    let source_facts = match &output_currentness_facts {
+        Some(facts) => facts.to_vec(),
+        None => decision_facts
+            .facts()
+            .values()
+            .filter_map(|fact| fact.observed_source_fact().cloned())
+            .collect(),
+    };
+    // Exact existing observed_source_facts() order after authorization merge.
+    // Temporary Vec/other nested heaps remain separately uncharged.
+    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
+    let source_fact_rebase = match crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
+        source_facts,
+        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request())),
+    ) {
+        Ok(prepared) => prepared,
+        Err(denial) => {
+            let _ = staged.abort();
+            return Err(WorthQueryProviderProgressionOutcome::Denied(super::super::WorthQueryApplicationCommitDenial::source_rebase_denied(denial)));
+        }
+    };
     let expected_steps = effects.shared_expected_steps();
     let dispatch_outbox = context.provider(&inspection).register_application_attempt(
         WorthQueryApplicationAttemptRegistration {
@@ -134,6 +157,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             retain_client_observation,
             producer_required_invariants,
             output_currentness_facts,
+            source_fact_rebase,
             consumed_outputs,
         },
     );

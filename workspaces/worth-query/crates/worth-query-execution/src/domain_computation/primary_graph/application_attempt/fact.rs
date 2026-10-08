@@ -16,7 +16,6 @@ pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacenc
 pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
-pub(in crate::domain_computation::primary_graph) use dependency_key::WorthQueryApplicationFactStorageKey;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::currentness_with_remaining as indexed_selection_currentness;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
@@ -90,7 +89,7 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,
         native_revision: Option<worth_relational::facade::identity::VersionId>,
         comparison_work_limit: usize,
-        endpoints: Vec<EntityId>,
+        endpoints: super::WorthQueryApplicationSourceAdjacencyEndpoints,
     },
     Entity {
         entity_id: EntityId,
@@ -379,5 +378,14 @@ impl WorthQueryApplicationObservedFact {
                 *transition_count,
             ),
         }
+    }
+}
+
+impl WorthQueryApplicationObservedFact {
+    pub(in crate::domain_computation::primary_graph) fn write_dependency_locator(
+        &self,
+        output: &mut dyn std::fmt::Write,
+    ) -> std::fmt::Result {
+        locator_identity::write(self, output)
     }
 }

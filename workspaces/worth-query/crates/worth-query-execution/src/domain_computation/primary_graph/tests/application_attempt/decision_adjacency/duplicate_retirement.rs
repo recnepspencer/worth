@@ -23,22 +23,30 @@ fn reused_relation_key_is_denied_during_public_authoring() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, principal| {
-            reader
-                .decision_relations_from(AccountOwner::reference(), principal)
-                .unwrap();
-            let account = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_owned())
-                .unwrap();
-            reader
-                .require_decision_field(&account, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, principal| {
+                reader
+                    .decision_relations_from(AccountOwner::reference(), principal)
+                    .unwrap();
+                let account = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                    .unwrap();
+                reader
+                    .require_decision_field(&account, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -93,16 +101,24 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, principal| {
-            reader
-                .decision_relations_from(AccountOwner::reference(), principal)
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, principal| {
+                reader
+                    .decision_relations_from(AccountOwner::reference(), principal)
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

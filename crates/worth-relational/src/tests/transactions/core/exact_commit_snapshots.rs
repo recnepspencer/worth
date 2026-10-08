@@ -126,9 +126,14 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
             crate::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .unwrap();
-    transaction.push_batch(batch_create("second")).unwrap();
+    transaction
+        .push_batch(
+            batch_create("second"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     assert!(matches!(
-        transaction.commit(&runtime),
+        transaction.commit(&runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,),
         Err(crate::facade::transactions::TransactionCommitError::PublicationDeferred {
             deferred:
                 crate::facade::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted {

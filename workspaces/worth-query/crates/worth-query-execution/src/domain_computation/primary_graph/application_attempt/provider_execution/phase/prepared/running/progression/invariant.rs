@@ -11,6 +11,7 @@ pub(super) fn progress_invariant_candidate<'run>(
     provider: &std::sync::Arc<
         crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     >,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
     WorthQueryProviderProgressionOutcome,
@@ -43,7 +44,7 @@ pub(super) fn progress_invariant_candidate<'run>(
         })
         .collect::<Result<Vec<_>, _>>();
     let _candidate_admission = match provider
-        .admit_primary_candidate(inspection.provider_session_view())
+        .admit_primary_candidate(inspection.provider_session_view(), allocation_policy)
     {
         Ok(admission) => admission,
         Err(failure) => {

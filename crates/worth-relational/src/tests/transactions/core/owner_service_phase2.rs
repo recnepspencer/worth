@@ -1,5 +1,6 @@
 use std::sync::{mpsc, Arc, Barrier};
 use std::time::Duration;
+use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 use crate::tests::support::*;
 
@@ -41,11 +42,17 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
     let mut paused_transaction =
         begin_transaction_with_control(&runtime, "paused-preparation", control);
     paused_transaction
-        .push_batch(batch_create("paused-preparation-write"))
+        .push_batch(
+            batch_create("paused-preparation-write"),
+            Allocation::SystemAllocation,
+        )
         .expect("paused transaction stages");
     let mut progressing_transaction = begin_transaction(&runtime, "progressing-preparation");
     progressing_transaction
-        .push_batch(batch_create("progressing-preparation-write"))
+        .push_batch(
+            batch_create("progressing-preparation-write"),
+            Allocation::SystemAllocation,
+        )
         .expect("progressing transaction stages");
 
     let paused_cell = runtime
@@ -56,8 +63,9 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
     let paused_waits_before = paused_cell.coordination().wait_count();
     let preparation = runtime.preparation_port();
     let paused_port = preparation.clone();
-    let paused_thread =
-        std::thread::spawn(move || paused_port.prepare_branch_transaction(paused_transaction));
+    let paused_thread = std::thread::spawn(move || {
+        paused_port.prepare_branch_transaction(paused_transaction, Allocation::SystemAllocation)
+    });
 
     reached.wait();
     assert!(
@@ -65,7 +73,7 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
         "branch A remains paused in preparation"
     );
     let progressing_candidate = preparation
-        .prepare_branch_transaction(progressing_transaction)
+        .prepare_branch_transaction(progressing_transaction, Allocation::SystemAllocation)
         .expect("branch B prepares while branch A is paused");
     assert!(
         !paused_thread.is_finished(),
@@ -264,18 +272,24 @@ fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
 
     let mut first = begin_transaction(&runtime, "symbol-sharing-a");
     first
-        .push_batch(batch_create("clone-shared-symbol-a"))
+        .push_batch(
+            batch_create("clone-shared-symbol-a"),
+            Allocation::SystemAllocation,
+        )
         .expect("first symbol transaction stages");
     let mut second = begin_transaction(&runtime, "symbol-sharing-b");
     second
-        .push_batch(batch_create("clone-shared-symbol-b"))
+        .push_batch(
+            batch_create("clone-shared-symbol-b"),
+            Allocation::SystemAllocation,
+        )
         .expect("second symbol transaction stages");
 
     let first_candidate = cloned_preparation
-        .prepare_branch_transaction(first)
+        .prepare_branch_transaction(first, Allocation::SystemAllocation)
         .expect("port clone prepares the first symbol");
     let second_candidate = preparation
-        .prepare_branch_transaction(second)
+        .prepare_branch_transaction(second, Allocation::SystemAllocation)
         .expect("original port prepares the second symbol");
     let symbols = runtime.config().identity.symbol_table;
     let first_symbol = symbols
@@ -307,7 +321,10 @@ fn phase2_ports_deny_after_their_runtime_owner_closes() {
     create_entity(&runtime, "phase2-owner-close-anchor");
     let mut transaction = begin_transaction(&runtime, "main");
     transaction
-        .push_batch(batch_create("phase2-owner-close-write"))
+        .push_batch(
+            batch_create("phase2-owner-close-write"),
+            Allocation::SystemAllocation,
+        )
         .expect("owner-close transaction stages");
     let preparation = runtime.preparation_port();
     let forking = runtime.fork_port();
@@ -318,7 +335,7 @@ fn phase2_ports_deny_after_their_runtime_owner_closes() {
     drop(runtime);
 
     assert!(matches!(
-        preparation.prepare_branch_transaction(transaction),
+        preparation.prepare_branch_transaction(transaction, Allocation::SystemAllocation,),
         Err(crate::transactions::data::TransactionCommitError::PublicationDenied {
             denial: crate::mvcc::RelationalPublicationDenial::OwnerUnavailable {
                 runtime_instance_id: observed,

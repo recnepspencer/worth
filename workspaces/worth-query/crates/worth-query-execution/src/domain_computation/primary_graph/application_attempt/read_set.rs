@@ -182,13 +182,14 @@ where
     ///         Schema, SecondOperation,
     ///     >,
     /// ) {
-    ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection);
+    ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     /// }
     /// ```
     pub fn begin_projected_application_read_attempt<Operation, Input, Scope>(
         &self,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
             Schema,
@@ -231,10 +232,15 @@ where
         let (lease, projected_scope, expected_facts, dependent_source_facts, consumed_outputs) =
             projection.into_lease_and_realized_scope();
         let mut admission = admission;
+        let admitted_source_facts = validate_source_facts(&mut admission, &lease)?;
         let source_facts = merge_source_facts(
-            validate_source_facts(&mut admission, &lease)?,
+            admitted_source_facts,
             dependent_source_facts,
             admission.operation(),
+            super::retained_decision_facts::StorageControl::new(
+                allocation_policy,
+                Some(admission.publication_request()),
+            ),
         )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {

@@ -17,10 +17,16 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
         )
         .expect("reader-race transaction binds");
     transaction
-        .push_batch(batch_create("atomic-reader-new-root"))
+        .push_batch(
+            batch_create("atomic-reader-new-root"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("reader-race candidate prepares");
     let publication_cell = candidate.publication_cell_for_test();
     let publication_gate = Arc::clone(publication_cell.coordination());
@@ -147,10 +153,16 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
         )
         .expect("fork-race transaction binds");
     transaction
-        .push_batch(batch_create("fork-race-new-root"))
+        .push_batch(
+            batch_create("fork-race-new-root"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("fork-race candidate prepares");
     let publication_cell = candidate.publication_cell_for_test();
     let publication_gate = Arc::clone(publication_cell.coordination());

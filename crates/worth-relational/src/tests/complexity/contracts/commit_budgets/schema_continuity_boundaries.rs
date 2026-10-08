@@ -33,9 +33,16 @@ fn complexity_budget_schema_transition_classification_is_changed_atom_bounded() 
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.schema_transition_atoms_inspected, 1);
@@ -77,9 +84,16 @@ fn complexity_budget_subscriber_resume_continuity_is_boundary_local() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     runtime.performance_access().reset_counters();
     let _ = runtime
@@ -128,9 +142,17 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("after-boundary"))
-        .expect("test staging stays within configured resource budgets");
-    let transitioned = txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("after-boundary"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    let transitioned = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let schema_counters = runtime.performance_access().counters();
 
     assert_eq!(schema_counters.schema_transition_atoms_inspected, 1);

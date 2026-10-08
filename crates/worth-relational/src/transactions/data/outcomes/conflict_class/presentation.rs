@@ -8,6 +8,11 @@ use super::ConflictClass;
 impl ConflictClass {
     pub fn code(&self) -> DiagnosticCode {
         match self {
+            Self::ExecutionAllocationDenied { .. }
+            | Self::TransactionStagingCardinalityOverflow
+            | Self::TransactionInputDirectoryAllocationDenied { .. } => {
+                DiagnosticCode::PreparationFailure
+            }
             Self::StaleTarget { .. } => DiagnosticCode::StaleHandle,
             Self::InvalidRelationEndpoint { .. } => DiagnosticCode::InvalidRelationEndpoint,
             Self::DuplicateRelationIdentity { .. } => DiagnosticCode::DuplicateRelationIdentity,
@@ -61,6 +66,9 @@ impl ConflictClass {
 
     pub fn detail(&self) -> String {
         match self {
+            Self::ExecutionAllocationDenied { denial } => denial.to_string(),
+            Self::TransactionStagingCardinalityOverflow => "native staging cardinality overflow".to_owned(),
+            Self::TransactionInputDirectoryAllocationDenied { requested_batches } => format!("unadmitted input batch directory could not reserve {requested_batches} batches"),
             Self::StaleTarget { target, context } => stale_target_detail(target, context),
             Self::InvalidRelationEndpoint { detail }
             | Self::DuplicateRelationIdentity { detail }

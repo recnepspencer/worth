@@ -8,7 +8,7 @@ fn overlay_byte_exhaustion_rejects_without_partial_staging() {
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
 
     assert!(matches!(
-        transaction.push_batch(batch_create("overlay-red-control")),
+        transaction.push_batch(batch_create("overlay-red-control"), worth_execution::ExecutionAllocationPolicy::SystemAllocation),
         Err(RelationalTransactionStagingDenial::OverlayCapacityExhausted {
             maximum_bytes: 0,
             required_bytes,
@@ -24,7 +24,10 @@ fn footprint_exhaustion_rejects_without_overlay_or_index_residue() {
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
 
     assert_eq!(
-        transaction.push_batch(batch_create("footprint-red-control")),
+        transaction.push_batch(
+            batch_create("footprint-red-control"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+        ),
         Err(
             RelationalTransactionStagingDenial::FootprintCapacityExhausted {
                 maximum_loci: 0,
@@ -41,7 +44,10 @@ fn savepoint_exhaustion_rejects_without_transaction_or_footprint_residue() {
     let runtime = runtime_with_limits(1_048_576, 8, 1);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("savepoint-budget-write"))
+        .push_batch(
+            batch_create("savepoint-budget-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let first = transaction.create_savepoint().unwrap();
     let batch_count = transaction.batches().len();
@@ -65,7 +71,10 @@ fn cumulative_savepoint_footprints_deny_before_an_unbounded_clone() {
     let runtime = runtime_with_limits(1_048_576, 2, 8);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("savepoint-footprint-write"))
+        .push_batch(
+            batch_create("savepoint-footprint-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     transaction.create_savepoint().unwrap();
     transaction.create_savepoint().unwrap();

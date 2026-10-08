@@ -40,9 +40,9 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
         .selected_product()
         .authorize_operation(&actor, &account, &operation, Default::default(), &request)
         .unwrap();
-    let over_budget = world
-        .invariant
-        .project_admitted_operation(&admission, |reader, _| {
+    let over_budget = world.invariant.project_admitted_operation(
+        &admission,
+        |reader, _| {
             let denial = reader
                 .decision_select_entities(AccountLabel::reference(), "primary".to_owned(), 32)
                 .unwrap_err()
@@ -52,40 +52,46 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
                 denial.kind(),
                 WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded
             );
-        });
+        },
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         over_budget.is_err(),
         "an exhausted projection cannot be sealed after a handler ignores its denial"
     );
     let (_, projection, work) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            for (limit, expected) in [
-                (
-                    0,
-                    WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
-                ),
-                (
-                    usize::MAX,
-                    WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
-                ),
-                (
-                    1,
-                    WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded { maximum: 1 },
-                ),
-            ] {
-                let denial = reader
-                    .decision_select_entities(
-                        AccountLabel::reference(),
-                        "primary".to_owned(),
-                        limit,
-                    )
-                    .unwrap_err()
-                    .downcast::<WorthQueryEntityResolutionDenial>()
-                    .unwrap();
-                assert_eq!(denial.kind(), expected);
-            }
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                for (limit, expected) in [
+                    (
+                        0,
+                        WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
+                    ),
+                    (
+                        usize::MAX,
+                        WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
+                    ),
+                    (
+                        1,
+                        WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded { maximum: 1 },
+                    ),
+                ] {
+                    let denial = reader
+                        .decision_select_entities(
+                            AccountLabel::reference(),
+                            "primary".to_owned(),
+                            limit,
+                        )
+                        .unwrap_err()
+                        .downcast::<WorthQueryEntityResolutionDenial>()
+                        .unwrap();
+                    assert_eq!(denial.kind(), expected);
+                }
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     assert_eq!(
@@ -96,7 +102,11 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
     assert_eq!(work.index_candidates_examined(), 1);
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -128,21 +138,29 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
         .unwrap();
     let (_, projection, work) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            for value in ["missing-a", "missing-b"] {
-                assert!(reader
-                    .decision_select_entities(AccountStatus::reference(), value.to_owned(), 2,)
-                    .unwrap()
-                    .is_empty());
-            }
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                for value in ["missing-a", "missing-b"] {
+                    assert!(reader
+                        .decision_select_entities(AccountStatus::reference(), value.to_owned(), 2,)
+                        .unwrap()
+                        .is_empty());
+                }
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     assert_eq!(work.equality_lookups(), 2);
     assert_eq!(work.index_candidates_examined(), 0);
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

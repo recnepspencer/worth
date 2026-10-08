@@ -147,9 +147,15 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
                         fields: Default::default(),
                     },
                 ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let created = transaction.commit(&runtime).unwrap();
+    let created = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let source = changed_entities(&created)[0];
     let target = source;
     let relation = changed_relations(&created)[0];

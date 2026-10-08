@@ -27,16 +27,24 @@ fn active_program_names_an_operation_missing_from_its_declared_routes() {
     let admission = admitted_operation(&world, &principal, &account, &request);
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let program = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

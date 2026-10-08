@@ -24,6 +24,7 @@ mod scope_selector;
 pub(in crate::domain_computation::primary_graph) use admitted_clone::WorthQueryObservedSourceCloneStop;
 pub(in crate::domain_computation::primary_graph) use admitted_epoch::WorthQueryObservedEpochStop;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
+pub use prepared_expectation::WorthQueryPendingSourceExpectation;
 pub(in crate::domain_computation::primary_graph) use prepared_expectation::{
     BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,
 };

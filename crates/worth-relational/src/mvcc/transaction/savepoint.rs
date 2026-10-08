@@ -7,18 +7,24 @@ pub(crate) struct RelationalTransactionSavepoint {
     id: SavepointId,
     retained_batch_count: usize,
     footprint: super::RelationalTransactionFootprint,
+    index: super::staging_storage::OrderedStore<super::index_row::IndexRow>,
+    normalization_generation: u64,
 }
 
 impl RelationalTransactionSavepoint {
-    pub(crate) fn new(
+    pub(super) fn new(
         id: SavepointId,
         retained_batch_count: usize,
         footprint: super::RelationalTransactionFootprint,
+        index: super::staging_storage::OrderedStore<super::index_row::IndexRow>,
+        normalization_generation: u64,
     ) -> Self {
         Self {
             id,
             retained_batch_count,
             footprint,
+            index,
+            normalization_generation,
         }
     }
 
@@ -63,12 +69,7 @@ impl super::BranchBoundRelationalTransaction {
         let required_loci = self
             .savepoint_footprint_loci
             .checked_add(footprint_loci)
-            .ok_or(
-                super::RelationalTransactionStagingDenial::SavepointFootprintCapacityExhausted {
-                    maximum_loci: self.maximum_footprint_loci,
-                    required_loci: usize::MAX,
-                },
-            )?;
+            .ok_or(super::RelationalTransactionStagingDenial::CardinalityOverflow)?;
         if required_loci > self.maximum_footprint_loci {
             return Err(
                 super::RelationalTransactionStagingDenial::SavepointFootprintCapacityExhausted {
@@ -81,6 +82,8 @@ impl super::BranchBoundRelationalTransaction {
             savepoint_id,
             self.batches().len(),
             self.footprint.clone(),
+            self.overlay.index.clone(),
+            self.overlay.normalization_generation,
         ));
         self.savepoint_footprint_loci = required_loci;
         self.next_savepoint_ordinal = next_savepoint_ordinal;
@@ -102,13 +105,23 @@ impl super::BranchBoundRelationalTransaction {
         };
         let batch_len = self.savepoints[index].retained_batch_count();
         let restored_footprint = self.savepoints[index].footprint().clone();
+        // Normalization can rekey retained input batches after a savepoint.
+        // Rebuild from the current retained prefix before changing any live state;
+        // unchanged generations restore the exact shared physical index instead.
+        let restored_index = if self.savepoints[index].normalization_generation
+            == self.overlay.normalization_generation
+        {
+            self.savepoints[index].index.clone()
+        } else {
+            self.overlay
+                .prefix_index(batch_len)
+                .map_err(super::RelationalTransactionStagingDenial::into_conflict)?
+        };
         let released_savepoint_loci = self.savepoints[index..]
             .iter()
             .map(RelationalTransactionSavepoint::footprint_loci)
             .sum::<usize>();
-        let drained = self
-            .overlay
-            .truncate_batches(batch_len, &mut self.footprint, &self.basis);
+        let drained = self.overlay.truncate_batches(batch_len, restored_index);
         let released_bytes = drained
             .iter()
             .map(crate::transactions::data::WorkerIntentBatch::resident_capacity_bytes)

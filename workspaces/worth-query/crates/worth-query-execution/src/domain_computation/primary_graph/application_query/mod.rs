@@ -95,7 +95,8 @@ pub(in crate::domain_computation::primary_graph) use observed_source::{
 };
 pub use observed_source::{
     WorthQueryBoundSourceExpectation, WorthQueryObservedResultSet, WorthQueryObservedSource,
-    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
+    WorthQueryPendingSourceExpectation, WorthQuerySourceExpectationDenial,
+    WorthQuerySourceExpectationDenialKind,
 };
 pub use one_shot::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,

@@ -66,9 +66,17 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
             .unwrap();
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
-            .push_batch(batch_create("observer-selected-write"))
+            .push_batch(
+                batch_create("observer-selected-write"),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
-        let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+        let candidate = runtime
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let outcome = runtime.publication_port().compare_and_publish(candidate);
         let observer = participant.observer.lock().unwrap().take().unwrap();
         if stop_after_prepare {

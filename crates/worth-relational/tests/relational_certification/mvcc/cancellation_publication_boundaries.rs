@@ -31,7 +31,10 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
 
     let event = match world
@@ -79,7 +82,10 @@ fn cancellation_inside_the_supply_chain_critical_section_is_deferred() {
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let port = world.runtime.publication_port();
     let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));

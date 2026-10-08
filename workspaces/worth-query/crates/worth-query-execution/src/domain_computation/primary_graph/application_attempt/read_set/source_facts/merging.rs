@@ -15,7 +15,7 @@ fn adjacency(
         direction: RelationalAdjacencyDirection::Outgoing,
         native_revision: Some(VersionId(revision)),
         comparison_work_limit: limit,
-        endpoints,
+        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&endpoints, worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
     }
 }
 
@@ -25,13 +25,18 @@ fn admitted_and_dependent_reads_merge_one_native_revision_with_complete_coverage
     let second = EntityId::new(PartitionId::main(), 4, 1);
     let admitted = adjacency(5, 2, vec![second, first]);
     let dependent = adjacency(5, 64, vec![first]);
-    let merged = merge_source_facts(vec![admitted.clone()], keyed([dependent.clone()]), "test")
-        .unwrap()
-        .into_values()
-        .collect::<Vec<_>>();
+    let merged = merge_source_facts(
+        vec![admitted.clone()],
+        keyed([dependent.clone()]),
+        "test",
+        control(),
+    )
+    .unwrap()
+    .into_values()
+    .collect::<Vec<_>>();
     assert_eq!(merged, vec![adjacency(5, 64, vec![first, second])]);
     assert_eq!(
-        merge_source_facts(vec![dependent], keyed([admitted]), "test")
+        merge_source_facts(vec![dependent], keyed([admitted]), "test", control())
             .unwrap()
             .into_values()
             .collect::<Vec<_>>(),
@@ -45,6 +50,7 @@ fn admitted_and_dependent_reads_reject_different_native_revisions() {
         vec![adjacency(5, 2, vec![])],
         keyed([adjacency(6, 64, vec![])]),
         "test",
+        control(),
     )
     .unwrap_err();
     assert_eq!(
@@ -53,13 +59,20 @@ fn admitted_and_dependent_reads_reject_different_native_revisions() {
     );
 }
 
+fn control() -> StorageControl<'static, 'static> {
+    StorageControl::new(
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        None,
+    )
+}
 fn keyed(
     facts: impl IntoIterator<Item = WorthQueryApplicationObservedFact>,
-) -> BTreeMap<WorthQueryApplicationFactStorageKey, WorthQueryApplicationObservedFact> {
-    facts
-        .into_iter()
-        .map(|fact| (fact.dependency_key(), fact))
-        .collect()
+) -> Option<RetainedSourceFacts> {
+    let mut store = AuthoringSourceFacts::new(control()).unwrap();
+    for fact in facts {
+        store.capture(fact, None, control()).unwrap();
+    }
+    Some(store.finish(control()).unwrap())
 }
 
 #[test]
@@ -94,14 +107,14 @@ fn isolated_source_map_transfer() {
             entity_id: EntityId::new(PartitionId::main(), slot, 1),
         }),
     );
-    let count = dependent.len();
+    let count = dependent.as_ref().unwrap().len();
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-    let merged = merge_source_facts(Vec::new(), dependent, "test").unwrap();
+    let merged = merge_source_facts(Vec::new(), dependent, "test", control()).unwrap();
     let allocated = region.change().bytes_allocated;
     assert_eq!(merged.len(), count);
     assert_eq!(
         allocated, 0,
-        "the transferred map must remain owned until final admitted array emission"
+        "the transferred sealed payload must remain owned until final admitted array emission"
     );
 }
 
@@ -115,7 +128,8 @@ fn source_storage_keeps_ordinary_order_and_projected_canonical_order() {
         ordinary.into_values().collect::<Vec<_>>(),
         vec![fact(second), fact(first)]
     );
-    let projected = merge_source_facts(vec![fact(second)], keyed([fact(first)]), "test").unwrap();
+    let projected =
+        merge_source_facts(vec![fact(second)], keyed([fact(first)]), "test", control()).unwrap();
     assert_eq!(
         projected.into_values().collect::<Vec<_>>(),
         vec![fact(first), fact(second)]

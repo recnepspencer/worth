@@ -253,6 +253,7 @@ where
             outcome_identity,
             aftermath_causality.as_ref(),
         ),
+        allocation_policy,
     ) {
         Ok(registered) => registered,
         Err(failure) => return failure.into_completion(),

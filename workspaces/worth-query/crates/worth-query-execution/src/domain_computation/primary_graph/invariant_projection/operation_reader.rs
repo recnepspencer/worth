@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -115,7 +115,7 @@ where
     /// fn inspection_cannot_become_projection<Schema: ApplicationSchema>(
     ///     authority: &WorthQueryApplicationInvariantProjectionAuthority<Schema>,
     /// ) {
-    ///     let inspected = authority.project_operation::<Operation, _>(|_| ());
+    ///     let inspected = authority.project_operation::<Operation, _>(|_| (), worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     ///     let _ = inspected.into_parts();
     /// }
     /// ```
@@ -124,25 +124,30 @@ where
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         ) -> Output,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryInspectedOperationInvariantProjection<Operation, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let completed = self.project(|reader| {
-            let mut decision_facts = BTreeSet::new();
-            let mut operation_reader = WorthQueryApplicationOperationInvariantProjectionReader {
-                reader,
-                admitted_graph_reads: None,
-                runtime_authority: self.runtime_authority,
-                binding_identity: &self.binding_identity,
-                admission_identity: None,
-                operation_scope: None,
-                decision_facts: &mut decision_facts,
-                _operation: PhantomData,
-            };
-            let output = projection(&mut operation_reader);
-            (output, decision_facts)
-        })?;
+        let completed = self.project(
+            |reader| {
+                let mut decision_facts = BTreeSet::new();
+                let mut operation_reader =
+                    WorthQueryApplicationOperationInvariantProjectionReader {
+                        reader,
+                        admitted_graph_reads: None,
+                        runtime_authority: self.runtime_authority,
+                        binding_identity: &self.binding_identity,
+                        admission_identity: None,
+                        operation_scope: None,
+                        decision_facts: &mut decision_facts,
+                        _operation: PhantomData,
+                    };
+                let output = projection(&mut operation_reader);
+                (output, decision_facts)
+            },
+            allocation_policy,
+        )?;
         let ((output, _), snapshot, work) = completed.into_parts();
         drop(snapshot);
         Ok(WorthQueryInspectedOperationInvariantProjection {
@@ -161,12 +166,15 @@ where
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         ) -> Output,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryInspectedOperationInvariantProjection<Operation, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let completed =
-            self.project_bounded(usize::MAX, product.relational_basis().clone(), |reader| {
+        let completed = self.project_bounded(
+            usize::MAX,
+            product.relational_basis().clone(),
+            |reader| {
                 let mut decision_facts = BTreeSet::new();
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
@@ -181,7 +189,10 @@ where
                     };
                 let output = projection(&mut operation_reader);
                 (output, decision_facts)
-            })?;
+            },
+            None,
+            allocation_policy,
+        )?;
         let ((output, _), snapshot, work) = completed.into_parts();
         drop(snapshot);
         Ok(WorthQueryInspectedOperationInvariantProjection {
@@ -198,6 +209,7 @@ where
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
             &WorthQueryInvariantEntityIdentity<Schema, Scope>,
         ) -> Output,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
         WorthQueryOperationProjectionDenial,
@@ -209,6 +221,7 @@ where
             .expect("admitted operation retains its selected mutation lease")
             .product()
             .retained_clone();
+        let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
         let completed = self
             .project_bounded(
                 admission.allowed_graph_contract().projection_work_budget(),
@@ -248,6 +261,8 @@ where
                     let output = projection(&mut operation_reader, &scope);
                     (output, decision_facts)
                 },
+                Some(admission.publication_request()),
+                allocation_control.policy(),
             )
             .map_err(|denial| {
                 WorthQueryOperationProjectionDenial::from_invariant(denial, admission.operation())
@@ -336,10 +351,7 @@ where
         super::super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         super::WorthQueryRealizedProjectionScope,
         BTreeSet<WorthQueryApplicationFactKey>,
-        BTreeMap<
-            super::super::application_attempt::WorthQueryApplicationFactStorageKey,
-            super::super::application_attempt::WorthQueryApplicationObservedFact,
-        >,
+        Option<super::super::application_attempt::retained_decision_facts::RetainedSourceFacts>,
         Vec<super::ConsumedOutputEvidence>,
     ) {
         let (lease, scope, dependent_source_facts, consumed_outputs) =

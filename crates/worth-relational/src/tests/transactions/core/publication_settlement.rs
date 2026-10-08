@@ -1,4 +1,5 @@
 use crate::tests::support::*;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn direct_publication_settles_before_a_child_can_acknowledge() {
@@ -11,10 +12,13 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("direct-parent"))
+        .push_batch(
+            batch_create("direct-parent"),
+            AllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
         .expect("direct parent prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -57,10 +61,13 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     );
     let mut blocked_child = test_owner_begin_transaction_for_main(&runtime);
     blocked_child
-        .push_batch(batch_create("blocked-before-settlement"))
+        .push_batch(
+            batch_create("blocked-before-settlement"),
+            AllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let child_denial = runtime
-        .prepare_branch_transaction(blocked_child)
+        .prepare_branch_transaction(blocked_child, AllocationPolicy::SystemAllocation)
         .expect_err("a child cannot hide its parent's unfinished settlement");
     assert!(format!("{child_denial:?}").contains("requires explicit owner settlement"));
     let settled_parent = runtime
@@ -133,10 +140,13 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("performed-before-append-fault"))
+        .push_batch(
+            batch_create("performed-before-append-fault"),
+            AllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
         .expect("fault candidate prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -262,10 +272,13 @@ fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() 
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("released-before-repair"))
+        .push_batch(
+            batch_create("released-before-repair"),
+            AllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
         .expect("already-released candidate prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -338,48 +351,4 @@ fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() 
     release_test_commit_snapshot(&runtime, &child);
 }
 
-#[test]
-fn runtime_recovers_settlement_after_external_capability_is_dropped() {
-    let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "runtime-recovery-anchor");
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(batch_create("runtime-owned-deferred-settlement"))
-        .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
-    else {
-        panic!("runtime recovery candidate performs before its injected append fault");
-    };
-    let commit_id = performed.canonical_commit().commit.commit_id;
-    runtime.durability.arm_append_failure();
-    let error = runtime
-        .settle_performed_publication(performed)
-        .expect_err("durable append fault returns deferred settlement");
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 1);
-    assert_eq!(runtime.visibility.published_snapshot_handle_count(), 1);
-    drop(error);
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 1);
-    assert_eq!(runtime.visibility.published_snapshot_handle_count(), 1);
-
-    let mut blocked = test_owner_begin_transaction_for_main(&runtime);
-    blocked
-        .push_batch(batch_create("blocked-unsettled-child"))
-        .unwrap();
-    assert!(runtime
-        .prepare_branch_transaction(blocked)
-        .unwrap_err()
-        .detail()
-        .contains("requires explicit owner settlement"));
-
-    let repaired = runtime
-        .repair_pending_publication_settlement(commit_id)
-        .expect("runtime-owned recovery survives loss of the external capability");
-    assert_eq!(repaired.commit_id, commit_id);
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
-    assert_eq!(runtime.visibility.published_snapshot_handle_count(), 0);
-    let child = create_entity_outcome(&runtime, "child-after-runtime-recovery");
-    assert_eq!(child.commit.parents, vec![commit_id]);
-    release_test_commit_snapshot(&runtime, &child);
-}
+mod external_capability_drop;

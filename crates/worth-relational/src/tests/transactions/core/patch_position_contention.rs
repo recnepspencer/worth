@@ -255,11 +255,17 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         RelationalOperationControl::uninterrupted(),
     );
     overflow
-        .push_batch(batch_create("post-contention-overflow"))
+        .push_batch(
+            batch_create("post-contention-overflow"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     assert!(
         matches!(
-            runtime.prepare_branch_transaction(overflow),
+            runtime.prepare_branch_transaction(
+                overflow,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            ),
             Err(TransactionCommitError::PublicationDeferred {
                 deferred: crate::mvcc::RelationalPublicationDeferred::CandidateCapacityExhausted {
                     maximum_candidates: 2,
@@ -311,9 +317,15 @@ fn prepared_write_on(
 ) -> PreparedRelationalCommitCandidate {
     let mut transaction = begin_contention_transaction(runtime, branch, control);
     transaction
-        .push_batch(batch_create(entity))
+        .push_batch(
+            batch_create(entity),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("contention candidate prepares")
 }

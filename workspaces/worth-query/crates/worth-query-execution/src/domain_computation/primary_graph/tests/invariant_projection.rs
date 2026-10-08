@@ -56,15 +56,18 @@ fn invariant_entity_identity_exposes_the_resolved_instance() {
     let world = installed_authorization_world(true);
     let completed = world
         .invariant
-        .project(|reader| {
-            let open = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-            let unrelated = reader
-                .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
-                .unwrap();
-            (open.entity_id(), unrelated.entity_id())
-        })
+        .project(
+            |reader| {
+                let open = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_string())
+                    .unwrap();
+                let unrelated = reader
+                    .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
+                    .unwrap();
+                (open.entity_id(), unrelated.entity_id())
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("invariant projection");
 
     assert_ne!(completed.output().0, completed.output().1);
@@ -75,30 +78,33 @@ fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans(
     let world = installed_authorization_world(true);
     let completed = world
         .invariant
-        .project(|reader| {
-            let principal = reader
-                .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
-                .unwrap();
-            let owned = reader
-                .relations_from(AccountOwner::reference(), &principal)
-                .unwrap();
-            let open = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-            let owners = reader
-                .relations_to(AccountOwner::reference(), &open)
-                .unwrap();
-            let mut statuses = owned
-                .iter()
-                .map(|relation| {
-                    reader
-                        .field(relation.to(), AccountStatus::reference())
-                        .unwrap()
-                })
-                .collect::<Vec<String>>();
-            statuses.sort();
-            (owned.len(), owners.len(), statuses)
-        })
+        .project(
+            |reader| {
+                let principal = reader
+                    .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
+                    .unwrap();
+                let owned = reader
+                    .relations_from(AccountOwner::reference(), &principal)
+                    .unwrap();
+                let open = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_string())
+                    .unwrap();
+                let owners = reader
+                    .relations_to(AccountOwner::reference(), &open)
+                    .unwrap();
+                let mut statuses = owned
+                    .iter()
+                    .map(|relation| {
+                        reader
+                            .field(relation.to(), AccountStatus::reference())
+                            .unwrap()
+                    })
+                    .collect::<Vec<String>>();
+                statuses.sort();
+                (owned.len(), owners.len(), statuses)
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("invariant projection");
 
     assert_eq!(
@@ -120,12 +126,15 @@ fn optional_locked_resolution_distinguishes_absence_from_ambiguity_and_counts_wo
     let world = installed_authorization_world(true);
     let completed = world
         .invariant
-        .project(|reader| {
-            reader
-                .resolve_optional_entity(AccountStatus::reference(), "missing".to_string())
-                .unwrap()
-                .is_none()
-        })
+        .project(
+            |reader| {
+                reader
+                    .resolve_optional_entity(AccountStatus::reference(), "missing".to_string())
+                    .unwrap()
+                    .is_none()
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("optional invariant projection");
 
     assert_eq!(completed.output(), &true);
@@ -138,16 +147,20 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
     let world = installed_authorization_world(true);
     let baseline = world.invariant.active_snapshot_count();
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = world
-            .invariant
-            .project::<()>(|_| panic!("hostile projector"));
+        let _ = world.invariant.project::<()>(
+            |_| panic!("hostile projector"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        );
     }));
 
     assert!(panic.is_err());
     assert_eq!(world.invariant.active_snapshot_count(), baseline);
     let completed = world
         .invariant
-        .project(|reader| reader.version())
+        .project(
+            |reader| reader.version(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("projection after hostile projector");
     assert!(!completed.output().is_zero());
 }
@@ -191,9 +204,11 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
 
     let completed = world
         .invariant
-        .project_admitted_operation(&admission, |reader, root| {
-            reader.field(root, AccountStatus::reference())
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, root| reader.field(root, AccountStatus::reference()),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
 
     assert_eq!(completed.output(), &Some("open".to_string()));
@@ -243,14 +258,18 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
 
     let denial = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            let account = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-            for _ in 0..31 {
-                let _ = reader.field(&account, AccountStatus::reference());
-            }
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                let account = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_string())
+                    .unwrap();
+                for _ in 0..31 {
+                    let _ = reader.field(&account, AccountStatus::reference());
+                }
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("provider work beyond the installed limit must deny");
 

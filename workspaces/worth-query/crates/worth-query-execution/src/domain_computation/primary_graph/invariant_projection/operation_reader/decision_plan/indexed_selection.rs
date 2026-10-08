@@ -117,18 +117,6 @@ impl<Schema: ApplicationSchema, Operation>
                 field.field(),
             ));
         }
-        let fact = WorthQueryApplicationObservedFact::IndexedEntitySelection {
-            index_id,
-            definition: outcome.retain_definition(),
-            entity_kind: layout.entity_kind,
-            locator: layout.locator.clone(),
-            value,
-            candidate_limit,
-            candidates: outcome.candidate_entity_ids().to_vec(),
-        };
-        self.reader
-            .dependent_source_facts
-            .insert(fact.dependency_key(), fact);
         let mut identities = Vec::with_capacity(outcome.candidate_entity_ids().len());
         for entity_id in outcome.candidate_entity_ids() {
             self.reader.realized_scope.record(*entity_id);
@@ -140,6 +128,19 @@ impl<Schema: ApplicationSchema, Operation>
                 _marker: PhantomData,
             });
         }
+        let fact = WorthQueryApplicationObservedFact::IndexedEntitySelection {
+            index_id,
+            definition: outcome.retain_definition(),
+            entity_kind: layout.entity_kind,
+            locator: layout.locator.clone(),
+            value,
+            candidate_limit,
+            candidates: outcome.into_candidate_entity_ids(),
+        };
+        self.reader
+            .dependent_source_facts
+            .capture(fact, None, self.reader.retention_control)
+            .map_err(HandlerExecutionDenial::new)?;
         Ok(identities)
     }
 

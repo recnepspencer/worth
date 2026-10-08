@@ -1,4 +1,5 @@
 use std::time::Duration;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 use worth_foundational::facade::{AspectValue, InternedString};
 
@@ -68,26 +69,6 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
     let denial = super::admit_raw(&world, &principal, &request, Some("elevation-2"))
         .err()
         .expect("a requested selector cannot bypass the lifecycle transition");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
-    );
-}
-
-#[test]
-fn ordinary_operation_progression_cannot_authorize_a_lifecycle_request() {
-    let world = request_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = request_access(&world, &principal, &request, honest_input()).unwrap();
-    let operation = request_operation(&world);
-
-    let denial = world
-        .application
-        .authorize_capability_operation(access, &operation, Default::default())
-        .err()
-        .expect("the ordinary progression API must reject lifecycle operations");
-
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
@@ -287,16 +268,24 @@ pub(super) fn request_reads(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, account| {
-            reader
-                .require_decision_field(account, AccountLabel::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, account| {
+                reader
+                    .require_decision_field(account, AccountLabel::reference())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -396,3 +385,6 @@ pub(super) fn resolve_created_identities(
 fn string(value: &str) -> AspectValue {
     AspectValue::String(InternedString::from(value))
 }
+
+#[path = "request_transition/ordinary_progression_refusal.rs"]
+mod ordinary_progression_refusal;

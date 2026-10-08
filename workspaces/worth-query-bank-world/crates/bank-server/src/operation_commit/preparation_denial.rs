@@ -19,6 +19,7 @@ pub enum BankApplicationAttemptDenialKind {
     DecisionDependencyMismatch,
     DecisionFactBudgetExceeded,
     AllocationDenied,
+    RetainedSourceStorageDenied,
     MutationPreconditionMismatch,
     SourceRetired,
     SourceChanged,
@@ -149,6 +150,9 @@ const fn application_attempt_kind(
             BankApplicationAttemptDenialKind::DecisionFactBudgetExceeded
         }
         Query::AllocationDenied => BankApplicationAttemptDenialKind::AllocationDenied,
+        Query::RetainedSourceStorageDenied => {
+            BankApplicationAttemptDenialKind::RetainedSourceStorageDenied
+        }
         Query::MutationPreconditionMismatch => {
             BankApplicationAttemptDenialKind::MutationPreconditionMismatch
         }

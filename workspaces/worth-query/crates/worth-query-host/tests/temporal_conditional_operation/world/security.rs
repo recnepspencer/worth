@@ -60,20 +60,28 @@ impl CourtroomWorld {
             .unwrap();
         let (target, projection, _) = self
             .invariant
-            .project_admitted_operation(&admission, |reader, mapping| {
-                reader
-                    .decision_field(mapping, MappingStatusField::reference())
-                    .expect("revocation admits the mapping status decision field")
-                    .expect("an authenticated mapping retains its status");
-                reader
-                    .mutation_target(mapping)
-                    .expect("the admitted mapping is a local mutation target")
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, mapping| {
+                    reader
+                        .decision_field(mapping, MappingStatusField::reference())
+                        .expect("revocation admits the mapping status decision field")
+                        .expect("an authenticated mapping retains its status");
+                    reader
+                        .mutation_target(mapping)
+                        .expect("the admitted mapping is a local mutation target")
+                },
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts();
         let reads = self
             .application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut effects = reads
             .complete_projected_dependencies(
@@ -171,12 +179,16 @@ pub(crate) fn projection_target_is_bound_to_exact_admission() {
     let prior_admission = admit_revocation!(world);
     let (prior_target, prior_projection, _) = world
         .invariant
-        .project_admitted_operation(&prior_admission, |reader, mapping| {
-            reader
-                .decision_field(mapping, MappingStatusField::reference())
-                .unwrap();
-            reader.mutation_target(mapping).unwrap()
-        })
+        .project_admitted_operation(
+            &prior_admission,
+            |reader, mapping| {
+                reader
+                    .decision_field(mapping, MappingStatusField::reference())
+                    .unwrap();
+                reader.mutation_target(mapping).unwrap()
+            },
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     drop(prior_projection);
@@ -184,17 +196,25 @@ pub(crate) fn projection_target_is_bound_to_exact_admission() {
     let current_admission = admit_revocation!(world);
     let (current_target, current_projection, _) = world
         .invariant
-        .project_admitted_operation(&current_admission, |reader, mapping| {
-            reader
-                .decision_field(mapping, MappingStatusField::reference())
-                .unwrap();
-            reader.mutation_target(mapping).unwrap()
-        })
+        .project_admitted_operation(
+            &current_admission,
+            |reader, mapping| {
+                reader
+                    .decision_field(mapping, MappingStatusField::reference())
+                    .unwrap();
+                reader.mutation_target(mapping).unwrap()
+            },
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(current_admission, current_projection)
+        .begin_projected_application_read_attempt(
+            current_admission,
+            current_projection,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let effects = reads
         .complete_projected_dependencies(

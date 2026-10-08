@@ -108,9 +108,15 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
                     )],
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let second = transaction.commit(&runtime).unwrap();
+    let second = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     release_test_commit_snapshot(&runtime, &second);
     let main = BranchId("main".into());
     let pinned = snapshot_for_owner_branch(&runtime, &main);

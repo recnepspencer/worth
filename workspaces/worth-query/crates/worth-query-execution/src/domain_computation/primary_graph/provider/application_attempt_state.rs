@@ -321,3 +321,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
 
 #[cfg(test)]
 mod tests;
+
+pub(in crate::domain_computation::primary_graph) use commit_preparation::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

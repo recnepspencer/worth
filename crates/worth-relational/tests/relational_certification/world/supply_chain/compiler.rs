@@ -232,9 +232,17 @@ fn commit_definition(
                 .expect("owner-admitted transaction context")
         };
         transaction
-            .push_batch(WorkerIntentBatch::new("supply-chain-empty-baseline"))
+            .push_batch(
+                WorkerIntentBatch::new("supply-chain-empty-baseline"),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("empty baseline staging fits the configured transaction budget");
-        return transaction.commit(runtime).map_err(transaction_error);
+        return transaction
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(transaction_error);
     }
 
     let mut batch = WorkerIntentBatch::new("supply-chain-baseline");
@@ -255,9 +263,17 @@ fn commit_definition(
             .expect("owner-admitted transaction context")
     };
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("Supply Chain baseline staging fits its configured transaction budget");
-    transaction.commit(runtime).map_err(transaction_error)
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(transaction_error)
 }
 
 fn bulk_entity_intents(program: &CompiledSupplyChainProgram) -> Vec<MutationIntent> {

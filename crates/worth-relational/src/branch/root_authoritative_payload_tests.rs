@@ -70,10 +70,16 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
         .begin_branch_transaction(input.basis(), input.intent().clone())
         .expect("schema transition transaction binds");
     transaction
-        .push_batch(batch_create("schema-after"))
+        .push_batch(
+            batch_create("schema-after"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("schema transition commits");
     let (root, envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
 

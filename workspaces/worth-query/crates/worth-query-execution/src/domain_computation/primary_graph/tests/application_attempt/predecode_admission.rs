@@ -68,23 +68,27 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
     let mut allocated = 0;
     let completed = world
         .invariant
-        .project_admitted_operation(&admission, |reader, scope| {
-            let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-            let result = reader.decision_field_with_predecode_admission(
-                scope,
-                AccountLabel::reference(),
-                |raw, _| {
-                    let AspectValue::String(InternedString::Raw(actual)) = raw else {
-                        panic!("actual label carrier expected")
-                    };
-                    assert_eq!(actual.len(), payload.len());
-                    Err::<(), _>("owner-work-limit")
-                },
-                &|| Ok(()),
-            );
-            allocated = region.change().bytes_allocated;
-            result
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, scope| {
+                let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+                let result = reader.decision_field_with_predecode_admission(
+                    scope,
+                    AccountLabel::reference(),
+                    |raw, _| {
+                        let AspectValue::String(InternedString::Raw(actual)) = raw else {
+                            panic!("actual label carrier expected")
+                        };
+                        assert_eq!(actual.len(), payload.len());
+                        Err::<(), _>("owner-work-limit")
+                    },
+                    &|| Ok(()),
+                );
+                allocated = region.change().bytes_allocated;
+                result
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert_eq!(
         completed.output().as_ref().unwrap(),
@@ -143,23 +147,31 @@ fn ordinary_field_allocation(world: &super::super::fixture::AuthorizationWorld) 
     let mut allocated = 0;
     let completed = world
         .invariant
-        .project_admitted_operation(&admission, |reader, scope| {
-            // Measure only this ordinary field call, not installation, authorization,
-            // completion or retained read-set capture. This is not a peak-byte proof.
-            let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
-            let actual = reader
-                .decision_field(scope, AccountLabel::reference())
-                .unwrap()
-                .unwrap();
-            allocated = region.change().bytes_allocated;
-            actual
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, scope| {
+                // Measure only this ordinary field call, not installation, authorization,
+                // completion or retained read-set capture. This is not a peak-byte proof.
+                let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+                let actual = reader
+                    .decision_field(scope, AccountLabel::reference())
+                    .unwrap()
+                    .unwrap();
+                allocated = region.change().bytes_allocated;
+                actual
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert_eq!(completed.work().field_reads(), 1);
     let (actual, projection, _) = completed.into_parts();
     let _reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -175,11 +187,14 @@ fn undeclared_and_foreign_reads_deny_before_raw_callback() {
     let request = live_scope();
     let foreign = other
         .invariant
-        .project(|reader| {
-            reader
-                .resolve_entity(AccountStatus::reference(), "open".into())
-                .unwrap()
-        })
+        .project(
+            |reader| {
+                reader
+                    .resolve_entity(AccountStatus::reference(), "open".into())
+                    .unwrap()
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts()
         .0;

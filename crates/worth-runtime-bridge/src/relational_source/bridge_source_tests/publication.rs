@@ -95,9 +95,15 @@ fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenan
             WorkerIntentBatch::new("partition-publication")
                 .push(entity(PartitionId::main(), "main"))
                 .push(entity(PartitionId::new(7), "secondary")),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let committed = transaction.commit(&runtime).unwrap();
+    let committed = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let secondary = committed
         .changed_records
         .iter()
@@ -267,9 +273,14 @@ fn runtime_bridge_replays_historical_commit_after_newer_publication_arrives() {
                     },
                 ),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).expect("second commit should publish");
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("second commit should publish");
     }
     let historical_commit_identity = RelationalCommittedPatchRequest::new(
         TruthCommitIdentity::from_relational_commit_id(historical_commit_id.0),

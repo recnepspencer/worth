@@ -208,22 +208,24 @@ where
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
         );
         let mut handler_contacted = false;
-        let projected =
-            self.mutation_projection
-                .project_admitted_operation(&admission, |reader, scope| {
-                    let mut decision_reader = DecisionReader::<Schema, Binding>::new(
-                        reader,
-                        scope,
-                        principal_identity,
-                        &operation_scope_binding,
-                        identities,
-                        request,
-                        &context_use,
-                    );
-                    on_contact();
-                    handler_contacted = true;
-                    handler.decide(input, &mut decision_reader)
-                });
+        let projected = self.mutation_projection.project_admitted_operation(
+            &admission,
+            |reader, scope| {
+                let mut decision_reader = DecisionReader::<Schema, Binding>::new(
+                    reader,
+                    scope,
+                    principal_identity,
+                    &operation_scope_binding,
+                    identities,
+                    request,
+                    &context_use,
+                );
+                on_contact();
+                handler_contacted = true;
+                handler.decide(input, &mut decision_reader)
+            },
+            allocation_control.policy(),
+        );
         let projected = match projected {
             Ok(projected) => projected,
             Err(denial) => {
@@ -254,7 +256,11 @@ where
             let mut admission = admission;
             admission.record_decision_context_use(context_use.get());
             let reads = self
-                .begin_projected_application_read_attempt(admission, projection)
+                .begin_projected_application_read_attempt(
+                    admission,
+                    projection,
+                    allocation_control.policy(),
+                )
                 .map_err(MutationHandlerExecutionDenial::Attempt)?
                 .complete_projected_dependencies(allocation_control.policy())
                 .map_err(MutationHandlerExecutionDenial::Attempt)?;

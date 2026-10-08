@@ -59,6 +59,9 @@ pub(super) fn transaction_staging(
 ) -> RelationalEffectExecutionFailure {
     use RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
+        Denial::AllocationDenied(_)
+        | Denial::CardinalityOverflow
+        | Denial::InputDirectoryAllocationDenied { .. } => return denied(&denial),
         Denial::OverlayCapacityExhausted {
             maximum_bytes,
             required_bytes,

@@ -12,11 +12,17 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
     let checkpoint = checkpoint_for_schema_version(right.patch_position(), SchemaVersionId(1));
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(batch_create("surviving"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("surviving"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     let savepoint = txn.create_savepoint().unwrap();
-    txn.push_batch(batch_create("abandoned"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("abandoned"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     txn.push_batch(
         WorkerIntentBatch::new("abandoned-left").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -28,6 +34,7 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -41,6 +48,7 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let rollback = txn.rollback_to_savepoint(savepoint).unwrap();
@@ -55,6 +63,7 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -68,9 +77,15 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     assert!(rollback.summary().has_discarded_entity_creation());
 

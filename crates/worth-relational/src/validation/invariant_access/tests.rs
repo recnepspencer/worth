@@ -221,9 +221,14 @@ fn commit_boundary_cardinality_failure_fields_localize_nonmanifold_like_overflow
                     },
                 )),
             ),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).unwrap()
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
     };
     let overflow_plan = MergedCommitPlan {
         transaction_id: TransactionId(5),

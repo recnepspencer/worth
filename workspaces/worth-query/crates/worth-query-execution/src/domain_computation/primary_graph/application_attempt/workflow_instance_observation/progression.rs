@@ -111,7 +111,7 @@ pub(super) fn observe_progress(
         direction: RelationalAdjacencyDirection::Outgoing,
         native_revision: revision,
         comparison_work_limit: COMPARISON_WORK_LIMIT,
-        endpoints: Vec::new(),
+        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
     });
     let key = WorkflowInstanceProgressKey::new(
         instance.branch().occurrence_ordinal(),

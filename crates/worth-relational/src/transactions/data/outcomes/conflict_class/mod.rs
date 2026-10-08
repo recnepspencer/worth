@@ -109,6 +109,17 @@ impl BulkImportStage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConflictClass {
+    /// In-process physical refusal; never a serialized graph verdict.
+    #[serde(skip)]
+    ExecutionAllocationDenied {
+        denial: worth_execution::ExecutionAllocationDenial,
+    },
+    #[serde(skip)]
+    TransactionStagingCardinalityOverflow,
+    #[serde(skip)]
+    TransactionInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     StaleTarget {
         target: ExistingRecordTarget,
         context: String,

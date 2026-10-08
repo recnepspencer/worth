@@ -10,6 +10,7 @@ use crate::domain_computation::authorization::{
 
 #[derive(Debug)]
 pub(super) enum DenialCause {
+    SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial),
     InvariantExecution(crate::domain_computation::WorthQueryInvariantExecutionFailure),
     DecisionReadSet(crate::domain_computation::WorthQueryDecisionReadSetFailure),
     /// The request's own authorization stopped the commit: its security
@@ -47,6 +48,44 @@ impl WorthQueryApplicationCommitDenial {
     ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
         match &self.cause {
             Some(DenialCause::InvariantExecution(failure)) => failure.custom_invariant_denial(),
+            _ => None,
+        }
+    }
+}
+
+impl WorthQueryApplicationCommitDenial {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn source_rebase_denied(
+        denial: crate::domain_computation::primary_graph::provider::PreparedRebaseDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: Some(DenialCause::SourceRebase(denial)),
+        }
+    }
+    /// Exact physical owner refusal; not logical count policy or graph authority.
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        match &self.cause {
+            Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)))) => Some(denial),
+            _ => None,
+        }
+    }
+    pub fn source_rebase_interruption(
+        &self,
+    ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
+    {
+        match &self.cause { Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)))) => Some(*stop), _ => None }
+    }
+    pub fn source_rebase_temporary_reservation_error(
+        &self,
+    ) -> Option<&std::collections::TryReserveError> {
+        match &self.cause {
+            Some(DenialCause::SourceRebase(
+                crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Temporary(
+                    error,
+                ),
+            )) => Some(error),
             _ => None,
         }
     }

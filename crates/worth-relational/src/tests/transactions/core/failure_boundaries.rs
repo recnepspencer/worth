@@ -24,9 +24,15 @@ fn failed_commit_carries_attempt_log() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     assert!(!error.commit_log().events().is_empty());
     assert!(error
@@ -59,9 +65,17 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
         })
         .build();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(batch_create("budget-fail"))
-        .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    txn.push_batch(
+        batch_create("budget-fail"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     assert!(matches!(
         error,
@@ -99,9 +113,15 @@ fn stale_entity_ids_are_rejected() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     assert!(matches!(
         error,
@@ -126,9 +146,15 @@ fn unknown_entity_kind_fails_explicitly() {
                 ),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     assert!(matches!(
         error,
@@ -157,9 +183,15 @@ fn duplicate_relation_identity_is_rejected() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     assert!(matches!(
         error,
@@ -172,13 +204,24 @@ fn duplicate_relation_identity_is_rejected() {
 fn savepoint_rollback_discards_inner_work_only() {
     let runtime = runtime_with_test_schema();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(batch_create("outer"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("outer"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     let savepoint = txn.create_savepoint().unwrap();
-    txn.push_batch(batch_create("inner"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("inner"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     let rollback = txn.rollback_to_savepoint(savepoint).unwrap();
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot)
@@ -202,9 +245,17 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
     let baseline = create_entity_outcome(&runtime, "baseline");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(batch_create("blocked"))
-        .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    txn.push_batch(
+        batch_create("blocked"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let committed_read = runtime
         .read_truth()
         .read_snapshot(&baseline.snapshot)
@@ -286,12 +337,24 @@ fn merged_plan_is_stable_across_batch_order() {
             .expect("owner-admitted transaction context")
     };
     txn_a
-        .push_batch(batch_create("b"))
+        .push_batch(
+            batch_create("b"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     txn_a
-        .push_batch(batch_create("a"))
+        .push_batch(
+            batch_create("a"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    let plan_a = txn_a.merged_plan(&runtime_a).unwrap().clone();
+    let plan_a = txn_a
+        .merged_plan(
+            &runtime_a,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+        .clone();
 
     let runtime_b = runtime_with_test_schema();
     let mut txn_b = {
@@ -305,12 +368,24 @@ fn merged_plan_is_stable_across_batch_order() {
             .expect("owner-admitted transaction context")
     };
     txn_b
-        .push_batch(batch_create("a"))
+        .push_batch(
+            batch_create("a"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     txn_b
-        .push_batch(batch_create("b"))
+        .push_batch(
+            batch_create("b"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    let plan_b = txn_b.merged_plan(&runtime_b).unwrap().clone();
+    let plan_b = txn_b
+        .merged_plan(
+            &runtime_b,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+        .clone();
 
     assert_eq!(plan_a, plan_b);
 }

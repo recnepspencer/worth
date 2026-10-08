@@ -10,11 +10,17 @@ fn perf_commit_delta_matrix() {
         commit_measurement(&runtime, |runtime| {
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
             for index in 0..64 {
-                txn.push_batch(batch_create(&format!("perf-entity-{index}")))
-                    .expect("test staging stays within configured resource budgets");
+                txn.push_batch(
+                    batch_create(&format!("perf-entity-{index}")),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
             }
-            txn.commit(runtime)
-                .expect("single-partition create burst commit")
+            txn.commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("single-partition create burst commit")
         })
     });
     assert!(narrow_samples
@@ -62,10 +68,16 @@ fn perf_commit_delta_matrix() {
                         },
                     )));
                 }
-                txn.push_batch(batch)
-                    .expect("test staging stays within configured resource budgets");
-                txn.commit(runtime)
-                    .expect("cross-partition relation burst commit")
+                txn.push_batch(
+                    batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
+                txn.commit(
+                    runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("cross-partition relation burst commit")
             })
         });
     assert!(cross_partition_samples
@@ -88,9 +100,16 @@ fn perf_commit_delta_matrix() {
             let runtime = persisted_runtime_with_test_schema();
             commit_measurement(&runtime, |runtime| {
                 let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-                txn.push_batch(batch_create("persisted-single"))
-                    .expect("test staging stays within configured resource budgets");
-                txn.commit(runtime).expect("persisted single entity create")
+                txn.push_batch(
+                    batch_create("persisted-single"),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
+                txn.commit(
+                    runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("persisted single entity create")
             })
         });
     emit_metric_summaries(

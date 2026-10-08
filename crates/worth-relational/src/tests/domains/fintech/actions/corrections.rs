@@ -51,9 +51,14 @@ pub(crate) fn correct_trade_with_replacement(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(&world.runtime).unwrap()
+    txn.commit(
+        &world.runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
 }
 
 pub(crate) fn correct_seeded_trade_candidate(

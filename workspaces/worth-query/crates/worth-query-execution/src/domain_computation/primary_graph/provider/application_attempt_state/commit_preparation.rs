@@ -88,12 +88,8 @@ fn take_prepared_session(
     .ok_or_else(|| {
         commit_failure("primary graph session has no exact commit-prepared application attempt")
     })?;
-    let (attempt, candidate, work, completion) = prepared.into_parts();
-    let source_fact_rebase =
-        relational_commit::PreparedSourceFactRebase::admit(attempt.observed_source_facts())
-            .map_err(|_| {
-                commit_failure("candidate source-fact rebase capacity exhausted before effects")
-            })?;
+    let (mut attempt, candidate, work, completion) = prepared.into_parts();
+    let source_fact_rebase = attempt.take_source_fact_rebase();
     let (retained_preimage, preimage_retention_work) =
         preimage_retention::retain_attempt_preimage(&attempt, &candidate)?.into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
@@ -113,3 +109,7 @@ fn commit_failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
         detail,
     )
 }
+
+pub(in crate::domain_computation::primary_graph) use relational_commit::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

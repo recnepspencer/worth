@@ -22,10 +22,15 @@ where
             &WorthQueryInvariantEntityIdentity<Schema, Scope>,
         ) -> WorthQueryOrdinaryReadBatch<Output>,
     ) -> Result<WorthQueryOrdinaryReadProjection<Output>, WorthQueryOperationProjectionDenial> {
-        let completed = self.project_admitted_operation(admission, |reader, root| {
-            let version = WorthQueryOrdinaryReadVersion::from_provider_version(reader.version().0);
-            (projection(reader, root), version)
-        })?;
+        let completed = self.project_admitted_operation(
+            admission,
+            |reader, root| {
+                let version =
+                    WorthQueryOrdinaryReadVersion::from_provider_version(reader.version().0);
+                (projection(reader, root), version)
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let ((batch, version), snapshot, work) = completed.into_parts();
         drop(snapshot);
         let (output, result_count, truncated) = batch.into_parts();

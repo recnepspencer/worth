@@ -229,28 +229,36 @@ impl CourtroomWorld {
             .unwrap();
         let (_, projection, _) = self
             .invariant
-            .project_admitted_operation(&admission, |reader, scope| {
-                reader
-                    .decision_field(scope, IntentRevisionField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, IntentLifecycleField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, IntentGateField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, IntentDueField::reference())
-                    .unwrap();
-                reader
-                    .decision_field(scope, IntentInputField::reference())
-                    .unwrap();
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, scope| {
+                    reader
+                        .decision_field(scope, IntentRevisionField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, IntentLifecycleField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, IntentGateField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, IntentDueField::reference())
+                        .unwrap();
+                    reader
+                        .decision_field(scope, IntentInputField::reference())
+                        .unwrap();
+                },
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts();
         let reads = self
             .application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut effects = reads
             .complete_projected_dependencies(

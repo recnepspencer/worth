@@ -20,9 +20,17 @@ fn subscriber_stream_rejects_checkpoint_with_mismatched_authoritative_boundary_b
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    let _ = txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    let _ = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let batch = runtime
         .publication()

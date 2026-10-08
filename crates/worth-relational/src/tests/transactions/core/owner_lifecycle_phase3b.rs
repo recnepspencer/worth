@@ -248,7 +248,10 @@ fn perform_write(
     let mut transaction =
         test_owner_begin_transaction_for_branch(runtime, BranchId(branch.to_owned()));
     transaction
-        .push_batch(batch_create(name))
+        .push_batch(
+            batch_create(name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     perform_prepared(runtime, transaction)
 }
@@ -273,7 +276,10 @@ fn perform_write_with_control(
         )
         .expect("controlled branch transaction");
     transaction
-        .push_batch(batch_create(name))
+        .push_batch(
+            batch_create(name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     perform_prepared(runtime, transaction)
 }
@@ -283,7 +289,10 @@ fn perform_prepared(
     transaction: crate::mvcc::BranchBoundRelationalTransaction,
 ) -> crate::mvcc::PerformedRelationalCommit {
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares");
     match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

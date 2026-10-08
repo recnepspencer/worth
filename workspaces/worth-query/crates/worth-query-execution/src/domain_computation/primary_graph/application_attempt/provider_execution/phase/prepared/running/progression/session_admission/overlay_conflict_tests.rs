@@ -76,6 +76,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                 outcome_identity,
                 aftermath_causality.as_ref(),
             ),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap_or_else(|_| panic!("overlay fixture must register"));
     registered::assert_second_real_overlay_is_rejected(registered_session.registered, &world);

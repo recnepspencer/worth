@@ -46,18 +46,22 @@ pub(super) fn with_reader<Output>(
     let context = std::cell::Cell::new(DecisionContextUse::default());
     world
         .invariant
-        .project_admitted_operation(&admission, |reader, scope| {
-            let mut decision = DecisionReader::new(
-                reader,
-                scope,
-                principal.principal_identity(),
-                &affinity,
-                &identities,
-                admission.publication_request(),
-                &context,
-            );
-            action(&mut decision)
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, scope| {
+                let mut decision = DecisionReader::new(
+                    reader,
+                    scope,
+                    principal.principal_identity(),
+                    &affinity,
+                    &identities,
+                    admission.publication_request(),
+                    &context,
+                );
+                action(&mut decision)
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts()
         .0

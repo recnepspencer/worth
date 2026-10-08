@@ -125,6 +125,7 @@ fn ordinary_transaction_cannot_stage_an_owner_materialization_transition() {
                     SuspendEntityMaterializationIntent { entity_id: entity },
                 )),
             ),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect_err("ordinary mutation authority cannot suspend record materialization");
 

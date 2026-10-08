@@ -40,10 +40,14 @@ fn replace_entity_on_branch(
                     },
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("replacement should commit");
 }
 
@@ -182,10 +186,14 @@ fn create_entity_on_branch(
                     ),
                 },
             ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("owner-created scale commit");
 }
 

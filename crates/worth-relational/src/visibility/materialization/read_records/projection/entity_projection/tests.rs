@@ -38,9 +38,15 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
                     ]),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let created = transaction.commit(&runtime).unwrap();
+    let created = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let entity = changed_entities(&created)[0];
     let updated = update_entity(&runtime, entity, "after");
     for (snapshot, expected_name) in [(&created.snapshot, "before"), (&updated.snapshot, "after")] {

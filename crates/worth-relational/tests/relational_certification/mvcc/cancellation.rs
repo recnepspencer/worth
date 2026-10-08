@@ -88,7 +88,10 @@ fn cancellation_during_preparation_releases_the_transaction_once() {
 
     let error = world
         .runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap_err();
     let worth_relational::facade::transactions::TransactionCommitError::Interrupted {
         interruption,
@@ -133,7 +136,10 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let before_reference = world
         .runtime
@@ -240,7 +246,10 @@ fn cancellation_after_linearization_preserves_performed_commit_and_settles_once(
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let before = world
         .runtime

@@ -81,10 +81,15 @@ where
         let identities = self.identities()?;
         let prepared = prepare(self, &identities, staged)?;
         let principal_identity = prepared.principal_identity;
-        let admission = prepared.admission;
+        let mut admission = prepared.admission;
         let commit_binding = WorthQueryMutationCommitBinding::new(&identities, prepared.extension);
         if let Some(outcome) = self.resolve_idempotency(&admission, commit_binding.idempotency())? {
             return Ok(CandidatePreparation::Settled(outcome));
+        }
+        if let Some(pending) = prepared.pending_source {
+            pending
+                .consume_into(self.request.application, &mut admission, allocation_policy)
+                .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?;
         }
         let workflow_authority = self
             .workflow_authority

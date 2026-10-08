@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole;
 use crate::domain_computation::primary_graph::{
     tests::fixture::Account, WorthQueryApplicationOutputCorrespondence,
@@ -81,7 +82,14 @@ fn sealed_rebase(
             exact(super::super::super::rebase_output(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                super::super::super::PreparedSourceFactRebase::admit(facts).unwrap(),
+                super::super::super::PreparedSourceFactRebase::admit(
+                    facts,
+                    StorageControl::new(
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                        None,
+                    ),
+                )
+                .unwrap(),
                 correspondence,
                 changed,
                 true,

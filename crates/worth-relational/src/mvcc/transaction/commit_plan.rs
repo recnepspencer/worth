@@ -20,16 +20,21 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
     pub fn merged_plan(
         &mut self,
         runtime: &crate::runtime::RelationalRuntime,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<&MergedCommitPlan, CommitConflict> {
         let preparation = runtime.preparation_runtime_snapshot();
-        self.merged_plan_for_preparation(&preparation)?;
+        self.merged_plan_for_preparation(&preparation, allocation_policy)?;
         Ok(self.last_merged_plan.as_ref().expect("merged plan"))
     }
 
     fn merged_plan_for_preparation(
         &mut self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<&MergedCommitPlan, CommitConflict> {
+        allocation_policy.check_live().map_err(|denial| {
+            super::RelationalTransactionStagingDenial::from(denial).into_conflict()
+        })?;
         if self.last_merged_plan.is_none() {
             self.ensure_current_basis(runtime)?;
             let selected_state =
@@ -37,7 +42,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
             runtime.services.symbols.with_read(|symbols| {
                 self.validate_staged_branch_locality(selected_state.state(), symbols)
             })?;
-            let intents = self.normalized_intents_for_merge(runtime);
+            let intents = self.normalized_intents_for_merge(runtime, allocation_policy)?;
             let plan =
                 self.build_merged_plan_for_state(runtime, selected_state.state(), intents)?;
             self.last_merged_plan = Some(plan);
@@ -105,30 +110,41 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn normalized_intents_for_merge(
         &mut self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-    ) -> Vec<MutationIntent> {
-        self.normalize_intents_for_merge(runtime);
-        self.batches()
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Vec<MutationIntent>, CommitConflict> {
+        self.normalize_intents_for_merge(runtime, allocation_policy)?;
+        Ok(self
+            .batches()
             .iter()
             .flat_map(|batch| batch.intents.iter().cloned())
-            .collect()
+            .collect())
     }
 
     fn normalize_intents_for_merge(
         &mut self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-    ) {
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), CommitConflict> {
+        allocation_policy.check_live().map_err(|denial| {
+            super::RelationalTransactionStagingDenial::from(denial).into_conflict()
+        })?;
         let client_key_symbol_policy = runtime.runtime_config().identity.client_key_symbol_policy;
         if !client_key_symbol_policy.interns_requested_strings() {
-            return;
+            return Ok(());
         }
 
+        let mut result = Ok(());
         runtime.services.symbols.normalize_client_keys(|symbols| {
-            self.overlay.normalize_client_keys(
+            let (entries, outcome) = self.overlay.normalize_client_keys(
                 &mut self.footprint,
                 symbols,
                 client_key_symbol_policy,
-            )
+                allocation_policy,
+            );
+            result = outcome;
+            entries
         });
+        result.map_err(super::RelationalTransactionStagingDenial::into_conflict)
     }
 
     pub(crate) fn ensure_runtime_affinity(

@@ -25,6 +25,7 @@ fn complexity_budget_preparation_packetization_is_chunked_for_broad_deltas() {
                     .collect(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = runtime

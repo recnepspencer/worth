@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationHistoricalRead,
     WorthQueryApplicationQueryAdmissionDenialKind,
 };
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn typed_emission_is_published_with_the_exact_provider_commit() {
@@ -58,44 +59,6 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
             .retained_application_emission_bytes(),
         emissions[0].retained_bytes(),
         "the live source must account for the exact admitted payload bytes"
-    );
-}
-
-#[test]
-fn rejection_before_transaction_publishes_no_emit_causality() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = admitted_program_with_emit(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "rejected",
-        Some("must-not-publish"),
-    );
-
-    world.faults.reject_next_commit_before_transaction();
-    let outcome = world.application.compare_and_commit_application(
-        program,
-        idempotency(32, 32),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    assert!(
-        !matches!(
-            outcome,
-            WorthQueryApplicationCommitOutcome::Committed(_)
-                | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
-        ),
-        "rejected transaction claimed commit: {outcome:?}"
-    );
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .published_application_commit_count(),
-        0
     );
 }
 
@@ -351,16 +314,24 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
@@ -391,3 +362,6 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
         "payload admission must fail before provider mutation or publication"
     );
 }
+
+#[path = "emitted_effects/pretransaction_emit_refusal.rs"]
+mod pretransaction_emit_refusal;

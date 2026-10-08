@@ -49,6 +49,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     retain_client_observation: bool,
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    source_fact_rebase: Option<crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase>,
     output_currentness_facts: Option<
         std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
     >,
@@ -74,6 +75,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.decision_facts.facts()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn take_source_fact_rebase(
+        &mut self,
+    ) -> crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase {
+        self.source_fact_rebase
+            .take()
+            .expect("registered pre-effect source rebase is consumed once")
+    }
     pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
         &self,
     ) -> Vec<super::super::super::WorthQueryApplicationObservedFact> {
@@ -313,6 +321,7 @@ impl WorthQueryPrimaryGraphProvider {
             producer_required_invariants,
             output_currentness_facts,
             mut consumed_outputs,
+            source_fact_rebase,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -361,6 +370,7 @@ impl WorthQueryPrimaryGraphProvider {
                 retain_client_observation,
                 producer_required_invariants,
                 output_currentness_facts,
+                source_fact_rebase: Some(source_fact_rebase),
                 consumed_outputs: std::sync::Arc::from(consumed_outputs),
             },
             requests,

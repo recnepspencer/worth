@@ -1,4 +1,5 @@
 use crate::facade::runtime::ExecutionAllocationPolicy;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 use worth_query_declaration::facade::application_schema::OperationReads;
 
 use super::super::super::application_attempt::idempotency;
@@ -163,23 +164,31 @@ pub(super) fn close_reads(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            seal_lifecycle_facts(reader);
-            let elevation = reader
-                .resolve_entity(
-                    CapabilityElevationIdentity::reference(),
-                    "elevation-2".to_owned(),
-                )
-                .unwrap();
-            reader
-                .require_decision_field(&elevation, CapabilityElevationClosedAt::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                seal_lifecycle_facts(reader);
+                let elevation = reader
+                    .resolve_entity(
+                        CapabilityElevationIdentity::reference(),
+                        "elevation-2".to_owned(),
+                    )
+                    .unwrap();
+                reader
+                    .require_decision_field(&elevation, CapabilityElevationClosedAt::reference())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
@@ -233,20 +242,28 @@ pub(super) fn review_reads(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            seal_lifecycle_facts(reader);
-            let review = reader
-                .resolve_entity(CapabilityReviewIdentity::reference(), "review-2".to_owned())
-                .unwrap();
-            reader
-                .require_decision_field(&review, CapabilityReviewReviewedAt::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                seal_lifecycle_facts(reader);
+                let review = reader
+                    .resolve_entity(CapabilityReviewIdentity::reference(), "review-2".to_owned())
+                    .unwrap();
+                reader
+                    .require_decision_field(&review, CapabilityReviewReviewedAt::reference())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
@@ -302,88 +319,6 @@ pub(super) fn seal_lifecycle_facts<Operation>(
     seal_lifecycle_relations(reader, &elevation, &review);
 }
 
-fn seal_lifecycle_fields<Operation>(
-    reader: &mut crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader<
-        IdentityExecutionSchema,
-        Operation,
-    >,
-    elevation: &ElevationIdentity,
-    review: &ReviewIdentity,
-) where
-    CapabilityElevationIdentity: OperationReads<Operation>,
-    CapabilityElevationReason: OperationReads<Operation>,
-    CapabilityElevationStatusField: OperationReads<Operation>,
-    CapabilityElevationNotBefore: OperationReads<Operation>,
-    CapabilityElevationNotAfter: OperationReads<Operation>,
-    CapabilityReviewIdentity: OperationReads<Operation>,
-    CapabilityReviewKindField: OperationReads<Operation>,
-    CapabilityReviewStatusField: OperationReads<Operation>,
-{
-    reader
-        .require_decision_field(elevation, CapabilityElevationIdentity::reference())
-        .unwrap();
-    reader
-        .require_decision_field(elevation, CapabilityElevationReason::reference())
-        .unwrap();
-    reader
-        .require_decision_field(elevation, CapabilityElevationStatusField::reference())
-        .unwrap();
-    reader
-        .require_decision_field(elevation, CapabilityElevationNotBefore::reference())
-        .unwrap();
-    reader
-        .require_decision_field(elevation, CapabilityElevationNotAfter::reference())
-        .unwrap();
-    reader
-        .require_decision_field(review, CapabilityReviewIdentity::reference())
-        .unwrap();
-    reader
-        .require_decision_field(review, CapabilityReviewKindField::reference())
-        .unwrap();
-    reader
-        .require_decision_field(review, CapabilityReviewStatusField::reference())
-        .unwrap();
-}
-
-fn seal_lifecycle_relations<Operation>(
-    reader: &mut crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader<
-        IdentityExecutionSchema,
-        Operation,
-    >,
-    elevation: &ElevationIdentity,
-    review: &ReviewIdentity,
-) where
-    CapabilityElevationRequester: OperationReads<Operation>,
-    CapabilityElevationApprover: OperationReads<Operation>,
-    CapabilityElevationGrant: OperationReads<Operation>,
-    CapabilityElevationResource: OperationReads<Operation>,
-    CapabilityElevationReview: OperationReads<Operation>,
-    CapabilityReviewResource: OperationReads<Operation>,
-    CapabilityReviewer: OperationReads<Operation>,
-{
-    reader
-        .decision_relations_to(CapabilityElevationRequester::reference(), elevation)
-        .unwrap();
-    reader
-        .decision_relations_to(CapabilityElevationApprover::reference(), elevation)
-        .unwrap();
-    reader
-        .decision_relations_from(CapabilityElevationGrant::reference(), elevation)
-        .unwrap();
-    reader
-        .decision_relations_from(CapabilityElevationResource::reference(), elevation)
-        .unwrap();
-    reader
-        .decision_relations_from(CapabilityElevationReview::reference(), elevation)
-        .unwrap();
-    reader
-        .decision_relations_from(CapabilityReviewResource::reference(), review)
-        .unwrap();
-    reader
-        .decision_relations_to(CapabilityReviewer::reference(), review)
-        .unwrap();
-}
-
 fn close_input() -> CloseElevationInput {
     CloseElevationInput {
         account: "account-1".to_owned(),
@@ -398,3 +333,7 @@ fn review_input() -> CompleteElevationReviewInput {
         review: "review-2".to_owned(),
     }
 }
+
+#[path = "terminal_lifecycle_support/lifecycle_facts.rs"]
+mod lifecycle_facts;
+use lifecycle_facts::{seal_lifecycle_fields, seal_lifecycle_relations};

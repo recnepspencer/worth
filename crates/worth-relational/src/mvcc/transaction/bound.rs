@@ -45,10 +45,15 @@ impl BranchBoundRelationalTransaction {
         &self.footprint
     }
 
+    /// Stages one owned input batch under an explicit physical allocation policy.
+    /// Index/footprint backing is admitted before semantic publication; nested
+    /// input/key heaps and the existing input directory remain separate owners.
     pub fn push_batch(
         &mut self,
         batch: WorkerIntentBatch,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), super::RelationalTransactionStagingDenial> {
+        policy.check_live()?;
         self.admit_materialization_batch(&batch)?;
         let required_bytes = self
             .overlay_bytes
@@ -61,9 +66,16 @@ impl BranchBoundRelationalTransaction {
                 },
             );
         }
-        self.footprint
-            .admit_staged_loci(&batch, self.maximum_footprint_loci)?;
-        self.overlay.stage(batch, &mut self.footprint);
+        let (index, footprint) = self.overlay.prepare_stage(
+            &batch,
+            &self.footprint,
+            self.maximum_footprint_loci,
+            policy,
+        )?;
+        self.overlay.reserve_input_directory()?;
+        policy.check_live()?;
+        self.overlay.stage(batch, index);
+        self.footprint = footprint;
         self.overlay_bytes = required_bytes;
         self.last_merged_plan = None;
         Ok(())
@@ -108,20 +120,22 @@ impl BranchBoundRelationalTransaction {
     pub fn commit(
         self,
         runtime: &crate::runtime::RelationalRuntime,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::transactions::data::CommitResult,
         crate::transactions::data::TransactionCommitError,
     > {
-        runtime.commit_branch_transaction(self)
+        runtime.commit_branch_transaction(self, allocation_policy)
     }
 
     pub fn validate(
         self,
         runtime: &crate::runtime::RelationalRuntime,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::mvcc::ValidatedRelationalProposal,
         crate::transactions::data::TransactionCommitError,
     > {
-        runtime.validate_branch_transaction(self)
+        runtime.validate_branch_transaction(self, allocation_policy)
     }
 }

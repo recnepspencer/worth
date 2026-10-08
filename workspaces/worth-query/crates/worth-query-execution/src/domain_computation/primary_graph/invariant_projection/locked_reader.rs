@@ -64,10 +64,13 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
             String,
         )>,
     >,
-    pub(super) dependent_source_facts: BTreeMap<
-        super::super::application_attempt::WorthQueryApplicationFactStorageKey,
-        super::super::application_attempt::WorthQueryApplicationObservedFact,
-    >,
+    pub(super) dependent_source_facts:
+        super::super::application_attempt::retained_decision_facts::AuthoringSourceFacts,
+    pub(super) retention_control:
+        super::super::application_attempt::retained_decision_facts::StorageControl<
+            'runtime,
+            'runtime,
+        >,
     pub(super) consumed_outputs: BTreeMap<
         Arc<super::super::output_lineage::RecordedSettlementIdentity>,
         super::ConsumedOutputEvidence,
@@ -94,6 +97,7 @@ where
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
@@ -109,6 +113,10 @@ where
             WorthQueryInvariantProjectionWorkBudget::unbounded(),
             basis,
             projection,
+            super::super::application_attempt::retained_decision_facts::StorageControl::new(
+                allocation_policy,
+                None,
+            ),
         )
     }
 
@@ -119,6 +127,10 @@ where
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
+        request: Option<
+            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
@@ -127,6 +139,10 @@ where
             WorthQueryInvariantProjectionWorkBudget::bounded(maximum_work),
             basis,
             projection,
+            super::super::application_attempt::retained_decision_facts::StorageControl::new(
+                allocation_policy,
+                request,
+            ),
         )
     }
 
@@ -137,6 +153,7 @@ where
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
+        retention_control: super::super::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Result<
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
@@ -167,7 +184,8 @@ where
                     prior_output_bindings: HashMap::new(),
                     current_output_families: HashMap::new(),
                     consumed_outputs: BTreeMap::new(),
-                    dependent_source_facts: BTreeMap::new(),
+                    dependent_source_facts: super::super::application_attempt::retained_decision_facts::AuthoringSourceFacts::vacant(),
+                    retention_control,
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);
@@ -176,7 +194,7 @@ where
                     reader.work,
                     reader.realized_scope,
                     reader.consumed_outputs,
-                    reader.dependent_source_facts,
+                    reader.dependent_source_facts.finish(retention_control),
                     reader.work_budget.exceeded(),
                 )
             }))
@@ -197,10 +215,23 @@ where
             self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             });
-            return Err(WorthQueryInvariantProjectionDenial::work_budget_exceeded(
-                work,
-            ));
+            let denial = WorthQueryInvariantProjectionDenial::work_budget_exceeded(work);
+            return Err(match dependent_source_facts {
+                Ok(_) => denial,
+                Err(retention) => denial.with_retention_denial(retention),
+            });
         }
+        let dependent_source_facts = match dependent_source_facts {
+            Ok(facts) => facts,
+            Err(denial) => {
+                self.graph.with_runtime_mut(|runtime| {
+                    crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+                });
+                return Err(
+                    WorthQueryInvariantProjectionDenial::source_retention_denied(denial, work),
+                );
+            }
+        };
         Ok(WorthQueryCompletedInvariantProjection {
             output,
             snapshot: WorthQueryApplicationInvariantProjectionSnapshot {
@@ -213,7 +244,7 @@ where
                 authority_identity: self.authority_identity,
                 realized_scope,
                 consumed_outputs,
-                dependent_source_facts,
+                dependent_source_facts: Some(dependent_source_facts),
                 _schema: PhantomData,
             },
             work,
@@ -241,136 +272,4 @@ impl<Schema, Output> WorthQueryCompletedInvariantProjection<Schema, Output> {
     }
 }
 
-impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub const fn version(&self) -> worth_relational::facade::identity::VersionId {
-        self.snapshot.version_id()
-    }
-
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
-        &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        if !self.work_budget.can_afford(3) {
-            return Err(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
-                field.field(),
-            ));
-        }
-        let value = Field::Binding::encode(&value).map_err(|_| {
-            WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
-                field.field(),
-            )
-        })?;
-        let truth = self.entity_resolution.at_snapshot(
-            self.runtime,
-            self.snapshot,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )?;
-        let (resolved, examined) =
-            truth.resolve_with_work(field.entity(), field.aspect(), field.field(), value);
-        self.work_budget.consume(1 + examined);
-        self.work.record_lookup(examined);
-        let resolved = resolved?;
-        self.realized_scope.record(resolved.entity_id());
-        Ok(WorthQueryInvariantEntityIdentity {
-            entity_id: resolved.entity_id(),
-            kind: resolved.entity_kind(),
-            entity: Arc::from(field.entity()),
-            authority_identity: self.authority_identity,
-            _marker: PhantomData,
-        })
-    }
-
-    pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
-        &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Result<
-        Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
-        WorthQueryEntityResolutionDenial,
-    >
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        match self.resolve_entity(field, value) {
-            Ok(identity) => Ok(Some(identity)),
-            Err(denial) if denial.kind() == WorthQueryEntityResolutionDenialKind::UnknownEntity => {
-                Ok(None)
-            }
-            Err(denial) => Err(denial),
-        }
-    }
-
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        &mut self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Option<Value>
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        if !self.identity_is_local(identity, field.entity()) {
-            return None;
-        }
-        if !self.work_budget.can_afford(1) {
-            return None;
-        }
-        self.work_budget.consume(1);
-        self.realized_scope.record(identity.entity_id);
-        let locator = self
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())?
-            .clone();
-        self.work.record_field();
-        super::super::application_attempt::observe_field_value_borrowed(
-            self.runtime,
-            self.snapshot,
-            identity.entity_id,
-            identity.kind,
-            &locator,
-            |raw| raw.and_then(|value| Field::Binding::decode(value).ok()),
-        )
-        .flatten()
-    }
-
-    pub(super) fn identity_is_local<Entity>(
-        &self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        entity: &str,
-    ) -> bool {
-        identity.authority_identity == self.authority_identity && identity.entity.as_ref() == entity
-    }
-}
+mod record_reads;

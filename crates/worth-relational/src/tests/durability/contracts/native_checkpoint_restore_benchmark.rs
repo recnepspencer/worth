@@ -41,9 +41,15 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
                         .collect(),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        let committed = txn.commit(&source).unwrap();
+        let committed = txn
+            .commit(
+                &source,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         release_test_commit_snapshot(&source, &committed);
     }
 

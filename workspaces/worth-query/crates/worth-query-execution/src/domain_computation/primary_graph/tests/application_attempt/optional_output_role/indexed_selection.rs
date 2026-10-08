@@ -112,7 +112,12 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         .unwrap();
     drop(world);
     let reopened = restored_world(checkpoint).expect("the real native application reopens");
-    let restored = decode_producer_facts(&durable).unwrap();
+    let restored = decode_producer_facts(
+        &durable,
+        None,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
     assert!(matches!(
         selection(&reopened.application, &restored),
         OutputDependencySelection::Reuse

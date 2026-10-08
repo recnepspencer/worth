@@ -120,6 +120,7 @@ where
             observed_source,
             input.input(),
             request_admission,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
     required_output.retain_actual_resources(resources);

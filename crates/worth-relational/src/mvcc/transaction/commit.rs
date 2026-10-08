@@ -5,8 +5,9 @@ impl RelationalRuntime {
     pub fn commit_branch_transaction(
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<CommitResult, TransactionCommitError> {
-        let candidate = self.prepare_branch_transaction(transaction)?;
+        let candidate = self.prepare_branch_transaction(transaction, allocation_policy)?;
         self.publish_prepared_candidate(candidate)
     }
 
@@ -22,9 +23,10 @@ impl RelationalRuntime {
     pub fn prepare_branch_transaction(
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         self.preparation_port()
-            .prepare_branch_transaction(transaction)
+            .prepare_branch_transaction(transaction, allocation_policy)
     }
 
     pub fn prepare_branch_transaction_with_lease(
@@ -71,11 +73,11 @@ impl RelationalRuntime {
     ///     .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
     ///     .expect("an exact admitted basis admits a branch transaction");
     /// transaction
-    ///     .push_batch(WorkerIntentBatch::new("preparation-port-doc"))
+    ///     .push_batch(WorkerIntentBatch::new("preparation-port-doc"), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
     ///     .expect("one empty batch stages within the declared budget");
     ///
     /// let candidate = preparation
-    ///     .prepare_branch_transaction(transaction)
+    ///     .prepare_branch_transaction(transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
     ///     .expect("preparation validates without moving the branch");
     /// preparation
     ///     .discard_prepared_candidate(candidate)

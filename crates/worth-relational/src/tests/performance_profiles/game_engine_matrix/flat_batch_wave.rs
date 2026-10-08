@@ -68,10 +68,16 @@ pub(super) fn certify_flat_entity_batch_region_wave(suite: &'static str) {
                         },
                     )));
                 }
-                txn.push_batch(batch)
-                    .expect("test staging stays within configured resource budgets");
-                txn.commit(&runtime)
-                    .expect("scene batch flat entity wave commit")
+                txn.push_batch(
+                    batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
+                txn.commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("scene batch flat entity wave commit")
             };
             let update_micros = update_started_at.elapsed().as_micros();
 

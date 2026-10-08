@@ -12,9 +12,9 @@ pub(crate) fn shock_market_on_branch(
     let mut txn =
         crate::tests::support::test_owner_begin_transaction_for_branch(&world.runtime, branch_id);
     for (idx, market_point) in world.market.market_points.iter().enumerate() {
-        txn.push_batch(WorkerIntentBatch::new(format!("shock-market-{idx}")).push(
-            MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                UpdateEntityFieldsIntent {
+        txn.push_batch(
+            WorkerIntentBatch::new(format!("shock-market-{idx}")).push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: *market_point,
                     fields: crate::tests::support::aspect_field_patch_from_values([
                         (
@@ -40,21 +40,26 @@ pub(crate) fn shock_market_on_branch(
                             crate::tests::support::string_aspect_value("intraday-shock"),
                         ),
                     ]),
-                },
+                }),
             )),
-        ))
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     }
-    txn.commit(&world.runtime).unwrap()
+    txn.commit(
+        &world.runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
 }
 
 pub(crate) fn refresh_risk_views(world: &mut FintechWorld, branch_id: BranchId) -> CommitResult {
     let mut txn =
         crate::tests::support::test_owner_begin_transaction_for_branch(&world.runtime, branch_id);
     for (idx, risk_view) in world.risk.risk_views.iter().enumerate() {
-        txn.push_batch(WorkerIntentBatch::new(format!("refresh-risk-{idx}")).push(
-            MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                UpdateEntityFieldsIntent {
+        txn.push_batch(
+            WorkerIntentBatch::new(format!("refresh-risk-{idx}")).push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: *risk_view,
                     fields: crate::tests::support::aspect_field_patch_from_values([
                         (
@@ -78,12 +83,17 @@ pub(crate) fn refresh_risk_views(world: &mut FintechWorld, branch_id: BranchId) 
                             crate::tests::support::bool_aspect_value(true),
                         ),
                     ]),
-                },
+                }),
             )),
-        ))
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     }
-    txn.commit(&world.runtime).unwrap()
+    txn.commit(
+        &world.runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
 }
 
 pub(crate) fn stress_seeded_intraday_risk(
@@ -126,6 +136,7 @@ pub(crate) fn stress_seeded_intraday_risk(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -161,6 +172,7 @@ pub(crate) fn stress_seeded_intraday_risk(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -191,6 +203,7 @@ pub(crate) fn stress_seeded_intraday_risk(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -221,7 +234,12 @@ pub(crate) fn stress_seeded_intraday_risk(
                 ]),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(&world.runtime).unwrap()
+    txn.commit(
+        &world.runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
 }

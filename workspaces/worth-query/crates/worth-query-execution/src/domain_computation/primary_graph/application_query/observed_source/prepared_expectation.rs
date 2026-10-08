@@ -1,5 +1,7 @@
 mod affinity;
+mod pending;
 use affinity::parameter_denial;
+pub use pending::WorthQueryPendingSourceExpectation;
 
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity;
@@ -192,7 +194,7 @@ where
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
         input: &Binding::Input,
-    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
+    ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
@@ -214,7 +216,7 @@ where
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
         input: &Binding::Input,
-    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
+    ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
@@ -247,6 +249,7 @@ where
         >,
         input: &Binding::Input,
         request_admission: &mut InvalidationEditAdmission,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<PreparedObservedSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
@@ -283,7 +286,8 @@ where
             Binding::IDENTITY,
         )?;
         let partition_identity = source.partition_identity();
-        let facts = prepared_facts.into_facts()?;
+        let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
+        let facts = prepared_facts.into_facts(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(admission.publication_request())))?;
         let super::WorthQueryApplicationBasisSelectionIdentity::Product(observed_product) =
             source.selection
         else {
@@ -303,22 +307,12 @@ where
 
     fn bind_checked_source_expectation<Binding, Scope>(
         &self,
-        admission: &mut WorthQueryAdmittedApplicationOperation<
-            Schema,
-            Binding::Operation,
-            Binding::Input,
-            Scope,
-        >,
-        source: WorthQueryObservedSource<
-            <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
-        >,
+        admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Binding::Operation, Binding::Input, Scope>,
+        source: WorthQueryObservedSource<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>,
         identity: [u8; 32],
         input: &Binding::Input,
-    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
-    where
-        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-            Schema,
-        >,
+    ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
+    where Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<Schema>,
     {
         let checked = self.checked_source_affinity::<Binding, Scope>(
             admission,
@@ -330,13 +324,22 @@ where
                     .map_err(|denial| parameter_denial(Binding::IDENTITY, denial))
             },
         )?;
-        let partition_identity = source.partition_identity();
-        let facts = source.validated_facts(checked.layout, checked.expected_query_identifier)?;
-        admission.bind_source_partition(partition_identity);
-        admission.bind_source_facts(facts);
-        Ok(WorthQueryBoundSourceExpectation {
+        source.validate_fact_retention(
+            checked.layout,
+            checked.expected_query_identifier,
+            Some(admission.publication_request()),
+        )?;
+        let bound = WorthQueryBoundSourceExpectation {
             identity,
-            partition_identity,
+            partition_identity: source.partition_identity(),
+        };
+        admission.bind_source_partition(bound.partition_identity);
+        Ok(WorthQueryPendingSourceExpectation {
+            admission_identity: admission.admission_identity(),
+            selected_product: checked.selected_product,
+            expected_query_identifier: checked.expected_query_identifier,
+            bound,
+            source,
         })
     }
 }

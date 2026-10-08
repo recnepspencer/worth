@@ -35,9 +35,15 @@ fn candidate_for_update(
                     fields: name_field_patch(name),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    runtime.prepare_branch_transaction(transaction).unwrap()
+    runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
 }
 
 fn budget(cold_slots: usize) -> DerivedIndexMaintenanceBudget {
@@ -70,9 +76,17 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
     let index_id = index(&runtime);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("expired-index-candidate"))
+        .push_batch(
+            batch_create("expired-index-candidate"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let mut candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let mut candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let denied = runtime
         .index_authority()

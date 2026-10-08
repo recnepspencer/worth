@@ -91,17 +91,23 @@ impl CargoRecords {
             let mut tx = runtime
                 .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
                 .unwrap();
-            tx.push_batch(WorkerIntentBatch::new(name).push(MutationIntent::Create(
-                CreateIntent::Entity(EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(kind),
-                    client_key: ClientKey::raw(name),
-                    fields: patch(value),
-                }),
-            )))
+            tx.push_batch(
+                WorkerIntentBatch::new(name).push(MutationIntent::Create(CreateIntent::Entity(
+                    EntitySpec {
+                        partition_id: PartitionId::main(),
+                        kind_id: KindId(kind),
+                        client_key: ClientKey::raw(name),
+                        fields: patch(value),
+                    },
+                ))),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("component owner: stage entity");
             let result = tx
-                .commit(&runtime)
+                .commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("component owner: install entity");
             let id = result
                 .changed_records
@@ -129,19 +135,25 @@ impl CargoRecords {
             let mut tx = runtime
                 .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
                 .unwrap();
-            tx.push_batch(WorkerIntentBatch::new("link").push(MutationIntent::Create(
-                CreateIntent::Relation(RelationSpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(5),
-                    client_key: ClientKey::raw(format!("{source}-{target}")),
-                    source: EntityReference::Existing(ids[source]),
-                    target: EntityReference::Existing(ids[target]),
-                    fields: AspectFieldPatch::default(),
-                }),
-            )))
+            tx.push_batch(
+                WorkerIntentBatch::new("link").push(MutationIntent::Create(
+                    CreateIntent::Relation(RelationSpec {
+                        partition_id: PartitionId::main(),
+                        kind_id: KindId(5),
+                        client_key: ClientKey::raw(format!("{source}-{target}")),
+                        source: EntityReference::Existing(ids[source]),
+                        target: EntityReference::Existing(ids[target]),
+                        fields: AspectFieldPatch::default(),
+                    }),
+                )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("component owner: stage route link");
-            tx.commit(&runtime)
-                .expect("component owner: install route link");
+            tx.commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("component owner: install route link");
         }
         Self { runtime, ids }
     }
@@ -239,11 +251,15 @@ impl CargoRecords {
                     fields: patch(value),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("component owner: stage update");
         self.runtime
             .preparation_port()
-            .prepare_branch_transaction(tx)
+            .prepare_branch_transaction(
+                tx,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("component owner: prepare update")
     }
 }

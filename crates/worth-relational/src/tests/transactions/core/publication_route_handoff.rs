@@ -20,10 +20,16 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("handoff-write"))
+        .push_batch(
+            batch_create("handoff-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("handoff candidate prepares");
     let publication_cell = candidate.publication_cell_for_test();
     let publication_gate = Arc::clone(publication_cell.coordination());

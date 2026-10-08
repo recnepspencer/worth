@@ -31,6 +31,13 @@ use worth_query_host::facade::{
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
 
+#[path = "assessment_output/ordinary.rs"]
+mod ordinary;
+pub use ordinary::{
+    OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,
+    OrdinaryRetentionAssessmentIntent,
+};
+
 use super::{
     retention_entry::{DocumentRetentionQueryBinding, DocumentRetentionRead},
     schema::{
@@ -336,7 +343,7 @@ impl WorthQueryApplicationProducerProvider<DocumentRetentionSchema, RetentionAss
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
-    schema
+    let schema = schema
         .operation(
             PublishRetentionAssessment::reference()
                 .definition()
@@ -354,5 +361,6 @@ pub fn declare(
             PublishRetentionAssessment::reference(),
             DocumentRetentionField::reference(),
         )
-        .application_mutation_binding::<RetentionAssessmentBinding>()
+        .application_mutation_binding::<RetentionAssessmentBinding>();
+    ordinary::declare(schema)
 }

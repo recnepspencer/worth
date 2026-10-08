@@ -57,11 +57,15 @@ fn same_commit_graph_creation_allows_relation_to_target_created_entities() {
                     fields: crate::transactions::data::AspectFieldPatch::default(),
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("same-commit graph creation should succeed");
     let created_entities = changed_entities(&outcome);
     let created_relations = changed_relations(&outcome);
@@ -144,11 +148,15 @@ fn bulk_relation_create_can_target_same_commit_created_entities() {
                     field_patches: vec![crate::transactions::data::AspectFieldPatch::default()],
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("bulk relation create against created refs should succeed");
 
     assert_eq!(changed_entities(&outcome).len(), 2);
@@ -228,11 +236,15 @@ fn relation_aspect_create_records_exact_owner_correspondence() {
                     aspect_patch: PortableRecordAspectPatch::new([]),
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("same-commit relation-aspect creation should succeed");
     let created_relation = changed_relations(&outcome)[0];
     assert_eq!(
@@ -276,11 +288,15 @@ fn relation_create_rejects_created_entity_refs_missing_from_same_commit() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
     let error = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("missing created ref should fail closed");
     match error {
         TransactionCommitError::Conflict { error, .. } => {

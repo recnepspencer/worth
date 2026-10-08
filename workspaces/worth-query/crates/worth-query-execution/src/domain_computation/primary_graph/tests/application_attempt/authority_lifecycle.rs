@@ -68,7 +68,11 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
         .unwrap();
     let projected_denial = target_world
         .invariant
-        .project_admitted_operation(&projected_admission, |_, _| ())
+        .project_admitted_operation(
+            &projected_admission,
+            |_, _| (),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("foreign admission cannot execute a target projection closure");
     assert_eq!(

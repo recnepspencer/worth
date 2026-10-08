@@ -1,4 +1,5 @@
 use std::time::Duration;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[path = "decision_adjacency/duplicate_retirement.rs"]
 mod duplicate_retirement;
@@ -102,38 +103,6 @@ fn assert_changed_decision(outcome: WorthQueryApplicationCommitOutcome, cause: &
 }
 
 #[test]
-fn compile_capability_cannot_widen_the_installed_relation_manifest() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let actor = authenticated(&world, "alice", &request);
-    let account = resolved_account(&world, "open", &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(&actor, &account, &operation, Default::default(), &request)
-        .unwrap();
-    let projected = world
-        .invariant
-        .project_admitted_operation(&admission, |reader, account| {
-            reader.decision_relations_to(AccountOwner::reference(), account)
-        })
-        .unwrap();
-    let denial = projected
-        .output()
-        .as_ref()
-        .expect_err("an uninstalled relation target must be denied");
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryInvariantProjectionTraversalDenialKind::UndeclaredDecisionTarget
-    );
-}
-
-#[test]
 fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
     let world = installed_authorization_world(true);
     let request = live_scope();
@@ -150,22 +119,30 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, principal| {
-            reader
-                .relations_from(AccountOwner::reference(), principal)
-                .unwrap();
-            let account = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-            reader
-                .require_decision_field(&account, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, principal| {
+                reader
+                    .relations_from(AccountOwner::reference(), principal)
+                    .unwrap();
+                let account = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_string())
+                    .unwrap();
+                reader
+                    .require_decision_field(&account, AccountStatus::reference())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     reads
         .complete_projected_dependencies(
@@ -239,22 +216,30 @@ fn link_program(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, principal| {
-            reader
-                .decision_relations_from(AccountOwner::reference(), principal)
-                .unwrap();
-            let account = reader
-                .resolve_entity(AccountStatus::reference(), account_status.to_string())
-                .unwrap();
-            reader
-                .require_decision_field(&account, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, principal| {
+                reader
+                    .decision_relations_from(AccountOwner::reference(), principal)
+                    .unwrap();
+                let account = reader
+                    .resolve_entity(AccountStatus::reference(), account_status.to_string())
+                    .unwrap();
+                reader
+                    .require_decision_field(&account, AccountStatus::reference())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
@@ -297,22 +282,30 @@ fn assert_membership_absent(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, principal| {
-            reader
-                .decision_relations_from(AccountOwner::reference(), principal)
-                .unwrap();
-            let account = reader
-                .resolve_entity(AccountStatus::reference(), account_status.to_owned())
-                .unwrap();
-            reader
-                .require_decision_field(&account, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, principal| {
+                reader
+                    .decision_relations_from(AccountOwner::reference(), principal)
+                    .unwrap();
+                let account = reader
+                    .resolve_entity(AccountStatus::reference(), account_status.to_owned())
+                    .unwrap();
+                reader
+                    .require_decision_field(&account, AccountStatus::reference())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -364,16 +357,24 @@ fn unlink_program(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, principal| {
-            reader
-                .decision_relations_from(AccountOwner::reference(), principal)
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, principal| {
+                reader
+                    .decision_relations_from(AccountOwner::reference(), principal)
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .complete_projected_dependencies(
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -387,3 +388,6 @@ fn unlink_program(
         .unwrap();
     effects.finish().unwrap()
 }
+
+#[path = "decision_adjacency/admitted_capability_manifest.rs"]
+mod admitted_capability_manifest;

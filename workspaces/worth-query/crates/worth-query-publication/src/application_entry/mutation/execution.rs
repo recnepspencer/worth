@@ -88,8 +88,21 @@ where
         let identities = self
             .identities()
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
-        let prepared = super::authorization::prepare(&self, &identities, staged)
+        let mut prepared = super::authorization::prepare(&self, &identities, staged)
             .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
+        if let Some(pending) = prepared.pending_source.take() {
+            pending
+                .consume_into(
+                    self.request.application,
+                    &mut prepared.admission,
+                    allocation_policy,
+                )
+                .map_err(|denial| {
+                    WorthQueryApplicationProgramMigrationPreparationDenial::Request(
+                        WorthQueryApplicationRequestMutationDenial::SourceExpectation(denial),
+                    )
+                })?;
+        }
         let completed = match self
             .request
             .application

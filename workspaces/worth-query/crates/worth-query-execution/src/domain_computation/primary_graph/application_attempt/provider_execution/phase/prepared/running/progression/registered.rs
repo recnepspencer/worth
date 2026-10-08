@@ -148,10 +148,11 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
                 return outcome
             }
         };
-        let candidate = match fresh.progress_invariant(self.steps, authority.provider()) {
-            Ok(candidate) => candidate,
-            Err(outcome) => return outcome,
-        };
+        let candidate =
+            match fresh.progress_invariant(self.steps, authority.provider(), allocation_policy) {
+                Ok(candidate) => candidate,
+                Err(outcome) => return outcome,
+            };
         super::authorized::authorize_and_resolve_provider_commit(
             candidate,
             authority,

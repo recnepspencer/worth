@@ -129,9 +129,17 @@ fn publication_handle_retention_is_bounded_by_policy() {
     let second = create_entity_outcome(&runtime, "second");
     let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction.push_batch(batch_create("third")).unwrap();
+    transaction
+        .push_batch(
+            batch_create("third"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     assert!(matches!(
-        transaction.commit(&runtime),
+        transaction.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         Err(
             crate::transactions::data::TransactionCommitError::PublicationDeferred {
                 deferred:

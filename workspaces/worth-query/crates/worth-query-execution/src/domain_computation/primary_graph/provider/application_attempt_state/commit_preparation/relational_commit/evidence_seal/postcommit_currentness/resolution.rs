@@ -32,6 +32,9 @@ impl PreparedFactRebase {
         producer_output: bool,
         maximum_pair_rebase_work: usize,
         indexed_rebase_work: &mut usize,
+        prepared_endpoints: Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+        >,
     ) -> Result<Self, RebaseVerificationReason> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
         if let Some(retirement) = retirement::resolve(runtime, snapshot, fact, retired) {
@@ -105,6 +108,7 @@ impl PreparedFactRebase {
                     snapshot,
                     fact,
                     maximum_pair_rebase_work,
+                    prepared_endpoints,
                 ) {
                     Some(rebased) => Ok(Self::Replace(rebased)),
                     None if producer_output => Err(unavailable),

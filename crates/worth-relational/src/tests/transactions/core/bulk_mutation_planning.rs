@@ -45,6 +45,7 @@ fn bulk_mutation_plan_normalizes_client_keys_and_tracks_locality() {
                     field_patches: vec![crate::transactions::data::AspectFieldPatch::default()],
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
@@ -116,6 +117,7 @@ fn bulk_mutation_plan_captures_lineage_and_provenance_for_topology_rewrite() {
                     relation_id: relation,
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
@@ -185,9 +187,15 @@ fn bulk_mutation_commit_records_admission_counters() {
                 field_patches: vec![crate::transactions::data::AspectFieldPatch::default()],
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     assert_eq!(outcome.complexity_delta().bulk_mutation_batch_count, 1);
     assert_eq!(

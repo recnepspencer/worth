@@ -1,14 +1,12 @@
-use super::world::supply_chain::relation_kind_id;
 use super::world::supply_chain::{
     audit_supply_chain_baseline, compile_supply_chain_baseline,
-    compile_supply_chain_baseline_with_budget, entity_kind_id, BaselineAuditError,
-    CompiledSupplyChainProgram, HandleBindingError, SupplyChainCompilationError,
+    compile_supply_chain_baseline_with_budget, entity_kind_id, relation_kind_id,
+    BaselineAuditError, ComparisonMismatch, CompiledSupplyChainProgram, EntityKey, EntityKind,
+    EntityRecord, HandleBindingError, RelationKind, SupplyChainCompilationError,
     SupplyChainProgramError, SupplyChainScale, SupplyChainSemanticHandles,
     SupplyChainWorldDefinition,
 };
-use super::world::supply_chain::{
-    ComparisonMismatch, EntityKey, EntityKind, EntityRecord, RelationKind,
-};
+use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaRegistryErrorClass};
@@ -84,10 +82,13 @@ fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
         )
         .expect("owner-admitted transaction context");
     transaction
-        .push_batch(WorkerIntentBatch::new("missing-owner-binding"))
+        .push_batch(
+            WorkerIntentBatch::new("missing-owner-binding"),
+            Allocation::SystemAllocation,
+        )
         .unwrap();
     let commit = transaction
-        .commit(&owner)
+        .commit(&owner, Allocation::SystemAllocation)
         .expect("the public no-op commit supplies a real empty correspondence");
     let error = SupplyChainSemanticHandles::bind(&program, &commit, commit.snapshot.clone())
         .expect_err("a real commit with no matching owner records cannot mint semantic handles");
@@ -111,7 +112,7 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
             )
             .expect("owner-admitted transaction context");
         let commit = transaction
-            .commit(&foreign_runtime)
+            .commit(&foreign_runtime, Allocation::SystemAllocation)
             .expect("foreign runtime no-op commit");
         commit.snapshot.clone()
     };
@@ -152,7 +153,7 @@ fn relation_binding_rejects_a_snapshot_from_another_runtime() {
             )
             .expect("owner-admitted transaction context");
         let commit = transaction
-            .commit(&foreign_runtime)
+            .commit(&foreign_runtime, Allocation::SystemAllocation)
             .expect("foreign runtime no-op commit");
         commit.snapshot.clone()
     };

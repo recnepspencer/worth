@@ -240,7 +240,11 @@ where
             .primary_graph()
             .ok_or(Denial::ForeignApplication)?;
         let facts = source
-            .retained_checkpoint_facts(&graph.layout)
+            .retained_checkpoint_facts(
+                &graph.layout,
+                None,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(|_| Denial::IncompleteDependencies)?;
         source_dependencies(&facts).ok_or(Denial::IncompleteDependencies)
     }

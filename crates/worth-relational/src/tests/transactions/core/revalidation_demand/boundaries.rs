@@ -18,11 +18,17 @@ fn staged_demands_consume_footprint_capacity_and_exhaust_it_by_name() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(revalidation_batch("within-ceiling", records[..4].to_vec()))
+        .push_batch(
+            revalidation_batch("within-ceiling", records[..4].to_vec()),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("four demands fit the ceiling exactly");
 
     assert_eq!(
-        transaction.push_batch(revalidation_batch("over-ceiling", [records[4]])),
+        transaction.push_batch(
+            revalidation_batch("over-ceiling", [records[4]]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+        ),
         Err(
             RelationalTransactionStagingDenial::FootprintCapacityExhausted {
                 maximum_loci: 4,
@@ -44,16 +50,19 @@ fn a_refused_demand_leaves_no_staging_residue() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(revalidation_batch(
-            "within-ceiling",
-            [first, second, third, fourth],
-        ))
+        .push_batch(
+            revalidation_batch("within-ceiling", [first, second, third, fourth]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("four demands fit the ceiling");
     let batch_count = transaction.batches().len();
     let read_count = transaction.footprint().reads().len();
 
     assert!(transaction
-        .push_batch(revalidation_batch("over-ceiling", [fifth]))
+        .push_batch(
+            revalidation_batch("over-ceiling", [fifth]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+        )
         .is_err());
     assert_eq!(transaction.batches().len(), batch_count);
     assert_eq!(transaction.footprint().reads().len(), read_count);
@@ -66,7 +75,10 @@ fn a_demand_claims_a_read_locus_and_never_a_write_locus() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(revalidation_batch("observe-only", [entity]))
+        .push_batch(
+            revalidation_batch("observe-only", [entity]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
 
     assert_eq!(
@@ -96,7 +108,10 @@ fn rolling_back_a_savepoint_past_a_demand_reports_no_restoration() {
         .create_savepoint()
         .expect("savepoint within configured budget");
     transaction
-        .push_batch(revalidation_batch("discarded", [entity]))
+        .push_batch(
+            revalidation_batch("discarded", [entity]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
         .rollback_to_savepoint(savepoint)
@@ -125,10 +140,16 @@ fn a_demand_puts_exactly_its_record_in_front_of_the_platform_touched_slot_rules(
     runtime.performance_access().reset_counters();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(revalidation_batch("revalidate-target", [target]))
+        .push_batch(
+            revalidation_batch("revalidate-target", [target]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the compliant record passes the strict reading");
     let counters = runtime.performance_access().counters();
     release_test_commit_snapshot(&runtime, &outcome);

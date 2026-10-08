@@ -83,12 +83,18 @@ impl<'run> WorthQueryAdmittedProviderSession<'run> {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryRegisteredProviderSession<'run>,
         WorthQueryProviderSessionRegistrationFailure,
     > {
-        match authorization.register_provider_attempt(prepared, self.staged, attempt_basis, context)
-        {
+        match authorization.register_provider_attempt(
+            prepared,
+            self.staged,
+            attempt_basis,
+            context,
+            allocation_policy,
+        ) {
             Ok(registered) => Ok(WorthQueryRegisteredProviderSession {
                 registered,
                 mutation_run: self.mutation_run,

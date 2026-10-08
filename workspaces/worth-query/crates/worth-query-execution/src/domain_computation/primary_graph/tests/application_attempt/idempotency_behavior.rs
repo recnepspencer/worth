@@ -312,15 +312,23 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
             .unwrap();
         let (_, projection, _) = world
             .invariant
-            .project_admitted_operation(&admission, |reader, projected| {
-                reader
-                    .require_decision_field(projected, super::AccountStatus::reference())
-                    .unwrap();
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, projected| {
+                    reader
+                        .require_decision_field(projected, super::AccountStatus::reference())
+                        .unwrap();
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts();
         application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()

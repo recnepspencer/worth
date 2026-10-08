@@ -120,9 +120,9 @@ mod tests {
         .build_runtime();
         let mut create = test_owner_begin_transaction_for_main(&runtime);
         create
-            .push_batch(WorkerIntentBatch::new("field-revision-create").push(
-                MutationIntent::Create(CreateIntent::Entity(
-                    crate::transactions::data::EntitySpec {
+            .push_batch(
+                WorkerIntentBatch::new("field-revision-create").push(MutationIntent::Create(
+                    CreateIntent::Entity(crate::transactions::data::EntitySpec {
                         partition_id: PartitionId::main(),
                         kind_id: KindId(1),
                         client_key: crate::symbols::data::ClientKey::raw("field-revision"),
@@ -131,11 +131,17 @@ mod tests {
                             field_key("title"),
                             "same",
                         )]),
-                    },
+                    }),
                 )),
-            ))
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
-        let created = create.commit(&runtime).unwrap();
+        let created = create
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let entity = changed_entities(&created)[0];
         let title = locator("summary", "title");
         let status = locator("summary", "status");
@@ -158,20 +164,26 @@ mod tests {
 
         let mut update = test_owner_begin_transaction_for_main(&runtime);
         update
-            .push_batch(WorkerIntentBatch::new("field-revision-update").push(
-                MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                    UpdateEntityFieldsIntent {
+            .push_batch(
+                WorkerIntentBatch::new("field-revision-update").push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                         entity_id: entity,
                         fields: string_aspect_field_patch([(
                             aspect_key("summary"),
                             field_key("status"),
                             "ready",
                         )]),
-                    },
+                    }),
                 )),
-            ))
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
-        let updated = update.commit(&runtime).unwrap();
+        let updated = update
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let after = read(&updated.snapshot);
         assert_eq!(before.0, after.0);
         assert_ne!(before.1, after.1);
@@ -208,9 +220,15 @@ mod tests {
                         )]),
                     }),
                 )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
-        let created = create.commit(&runtime).unwrap();
+        let created = create
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let entity = changed_entities(&created)[0];
         let status = locator("summary", "status");
         let title = locator("summary", "title");
@@ -242,9 +260,15 @@ mod tests {
                     )]),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        let present = set.commit(&runtime).unwrap();
+        let present = set
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         assert_eq!(
             revision(&present.snapshot).presence(),
             RelationalFieldPresence::Present
@@ -266,9 +290,15 @@ mod tests {
                         ]),
                     }),
                 )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
-        let absent_again = clear.commit(&runtime).unwrap();
+        let absent_again = clear
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let final_revision = revision(&absent_again.snapshot);
         assert_eq!(final_revision.presence(), RelationalFieldPresence::Absent);
         assert_ne!(initial, final_revision);

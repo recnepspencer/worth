@@ -293,16 +293,24 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             .unwrap();
         let (_, projection, _) = world
             .invariant
-            .project_admitted_operation(&admission, |reader, account| {
-                reader
-                    .require_decision_field(account, AccountStatus::reference())
-                    .unwrap();
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, account| {
+                    reader
+                        .require_decision_field(account, AccountStatus::reference())
+                        .unwrap();
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts();
         let reads = world
             .application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut effects = reads
             .complete_projected_dependencies(

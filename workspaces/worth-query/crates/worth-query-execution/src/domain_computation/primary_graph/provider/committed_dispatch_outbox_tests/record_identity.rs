@@ -45,9 +45,15 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
                     .push(MutationIntent::Create(
                         worth_relational::facade::transactions::CreateIntent::Entity(unrelated),
                     )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
+        let committed = transaction
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         assert_ne!(
             committed.created_entity(pending.created_entity()),
             committed.created_entity(&unrelated_created),
@@ -109,9 +115,9 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
                     WorkerIntentBatch::new("record-ref-substitution-owner-test")
                         .push(intent(&first))
                         .push(intent(&second)),
-                )
+                 worth_execution::ExecutionAllocationPolicy::SystemAllocation)
                 .expect("test staging stays within configured resource budgets");
-            let committed = transaction.commit(runtime).unwrap();
+            let committed = transaction.commit(runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,).unwrap();
             let bind = |record| {
                 WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
                     provider.graph.layout.provider_dispatch_outbox(),

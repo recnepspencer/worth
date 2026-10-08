@@ -65,16 +65,24 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
     assert_eq!(admission.authorization_requirement_count(), 2);
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, root| {
-            reader
-                .require_decision_field(root, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, root| {
+                reader
+                    .require_decision_field(root, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let mut reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     reads
         .observe_field(&account, AccountStatus::reference())

@@ -36,17 +36,38 @@ pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
 /// Capacity for the selected-snapshot fact transition is acquired while the
 /// candidate is still pre-effect custody. The postcommit path only fills the
 /// already allocated action and result buffers.
-pub(in crate::domain_computation::primary_graph::provider) struct PreparedSourceFactRebase {
+pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase {
     facts: Vec<WorthQueryApplicationObservedFact>,
+    endpoints: worth_execution::ExecutionArray<(
+        usize,
+        crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+    )>,
     actions: Vec<resolution::PreparedFactRebase>,
     rebased: Vec<WorthQueryApplicationObservedFact>,
     superseded: Vec<usize>,
 }
 
 impl PreparedSourceFactRebase {
-    pub(in crate::domain_computation::primary_graph::provider) fn admit(
+    pub(in crate::domain_computation::primary_graph) fn admit(
         facts: Vec<WorthQueryApplicationObservedFact>,
-    ) -> Result<Self, std::collections::TryReserveError> {
+        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<Self, PreparedRebaseDenial> {
+        control.check_live()?;
+        let endpoint_count = facts.iter().try_fold(0usize, |count, fact| {
+            control.check_live()?;
+            if matches!(fact, WorthQueryApplicationObservedFact::Relation { .. } | WorthQueryApplicationObservedFact::Adjacency { .. }) {
+                count.checked_add(1).ok_or(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability)
+            } else { Ok(count) }
+        })?;
+        let mut endpoints =
+            worth_execution::ExecutionArrayBuilder::allocate(endpoint_count, control.policy())?;
+        for (ordinal, fact) in facts.iter().enumerate() {
+            control.check_live()?;
+            if let Some(payload) = adjacency::prepare_endpoints(fact, control)? {
+                endpoints.push((ordinal, payload))?;
+            }
+        }
+        let endpoints = endpoints.seal()?;
         let mut actions = Vec::new();
         actions.try_reserve_exact(facts.len())?;
         let mut rebased = Vec::new();
@@ -55,6 +76,7 @@ impl PreparedSourceFactRebase {
         superseded.try_reserve_exact(facts.len())?;
         Ok(Self {
             facts,
+            endpoints,
             actions,
             rebased,
             superseded,
@@ -158,10 +180,12 @@ fn rebase(
 ) -> RebasedSourceFacts {
     let PreparedSourceFactRebase {
         facts,
+        endpoints,
         mut actions,
         mut rebased,
         mut superseded,
     } = prepared;
+    let mut endpoints = endpoints.into_iter().peekable();
     let mut indexed_work = maximum_indexed_rebase_work;
     for (ordinal, fact) in facts.iter().enumerate() {
         if let Some(meter) = admission.as_mut() {
@@ -200,6 +224,9 @@ fn rebase(
             producer_output,
             adjacency_work,
             &mut indexed_work,
+            endpoints
+                .next_if(|(prepared_ordinal, _)| *prepared_ordinal == ordinal)
+                .map(|(_, payload)| payload),
         ) {
             Ok(action) => actions.push(action),
             Err(reason) => {
@@ -237,3 +264,23 @@ fn rebase(
 #[cfg(test)]
 #[path = "postcommit_currentness/tests.rs"]
 mod tests;
+
+/// Exact physical source refusal stays distinct from legacy temporary Vec refusal.
+#[derive(Debug)]
+pub(in crate::domain_computation::primary_graph) enum PreparedRebaseDenial {
+    Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial),
+    Temporary(std::collections::TryReserveError),
+}
+impl From<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial> for PreparedRebaseDenial {
+    fn from(denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial) -> Self { Self::Retention(denial) }
+}
+impl From<worth_execution::ExecutionAllocationDenial> for PreparedRebaseDenial {
+    fn from(denial: worth_execution::ExecutionAllocationDenial) -> Self {
+        Self::Retention(denial.into())
+    }
+}
+impl From<std::collections::TryReserveError> for PreparedRebaseDenial {
+    fn from(denial: std::collections::TryReserveError) -> Self {
+        Self::Temporary(denial)
+    }
+}

@@ -57,9 +57,14 @@ fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
                 target: EntityReference::Existing(shared_target),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).expect("relation rewire should commit");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("relation rewire should commit");
 
     let current_neighbors = runtime
         .inspect_what_happened()

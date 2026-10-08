@@ -45,11 +45,17 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
         .begin_branch_transaction(&predecessor, RelationalTransactionIntent::ordinary())
         .expect("the exact port-issued predecessor opens a transaction");
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the Supply Chain reroute remains inside its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the preparation port builds the canonical reroute candidate");
     let performed = match services.publication_port().compare_and_publish(candidate) {
         RelationalPublicationOutcome::Performed(performed) => performed,
@@ -123,10 +129,16 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
         .begin_branch_transaction(&predecessor, RelationalTransactionIntent::ordinary())
         .expect("the exact port-issued predecessor opens the direct route");
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the Supply Chain maintenance delta remains in budget");
     let committed = transaction
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the compatibility commit performs canonically");
 
     assert!(matches!(

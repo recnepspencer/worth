@@ -1,7 +1,6 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
 mod postcommit_currentness;
-pub(in crate::domain_computation::primary_graph::provider) use postcommit_currentness::PreparedSourceFactRebase;
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::RebaseVerificationReason;
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
@@ -214,3 +213,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         self.observed_source_facts.verification_requirement()
     }
 }
+
+pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

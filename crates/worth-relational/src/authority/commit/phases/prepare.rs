@@ -160,6 +160,7 @@ fn sparse_relation_overlay_partitions_for_plan(
 pub(crate) fn prepare_working_state_scope(
     runtime: &RelationalPreparationRuntime,
     transaction: &mut crate::mvcc::BranchBoundRelationalTransaction,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
     transaction
         .ensure_current_basis(runtime)
@@ -175,7 +176,9 @@ pub(crate) fn prepare_working_state_scope(
         .map_err(TransactionCommitError::conflict)?;
     let mut phase_timing = CommitPhaseTiming::default();
     let normalization_started = Instant::now();
-    let intents = transaction.normalized_intents_for_merge(runtime);
+    let intents = transaction
+        .normalized_intents_for_merge(runtime, allocation_policy)
+        .map_err(TransactionCommitError::conflict)?;
     phase_timing.draft_intent_normalization_micros =
         normalization_started.elapsed().as_micros() as u64;
     let merge_plan_started = Instant::now();
@@ -188,7 +191,11 @@ pub(crate) fn prepare_working_state_scope(
     phase_timing.draft_conflict_detection_micros = merged_plan_timing.conflict_detection_micros;
     transaction
         .footprint
-        .derive_validation_dependencies(&merged_plan, transaction.maximum_footprint_loci)
+        .derive_validation_dependencies(
+            &merged_plan,
+            transaction.maximum_footprint_loci,
+            allocation_policy,
+        )
         .map_err(|denial| TransactionCommitError::conflict(denial.into_conflict()))?;
     let (structural_summary, working_state, prepare_phase_timing) =
         prepare_authoritative_working_state_scope_for_base(

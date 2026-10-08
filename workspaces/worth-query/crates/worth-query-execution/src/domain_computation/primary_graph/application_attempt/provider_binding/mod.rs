@@ -61,11 +61,19 @@ impl WorthQueryPreparedApplicationProviderAttempt {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         super::provider_execution::WorthQueryRegisteredProviderAttempt<'run>,
         super::provider_execution::WorthQueryProviderProgressionOutcome,
     > {
-        registration::register_provider_attempt(self, staged, authorization, attempt_basis, context)
+        registration::register_provider_attempt(
+            self,
+            staged,
+            authorization,
+            attempt_basis,
+            context,
+            allocation_policy,
+        )
     }
 }
 

@@ -22,8 +22,18 @@ fn recovered_world() -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority)
 
 fn candidate(runtime: &RelationalRuntime, name: &str) -> PreparedRelationalCommitCandidate {
     let mut transaction = test_owner_begin_transaction_for_main(runtime);
-    transaction.push_batch(batch_create(name)).unwrap();
-    runtime.prepare_branch_transaction(transaction).unwrap()
+    transaction
+        .push_batch(
+            batch_create(name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
 }
 
 fn main_basis(runtime: &RelationalRuntime) -> crate::branch::AdmittedRelationalBranchBasis {

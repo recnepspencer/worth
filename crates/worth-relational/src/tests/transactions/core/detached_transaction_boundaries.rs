@@ -41,6 +41,7 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
         .push_batch(
             WorkerIntentBatch::new("storm-relation-update")
                 .push(MutationIntent::Relation(storm_relation_mutation.clone())),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     assert_eq!(
@@ -88,6 +89,7 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
         .push_batch(
             WorkerIntentBatch::new("maintenance-relation-create")
                 .push(MutationIntent::Create(maintenance_create.clone())),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     assert_eq!(
@@ -105,10 +107,16 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
         .is_none());
 
     let storm = storm
-        .validate(&runtime)
+        .validate(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("storm relation overlay validates against its root");
     let maintenance = maintenance
-        .validate(&runtime)
+        .validate(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("maintenance relation overlay validates against its root");
     assert_eq!(storm.footprint().basis(), storm_basis.descriptor());
     assert_eq!(
@@ -217,6 +225,7 @@ fn bulk_created_reads_share_one_staged_intent_allocation() {
                     client_keys,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
 

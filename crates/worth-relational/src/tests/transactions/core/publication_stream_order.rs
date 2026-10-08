@@ -9,10 +9,16 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
 
     let mut first_transaction = test_owner_begin_transaction_for_main(&runtime);
     first_transaction
-        .push_batch(batch_create("head-index-first"))
+        .push_batch(
+            batch_create("head-index-first"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("first publication stages");
     let first_candidate = runtime
-        .prepare_branch_transaction(first_transaction)
+        .prepare_branch_transaction(
+            first_transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("first publication prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(first) = runtime
         .publication_port()
@@ -270,10 +276,16 @@ fn prepare_publication(
 ) -> crate::facade::mvcc::PreparedRelationalCommitCandidate {
     let mut transaction = begin_publication_transaction(runtime, branch);
     transaction
-        .push_batch(batch_create(entity))
+        .push_batch(
+            batch_create(entity),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("publication candidate prepares")
 }
 

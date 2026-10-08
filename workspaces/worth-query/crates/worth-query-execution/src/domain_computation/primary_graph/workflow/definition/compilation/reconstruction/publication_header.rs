@@ -85,7 +85,7 @@ fn observe_adjacency_revision(
         direction: RelationalAdjacencyDirection::Outgoing,
         native_revision: revision,
         comparison_work_limit: COMPARISON_WORK_LIMIT,
-        endpoints: Vec::new(),
+        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
     });
     Ok(revision)
 }

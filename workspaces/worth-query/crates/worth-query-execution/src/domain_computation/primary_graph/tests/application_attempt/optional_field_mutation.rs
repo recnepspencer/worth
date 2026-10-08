@@ -95,19 +95,27 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .decision_field(projected, AccountNote::reference())
-                .unwrap();
-            reader
-                .decision_field(projected, AccountScore::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .decision_field(projected, AccountNote::reference())
+                    .unwrap();
+                reader
+                    .decision_field(projected, AccountScore::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
@@ -212,19 +220,27 @@ fn program(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .decision_field(projected, AccountNote::reference())
-                .unwrap();
-            reader
-                .decision_field(projected, AccountScore::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .decision_field(projected, AccountNote::reference())
+                    .unwrap();
+                reader
+                    .decision_field(projected, AccountScore::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(

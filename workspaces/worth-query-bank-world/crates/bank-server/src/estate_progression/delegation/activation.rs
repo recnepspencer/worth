@@ -242,15 +242,21 @@ impl BankIdentityRuntime {
     ) -> Result<DelegationProgram, BankEstateProgressionDenial> {
         let projected = self
             .invariant_projection()
-            .project_admitted_operation(&admission, |reader, estate| {
-                project_delegation(reader, estate, child)
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, estate| project_delegation(reader, estate, child),
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(BankEstateProgressionDenial::from_projection)?;
         let (result, projection, _) = projected.into_parts();
         result.map_err(BankEstateProgressionDenial::CapabilityDelegationProjection)?;
         let reads = self
             .application_runtime()
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         reads
             .complete_projected_dependencies(

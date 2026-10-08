@@ -337,7 +337,11 @@ fn validate_status_update(
             WorkerIntentBatch::new("phase5-proposed-status").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction.validate(runtime)
+    transaction.validate(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }

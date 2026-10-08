@@ -312,8 +312,18 @@ fn change_label(
     let mut transaction = runtime
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
-    transaction.push_batch(batch).unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    transaction
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
     else {

@@ -227,7 +227,13 @@ impl WorthQueryApplicationCheckpoint {
                     let bytes = cursor.next_bytes(fact_len)?;
                     match fact_version {
                         facts::WIRE_VERSION => {
-                            facts::decode_for_wire_version(bytes, fact_version)?;
+                            facts::decode_for_wire_version(
+                                bytes,
+                                fact_version,
+                                None,
+                                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                            )
+                            .map_err(|denial| denial.to_string())?;
                             (Some(bytes.to_vec()), fact_version)
                         }
                         // Captured before facts were kept for roots alone:

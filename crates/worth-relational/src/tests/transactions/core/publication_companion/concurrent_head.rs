@@ -37,10 +37,16 @@ fn prepare_on_main(
 ) -> crate::mvcc::PreparedRelationalCommitCandidate {
     let mut transaction = test_owner_begin_transaction_for_main(runtime);
     transaction
-        .push_batch(batch_create(key))
+        .push_batch(
+            batch_create(key),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate stages");
     runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares")
 }
 

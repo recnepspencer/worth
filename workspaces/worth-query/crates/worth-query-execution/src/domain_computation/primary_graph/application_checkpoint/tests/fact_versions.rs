@@ -49,7 +49,16 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
         WIRE_VERSION
     );
     assert_eq!(decoded.accepted_outputs[0].posture, Posture::Performed);
-    assert_eq!(facts::decode(&bytes).unwrap().as_ref(), &[fact]);
+    assert_eq!(
+        facts::decode(
+            &bytes,
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+        )
+        .unwrap()
+        .as_ref(),
+        &[fact]
+    );
 
     let mut hostile = body;
     let length_start = hostile.len() - bytes.len() - 8;

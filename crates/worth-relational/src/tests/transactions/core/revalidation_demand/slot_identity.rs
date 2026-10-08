@@ -21,19 +21,31 @@ fn judgement_tracks_the_nonzero_slot_named_by_the_demand() {
 
     let mut target_transaction = test_owner_begin_transaction_for_main(&runtime);
     target_transaction
-        .push_batch(revalidation_batch("target", [mode, target]))
+        .push_batch(
+            revalidation_batch("target", [mode, target]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
     let target_outcome = target_transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the compliant target passes even though both neighbours fail");
     release_test_commit_snapshot(&runtime, &target_outcome);
 
     let mut bystander_transaction = test_owner_begin_transaction_for_main(&runtime);
     bystander_transaction
-        .push_batch(revalidation_batch("bystander", [mode, bystander_low]))
+        .push_batch(
+            revalidation_batch("bystander", [mode, bystander_low]),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("staging stays within configured resource budgets");
     let error = bystander_transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("the oversized bystander must be the record judged");
 
     let TransactionCommitError::Conflict { error, .. } = error else {

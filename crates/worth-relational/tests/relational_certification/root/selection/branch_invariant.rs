@@ -288,9 +288,13 @@ fn commit_relation(
                     fields: worth_relational::facade::transactions::AspectFieldPatch::default(),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction.commit(runtime)
+    transaction.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }
 
 fn registry_with_vessel_source_cardinality(

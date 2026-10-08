@@ -163,9 +163,24 @@ mod tests {
         for candidates in [vec![], vec![EntityId::new(PartitionId(0), 2, 1)]] {
             let fact = selection(candidates);
             let bytes = super::super::encode(std::slice::from_ref(&fact)).unwrap();
-            assert_eq!(super::super::decode(&bytes).unwrap().as_ref(), &[fact]);
+            assert_eq!(
+                super::super::decode(
+                    &bytes,
+                    None,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation
+                )
+                .unwrap()
+                .as_ref(),
+                &[fact]
+            );
             assert!(
-                super::super::decode_for_wire_version(&bytes, 6).is_err(),
+                super::super::decode_for_wire_version(
+                    &bytes,
+                    6,
+                    None,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation
+                )
+                .is_err(),
                 "older checkpoint versions cannot reinterpret the new fact tag"
             );
         }
@@ -181,9 +196,15 @@ mod tests {
         let length = bytes.len();
         let first = bytes[length - 32..length - 16].to_vec();
         bytes[length - 16..].copy_from_slice(&first);
-        assert!(super::super::decode(&bytes)
-            .unwrap_err()
-            .contains("unique ordered set"));
+        assert!(matches!(
+            super::super::decode(
+                &bytes,
+                None,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            ).unwrap_err(),
+            super::super::fact_decode_denial::FactDecodeDenial::Format(message)
+                if message.contains("unique ordered set")
+        ));
     }
 
     #[test]

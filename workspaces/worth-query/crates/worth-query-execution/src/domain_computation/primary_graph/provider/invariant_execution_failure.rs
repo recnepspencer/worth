@@ -31,6 +31,14 @@ pub(super) fn map_transaction_staging_failure(
 ) -> WorthQueryInvariantExecutionFailure {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
+        native @ (Denial::AllocationDenied(_)
+        | Denial::CardinalityOverflow
+        | Denial::InputDirectoryAllocationDenied { .. }) => {
+            return WorthQueryInvariantExecutionFailure::native_staging(
+                native,
+                "Relational staging owner refused backing or cardinality",
+            );
+        }
         Denial::OverlayCapacityExhausted {
             maximum_bytes,
             required_bytes,
@@ -91,6 +99,12 @@ pub(super) fn map_validation_failure(
             return request_interruption(interruption.interruption())
         }
         Error::Conflict { error, .. } => {
+            if let Some(cause) = error.allocation_denial() {
+                return WorthQueryInvariantExecutionFailure::physical_allocation(
+                    cause.clone(),
+                    error.detail(),
+                );
+            }
             let relational_detail = error.detail();
             let ConflictClass::InvariantViolation { fields, detail, .. } = error.class else {
                 return provider_failure(relational_detail);

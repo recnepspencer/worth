@@ -72,9 +72,8 @@ where
         let observed_source_facts =
             crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts_for_wire_version(
                 fact_bytes,
-                readmitted.checkpoint.producer_fact_wire_version,
-            )
-            .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error))?;
+                readmitted.checkpoint.producer_fact_wire_version, None, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error.to_string()))?;
         // The checkpoint's expected output revisions are original facts, not
         // revisions projected from the recovered root. Select the disclosed
         // source's current Product and verify both the original revisions and

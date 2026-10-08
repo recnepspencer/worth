@@ -141,7 +141,7 @@ pub(super) fn observe(
                         direction: RelationalAdjacencyDirection::Outgoing,
                         native_revision,
                         comparison_work_limit: 1,
-                        endpoints: Vec::new(),
+                        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
                     },
                 ],
             })

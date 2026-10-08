@@ -9,6 +9,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationIdempotencyBinding,
 };
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 use super::*;
 use crate::estate_capability_admission::fixture::{
@@ -266,15 +267,21 @@ fn materialize_generic(
     let admission = runtime.admit_delegation(principal, action, command.child, &request_scope())?;
     let projected = runtime
         .invariant_projection()
-        .project_admitted_operation(&admission, |reader, estate| {
-            project_delegation(reader, estate, command.child)
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, estate| project_delegation(reader, estate, command.child),
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .map_err(BankEstateProgressionDenial::from_projection)?;
     let (result, projection, _) = projected.into_parts();
     result.map_err(BankEstateProgressionDenial::CapabilityDelegationProjection)?;
     let reads = runtime
         .application_runtime()
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .map_err(BankEstateProgressionDenial::from_attempt)?;
     reads
         .complete_projected_dependencies(

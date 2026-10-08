@@ -194,9 +194,14 @@ fn replace_entity_after_snapshot(
                 },
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(runtime).expect("second commit should publish");
+    txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("second commit should publish");
 }
 
 fn runtime_with_test_schema() -> worth_relational::facade::runtime::RelationalRuntime {

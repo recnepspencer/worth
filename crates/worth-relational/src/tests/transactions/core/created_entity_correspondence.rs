@@ -33,9 +33,15 @@ fn committed_create_references_resolve_their_own_distinct_persisted_meanings() {
                     client_key: second.client_key.clone(),
                     fields: name_field_patch("second-persisted-meaning"),
                 }))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let committed = transaction.commit(&runtime).expect("both creates commit");
+    let committed = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("both creates commit");
     let first_id = committed
         .created_entity(&first)
         .expect("first create reference resolves");

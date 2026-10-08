@@ -42,6 +42,11 @@ pub(super) fn staging(
 ) -> WorthQueryWorkspaceError {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
+        Denial::AllocationDenied(_)
+        | Denial::CardinalityOverflow
+        | Denial::InputDirectoryAllocationDenied { .. } => {
+            WorthQueryWorkspaceErrorKind::Unclassified
+        }
         Denial::OverlayCapacityExhausted {
             maximum_bytes,
             required_bytes,

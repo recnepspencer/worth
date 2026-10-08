@@ -62,7 +62,13 @@ pub(super) fn fact_payload_bytes(
             admit_locator(locator, admission)?;
             charge_usize(locator.owned_allocation_capacity_bytes())
         }
-        Fact::SourceAdjacencyRevision { endpoints, .. } => vec_bytes(endpoints),
+        Fact::SourceAdjacencyRevision { endpoints, .. } => {
+            let bytes = endpoints
+                .len()
+                .checked_mul(size_of::<worth_relational::facade::identity::EntityId>())
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+            charge_usize(bytes)
+        }
         Fact::Field { locator, value, .. } => {
             admit_locator(locator, admission)?;
             checked_add(

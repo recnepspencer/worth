@@ -1,5 +1,6 @@
 use super::{authenticated_principal, installed_authorization_world, live_scope, resolved_account};
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 use super::super::fixture::{
     AccountLabel, AccountStatus, MultiTouchOperation, TouchAccountOperation,
@@ -65,12 +66,16 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |_, _| ())
+        .project_admitted_operation(&admission, |_, _| (), AllocationPolicy::SystemAllocation)
         .unwrap()
         .into_parts();
     let attempt = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap();
 
     attempt
@@ -151,12 +156,20 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
         .unwrap();
     let (_, other_projection, _) = world
         .invariant
-        .project_admitted_operation(&other_admission, |_, _| ())
+        .project_admitted_operation(
+            &other_admission,
+            |_, _| (),
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let mismatch = world
         .application
-        .begin_projected_application_read_attempt(admission, other_projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            other_projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("another admitted scope's projection must not substitute");
     assert_eq!(
@@ -191,12 +204,20 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     );
     let (_, first_projection, _) = world
         .invariant
-        .project_admitted_operation(&first_equivalent, |_, _| ())
+        .project_admitted_operation(
+            &first_equivalent,
+            |_, _| (),
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let equivalent_mismatch = world
         .application
-        .begin_projected_application_read_attempt(second_equivalent, first_projection)
+        .begin_projected_application_read_attempt(
+            second_equivalent,
+            first_projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("stable retry identity must not substitute occurrence authority");
     assert_eq!(
@@ -228,16 +249,24 @@ fn projected_distinct_facts_cannot_exceed_the_installed_budget() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            reader
-                .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                reader
+                    .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let mut attempt = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let other = attempt
         .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
@@ -276,11 +305,15 @@ fn fact_budget_denial_precedes_freshness_provider_work() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_string())
+                    .unwrap();
+            },
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
 
@@ -297,7 +330,11 @@ fn fact_budget_denial_precedes_freshness_provider_work() {
 
     let mut attempt = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     attempt
         .observe_field(&other, AccountStatus::reference())
@@ -315,59 +352,5 @@ fn fact_budget_denial_precedes_freshness_provider_work() {
     );
 }
 
-#[test]
-fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(MultiTouchOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            let open = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-            let unrelated = reader
-                .resolve_entity(AccountStatus::reference(), "unrelated".to_string())
-                .unwrap();
-            reader
-                .require_decision_field(&open, AccountStatus::reference())
-                .unwrap();
-            reader
-                .require_decision_field(&unrelated, AccountStatus::reference())
-                .unwrap();
-        })
-        .unwrap()
-        .into_parts();
-    let mut reads = world
-        .application
-        .begin_projected_application_read_attempt(admission, projection)
-        .unwrap();
-    reads
-        .observe_field(&account, AccountStatus::reference())
-        .unwrap();
-
-    let denial = reads
-        .complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
-        .err()
-        .expect("one target-family instance cannot satisfy two exact planned facts");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch
-    );
-}
+#[path = "touched_graph_closure/field_family_occurrence.rs"]
+mod field_family_occurrence;

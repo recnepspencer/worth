@@ -21,10 +21,16 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("prepared-discard"))
+        .push_batch(
+            batch_create("prepared-discard"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("all fallible preparation succeeds without publication");
 
     assert_eq!(runtime.history.branch_cells_snapshot(), branch_cells_before);
@@ -104,14 +110,23 @@ fn prepared_root_materializes_exactly_the_declared_write_partitions() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(create_batch("main-write", PartitionId::main()))
+        .push_batch(
+            create_batch("main-write", PartitionId::main()),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(create_batch("second-write", PartitionId(29)))
+        .push_batch(
+            create_batch("second-write", PartitionId(29)),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let declared_write_partition_count = transaction.footprint().write_partitions().len() as u64;
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate root construction succeeds");
     let (touched, reused) = candidate.materialization_counts();
 
@@ -159,10 +174,16 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         )
         .expect("first transaction binds");
     first
-        .push_batch(batch_create("first-race-write"))
+        .push_batch(
+            batch_create("first-race-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let first = runtime
-        .prepare_branch_transaction(first)
+        .prepare_branch_transaction(
+            first,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("first candidate prepares");
 
     let mut second = runtime
@@ -172,10 +193,16 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         )
         .expect("second transaction binds");
     second
-        .push_batch(batch_create("second-race-write"))
+        .push_batch(
+            batch_create("second-race-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let second = runtime
-        .prepare_branch_transaction(second)
+        .prepare_branch_transaction(
+            second,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("second candidate prepares");
     let start = Arc::new(Barrier::new(3));
     let (first_done, first_completion) = std::sync::mpsc::sync_channel(1);

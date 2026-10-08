@@ -15,6 +15,8 @@ pub enum WorthQueryInvariantProjectionDenialKind {
     RetentionIdentityExhausted,
     /// The projection exceeded its work budget.
     WorkBudgetExceeded,
+    /// Retaining full source predicates failed; its exact owner cause is kept.
+    SourceRetentionDenied,
 }
 
 /// Refusal to run an invariant projection. No output or snapshot is returned;
@@ -23,6 +25,7 @@ pub enum WorthQueryInvariantProjectionDenialKind {
 pub struct WorthQueryInvariantProjectionDenial {
     kind: WorthQueryInvariantProjectionDenialKind,
     projection_work: Option<super::WorthQueryInvariantProjectionWork>,
+    retention_denial: Option<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>,
 }
 
 impl WorthQueryInvariantProjectionDenial {
@@ -35,10 +38,40 @@ impl WorthQueryInvariantProjectionDenial {
         self.projection_work
     }
 
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        match &self.retention_denial {
+            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial),
+            _ => None,
+        }
+    }
+    pub fn source_retention_interruption(
+        &self,
+    ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
+    {
+        match &self.retention_denial { Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop), _ => None }
+    }
+    pub(super) fn source_retention_denied(
+        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+        work: super::WorthQueryInvariantProjectionWork,
+    ) -> Self {
+        Self {
+            kind: WorthQueryInvariantProjectionDenialKind::SourceRetentionDenied,
+            projection_work: Some(work),
+            retention_denial: Some(denial),
+        }
+    }
+    pub(super) fn with_retention_denial(
+        mut self,
+        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+    ) -> Self {
+        self.retention_denial = Some(denial);
+        self
+    }
     pub(super) const fn basis_unavailable() -> Self {
         Self {
             kind: WorthQueryInvariantProjectionDenialKind::BasisUnavailable,
             projection_work: None,
+            retention_denial: None,
         }
     }
 
@@ -46,6 +79,7 @@ impl WorthQueryInvariantProjectionDenial {
         Self {
             kind,
             projection_work: None,
+            retention_denial: None,
         }
     }
 
@@ -55,6 +89,7 @@ impl WorthQueryInvariantProjectionDenial {
         Self {
             kind: WorthQueryInvariantProjectionDenialKind::WorkBudgetExceeded,
             projection_work: Some(work),
+            retention_denial: None,
         }
     }
 }

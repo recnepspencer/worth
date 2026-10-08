@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 use crate::branch::{
     AdmittedRelationalBranchBasis, PreparedRelationalMaterializationSuspension,
@@ -53,10 +54,13 @@ impl RelationalMaterializationPort {
             )
             .map_err(RelationalMaterializationError::TransactionAdmission)?;
         transaction
-            .push_batch(suspension_batch(&records))
+            .push_batch(
+                suspension_batch(&records),
+                AllocationPolicy::SystemAllocation,
+            )
             .map_err(RelationalMaterializationError::TransactionStaging)?;
         let candidate = runtime
-            .prepare_branch_transaction(transaction)
+            .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
             .map_err(RelationalMaterializationError::Commit)?;
         let transaction_id = candidate.transaction_id();
         Ok(PreparedRelationalMaterializationSuspension {
@@ -167,10 +171,13 @@ impl RelationalMaterializationPort {
             )
             .map_err(RelationalMaterializationError::TransactionAdmission)?;
         transaction
-            .push_batch(rematerialization_batch(entities, relations))
+            .push_batch(
+                rematerialization_batch(entities, relations),
+                AllocationPolicy::SystemAllocation,
+            )
             .map_err(RelationalMaterializationError::TransactionStaging)?;
         let validated = transaction
-            .validate(&runtime)
+            .validate(&runtime, AllocationPolicy::SystemAllocation)
             .map_err(RelationalMaterializationError::Commit)?;
         let invariant_evidence = validated.invariant_evidence().clone();
         let candidate = runtime
@@ -300,30 +307,6 @@ fn missing_relation(
     )
 }
 
-fn suspension_batch(records: &[RelationalMaterializationRecord]) -> WorkerIntentBatch {
-    records.iter().fold(
-        WorkerIntentBatch::new("owner-materialization-suspension"),
-        |batch, record| {
-            batch.push(MutationIntent::Materialization(match record {
-                RelationalMaterializationRecord::Entity { entity_id, .. } => {
-                    MaterializationMutationIntent::SuspendEntity(
-                        SuspendEntityMaterializationIntent {
-                            entity_id: *entity_id,
-                        },
-                    )
-                }
-                RelationalMaterializationRecord::Relation { relation_id, .. } => {
-                    MaterializationMutationIntent::SuspendRelation(
-                        SuspendRelationMaterializationIntent {
-                            relation_id: *relation_id,
-                        },
-                    )
-                }
-            }))
-        },
-    )
-}
-
 fn validate_custody_basis(
     basis: &AdmittedRelationalBranchBasis,
     custody: &RelationalMaterializationCustody,
@@ -366,35 +349,9 @@ fn validate_candidate_manifest(
     Ok(())
 }
 
-fn rematerialization_batch(
-    entities: Vec<RelationalEntityMaterialization>,
-    relations: Vec<RelationalRelationMaterialization>,
-) -> WorkerIntentBatch {
-    let batch = entities.into_iter().fold(
-        WorkerIntentBatch::new("owner-materialization-restoration"),
-        |batch, spec| {
-            batch.push(MutationIntent::Materialization(
-                MaterializationMutationIntent::RematerializeEntity(RematerializeEntityIntent {
-                    entity_id: spec.entity_id,
-                    kind_id: spec.kind_id,
-                    fields: spec.fields,
-                }),
-            ))
-        },
-    );
-    relations.into_iter().fold(batch, |batch, spec| {
-        batch.push(MutationIntent::Materialization(
-            MaterializationMutationIntent::RematerializeRelation(RematerializeRelationIntent {
-                relation_id: spec.relation_id,
-                kind_id: spec.kind_id,
-                source: spec.source,
-                target: spec.target,
-                fields: spec.fields,
-            }),
-        ))
-    })
-}
-
 #[cfg(test)]
 #[path = "materialization_port_tests.rs"]
 mod tests;
+
+mod batch;
+use batch::{rematerialization_batch, suspension_batch};

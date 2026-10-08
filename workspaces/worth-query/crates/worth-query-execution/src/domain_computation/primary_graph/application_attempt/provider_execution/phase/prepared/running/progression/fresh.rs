@@ -53,11 +53,18 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
         self,
         steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         provider: &std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
         WorthQueryProviderProgressionOutcome,
     > {
-        super::invariant::progress_invariant_candidate(self.staged, self.read_set, steps, provider)
+        super::invariant::progress_invariant_candidate(
+            self.staged,
+            self.read_set,
+            steps,
+            provider,
+            allocation_policy,
+        )
     }
 }
 

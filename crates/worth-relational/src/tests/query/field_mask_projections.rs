@@ -257,9 +257,9 @@ fn create_entity_with_summary_fields(
     summary_status: &str,
 ) -> EntityId {
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(WorkerIntentBatch::new(format!("batch-{client_key}")).push(
-        MutationIntent::Create(CreateIntent::Entity(
-            crate::transactions::data::EntitySpec {
+    txn.push_batch(
+        WorkerIntentBatch::new(format!("batch-{client_key}")).push(MutationIntent::Create(
+            CreateIntent::Entity(crate::transactions::data::EntitySpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw(client_key),
@@ -286,11 +286,18 @@ fn create_entity_with_summary_fields(
                         string_aspect_value(summary_status),
                     ),
                 ])),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(&txn.commit(runtime).unwrap())[0]
+    changed_entities(
+        &txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap(),
+    )[0]
 }
 
 fn create_relation_with_summary_fields(
@@ -328,9 +335,14 @@ fn create_relation_with_summary_fields(
                 ])),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(runtime).unwrap();
+    txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 }
 
 fn test_projection_contract_identity(aspect_key: &AspectKey) -> u64 {

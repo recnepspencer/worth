@@ -39,7 +39,12 @@ fn invariant_staging_capacity_cause_survives_application_commit_mapping() {
                 fields: AspectFieldPatch::default(),
             })),
         );
-        let owner_denial = transaction.push_batch(batch).unwrap_err();
+        let owner_denial = transaction
+            .push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap_err();
         let expected = match owner_denial {
             Staging::OverlayCapacityExhausted {
                 maximum_bytes,

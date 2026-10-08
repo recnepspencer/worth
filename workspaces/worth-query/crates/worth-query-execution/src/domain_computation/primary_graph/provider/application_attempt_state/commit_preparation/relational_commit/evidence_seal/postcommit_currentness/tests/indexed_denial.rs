@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationIdentities,
     application_schema::TypedMutationPreconditions,
@@ -168,7 +169,10 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
         ));
         let original = vec![observed.clone(), observed.clone()];
         let outcome = rebase(runtime, snapshot,
-            PreparedSourceFactRebase::admit(original.clone()).unwrap(),
+            PreparedSourceFactRebase::admit(
+                original.clone(),
+                StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
+            ).unwrap(),
             &BTreeSet::new(), true, 4, None);
         let RebasedSourceFacts::Exact(facts) = outcome else {
             panic!("two native one-row probes fit four work units: {outcome:?}");
@@ -178,7 +182,10 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
             assert_eq!(fact.source_currentness_in(runtime, snapshot, 2), Ok((true, 2)));
         }
         let denied = rebase(runtime, snapshot,
-            PreparedSourceFactRebase::admit(original.clone()).unwrap(),
+            PreparedSourceFactRebase::admit(
+                original.clone(),
+                StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
+            ).unwrap(),
             &BTreeSet::new(), true, 2, None);
         assert_eq!(denied, RebasedSourceFacts::VerificationRequired {
             reason: RebaseVerificationReason::IndexedSelectionFactDenied(
@@ -204,7 +211,14 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
         let denied = rebase(
             runtime,
             snapshot,
-            PreparedSourceFactRebase::admit(vec![observed.clone()]).unwrap(),
+            PreparedSourceFactRebase::admit(
+                vec![observed.clone()],
+                StorageControl::new(
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
+                ),
+            )
+            .unwrap(),
             &BTreeSet::new(),
             true,
             2,

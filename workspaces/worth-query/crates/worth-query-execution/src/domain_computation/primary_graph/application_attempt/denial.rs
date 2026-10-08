@@ -25,6 +25,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DecisionFactBudgetExceeded,
     /// Fresh inline payload backing was refused by its allocation owner.
     AllocationDenied,
+    /// Checked representation or ordering failure while retaining source facts.
+    RetainedSourceStorageDenied,
     MutationPreconditionMismatch,
     SourceRetired,
     SourceChanged,
@@ -153,6 +155,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,
+    RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
     Expression(worth_foundational::expression_api::ExpressionDenial),
     Allocation(worth_execution::ExecutionAllocationDenial),
     RequestAuthority(
@@ -207,9 +210,38 @@ impl WorthQueryApplicationAttemptDenial {
     }
 
     /// Exact physical owner refusal behind AllocationDenied; not graph authority.
-    pub const fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+    pub(in crate::domain_computation::primary_graph) fn retained_source_denied(
+        kind: WorthQueryApplicationAttemptDenialKind,
+        subject: &str,
+        denial: super::retained_decision_facts::StoreDenial,
+    ) -> Self {
+        Self {
+            kind,
+            subject: subject.to_owned(),
+            cause: AttemptDenialCause::RetainedSource(Box::new(denial)),
+        }
+    }
+    pub fn source_retention_interruption(
+        &self,
+    ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
+    {
+        match &self.cause {
+            AttemptDenialCause::RetainedSource(denial) => match denial.as_ref() {
+                super::retained_decision_facts::StoreDenial::RequestInterruption(interruption) => {
+                    Some(*interruption)
+                }
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match &self.cause {
             AttemptDenialCause::Allocation(denial) => Some(denial),
+            AttemptDenialCause::RetainedSource(denial) => match denial.as_ref() {
+                super::retained_decision_facts::StoreDenial::Allocation(denial) => Some(denial),
+                _ => None,
+            },
             _ => None,
         }
     }
@@ -255,4 +287,12 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
     }
 }
 
-impl std::error::Error for WorthQueryApplicationAttemptDenial {}
+impl std::error::Error for WorthQueryApplicationAttemptDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match &self.cause {
+            AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
+            AttemptDenialCause::Allocation(denial) => Some(denial),
+            _ => None,
+        }
+    }
+}

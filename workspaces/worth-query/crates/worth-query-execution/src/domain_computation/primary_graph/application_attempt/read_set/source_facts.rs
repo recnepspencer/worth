@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
-
-use super::super::WorthQueryApplicationFactStorageKey;
+use super::super::retained_decision_facts::{
+    AuthoringSourceFacts, RetainedSourceFacts, StorageControl,
+};
 use super::{denial, WorthQueryApplicationSnapshotLease};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
@@ -38,26 +38,28 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
 
 pub(super) fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,
-    mut dependent: BTreeMap<WorthQueryApplicationFactStorageKey, WorthQueryApplicationObservedFact>,
+    dependent: Option<RetainedSourceFacts>,
     operation: &str,
+    control: StorageControl<'_, '_>,
 ) -> Result<SourceFacts, WorthQueryApplicationAttemptDenial> {
-    // The projection already keyed and deduplicated its retained observations.
-    // Move that allocation through the handoff; only admitted sources need keys.
-    for fact in admitted {
-        let locator = fact.dependency_key();
-        match dependent.entry(locator) {
-            std::collections::btree_map::Entry::Vacant(entry) => {
-                entry.insert(fact);
-            }
-            std::collections::btree_map::Entry::Occupied(mut entry) => {
-                if !entry.get_mut().merge_same_source_fact(fact) {
-                    return Err(denial(
-                        WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                        format!("{operation}: source facts conflict at {:?}", entry.key()),
-                    ));
-                }
-            }
-        }
+    control
+        .check_live()
+        .map_err(|denial| denial.into_attempt_denial(operation))?;
+    if admitted.is_empty() {
+        return Ok(SourceFacts::Projected(dependent));
     }
-    Ok(SourceFacts::Projected(dependent))
+    let mut dependent = match dependent {
+        Some(facts) => AuthoringSourceFacts::from_retained(facts, control),
+        None => AuthoringSourceFacts::new(control),
+    }
+    .map_err(|denial| denial.into_attempt_denial(operation))?;
+    for fact in admitted {
+        dependent
+            .capture(fact, None, control)
+            .map_err(|denial| denial.into_attempt_denial(operation))?;
+    }
+    let facts = dependent
+        .finish(control)
+        .map_err(|denial| denial.into_attempt_denial(operation))?;
+    Ok(SourceFacts::Projected(Some(facts)))
 }

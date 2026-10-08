@@ -56,8 +56,18 @@ fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal(
     let mut transaction = runtime
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap();
-    transaction.push_batch(batch_create("before-seal")).unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    transaction
+        .push_batch(
+            batch_create("before-seal"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()
@@ -94,8 +104,18 @@ fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal(
             crate::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .unwrap();
-    fresh.push_batch(batch_create("after-seal")).unwrap();
-    let fresh = runtime.prepare_branch_transaction(fresh).unwrap();
+    fresh
+        .push_batch(
+            batch_create("after-seal"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let fresh = runtime
+        .prepare_branch_transaction(
+            fresh,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         port.compare_and_publish(fresh)
     else {
@@ -119,9 +139,17 @@ fn delayed_installation_rejects_published_unsettled_branch() {
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap();
     transaction
-        .push_batch(batch_create("before-delayed-seal"))
+        .push_batch(
+            batch_create("before-delayed-seal"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let publication = runtime.publication_port();
     let installation = runtime.prepare_initial_schema_installation().unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
@@ -158,16 +186,25 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap();
     prepared_transaction
-        .push_batch(batch_create("old-prepared"))
+        .push_batch(
+            batch_create("old-prepared"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(prepared_transaction)
+        .prepare_branch_transaction(
+            prepared_transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut pending_transaction = runtime
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap();
     pending_transaction
-        .push_batch(batch_create("old-pending"))
+        .push_batch(
+            batch_create("old-pending"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let preparation = runtime.preparation_port();
     let publication = runtime.publication_port();
@@ -184,7 +221,10 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
         let preparation_finished = finished_tx.clone();
         let prepare = threads.spawn(move || {
             preparation_started.send(()).unwrap();
-            let result = preparation.prepare_branch_transaction(pending_transaction);
+            let result = preparation.prepare_branch_transaction(
+                pending_transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            );
             preparation_finished.send(()).unwrap();
             result
         });
@@ -230,11 +270,17 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap();
     fresh
-        .push_batch(batch_create("fresh-after-cutover"))
+        .push_batch(
+            batch_create("fresh-after-cutover"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let candidate = runtime
         .preparation_port()
-        .prepare_branch_transaction(fresh)
+        .prepare_branch_transaction(
+            fresh,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)

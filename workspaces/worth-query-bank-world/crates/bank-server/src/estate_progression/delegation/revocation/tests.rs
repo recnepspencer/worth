@@ -4,6 +4,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationIdempotencyBinding,
 };
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 use super::*;
 use crate::estate_capability_admission::fixture::{
@@ -143,15 +144,21 @@ fn generic_empty_program(
 > {
     let projected = runtime
         .invariant_projection()
-        .project_admitted_operation(&admission, |reader, estate| {
-            project_active_estate_grant(reader, estate, grant)
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, estate| project_active_estate_grant(reader, estate, grant),
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let (result, projection, _) = projected.into_parts();
     result.unwrap();
     let reads = runtime
         .application_runtime()
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     reads
         .resolve_entity(CapabilityGrantIdentityField::reference(), grant)

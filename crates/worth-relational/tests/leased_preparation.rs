@@ -1,3 +1,4 @@
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 #[path = "leased_preparation/index_budget.rs"]
 mod leased_preparation_index_budget;
 #[path = "../examples/support.rs"]
@@ -95,6 +96,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
                         fields: AspectFieldPatch::default(),
                     }),
                 )),
+                AllocationPolicy::SystemAllocation,
             )
             .expect("entity intent stages");
         if validation_only {
@@ -244,6 +246,7 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
                     fields: AspectFieldPatch::default(),
                 }),
             )),
+            AllocationPolicy::SystemAllocation,
         )
         .expect("entity intent stages");
     let error = runtime
@@ -266,60 +269,6 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
             .0,
         before
     );
-}
-
-#[test]
-fn leased_bulk_creation_matches_serial_canonical_patch() {
-    let _serial = TEST_SERIAL.lock().unwrap();
-    fn commit_bulk(
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    ) -> worth_relational::facade::transactions::CommitResult {
-        let runtime = RelationalRuntimeApi::builder()
-            .schema_registry(support::demo_schema_registry())
-            .build();
-        let identity = runtime.main_branch_identity();
-        let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
-        let mut transaction = runtime
-            .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-            .expect("admitted basis");
-        let keys = (0..64)
-            .map(|index| ClientKey::raw(format!("bulk-{index}")))
-            .collect();
-        let fields = (0..64)
-            .map(|index| {
-                AspectFieldPatch::from_locator(
-                    support::aspect_field_locator("name"),
-                    AspectValue::String(format!("bulk-{index}").into()),
-                )
-            })
-            .collect();
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("leased-bulk").push(MutationIntent::Create(
-                    CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                        partition_id: PartitionId::main(),
-                        kind_id: KindId(1),
-                        client_keys: keys,
-                        field_patches: fields,
-                    }),
-                )),
-            )
-            .expect("bulk transaction stages");
-        match lease {
-            Some(lease) => runtime.commit_branch_transaction_with_lease(transaction, lease),
-            None => runtime.commit_branch_transaction(transaction),
-        }
-        .expect("bulk commit succeeds")
-    }
-
-    let serial = commit_bulk(None);
-    let lease = authority()
-        .request_lease(lease_request(32 * 1024 * 1024, CancellationToken::new()))
-        .expect("bulk lease admitted");
-    let leased = commit_bulk(Some(&lease));
-    assert_eq!(serial.changed_records.len(), 64);
-    assert_eq!(serial.changed_records, leased.changed_records);
-    assert_eq!(serial.patch(), leased.patch());
 }
 
 #[test]
@@ -354,10 +303,11 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
                     field_patches,
                 }),
             )),
+            AllocationPolicy::SystemAllocation,
         )
         .expect("bulk source stages");
     let committed = runtime
-        .commit_branch_transaction(transaction)
+        .commit_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
         .expect("source commits");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -398,3 +348,6 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
         published
     );
 }
+
+#[path = "leased_preparation/bulk_creation.rs"]
+mod bulk_creation;

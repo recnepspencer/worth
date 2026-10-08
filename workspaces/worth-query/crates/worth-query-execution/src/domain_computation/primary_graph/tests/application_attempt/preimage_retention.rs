@@ -52,19 +52,27 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-            reader
-                .require_decision_field(projected, AccountLabel::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+                reader
+                    .require_decision_field(projected, AccountLabel::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
@@ -119,25 +127,33 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            let open = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_owned())
-                .unwrap();
-            let unrelated = reader
-                .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
-                .unwrap();
-            reader
-                .require_decision_field(&open, AccountStatus::reference())
-                .unwrap();
-            reader
-                .require_decision_field(&unrelated, AccountLabel::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                let open = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                    .unwrap();
+                let unrelated = reader
+                    .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
+                    .unwrap();
+                reader
+                    .require_decision_field(&open, AccountStatus::reference())
+                    .unwrap();
+                reader
+                    .require_decision_field(&unrelated, AccountLabel::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
@@ -190,19 +206,27 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-            reader
-                .require_decision_field(projected, AccountLabel::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+                reader
+                    .require_decision_field(projected, AccountLabel::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(

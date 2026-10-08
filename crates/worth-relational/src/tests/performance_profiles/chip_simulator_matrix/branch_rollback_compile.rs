@@ -81,8 +81,11 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
                     }),
                 ));
             }
-            txn.push_batch(transient_batch)
-                .expect("test staging stays within configured resource budgets");
+            txn.push_batch(
+                transient_batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("test staging stays within configured resource budgets");
 
             let rollback_started_at = Instant::now();
             let rollback = txn
@@ -90,9 +93,9 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
                 .expect("chip savepoint rollback");
             let rollback_micros = rollback_started_at.elapsed().as_micros();
 
-            txn.push_batch(WorkerIntentBatch::new("chip-committed-step").push(
-                MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                    UpdateEntityFieldsIntent {
+            txn.push_batch(
+                WorkerIntentBatch::new("chip-committed-step").push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                         entity_id: source,
                         fields: crate::tests::support::aspect_field_patch_from_values([
                             (
@@ -111,12 +114,18 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
                                 crate::tests::support::string_aspect_value("feature"),
                             ),
                         ]),
-                    },
+                    }),
                 )),
-            ))
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("test staging stays within configured resource budgets");
             let commit_started_at = Instant::now();
-            let commit_outcome = txn.commit(&runtime).expect("chip branch step commit");
+            let commit_outcome = txn
+                .commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("chip branch step commit");
             let commit_micros = commit_started_at.elapsed().as_micros();
 
             let feature_commit = runtime

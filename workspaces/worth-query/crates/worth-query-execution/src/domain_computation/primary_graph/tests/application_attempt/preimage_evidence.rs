@@ -330,27 +330,35 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .then(|| resolved_account(world, "unrelated", request));
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-            match breadth {
-                RetentionMutationBreadth::Narrow => {}
-                RetentionMutationBreadth::CrossRecordLabel => {
-                    let other = reader
-                        .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
-                        .unwrap();
-                    reader
-                        .require_decision_field(&other, AccountLabel::reference())
-                        .unwrap();
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+                match breadth {
+                    RetentionMutationBreadth::Narrow => {}
+                    RetentionMutationBreadth::CrossRecordLabel => {
+                        let other = reader
+                            .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
+                            .unwrap();
+                        reader
+                            .require_decision_field(&other, AccountLabel::reference())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(

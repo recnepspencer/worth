@@ -43,6 +43,7 @@ pub(in crate::domain_computation::primary_graph) use read_set::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
 };
 mod retained_commit;
+pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
 pub(super) mod snapshot_lease;
 mod workflow_deadline;
 mod workflow_definition_program;
@@ -117,7 +118,7 @@ pub(in crate::domain_computation::primary_graph) use fact::{
     indexed_selection_currentness, observe_adjacency, observe_indexed_entity_selection,
     reobserve_indexed_entity_selection, IndexedSelectionReobserveDenial,
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    WorthQueryApplicationFactStorageKey, WorthQuerySourceCurrentnessFailure,
+    WorthQuerySourceCurrentnessFailure,
 };
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryRecordedIntentMatch;
 pub use idempotency::{
@@ -183,3 +184,5 @@ pub use workflow_transition_program::{
     WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
     WorthQueryWorkflowAdvanceAdapter,
 };
+
+pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;

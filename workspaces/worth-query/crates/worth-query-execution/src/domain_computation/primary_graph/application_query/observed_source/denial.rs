@@ -28,6 +28,8 @@ pub enum WorthQuerySourceExpectationDenialKind {
     WorkBudgetExceeded,
     /// Constructing the source facts exceeded this request's preparation memory.
     PreparationMemoryExceeded,
+    /// Exact backing or request stop while retaining a source payload.
+    RetainedSourceStorageDenied,
 }
 
 /// Refusal to bind an observed query source as an admitted mutation's source
@@ -39,6 +41,7 @@ pub enum WorthQuerySourceExpectationDenialKind {
 pub struct WorthQuerySourceExpectationDenial {
     kind: WorthQuerySourceExpectationDenialKind,
     subject: String,
+    retention_denial: Option<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>,
 }
 
 impl WorthQuerySourceExpectationDenial {
@@ -50,6 +53,21 @@ impl WorthQuerySourceExpectationDenial {
         &self.subject
     }
 
+    pub(in crate::domain_computation::primary_graph) fn source_retention_denied(
+        subject: &str,
+        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQuerySourceExpectationDenialKind::RetainedSourceStorageDenied,
+            subject: subject.to_owned(),
+            retention_denial: Some(denial),
+        }
+    }
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        match &self.retention_denial {
+            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial), _ => None,
+        }
+    }
     #[doc(hidden)]
     pub fn new_missing(subject: impl Into<String>) -> Self {
         Self::new(
@@ -65,6 +83,7 @@ impl WorthQuerySourceExpectationDenial {
         Self {
             kind,
             subject: subject.into(),
+            retention_denial: None,
         }
     }
 }

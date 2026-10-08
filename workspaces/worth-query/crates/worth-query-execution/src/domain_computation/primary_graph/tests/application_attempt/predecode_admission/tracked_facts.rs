@@ -22,24 +22,32 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
     let admission = admitted_operation(&world, &principal, &account, &request);
     let (_, snapshot, work) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, root| {
-            let value = reader
-                .decision_field_with_predecode_admission(
-                    root,
-                    AccountStatus::reference(),
-                    |_, _| Ok::<_, ()>(()),
-                    &|| Ok(()),
-                )
-                .unwrap()
-                .unwrap();
-            assert_eq!(value.as_deref(), Some("open"));
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, root| {
+                let value = reader
+                    .decision_field_with_predecode_admission(
+                        root,
+                        AccountStatus::reference(),
+                        |_, _| Ok::<_, ()>(()),
+                        &|| Ok(()),
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(value.as_deref(), Some("open"));
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     assert_eq!(work.field_reads(), 1);
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, snapshot)
+        .begin_projected_application_read_attempt(
+            admission,
+            snapshot,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
@@ -132,26 +140,34 @@ fn optional_program(
         .unwrap();
     let (_, snapshot, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, root| {
-            let value = reader
-                .decision_field_with_predecode_admission(
-                    root,
-                    AccountNote::reference(),
-                    |_, _| {
-                        called.set(true);
-                        Ok::<_, ()>(())
-                    },
-                    &|| Ok(()),
-                )
-                .unwrap()
-                .unwrap();
-            assert_eq!(value, None);
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, root| {
+                let value = reader
+                    .decision_field_with_predecode_admission(
+                        root,
+                        AccountNote::reference(),
+                        |_, _| {
+                            called.set(true);
+                            Ok::<_, ()>(())
+                        },
+                        &|| Ok(()),
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(value, None);
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, snapshot)
+        .begin_projected_application_read_attempt(
+            admission,
+            snapshot,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(

@@ -198,12 +198,20 @@ where
         let (_, projection, _) = self
             .application()
             .mutation_projection
-            .project_admitted_operation(&admission, |_, _| {})
+            .project_admitted_operation(
+                &admission,
+                |_, _| {},
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(WorkflowInstancePreparationDenial::Projection)?
             .into_parts();
         let read_set = self
             .application()
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(WorkflowInstancePreparationDenial::Attempt)?
             .complete_projected_dependencies(
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

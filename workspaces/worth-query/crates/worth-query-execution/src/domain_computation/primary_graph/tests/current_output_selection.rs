@@ -33,11 +33,14 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
     let foreign = installed_authorization_world(true);
     let foreign_account = foreign
         .invariant
-        .project(|reader| {
-            reader
-                .resolve_entity(AccountStatus::reference(), "open".to_owned())
-                .unwrap()
-        })
+        .project(
+            |reader| {
+                reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                    .unwrap()
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts()
         .0;
@@ -49,9 +52,11 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
 
     let completed = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            reader.current_output::<TestCurrentOutputFamily, Account>(&foreign_account)
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| reader.current_output::<TestCurrentOutputFamily, Account>(&foreign_account),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let Err(denial) = completed.output() else {
         panic!("a foreign producer identity must not select an output");
@@ -71,14 +76,16 @@ fn current_output_exhaustion_denies_the_admitted_projection() {
         .authorize_operation(&principal, &scope, &operation, Default::default(), &request)
         .unwrap();
 
-    let projected = world
-        .invariant
-        .project_admitted_operation(&admission, |reader, root| {
+    let projected = world.invariant.project_admitted_operation(
+        &admission,
+        |reader, root| {
             for _ in 0..31 {
                 reader.field(root, AccountStatus::reference()).unwrap();
             }
             reader.current_output::<TestCurrentOutputFamily, Account>(root)
-        });
+        },
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let Err(denial) = projected else {
         panic!("selector work beyond the admitted budget must deny the projection");
     };
@@ -93,11 +100,14 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
     let world = installed_authorization_world(true);
     let obsolete = world
         .invariant
-        .project(|reader| {
-            reader
-                .resolve_entity(AccountStatus::reference(), "open".to_owned())
-                .unwrap()
-        })
+        .project(
+            |reader| {
+                reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                    .unwrap()
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts()
         .0;
@@ -139,9 +149,11 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
 
     let completed = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            reader.current_output::<TestCurrentOutputFamily, Account>(&obsolete)
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| reader.current_output::<TestCurrentOutputFamily, Account>(&obsolete),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(matches!(
         completed.output(),
@@ -163,19 +175,27 @@ fn retire_open_account(world: &super::fixture::AuthorizationWorld) {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, account| {
-            reader
-                .require_decision_entity(account, Account::reference())
-                .unwrap();
-            reader
-                .require_decision_field(account, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, account| {
+                reader
+                    .require_decision_entity(account, Account::reference())
+                    .unwrap();
+                reader
+                    .require_decision_field(account, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
@@ -284,7 +304,7 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement_and_budget() 
             direction: RelationalAdjacencyDirection::Outgoing,
             native_revision: revision.revision(),
             comparison_work_limit: 1,
-            endpoints: Vec::new(),
+            endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&(Vec::new()), worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
         }
     });
     graph.integration_handle().with_runtime(|runtime| {

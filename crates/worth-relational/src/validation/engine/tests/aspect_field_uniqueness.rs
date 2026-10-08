@@ -53,16 +53,22 @@ fn unique_entity_aspect_field_rejects_entity_aspect_create() {
     let create = |runtime: &crate::runtime::RelationalRuntime, key: &str| {
         let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
         transaction
-            .push_batch(WorkerIntentBatch::new(key).push(MutationIntent::Create(
-                CreateIntent::EntityAspects(EntityAspectCreateIntent {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: ClientKey::raw(key),
-                    aspect_patch: patch.clone(),
-                }),
-            )))
+            .push_batch(
+                WorkerIntentBatch::new(key).push(MutationIntent::Create(
+                    CreateIntent::EntityAspects(EntityAspectCreateIntent {
+                        partition_id: PartitionId::main(),
+                        kind_id: KindId(1),
+                        client_key: ClientKey::raw(key),
+                        aspect_patch: patch.clone(),
+                    }),
+                )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("test staging stays within configured resource budgets");
-        transaction.commit(runtime)
+        transaction.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
     };
 
     create(&mut runtime, "first").expect("first entity-aspect create");
@@ -112,10 +118,16 @@ fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
                     aspect_patch: patch,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
 
-    let error = transaction.commit(&runtime).unwrap_err();
+    let error = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     assert_unique_entity_field_conflict(error, "shared-title");
     assert_runtime_marker_unchanged(&runtime, before);
     assert_entity_summary(&runtime, second_id, "second-title", "open");

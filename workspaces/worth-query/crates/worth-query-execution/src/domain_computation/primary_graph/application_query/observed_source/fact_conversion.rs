@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod preparation_capacity;
+mod retention_validation;
 mod source_fact_locator;
 use source_fact_locator::SourceFactLocator;
 
@@ -27,6 +28,10 @@ impl<Query> WorthQueryObservedSource<Query> {
         expected_query_identifier: &str,
         expected_query_identity: &WorthQueryInstalledApplicationQueryIdentity,
         layout: &WorthQueryPrimaryGraphLayout,
+        request: Option<
+            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         self.validate_affinity(
             runtime_authority,
@@ -37,20 +42,35 @@ impl<Query> WorthQueryObservedSource<Query> {
             expected_query_identifier,
             expected_query_identity,
         )?;
-        self.validated_facts(layout, expected_query_identifier)
+        self.validated_facts(
+            layout,
+            expected_query_identifier,
+            request,
+            allocation_policy,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn retained_checkpoint_facts(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
+        request: Option<
+            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<std::sync::Arc<[Fact]>, WorthQuerySourceExpectationDenial> {
-        Ok(self.validated_facts(layout, &self.query_identifier)?.into())
+        Ok(self
+            .validated_facts(layout, &self.query_identifier, request, allocation_policy)?
+            .into())
     }
 
     pub(super) fn validated_facts(
         &self,
         layout: &WorthQueryPrimaryGraphLayout,
         expected_query_identifier: &str,
+        request: Option<
+            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         self.validate_completeness(expected_query_identifier)?;
         let footprint = self.source_meaning.footprint();
@@ -76,7 +96,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             fields,
             fact_count,
         }
-        .into_facts()
+        .into_facts(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, request))
     }
 }
 
@@ -111,7 +131,10 @@ fn source_fact_count<Query>(
 }
 
 impl<Query> PreparedSourceFactMaterialization<'_, Query> {
-    pub(super) fn into_facts(self) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
+    pub(super) fn into_facts(
+        self,
+        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         let source = self.source;
         let WorthQueryObservedSourceFootprint {
             entities,
@@ -131,7 +154,14 @@ impl<Query> PreparedSourceFactMaterialization<'_, Query> {
         for field in &self.fields[..aspects.len()] {
             field.append(&mut facts);
         }
-        facts.extend(adjacencies.iter().cloned().map(adjacency_fact));
+        for adjacency in adjacencies {
+            facts.push(adjacency_fact(adjacency, control).map_err(|denial| {
+                WorthQuerySourceExpectationDenial::source_retention_denied(
+                    &source.query_identifier,
+                    denial,
+                )
+            })?);
+        }
         if let Some(selection) = selection {
             facts.extend(
                 selection
@@ -143,7 +173,14 @@ impl<Query> PreparedSourceFactMaterialization<'_, Query> {
             for field in &self.fields[aspects.len()..] {
                 field.append(&mut facts);
             }
-            facts.extend(selection.adjacencies.iter().cloned().map(adjacency_fact));
+            for adjacency in &selection.adjacencies {
+                facts.push(adjacency_fact(adjacency, control).map_err(|denial| {
+                    WorthQuerySourceExpectationDenial::source_retention_denied(
+                        &source.query_identifier,
+                        denial,
+                    )
+                })?);
+            }
         }
         let mut seen = std::collections::BTreeMap::new();
         let mut unique = Vec::with_capacity(facts.len());
@@ -156,7 +193,15 @@ impl<Query> PreparedSourceFactMaterialization<'_, Query> {
                 }
                 std::collections::btree_map::Entry::Occupied(entry) => {
                     let existing = &mut unique[*entry.get()];
-                    if !existing.merge_same_source_fact(fact) {
+                    if !existing
+                        .merge_same_source_fact(fact, control.policy(), control.request())
+                        .map_err(|denial| {
+                            WorthQuerySourceExpectationDenial::source_retention_denied(
+                                &source.query_identifier,
+                                denial,
+                            )
+                        })?
+                    {
                         return Err(WorthQuerySourceExpectationDenial::new(
                             WorthQuerySourceExpectationDenialKind::SourceChanged,
                             source.query_identifier.as_str(),
@@ -262,58 +307,16 @@ impl<'source> ValidatedSourceField<'source> {
     }
 }
 
-fn adjacency_fact(adjacency: WorthQueryObservedAdjacencyRevision) -> Fact {
-    Fact::SourceAdjacencyRevision {
+fn adjacency_fact(adjacency: &WorthQueryObservedAdjacencyRevision, control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>) -> Result<Fact, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
+    Ok(Fact::SourceAdjacencyRevision {
         relation_kind: adjacency.relation_kind,
         anchor: adjacency.anchor,
         direction: adjacency.direction,
         native_revision: adjacency.native_revision,
         comparison_work_limit: adjacency.comparison_work_limit,
-        endpoints: adjacency.endpoints,
-    }
+        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::preserve(&adjacency.endpoints, control)?,
+    })
 }
 
 #[cfg(test)]
-mod tests {
-    use worth_relational::facade::{
-        identity::{EntityId, KindId, PartitionId, VersionId},
-        runtime::RelationalAdjacencyDirection,
-    };
-
-    use super::Fact;
-
-    #[test]
-    fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
-        let anchor = EntityId::new(PartitionId::main(), 1, 1);
-        let endpoint = EntityId::new(PartitionId::main(), 2, 1);
-        let mut projected = Fact::SourceAdjacencyRevision {
-            relation_kind: KindId::new(3),
-            anchor,
-            direction: RelationalAdjacencyDirection::Outgoing,
-            native_revision: Some(VersionId(4)),
-            comparison_work_limit: 1,
-            endpoints: vec![endpoint],
-        };
-        let path = Fact::SourceAdjacencyRevision {
-            relation_kind: KindId::new(3),
-            anchor,
-            direction: RelationalAdjacencyDirection::Outgoing,
-            native_revision: Some(VersionId(4)),
-            comparison_work_limit: 1,
-            endpoints: vec![],
-        };
-        assert!(projected.merge_same_source_fact(path));
-        assert!(
-            matches!(&projected, Fact::SourceAdjacencyRevision { endpoints, .. } if endpoints == &vec![endpoint])
-        );
-        let changed = Fact::SourceAdjacencyRevision {
-            relation_kind: KindId::new(3),
-            anchor,
-            direction: RelationalAdjacencyDirection::Outgoing,
-            native_revision: Some(VersionId(5)),
-            comparison_work_limit: 1,
-            endpoints: vec![],
-        };
-        assert!(!projected.merge_same_source_fact(changed));
-    }
-}
+mod tests;

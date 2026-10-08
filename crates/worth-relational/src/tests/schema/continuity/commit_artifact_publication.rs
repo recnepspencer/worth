@@ -91,9 +91,15 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let transition = outcome.schema_transition_summary().unwrap();
     assert_eq!(transition.changed_atom_count, 1);
@@ -237,9 +243,9 @@ fn schema_certification_transition_is_explained_and_counted() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(WorkerIntentBatch::new("schema-transition-certified").push(
-        MutationIntent::Create(CreateIntent::Entity(
-            crate::transactions::data::EntitySpec {
+    txn.push_batch(
+        WorkerIntentBatch::new("schema-transition-certified").push(MutationIntent::Create(
+            CreateIntent::Entity(crate::transactions::data::EntitySpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw("b"),
@@ -248,11 +254,17 @@ fn schema_certification_transition_is_explained_and_counted() {
                     crate::tests::support::field_key("name"),
                     "b",
                 ),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let diagnostics = outcome.diagnostics();
     let detailed_trace = diagnostics

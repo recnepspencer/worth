@@ -12,6 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, RecvTimeoutError};
 use std::sync::{Arc, Barrier};
 use std::time::{Duration, Instant};
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 use super::invariant_oracle_expectations::expected_supply_chain_branch;
 use super::world::supply_chain::{
@@ -367,7 +368,7 @@ pub(crate) fn begin_court_transaction(
         )
         .expect("the controlled court transaction binds to its exact admitted basis");
     transaction
-        .push_batch(batch)
+        .push_batch(batch, AllocationPolicy::SystemAllocation)
         .expect("the lowered Supply Chain delta fits the configured transaction budget");
     transaction
 }

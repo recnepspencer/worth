@@ -49,11 +49,17 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
         )
         .unwrap();
     transaction
-        .push_batch(lower_hazard_v2_batch(&world.handles).unwrap())
+        .push_batch(
+            lower_hazard_v2_batch(&world.handles).unwrap(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(matches!(
         world

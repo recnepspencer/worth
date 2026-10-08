@@ -73,9 +73,15 @@ pub(super) fn create_entity(
                     .expect("seed name aspect patch"),
             }),
         )),
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("seeded effect fixture staging fits the configured transaction budget");
-    let outcome = txn.commit(runtime).expect("seed commit should succeed");
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("seed commit should succeed");
     let entity = outcome
         .changed_records
         .iter()

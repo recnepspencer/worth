@@ -236,7 +236,7 @@ fn observe_dependency(
                 direction,
                 native_revision: native_revision.map(VersionId),
                 comparison_work_limit,
-                endpoints: Vec::new(),
+                endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
             })
         }
         _ => Err(denial("workflow evidence dependency shape is invalid")),

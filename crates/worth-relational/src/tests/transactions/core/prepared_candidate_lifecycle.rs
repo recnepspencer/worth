@@ -30,9 +30,17 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
         )
         .unwrap();
     transaction
-        .push_batch(batch_create("expired-candidate"))
+        .push_batch(
+            batch_create("expired-candidate"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     assert_eq!(runtime.reap_expired_prepared_candidates(), 1);
     assert!(matches!(
@@ -134,10 +142,16 @@ fn foreign_publication_port_denies_before_reference_movement() {
         )
         .expect("source transaction binds");
     transaction
-        .push_batch(batch_create("foreign-port-write"))
+        .push_batch(
+            batch_create("foreign-port-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let candidate = source
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("source candidate prepares");
     let foreign = runtime_with_test_schema();
 
@@ -213,6 +227,14 @@ fn prepared_write(
     let mut transaction = runtime
         .begin_branch_transaction(basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap();
-    transaction.push_batch(batch_create(key)).unwrap();
-    runtime.prepare_branch_transaction(transaction)
+    transaction
+        .push_batch(
+            batch_create(key),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    runtime.prepare_branch_transaction(
+        transaction,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }

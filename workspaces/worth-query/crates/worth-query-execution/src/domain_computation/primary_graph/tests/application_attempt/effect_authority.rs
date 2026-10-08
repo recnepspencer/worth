@@ -28,19 +28,27 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            let projected = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-            reader
-                .require_decision_field(&projected, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                let projected = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_string())
+                    .unwrap();
+                reader
+                    .require_decision_field(&projected, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let mut reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     reads
         .observe_field(&account, AccountStatus::reference())
@@ -96,19 +104,27 @@ fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| {
-            let projected = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_string())
-                .unwrap();
-            reader
-                .require_decision_field(&projected, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, _| {
+                let projected = reader
+                    .resolve_entity(AccountStatus::reference(), "open".to_string())
+                    .unwrap();
+                reader
+                    .require_decision_field(&projected, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let mut reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     reads
         .observe_field(&account, AccountStatus::reference())

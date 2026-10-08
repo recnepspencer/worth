@@ -238,12 +238,23 @@ fn checkpoint_lineage_node_swap_denies_before_installation() {
     let runtime = persisted_runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("checkpoint-swap-first"))
+        .push_batch(
+            batch_create("checkpoint-swap-first"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(batch_create("checkpoint-swap-second"))
+        .push_batch(
+            batch_create("checkpoint-swap-second"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(&runtime).expect("two-entity commit");
+    transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("two-entity commit");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -269,12 +280,23 @@ fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
     let runtime = persisted_runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("checkpoint-duplicate-node-first"))
+        .push_batch(
+            batch_create("checkpoint-duplicate-node-first"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(batch_create("checkpoint-duplicate-node-second"))
+        .push_batch(
+            batch_create("checkpoint-duplicate-node-second"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(&runtime).expect("two-entity commit");
+    transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("two-entity commit");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,

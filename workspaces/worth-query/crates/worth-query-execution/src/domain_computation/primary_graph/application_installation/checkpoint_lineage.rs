@@ -35,14 +35,18 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             // An output without producer facts retains descriptive prior identity only.
             continue;
         };
-        let facts =
-            decode_producer_facts_for_wire_version(bytes, checkpoint.producer_fact_wire_version)
-                .map_err(|detail| {
-                    WorthQueryPrimaryGraphInstallationDenial::new(
-                        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                        detail,
-                    )
-                })?;
+        let facts = decode_producer_facts_for_wire_version(
+            bytes,
+            checkpoint.producer_fact_wire_version,
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(|detail| {
+            WorthQueryPrimaryGraphInstallationDenial::new(
+                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                detail.to_string(),
+            )
+        })?;
         lineage.record_restoration(
             binding,
             application.runtime.authority_identity().as_u64(),

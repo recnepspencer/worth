@@ -1,4 +1,7 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::{
+    endpoints::AdmittedAdjacencyEndpoints, StorageControl,
+};
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationAdjacencyDirection,
     output_reuse::{compare_retained_output_dependencies, OutputDependencySelection},
@@ -49,6 +52,8 @@ fn own_retirement_preserves_each_read_locator_and_checkpoint_currentness() {
     let restored =
         crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(
             &encoded,
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     assert_eq!(restored.as_ref(), retired.as_slice());
@@ -128,11 +133,12 @@ fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() 
 
 fn reads(world: &AuthorizationWorld, key: &str) -> (EntityId, KindId, Vec<Fact>) {
     let selected = world.selected_product();
+    let request = live_scope();
     let entity = selected
         .resolve_entity(
             AccountIdentity::reference(),
             key.to_owned(),
-            &live_scope(),
+            &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
@@ -235,7 +241,15 @@ fn reads(world: &AuthorizationWorld, key: &str) -> (EntityId, KindId, Vec<Fact>)
             direction: worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing,
             native_revision: adjacency_revision,
             comparison_work_limit: 16,
-            endpoints: relations.iter().map(|relation| relation.to).collect(),
+            endpoints: AdmittedAdjacencyEndpoints::from_exact_iterator(
+                relations.len(),
+                relations.iter().map(|relation| relation.to),
+                StorageControl::new(
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    Some(&request),
+                ),
+            )
+            .expect("the unchanged ordered relation endpoints are admitted"),
         },
         Fact::Adjacency {
             anchor: entity,
@@ -291,7 +305,7 @@ fn normal_rebase(world: &AuthorizationWorld, facts: Vec<Fact>) -> std::sync::Arc
             exact(super::super::rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                super::super::PreparedSourceFactRebase::admit(facts).unwrap(),
+                super::super::PreparedSourceFactRebase::admit(facts, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                 &BTreeSet::new(),
                 true,
                 64,

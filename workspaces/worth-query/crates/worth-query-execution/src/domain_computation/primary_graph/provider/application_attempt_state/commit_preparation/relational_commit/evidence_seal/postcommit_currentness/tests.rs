@@ -44,6 +44,8 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
     let durable = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(
             &crate::domain_computation::primary_graph::application_checkpoint::encode_producer_facts(&facts)
                 .expect("the rebased non-query producer decision field is checkpoint-comparable"),
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the complete producer fact set round-trips");
     assert_eq!(durable.as_ref(), facts.as_ref());
@@ -249,7 +251,7 @@ fn rebase_result_at_current(
             rebase(
                 runtime,
                 selected.application_basis().snapshot_handle(),
-                PreparedSourceFactRebase::admit(facts).unwrap(),
+                PreparedSourceFactRebase::admit(facts, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                 &BTreeSet::new(),
                 true,
                 64,

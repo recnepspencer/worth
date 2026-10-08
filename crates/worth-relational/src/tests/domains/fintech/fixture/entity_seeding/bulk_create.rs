@@ -28,9 +28,16 @@ where
                 field_patches,
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(&txn.commit(runtime).unwrap())
+    changed_entities(
+        &txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap(),
+    )
 }
 
 fn changed_entities(outcome: &CommitResult) -> Vec<EntityId> {

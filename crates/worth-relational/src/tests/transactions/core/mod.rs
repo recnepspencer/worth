@@ -57,3 +57,5 @@ mod stale_fork_generation;
 mod struct_field_patch_authority;
 mod transaction_resource_budgets;
 mod visibility_aspect_versions;
+
+mod staging_allocation_custody;

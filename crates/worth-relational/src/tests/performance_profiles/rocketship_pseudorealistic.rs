@@ -77,10 +77,16 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
         for intent in bulk_entity_create_intents(&entity_specs) {
             batch = batch.push(intent);
         }
-        txn.push_batch(batch)
-            .expect("test staging stays within configured resource budgets");
-        txn.commit(runtime)
-            .expect("pseudorealistic rocketship entity seed commit")
+        txn.push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("test staging stays within configured resource budgets");
+        txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("pseudorealistic rocketship entity seed commit")
     };
     let entity_commit_micros = entity_commit_started_at.elapsed().as_micros();
     assert_eq!(
@@ -228,10 +234,16 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
             for intent in bulk_relation_create_intents(relation_chunk) {
                 batch = batch.push(intent);
             }
-            txn.push_batch(batch)
-                .expect("test staging stays within configured resource budgets");
-            txn.commit(runtime)
-                .expect("pseudorealistic rocketship relation seed commit chunk")
+            txn.push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("test staging stays within configured resource budgets");
+            txn.commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("pseudorealistic rocketship relation seed commit chunk")
         };
         relation_commit_micros += relation_commit_started_at.elapsed().as_micros();
         relation_commit_phase_timing.draft_preparation_micros +=

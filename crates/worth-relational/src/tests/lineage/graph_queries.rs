@@ -57,9 +57,15 @@ fn lineage_graph_replace_emits_replace_edge() {
                 },
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let graph = runtime.lineage_access().graph(LineageGraphRequest {
         branch_id: BranchId("main".to_string()),
         traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
@@ -118,9 +124,15 @@ fn lineage_graph_same_shape_replacements_do_not_cross_wire_targets() {
                     },
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let graph = runtime.lineage_access().graph(LineageGraphRequest {
         branch_id: BranchId("main".to_string()),
         traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
@@ -183,9 +195,15 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
                 },
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let replay = runtime.replay();
     let envelope = replay
         .canonical_commit_envelope(outcome.commit.commit_id)

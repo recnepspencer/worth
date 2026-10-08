@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use worth_execution::ExecutionAllocationPolicy as NativeAllocationPolicy;
 
 use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
 use worth_relational::facade::identity::{KindId, PartitionId};
@@ -250,10 +251,11 @@ fn create_fixture_entity(
                     fields: AspectFieldPatch::new(BTreeMap::new()),
                 }),
             )),
+            NativeAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(runtime)
+        .commit(runtime, NativeAllocationPolicy::SystemAllocation)
         .expect("managed-run fixture entity should commit")
 }
 

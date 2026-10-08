@@ -21,7 +21,16 @@ fn current_facts_roundtrip_older_formats_drop_theirs_and_hostile_lengths_fail_be
         decoded.accepted_outputs[0].producer_facts.as_deref(),
         Some(bytes.as_slice())
     );
-    assert_eq!(facts::decode(&bytes).unwrap().as_ref(), &[fact]);
+    assert_eq!(
+        facts::decode(
+            &bytes,
+            None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+        )
+        .unwrap()
+        .as_ref(),
+        &[fact]
+    );
     // Formats 5, 6 and 7 carry no posture byte and no fact wire version.
     // They stay readable, and their facts are never read: those formats kept
     // facts for outputs that consumed other outputs too.

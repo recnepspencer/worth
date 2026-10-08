@@ -45,10 +45,16 @@ pub(super) fn commit_bootstrap_rows(
         }
         batch = append_typed_rows(batch, entity_rows, relation_rows);
         transaction
-            .push_batch(batch)
+            .push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(map_bootstrap_staging_denial)?;
         let committed = transaction
-            .commit(runtime)
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(map_bootstrap_commit_denial)?;
         let commit_id = committed.commit.commit_id;
         crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
@@ -101,6 +107,11 @@ pub(super) fn map_bootstrap_staging_denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
+        Denial::AllocationDenied(_)
+        | Denial::CardinalityOverflow
+        | Denial::InputDirectoryAllocationDenied { .. } => {
+            WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
+        }
         Denial::OverlayCapacityExhausted {
             maximum_bytes,
             required_bytes,

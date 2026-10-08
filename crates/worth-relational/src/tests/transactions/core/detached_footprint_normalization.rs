@@ -22,22 +22,31 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
         target: EntityReference::Created(raw_target.clone()),
     };
     transaction
-        .push_batch(batch_create("normalized-source"))
+        .push_batch(
+            batch_create("normalized-source"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(batch_create("normalized-target"))
+        .push_batch(
+            batch_create("normalized-target"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(WorkerIntentBatch::new("normalized-relation-batch").push(
-            MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: raw_relation.partition_id,
-                kind_id: raw_relation.kind_id,
-                client_key: raw_relation.client_key.clone(),
-                source: raw_relation.source.clone(),
-                target: raw_relation.target.clone(),
-                fields: Default::default(),
-            })),
-        ))
+        .push_batch(
+            WorkerIntentBatch::new("normalized-relation-batch").push(MutationIntent::Create(
+                CreateIntent::Relation(RelationSpec {
+                    partition_id: raw_relation.partition_id,
+                    kind_id: raw_relation.kind_id,
+                    client_key: raw_relation.client_key.clone(),
+                    source: raw_relation.source.clone(),
+                    target: raw_relation.target.clone(),
+                    fields: Default::default(),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     assert!(transaction
         .read_created_entity(&raw_source)
@@ -53,7 +62,10 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
         .is_some());
 
     let merged_intents = transaction
-        .merged_plan(&runtime)
+        .merged_plan(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("raw created graph normalizes")
         .merged_intents
         .clone();

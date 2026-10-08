@@ -12,10 +12,10 @@ use worth_query_host::facade::{
         WorthQueryApplicationRequestMutationDenial as RequestDenial,
     },
     primary_graph::{
-        MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind as AttemptKind,
-        WorthQueryApplicationCommitDenialKind as CommitKind,
+        MutationHandlerExecutionDenial, WorthQueryApplicationCommitDenialKind as CommitKind,
         WorthQueryApplicationCommitDenialStage as CommitStage, WorthQueryApplicationUncommitted,
-        WorthQueryMutationHandlerWork,
+        WorthQueryInvariantProjectionDenialKind as InvariantKind, WorthQueryMutationHandlerWork,
+        WorthQueryOperationProjectionDenialKind as ProjectionKind,
     },
     runtime::{
         CancellationToken, ExecutionAllocationDenial, ExecutionAllocationDenialKind,
@@ -111,16 +111,28 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
     let (refused, work) = request!(&refused_key)
         .execute_in_program_report(&host, Policy::Execution(&zero))
         .into_parts();
-    let Err(RequestDenial::Handler(MutationHandlerExecutionDenial::Attempt(denial))) = refused
-    else {
-        panic!("zero payload budget must retain the original attempt refusal");
+    let denial = match refused {
+        Err(RequestDenial::Handler(MutationHandlerExecutionDenial::Projection(denial))) => denial,
+        Err(denial) => panic!("zero payload budget refused at an unexpected owner: {denial:?}"),
+        Ok(_) => panic!("zero payload budget must refuse scope predicate retention"),
     };
-    assert_eq!(denial.kind(), AttemptKind::AllocationDenied);
+    assert_eq!(
+        denial.kind(),
+        ProjectionKind::InvariantAdmission(InvariantKind::SourceRetentionDenied)
+    );
     assert_memory_refusal(denial.allocation_denial().expect("original physical cause"));
+    let invariant = denial
+        .invariant_denial()
+        .expect("full scope retention refusal");
+    assert_eq!(invariant.kind(), InvariantKind::SourceRetentionDenied);
+    assert_eq!(invariant.allocation_denial(), denial.allocation_denial());
     let WorthQueryMutationHandlerWork::Captured(work) = work else {
-        panic!("the real decision projection ran before completion admission");
+        panic!("the real decision projection ran before candidate construction");
     };
     assert!(work.handler_contacted());
+    assert_eq!(Some(work.projection_work()), denial.projection_work());
+    assert_eq!(work.projection_work().equality_lookups(), 1);
+    assert_eq!(work.projection_work().index_candidates_examined(), 1);
     assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
     assert_eq!(
         observe_head(runtime, branch).selected_commit(),

@@ -7,7 +7,6 @@ pub(in crate::domain_computation::primary_graph) use commit_execution::RetainedT
 
 pub(in crate::domain_computation::primary_graph) use commit_execution::WorthQueryPrimaryGraphCommittedApplication;
 
-pub(in crate::domain_computation::primary_graph::provider) use evidence_seal::PreparedSourceFactRebase;
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{
     RebaseVerificationReason, WorthQueryMutationWorkCommitSeal,
     WorthQueryPrimaryGraphCommitEvidence,
@@ -60,3 +59,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
         committed.publish_and_encode(provider, runtime, evidence, publication_admission)
     })
 }
+
+pub(in crate::domain_computation::primary_graph) use evidence_seal::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

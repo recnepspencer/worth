@@ -102,12 +102,13 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn admit_primary_candidate(
         &self,
         session: WorthQueryProviderSessionView<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<WorthQueryPrimaryCandidateAdmission, WorthQueryInvariantExecutionFailure> {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
         let material = self.invariant_candidate_material(session)?;
-        self.validate_and_retain_candidate(session, material)?;
+        self.validate_and_retain_candidate(session, material, allocation_policy)?;
         Ok(WorthQueryPrimaryCandidateAdmission { _private: () })
     }
 
@@ -153,6 +154,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         session: WorthQueryProviderSessionView<'_>,
         material: ApplicationInvariantCandidateMaterial,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         let host_budget = self.resource_support.graph().envelope()
             .optional_scale_ceiling(worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::WorkItems);
@@ -164,6 +166,7 @@ impl WorthQueryPrimaryGraphProvider {
             &material.request,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
+            allocation_policy,
         )?;
         let owner_work = receipt_closure::validate_receipt_closure(
             candidate.invariant_evidence(),

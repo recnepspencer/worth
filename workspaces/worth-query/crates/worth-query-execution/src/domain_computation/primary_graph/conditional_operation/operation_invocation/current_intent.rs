@@ -129,7 +129,7 @@ where
             .invariant
             .project_operation_on_product::<Operation, _>(product.product(), |reader| {
                 self.observe_current_intent(reader, identity_value.clone(), &expected_revision)
-            })
+            }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .map_err(WorthQueryTemporalReentryDenial::from_invariant)?;
         Ok(current.output().is_ok().then_some(WorthQueryCurrentTemporalIntent {
             identity_value,

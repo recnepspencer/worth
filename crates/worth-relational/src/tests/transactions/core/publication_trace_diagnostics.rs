@@ -120,9 +120,15 @@ fn aspect_evaluation_trace_retains_unchanged_bindings_for_auditability() {
                 ]),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let created = txn.commit(&runtime).unwrap();
+    let created = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let entity = changed_entities(&created)[0];
 
     let mut update_txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -145,9 +151,15 @@ fn aspect_evaluation_trace_retains_unchanged_bindings_for_auditability() {
                     ]),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let result = update_txn.commit(&runtime).unwrap();
+    let result = update_txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let trace = &result.aspect_evaluation_traces()[0];
     let status_key = AspectKey::new("status").unwrap();
     let status_row = trace

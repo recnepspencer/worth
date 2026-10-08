@@ -151,10 +151,10 @@ impl WorthQueryPrimaryGraphProvider {
                 transaction
                     .push_batch(
                         WorkerIntentBatch::new("inbound-external-effect-completion").push(intent),
-                    )
+                     worth_execution::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|_| Denial::StagingUnavailable)?;
                 let validated = transaction
-                    .validate(runtime)
+                    .validate(runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,)
                     .map_err(|_| Denial::ValidationUnavailable)?;
                 let mut candidate = runtime
                     .prepare_validated_proposal(validated)

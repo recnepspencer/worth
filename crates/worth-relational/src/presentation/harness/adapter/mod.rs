@@ -86,9 +86,17 @@ impl HarnessAdapter for RelationalHarnessAdapter {
             return Ok(());
         }
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-        txn.push_batch(entity_fixture_batch(&fixture.fixture.entities))
-            .expect("test staging stays within configured resource budgets");
-        let outcome = txn.commit(runtime).map_err(commit_error_to_harness_error)?;
+        txn.push_batch(
+            entity_fixture_batch(&fixture.fixture.entities),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("test staging stays within configured resource budgets");
+        let outcome = txn
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(commit_error_to_harness_error)?;
         let entity_ids = outcome
             .changed_records
             .iter()
@@ -101,13 +109,16 @@ impl HarnessAdapter for RelationalHarnessAdapter {
             let mut relation_txn =
                 crate::tests::support::test_owner_begin_transaction_for_main(runtime);
             relation_txn
-                .push_batch(relation_fixture_batch(
-                    &fixture.fixture.relations,
-                    &entity_ids,
-                )?)
+                .push_batch(
+                    relation_fixture_batch(&fixture.fixture.relations, &entity_ids)?,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("test staging stays within configured resource budgets");
             relation_txn
-                .commit(runtime)
+                .commit(
+                    runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .map_err(commit_error_to_harness_error)?;
         }
         Ok(())
@@ -121,10 +132,17 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
         for operation in &batch.operations {
             let operation: WorkerIntentBatch = operation.clone();
-            txn.push_batch(operation)
-                .expect("test staging stays within configured resource budgets");
+            txn.push_batch(
+                operation,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("test staging stays within configured resource budgets");
         }
-        txn.commit(runtime).map_err(commit_error_to_harness_error)?;
+        txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(commit_error_to_harness_error)?;
         Ok(())
     }
 

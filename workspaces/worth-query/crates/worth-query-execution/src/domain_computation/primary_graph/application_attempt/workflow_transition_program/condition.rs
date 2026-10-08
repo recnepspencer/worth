@@ -59,6 +59,8 @@ where
                         operand.query,
                         expected_query_identity,
                         &graph.layout,
+                        Some(self.admitted.read_set().admission.publication_request()),
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
                     .map_err(|_| denial(&node_path))?,
             );

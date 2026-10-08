@@ -116,9 +116,14 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
                 ),
             ),
         ),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).expect("seed replicas");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("seed replicas");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(

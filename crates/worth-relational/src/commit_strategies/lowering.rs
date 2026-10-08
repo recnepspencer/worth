@@ -25,7 +25,10 @@ pub(crate) fn lower_execution(
         .cloned()
     {
         transaction
-            .push_batch(worker_batch)
+            .push_batch(
+                worker_batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(|denial| StrategyLoweringError::mutation_conflict(denial.into_conflict()))?;
     }
     runtime
@@ -39,13 +42,22 @@ pub(crate) fn lower_execution(
     let bulk_mutation_batch = transaction
         .admit_provenance_complete_bulk_mutation_batch(runtime)
         .map_err(StrategyLoweringError::mutation_conflict)?;
-    let intents = transaction.normalized_intents_for_merge(&preparation);
+    let intents = transaction
+        .normalized_intents_for_merge(
+            &preparation,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(StrategyLoweringError::mutation_conflict)?;
     let merged_plan = transaction
         .build_merged_plan_for_state(&preparation, selected_branch_state.state(), intents)
         .map_err(StrategyLoweringError::mutation_conflict)?;
     transaction
         .footprint
-        .derive_validation_dependencies(&merged_plan, transaction.maximum_footprint_loci)
+        .derive_validation_dependencies(
+            &merged_plan,
+            transaction.maximum_footprint_loci,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .map_err(|denial| StrategyLoweringError::mutation_conflict(denial.into_conflict()))?;
     let lowering_provenance =
         StrategyLoweringProvenance::from_request_and_execution(request, execution);

@@ -212,10 +212,16 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
     runtime.history.sabotage_next_root_capture();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("root-capture-production-sabotage"))
+        .push_batch(
+            batch_create("root-capture-production-sabotage"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("the test-only root court must reject the real commit path");
     assert!(format!("{error:?}").contains("UnresolvedContentSymbol"));
 

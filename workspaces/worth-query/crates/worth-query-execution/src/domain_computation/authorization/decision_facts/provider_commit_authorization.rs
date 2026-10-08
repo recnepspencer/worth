@@ -72,6 +72,7 @@ impl WorthQueryProviderCommitAuthorization {
         staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
         attempt_basis: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptBasis,
         context: crate::domain_computation::primary_graph::WorthQueryProviderAttemptRegistrationContext<'_, Schema, Operation, Input, Scope>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::primary_graph::WorthQueryRegisteredProviderAttempt<'run>,
         crate::domain_computation::primary_graph::WorthQueryProviderProgressionOutcome,
@@ -82,7 +83,7 @@ impl WorthQueryProviderCommitAuthorization {
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
             ));
         };
-        prepared.register(staged, provider, attempt_basis, context)
+        prepared.register(staged, provider, attempt_basis, context, allocation_policy)
     }
 
     pub(in crate::domain_computation) fn finish_registration(

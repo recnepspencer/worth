@@ -1,5 +1,6 @@
 //! The actual Relational validation, under the admitted request control.
 use super::*;
+use crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(super) fn validate_relational_candidate(
@@ -12,6 +13,7 @@ impl WorthQueryPrimaryGraphProvider {
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         worth_relational::facade::mvcc::ValidatedRelationalProposal,
         WorthQueryInvariantExecutionFailure,
@@ -37,6 +39,7 @@ impl WorthQueryPrimaryGraphProvider {
             return Err(owner_failure());
         }
         let control = super::validation_control::ValidationRequestControl::new(request);
+        let allocation_control = RequestAllocationControl::new(request, allocation_policy);
         let candidate = self.graph.with_runtime_mut(|runtime| {
             if let Some(pending) = aftermath_causality {
                 let observed_parent = basis
@@ -56,11 +59,13 @@ impl WorthQueryPrimaryGraphProvider {
                 )
                 .map_err(map_transaction_admission_failure)?;
             transaction
-                .push_batch(batch)
+                .push_batch(batch, allocation_control.policy())
                 .map_err(map_transaction_staging_failure)?;
             #[cfg(test)]
             self.fault_port.candidate_staged_for_validation();
-            Ok::<_, WorthQueryInvariantExecutionFailure>(transaction.validate(runtime))
+            Ok::<_, WorthQueryInvariantExecutionFailure>(
+                transaction.validate(runtime, allocation_control.policy()),
+            )
         });
         let candidate = candidate?.map_err(map_validation_failure)?;
         validate_owner_evidence(candidate.invariant_evidence(), branch)?;

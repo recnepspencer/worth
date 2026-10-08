@@ -19,8 +19,11 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     let savepoint_a = txn.create_savepoint().unwrap();
-    txn.push_batch(batch_create("surviving-a"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("surviving-a"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     txn.push_batch(
         WorkerIntentBatch::new("surviving-a-update").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -32,12 +35,16 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
     let savepoint_b = txn.create_savepoint().unwrap();
-    txn.push_batch(batch_create("abandoned-entity"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("abandoned-entity"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     txn.push_batch(
         WorkerIntentBatch::new("abandoned-relation").push(MutationIntent::Create(
             CreateIntent::Relation(crate::transactions::data::RelationSpec {
@@ -49,6 +56,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     txn.push_batch(
@@ -67,12 +75,16 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
                 },
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let rollback_b = txn.rollback_to_savepoint(savepoint_b).unwrap();
 
-    txn.push_batch(batch_create("surviving-b"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("surviving-b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     txn.push_batch(
         WorkerIntentBatch::new("surviving-b-update").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -84,12 +96,16 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let rollback_a = txn.rollback_to_savepoint(savepoint_a).unwrap();
 
-    txn.push_batch(batch_create("surviving-final"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("surviving-final"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     txn.push_batch(
         WorkerIntentBatch::new("surviving-final-update").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -101,22 +117,29 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
                 ),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.push_batch(WorkerIntentBatch::new("surviving-final-relation").push(
-        MutationIntent::Create(CreateIntent::Relation(
-            crate::transactions::data::RelationSpec {
+    txn.push_batch(
+        WorkerIntentBatch::new("surviving-final-relation").push(MutationIntent::Create(
+            CreateIntent::Relation(crate::transactions::data::RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: crate::symbols::data::ClientKey::raw("surviving-r"),
                 source: crate::transactions::data::EntityReference::Existing(anchor),
                 target: crate::transactions::data::EntityReference::Existing(target),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     assert!(rollback_b.has_effects());
     assert!(rollback_a.has_effects());
