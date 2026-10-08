@@ -103,10 +103,11 @@ impl WorthQueryCheckpointTransitionRecovery {
         match self
             .graph
             .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
-        {
-            Ok(native) => {
-                Ok(WorthQueryApplicationCheckpoint::encode(native, &self.publication, &[]).0)
-            }
+            .and_then(|native| {
+                WorthQueryApplicationCheckpoint::encode(native, &self.publication, &[])
+                    .map(|(checkpoint, _)| checkpoint)
+            }) {
+            Ok(checkpoint) => Ok(checkpoint),
             Err(error) => {
                 self.detail = format!("{error:?}");
                 Err(self)

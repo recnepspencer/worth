@@ -158,17 +158,15 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
         .graph
         .integration_handle()
         .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
-    {
-        Ok(native) => {
-            *recovery.borrow_mut() = Some(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::encode(
-                    native,
-                    &publication,
-                    &[],
-                )
-                .0,
+        .and_then(|native| {
+            crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::encode(
+                native,
+                &publication,
+                &[],
             )
-        }
+            .map(|(checkpoint, _)| checkpoint)
+        }) {
+        Ok(checkpoint) => *recovery.borrow_mut() = Some(checkpoint),
         Err(error) => {
             return Err(
                 WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(Box::new(

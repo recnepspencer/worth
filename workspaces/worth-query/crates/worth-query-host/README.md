@@ -108,6 +108,16 @@ Capture admits the required native prior locators before best-effort reuse facts
 If those optional facts exhaust their remaining allowance, the checkpoint retains
 prior custody and the output starts fresh after reopening.
 
+Query frames a captured native checkpoint directly in its final byte buffer,
+preserving the format-8 wire layout and checksum. Capture reports
+`CheckpointSizeOverflow` when encoded lengths cannot fit this host or wire
+format, and `CheckpointAllocationUnavailable` when reserving that buffer fails.
+Both are write failures and do not suggest repairing the saved store. This
+removes the intermediate full Query body copy; native capture, accepted fact
+payloads, boxed-slice conversion and host compression have separate allocations.
+An internal difference between reserved and emitted frame size reports
+`CheckpointFrameSizeMismatch` before any checkpoint is returned.
+
 A family read rejects an older candidate when its own recorded facts or native
 output witness prove it changed, even if its upstream is pending. Unchanged own
 evidence still returns `PendingUpstream`; it never establishes upstream currentness.

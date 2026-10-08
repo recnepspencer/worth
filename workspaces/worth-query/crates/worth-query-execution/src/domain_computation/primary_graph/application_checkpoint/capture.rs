@@ -141,11 +141,11 @@ where
                         )
                     })?;
                     drop(lineage);
-                    Ok(WorthQueryApplicationCheckpoint::encode(
+                    WorthQueryApplicationCheckpoint::encode(
                         checkpoint,
                         self.publication(),
                         &accepted_outputs,
-                    ))
+                    )
                 })
         })
     }

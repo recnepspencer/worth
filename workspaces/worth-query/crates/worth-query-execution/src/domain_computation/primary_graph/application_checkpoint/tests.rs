@@ -246,10 +246,9 @@ fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]
 fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
     let mut accepted = accepted_prefix(b"producer", 0, [0; 32]);
     accepted.truncate(accepted.len() - 17);
-    super::resources::encode_profile(
-        &mut accepted,
+    accepted.extend_from_slice(&super::resources::encode_profile(
         Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(4_096, 8_192)),
-    );
+    ));
     accepted.extend_from_slice(&0_u64.to_be_bytes());
     accepted.extend_from_slice(&0_u16.to_be_bytes());
     accepted.extend_from_slice(&0_u64.to_be_bytes());
