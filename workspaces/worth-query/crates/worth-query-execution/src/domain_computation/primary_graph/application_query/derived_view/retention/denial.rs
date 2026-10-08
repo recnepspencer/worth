@@ -46,3 +46,22 @@ pub enum WorthQueryManagedDerivedViewDenial {
     /// The view was dropped; its snapshots can no longer read.
     Disposed,
 }
+
+/// A shared-loan pair refresh preserves either managed-view provenance and
+/// lifecycle refusal, or the actual ordinary execution/aggregate budget cause.
+/// No refusal installs a partially projected entry.
+#[derive(Debug)]
+pub enum WorthQueryManagedDerivedCollectionBatchRefreshDenial {
+    /// The intact second result was executed under a different shared loan.
+    ForeignBatch,
+    View(WorthQueryManagedDerivedViewDenial),
+    Read(crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBatchReadDenial),
+}
+
+impl From<WorthQueryManagedDerivedViewDenial>
+    for WorthQueryManagedDerivedCollectionBatchRefreshDenial
+{
+    fn from(denial: WorthQueryManagedDerivedViewDenial) -> Self {
+        Self::View(denial)
+    }
+}

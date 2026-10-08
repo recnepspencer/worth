@@ -52,6 +52,13 @@ impl WorthQueryApplicationQueryBatchAdmission {
 }
 
 impl WorthQueryApplicationQueryBatchMemory {
+    pub(in crate::domain_computation::primary_graph::application_query) fn belongs_to(
+        &self,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+    ) -> bool {
+        Arc::ptr_eq(&self.totals, &batch.totals)
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn grow(
         &mut self,
         bytes: usize,

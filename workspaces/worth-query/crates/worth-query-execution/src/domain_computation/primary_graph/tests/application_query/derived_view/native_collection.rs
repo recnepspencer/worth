@@ -1,8 +1,10 @@
 use super::*;
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
 use crate::domain_computation::primary_graph::tests::fixture::{
     AccountSummaryResult, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };
+use crate::domain_computation::primary_graph::WorthQueryManagedDerivedCollectionBatchRefreshDenial;
+
+mod batch_refresh;
 
 #[test]
 fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entry() {
@@ -147,13 +149,15 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
         .unwrap();
     assert_eq!(keys.len(), 1);
     let key = keys[0].clone();
-    let original = world
+    let original_snapshot = world
         .application
         .observe_managed_derived_view(&view)
-        .unwrap()
-        .get(&key)
-        .unwrap()
         .unwrap();
+    assert_eq!(
+        original_snapshot.selected_commit(),
+        selected.product().selected_commit()
+    );
+    let original = original_snapshot.get(&key).unwrap().unwrap();
     assert_eq!(original.0, "primary");
     let denied = world
         .application
@@ -167,20 +171,8 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     .map(|root| (*root, row.tag.clone()))
                     .collect()
             },
-            |_: &String| -> Result<
-                WorthQueryApplicationOneShotResult<
-                    PublicScopedAccountSummaryQuery,
-                    AccountSummaryResult,
-                >,
-                WorthQueryManagedDerivedViewDenial,
-            > { Err(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied) },
-            |_| -> Result<
-                WorthQueryApplicationOneShotResult<
-                    PublicScopedAccountSummaryQuery,
-                    AccountSummaryResult,
-                >,
-                WorthQueryManagedDerivedViewDenial,
-            > { unreachable!("second read cannot run after first denial") },
+            batch_refresh::deny_first,
+            batch_refresh::deny_second,
             |row| row.status().to_string(),
             |row| row.status().to_string(),
             |_, body| SceneLabel(body.label().to_string()),
@@ -231,6 +223,14 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
     change_label(unrelated.entity_id(), "other-changed");
     let after = world.selected_product();
     prepared.apply(after.product().selected_commit());
+    assert_ne!(
+        original_snapshot.selected_commit(),
+        after.product().selected_commit()
+    );
+    assert_eq!(
+        original_snapshot.get(&key).err(),
+        Some(WorthQueryManagedDerivedViewDenial::StaleSource)
+    );
     let retained = world
         .application
         .observe_managed_derived_view(&view)
@@ -330,28 +330,70 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             .err(),
         Some(WorthQueryManagedDerivedViewDenial::IncompleteDependencies),
     );
-    let refreshed = world
+    let first_work = world
         .application
-        .refresh_managed_derived_collection_pair_entry(
-            &view,
-            fresh.product(),
-            &key,
-            admit_entry(),
-            read_second,
-            |row| row.status().to_string(),
-            |row| row.status().to_string(),
-            |_, body| SceneLabel(body.label().to_string()),
-        )
+        .execute_application_query_one_shot(admit_entry())
+        .unwrap()
+        .receipt()
+        .work()
+        .total_work_units();
+    let first_memory = std::cell::Cell::new(0);
+    let projections = std::cell::Cell::new(0);
+    let snapshot = world
+        .application
+        .observe_managed_derived_view(&view)
         .unwrap();
-    assert_eq!(refreshed.0, "primary-changed");
-    assert!(std::sync::Arc::ptr_eq(
-        &refreshed,
-        &world
-            .application
-            .observe_managed_derived_view(&view)
-            .unwrap()
-            .get(&key)
-            .unwrap()
-            .unwrap(),
-    ));
+    let (application, fresh_product, _) = fresh.into_parts();
+    batch_refresh::refuse_then_refresh(
+        first_work,
+        &first_memory,
+        &projections,
+        &snapshot,
+        &key,
+        |batch, second_batch| {
+            world
+                .application
+                .refresh_managed_derived_collection_pair_entry_in_batch(
+                    &view,
+                    &fresh_product,
+                    &key,
+                    admit_entry(),
+                    batch,
+                    |row: &AccountSummaryResult, batch| {
+                        first_memory.set(batch.observe().retained_bytes());
+                        let selected = application
+                            .on_product(fresh_product.retained_clone())
+                            .unwrap();
+                        let scope = selected
+                            .resolve_entity(
+                                AccountStatus::reference(),
+                                row.status().to_owned(),
+                                &request,
+                                WorthQueryPrincipalResolutionMode::Ordinary,
+                            )
+                            .unwrap();
+                        let access =
+                            WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
+                        let plan = selected
+                            .admit_application_query(
+                                &entry_query,
+                                &access,
+                                ApplicationQueryParameterSet::new(),
+                                current_controls(&request),
+                            )
+                            .unwrap();
+                        world
+                            .application
+                            .execute_application_query_one_shot_in_batch(plan, second_batch)
+                            .map_err(WorthQueryManagedDerivedCollectionBatchRefreshDenial::Read)
+                    },
+                    |row| row.status().to_string(),
+                    |row| row.status().to_string(),
+                    |_, body| {
+                        projections.set(projections.get() + 1);
+                        SceneLabel(body.label().to_string())
+                    },
+                )
+        },
+    );
 }

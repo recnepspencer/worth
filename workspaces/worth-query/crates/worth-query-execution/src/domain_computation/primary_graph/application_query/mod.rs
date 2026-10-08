@@ -74,6 +74,7 @@ pub use denial::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
 };
 pub use derived_view::{
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial,
     WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
     WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
@@ -104,7 +105,7 @@ pub use observed_source::{
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
 };
 pub use one_shot::{
-    WorthQueryApplicationBatchReadDenial,
+    WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
     WorthQueryApplicationOneShotResult,
 };

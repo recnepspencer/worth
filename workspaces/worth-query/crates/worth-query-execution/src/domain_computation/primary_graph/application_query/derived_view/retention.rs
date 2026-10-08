@@ -22,7 +22,9 @@ mod publication;
 mod reconcile;
 mod refresh;
 
-pub use denial::WorthQueryManagedDerivedViewDenial;
+pub use denial::{
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedViewDenial,
+};
 pub use member_token::WorthQueryManagedDerivedMemberToken;
 pub(in crate::domain_computation::primary_graph::application_query::derived_view) use member_token::RetainedMemberToken;
 use member_token::token_charge;
@@ -360,6 +362,13 @@ where
     Key: Clone + Ord,
     Value: WorthQueryManagedDerivedValue,
 {
+    /// The commit this snapshot observed. Comparing it with a fresh selected
+    /// product establishes matching commit identity, not future currentness;
+    /// `get` still validates the managed view's current state.
+    pub const fn selected_commit(&self) -> &CompositeCommitIdentity {
+        &self.commit
+    }
+
     pub fn get(&self, key: &Key) -> Result<Option<Arc<Value>>, WorthQueryManagedDerivedViewDenial> {
         self.state.get(key, &self.commit)
     }

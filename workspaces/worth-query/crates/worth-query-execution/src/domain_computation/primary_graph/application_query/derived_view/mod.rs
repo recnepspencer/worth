@@ -16,8 +16,8 @@ pub(in crate::domain_computation::primary_graph) use registry::{
     ManagedDerivedViewRegistry, PreparedManagedViewPublication,
 };
 pub use retention::{
-    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
-    WorthQueryManagedDerivedViewDenial,
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
+    WorthQueryManagedDerivedValue, WorthQueryManagedDerivedViewDenial,
 };
 
 /// Query-issued row identity: an exact source root and parameter binding,

@@ -100,7 +100,7 @@ where
                     resource(Some(index), denial)
                 }
             })?;
-        let (result, claim) = request
+        let result = request
             .application
             .execute_application_query_one_shot_in_batch(plan, &admission)
             .map_err(|cause| match cause {
@@ -111,6 +111,7 @@ where
                     item(index, ItemDenial::Execution(cause))
                 }
             })?;
+        let (result, claim) = result.into_parts();
         staged.push(result.into_admitted_disclosed());
         claims.push(claim);
     }

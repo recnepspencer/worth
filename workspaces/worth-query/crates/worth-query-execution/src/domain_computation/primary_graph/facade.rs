@@ -99,7 +99,7 @@ pub use super::application_program::{
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_query::query_read_kernel_entries_on_this_thread_for_test;
 pub use super::application_query::{
-    WorthQueryApplicationBatchReadDenial,
+    WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult,
     WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
     WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial,
     WorthQueryApplicationQueryBatchWork,
@@ -131,6 +131,7 @@ pub use super::application_query::{
     WorthQueryApplicationQueryWorkEvidence, WorthQueryApplicationReadObservation,
     WorthQueryApplicationResultBufferEvidence, WorthQueryApplicationResultBufferObservation,
     WorthQueryApplicationResultBufferObserver, WorthQueryBoundSourceExpectation,
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial,
     WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
     WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,

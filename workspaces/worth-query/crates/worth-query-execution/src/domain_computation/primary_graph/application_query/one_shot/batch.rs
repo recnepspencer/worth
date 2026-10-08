@@ -4,6 +4,9 @@ use super::super::{
 };
 use super::*;
 
+mod result;
+pub use result::WorthQueryApplicationBatchResult;
+
 /// A batch read preserves the ordinary execution cause and distinguishes an
 /// aggregate admission refusal. It carries no partially completed result.
 #[derive(Debug)]
@@ -39,10 +42,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         batch: &WorthQueryApplicationQueryBatchAdmission,
     ) -> Result<
-        (
-            WorthQueryApplicationOneShotResult<Query, QueryResult>,
-            WorthQueryApplicationQueryBatchMemory,
-        ),
+        WorthQueryApplicationBatchResult<Query, QueryResult>,
         WorthQueryApplicationBatchReadDenial,
     >
     where
@@ -90,7 +90,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         reservation.settle(actual).map_err(Resource)?;
         match result {
-            Ok(result) => Ok((result, rows)),
+            Ok(result) => Ok(WorthQueryApplicationBatchResult::issued(result, rows)),
             Err(error) => {
                 if let Some(denial) = batch.memory_denial() {
                     return Err(Resource(denial));

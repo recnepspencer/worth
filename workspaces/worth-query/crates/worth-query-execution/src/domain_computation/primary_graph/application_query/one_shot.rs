@@ -6,7 +6,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
 mod batch;
-pub use batch::WorthQueryApplicationBatchReadDenial;
+pub use batch::{WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult};
 mod custody_work;
 mod denial;
 mod outcome;

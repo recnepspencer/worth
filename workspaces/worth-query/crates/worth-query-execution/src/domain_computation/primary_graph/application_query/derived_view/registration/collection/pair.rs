@@ -21,6 +21,7 @@ mod reconcile;
 mod reconstruct;
 mod reconstruct_lazy;
 mod reconstruct_parallel;
+mod refresh_batch;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

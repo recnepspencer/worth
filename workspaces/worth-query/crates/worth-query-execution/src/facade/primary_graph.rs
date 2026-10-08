@@ -40,7 +40,7 @@ pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
 pub use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBatchReadDenial,
+    WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult,
     WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
     WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial,
     WorthQueryApplicationQueryBatchWork,
@@ -178,6 +178,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
     WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,
     WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial,
     WorthQueryManagedApplicationRecoveryPerformed, WorthQueryManagedDerivedMemberToken,
     WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
     WorthQueryManagedDerivedViewDenial, WorthQueryManagedDerivedViewKey,

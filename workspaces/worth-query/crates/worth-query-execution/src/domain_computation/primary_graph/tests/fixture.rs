@@ -83,6 +83,11 @@ mod optional_account_field_query;
 pub(super) use optional_account_field_query::{
     OptionalAccountFieldQuery, OptionalAccountFieldResult,
 };
+#[path = "fixture/optional_account_owner_query.rs"]
+mod optional_account_owner_query;
+pub(super) use optional_account_owner_query::{
+    OptionalAccountOwnerQuery, OptionalAccountOwnerResult,
+};
 #[path = "fixture/nested_account.rs"]
 mod nested_account;
 pub(in crate::domain_computation::primary_graph) use nested_account::NestedAccountQuery;
@@ -342,6 +347,7 @@ worth_query_application_schema! {
                 .application_query(application_queries::governed_account_summary_definition())
                 .application_query(application_queries::ordered_account_summary_definition())
                 .application_query(optional_account_field_query::optional_account_field_definition())
+                .application_query(optional_account_owner_query::definition())
                 .application_query(nested_account::nested_account_definition())
                 .application_query(filtered_activity_query::selected_activity_definition())
                 .application_query(forged_selector::forged_selector_definition())
