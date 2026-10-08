@@ -13,9 +13,19 @@ pub enum WorthQueryApplicationNoEffectCause {
     PreEffectFailure,
 }
 
-#[derive(Debug)]
 pub struct WorthQueryApplicationNoEffect {
     terminal: worth_runtime_world::facade::NoEffectCompositePublication,
+}
+
+impl std::fmt::Debug for WorthQueryApplicationNoEffect {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Terminal custody owns persistent graph roots. Diagnostic rendering
+        // describes the cause without recursively traversing that storage.
+        formatter
+            .debug_struct("WorthQueryApplicationNoEffect")
+            .field("cause", &self.terminal.cause())
+            .finish_non_exhaustive()
+    }
 }
 
 impl WorthQueryApplicationNoEffect {

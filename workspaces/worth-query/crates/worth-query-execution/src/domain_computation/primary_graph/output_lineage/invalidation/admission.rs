@@ -52,7 +52,7 @@ pub(super) trait IndexAdmission {
     ) -> Result<(), CompanionPreflightStop> {
         self.key_read(key, entries)?;
         self.bytes(
-            index_capacity::ordered_edit_bytes::<K, V>(entries)
+            index_capacity::ordered_insertion_bytes::<K, V>(entries)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )
     }
@@ -71,7 +71,7 @@ pub(super) trait IndexAdmission {
     fn ordered_edit<K, V>(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
         self.ordered_read(entries)?;
         self.bytes(
-            index_capacity::ordered_edit_bytes::<K, V>(entries)
+            index_capacity::ordered_insertion_bytes::<K, V>(entries)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )
     }

@@ -52,9 +52,8 @@ pub(super) fn retained_forest_bytes<K, V>(entries: usize, trees: usize) -> Optio
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
 
-/// One selected edit copies a search path. Minimum branching two bounds its
-/// height by bit length; splitting can add two nodes per level and a new root.
-/// Old and new roots coexist during preparation and visibility cutover.
+/// Deletion's conservative copy allowance includes sibling borrowing, merging
+/// and lookahead. Keep this separate from insertion's stable-height bound.
 pub(super) fn ordered_edit_bytes<K, V>(entries: usize) -> Option<u64> {
     let prospective = entries.checked_add(1)?;
     let levels = usize::BITS as usize - prospective.leading_zeros() as usize + 1;
@@ -62,13 +61,19 @@ pub(super) fn ordered_edit_bytes<K, V>(entries: usize) -> Option<u64> {
         .checked_mul(u64::try_from(levels.checked_mul(2)?.checked_add(1)?).ok()?)
 }
 
-/// Binary search within at most 64 initialized entries plus navigation at
-/// each level. Key comparison payload work is admitted by the key owner.
-pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
-    // Pinned im 15.1 splits into 32-key children; removal can leave 31.
-    // A nonroot node therefore has at least 31 keys and 32 children. With
-    // a one-key root, a height h needs at least 2 * 32^(h - 1) - 1 keys.
-    // Counting bit length as height priced a one-node index as many levels.
+/// Pinned im 15.1 insertion copies only the selected path. Stable nonroot
+/// nodes have at least 31 keys, so their branching is at least 32. Allow one
+/// additional level for a root split, two nodes per level and one further
+/// root: this covers copied old/new overlap as the split is installed.
+/// Payload allocations behind Arc keys/values remain separately charged.
+pub(super) fn ordered_insertion_bytes<K, V>(entries: usize) -> Option<u64> {
+    entries.checked_add(1)?;
+    let levels = stable_tree_levels(entries)?.checked_add(1)?;
+    ordered_node_bytes::<K, V>()?
+        .checked_mul(u64::try_from(levels.checked_mul(2)?.checked_add(1)?).ok()?)
+}
+
+fn stable_tree_levels(entries: usize) -> Option<usize> {
     let mut levels = 1usize;
     let mut next_minimum = 63usize;
     while entries >= next_minimum {
@@ -82,6 +87,17 @@ pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
         };
         next_minimum = next;
     }
+    Some(levels)
+}
+
+/// Binary search within at most 64 initialized entries plus navigation at
+/// each level. Key comparison payload work is admitted by the key owner.
+pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
+    // Pinned im 15.1 splits into 32-key children; removal can leave 31.
+    // A nonroot node therefore has at least 31 keys and 32 children. With
+    // a one-key root, a height h needs at least 2 * 32^(h - 1) - 1 keys.
+    // Counting bit length as height priced a one-node index as many levels.
+    let levels = stable_tree_levels(entries)?;
     let slots = entries.min(64);
     let comparisons = usize::BITS as usize - slots.leading_zeros() as usize + 1;
     u64::try_from(
@@ -114,3 +130,6 @@ mod navigation_tests;
 
 #[cfg(test)]
 mod retention_tests;
+
+#[cfg(test)]
+mod insertion_tests;
