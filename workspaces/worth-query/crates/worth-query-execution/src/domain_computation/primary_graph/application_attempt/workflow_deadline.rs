@@ -101,7 +101,10 @@ impl<Schema, Operation, Input, Scope, Phase>
         let deadline = self.lease.handle().with_runtime(|runtime| {
             instance_deadline(runtime, snapshot, layout, instance, &mut facts)
         })?;
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         if let Some(deadline) = deadline {
             ensure_before(clock, deadline)?;
             self.workflow_deadline = Some(deadline);

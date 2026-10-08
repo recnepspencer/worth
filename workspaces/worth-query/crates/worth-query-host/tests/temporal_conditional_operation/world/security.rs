@@ -76,7 +76,9 @@ impl CourtroomWorld {
             .begin_projected_application_read_attempt(admission, projection)
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .begin_effect_program();
         let mapping = effects.projected_entity(&target).unwrap();
@@ -96,6 +98,7 @@ impl CourtroomWorld {
                 _,
             >("security", "security")
             .unwrap(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         assert!(
             matches!(
@@ -194,7 +197,9 @@ pub(crate) fn projection_target_is_bound_to_exact_admission() {
         .begin_projected_application_read_attempt(current_admission, current_projection)
         .unwrap();
     let effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     effects

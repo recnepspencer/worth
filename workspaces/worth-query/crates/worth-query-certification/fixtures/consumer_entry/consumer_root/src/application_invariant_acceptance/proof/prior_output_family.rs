@@ -78,7 +78,10 @@ fn absent_family_is_a_domain_outcome(
         })
         .expect_source(source)
         .idempotency(&949)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("an absent exact prior binding reaches the installed handler");
     assert!(matches!(
         outcome,
@@ -96,7 +99,10 @@ fn absent_family_is_a_domain_outcome(
         })
         .expect_source(source)
         .idempotency(&948)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("an absent exact binding remains absence for a member read");
     assert!(matches!(
         selected,
@@ -132,7 +138,10 @@ fn oversized_family_is_denied_before_publication(
         })
         .expect_source(source)
         .idempotency(&955)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("the family inventory must fit before it can be materialized");
     let WorthQueryApplicationRequestMutationDenial::Handler(
         MutationHandlerExecutionDenial::Projection(projection),
@@ -168,7 +177,10 @@ fn direct_member_fits_where_whole_inventory_does_not(
         })
         .expect_source(source)
         .idempotency(&956)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("one indexed member fits the admitted projection budget");
     let WorthQueryApplicationMutationOutcome::Committed { result, .. } = outcome else {
         panic!("the exact prior member must publish: {outcome:?}")
@@ -200,7 +212,10 @@ fn missing_member_is_a_denial_not_initial_absence(
         })
         .expect_source(source)
         .idempotency(&command)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("a present correspondence cannot lose its required member silently");
     let WorthQueryApplicationRequestMutationDenial::Handler(
         MutationHandlerExecutionDenial::Handler(denial),
@@ -273,7 +288,10 @@ fn adjust_prior(
         })
         .expect_source(source)
         .idempotency(&command)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the public prior-family operation reaches its installed provider");
     let WorthQueryApplicationMutationOutcome::Committed { result, .. } = outcome else {
         panic!("the prior-family adjustment {command} must publish: {outcome:?}")

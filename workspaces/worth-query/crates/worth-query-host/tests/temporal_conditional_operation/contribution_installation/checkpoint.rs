@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
     let contacts = ContactCounters::default();
@@ -30,7 +31,7 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
     let original_world = application.current_world();
     assert_live_relation_is_readable(&application, "source");
     let (checkpoint, sections) = application
-        .capture_application_checkpoint_with_sections()
+        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
         .expect("the current committed world captures as opaque bytes");
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
     assert!(sections.native_bytes() > 0);
@@ -177,7 +178,9 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
         },
     )
     .expect("the denial courtroom source application installs");
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     let mut corrupt_payload = checkpoint.bytes().to_vec();
     *corrupt_payload.last_mut().unwrap() ^= 0x01;
     let forged_commit = checkpoint

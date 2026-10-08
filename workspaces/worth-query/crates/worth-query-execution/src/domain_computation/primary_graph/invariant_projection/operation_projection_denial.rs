@@ -24,6 +24,7 @@ pub struct WorthQueryOperationProjectionDenial {
     kind: WorthQueryOperationProjectionDenialKind,
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
     subject: String,
+    projection_work: Option<super::WorthQueryInvariantProjectionWork>,
 }
 
 impl WorthQueryOperationProjectionDenial {
@@ -41,11 +42,17 @@ impl WorthQueryOperationProjectionDenial {
             kind,
             authorization_denial: None,
             subject: subject.into(),
+            projection_work: denial.projection_work(),
         }
     }
 
     pub const fn kind(&self) -> WorthQueryOperationProjectionDenialKind {
         self.kind
+    }
+
+    /// Actual reader work before refusal; absent when no reader executed.
+    pub const fn projection_work(&self) -> Option<super::WorthQueryInvariantProjectionWork> {
+        self.projection_work
     }
 
     pub fn subject(&self) -> &str {
@@ -67,6 +74,7 @@ impl From<WorthQueryOperationAuthorizationDenial> for WorthQueryOperationProject
             kind: WorthQueryOperationProjectionDenialKind::Authorization(denial.kind()),
             subject: denial.subject().to_string(),
             authorization_denial: Some(Box::new(denial)),
+            projection_work: None,
         }
     }
 }

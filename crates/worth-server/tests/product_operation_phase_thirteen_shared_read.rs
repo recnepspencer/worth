@@ -19,7 +19,7 @@ fn host_execution_authority_runs_charged_shared_read_batch() {
     let authority = Arc::new(
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: 1 << 27,
+            charged_memory_bytes: Some(1 << 27),
         })
         .unwrap(),
     );

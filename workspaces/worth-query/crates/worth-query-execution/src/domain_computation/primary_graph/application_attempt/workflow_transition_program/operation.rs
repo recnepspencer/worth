@@ -194,7 +194,10 @@ where
             ));
         }
         authority_facts.extend_from_slice(&facts[handoff_start..]);
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let subject = self.admission.scope_entity_id();
         let branch = self.lease.product().product_branch();
         let binding = operation

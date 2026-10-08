@@ -71,7 +71,9 @@ pub(super) fn change_input(
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let intent = effects.existing_entity(&intent).unwrap();

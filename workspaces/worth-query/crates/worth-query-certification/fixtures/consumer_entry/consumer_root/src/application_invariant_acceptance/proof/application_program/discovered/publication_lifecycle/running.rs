@@ -36,6 +36,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .idempotency(&10_044)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the first source publication succeeds");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(first) = first else {
@@ -70,7 +71,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         }))
         .expect_source(changed)
         .idempotency(&10_045)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the sibling ring changes while the first handle is active");
     let current = request
         .query(PlanarRead {
@@ -89,6 +93,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .idempotency(&10_046)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the newer source publication succeeds");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(second) = second else {

@@ -69,11 +69,11 @@ fn equivalent_retry_denies_before_receipt_after_grant_revocation() {
     commit_first(&world, first, 51);
     revoke_grant(&world);
 
-    assert_readmission_denial(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(51, 51)),
-    );
+    assert_readmission_denial(world.application.compare_and_commit_application(
+        retry,
+        idempotency(51, 51),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
 }
 
 #[test]
@@ -85,11 +85,11 @@ fn equivalent_retry_denies_before_receipt_after_principal_disablement() {
     commit_first(&world, first, 52);
     disable_mapping(&world, principal.mapping_entity_id());
 
-    assert_readmission_denial(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(52, 52)),
-    );
+    assert_readmission_denial(world.application.compare_and_commit_application(
+        retry,
+        idempotency(52, 52),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
 }
 
 #[test]
@@ -101,11 +101,11 @@ fn equivalent_retry_denies_before_receipt_after_capability_expiry() {
     commit_first(&world, first, 53);
     world.authorization_time.script([time(300)]);
 
-    assert_readmission_denial(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(53, 53)),
-    );
+    assert_readmission_denial(world.application.compare_and_commit_application(
+        retry,
+        idempotency(53, 53),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
 }
 
 #[test]
@@ -131,11 +131,11 @@ fn future_equivalent_grant_cannot_inherit_an_expired_access_context() {
     commit_first(&world, first, 56);
     world.authorization_time.script([time(120)]);
 
-    assert_readmission_denial(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(56, 56)),
-    );
+    assert_readmission_denial(world.application.compare_and_commit_application(
+        retry,
+        idempotency(56, 56),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
 }
 
 #[test]
@@ -175,11 +175,11 @@ fn equivalent_retry_denies_before_receipt_after_resource_workflow_drift() {
     commit_first(&world, first, 54);
     change_account_status(&world, "account-1", "closed");
 
-    assert_readmission_denial(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(54, 54)),
-    );
+    assert_readmission_denial(world.application.compare_and_commit_application(
+        retry,
+        idempotency(54, 54),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
 }
 
 #[test]
@@ -191,9 +191,11 @@ fn unrelated_graph_drift_preserves_current_idempotent_recovery() {
     let committed = commit_first(&world, first, 55);
     change_account_label(&world, "account-2", "independently-updated");
 
-    let outcome = world
-        .application
-        .compare_and_commit_application(retry, idempotency(55, 55));
+    let outcome = world.application.compare_and_commit_application(
+        retry,
+        idempotency(55, 55),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = outcome else {
         panic!("unrelated drift must preserve lawful idempotent recovery: {outcome:?}");
     };
@@ -242,9 +244,12 @@ fn equivalent_programs(
 }
 
 fn commit_first(world: &World, program: Program, key: u8) -> WorthQueryApplicationCommitReceipt {
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(program, idempotency(key, key))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(key, key),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the current first application attempt must commit");
     };

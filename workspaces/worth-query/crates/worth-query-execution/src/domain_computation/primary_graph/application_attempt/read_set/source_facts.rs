@@ -1,10 +1,14 @@
 use std::collections::BTreeMap;
 
+use super::super::WorthQueryApplicationFactStorageKey;
 use super::{denial, WorthQueryApplicationSnapshotLease};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
+
+mod storage;
+pub(super) use storage::SourceFacts;
 
 #[cfg(test)]
 mod indexed_selection;
@@ -34,13 +38,14 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
 
 pub(super) fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,
-    dependent: Vec<WorthQueryApplicationObservedFact>,
+    mut dependent: BTreeMap<WorthQueryApplicationFactStorageKey, WorthQueryApplicationObservedFact>,
     operation: &str,
-) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
-    let mut merged = BTreeMap::new();
-    for fact in admitted.into_iter().chain(dependent) {
+) -> Result<SourceFacts, WorthQueryApplicationAttemptDenial> {
+    // The projection already keyed and deduplicated its retained observations.
+    // Move that allocation through the handoff; only admitted sources need keys.
+    for fact in admitted {
         let locator = fact.dependency_key();
-        match merged.entry(locator) {
+        match dependent.entry(locator) {
             std::collections::btree_map::Entry::Vacant(entry) => {
                 entry.insert(fact);
             }
@@ -54,5 +59,5 @@ pub(super) fn merge_source_facts(
             }
         }
     }
-    Ok(merged.into_values().collect())
+    Ok(SourceFacts::Projected(dependent))
 }

@@ -37,6 +37,10 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        self.compare_and_commit_application_inner(program.into_inner(), idempotency)
+        self.compare_and_commit_application_inner(
+            program.into_inner(),
+            idempotency,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     }
 }

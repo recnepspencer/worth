@@ -96,7 +96,10 @@ macro_rules! change_root {
             })
             .expect_source(selected.observed_sources()[0].clone())
             .idempotency(&$idempotency)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(&$application)
+            .execute_performed::<program::ChainProgram, program::ChainRoot>(
+                &$application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(
             matches!(

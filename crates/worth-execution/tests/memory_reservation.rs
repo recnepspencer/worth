@@ -1,0 +1,172 @@
+//! External-consumer payload custody; ledger bookkeeping is outside this claim.
+use std::{
+    cell::Cell,
+    num::NonZeroUsize,
+    sync::{Mutex, OnceLock},
+};
+use worth_execution::{
+    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMemoryReservation,
+    ExecutionResourceLease, LeaseDenial, LeaseRequest,
+};
+use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+};
+
+static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
+static SERIAL: Mutex<()> = Mutex::new(());
+
+fn authority() -> &'static ExecutionAuthority {
+    AUTHORITY.get_or_init(|| {
+        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
+            max_workers: NonZeroUsize::new(1).unwrap(),
+            charged_memory_bytes: Some(2_048),
+        })
+        .unwrap()
+    })
+}
+
+fn request(bytes: u64) -> LeaseRequest {
+    LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, 1),
+        ),
+        deadline: None,
+        cancellation: CancellationToken::new(),
+    }
+}
+
+// Declaration order frees the backing before releasing its admitted charge.
+struct Payload {
+    backing: Vec<u8>,
+    ticket: ExecutionMemoryReservation,
+}
+
+fn payload(
+    lease: &ExecutionResourceLease<'_>,
+    bytes: usize,
+    allocations: &Cell<usize>,
+) -> Result<Payload, LeaseDenial> {
+    let ticket = lease.reserve_memory(u64::try_from(bytes).unwrap())?;
+    // No payload allocation is attempted until the actual ledger admits it.
+    allocations.set(allocations.get() + 1);
+    let mut backing = Vec::new();
+    backing.try_reserve_exact(bytes).unwrap();
+    assert_eq!(
+        backing.capacity(),
+        bytes,
+        "check actual admitted Vec backing"
+    );
+    backing.resize(bytes, 7);
+    Ok(Payload { backing, ticket })
+}
+
+#[test]
+fn payload_admission_precedes_growth_and_charges_process_and_ancestors() {
+    let _serial = SERIAL.lock().unwrap();
+    let authority = authority();
+    let parent = authority.request_lease(request(128)).unwrap();
+    let first = parent.child(request(96)).unwrap();
+    let sibling = parent.child(request(96)).unwrap();
+    let allocations = Cell::new(0);
+    let held = payload(&first, 64, &allocations).unwrap();
+    assert_eq!(held.ticket.charged_bytes(), 64);
+    assert!(matches!(
+        payload(&sibling, 65, &allocations),
+        Err(LeaseDenial::ResourceExhausted)
+    ));
+    assert_eq!(allocations.get(), 1, "refusal precedes payload allocation");
+    assert_eq!(held.backing, vec![7; 64], "existing backing remains intact");
+    let other = payload(&sibling, 64, &allocations).unwrap();
+    assert!(matches!(
+        parent.reserve_memory(1),
+        Err(LeaseDenial::ResourceExhausted)
+    ));
+
+    // Each unrelated lease can admit its own request; their shared process cannot.
+    let unrelated = authority.request_lease(request(1_024)).unwrap();
+    let occupied = unrelated.reserve_memory(1_024).unwrap();
+    let process_probe = authority.request_lease(request(1_024)).unwrap();
+    assert!(matches!(
+        process_probe.reserve_memory(897),
+        Err(LeaseDenial::ResourceExhausted)
+    ));
+    drop(occupied);
+    assert_eq!(
+        process_probe.reserve_memory(897).unwrap().charged_bytes(),
+        897
+    );
+    drop(held);
+    drop(other);
+    let all = authority.request_lease(request(2_048)).unwrap();
+    assert_eq!(all.reserve_memory(2_048).unwrap().charged_bytes(), 2_048);
+}
+
+#[test]
+fn replacement_backings_coexist_and_custody_outlives_the_lease() {
+    let _serial = SERIAL.lock().unwrap();
+    let authority = authority();
+    let allocations = Cell::new(0);
+    let retained = {
+        let lease = authority.request_lease(request(128)).unwrap();
+        let old = payload(&lease, 48, &allocations).unwrap();
+        let replacement = payload(&lease, 80, &allocations).unwrap();
+        assert_eq!(old.backing.len(), 48);
+        assert_eq!(replacement.backing.len(), 80);
+        assert!(matches!(
+            lease.reserve_memory(1),
+            Err(LeaseDenial::ResourceExhausted)
+        ));
+        drop(old); // Old backing is freed before its ticket.
+        assert_eq!(lease.reserve_memory(48).unwrap().charged_bytes(), 48);
+        replacement
+    };
+    let process_probe = authority.request_lease(request(2_048)).unwrap();
+    assert!(matches!(
+        process_probe.reserve_memory(1_969),
+        Err(LeaseDenial::ResourceExhausted)
+    ));
+    assert_eq!(retained.backing, vec![7; 80]);
+    drop(retained);
+    assert_eq!(
+        process_probe.reserve_memory(2_048).unwrap().charged_bytes(),
+        2_048
+    );
+}
+
+#[test]
+fn same_byte_transfer_is_atomic_and_releases_only_the_old_lineage() {
+    let _serial = SERIAL.lock().unwrap();
+    let authority = authority();
+    let source = authority.request_lease(request(64)).unwrap();
+    let target = authority.request_lease(request(64)).unwrap();
+    let allocations = Cell::new(0);
+    let mut retained = payload(&source, 64, &allocations).unwrap();
+    let blocker = target.reserve_memory(1).unwrap();
+    assert_eq!(
+        target.transfer_memory(&mut retained.ticket),
+        Err(LeaseDenial::ResourceExhausted)
+    );
+    assert_eq!(retained.ticket.charged_bytes(), 64);
+    assert!(matches!(
+        source.reserve_memory(1),
+        Err(LeaseDenial::ResourceExhausted)
+    ));
+    assert_eq!(retained.backing, vec![7; 64]);
+    drop(blocker);
+    target.transfer_memory(&mut retained.ticket).unwrap();
+    assert_eq!(retained.ticket.charged_bytes(), 64);
+    assert_eq!(source.reserve_memory(64).unwrap().charged_bytes(), 64);
+    assert!(matches!(
+        target.reserve_memory(1),
+        Err(LeaseDenial::ResourceExhausted)
+    ));
+    assert_eq!(
+        allocations.get(),
+        1,
+        "transfer does not allocate replacement backing"
+    );
+    drop(retained);
+    assert_eq!(target.reserve_memory(64).unwrap().charged_bytes(), 64);
+}

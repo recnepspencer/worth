@@ -25,6 +25,7 @@ impl<Schema, Operation, Input, Scope>
     pub fn bind_workflow_operation_authority(
         mut self,
         authority: &WorkflowOperationAuthority,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         if self.read_set.workflow_authority_binding.is_some()
             || self.read_set.admission.operation() != authority.operation
@@ -50,22 +51,28 @@ impl<Schema, Operation, Input, Scope>
                 return Err(mismatch("workflow operation authority"));
             }
         }
+        let original_count = self.read_set.facts.len();
+        let mut additions = Vec::new();
         for fact in authority.facts() {
             let locator = fact.dependency_key();
             match locators.entry(locator) {
                 std::collections::btree_map::Entry::Vacant(entry) => {
-                    entry.insert(self.read_set.facts.len());
-                    self.read_set.facts.push(fact.clone());
+                    entry.insert(original_count + additions.len());
+                    additions.push(fact);
                 }
                 std::collections::btree_map::Entry::Occupied(entry)
-                    if self.read_set.facts[*entry.get()] != *fact =>
+                    if (if *entry.get() < original_count {
+                        &self.read_set.facts[*entry.get()]
+                    } else {
+                        additions[*entry.get() - original_count]
+                    }) != fact =>
                 {
                     return Err(mismatch("workflow operation authority"));
                 }
                 std::collections::btree_map::Entry::Occupied(_) => {}
             }
         }
-        if self.read_set.facts.len()
+        if original_count.saturating_add(additions.len())
             > self
                 .read_set
                 .admission
@@ -77,6 +84,10 @@ impl<Schema, Operation, Input, Scope>
                 "workflow operation authority",
             ));
         }
+        // References only: cloning nested source values retains its previous
+        // semantic owner and is outside the inline array payload charge.
+        self.read_set
+            .append_completed_facts(additions.into_iter().cloned(), allocation_policy)?;
         self.read_set.workflow_authority_binding = Some(WorkflowOperationBindingProof {
             binding: authority.binding.clone(),
             transition_identity: authority.transition_identity,

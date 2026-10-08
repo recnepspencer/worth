@@ -6,22 +6,6 @@ use super::{
 };
 
 impl WorthQueryApplicationCommitDenial {
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn candidate_validator_work_exceeded(
-        stage: WorthQueryApplicationCommitDenialStage,
-        maximum_work: usize,
-        required_work: usize,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::CandidateValidatorWorkExceeded {
-                maximum_work,
-                required_work,
-            },
-            stage,
-            detail: None,
-            cause: None,
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn active_snapshot_capacity_exhausted(
         stage: WorthQueryApplicationCommitDenialStage,
         maximum_active_snapshots: usize,

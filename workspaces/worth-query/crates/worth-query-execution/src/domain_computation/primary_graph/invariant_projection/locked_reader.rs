@@ -21,6 +21,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+#[path = "locked_reader/predecode_admission.rs"]
+mod predecode_admission;
 #[path = "locked_reader/traversal_denial.rs"]
 mod traversal_denial;
 pub use traversal_denial::{
@@ -195,7 +197,9 @@ where
             self.graph.with_runtime_mut(|runtime| {
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             });
-            return Err(WorthQueryInvariantProjectionDenial::work_budget_exceeded());
+            return Err(WorthQueryInvariantProjectionDenial::work_budget_exceeded(
+                work,
+            ));
         }
         Ok(WorthQueryCompletedInvariantProjection {
             output,
@@ -351,14 +355,15 @@ where
             .field_locator(field.entity(), field.aspect(), field.field())?
             .clone();
         self.work.record_field();
-        super::super::application_attempt::observe_field_value(
+        super::super::application_attempt::observe_field_value_borrowed(
             self.runtime,
             self.snapshot,
             identity.entity_id,
             identity.kind,
             &locator,
+            |raw| raw.and_then(|value| Field::Binding::decode(value).ok()),
         )
-        .and_then(|value| Field::Binding::decode(&value).ok())
+        .flatten()
     }
 
     pub(super) fn identity_is_local<Entity>(

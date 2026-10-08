@@ -204,7 +204,10 @@ fn change_advance_grant(court: &Court, status: &str, key: u64) {
         })
         .without_source()
         .idempotency(&key)
-        .execute_in_program(court.application.program_runtime())
+        .execute_in_program(
+            court.application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the grant change prepares");
     assert!(
         matches!(

@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_execution::ExecutionArray;
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
@@ -22,8 +23,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+mod admitted_arrays;
 mod binding_proof;
 mod completion;
+mod retained_facts;
+pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
 mod decision_reuse;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
@@ -38,7 +42,7 @@ mod source_facts;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
-use source_facts::{merge_source_facts, validate_source_facts};
+use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
 
 /// An in-progress decision read for one admitted operation, begun on a leased
 /// snapshot of the branch.
@@ -64,7 +68,7 @@ pub struct WorthQueryApplicationReadAttempt<
     installed_read_scopes:
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
-    source_facts: Vec<WorthQueryApplicationObservedFact>,
+    source_facts: SourceFacts,
     consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     _phase: PhantomData<fn() -> Phase>,
 }
@@ -85,8 +89,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
 > {
     pub(super) admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     pub(super) lease: WorthQueryApplicationSnapshotLease,
-    pub(super) installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
-    pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
+    pub(super) installed_read_scopes: ExecutionArray<WorthQueryOperationGraphReadScope>,
+    pub(super) facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
@@ -137,7 +141,7 @@ where
                     admission.operation(),
                 )
             })?;
-        let source_facts = validate_source_facts(&mut admission, &lease)?;
+        let source_facts = SourceFacts::Admitted(validate_source_facts(&mut admission, &lease)?);
         Ok(WorthQueryApplicationReadAttempt {
             admission,
             lease,

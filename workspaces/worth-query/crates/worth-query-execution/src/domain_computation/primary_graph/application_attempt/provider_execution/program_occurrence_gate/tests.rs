@@ -38,7 +38,9 @@ fn active_program_names_an_operation_missing_from_its_declared_routes() {
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program()
         .finish()

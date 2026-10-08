@@ -3,6 +3,7 @@ use super::*;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryOutputSettlementPosture,
 };
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
 fn an_unreclaimed_root_reopens_under_the_same_custody_profile() {
@@ -33,7 +34,9 @@ fn an_unreclaimed_root_reopens_under_the_same_custody_profile() {
     drop(request);
     drop(principal);
     drop(scope);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
     let reopened = support::install_program::<CheckpointProgram>(Some(checkpoint), profile);
     let (scope, principal) = authenticate(&reopened);
@@ -124,7 +127,9 @@ fn a_reclaimed_ready_keeps_its_native_prior_locator_across_checkpoint() {
     drop(request);
     drop(principal);
     drop(scope);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
 
     let reopened = support::install_program::<CheckpointProgram>(Some(checkpoint), profile);
@@ -162,7 +167,9 @@ fn a_reclaimed_ready_keeps_its_native_prior_locator_across_checkpoint() {
     drop(request);
     drop(principal);
     drop(scope);
-    let preserved_checkpoint = reopened.capture_application_checkpoint().unwrap();
+    let preserved_checkpoint = reopened
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(reopened);
 
     let reopened_again =

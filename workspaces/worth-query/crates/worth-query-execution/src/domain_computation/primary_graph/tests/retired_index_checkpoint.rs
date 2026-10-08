@@ -6,6 +6,7 @@
 //! definition binds to nothing; publications refresh only Query's installed
 //! index set, so nothing maintains or requires the retired one.
 
+use crate::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
@@ -41,7 +42,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     let retired = persist_as_the_retired_code_did(&world);
     let checkpoint = world
         .application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the store with the retired index captures");
     drop(world);
 
@@ -66,7 +67,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     // The retired index now lags head; capture and readmission still hold.
     let checkpoint = restored
         .application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("a store with a lagging retired index captures");
     drop(restored);
     let reopened = restored_world(checkpoint).expect("the lagging retired index still reopens");

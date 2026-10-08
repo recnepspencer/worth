@@ -42,7 +42,9 @@ fn structured_effect_validation_precedes_retention_and_external_projection() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
 

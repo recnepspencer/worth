@@ -82,6 +82,16 @@ fn component_support(
         )
         .expect("static primary provider capacity is valid"),
     );
+    let scale =
+        WorthQuerySemanticScaleRequest::bounded(candidate_resources.maximum_operation_width())
+            .with(
+                WorthQuerySemanticScaleAxis::CandidateItems,
+                candidate_resources.maximum_items(),
+            );
+    let scale = match candidate_resources.maximum_validator_work() {
+        Some(maximum) => scale.with(WorthQuerySemanticScaleAxis::WorkItems, maximum),
+        None => scale.without_work_budget(),
+    };
     let support = WorthQueryExecutionResourceSupport::new(
         WorthQueryExecutionProviderFamily::new(APPLICATION_EXECUTION_PROVIDER_FAMILY)
             .expect("static provider family is canonical"),
@@ -90,15 +100,7 @@ fn component_support(
         WorthQueryExecutionAllocatorFamily::new(APPLICATION_EXECUTION_ALLOCATOR_FAMILY)
             .expect("static allocator family is canonical"),
         WorthQueryExecutionResourceEnvelope::new(
-            WorthQuerySemanticScaleRequest::bounded(candidate_resources.maximum_operation_width())
-                .with(
-                    WorthQuerySemanticScaleAxis::CandidateItems,
-                    candidate_resources.maximum_items(),
-                )
-                .with(
-                    WorthQuerySemanticScaleAxis::WorkItems,
-                    candidate_resources.maximum_validator_work(),
-                ),
+            scale,
             WorthQueryResourceLimitRequest::bounded(candidate_resources.maximum_operation_width())
                 .with(
                     WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,

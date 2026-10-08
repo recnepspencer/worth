@@ -28,7 +28,10 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         })
         .expect_source(successor.observed_sources()[0].clone())
         .idempotency(&301_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&application)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("a real source suffix changes before cutoff preparation");
     drop(successor);
     let before = request.retain_read().unwrap();

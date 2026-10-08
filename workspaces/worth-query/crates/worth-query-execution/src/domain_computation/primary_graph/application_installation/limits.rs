@@ -5,7 +5,7 @@ use crate::domain_computation::execution_runtime::{
 };
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
-use super::WorthQueryInMemoryApplicationProfile;
+use super::{WorthQueryInMemoryApplicationProfile, WorthQueryTransactionStagingResources};
 
 /// Explicit finite resources and clock for one in-memory application.
 #[derive(Clone)]
@@ -18,9 +18,20 @@ pub struct WorthQueryInMemoryApplicationLimits {
     pub(super) conditionals: SignalConditionalEvaluationBudget,
     pub(super) profile: WorthQueryInMemoryApplicationProfile,
     pub(super) maximum_publication_records: Option<std::num::NonZeroUsize>,
+    pub(super) transaction_staging: Option<WorthQueryTransactionStagingResources>,
 }
 
 impl WorthQueryInMemoryApplicationLimits {
+    /// Installs the caller's process execution authority in the application's
+    /// World on fresh installation or checkpoint reopen, without changing policy.
+    pub fn with_execution_authority(
+        mut self,
+        authority: std::sync::Arc<worth_execution::ExecutionAuthority>,
+    ) -> Self {
+        self.world = self.world.with_execution_authority(authority);
+        self
+    }
+
     pub const fn new(
         world: WorthQueryProductWorldResources,
         candidates: WorthQueryApplicationCandidateResourceProfile,
@@ -36,6 +47,7 @@ impl WorthQueryInMemoryApplicationLimits {
             conditionals,
             profile: WorthQueryInMemoryApplicationProfile::GeneralPurpose,
             maximum_publication_records: None,
+            transaction_staging: None,
         }
     }
 
@@ -71,6 +83,17 @@ impl WorthQueryInMemoryApplicationLimits {
         maximum: std::num::NonZeroUsize,
     ) -> Self {
         self.maximum_publication_records = Some(maximum);
+        self
+    }
+
+    /// Selects only the native overlay-byte and footprint-locus ceilings. The
+    /// selected resources apply on fresh installation and checkpoint restore;
+    /// omitting them preserves the selected profile's policy and provenance.
+    pub const fn with_transaction_staging_resources(
+        mut self,
+        resources: WorthQueryTransactionStagingResources,
+    ) -> Self {
+        self.transaction_staging = Some(resources);
         self
     }
 }

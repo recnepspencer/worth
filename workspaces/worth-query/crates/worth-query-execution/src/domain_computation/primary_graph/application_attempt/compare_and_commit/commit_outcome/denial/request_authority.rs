@@ -10,7 +10,8 @@ use crate::domain_computation::authorization::{
 
 #[derive(Debug)]
 pub(super) enum DenialCause {
-    CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
+    InvariantExecution(crate::domain_computation::WorthQueryInvariantExecutionFailure),
+    DecisionReadSet(crate::domain_computation::WorthQueryDecisionReadSetFailure),
     /// The request's own authorization stopped the commit: its security
     /// basis on the branch, or what it may do there.
     RequestAuthority(WorthQueryOperationAuthorizationDenialKind),
@@ -41,11 +42,11 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(super) const fn custom_invariant(
+    pub(super) fn custom_invariant(
         &self,
     ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
         match &self.cause {
-            Some(DenialCause::CustomInvariant(denial)) => Some(denial),
+            Some(DenialCause::InvariantExecution(failure)) => failure.custom_invariant_denial(),
             _ => None,
         }
     }

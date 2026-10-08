@@ -23,6 +23,7 @@ pub(super) struct WorthQueryCandidateReservation {
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryCandidateValidatorWorkAdmission {
     UnreservedInternal,
+    NoAggregateLimit,
     Reserved { maximum_work: usize },
 }
 
@@ -30,20 +31,19 @@ impl WorthQueryCandidateReservation {
     pub(super) fn admit(
         requested: ApplicationCandidateRequirements,
         ceiling: ApplicationCandidateRequirements,
-        derived_validator_work: u64,
         candidate_item_capacity: u64,
         retained_representation_byte_capacity: u64,
-        validator_work_capacity: u64,
+        validator_work_capacity: Option<u64>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let requested_cardinality = requested.cardinality();
         let ceiling_cardinality = ceiling.cardinality();
         let requested_total = total(requested_cardinality).ok_or_else(capacity_denial)?;
         let declared_work = ceiling.resources().maximum_validator_work();
-        let derived_work =
-            usize::try_from(derived_validator_work).map_err(|_| capacity_denial())?;
         let requested_cap = requested.resources().maximum_validator_work();
-        let installed_work = declared_work.map_or(derived_work, |cap| cap.min(derived_work));
-        let requested_work = requested_cap.map_or(installed_work, |cap| cap.min(installed_work));
+        let requested_work = match (declared_work, requested_cap) {
+            (Some(left), Some(right)) => Some(left.min(right)),
+            (left, right) => left.or(right),
+        };
         let within_binding = requested_cardinality.maximum_creates()
             <= ceiling_cardinality.maximum_creates()
             && requested_cardinality.maximum_deletes() <= ceiling_cardinality.maximum_deletes()
@@ -63,18 +63,27 @@ impl WorthQueryCandidateReservation {
                     .resources()
                     .maximum_retained_representation_bytes(),
             )
-            .is_ok_and(|bytes| bytes <= retained_representation_byte_capacity)
-            && u64::try_from(requested_work).is_ok_and(|work| work <= validator_work_capacity);
+            .is_ok_and(|bytes| bytes <= retained_representation_byte_capacity);
         if !within_binding || !within_runtime {
             return Err(capacity_denial());
         }
+        let requested_work = match (requested_work, validator_work_capacity) {
+            (Some(work), Some(host)) => {
+                Some(work.min(usize::try_from(host).map_err(|_| capacity_denial())?))
+            }
+            (None, Some(host)) => Some(usize::try_from(host).map_err(|_| capacity_denial())?),
+            (work, None) => work,
+        };
         Ok(Self {
             remaining: requested_cardinality,
             remaining_retained_representation_bytes: requested
                 .resources()
                 .maximum_retained_representation_bytes(),
-            validator_work: WorthQueryCandidateValidatorWorkAdmission::Reserved {
-                maximum_work: requested_work,
+            validator_work: match requested_work {
+                Some(maximum_work) => {
+                    WorthQueryCandidateValidatorWorkAdmission::Reserved { maximum_work }
+                }
+                None => WorthQueryCandidateValidatorWorkAdmission::NoAggregateLimit,
             },
         })
     }
@@ -210,7 +219,7 @@ impl WorthQueryCandidateValidatorWorkAdmission {
 
     pub(in crate::domain_computation::primary_graph) const fn maximum_work(self) -> Option<usize> {
         match self {
-            Self::UnreservedInternal => None,
+            Self::UnreservedInternal | Self::NoAggregateLimit => None,
             Self::Reserved { maximum_work } => Some(maximum_work),
         }
     }

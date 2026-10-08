@@ -19,7 +19,7 @@ impl WorthQueryProductRuntime {
             worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
         >,
     ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
-        let (budgets, clock, _invalidation_resources) = resources.into_parts();
+        let (budgets, clock, _invalidation_resources, execution_authority) = resources.into_parts();
         let super::WorthQueryProductRelationalInstallation {
             services: relational_services,
             basis: relational_basis,
@@ -61,7 +61,12 @@ impl WorthQueryProductRuntime {
             .with_signal_services(signal_services)
             .with_signal_definition_publication(definition_publication)
             .with_budgets(budgets)
-            .with_clock(RuntimeWorldClock::from_source(clock.clone()))
+            .with_clock(RuntimeWorldClock::from_source(clock.clone()));
+        let owner = match execution_authority {
+            Some(authority) => owner.with_execution_authority(authority),
+            None => owner,
+        };
+        let owner = owner
             .build()
             .map_err(|denial| installation_denial(format!("World installation: {denial:?}")))?;
         let branch = ProductBranchCreationIntent::named("primary")

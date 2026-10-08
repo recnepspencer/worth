@@ -31,7 +31,9 @@ fn incomplete_mandatory_decision_reads_cannot_form_an_effect_program() {
         .begin_application_read_attempt(admission)
         .unwrap();
 
-    let Err(denial) = attempt.complete() else {
+    let Err(denial) =
+        attempt.complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+    else {
         panic!("an incomplete mandatory decision-read set must not complete");
     };
     assert_eq!(
@@ -72,7 +74,9 @@ fn sealed_projection_completion_accepts_the_exact_empty_dependency_set() {
         .unwrap();
 
     attempt
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the projection sealed an exact empty dependency set");
 }
 
@@ -282,9 +286,11 @@ fn fact_budget_denial_precedes_freshness_provider_work() {
 
     let mutation = super::admitted_program(&world, &principal, &account, &request, "changed");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(mutation, super::idempotency(21, 21)),
+        world.application.compare_and_commit_application(
+            mutation,
+            super::idempotency(21, 21),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let newer_identity = resolved_account(&world, "changed", &request);
@@ -357,7 +363,7 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
         .unwrap();
 
     let denial = reads
-        .complete()
+        .complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
         .err()
         .expect("one target-family instance cannot satisfy two exact planned facts");
     assert_eq!(

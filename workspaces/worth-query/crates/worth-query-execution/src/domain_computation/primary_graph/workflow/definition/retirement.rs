@@ -63,7 +63,9 @@ where
             .application()
             .begin_projected_application_read_attempt(admission, projection)
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?;
         read_set
             .materialize_workflow_definition_retirement::<Capability, Spec>(

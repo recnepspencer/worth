@@ -65,7 +65,11 @@ impl WorthQueryCheckpointTransitionResources {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct CheckpointTransition<'authoring, Schema> {
+pub(in crate::domain_computation::primary_graph) struct CheckpointTransition<
+    'authoring,
+    'authority,
+    Schema,
+> {
     pub(in crate::domain_computation::primary_graph) recovery: std::rc::Rc<
         std::cell::RefCell<
             Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
@@ -75,6 +79,11 @@ pub(in crate::domain_computation::primary_graph) struct CheckpointTransition<'au
         WorthQueryCheckpointProgramPredecessor,
     pub(in crate::domain_computation::primary_graph) resources:
         WorthQueryCheckpointTransitionResources,
+    pub(in crate::domain_computation::primary_graph) capture_policy:
+        crate::domain_computation::primary_graph::WorthQueryCheckpointCapturePolicy<
+            'authoring,
+            'authority,
+        >,
     pub(in crate::domain_computation::primary_graph) author: Box<
         dyn FnOnce(
                 &mut WorthQueryCheckpointMigrationWriter<'_, Schema>,

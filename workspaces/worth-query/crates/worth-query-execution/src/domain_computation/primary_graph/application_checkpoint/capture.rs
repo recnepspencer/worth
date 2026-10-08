@@ -1,5 +1,8 @@
 use super::super::application_output_demand::AcceptedCheckpointFactSource;
-use super::{facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes};
+use super::{
+    facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
+    WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
+};
 
 mod native_priors;
 mod output_facts;
@@ -32,11 +35,9 @@ where
 {
     pub fn capture_application_checkpoint(
         &self,
-    ) -> Result<
-        WorthQueryApplicationCheckpoint,
-        worth_relational::facade::durability::DurabilityError,
-    > {
-        self.capture_application_checkpoint_with_sections()
+        policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
+    ) -> Result<WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial> {
+        self.capture_application_checkpoint_with_sections(policy)
             .map(|(checkpoint, _)| checkpoint)
     }
 
@@ -44,13 +45,15 @@ where
     /// The sizes describe these exact bytes; no second capture is performed.
     pub fn capture_application_checkpoint_with_sections(
         &self,
+        policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     ) -> Result<
         (
             WorthQueryApplicationCheckpoint,
             WorthQueryApplicationCheckpointSectionBytes,
         ),
-        worth_relational::facade::durability::DurabilityError,
+        WorthQueryCheckpointCaptureDenial,
     > {
+        policy.check_live()?;
         let occurrence = self.product_runtime.default_occurrence;
         let lane = self
             .primary_provider
@@ -66,9 +69,11 @@ where
                 native_priors::capture_denial("checkpoint product occurrence cannot be admitted")
             })?;
         self.primary_provider.graph.with_runtime(|runtime| {
+            policy.check_live()?;
             runtime
                 .durability_authority()
                 .native_checkpoint()
+                .map_err(WorthQueryCheckpointCaptureDenial::from)
                 .and_then(|checkpoint| {
                     let mut accepted = self.output_demands.accepted_checkpoint_records();
                     let mut admission = self
@@ -100,6 +105,7 @@ where
                             )
                         })?;
                     for (identity, source, _) in &mut accepted {
+                        policy.check_live()?;
                         let Some(source) = source else {
                             continue;
                         };
@@ -141,11 +147,12 @@ where
                         )
                     })?;
                     drop(lineage);
-                    Ok(WorthQueryApplicationCheckpoint::encode(
+                    WorthQueryApplicationCheckpoint::encode(
                         checkpoint,
                         self.publication(),
                         &accepted_outputs,
-                    ))
+                        policy,
+                    )
                 })
         })
     }

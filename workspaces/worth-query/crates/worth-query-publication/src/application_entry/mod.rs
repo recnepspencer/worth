@@ -49,8 +49,9 @@ pub use mandatory_review::{
     WorthQueryApplicationMandatoryReviewDenial, WorthQueryApplicationMandatoryReviewFailure,
 };
 pub use mutation::{
-    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationOutcome,
-    WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationAttemptReport,
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
+    WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryApplicationPerformedMutationOutcome,
     WorthQueryApplicationProgramMigrationPreparationDenial,
     WorthQueryApplicationProgramMigrationPreparationOutcome,

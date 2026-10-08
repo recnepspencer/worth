@@ -74,7 +74,7 @@ The main owners remain separate:
 
 ## Preparing a program action before publication
 
-A keyed mutation request may call `prepare_in_program(&runtime)` when its
+A keyed mutation request may call `prepare_in_program(&runtime, allocation)` when its
 installed candidate must wait before publication. Match
 `WorthQueryApplicationProgramMutationPreparation`: `Prepared` carries a sealed
 `WorthQueryPreparedProgramMutation`; `Settled` carries an ordinary replay,
@@ -88,7 +88,7 @@ borrowed until the handle is consumed or dropped. Its one-shot source and
 preconditions are consumed once: preparing that same request again returns
 `PreparationSpent`; build a fresh request with the same key for a real retry.
 
-Call `candidate.commit()` to compare and publish. The result is inaccessible
+Call `candidate.commit(allocation)` to compare and publish. The result is inaccessible
 before an accepted new commit. Drop discards it; stale basis, revoked authority,
 changed program, cancellation, deadline and duplicate replay never release it.
 Any intervening same-branch commit conservatively rejects the prepared basis,
@@ -97,6 +97,57 @@ unrelated changes, detached result authority, durable queued work, or effect
 recovery. Those use their existing source, workflow, and publication owners.
 
 ## How It Executes
+
+Ordinary mutation execution, preparation and publication take an explicit
+`ExecutionAllocationPolicy`. A host may choose `SystemAllocation`, or supply
+`Execution(&lease)` from its caller-owned process authority. The policy governs
+the completed decision and provider read-set arrays; it grants no graph authority
+and does not charge nested metadata or temporary maps. Preparation retains its
+payload charge with the candidate. Publication takes a fresh policy for its
+provider comparison. An admitted idempotent replay returns before new allocation.
+Request cancellation and deadlines constrain a child lease without changing the
+caller's parent policy or shortening payload custody to the request's lifetime.
+
+### Observing installed mutation work
+
+Use `execute_in_program_report` when a caller needs the installed handler's
+decision projection evidence alongside the ordinary outcome:
+
+```rust,ignore
+use worth_query_host::facade::primary_graph::WorthQueryMutationHandlerWork;
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
+
+let report = request.mutate(mutation_intent)
+    .without_source().idempotency(&command_id)
+    .execute_in_program_report(&application, ExecutionAllocationPolicy::SystemAllocation);
+if let WorthQueryMutationHandlerWork::Captured(capture) = report.decision_work() {
+    let projection = capture.projection_work();
+    println!("{} fields read", projection.field_reads());
+}
+let outcome = report.into_outcome()?;
+```
+
+`execute_report`, `prepare_in_program_report`, the prepared handle's
+`commit_report`, and `execute_performed_report` preserve the same distinction.
+Existing methods execute that same path and return only its ordinary outcome.
+Reports have sealed construction; captured values describe actual Query work
+and grant no execution, read, publication or result-reuse authority.
+
+`NotStarted` means no decision projection reader ran in this invocation.
+`Captured` can contain zero work and records whether the installed handler was
+contacted. A denial after projection begins retains its observed work. A cached
+idempotency replay before handler execution is `NotStarted`; a duplicate found
+when committing an already prepared candidate retains that candidate's original
+capture without releasing its unpublished result. Preparation and commit reports
+repeat the same capture, so adding them would double-count one execution.
+
+The eleven counters cover indexed candidates, adjacency/endpoint visits, field
+reads, aggregate activity and output-lineage lookups during decision projection.
+They exclude candidate construction, commit work, physical I/O, latency and
+whole-process memory. Compare the complete work value when checking structural
+amplification: `provider_work_units()` excludes aggregate cache hits and rebuild
+input rows. Commit receipts continue to describe landed history rather than
+the fresh work of a retry.
 
 The ordinary request path is:
 
@@ -124,6 +175,7 @@ installed program commits through the branch-resolved program lane:
 
 ```rust,ignore
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 let request = application.request(&external_principal, &request_scope);
 let result = request.query(query_intent).execute()?;
@@ -131,10 +183,10 @@ let outcome = request
     .mutate(mutation_intent)
     .without_source()
     .idempotency(&command_id)
-    .execute_in_program(&application)?;
+    .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)?;
 ```
 
-`execute()` without a program serves only mutations that require no
+`execute(allocation)` without a program serves only mutations that require no
 application program; for a program-owned action it returns
 `WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired`.
 
@@ -274,22 +326,24 @@ request's exact branch, resolves the commit owner from the program that branch
 carries, and commits through that installed owner:
 
 ```rust,ignore
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
+
 let outcome = application
     .request(&principal, &scope)
     .on_branch(branch)
     .mutate(intent)
     .without_source()
     .idempotency(&command_id)
-    .execute_in_program(&application)?;
+    .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)?;
 ```
 
 | Lane | Use it for |
 |---|---|
-| `execute_in_program(&runtime)` | An ordinary mutation committed through the branch's program owner. |
-| `execute_capability_in_program(&runtime)` | The same lane for a binding that implements `ApplicationCapabilityMutationBinding`. |
-| `execute_retained_in_program(&runtime)` | A mutation whose committed outcome also returns a retained read observation (`WorthQueryApplicationRetainedMutationOutcome`). |
-| `execute_performed::<Program, Root>(&runtime)` | A source mutation that commits and starts the required outputs declared under `Root`. |
-| `execute_performed_discovered::<Program, Root>(&runtime)` | The discovered-output counterpart of `execute_performed`. |
+| `execute_in_program(&runtime, allocation)` | An ordinary mutation committed through the branch's program owner. |
+| `execute_capability_in_program(&runtime, allocation)` | The same lane for a binding that implements `ApplicationCapabilityMutationBinding`. |
+| `execute_retained_in_program(&runtime, allocation)` | A mutation whose committed outcome also returns a retained read observation (`WorthQueryApplicationRetainedMutationOutcome`). |
+| `execute_performed::<Program, Root>(&runtime, allocation)` | A source mutation that commits and starts the required outputs declared under `Root`. |
+| `execute_performed_discovered::<Program, Root>(&runtime, allocation)` | The discovered-output counterpart of `execute_performed`. |
 
 Each lane takes the `WorthQueryProgramApplicationRuntime` that the request was
 built from. A different runtime returns `ApplicationProgramMismatch`, or
@@ -597,11 +651,28 @@ explains a transition; it does not perform the transition.
 
 An installed application runtime can capture its opaque Query checkpoint and
 encoder-owned section report together with
-`capture_application_checkpoint_with_sections()`. The report splits Query
+`capture_application_checkpoint_with_sections(policy)`. The report splits Query
 framing, native Relational bytes and accepted-output identities; a locally
 captured native checkpoint also reports envelope, branch-root, branch-cell,
 partition-mirror, derived-index and framing bytes. These sizes describe the
 same encoding pass. They cannot validate received bytes or authorize restore.
+
+The caller supplies `WorthQueryCheckpointCapturePolicy::SystemAllocation` or
+`Execution(&lease)` for capture, program transition and every repair attempt.
+System allocation is fallible and uncharged. Execution mode checks the live
+caller lease, reserves the checked exact final-frame payload before allocating,
+and retains that one charge until its last Query or embedded native byte owner
+drops. Neither mode charges native codec temporaries, decoded rows or allocator
+metadata. There is no fallback from an exhausted or stopped lease to system
+allocation.
+
+`WorthQueryCheckpointCaptureDenial` preserves either the native durability
+error or the typed physical allocation refusal and its available payload quote.
+An acknowledged transition whose capture fails returns its unpublished repair
+capsule, with `capture_denial()` identifying the latest capture failure. A later
+native settlement failure clears that obsolete capture cause. Repair takes a
+fresh explicit policy, retains its current phase on refusal and never reruns
+authoring; a captured successor still requires ordinary target readmission.
 
 The application owns the enclosing artifact, transport, compatibility check
 and fresh installed-schema readmission. Relational verifies and rebuilds

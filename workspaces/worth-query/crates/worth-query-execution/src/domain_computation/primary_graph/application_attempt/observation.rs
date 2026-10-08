@@ -9,6 +9,9 @@ use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 
+mod predecode_admission;
+pub(in crate::domain_computation::primary_graph) use predecode_admission::observe_field_value_borrowed;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFieldObservation {
     Present(worth_foundational::facade::AspectValue),

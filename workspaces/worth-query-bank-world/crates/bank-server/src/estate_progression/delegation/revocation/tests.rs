@@ -23,7 +23,11 @@ fn generic_program_cannot_bypass_the_installed_revocation_action() {
     let outcome = fixture
         .runtime
         .application_runtime()
-        .compare_and_commit_application(program, query_idempotency(151));
+        .compare_and_commit_application(
+            program,
+            query_idempotency(151),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("generic revocation must deny before provider execution: {outcome:?}");
     };
@@ -153,7 +157,9 @@ fn generic_empty_program(
         .resolve_entity(CapabilityGrantIdentityField::reference(), grant)
         .unwrap();
     reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program()
         .finish()

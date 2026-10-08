@@ -39,9 +39,12 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
             .unwrap(),
         WorthQueryGuardedWorkflowOperationCustody::Unseen
     ));
-    let WorthQueryApplicationCommitOutcome::Committed(committed) = world
-        .application
-        .compare_and_commit_application(program, binding)
+    let WorthQueryApplicationCommitOutcome::Committed(committed) =
+        world.application.compare_and_commit_application(
+            program,
+            binding,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the guarded mutation must commit");
     };
@@ -98,9 +101,12 @@ fn guarded_operation_custody_retains_world_issued_unpublished_recovery() {
     let binding = idempotency(80, 81).bind_guarded_workflow_effect(&transition);
 
     world.application.fail_next_durable_append_for_test();
-    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = world
-        .application
-        .compare_and_commit_application(program, binding)
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) =
+        world.application.compare_and_commit_application(
+            program,
+            binding,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the World must issue unpublished recovery material");
     };

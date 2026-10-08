@@ -78,10 +78,11 @@ where
         if self.change.program.product_branch() != self.entry.branch {
             return Err(WorthQueryProductTransactionCommitError::BranchMismatch);
         }
-        Ok(
-            application
-                .compare_and_commit_application(self.change.program, self.change.idempotency),
-        )
+        Ok(application.compare_and_commit_application(
+            self.change.program,
+            self.change.idempotency,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ))
     }
 
     /// Commits an already admitted change only through the installed program
@@ -125,6 +126,7 @@ where
                 &presented,
                 self.change.program,
                 self.change.idempotency,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             ),
         )
     }

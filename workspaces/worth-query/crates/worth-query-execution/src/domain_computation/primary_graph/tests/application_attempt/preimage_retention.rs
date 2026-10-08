@@ -67,7 +67,9 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
@@ -78,9 +80,11 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
             "must-not-land".to_owned(),
         )
         .unwrap();
-    let outcome = world
-        .application
-        .compare_and_commit_application(effects.finish().unwrap(), idempotency(71, 72));
+    let outcome = world.application.compare_and_commit_application(
+        effects.finish().unwrap(),
+        idempotency(71, 72),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
 
     assert_retention_denied(&outcome);
     let after = relational_head(&world);
@@ -136,7 +140,9 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let open = effects.existing_entity(&account).unwrap();
@@ -151,9 +157,11 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
             "must-not-land".to_owned(),
         )
         .unwrap();
-    let outcome = world
-        .application
-        .compare_and_commit_application(effects.finish().unwrap(), idempotency(73, 74));
+    let outcome = world.application.compare_and_commit_application(
+        effects.finish().unwrap(),
+        idempotency(73, 74),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
 
     assert_retention_denied(&outcome);
     assert_eq!(relational_head(&world), before);
@@ -197,7 +205,9 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
@@ -207,9 +217,11 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     effects
         .write_field(&account, AccountLabel::reference(), "renamed".to_owned())
         .unwrap();
-    let outcome = world
-        .application
-        .compare_and_commit_application(effects.finish().unwrap(), idempotency(75, 76));
+    let outcome = world.application.compare_and_commit_application(
+        effects.finish().unwrap(),
+        idempotency(75, 76),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("same-record inverse must commit: {outcome:?}");
     };

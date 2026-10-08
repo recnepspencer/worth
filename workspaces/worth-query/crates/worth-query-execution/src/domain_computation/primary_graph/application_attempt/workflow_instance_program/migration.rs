@@ -291,7 +291,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         self.workflow_deadline = source_deadline;
         let mut demand = PlatformEffectDemand::default();
         for effect in &effects {

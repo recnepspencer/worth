@@ -3,6 +3,8 @@
 
 #[path = "application_graph/adoption.rs"]
 mod adoption;
+#[path = "application_graph/allocation_custody.rs"]
+mod allocation_custody;
 #[path = "application_graph/canonical_identity.rs"]
 mod canonical_identity;
 #[path = "application_graph/document_retention_model.rs"]

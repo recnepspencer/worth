@@ -32,6 +32,18 @@ handles, and pending cleanup are memory-resident. Process loss releases those
 capabilities. Restart durability belongs to Store and requires fresh owner
 readmission; Query does not serialize live authority.
 
+`WorthQueryApplicationCheckpoint` clones share immutable byte backing. Capture,
+program transition and each repair attempt receive an explicit
+`WorthQueryCheckpointCapturePolicy`: `SystemAllocation` uses fallible uncharged
+storage; `Execution(&lease)` reserves the checked final-frame payload before
+allocation. Clones and embedded native regions retain that one backing and its
+charge until the last owner drops. There is no fallback after lease refusal.
+Decode verifies framing and checksum before the same-backing native handoff;
+ordinary native recovery still owns readmission. Byte equality and wire grammar
+do not encode allocation policy. Native codec temporaries, decoded rows and
+allocator/Arc metadata remain outside this payload charge. See the
+[capture and reopen contract](./crates/worth-query/docs/foundations/ordinary-application-front-door.md#capture-and-reopen-cost-boundary).
+
 Required output progression rechecks native consumer decision facts before
 following its previously consumed dependencies. Sealed child entity/field content
 is excluded from the independent-fact check. Changed consumer fields or

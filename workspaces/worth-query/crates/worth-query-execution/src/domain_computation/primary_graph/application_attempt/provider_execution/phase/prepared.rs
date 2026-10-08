@@ -1,3 +1,4 @@
+use worth_execution::ExecutionArray;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;
@@ -112,8 +113,8 @@ impl<Schema, Operation, Input, Scope>
 
 struct WorthQueryProviderAttemptPreparation {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: Vec<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
+    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     application_effect_count: usize,

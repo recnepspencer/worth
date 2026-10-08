@@ -154,7 +154,11 @@ fn generic_provider_entry_cannot_bypass_the_installed_delegation_action() {
     let outcome = fixture
         .runtime
         .application_runtime()
-        .compare_and_commit_application(program, query_idempotency(125));
+        .compare_and_commit_application(
+            program,
+            query_idempotency(125),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("the generic provider entry must reject activation admissions");
     };
@@ -273,7 +277,9 @@ fn materialize_generic(
         .begin_projected_application_read_attempt(admission, projection)
         .map_err(BankEstateProgressionDenial::from_attempt)?;
     reads
-        .complete_projected_dependencies()?
+        .complete_projected_dependencies(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )?
         .begin_effect_program()
         .finish()
         .map_err(BankEstateProgressionDenial::from_attempt)

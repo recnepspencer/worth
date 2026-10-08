@@ -55,20 +55,23 @@ pub(super) fn reserve(
 /// traversal: logical cardinalities are changed with their selected
 /// posting/mark edits.
 pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
+    let rows = state.settlements.len();
+    let postings = state.posting_count;
     arc_bytes::<MarkState>()?
         .checked_add(state.key_payload_bytes)?
         .checked_add(state.settlement_key_payload_bytes)?
-        // At most one live basis per row; shared carry batches need no more.
-        // This is a whole-index cap, not another reservation of original facts.
+        // A whole-index quote includes one live basis allocation per row.
+        // Its actual ticket remains separately owned by that allocation.
         .checked_add(
             state
                 .maximum_basis_allocation_bytes
-                .checked_mul(state.settlements.len() as u64)?,
+                .checked_mul(rows as u64)?,
         )?
+        // Each row owns a consumed_upstream set, even when empty.
         .checked_add(
             retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
                 state.downstream_edge_count,
-                state.settlements.len(),
+                rows,
             )?,
         )?
         .checked_add(retained_map_bytes::<
@@ -87,23 +90,20 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
                     .checked_add(state.settlements.len())? as u64,
             )?,
         )?
-        .checked_add(retained_forest_bytes::<
-            Arc<FactPostingKey>,
-            im::OrdSet<usize>,
-        >(state.posting_count, state.settlements.len())?)?
-        // Each local posting group owns an ordinal set. Its count is at most
-        // posting_count, not settlements.len(): one settlement may read many
-        // distinct keys. Preserve that conservative root count without a scan.
-        .checked_add(retained_forest_bytes::<usize, ()>(
-            state.posting_count,
-            state.posting_count,
-        )?)?
+        .checked_add(
+            // One posting_ordinals map per row; each distinct key has at
+            // least one ordinal, so posting_count bounds their total keys.
+            retained_forest_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(postings, rows)?,
+        )?
+        // Each row/key pair owns its own ordinal set. Their root count is
+        // at most posting_count; combining them into one tree undercounts.
+        .checked_add(retained_forest_bytes::<usize, ()>(postings, postings)?)?
         .checked_add(retained_map_bytes::<
             Arc<FactPostingKey>,
             im::OrdSet<FactPosting>,
         >(state.postings.len())?)?
         .checked_add(retained_forest_bytes::<FactPosting, ()>(
-            state.posting_count,
+            postings,
             state.postings.len(),
         )?)?
         .checked_add(retained_map_bytes::<
@@ -122,12 +122,12 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
         )?
         .checked_add(retained_forest_bytes::<usize, ()>(
             state.dirty_ordinal_count,
-            state.settlements.len(),
+            rows,
         )?)?
         .checked_add(
             retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
                 state.pending_edge_count,
-                state.settlements.len(),
+                rows,
             )?,
         )?
         .checked_add(arc_bytes::<SettlementMarks>()?.checked_mul(state.settlements.len() as u64)?)
@@ -200,26 +200,40 @@ fn admit(
     Ok(())
 }
 
-/// A root owns its retained positions, and what its oldest version shares
+/// Reserve a newly edited history map beside every pinned predecessor. Edited
+/// maps keep the conservative whole-map bound; unchanged replacements retain
+/// their existing allocation owner's ticket instead.
+pub(super) fn admit_edited_history(
+    root: &mut BranchMarkRoot,
+    resources: &WorthQueryInvalidationResources,
+    admission: &mut impl IndexAdmission,
+) -> Result<(), CompanionPreflightStop> {
+    use worth_relational::facade::publication::PatchStreamPosition;
+    let bytes =
+        retained_map_bytes::<Option<PatchStreamPosition>, HistoricalMarkState>(root.past.len())
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    root.history_capacity = Some(reserve(resources, bytes, admission)?);
+    Ok(())
+}
+
+/// A root owns its object, and what its oldest version shares
 /// with versions that have left. `left` is the version leaving with this
 /// root: its successor still shares what it had reserved, and with its own
-/// reservation never needs more than its whole index.
+/// reservation never needs more than its whole index. Its history ticket is
+/// shared with unchanged replacements; the delivery owner separately admits
+/// every insertion/removal before calling this function.
 pub(super) fn admit_root(
     root: &mut BranchMarkRoot,
     left: Option<&MarkState>,
     resources: &WorthQueryInvalidationResources,
     admission: &mut impl IndexAdmission,
 ) -> Result<(), CompanionPreflightStop> {
-    use worth_relational::facade::publication::PatchStreamPosition;
     let bytes = arc_bytes::<BranchMarkRoot>()
-        .and_then(|n| {
-            n.checked_add(retained_map_bytes::<
-                Option<PatchStreamPosition>,
-                HistoricalMarkState,
-            >(root.past.len())?)
-        })
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     root.retained_capacity = Some(reserve(resources, bytes, admission)?);
+    if root.history_capacity.is_none() {
+        admit_edited_history(root, resources, admission)?;
+    }
     let overflow = CompanionPreflightStop::PreparationMemoryCounterOverflow;
     let oldest = root
         .past

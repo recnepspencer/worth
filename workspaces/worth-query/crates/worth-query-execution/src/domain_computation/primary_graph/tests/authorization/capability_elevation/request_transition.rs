@@ -104,9 +104,12 @@ fn ordinary_compare_and_commit_cannot_publish_a_lifecycle_program() {
         .finish()
         .unwrap();
 
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(ordinary, idempotency(72, 72))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            ordinary,
+            idempotency(72, 72),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("ordinary compare-and-commit must reject lifecycle authority");
     };
@@ -295,7 +298,9 @@ pub(super) fn request_reads(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
 }
 

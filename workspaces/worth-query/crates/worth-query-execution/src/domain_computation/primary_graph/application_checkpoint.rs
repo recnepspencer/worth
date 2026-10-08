@@ -1,6 +1,8 @@
 use sha2::{Digest, Sha256};
+use std::sync::Arc;
 
 mod capture;
+mod denial;
 mod encode;
 mod facts;
 mod resources;
@@ -9,6 +11,7 @@ mod section_bytes;
 mod tests;
 #[cfg(test)]
 use capture::merge_accepted_outputs;
+pub use denial::WorthQueryCheckpointCaptureDenial;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;
 pub(in crate::domain_computation::primary_graph) use facts::decode_for_wire_version as decode_producer_facts_for_wire_version;
@@ -17,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) use facts::encode as encode_pro
 pub use section_bytes::{
     WorthQueryApplicationCheckpointSectionBytes, WorthQueryNativeCheckpointSectionBytes,
 };
+pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
 const FORMAT_VERSION: u16 = 8;
@@ -38,9 +42,11 @@ const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
 ///
 /// Query alone defines and admits the payload. Hosts retain and transport the
 /// bytes without interpreting model facts or reconstructing a partial runtime.
+/// Clones share immutable byte backing. Decoding retains that same backing for
+/// the embedded native region; native recovery still owns fresh readmission.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCheckpoint {
-    bytes: Box<[u8]>,
+    bytes: worth_execution::ExecutionImmutableBytes,
 }
 
 pub(in crate::domain_computation::primary_graph) struct DecodedApplicationCheckpoint {
@@ -53,12 +59,20 @@ pub(in crate::domain_computation::primary_graph) struct DecodedApplicationCheckp
 impl WorthQueryApplicationCheckpoint {
     pub fn from_untrusted_bytes(bytes: impl Into<Box<[u8]>>) -> Self {
         Self {
-            bytes: bytes.into(),
+            bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                bytes.into(),
+            )),
         }
     }
 
     pub fn bytes(&self) -> &[u8] {
-        &self.bytes
+        self.bytes.bytes()
+    }
+
+    /// Actual final-frame payload charge; imported and SystemAllocation bytes
+    /// are uncharged. Native encoding and other capture temporaries are separate.
+    pub fn charged_payload_bytes(&self) -> Option<u64> {
+        self.bytes.charged_payload_bytes()
     }
 
     #[cfg(feature = "test-durability-faults")]

@@ -161,7 +161,10 @@ fn mutate(
         })
         .without_source()
         .idempotency(&idempotency)
-        .execute_in_program(&application.runtime)
+        .execute_in_program(
+            &application.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the branch-local application mutation must prepare");
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         panic!("the branch-local application mutation must commit")

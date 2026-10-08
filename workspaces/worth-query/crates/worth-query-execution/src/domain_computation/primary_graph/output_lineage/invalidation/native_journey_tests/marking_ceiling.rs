@@ -41,14 +41,15 @@ pub(super) fn world_installing(
         WorthQueryInvalidationResourceInstallation,
     ) -> WorthQueryInvalidationResourceInstallation,
 ) -> AuthorizationWorld {
-    let (budgets, clock, defaults) = test_product_world_resources().into_parts();
+    let (budgets, clock, defaults, authority) = test_product_world_resources().into_parts();
     let invalidation =
         WorthQueryInvalidationResources::install(adjust(defaults.installation())).unwrap();
-    installed_authorization_world_with_product_resources(WorthQueryProductWorldResources::new(
-        budgets,
-        clock,
-        invalidation,
-    ))
+    let resources = WorthQueryProductWorldResources::new(budgets, clock, invalidation);
+    let resources = match authority {
+        Some(authority) => resources.with_execution_authority(authority),
+        None => resources,
+    };
+    installed_authorization_world_with_product_resources(resources)
 }
 
 /// One commit creating `count` accounts no reader watches. Every created

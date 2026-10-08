@@ -249,7 +249,10 @@ fn actual_candidate_checks_untouched_neighbors(
         .mutate(PlanarEdit(valid.clone()))
         .expect_source(source.clone())
         .idempotency(&10)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the typed request reaches the actual mutation owner");
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         panic!("the positive-turn adjustment must commit: {outcome:?}")
@@ -264,7 +267,10 @@ fn actual_candidate_checks_untouched_neighbors(
         .mutate(PlanarEdit(valid))
         .expect_source(source)
         .idempotency(&10)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the repeated typed request reaches idempotency resolution");
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered) = retry else {
         panic!("the repeated command must recover its single committed publication")
@@ -337,7 +343,10 @@ fn mutate(
         .mutate(PlanarEdit(input))
         .expect_source(source)
         .idempotency(&key)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the typed request reaches the actual mutation owner")
 }
 

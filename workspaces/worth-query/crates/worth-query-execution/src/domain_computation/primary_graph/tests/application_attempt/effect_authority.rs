@@ -45,7 +45,10 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
     reads
         .observe_field(&account, AccountStatus::reference())
         .unwrap();
-    let mut effects = reads.complete().unwrap().begin_effect_program();
+    let mut effects = reads
+        .complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap()
+        .begin_effect_program();
     let target = effects.existing_entity(&account).unwrap();
 
     let Err(denial) = effects.write_field(&target, AccountLabel::reference(), "forged".to_string())
@@ -110,7 +113,10 @@ fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
     reads
         .observe_field(&account, AccountStatus::reference())
         .unwrap();
-    let effects = reads.complete().unwrap().begin_effect_program();
+    let effects = reads
+        .complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap()
+        .begin_effect_program();
 
     let Err(denial) = effects.existing_entity(&foreign) else {
         panic!("a foreign admitted scope must not become a realized effect target");

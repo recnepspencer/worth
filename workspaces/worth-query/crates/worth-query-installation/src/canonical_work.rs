@@ -1,10 +1,10 @@
 use worth_foundational::facade::CanonicalDigestWorkEvidence;
 use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
 
-// Package and schema identity derivations share finite installation headroom.
-// The composed House component application exceeds the former 16 MiB ceiling
-// even with capabilities narrowed to its consumed read vocabulary.
-pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 32 * 1_024 * 1_024;
+// Complete application installation includes package and schema meaning. Its
+// finite 64 MiB ceiling matches portable package export and reconstruction
+// capacity; callers may still narrow canonical work below this platform limit.
+pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 64 * 1_024 * 1_024;
 
 /// Deterministic counts of the canonical work Query performed for one phase.
 ///

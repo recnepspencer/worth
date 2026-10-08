@@ -46,5 +46,8 @@ where
         })
         .without_source()
         .idempotency(&idempotency)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
 }

@@ -40,6 +40,7 @@ where
             program,
             idempotency,
             handoff.pending_causality(),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
@@ -69,6 +70,7 @@ where
             program,
             idempotency,
             handoff.pending_causality(),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 }

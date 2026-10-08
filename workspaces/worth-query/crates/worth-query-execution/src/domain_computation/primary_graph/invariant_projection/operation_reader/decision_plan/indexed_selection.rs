@@ -91,6 +91,9 @@ impl<Schema: ApplicationSchema, Operation>
             .index_access()
             .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
             .map_err(|denial| {
+                let examined = denial.examined_entry_count();
+                self.reader.work_budget.consume(1 + examined);
+                self.reader.work.record_lookup(examined);
                 let kind = match denial.kind() {
                     BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
                     | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {

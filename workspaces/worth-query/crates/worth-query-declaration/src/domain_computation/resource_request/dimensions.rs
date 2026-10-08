@@ -144,6 +144,12 @@ impl WorthQuerySemanticScaleRequest {
         self
     }
 
+    /// Omits an aggregate execution-work budget; other scale axes stay explicit.
+    pub fn without_work_budget(mut self) -> Self {
+        self.values.remove(&WorthQuerySemanticScaleAxis::WorkItems);
+        self
+    }
+
     pub fn get(&self, axis: WorthQuerySemanticScaleAxis) -> Option<u64> {
         self.values.get(&axis).copied()
     }

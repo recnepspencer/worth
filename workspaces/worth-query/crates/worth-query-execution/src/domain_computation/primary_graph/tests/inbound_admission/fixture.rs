@@ -1,3 +1,4 @@
+use crate::facade::runtime::ExecutionAllocationPolicy;
 use std::future::Future;
 use std::pin::pin;
 use std::sync::Arc;
@@ -192,7 +193,7 @@ impl InboundWorld {
             .begin_projected_application_read_attempt(admission, projection)
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()
             .begin_effect_program();
         effects
@@ -207,6 +208,7 @@ impl InboundWorld {
         match self.application.compare_and_commit_application(
             program,
             WorthQueryApplicationIdempotencyBinding::new(key, fingerprint),
+            ExecutionAllocationPolicy::SystemAllocation,
         ) {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
             other => panic!("other operation {seed} must issue a genuine dispatch: {other:?}"),
@@ -316,7 +318,7 @@ impl InboundWorld {
             .begin_projected_application_read_attempt(admission, projection)
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()
             .begin_effect_program();
         if emit_external {
@@ -328,6 +330,7 @@ impl InboundWorld {
         self.application.compare_and_commit_application(
             program,
             WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed.wrapping_add(1); 32]),
+            ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 }

@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     collections::HashMap,
     num::NonZeroUsize,
     sync::{Arc, Mutex, OnceLock},
@@ -15,17 +14,26 @@ use super::{equivalence::EquivalenceRegistry, CancellationToken, EquivalencePred
 
 static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
+mod array_backing;
+mod byte_backing;
+mod fixed_backing;
 mod limits;
+mod memory_reservation;
 mod retained;
 mod worker_context;
-thread_local! {
-    static ACTIVE_WORKER: RefCell<Vec<(usize, u64)>> = const { RefCell::new(Vec::new()) };
-}
+pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
+pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
+pub use fixed_backing::{
+    ExecutionAllocationDenial, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+};
+pub use memory_reservation::ExecutionMemoryReservation;
+use worker_context::ACTIVE_WORKER;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExecutionAuthorityConfig {
     pub max_workers: NonZeroUsize,
-    pub charged_memory_bytes: u64,
+    /// Optional process-wide payload-backing ceiling; request/ancestor bounds remain finite.
+    pub charged_memory_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -161,7 +169,12 @@ impl ExecutionAuthority {
         if budget.max_workers().get() > self.inner.config.max_workers.get() {
             return Err(LeaseDenial::WorkerLimitExceedsParent);
         }
-        if budget.charged_memory_bytes() > self.inner.config.charged_memory_bytes {
+        if self
+            .inner
+            .config
+            .charged_memory_bytes
+            .is_some_and(|cap| budget.charged_memory_bytes() > cap)
+        {
             return Err(LeaseDenial::MemoryLimitExceedsParent);
         }
         let id = self.next_id();
@@ -283,8 +296,13 @@ impl<'a> ExecutionResourceLease<'a> {
         let workers_after = ledger.active_workers.checked_add(process_workers);
         let process_memory = ledger.charged_memory_bytes.checked_add(memory_bytes);
         if workers_after.is_none_or(|count| count > self.authority.inner.config.max_workers.get())
-            || process_memory
-                .is_none_or(|count| count > self.authority.inner.config.charged_memory_bytes)
+            || process_memory.is_none_or(|count| {
+                self.authority
+                    .inner
+                    .config
+                    .charged_memory_bytes
+                    .is_some_and(|cap| count > cap)
+            })
         {
             return Err(LeaseDenial::ResourceExhausted);
         }

@@ -230,12 +230,17 @@ fn while_peer_is_registered(
     };
     let peer = finish_application_commit(
         &world.application,
-        registered.progress(&authority).finish(
-            lease,
-            running,
-            None,
-            admission.publication_request().clone(),
-        ),
+        registered
+            .progress(
+                &authority,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .finish(
+                lease,
+                running,
+                None,
+                admission.publication_request().clone(),
+            ),
     );
     assert!(matches!(
         peer,

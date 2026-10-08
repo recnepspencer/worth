@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     tests::fixture::{publish_relational_mutation_on_application, restored_world, AccountStatus},
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use crate::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding,
 };
@@ -35,9 +36,11 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
         panic!("both decisions see the same absence");
     };
     let (winner, _) = winner.into_parts();
-    let winner_outcome = world
-        .application
-        .compare_and_commit_application(winner, winner_key);
+    let winner_outcome = world.application.compare_and_commit_application(
+        winner,
+        winner_key,
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(
             winner_outcome,
@@ -46,9 +49,11 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
         "winner: {winner_outcome:?}"
     );
     let committed_head = world.selected_product().product().selected_commit().clone();
-    let outcome = world
-        .application
-        .compare_and_commit_application(loser, loser_key);
+    let outcome = world.application.compare_and_commit_application(
+        loser,
+        loser_key,
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     super::super::assert_changed_decision(outcome, "a competing indexed absence");
     assert_eq!(
         world.selected_product().product().selected_commit(),
@@ -65,9 +70,11 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         panic!("the installed handler completes its indexed decision");
     };
     let (program, _) = completed.into_parts();
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, key);
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        key,
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the indexed handler publishes through the production commit lane: {outcome:?}");
     };
@@ -99,7 +106,10 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     ));
 
     let durable = encode_producer_facts(&facts).expect("all rebased handler reads are durable");
-    let checkpoint = world.application.capture_application_checkpoint().unwrap();
+    let checkpoint = world
+        .application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(world);
     let reopened = restored_world(checkpoint).expect("the real native application reopens");
     let restored = decode_producer_facts(&durable).unwrap();

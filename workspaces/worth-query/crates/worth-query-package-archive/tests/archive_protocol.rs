@@ -28,3 +28,6 @@ mod release_envelope_fixture;
 mod repository_contract;
 #[path = "archive_protocol/signing_payload.rs"]
 mod signing_payload;
+
+#[path = "archive_protocol/optional_work.rs"]
+mod optional_work;

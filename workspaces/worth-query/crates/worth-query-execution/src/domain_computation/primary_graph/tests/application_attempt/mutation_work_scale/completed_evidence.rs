@@ -26,9 +26,12 @@ fn commit_status(
     let principal = authenticated_principal(world, &request);
     let account = resolved_account(world, from, &request);
     let program = admitted_program(world, &principal, &account, &request, to);
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(program, idempotency(key, key))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(key, key),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("key {key} commits inside the idempotency window");
     };
@@ -58,9 +61,12 @@ fn a_replay_beyond_the_idempotency_window_is_typed_and_never_re_executes() {
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "w3", &request);
     let replay = admitted_program(&world, &principal, &account, &request, "w1");
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(replay, idempotency(91, 91))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            replay,
+            idempotency(91, 91),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("a replay beyond the window is denied, never drift or a second execution");
     };
@@ -97,10 +103,11 @@ fn held_receipts_are_never_evicted_for_room_they_cannot_free() {
         let next = format!("h{key}");
         let program = admitted_program(&world, &principal, &account, &request, &next);
         let (entries, _) = world.application.completed_evidence_retained_for_test();
-        match world
-            .application
-            .compare_and_commit_application(program, idempotency(key, key))
-        {
+        match world.application.compare_and_commit_application(
+            program,
+            idempotency(key, key),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ) {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => held.push(receipt),
             WorthQueryApplicationCommitOutcome::Deferred(_) => {
                 let (after, _) = world.application.completed_evidence_retained_for_test();
@@ -126,6 +133,7 @@ fn completed_evidence_capacity_denies_before_publication_and_refunds_after_last_
     let committed = baseline.application.compare_and_commit_application(
         no_demand_mutation_program(&baseline, false),
         idempotency(91, 92),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Committed(baseline_receipt) = committed else {
         panic!("the funded actual mutation must publish");
@@ -161,6 +169,7 @@ fn completed_evidence_capacity_denies_before_publication_and_refunds_after_last_
     let denied_result = denied.application.compare_and_commit_application(
         no_demand_mutation_program(&denied, false),
         idempotency(91, 92),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Deferred(deferred) = denied_result else {
         panic!("completed evidence exhaustion must retain typed retry posture");
@@ -197,6 +206,7 @@ fn completed_evidence_capacity_denies_before_publication_and_refunds_after_last_
     let published = exact.application.compare_and_commit_application(
         no_demand_mutation_program(&exact, false),
         idempotency(91, 92),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = published else {
         panic!("the exact real backing must publish");

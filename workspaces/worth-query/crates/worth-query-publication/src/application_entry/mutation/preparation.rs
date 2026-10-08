@@ -12,6 +12,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryApplicationEffectProgram,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) type CandidateProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
@@ -28,6 +29,8 @@ pub(super) struct PreparedCandidate<
     pub(super) result: Binding::Result,
     pub(super) identities: ApplicationMutationIdentities<'request, Schema, Binding>,
     pub(super) extension: WorthQueryCommitExtension,
+    pub(super) decision_work:
+        worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
 }
 pub(super) enum CandidatePreparation<
     'request,
@@ -67,6 +70,8 @@ where
             super::authorization::PreparedMutation<Schema, Intent::Binding>,
             WorthQueryApplicationRequestMutationDenial,
         >,
+        decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         CandidatePreparation<'request, Schema, Intent::Binding>,
         WorthQueryApplicationRequestMutationDenial,
@@ -97,42 +102,45 @@ where
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;
         }
-        let completed = match self
+        let (handler_outcome, work) = self
             .request
             .application
-            .execute_mutation_handler::<Intent::Binding>(
+            .execute_mutation_handler_report::<Intent::Binding>(
                 &identities,
                 &principal_identity,
                 admission,
+                allocation_policy,
             )
-            .map_err(WorthQueryApplicationRequestMutationDenial::Handler)?
-        {
-            HandlerResult::Completed(completed) => completed,
-            HandlerResult::DomainDenied(denial) => {
-                return Ok(CandidatePreparation::Settled(
-                    WorthQueryApplicationMutationOutcome::DomainDenied(denial),
-                ));
-            }
-            HandlerResult::ExecutionDenied(denial) => {
-                return Err(WorthQueryApplicationRequestMutationDenial::Handler(
-                    MutationHandlerExecutionDenial::Handler(denial),
-                ));
-            }
-            HandlerResult::Cancelled => {
-                return Ok(CandidatePreparation::Settled(
-                    WorthQueryApplicationMutationOutcome::Cancelled,
-                ));
-            }
-            HandlerResult::DeadlineExceeded => {
-                return Ok(CandidatePreparation::Settled(
-                    WorthQueryApplicationMutationOutcome::DeadlineExceeded,
-                ));
-            }
-        };
+            .into_parts();
+        *decision_work = work;
+        let completed =
+            match handler_outcome.map_err(WorthQueryApplicationRequestMutationDenial::Handler)? {
+                HandlerResult::Completed(completed) => completed,
+                HandlerResult::DomainDenied(denial) => {
+                    return Ok(CandidatePreparation::Settled(
+                        WorthQueryApplicationMutationOutcome::DomainDenied(denial),
+                    ));
+                }
+                HandlerResult::ExecutionDenied(denial) => {
+                    return Err(WorthQueryApplicationRequestMutationDenial::Handler(
+                        MutationHandlerExecutionDenial::Handler(denial),
+                    ));
+                }
+                HandlerResult::Cancelled => {
+                    return Ok(CandidatePreparation::Settled(
+                        WorthQueryApplicationMutationOutcome::Cancelled,
+                    ));
+                }
+                HandlerResult::DeadlineExceeded => {
+                    return Ok(CandidatePreparation::Settled(
+                        WorthQueryApplicationMutationOutcome::DeadlineExceeded,
+                    ));
+                }
+            };
         let (mut program, result) = completed.into_parts();
         if let Some(authority) = workflow_authority.as_ref() {
             program = program
-                .bind_workflow_operation_authority(authority)
+                .bind_workflow_operation_authority(authority, allocation_policy)
                 .map_err(
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;
@@ -142,6 +150,7 @@ where
             result,
             identities,
             extension: prepared.extension,
+            decision_work: work,
         }))
     }
 }

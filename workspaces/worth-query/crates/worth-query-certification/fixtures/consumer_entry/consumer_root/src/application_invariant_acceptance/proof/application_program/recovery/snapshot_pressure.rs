@@ -41,7 +41,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         })
         .expect_source(source)
         .idempotency(&10_044)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the source commits before snapshot pressure");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("snapshot pressure requires one fresh committed source")

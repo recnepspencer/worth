@@ -101,7 +101,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(lineage.facts);
+        self.append_completed_facts(
+            lineage.facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
 
         let program_revision = *bound.contract.program_revision();
         let WorthQueryInstalledWorkflowDefinitionParts {

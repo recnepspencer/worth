@@ -27,7 +27,7 @@ impl<K, V> PreparedTreeEdits<K, V> {
         admission: &mut impl IndexAdmission,
     ) -> Result<(), CompanionPreflightStop> {
         admission.ordered_edit::<K, V>(entries)?;
-        self.add(index_capacity::ordered_insertion_bytes::<K, V>(entries))
+        self.add(index_capacity::ordered_edit_bytes::<K, V>(entries))
     }
 
     pub(in super::super) fn remove(
@@ -46,7 +46,7 @@ impl<K, V> PreparedTreeEdits<K, V> {
         admission: &mut impl IndexAdmission,
     ) -> Result<(), CompanionPreflightStop> {
         admission.key_edit::<K, V>(key, entries)?;
-        self.add(index_capacity::ordered_insertion_bytes::<K, V>(entries))
+        self.add(index_capacity::ordered_edit_bytes::<K, V>(entries))
     }
 
     pub(in super::super) fn key_remove(

@@ -16,7 +16,7 @@ pub(crate) fn test_execution_authority() -> &'static ExecutionAuthority {
     TEST_EXECUTION_AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).expect("positive test worker count"),
-            charged_memory_bytes: 512 * 1024 * 1024,
+            charged_memory_bytes: Some(512 * 1024 * 1024),
         })
         .expect("one execution authority for relational lib tests")
     })

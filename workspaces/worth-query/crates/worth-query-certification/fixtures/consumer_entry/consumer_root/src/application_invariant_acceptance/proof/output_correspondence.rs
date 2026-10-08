@@ -45,7 +45,10 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency(&402_u64)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let WorthQueryApplicationMutationOutcome::Committed {
         mut receipt,
@@ -85,7 +88,10 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         .mutate(input.clone())
         .expect_source(source)
         .idempotency(&402_u64)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut recovered) = recovered else {
         panic!("retry must recover the original replacement publication")
@@ -99,7 +105,10 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         .mutate(input)
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&402_u64)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(matches!(
         drift,
@@ -121,7 +130,10 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
         .mutate(replacement("replacement-b", "rejected-replacement", 1, 12))
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&404_u64)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     require_planar_violation(malformed);
     assert_eq!(source_version(request), before);
@@ -151,7 +163,10 @@ pub(super) fn require_foreign_source(
         ))
         .expect_source(source)
         .idempotency(&412_u64)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("an observation from another application cannot authorize this mutation");
     let WorthQueryApplicationRequestMutationDenial::SourceExpectation(denial) = denial else {
         panic!("foreign source must retain its exact denial family: {denial:?}")
@@ -172,7 +187,10 @@ fn require_missing_source(
     let denial = request
         .mutate(input)
         .idempotency(&command)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("a source-bound mutation cannot execute without its observation");
     let WorthQueryApplicationRequestMutationDenial::SourceExpectation(denial) = denial else {
         panic!("missing source must retain its exact denial family: {denial:?}")

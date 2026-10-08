@@ -49,7 +49,10 @@ fn run() {
         })
         .without_source()
         .idempotency(&0x51_u64)
-        .execute_in_program(&application.runtime)
+        .execute_in_program(
+            &application.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the installed program must prepare the application mutation");
     let (receipt, result) = match outcome {
         WorthQueryApplicationMutationOutcome::Committed { receipt, result } => (receipt, result),

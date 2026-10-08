@@ -1,3 +1,4 @@
+use worth_execution::ExecutionArray;
 mod effect_accumulator;
 pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
 mod effect_lowering;
@@ -24,8 +25,8 @@ use super::{
 
 pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: Vec<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
+    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
@@ -87,8 +88,10 @@ pub(super) fn installed_preimage_demand(
 pub(super) fn prepare_provider_attempt(
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
-    installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: Vec<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: ExecutionArray<
+        worth_query_installation::facade::WorthQueryOperationGraphReadScope,
+    >,
+    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     consumed_outputs: Vec<
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,

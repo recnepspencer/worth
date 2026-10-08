@@ -30,51 +30,44 @@ fn ordered_node_bytes<K, V>() -> Option<u64> {
     u64::try_from(bytes).ok()
 }
 
-/// One stable pinned im 15.1 tree, including its root allocation. Splitting
-/// produces 32-key children; removal repairs a child below 32 keys before
-/// descending, so retained nonroot nodes have at least 31 keys. The root may
-/// have just one key (or be empty). This is an allocation upper bound, not a
-/// measured node count. Transient edit paths use their separate forecast.
+/// A completed im 15.1 tree owns one root, even when empty. Splitting leaves
+/// 32 keys in each child; deletion can leave 31, and rebalances before a
+/// further descent. Every nonroot therefore owns at least 31 keys. Roots
+/// sharing physical nodes share the allocation owner's reservation.
 pub(super) fn retained_map_bytes<K, V>(entries: usize) -> Option<u64> {
-    let nodes = entries.saturating_sub(1).checked_div(31)?.checked_add(1)?;
+    let nodes = 1usize.checked_add(entries.saturating_sub(1) / 31)?;
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
 
-/// Independently rooted stable trees whose individual lengths need not be
-/// traversed. Charge every root, including empty/singleton trees, and bound
-/// their combined nonroot nodes by the combined entry count. Applying the
-/// one-tree bound to summed lengths would lose these independent roots.
-pub(super) fn retained_forest_bytes<K, V>(entries: usize, trees: usize) -> Option<u64> {
-    if trees == 0 && entries != 0 {
+/// Nested maps and sets each own a root, including empty and singleton trees.
+/// Summing their nonroot bounds is no greater than total entries / 31. A
+/// forest must never be priced as one tree just because its keys are counted
+/// together. `roots` and `entries` may conservatively overestimate the forest.
+pub(super) fn retained_forest_bytes<K, V>(entries: usize, roots: usize) -> Option<u64> {
+    if roots == 0 && entries != 0 {
         return None;
     }
-    let nodes = trees.checked_add(entries.checked_div(31)?)?;
+    let nodes = roots.checked_add(entries / 31)?;
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
 
-/// Deletion's conservative copy allowance includes sibling borrowing, merging
-/// and lookahead. Keep this separate from insertion's stable-height bound.
+/// All newly allocated Arc nodes beside a retained predecessor. Insertion
+/// copies one path and can allocate two split children at each level, then
+/// one root. Deletion can copy a child and donor and materialize a replacement
+/// at each level; merge/collapse returns its Node by value. Both fit 3H + 1.
+/// This bounds transient allocation as well as the copied nodes retained by
+/// the successor; old tickets remain charged until their final owner drops.
 pub(super) fn ordered_edit_bytes<K, V>(entries: usize) -> Option<u64> {
     let prospective = entries.checked_add(1)?;
-    let levels = usize::BITS as usize - prospective.leading_zeros() as usize + 1;
+    let levels = ordered_height(prospective)?;
     ordered_node_bytes::<K, V>()?
-        .checked_mul(u64::try_from(levels.checked_mul(2)?.checked_add(1)?).ok()?)
+        .checked_mul(u64::try_from(levels.checked_mul(3)?.checked_add(1)?).ok()?)
 }
 
-/// Pinned im 15.1 insertion copies only the selected path. Stable nonroot
-/// nodes have at least 31 keys, so their branching is at least 32. Allow one
-/// additional level for a root split, two nodes per level and one further
-/// root: this covers copied old/new overlap as the split is installed.
-/// Payload allocations behind Arc keys/values remain separately charged.
-pub(super) fn ordered_insertion_bytes<K, V>(entries: usize) -> Option<u64> {
-    entries.checked_add(1)?;
-    let levels = stable_tree_levels(entries)?.checked_add(1)?;
-    ordered_node_bytes::<K, V>()?
-        .checked_mul(u64::try_from(levels.checked_mul(2)?.checked_add(1)?).ok()?)
-}
-
-fn stable_tree_levels(entries: usize) -> Option<usize> {
+fn ordered_height(entries: usize) -> Option<usize> {
     let mut levels = 1usize;
+    // A nonroot has 31 keys and 32 children. With a one-key root, height H
+    // requires at least 2 * 32^(H - 1) - 1 keys: 63, 2047, 65535, ...
     let mut next_minimum = 63usize;
     while entries >= next_minimum {
         levels = levels.checked_add(1)?;
@@ -97,7 +90,7 @@ pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
     // A nonroot node therefore has at least 31 keys and 32 children. With
     // a one-key root, a height h needs at least 2 * 32^(h - 1) - 1 keys.
     // Counting bit length as height priced a one-node index as many levels.
-    let levels = stable_tree_levels(entries)?;
+    let levels = ordered_height(entries)?;
     let slots = entries.min(64);
     let comparisons = usize::BITS as usize - slots.leading_zeros() as usize + 1;
     u64::try_from(
@@ -125,6 +118,8 @@ pub(super) fn ordered_removal_work(entries: usize) -> Option<u64> {
     .ok()
 }
 
+#[cfg(all(test, feature = "allocation-probes"))]
+mod allocation_tests;
 #[cfg(test)]
 mod navigation_tests;
 

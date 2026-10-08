@@ -7,6 +7,7 @@ use crate::document_retention_model::{
     schema::{Document, DocumentIdentityField, DocumentRetentionField, DocumentRetentionSchema},
     settled_verdict::{settle, RetentionVerdict},
 };
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{application_installation as installation, primary_graph};
 
 #[test]
@@ -22,7 +23,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
     );
     let (source, sections) = host
         .runtime()
-        .capture_application_checkpoint_with_sections()
+        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
         .unwrap();
     assert_eq!(sections.accepted_output_count(), 0);
     drop(host);
@@ -36,6 +37,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
         source.clone(),
         predecessor,
         installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        CapturePolicy::SystemAllocation,
         |writer, _| {
             authored = true;
             writer.bind_entity(
@@ -80,7 +82,10 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         &host.installed_program().revision().to_string(),
     )
     .unwrap();
-    let source = host.runtime().capture_application_checkpoint().unwrap();
+    let source = host
+        .runtime()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(host);
     let migrated = installation::in_memory_rostered_program_from_checkpoint_with_transition(
         validated_second_program(),
@@ -91,6 +96,7 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         source,
         predecessor,
         installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        CapturePolicy::SystemAllocation,
         |writer, _| {
             writer.bind_entity(
                 primary_graph::WorthQueryApplicationEntitySeed::new(

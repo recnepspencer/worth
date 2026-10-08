@@ -2,6 +2,7 @@
 //! judged after every step.
 
 use super::*;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 mod sequence;
 use sequence::{Commit, Demands, Trace, Xorshift, COMMITS, DEMANDS, HELD_ORDERS};
@@ -215,7 +216,11 @@ fn run(seed: u64, observations: u64, driven: &mut Driven) {
         drop((principal, scope));
         if step < STEPS {
             // Whatever the last step left marked and unsettled is captured so.
-            checkpoint = Some(application.capture_application_checkpoint().unwrap());
+            checkpoint = Some(
+                application
+                    .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+                    .unwrap(),
+            );
             driven.restores += 1;
         }
     }

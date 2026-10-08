@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -336,7 +336,10 @@ where
         super::super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         super::WorthQueryRealizedProjectionScope,
         BTreeSet<WorthQueryApplicationFactKey>,
-        Vec<super::super::application_attempt::WorthQueryApplicationObservedFact>,
+        BTreeMap<
+            super::super::application_attempt::WorthQueryApplicationFactStorageKey,
+            super::super::application_attempt::WorthQueryApplicationObservedFact,
+        >,
         Vec<super::ConsumedOutputEvidence>,
     ) {
         let (lease, scope, dependent_source_facts, consumed_outputs) =

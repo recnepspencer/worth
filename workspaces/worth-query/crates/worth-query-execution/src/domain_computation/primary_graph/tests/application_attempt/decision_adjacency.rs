@@ -31,14 +31,18 @@ fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
     );
 
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(winner, idempotency(31, 31)),
+        world.application.compare_and_commit_application(
+            winner,
+            idempotency(31, 31),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let outcome = world
-        .application
-        .compare_and_commit_application(losing, idempotency(32, 32));
+    let outcome = world.application.compare_and_commit_application(
+        losing,
+        idempotency(32, 32),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert_changed_decision(outcome, "the edge entering the sealed empty adjacency");
 }
 
@@ -51,9 +55,12 @@ fn sealed_adjacency_membership_supplies_exact_unlink_evidence() {
     let account = resolved_account(&world, "open", &request);
     let program = unlink_program(&world, &actor, &principal, &account, &request);
 
-    let WorthQueryApplicationCommitOutcome::Committed(_) = world
-        .application
-        .compare_and_commit_application(program, idempotency(35, 35))
+    let WorthQueryApplicationCommitOutcome::Committed(_) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(35, 35),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the exact relation carried by adjacency evidence must be unlinkable");
     };
@@ -71,14 +78,18 @@ fn removing_an_observed_present_relation_stales_a_competing_program() {
     let loser = unlink_program(&world, &actor, &principal, &account, &request);
 
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(winner, idempotency(36, 36)),
+        world.application.compare_and_commit_application(
+            winner,
+            idempotency(36, 36),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let outcome = world
-        .application
-        .compare_and_commit_application(loser, idempotency(37, 37));
+    let outcome = world.application.compare_and_commit_application(
+        loser,
+        idempotency(37, 37),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert_changed_decision(outcome, "removing the retained relation");
     assert_membership_absent(&world, &actor, &principal, &account, &request, "open");
 }
@@ -157,7 +168,9 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("completion must re-observe only the explicitly sealed status dependency");
 }
 
@@ -244,7 +257,9 @@ fn link_program(
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let principal = effects.existing_entity(principal).unwrap();
@@ -299,7 +314,9 @@ fn assert_membership_absent(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let Err(denial) = reads.projected_relation(AccountOwner::reference(), principal, account)
     else {
@@ -358,7 +375,9 @@ fn unlink_program(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads.begin_effect_program();
     let from = effects.existing_entity(principal).unwrap();

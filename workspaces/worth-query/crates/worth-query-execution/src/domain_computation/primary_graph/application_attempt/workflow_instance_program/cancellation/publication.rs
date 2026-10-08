@@ -104,6 +104,7 @@ where
                 &presented,
                 program,
                 idempotency.bind_workflow_instance(&intent_identity),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .landed()
         {

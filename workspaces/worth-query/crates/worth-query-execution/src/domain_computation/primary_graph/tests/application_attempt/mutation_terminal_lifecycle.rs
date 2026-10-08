@@ -21,9 +21,11 @@ fn committed_terminal() {
     let account = resolved_account(&world, "open", &request);
     let program = admitted_program(&world, &principal, &account, &request, "terminal-commit");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(61, 61)),
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(61, 61),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     assert_baselines(&world, baseline);
@@ -39,15 +41,19 @@ fn stale_terminal() {
     let winner = admitted_program(&world, &principal, &account, &request, "terminal-winner");
     let stale = admitted_program(&world, &principal, &account, &request, "terminal-stale");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(winner, idempotency(62, 62)),
+        world.application.compare_and_commit_application(
+            winner,
+            idempotency(62, 62),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     super::assert_changed_decision(
-        world
-            .application
-            .compare_and_commit_application(stale, idempotency(63, 63)),
+        world.application.compare_and_commit_application(
+            stale,
+            idempotency(63, 63),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         "the serial loser bound to the prior product",
     );
     assert_baselines(&world, baseline);
@@ -67,9 +73,11 @@ fn cancelled_terminal() {
     let program = admitted_program(&world, &principal, &account, &request, "terminal-cancel");
     cancellation.cancel();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(64, 64)),
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(64, 64),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Cancelled
     ));
     assert_baselines(&world, baseline);
@@ -84,7 +92,7 @@ fn provider_denial_terminal() {
     assert!(matches!(
         world
             .application
-            .compare_and_commit_application(program, idempotency(65, 65)),
+            .compare_and_commit_application(program, idempotency(65, 65), crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
     ));
@@ -98,9 +106,11 @@ fn aborted_terminal() {
     let program = program(&world, "terminal-abort");
     world.faults.reject_next_commit_before_transaction();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(66, 66)),
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(66, 66),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Aborted
     ));
     assert_baselines(&world, baseline);
@@ -115,7 +125,7 @@ fn skipped_owner_admission_is_a_denied_terminal() {
     assert!(matches!(
         world
             .application
-            .compare_and_commit_application(program, idempotency(67, 67)),
+            .compare_and_commit_application(program, idempotency(67, 67), crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.stage() == WorthQueryApplicationCommitDenialStage::InvariantExecution
     ));
@@ -129,9 +139,11 @@ fn response_loss_terminal() {
     let program = program(&world, "terminal-response-loss");
     world.faults.lose_next_commit_response();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(68, 68)),
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(68, 68),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     assert_baselines(&world, baseline);
@@ -144,15 +156,19 @@ fn idempotent_retry_terminal() {
     let first = program(&world, "terminal-idempotent");
     let retry = program(&world, "terminal-idempotent");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(69, 69)),
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(69, 69),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(69, 69)),
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(69, 69),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_baselines(&world, baseline);

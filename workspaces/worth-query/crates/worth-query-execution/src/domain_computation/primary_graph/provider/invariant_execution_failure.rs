@@ -11,6 +11,12 @@ pub(super) fn map_transaction_admission_failure(
             WorthQueryInvariantExecutionDenialKind::ProductBasisStale,
             "the exact product basis became stale before invariant candidate admission",
         ),
+        Denial::Cancelled => request_interruption(
+            worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled,
+        ),
+        Denial::TimedOut => request_interruption(
+            worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut,
+        ),
         Denial::RetentionCapacityExhausted => retention_capacity_failure(),
         Denial::RetentionIdentityExhausted => exhausted_failure(
             WorthQueryInvariantExecutionDenialKind::RetentionIdentityExhausted,
@@ -54,8 +60,15 @@ pub(super) fn map_transaction_staging_failure(
         Denial::SavepointIdentityExhausted => {
             WorthQueryInvariantExecutionDenialKind::SavepointIdentityExhausted
         }
-        Denial::MaterializationAuthorityRequired | Denial::MaterializationModeMismatch => {
-            WorthQueryInvariantExecutionDenialKind::ProviderRejected
+        Denial::MaterializationAuthorityRequired => {
+            return provider_failure(
+                "Relational invariant transaction requires materialization authority",
+            );
+        }
+        Denial::MaterializationModeMismatch => {
+            return provider_failure(
+                "Relational invariant transaction materialization mode does not match its intents",
+            );
         }
     };
     exhausted_failure(
@@ -74,6 +87,9 @@ pub(super) fn map_validation_failure(
     use worth_relational::facade::transactions::CommitPreparationReason;
     use worth_relational::facade::transactions::ConflictClass;
     let kind = match failure {
+        Error::Interrupted { interruption, .. } => {
+            return request_interruption(interruption.interruption())
+        }
         Error::Conflict { error, .. } => {
             let relational_detail = error.detail();
             let ConflictClass::InvariantViolation { fields, detail, .. } = error.class else {
@@ -201,6 +217,10 @@ fn provider_failure(detail: impl Into<std::sync::Arc<str>>) -> WorthQueryInvaria
 }
 
 #[cfg(test)]
+#[path = "invariant_execution_failure/staging_tests.rs"]
+mod staging_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{map_custom_invariant_failure, map_invariant_failure};
     use crate::domain_computation::WorthQueryCustomInvariantDenial;
@@ -229,6 +249,15 @@ mod tests {
             failure.custom_invariant_denial(),
             Some(&WorthQueryCustomInvariantDenial::Violation { identity })
         );
+        let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+            failure.clone(),
+        );
+        assert_eq!(
+            denial.custom_invariant_denial(),
+            failure.custom_invariant_denial()
+        );
+        assert_eq!(denial.invariant_execution_failure(), Some(&failure));
     }
 
     #[test]
@@ -282,4 +311,13 @@ mod tests {
             semantic_version: CustomInvariantSemanticVersion::new(3, 7),
         }
     }
+}
+
+fn request_interruption(
+    reason: worth_relational::facade::mvcc::RelationalOperationInterruption,
+) -> WorthQueryInvariantExecutionFailure {
+    WorthQueryInvariantExecutionFailure::new(
+        WorthQueryInvariantExecutionDenialKind::RequestInterrupted(reason),
+        "the admitted request interrupted Relational candidate validation",
+    )
 }

@@ -69,6 +69,7 @@ sha2 = "=0.10.9"
 indexmap = { version = "2", features = ["serde"] }
 smallvec = "1"
 rayon = "1"
+allocator-api2 = "=0.2.21"
 
 # ---- Workspace-wide lint policy ----
 # These apply to every crate that declares `lints.workspace = true`.

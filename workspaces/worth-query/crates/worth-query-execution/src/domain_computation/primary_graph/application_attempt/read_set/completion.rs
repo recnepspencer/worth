@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use worth_execution::ExecutionAllocationPolicy;
 
 use super::{
     denial, observation_admission, CompletedHandlerFactBoundary,
@@ -11,6 +12,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 {
     pub fn complete(
         mut self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         WorthQueryApplicationAttemptDenial,
@@ -89,11 +91,43 @@ impl<Schema, Operation, Input, Scope, Phase>
         self.admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
         );
+        let operation = self.admission.operation();
+        let fact_count = self
+            .facts
+            .len()
+            .checked_add(self.source_facts.len())
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
+                    operation,
+                )
+            })?;
+        let check_authority = || {
+            self.admission
+                .validate_current_authority()
+                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+        };
+        let installed_read_scopes = super::admit_array(
+            self.installed_read_scopes.len(),
+            self.installed_read_scopes.into_values(),
+            allocation_policy,
+            operation,
+            check_authority,
+        )?;
+        let facts = super::admit_array(
+            fact_count,
+            self.facts
+                .into_values()
+                .chain(self.source_facts.into_values()),
+            allocation_policy,
+            operation,
+            check_authority,
+        )?;
         Ok(WorthQueryCompleteApplicationReadSet {
             admission: self.admission,
             lease: self.lease,
-            installed_read_scopes: self.installed_read_scopes.into_values().collect(),
-            facts: self.facts.into_values().chain(self.source_facts).collect(),
+            installed_read_scopes,
+            facts,
             consumed_outputs: self.consumed_outputs,
             workflow_authority_binding: None,
             mutation_handler_binding: None,

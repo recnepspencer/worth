@@ -239,7 +239,10 @@ fn change_grant(
         })
         .without_source()
         .idempotency(&key)
-        .execute_in_program(application.program_runtime())
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("ordinary grant change prepares");
     assert!(
         matches!(

@@ -130,13 +130,18 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryProviderProgressionOutcome
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
     {
-        let read_set =
-            super::fresh::compare_provider_read_set(self.staged, self.requests, authority);
+        let read_set = super::fresh::compare_provider_read_set(
+            self.staged,
+            self.requests,
+            authority,
+            allocation_policy,
+        );
         let fresh = match read_set {
             super::fresh::WorthQueryProviderReadSetProgression::Fresh(fresh) => fresh,
             super::fresh::WorthQueryProviderReadSetProgression::Terminal(outcome) => {

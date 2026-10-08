@@ -168,7 +168,9 @@ impl BankIdentityRuntime {
             .resolve_entity(CapabilityGrantIdentityField::reference(), expected_grant)
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(BankEstateProgressionDenial::from_attempt)?
             .materialize_capability_revocation_program(&grant)
             .map_err(BankEstateProgressionDenial::from_attempt)

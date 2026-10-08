@@ -24,7 +24,9 @@ use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRe
 mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
+mod execution_memory;
 mod external_dispatch_attempt;
+pub use execution_memory::WorthQueryExecutionLeaseDenial;
 mod inbound_occurrence;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;

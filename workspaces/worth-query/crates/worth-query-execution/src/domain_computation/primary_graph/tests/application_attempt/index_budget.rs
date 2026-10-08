@@ -18,9 +18,12 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     // Constrain only the next ordinary preflight. The real Relational candidate
     // and index preparation still run; no World publication is faulted.
     world.faults.constrain_next_index_maintenance_budget();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(denied, idempotency(41, 41))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            denied,
+            idempotency(41, 41),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("index work exhaustion must deny before a World effect");
     };
@@ -42,9 +45,12 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     let _still_open = resolved_account(&world, "open", &live_scope());
 
     let retry = admitted_program(&world, &principal, &account, &request, "budget-replacement");
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(41, 41))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(41, 41),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the identical intent must commit when ordinary index work is admitted");
     };

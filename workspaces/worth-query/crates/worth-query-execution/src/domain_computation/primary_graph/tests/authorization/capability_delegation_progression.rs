@@ -20,11 +20,11 @@ fn parent_revocation_after_program_admission_denies_final_commit() {
 
     revoke_parent(&world);
 
-    assert_decision_read_set_denial(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(71, 71)),
-    );
+    assert_decision_read_set_denial(world.application.compare_and_commit_application(
+        program,
+        idempotency(71, 71),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
 }
 
 #[test]
@@ -35,20 +35,23 @@ fn parent_revocation_denies_idempotency_receipt_inspection() {
     let principal = authenticated_principal(&world, &request);
     let first = admitted_capability_program(&world, &principal, &request, "committed").0;
     let retry = admitted_capability_program(&world, &principal, &request, "committed").0;
-    let WorthQueryApplicationCommitOutcome::Committed(_) = world
-        .application
-        .compare_and_commit_application(first, idempotency(72, 72))
+    let WorthQueryApplicationCommitOutcome::Committed(_) =
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(72, 72),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the current delegated program must establish the idempotency receipt");
     };
 
     revoke_parent(&world);
 
-    assert_decision_read_set_denial(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(72, 72)),
-    );
+    assert_decision_read_set_denial(world.application.compare_and_commit_application(
+        retry,
+        idempotency(72, 72),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
 }
 
 pub(super) fn revoke_parent(world: &super::super::fixture::AuthorizationWorld) {

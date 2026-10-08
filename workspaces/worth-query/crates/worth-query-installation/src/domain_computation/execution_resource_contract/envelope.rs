@@ -52,6 +52,16 @@ impl WorthQueryExecutionResourceEnvelope {
         )
     }
 
+    /// WorkItems may be absent: no aggregate execution-work budget is imposed.
+    pub fn optional_scale_ceiling(&self, axis: WorthQuerySemanticScaleAxis) -> Option<u64> {
+        self.scale_ceilings.get(axis)
+    }
+
+    pub fn admits_scale(&self, axis: WorthQuerySemanticScaleAxis, value: u64) -> bool {
+        self.optional_scale_ceiling(axis)
+            .is_none_or(|maximum| value <= maximum)
+    }
+
     pub fn scale_ceiling(&self, axis: WorthQuerySemanticScaleAxis) -> u64 {
         self.scale_ceilings
             .get(axis)
@@ -132,7 +142,7 @@ impl WorthQueryExecutionResourceEnvelope {
         request
             .scale()
             .iter()
-            .all(|(axis, value)| value <= self.scale_ceiling(axis))
+            .all(|(axis, value)| self.admits_scale(axis, value))
             && request
                 .limits()
                 .iter()

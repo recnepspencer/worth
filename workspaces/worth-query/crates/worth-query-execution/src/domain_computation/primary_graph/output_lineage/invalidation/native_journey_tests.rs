@@ -36,6 +36,8 @@ mod required_hints;
 mod retained_categories;
 #[path = "native_journey_tests/shared_versions.rs"]
 mod shared_versions;
+#[path = "native_journey_tests/unchanged_history.rs"]
+mod unchanged_history;
 #[path = "native_journey_tests/undeclared_change.rs"]
 mod undeclared_change;
 #[path = "native_journey_tests/verified_current.rs"]

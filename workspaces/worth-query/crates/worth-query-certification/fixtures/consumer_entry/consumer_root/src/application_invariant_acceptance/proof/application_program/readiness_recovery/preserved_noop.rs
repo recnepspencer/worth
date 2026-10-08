@@ -48,7 +48,10 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
         .mutate(PlanarEdit(adjust("anchor-b", 5, 4_096)))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&10_021)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the related dependency changes");
     assert!(matches!(
         outcome,

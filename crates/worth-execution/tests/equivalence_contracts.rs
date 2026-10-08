@@ -37,7 +37,7 @@ fn predicate(id: u64, identity: u8) -> EquivalencePredicate {
 fn predicates_install_once_and_leases_carry_exact_contract_to_children() {
     let config = ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: 4096,
+        charged_memory_bytes: Some(4096),
     };
     assert_eq!(
         ExecutionAuthority::try_construct_with_equivalences(

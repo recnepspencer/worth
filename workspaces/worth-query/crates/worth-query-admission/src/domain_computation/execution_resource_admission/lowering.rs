@@ -150,8 +150,12 @@ fn capacity_mismatch_detail(
     actual: &super::WorthQueryExecutionResourceSupport,
 ) -> String {
     for axis in WorthQuerySemanticScaleAxis::ALL {
-        let supported = actual.envelope().scale_ceiling(axis);
-        let required = strategy.envelope().scale_ceiling(axis);
+        let Some(required) = strategy.envelope().optional_scale_ceiling(axis) else {
+            continue;
+        };
+        let Some(supported) = actual.envelope().optional_scale_ceiling(axis) else {
+            continue;
+        };
         if supported < required {
             return format!(
                 "{subject} supports {axis:?}={supported}, below the required {required}"
@@ -285,7 +289,7 @@ fn request_fits_capacity(
     request
         .scale()
         .iter()
-        .all(|(axis, value)| value <= strategy.envelope().scale_ceiling(axis))
+        .all(|(axis, value)| strategy.envelope().admits_scale(axis, value))
         && request
             .limits()
             .iter()

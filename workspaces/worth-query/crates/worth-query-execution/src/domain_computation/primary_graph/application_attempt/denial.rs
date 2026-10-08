@@ -23,6 +23,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     IncompleteDecisionReadSet,
     DecisionDependencyMismatch,
     DecisionFactBudgetExceeded,
+    /// Fresh inline payload backing was refused by its allocation owner.
+    AllocationDenied,
     MutationPreconditionMismatch,
     SourceRetired,
     SourceChanged,
@@ -152,6 +154,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 enum AttemptDenialCause {
     None,
     Expression(worth_foundational::expression_api::ExpressionDenial),
+    Allocation(worth_execution::ExecutionAllocationDenial),
     RequestAuthority(
         Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>,
     ),
@@ -189,6 +192,25 @@ impl WorthQueryApplicationAttemptDenial {
             kind: WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
             subject: denial.subject().to_owned(),
             cause: AttemptDenialCause::RequestAuthority(Box::new(denial)),
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn allocation_denied(
+        subject: impl Into<String>,
+        denial: worth_execution::ExecutionAllocationDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+            subject: subject.into(),
+            cause: AttemptDenialCause::Allocation(denial),
+        }
+    }
+
+    /// Exact physical owner refusal behind AllocationDenied; not graph authority.
+    pub const fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        match &self.cause {
+            AttemptDenialCause::Allocation(denial) => Some(denial),
+            _ => None,
         }
     }
 

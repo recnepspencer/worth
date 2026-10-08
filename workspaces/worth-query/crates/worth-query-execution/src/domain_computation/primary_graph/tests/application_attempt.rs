@@ -46,6 +46,8 @@ mod optional_field_mutation;
 mod optional_output_role;
 #[path = "application_attempt/post_commit_recovery.rs"]
 mod post_commit_recovery;
+#[path = "application_attempt/predecode_admission.rs"]
+mod predecode_admission;
 #[path = "application_attempt/preimage_evidence.rs"]
 pub(in crate::domain_computation::primary_graph) mod preimage_evidence;
 #[path = "application_attempt/preimage_retention.rs"]
@@ -74,6 +76,8 @@ mod touched_graph_closure;
 #[cfg(feature = "test-world-operation-control")]
 #[path = "application_attempt/unwind_custody.rs"]
 mod unwind_custody;
+#[path = "application_attempt/validation_interruption.rs"]
+mod validation_interruption;
 
 use program_fixture::{
     admitted_mutation_free_program, admitted_program, admitted_program_on_selected,
@@ -97,14 +101,18 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
 
     let (left, right) = std::thread::scope(|scope| {
         let left = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(first, idempotency(12, 12))
+            world.application.compare_and_commit_application(
+                first,
+                idempotency(12, 12),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
         });
         let right = scope.spawn(|| {
-            world
-                .application
-                .compare_and_commit_application(second, idempotency(12, 12))
+            world.application.compare_and_commit_application(
+                second,
+                idempotency(12, 12),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
         });
         (left.join().unwrap(), right.join().unwrap())
     });
@@ -147,15 +155,21 @@ fn response_loss_resolves_the_published_commit_before_returning() {
     );
 
     world.faults.lose_next_commit_response();
-    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) = world
-        .application
-        .compare_and_commit_application(first, idempotency(15, 15))
+    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(15, 15),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("authoritative idempotency must prove the response-lost commit");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(15, 15))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(15, 15),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("retry must recover the transaction published before response loss");
     };
@@ -193,9 +207,11 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
 
     world.faults.lose_next_commit_response();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(31, 31)),
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(31, 31),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let after_commit = crate::execution_digest::test_hash_parts_call_count();
@@ -207,9 +223,11 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
     );
 
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(31, 31)),
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(31, 31),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(
@@ -246,9 +264,11 @@ pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_mat
         "bounded-unpublished-material",
     );
     world.application.fail_next_durable_append_for_test();
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, binding);
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        binding,
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
         panic!("the real World must issue unpublished recovery material: {outcome:?}")
     };

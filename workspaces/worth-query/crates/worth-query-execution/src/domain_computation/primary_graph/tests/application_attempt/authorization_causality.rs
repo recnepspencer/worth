@@ -33,7 +33,7 @@ fn ownership_revocation_after_admission_stales_before_effect_commit() {
     assert!(matches!(
         world
             .application
-            .compare_and_commit_application(program, idempotency(31, 31)),
+            .compare_and_commit_application(program, idempotency(31, 31), crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation),
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.kind() == WorthQueryApplicationCommitDenialKind::ProviderRejected
                 && denial.stage() == WorthQueryApplicationCommitDenialStage::DecisionReadSet
@@ -79,7 +79,10 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
     reads
         .observe_field(&account, AccountStatus::reference())
         .unwrap();
-    let mut effects = reads.complete().unwrap().begin_effect_program();
+    let mut effects = reads
+        .complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap()
+        .begin_effect_program();
     let target = effects.existing_entity(&account).unwrap();
     effects
         .write_field(
@@ -89,9 +92,11 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
         )
         .unwrap();
 
-    let outcome = world
-        .application
-        .compare_and_commit_application(effects.finish().unwrap(), idempotency(32, 32));
+    let outcome = world.application.compare_and_commit_application(
+        effects.finish().unwrap(),
+        idempotency(32, 32),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
         "complete two-ability decision set should commit: {outcome:?}",

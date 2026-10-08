@@ -12,6 +12,7 @@ serde_json = "1"
 sha2 = "0.10"
 
 [dev-dependencies]
+stats_alloc = "=0.1.10"
 trybuild.workspace = true
 
 [lints]

@@ -51,7 +51,10 @@ impl BankIdentityRuntime {
             self.request(principal, request)
                 .mutate(bank_domain::schema::OpenEstateCase::new(estate, notice))
                 .idempotency(key)
-                .execute_capability_in_program(self.application_program()),
+                .execute_capability_in_program(
+                    self.application_program(),
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                ),
             "OpenEstateCaseOperation",
             |denial| {
                 denial

@@ -54,6 +54,7 @@ pub use super::application_attempt::{
 };
 pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
+    WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
 pub use super::application_contribution::{
@@ -83,6 +84,8 @@ pub use super::application_contribution::{
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
+    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
+    WorthQueryMutationHandlerWork,
 };
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_output_demand::required_ready_custody_bytes_for_test;
@@ -145,10 +148,11 @@ pub use super::application_runtime::{
     WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt,
     WorthQueryCertificationCostScope, WorthQueryCertificationWorldHistory,
     WorthQueryCertificationWorldRetention, WorthQueryCorrelatedInboundOccurrence,
-    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
-    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
-    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
-    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryExecutionLeaseDenial, WorthQueryInboundAdmissionDenial,
+    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCleanupReport,
+    WorthQueryInboundCostObservation, WorthQueryInboundIndexRepairDenial,
+    WorthQueryInboundMaintenanceReport, WorthQueryInboundPendingReason,
+    WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,

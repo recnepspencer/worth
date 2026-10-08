@@ -78,7 +78,10 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&111_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&application)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("a real changed producer input publishes");
     drop(source);
     let before_changed_entries = query_entries();

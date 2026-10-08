@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 type Application = application_installation::WorthQueryProgramApplicationRuntime<
     TemporalHostSchema,
@@ -21,7 +22,9 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
         },
     )
     .expect("ordinary source installation");
-    let checkpoint = source.capture_application_checkpoint().unwrap();
+    let checkpoint = source
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     let original = read_intent(&source);
     drop(source);
     for maximum in [1, 65_536] {

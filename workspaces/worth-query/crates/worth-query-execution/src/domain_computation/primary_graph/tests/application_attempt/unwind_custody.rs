@@ -44,9 +44,11 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         .panic_before_product_compare_once();
 
     let unwind = catch_unwind(AssertUnwindSafe(|| {
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(0xD1, 0xD1))
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(0xD1, 0xD1),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     }));
     let isolated = unwind.expect("the application boundary isolates provider unwind");
     assert!(
@@ -82,11 +84,11 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         .unwrap();
     let before_retry_inspections =
         crate::domain_computation::primary_graph::provider::unwind_recovery_inspection_count();
-    assert_idempotency_refuses_unpublished(
-        world
-            .application
-            .compare_and_commit_application(retry_while_retained, idempotency(0xD1, 0xD1)),
-    );
+    assert_idempotency_refuses_unpublished(world.application.compare_and_commit_application(
+        retry_while_retained,
+        idempotency(0xD1, 0xD1),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
     assert_eq!(
         crate::domain_computation::primary_graph::provider::unwind_recovery_inspection_count(),
         before_retry_inspections,
@@ -106,9 +108,11 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         "cleanup releases Query's exact recovery-indexed slot",
     );
 
-    let after = world
-        .application
-        .compare_and_commit_application(retry_after_cleanup, idempotency(0xD1, 0xD1));
+    let after = world.application.compare_and_commit_application(
+        retry_after_cleanup,
+        idempotency(0xD1, 0xD1),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = after else {
         panic!("the unpublished Relational movement leaves the product basis stale: {after:?}")
     };

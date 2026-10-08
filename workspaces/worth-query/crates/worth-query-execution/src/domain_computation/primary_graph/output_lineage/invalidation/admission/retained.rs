@@ -18,7 +18,7 @@ pub(in super::super) trait RetainedIndexAdmission: IndexAdmission {
     fn index_edit<K, V>(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
         self.ordered_edit::<K, V>(entries)?;
         self.record_index_bytes(
-            index_capacity::ordered_insertion_bytes::<K, V>(entries)
+            index_capacity::ordered_edit_bytes::<K, V>(entries)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )
     }
@@ -30,5 +30,4 @@ pub(in super::super) trait RetainedIndexAdmission: IndexAdmission {
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )
     }
-
 }

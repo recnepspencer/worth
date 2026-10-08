@@ -27,7 +27,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     support: &WorthQueryAdmittedProgramSupport<Schema>,
     cell: &WorthQueryProgramActivationCell,
-    transition: CheckpointTransition<'_, Schema>,
+    transition: CheckpointTransition<'_, '_, Schema>,
 ) -> Result<
     worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
     WorthQueryInMemoryApplicationDenial,
@@ -98,6 +98,9 @@ fn prepare_transition<Schema: ApplicationSchema>(
             RevalidateEntityIntent { entity_id },
         )));
     }
+    transition.capture_policy.check_live().map_err(|error| {
+        WorthQueryInMemoryApplicationDenial::CheckpointTransitionPolicyStopped(error.into())
+    })?;
     let recovered = graph.recovered_relational_authority.take().ok_or_else(|| {
         WorthQueryInMemoryApplicationDenial::Graph(denial(
             "checkpoint transition has no recovered native authority",
@@ -146,29 +149,35 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     support: &WorthQueryAdmittedProgramSupport<Schema>,
     cell: &WorthQueryProgramActivationCell,
-    transition: CheckpointTransition<'_, Schema>,
+    transition: CheckpointTransition<'_, '_, Schema>,
 ) -> Result<(), WorthQueryInMemoryApplicationDenial> {
     let recovery = std::rc::Rc::clone(&transition.recovery);
+    let capture_policy = transition.capture_policy;
     let successor = prepare_transition(graph, installed, support, cell, transition)?;
     let publication = graph
         .recovered_publication
         .clone()
         .expect("transition holds its original native bootstrap publication");
-    match graph
-        .graph
-        .integration_handle()
-        .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
-    {
-        Ok(native) => {
-            *recovery.borrow_mut() = Some(
-                crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::encode(
-                    native,
-                    &publication,
-                    &[],
-                )
-                .0,
+    match capture_policy
+        .check_live()
+        .map_err(crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial::from)
+        .and_then(|()| {
+            graph
+                .graph
+                .integration_handle()
+                .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
+                .map_err(crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial::from)
+        })
+        .and_then(|native| {
+            crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint::encode(
+                native,
+                &publication,
+                &[],
+                capture_policy,
             )
-        }
+            .map(|(checkpoint, _)| checkpoint)
+        }) {
+        Ok(checkpoint) => *recovery.borrow_mut() = Some(checkpoint),
         Err(error) => {
             return Err(
                 WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(Box::new(
@@ -176,7 +185,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
                         graph.graph.integration_handle(),
                         publication,
                         successor,
-                        format!("acknowledged target checkpoint capture stopped: {error:?}"),
+                        error,
                     ),
                 )),
             )

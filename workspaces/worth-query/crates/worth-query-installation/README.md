@@ -69,11 +69,10 @@ Equivalent declaration order converges to one canonical identity. One-field
 semantic drift produces a conflict. Derived lookup indexes must be rebuildable
 from portable installed artifacts without changing identity or denial outcomes.
 
-Package and application-schema identity derivations each have a fixed 32 MiB
-canonical encoded-byte ceiling. This provides headroom for the composed House
-component application, whose package exceeded the former 16 MiB ceiling after
-its capabilities were narrowed to the read vocabulary it consumes. This
-allowance belongs to Query installation; consumers cannot raise it.
+Package and application-schema identity derivations each have a fixed 64 MiB
+canonical encoded-byte ceiling, matching portable package export and
+reconstruction capacity. This allowance belongs to Query installation;
+callers may narrow canonical work below it, but cannot raise the platform limit.
 
 Package validation checks entry breadth before member sorting and canonical
 basis construction, using the entry-storage bound derived from that finite

@@ -62,7 +62,7 @@ fn keyed_routes_source_facts_and_denies_identity_aliases_without_mutation() {
 fn candidate_partition_work_is_charged_by_enclosing_map_lease() {
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(1).unwrap(),
-        charged_memory_bytes: 8_192,
+        charged_memory_bytes: Some(8_192),
     })
     .unwrap();
     let map = ExecutionMap::try_from_declared_partitions(

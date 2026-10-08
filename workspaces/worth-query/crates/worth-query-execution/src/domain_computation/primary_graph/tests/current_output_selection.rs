@@ -178,7 +178,9 @@ fn retire_open_account(world: &super::fixture::AuthorizationWorld) {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
@@ -189,6 +191,7 @@ fn retire_open_account(world: &super::fixture::AuthorizationWorld) {
     let outcome = world.application.compare_and_commit_application(
         program,
         WorthQueryApplicationIdempotencyBinding::new([201; 32], [202; 32]),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     if !matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)) {
         panic!("authoritative retirement must commit: {outcome:?}");

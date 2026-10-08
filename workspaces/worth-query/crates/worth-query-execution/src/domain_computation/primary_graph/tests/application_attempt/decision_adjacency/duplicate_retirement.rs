@@ -40,7 +40,9 @@ fn reused_relation_key_is_denied_during_public_authoring() {
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads.begin_effect_program();
     let from = effects.existing_entity(&principal).unwrap();
@@ -68,9 +70,11 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let account = resolved_account(&world, status, &request);
         let program = link_program(&world, &actor, &principal, &account, &request, status, key);
         assert!(matches!(
-            world
-                .application
-                .compare_and_commit_application(program, idempotency(caller, caller)),
+            world.application.compare_and_commit_application(
+                program,
+                idempotency(caller, caller),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+            ),
             WorthQueryApplicationCommitOutcome::Committed(_)
         ));
     }
@@ -100,7 +104,9 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads.begin_effect_program();
     let from = effects.existing_entity(&principal).unwrap();
@@ -114,9 +120,12 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         .unwrap();
     let program = effects.finish().unwrap();
 
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(program, idempotency(92, 92))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(92, 92),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("two observed relation deletions must reach one committed attempt");
     };

@@ -93,9 +93,11 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
 
     cancellation.cancel();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(17, 17)),
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(17, 17),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Cancelled
     ));
     let fresh_request = live_scope();

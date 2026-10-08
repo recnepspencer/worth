@@ -343,7 +343,9 @@ pub(super) fn materialize_exact_approval(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .materialize_elevation_approval_program()
         .unwrap()

@@ -52,6 +52,7 @@ pub(super) fn performed_source_discovers_required_root(
         .idempotency(&10_030)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the declared discovered root reaches source publication");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {
@@ -156,6 +157,7 @@ pub(super) fn isolated_source_settles_without_roots(
         .idempotency(&10_031)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the isolated source publication succeeds");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {

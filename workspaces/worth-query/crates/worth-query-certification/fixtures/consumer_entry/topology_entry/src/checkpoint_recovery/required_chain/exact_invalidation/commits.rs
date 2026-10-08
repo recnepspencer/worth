@@ -32,7 +32,10 @@ impl Court<'_, '_, '_, '_> {
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(self.application);
+            .execute_performed::<program::ChainProgram, program::ChainRoot>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         let answer = match outcome {
             Ok(Performed::Performed(performed)) => {
                 if start {
@@ -79,7 +82,10 @@ impl Court<'_, '_, '_, '_> {
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_in_program::<program::ChainProgram>(self.application);
+            .execute_in_program::<program::ChainProgram>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         assert!(
             matches!(
                 &outcome,
@@ -115,7 +121,10 @@ impl Court<'_, '_, '_, '_> {
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_in_program::<program::ChainProgram>(self.application);
+            .execute_in_program::<program::ChainProgram>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         assert!(
             matches!(
                 &outcome,
@@ -148,7 +157,10 @@ impl Court<'_, '_, '_, '_> {
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_in_program::<program::ChainProgram>(self.application);
+            .execute_in_program::<program::ChainProgram>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         assert!(
             matches!(
                 &outcome,

@@ -44,7 +44,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let required =
             RequiredWorkflowApproval::from_selected(instance.entity_id(), &selected, approval);
         Ok(PreparedWorkflowAdvance::AwaitingApproval {

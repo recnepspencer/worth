@@ -2,6 +2,7 @@
 use super::*;
 use crate::document_retention_model::{host::host_limits, schema::DocumentRetentionSchema};
 use worth_query_host::facade::application_installation as installation;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
 fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
@@ -29,7 +30,7 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
     };
     assert!(settled.application_commit_receipt().is_some());
     let (source, sections) = runtime
-        .capture_application_checkpoint_with_sections()
+        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
         .unwrap();
     assert_eq!(sections.accepted_output_count(), 1);
     let mut called = false;
@@ -42,6 +43,7 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
         source.clone(),
         predecessor,
         installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        CapturePolicy::SystemAllocation,
         |_, _| {
             called = true;
             Ok(())
@@ -63,7 +65,7 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
     assert_eq!(
         restored
             .runtime()
-            .capture_application_checkpoint_with_sections()
+            .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
             .unwrap()
             .1
             .accepted_output_count(),

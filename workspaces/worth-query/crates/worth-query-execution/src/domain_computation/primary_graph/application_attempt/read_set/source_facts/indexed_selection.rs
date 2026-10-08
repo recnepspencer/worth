@@ -98,7 +98,9 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(
         !reads
@@ -142,7 +144,9 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let predicates = reads
         .facts

@@ -194,7 +194,10 @@ fn overwrite_middle_output(
         }))
         .expect_source(selected.observed_sources()[0].clone())
         .idempotency(&idempotency)
-        .execute_in_program::<program::ChainProgram>(application);
+        .execute_in_program::<program::ChainProgram>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(
         matches!(
             &outcome,

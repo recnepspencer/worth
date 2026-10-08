@@ -137,7 +137,8 @@ where
                     }
                 }
             }
-            PlanarOperation::VerifyCurrentOutputs(expectations) => {
+            PlanarOperation::VerifyCurrentOutputs(expectations)
+            | PlanarOperation::VerifyFinalCurrentOutputs(expectations) => {
                 for expectation in expectations {
                     let producer = match reader
                         .resolve_entity(BodyKey::reference(), expectation.producer_key.clone())
@@ -145,8 +146,13 @@ where
                         Ok(entity) => entity,
                         Err(error) => return HandlerResult::ExecutionDenied(error),
                     };
-                    let output = match reader.current_output::<PlanarOutputFamily, Body>(&producer)
-                    {
+                    let selected = match &input.operation {
+                        PlanarOperation::VerifyFinalCurrentOutputs(_) => {
+                            reader.current_output::<PlanarFinalOutputFamily, Body>(&producer)
+                        }
+                        _ => reader.current_output::<PlanarOutputFamily, Body>(&producer),
+                    };
+                    let output = match selected {
                         Ok(WorthQueryCurrentOutputSelection::Unique(output)) => output,
                         Ok(WorthQueryCurrentOutputSelection::Missing) => {
                             return HandlerResult::DomainDenied(
@@ -194,7 +200,8 @@ where
             PlanarOperation::Adjust(adjustments) => (0, 0, 0, adjustments.len()),
             PlanarOperation::PublishDerivedOutput(_) => (0, 0, 0, 1),
             PlanarOperation::RetargetSuccessor { .. } => (0, 1, 1, 0),
-            PlanarOperation::VerifyCurrentOutputs(_) => (0, 0, 0, 0),
+            PlanarOperation::VerifyCurrentOutputs(_)
+            | PlanarOperation::VerifyFinalCurrentOutputs(_) => (0, 0, 0, 0),
         };
         requirements(creates, links, unlinks, writes, 8192, input.validator_work)
     }
@@ -321,6 +328,7 @@ where
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(0)
         }
-        PlanarOperation::VerifyCurrentOutputs(_) => Ok(0),
+        PlanarOperation::VerifyCurrentOutputs(_)
+        | PlanarOperation::VerifyFinalCurrentOutputs(_) => Ok(0),
     }
 }

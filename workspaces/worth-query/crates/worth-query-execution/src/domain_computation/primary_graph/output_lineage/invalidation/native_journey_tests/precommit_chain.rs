@@ -305,7 +305,9 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             .begin_projected_application_read_attempt(admission, projection)
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .begin_effect_program();
         let account = effects.existing_entity(&account).unwrap();
@@ -320,6 +322,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     let denied = world.application.compare_and_commit_application(
         stale,
         WorthQueryApplicationIdempotencyBinding::new([211; 32], [212; 32]),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = denied else {
         panic!("the provider must refuse changed upstream evidence before effects: {denied:?}");
@@ -355,6 +358,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         world.application.compare_and_commit_application(
             admitted_program("fresh-valid-commit"),
             WorthQueryApplicationIdempotencyBinding::new([213; 32], [214; 32]),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));

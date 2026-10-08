@@ -21,6 +21,9 @@ pub enum RecoveryFailureClass {
     DurableIoFailure,
     CheckpointPublicationInFlight,
     PerformedPublicationRequiresSettlement,
+    CheckpointSizeOverflow,
+    CheckpointAllocationUnavailable,
+    CheckpointFrameSizeMismatch,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -200,10 +203,19 @@ pub struct DurabilityError {
 
 impl DurabilityError {
     pub fn new(class: RecoveryFailureClass, detail: impl Into<String>) -> Self {
+        let suggested_fix = match class {
+            RecoveryFailureClass::CheckpointSizeOverflow
+            | RecoveryFailureClass::CheckpointAllocationUnavailable
+            | RecoveryFailureClass::CheckpointFrameSizeMismatch => None,
+            _ => Some(SuggestedFix::RepairDurableStore),
+        };
         let operation = match class {
             RecoveryFailureClass::DurableIoFailure => ErrorOperation::ReadDurableStore,
             RecoveryFailureClass::CheckpointPublicationInFlight
-            | RecoveryFailureClass::PerformedPublicationRequiresSettlement => {
+            | RecoveryFailureClass::PerformedPublicationRequiresSettlement
+            | RecoveryFailureClass::CheckpointSizeOverflow
+            | RecoveryFailureClass::CheckpointAllocationUnavailable
+            | RecoveryFailureClass::CheckpointFrameSizeMismatch => {
                 ErrorOperation::WriteDurableStore
             }
             RecoveryFailureClass::CorruptCheckpoint
@@ -215,13 +227,14 @@ impl DurabilityError {
             | RecoveryFailureClass::ProfileMismatch
             | RecoveryFailureClass::RuntimeNameMismatch => ErrorOperation::Recover,
         };
+        let mut context = ErrorContext::new(RelationalSubsystem::Durability, operation);
+        context.suggested_fix = suggested_fix;
         Self {
             class,
             detail: detail.into(),
             history_drift_class: None,
             authority_continuity_mismatch: None,
-            context: ErrorContext::new(RelationalSubsystem::Durability, operation)
-                .with_fix(SuggestedFix::RepairDurableStore),
+            context,
         }
     }
 

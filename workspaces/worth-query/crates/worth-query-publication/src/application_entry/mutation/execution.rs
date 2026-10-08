@@ -8,6 +8,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -60,6 +61,7 @@ where
     pub fn prepare_program_migration(
         mut self,
         target: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationProgramMigrationPreparationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -95,6 +97,7 @@ where
                 &identities,
                 &prepared.principal_identity,
                 prepared.admission,
+                allocation_policy,
             )
             .map_err(|denial| {
                 WorthQueryApplicationProgramMigrationPreparationDenial::Request(
@@ -134,6 +137,7 @@ where
 
     pub fn execute(
         self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -141,23 +145,81 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        self.require_workflow_transition()?;
+        self.execute_report(allocation_policy).into_outcome()
+    }
+
+    /// Executes the same ordinary mutation and preserves this attempt's decision work.
+    pub fn execute_report(
+        self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        Result<
+            WorthQueryApplicationMutationOutcome<
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+            >,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+    > {
+        if let Err(denial) = self.require_workflow_transition() {
+            return super::WorthQueryApplicationMutationAttemptReport::new(Err(denial),
+                worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+        }
         if self
             .request
             .application
             .requires_application_program::<Intent::Binding>()
         {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+            return super::WorthQueryApplicationMutationAttemptReport::new(
+                Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired),
+                worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
         }
-        self.execute_with_preparation_and_commit(
+        self.execute_with_preparation_and_commit_report(
             super::authorization::prepare,
             |application, program, binding| {
-                application.compare_and_commit_application(program, binding.idempotency())
+                application.compare_and_commit_application(
+                    program,
+                    binding.idempotency(),
+                    allocation_policy,
+                )
             },
+            allocation_policy,
         )
     }
 
     pub(super) fn execute_with_preparation_and_commit(
+        self,
+        prepare: impl FnOnce(
+            &Self,
+            &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+            WorthQueryStagedMutation<Schema, Intent>,
+        ) -> Result<
+            super::authorization::PreparedMutation<Schema, Intent::Binding>,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+        commit: impl FnOnce(
+            &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+            WorthQueryApplicationEffectProgram<
+                Schema,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
+                <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+            >,
+            &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
+        ) -> WorthQueryApplicationCommitOutcome,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationMutationOutcome<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
+        self.execute_with_preparation_and_commit_report(prepare, commit, allocation_policy)
+            .into_outcome()
+    }
+
+    pub(super) fn execute_with_preparation_and_commit_report(
         mut self,
         prepare: impl FnOnce(
             &Self,
@@ -177,36 +239,48 @@ where
             >,
             &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
         ) -> WorthQueryApplicationCommitOutcome,
-    ) -> Result<
-        WorthQueryApplicationMutationOutcome<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        Result<
+            WorthQueryApplicationMutationOutcome<
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+            >,
+            WorthQueryApplicationRequestMutationDenial,
         >,
-        WorthQueryApplicationRequestMutationDenial,
     > {
-        let application = self.request.application;
-        let candidate = match self.prepare_candidate(prepare)? {
-            super::preparation::CandidatePreparation::Prepared(candidate) => candidate,
-            super::preparation::CandidatePreparation::Settled(outcome) => return Ok(outcome),
-        };
-        let super::preparation::PreparedCandidate {
-            program,
-            result,
-            identities,
-            extension,
-        } = candidate;
-        let commit_binding = WorthQueryMutationCommitBinding::new(&identities, extension);
-        Ok(
-            match commit(application, program, &commit_binding).landed() {
-                Ok((receipt, false)) => {
-                    WorthQueryApplicationMutationOutcome::Committed { receipt, result }
-                }
-                Ok((receipt, true)) => {
-                    WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)
-                }
-                Err(uncommitted) => WorthQueryApplicationMutationOutcome::Commit(uncommitted),
-            },
-        )
+        let mut decision_work =
+            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
+        let outcome = (|| {
+            let application = self.request.application;
+            let candidate =
+                match self.prepare_candidate(prepare, &mut decision_work, allocation_policy)? {
+                    super::preparation::CandidatePreparation::Prepared(candidate) => candidate,
+                    super::preparation::CandidatePreparation::Settled(outcome) => {
+                        return Ok(outcome)
+                    }
+                };
+            let super::preparation::PreparedCandidate {
+                program,
+                result,
+                identities,
+                extension,
+                decision_work: _,
+            } = candidate;
+            let commit_binding = WorthQueryMutationCommitBinding::new(&identities, extension);
+            Ok(
+                match commit(application, program, &commit_binding).landed() {
+                    Ok((receipt, false)) => {
+                        WorthQueryApplicationMutationOutcome::Committed { receipt, result }
+                    }
+                    Ok((receipt, true)) => {
+                        WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)
+                    }
+                    Err(uncommitted) => WorthQueryApplicationMutationOutcome::Commit(uncommitted),
+                },
+            )
+        })();
+        super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
     }
 
     pub(super) fn require_workflow_transition(

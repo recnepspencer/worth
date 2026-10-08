@@ -7,6 +7,7 @@ use worth_query_execution::facade::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner,
     WorthQuerySelectedProgramOwnerDenial,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -50,6 +51,7 @@ where
     pub fn execute_in_program<Program>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -60,12 +62,41 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
+        self.execute_in_program_report(application, allocation_policy)
+            .into_outcome()
+    }
+
+    /// The same selected-program execution, with this attempt's sealed decision work.
+    pub fn execute_in_program_report<Program>(
+        self,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> super::WorthQueryApplicationMutationAttemptReport<
+        Result<
+            WorthQueryApplicationMutationOutcome<
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+            >,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
         let mut request = self;
-        match request.prepare_in_program(application)? {
-            super::WorthQueryApplicationProgramMutationPreparation::Prepared(candidate) => {
-                Ok(candidate.commit())
+        let (outcome, decision_work) = request
+            .prepare_in_program_report(application, allocation_policy)
+            .into_parts();
+        match outcome {
+            Ok(super::WorthQueryApplicationProgramMutationPreparation::Prepared(candidate)) => {
+                candidate.commit_report(allocation_policy).map(Ok)
             }
-            super::WorthQueryApplicationProgramMutationPreparation::Settled(outcome) => Ok(outcome),
+            Ok(super::WorthQueryApplicationProgramMutationPreparation::Settled(outcome)) => {
+                super::WorthQueryApplicationMutationAttemptReport::new(Ok(outcome), decision_work)
+            }
+            Err(denial) => {
+                super::WorthQueryApplicationMutationAttemptReport::new(Err(denial), decision_work)
+            }
         }
     }
 
@@ -74,6 +105,7 @@ where
     pub fn execute_capability_in_program<Program>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -121,15 +153,18 @@ where
                         program,
                         binding.identities(),
                         |idempotency| binding.extension().apply(idempotency),
+                        allocation_policy,
                     )
                 } else {
                     application.compare_and_commit_program_action(
                         program,
                         binding.identities(),
                         |idempotency| binding.extension().apply(idempotency),
+                        allocation_policy,
                     )
                 }
             },
+            allocation_policy,
         )
     }
 }
