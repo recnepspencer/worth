@@ -46,17 +46,15 @@ macro_rules! unrelated_settles_unverified {
 fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
     let _guard = checkpoint_recovery_test_guard();
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    // Three Ready rows per settled demand fail every queued refresh the
-    // unrelated caller runs as a frame; five let those refreshes finish. A
-    // refresh that cannot finish returns its row to the Ready it reopened,
-    // which stays cached for an equivalent later demand like any Ready row.
-    for rows_per_demand in [3, 5] {
+    // Both finite profiles admit the four-demand world. Twelve actual Ready
+    // layout slots admit the long-cycle reopen; twenty provide the
+    // contrasting headroom. Retry/terminal pressure is covered separately
+    // in custody_stops rather than assumed from a stale byte estimate here.
+    for custody_rows in [12, 20] {
         let retained_positions = 8;
-        let (application, invalidation) = limited_application(
-            4 * rows_per_demand * row,
-            128 * 1_024 * 1_024,
-            retained_positions,
-        );
+        let custody_budget = custody_rows * row;
+        let (application, invalidation) =
+            limited_application(custody_budget, 128 * 1_024 * 1_024, retained_positions);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let (a, b, c, mut d) = chain_with_unrelated!(application, request);
@@ -69,18 +67,13 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
             assert_steady!(steady, cycle, retained_positions, application, invalidation);
         }
         // A refreshed row belongs to its own demand, never to the caller
-        // that happened to run it, so closing the chain leaves no more custody
-        // than the settled chain held. The middle consumer then reopens alone
-        // over its stale, undemanded root. At five rows it refreshes that
-        // root and settles in one advance. At three, custody cannot keep the
-        // middle refresh at once: the advance stops retryable and ends the
-        // refreshes it carried, which leaves less custody held than before
-        // it, so the retry settles beside the unrelated caller's open Ready.
+        // that happened to run it. The middle consumer then reopens alone
+        // over its stale, undemanded root beside the existing unrelated caller.
         drop((a, b, c));
         let closed_custody = application.required_custody_bytes_for_test();
         assert!(
             closed_custody <= settled_custody,
-            "{rows_per_demand} rows per demand: closing the chain holds no more than it settled with"
+            "{custody_rows} Ready slots: closing the chain holds no more than it settled with"
         );
         let mut b = request
             .demand(ChainDemand("anchor-b".to_owned()))
@@ -88,35 +81,41 @@ fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
                 &application,
             )
             .unwrap();
-        if rows_per_demand == 3 {
-            let stopped = b.advance(&request);
-            assert!(
-                matches!(
-                    &stopped,
-                    Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
-                        if denial.kind() == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-                            && denial.recovery_posture()
-                                == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
-                ),
-                "a refresh custody cannot keep at once stops retryable: {:?}",
-                stopped.as_ref().err()
-            );
-            assert!(
-                application.required_custody_bytes_for_test() < closed_custody,
-                "the stop holds less than the advance began with"
-            );
-        }
         settled_in_one_advance!(b, request, "the reopened middle consumer");
         drop(b);
+        let closed_ready_custody = application.required_custody_bytes_for_test();
         assert!(
-            application.required_custody_bytes_for_test() <= settled_custody,
-            "{rows_per_demand} rows per demand: the unrelated caller retains no refreshed chain row"
+            closed_ready_custody <= custody_budget,
+            "{custody_rows} Ready slots: eligible closed Ready custody remains in its declared allowance"
         );
+        // Closing a caller may leave its Ready cached. Reopening unchanged
+        // output must neither accumulate those eligible rows nor republish it.
+        let current_commit = request.retain_read().unwrap().selected_commit().clone();
+        for reopen in 0..8 {
+            let mut b = request
+                .demand(ChainDemand("anchor-b".to_owned()))
+                .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(
+                    &application,
+                )
+                .unwrap();
+            settled_in_one_advance!(b, request, "the unchanged reopened middle consumer");
+            drop(b);
+            assert_eq!(
+                application.required_custody_bytes_for_test(),
+                closed_ready_custody,
+                "reopen {reopen}: closed Ready custody stays on its actual plateau"
+            );
+            assert_eq!(
+                request.retain_read().unwrap().selected_commit(),
+                &current_commit,
+                "reopen {reopen}: unchanged output is not republished"
+            );
+        }
         settled_in_one_advance!(d, request, "the unrelated required demand");
         drop(d);
         assert!(
-            application.required_custody_bytes_for_test() <= settled_custody,
-            "{rows_per_demand} rows per demand: custody returns within the settled chain's"
+            application.required_custody_bytes_for_test() <= closed_ready_custody,
+            "{custody_rows} Ready slots: closing the unrelated caller adds no custody"
         );
     }
 }

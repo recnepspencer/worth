@@ -67,6 +67,12 @@ pub fn world_no_effect_retains_conditional_provenance() {
         transaction.cause(),
         worth_query_host::facade::product::WorthQueryApplicationNoEffectCause::CapacityExhausted,
     );
+    let diagnostic = format!("{transaction:?}");
+    assert!(diagnostic.contains("CapacityExhausted"));
+    assert!(
+        diagnostic.len() < 1_024,
+        "a no-effect diagnostic must not traverse retained graph storage"
+    );
 
     let no_effect = courtroom_support::observe(&world);
     assert_eq!(no_effect.committed_operation_count(), 0);

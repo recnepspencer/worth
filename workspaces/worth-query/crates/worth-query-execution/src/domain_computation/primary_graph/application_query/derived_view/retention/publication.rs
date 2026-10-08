@@ -45,7 +45,7 @@ where
             return None;
         }
         affected.entries.extend(retained.dirty.iter().cloned());
-        if affected.entries.len() > self.limits.maximum_entries() {
+        if self.limits.rejects_entries(affected.entries.len()) {
             return None;
         }
         Some(PreparedViewTransition {

@@ -11,6 +11,7 @@ mod mandatory_review;
 mod mutation;
 mod programs;
 mod query;
+mod query_batch;
 mod request;
 mod retained_read;
 mod workflow;
@@ -92,6 +93,10 @@ pub use programs::{
     WorthQueryWorkflowInstanceDisposition, WorthQueryWorkflowInstanceOccurrence,
 };
 pub use query::WorthQueryApplicationQueryRequest;
+pub use query_batch::{
+    WorthQueryApplicationBoundedQueryBatchRequest, WorthQueryApplicationQueryBatchDenial,
+    WorthQueryApplicationQueryBatchRequest,
+};
 pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
@@ -143,4 +148,7 @@ pub use workflow::{
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
     WorthQueryWorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenialKind,
     WorthQueryWorkflowProposalRequest,
+};
+pub use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationQueryBatchLimits, WorthQueryApplicationQueryBatchResourceDenial,
 };

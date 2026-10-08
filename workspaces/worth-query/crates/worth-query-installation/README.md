@@ -69,6 +69,20 @@ Equivalent declaration order converges to one canonical identity. One-field
 semantic drift produces a conflict. Derived lookup indexes must be rebuildable
 from portable installed artifacts without changing identity or denial outcomes.
 
+Package and application-schema identity derivations each have a fixed 64 MiB
+canonical encoded-byte ceiling, matching portable package export and
+reconstruction capacity. This allowance belongs to Query installation;
+callers may narrow canonical work below it, but cannot raise the platform limit.
+
+Package validation checks entry breadth before member sorting and canonical
+basis construction, using the entry-storage bound derived from that finite
+byte ceiling. Canonical encoding checks each append before accepting bytes
+beyond the ceiling and reports typed exhaustion. The ceiling bounds encoded
+material, not total installation memory; basis storage and canonical allocation
+remain separate costs. Raising it changes admission headroom without changing
+canonical rules, ordering, versions, or identities of previously admitted
+packages and schemas.
+
 ## Related Docs
 
 - [Runtime-Installed Domains And Operations](../worth-query/docs/domain-capabilities/runtime-installed-domains.md)

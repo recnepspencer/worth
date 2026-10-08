@@ -92,6 +92,7 @@ impl CourtroomWorld {
             None,
             1,
             true,
+            None,
         )
     }
 
@@ -109,6 +110,7 @@ impl CourtroomWorld {
             None,
             1,
             true,
+            None,
         )
     }
 
@@ -126,6 +128,7 @@ impl CourtroomWorld {
             None,
             1,
             true,
+            None,
         )
     }
 
@@ -144,6 +147,7 @@ impl CourtroomWorld {
             Some(maximum),
             1,
             true,
+            None,
         )
     }
 
@@ -162,6 +166,7 @@ impl CourtroomWorld {
             None,
             intent_row_count,
             false,
+            None,
         )
     }
 
@@ -179,6 +184,7 @@ impl CourtroomWorld {
             None,
             1,
             true,
+            None,
         )
     }
 
@@ -193,6 +199,7 @@ impl CourtroomWorld {
         maximum_concurrent_graph_work: Option<usize>,
         intent_row_count: usize,
         include_live_relations: bool,
+        maximum_result_bytes_per_root: Option<usize>,
     ) -> Self
     where
         Provider: domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> + 'static,
@@ -212,7 +219,7 @@ impl CourtroomWorld {
             .unwrap();
         let query_resources = runtime::WorthQueryApplicationQueryResourceProfile::bounded(
             5_120,
-            2_048,
+            maximum_result_bytes_per_root.unwrap_or(2_048),
             usize::MAX,
             maximum_concurrent_graph_work.unwrap_or(128),
         )

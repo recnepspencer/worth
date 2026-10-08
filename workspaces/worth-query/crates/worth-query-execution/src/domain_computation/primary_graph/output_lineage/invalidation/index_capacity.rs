@@ -44,6 +44,9 @@ pub(super) fn retained_map_bytes<K, V>(entries: usize) -> Option<u64> {
 /// forest must never be priced as one tree just because its keys are counted
 /// together. `roots` and `entries` may conservatively overestimate the forest.
 pub(super) fn retained_forest_bytes<K, V>(entries: usize, roots: usize) -> Option<u64> {
+    if roots == 0 && entries != 0 {
+        return None;
+    }
     let nodes = roots.checked_add(entries / 31)?;
     ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
@@ -119,3 +122,9 @@ pub(super) fn ordered_removal_work(entries: usize) -> Option<u64> {
 mod allocation_tests;
 #[cfg(test)]
 mod navigation_tests;
+
+#[cfg(test)]
+mod retention_tests;
+
+#[cfg(test)]
+mod insertion_tests;

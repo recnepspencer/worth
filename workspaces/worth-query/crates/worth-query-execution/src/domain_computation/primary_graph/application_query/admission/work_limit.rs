@@ -52,5 +52,9 @@ pub(super) fn application_query_graph_read_budget<Schema>(
     profile: WorthQueryApplicationQueryResourceProfile,
     controls: &WorthQueryApplicationQueryControls<'_, Schema>,
 ) -> worth_query_admission::facade::graph_read_access::WorthQueryGraphReadBudget {
-    profile.admission_budget(controls.maximum_result_count(), controls.maximum_work())
+    profile.admission_budget_with_result_cap(
+        controls.maximum_result_count(),
+        controls.maximum_work(),
+        controls.maximum_inline_result_bytes(),
+    )
 }

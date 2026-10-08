@@ -16,3 +16,6 @@ worth-query-decl.workspace = true
 worth-query-host.workspace = true
 worth-foundational = { path = "../../../../../../../crates/worth-foundational" }
 serde.workspace = true
+
+[dev-dependencies]
+worth-relational = { path = "../../../../../../../crates/worth-relational" }

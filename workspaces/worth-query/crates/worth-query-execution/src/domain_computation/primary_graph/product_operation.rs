@@ -75,6 +75,7 @@ pub use program_adoption::{
     WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryProductQueryControls;
+pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;
 pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError,

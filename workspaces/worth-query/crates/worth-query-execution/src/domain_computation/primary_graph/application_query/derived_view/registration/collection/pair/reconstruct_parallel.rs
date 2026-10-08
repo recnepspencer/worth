@@ -86,15 +86,15 @@ where
                 if expected.insert(root, member).is_some() {
                     return Err(Denial::IncompleteDependencies);
                 }
-                if expected.len() > view.state.limits.maximum_entries() {
+                if view.state.limits.rejects_entries(expected.len()) {
                     return Err(Denial::EntryCapacityExceeded);
                 }
             }
         }
         let tokens = expected
             .iter()
-            .map(|(root, member)| (*root, RetainedMemberToken::new(member.clone())))
-            .collect();
+            .map(|(root, member)| Ok((*root, RetainedMemberToken::clone_admitted(member)?)))
+            .collect::<Result<_, Denial>>()?;
         let expected = expected.into_iter().collect::<Vec<_>>();
         let mut entries = Vec::with_capacity(expected.len());
         let mut keys = Vec::with_capacity(expected.len());

@@ -5,10 +5,17 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
+mod batch;
+pub use batch::{WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult};
 mod custody_work;
 mod denial;
 mod outcome;
 mod result;
+mod validation;
+use validation::{
+    admit_request, validate_authentication_lifetime, validate_basis_lifetime,
+    validate_one_shot_plan,
+};
 
 use denial::{authorization_denial, denial};
 pub use denial::{WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
@@ -84,7 +91,7 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        self.execute_application_query_one_shot_core(plan, None)
+        self.execute_application_query_one_shot_core(plan, None, None, None)
     }
 
     fn execute_application_query_one_shot_core<
@@ -107,6 +114,8 @@ where
             Scope,
         >,
         spent: Option<&OneShotReadWorkObservation>,
+        batch: Option<&super::WorthQueryApplicationQueryBatchAdmission>,
+        maximum_work: Option<usize>,
     ) -> Result<
         WorthQueryApplicationOneShotResult<Query, QueryResult>,
         WorthQueryApplicationOneShotDenial,
@@ -117,7 +126,7 @@ where
         validate_one_shot_plan(self, &plan)?;
         refresh_governed_authorization(self, &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        let result_buffer = reserve_one_shot_result_buffer(self, &plan)?;
+        let result_buffer = reserve_one_shot_result_buffer_in_batch(self, &plan, batch)?;
         let (raw, authorization_work, read_proof) =
             execute_authorized_read(self, &plan, |runtime, graph, plan| {
                 read_bounded_root_rows(
@@ -126,60 +135,12 @@ where
                     plan,
                     result_buffer,
                     spent,
-                    plan.controls.maximum_work().get(),
+                    maximum_work.unwrap_or(plan.controls.maximum_work().get()),
                 )
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         finalize_one_shot(self, plan, raw, authorization_work, read_proof, spent)
     }
-}
-
-fn validate_one_shot_plan<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
-) -> Result<(), WorthQueryApplicationOneShotDenial>
-where
-    Schema: ApplicationSchema,
-{
-    validate_plan_owner(application, plan)?;
-    if plan.controls.lane()
-        != worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane::OneShot
-    {
-        return Err(denial(
-            WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-            plan.query.name(),
-            plan.query.name(),
-        ));
-    }
-    let request = plan.controls.request_scope();
-    admit_request(request, plan.query.name())?;
-    validate_basis_lifetime(&plan.controls, plan.query.name())?;
-    validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    if !plan.basis.is_live() {
-        return Err(denial(
-            WorthQueryApplicationOneShotDenialKind::BasisUnavailable,
-            plan.query.name(),
-            plan.query.name(),
-        ));
-    }
-    Ok(())
 }
 
 fn reserve_one_shot_result_buffer<
@@ -209,6 +170,37 @@ fn reserve_one_shot_result_buffer<
 where
     Schema: ApplicationSchema,
 {
+    reserve_one_shot_result_buffer_in_batch(application, plan, None)
+}
+
+fn reserve_one_shot_result_buffer_in_batch<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    plan: &WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+    batch: Option<&super::WorthQueryApplicationQueryBatchAdmission>,
+) -> Result<
+    super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+    WorthQueryApplicationOneShotDenial,
+>
+where
+    Schema: ApplicationSchema,
+{
     application.runtime.primary_graph().ok_or_else(|| {
         denial(
             WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
@@ -216,11 +208,16 @@ where
             plan.query.name(),
         )
     })?;
-    Ok(application.result_buffers.reserve(
-        plan.graph_read_plan()
-            .budget_check()
-            .max_inline_result_bytes(),
-    ))
+    let bytes = plan
+        .graph_read_plan()
+        .budget_check()
+        .max_inline_result_bytes();
+    Ok(match batch {
+        Some(batch) => application
+            .result_buffers
+            .reserve_in_batch(batch.inline_result_bytes(bytes), batch),
+        None => application.result_buffers.reserve(bytes),
+    })
 }
 
 fn map_authorized_read_denial(
@@ -290,104 +287,4 @@ fn map_authorized_read_denial(
         ),
     };
     denial(kind, query, subject)
-}
-
-fn validate_authentication_lifetime<Schema, Principal, PrincipalIdentity>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    subject: &str,
-) -> Result<(), WorthQueryApplicationOneShotDenial> {
-    if application.authentication_is_expired(principal.valid_until()) {
-        Err(denial(
-            WorthQueryApplicationOneShotDenialKind::StalePrincipal,
-            subject,
-            subject,
-        ))
-    } else {
-        Ok(())
-    }
-}
-
-fn validate_basis_lifetime(
-    controls: &WorthQueryAdmittedApplicationQueryControls<'_>,
-    subject: &str,
-) -> Result<(), WorthQueryApplicationOneShotDenial> {
-    if controls.basis_is_expired() {
-        Err(denial(
-            WorthQueryApplicationOneShotDenialKind::ExpiredBasis,
-            subject,
-            subject,
-        ))
-    } else {
-        Ok(())
-    }
-}
-
-fn validate_plan_owner<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
-) -> Result<(), WorthQueryApplicationOneShotDenial>
-where
-    Schema: ApplicationSchema,
-{
-    if plan.runtime_authority != application.runtime.authority_identity() {
-        return Err(denial(
-            WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-            plan.query.name(),
-            plan.query.name(),
-        ));
-    }
-    if !application.installed_schema_is_current() {
-        return Err(denial(
-            WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
-            plan.query.name(),
-            plan.query.name(),
-        ));
-    }
-    application
-        .installed_schema
-        .validate_installed_query(plan.query)
-        .map_err(|_| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })
-}
-
-fn admit_request(
-    request: &WorthQueryRequestScope,
-    subject: &str,
-) -> Result<(), WorthQueryApplicationOneShotDenial> {
-    match request.interruption() {
-        Some(WorthQueryRequestInterruption::Cancelled) => Err(denial(
-            WorthQueryApplicationOneShotDenialKind::Cancelled,
-            subject,
-            subject,
-        )),
-        Some(WorthQueryRequestInterruption::DeadlineExceeded) => Err(denial(
-            WorthQueryApplicationOneShotDenialKind::DeadlineExceeded,
-            subject,
-            subject,
-        )),
-        None => Ok(()),
-    }
 }

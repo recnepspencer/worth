@@ -4,6 +4,7 @@ use super::*;
 
 #[cfg(test)]
 mod tests;
+mod work_bound;
 
 impl SealedNativeOutputWitness {
     /// The original output revisions and the decodable producer observations

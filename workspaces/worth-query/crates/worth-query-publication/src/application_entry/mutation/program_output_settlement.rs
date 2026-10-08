@@ -168,6 +168,9 @@ pub struct ProgramOutputRecord {
         worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence,
     >,
     observation: crate::application_entry::WorthQueryApplicationReadObservation,
+    checkpoint_readmission_work_units: u64,
+    checkpoint_readmission_work_bound: u64,
+    checkpoint_readmission_charged_preparation_bytes: u64,
 }
 
 impl ProgramOutputRecord {
@@ -228,6 +231,18 @@ impl ProgramOutputRecord {
         self.readiness_delivery.as_ref()
     }
 
+    pub(super) fn checkpoint_readmission_work_units(&self) -> u64 {
+        self.checkpoint_readmission_work_units
+    }
+
+    pub(super) fn checkpoint_readmission_work_bound(&self) -> u64 {
+        self.checkpoint_readmission_work_bound
+    }
+
+    pub(super) fn checkpoint_readmission_charged_preparation_bytes(&self) -> u64 {
+        self.checkpoint_readmission_charged_preparation_bytes
+    }
+
     pub(super) fn new<Schema, Connection>(
         demand: Demand<Schema, <Connection as ApplicationConnectionShape<Schema>>::Binding>,
         settlement: crate::application_entry::WorthQueryApplicationOutputDemandSettlement<
@@ -245,6 +260,10 @@ impl ProgramOutputRecord {
         let retained_settlement = settlement.retain_settlement();
         let receipt = settlement.application_commit_receipt().cloned();
         let readiness_delivery = settlement.readiness_delivery().cloned();
+        let checkpoint_readmission_work_units = settlement.checkpoint_readmission_work_units();
+        let checkpoint_readmission_work_bound = settlement.checkpoint_readmission_work_bound();
+        let checkpoint_readmission_charged_preparation_bytes =
+            settlement.checkpoint_readmission_charged_preparation_bytes();
         let declaration = Connection::declaration();
         Self {
             connection_identity: declaration.identity(),
@@ -254,6 +273,9 @@ impl ProgramOutputRecord {
             retained_settlement,
             receipt,
             readiness_delivery,
+            checkpoint_readmission_work_units,
+            checkpoint_readmission_work_bound,
+            checkpoint_readmission_charged_preparation_bytes,
             observation,
         }
     }

@@ -2,8 +2,11 @@
 
 #[cfg(test)]
 mod navigation_tests;
+mod reclaim;
 mod removal;
 mod reservation;
+#[cfg(test)]
+mod storage_tests;
 
 use std::collections::BTreeMap;
 use std::mem::size_of;
@@ -140,6 +143,11 @@ impl SettlementIndex {
             .expect("admitted settlement address tree size");
         if source.is_empty() {
             self.sources.remove(identity.source());
+            if self.sources.is_empty() {
+                // std removal can leave an allocated empty leaf root. Release
+                // it before the zero-entry forest refunds its last root.
+                self.sources = BTreeMap::new();
+            }
         }
         let outer_after = tree_retained_bytes::<SemanticSource, SourcePostings>(self.sources.len())
             .expect("admitted settlement tree size");
@@ -242,13 +250,16 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-/// Stable std B-tree nodes have at least five occupied entries below the root.
-/// One spare root covers the first insertion and split boundaries.
+/// Rust 1.94 alloc/btree/map.rs requires five keys in every stable nonroot
+/// node and at least one key in a nonempty root. Hence n keys fund at most
+/// one root plus floor((n - 1) / 5) nonroots. Empty outer roots are dropped
+/// by remove; empty inner maps are dropped with their source bucket.
+/// Transient splits remain separately admitted by tree_insert_bytes.
 fn tree_retained_bytes<K, V>(entries: usize) -> Option<usize> {
     if entries == 0 {
         return Some(0);
     }
-    let nodes = 1usize.checked_add(entries.checked_add(4)? / 5)?;
+    let nodes = 1usize.checked_add(entries.checked_sub(1)? / 5)?;
     node_bytes::<K, V>()?.checked_mul(nodes)
 }
 

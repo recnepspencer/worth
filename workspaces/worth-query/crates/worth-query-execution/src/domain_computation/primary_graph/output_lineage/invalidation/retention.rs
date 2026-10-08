@@ -14,6 +14,7 @@ use crate::domain_computation::execution_runtime::source_invalidation::{
 
 use super::super::RecordedSettlementIdentity;
 use super::admission::IndexAdmission;
+use super::edit_admission::RetainedIndexCheckpoint;
 use super::fact_key::FactPostingKey;
 use super::index_capacity::{arc_bytes, retained_forest_bytes, retained_map_bytes};
 use super::mark_state::{EqualOutputLink, FactPosting, MarkState, SettlementMarks};
@@ -59,6 +60,13 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
     arc_bytes::<MarkState>()?
         .checked_add(state.key_payload_bytes)?
         .checked_add(state.settlement_key_payload_bytes)?
+        // A whole-index quote includes one live basis allocation per row.
+        // Its actual ticket remains separately owned by that allocation.
+        .checked_add(
+            state
+                .maximum_basis_allocation_bytes
+                .checked_mul(rows as u64)?,
+        )?
         // Each row owns a consumed_upstream set, even when empty.
         .checked_add(
             retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
@@ -162,15 +170,16 @@ pub(super) fn admit_version(
 
 /// Admits a version that replaces the live one at its source position, so
 /// what the replaced version copied lives on in it. `before` is the
-/// admission's byte total when the edit began.
+/// admission's retained-index subtotal when the edit began. Preparation scratch
+/// and allocations that have separate tickets are not copied index storage.
 pub(super) fn admit_replacement(
     state: &mut MarkState,
-    before: u64,
+    before: RetainedIndexCheckpoint,
     resources: &WorthQueryInvalidationResources,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     let overflow = CompanionPreflightStop::PreparationMemoryCounterOverflow;
-    let copied = admission.charged_bytes().saturating_sub(before);
+    let copied = admission.index_bytes_since(before)?;
     // The clone still carries the reservation of the version it replaces.
     let own = reserved(&state.retained_capacity)
         .and_then(|replaced| replaced.checked_add(copied))
@@ -248,3 +257,6 @@ pub(super) fn admit_root(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod budget_tests;

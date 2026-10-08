@@ -81,14 +81,14 @@ where
                 if expected.insert(root, member).is_some() {
                     return Err(Denial::IncompleteDependencies);
                 }
-                if expected.len() > view.state.limits.maximum_entries() {
+                if view.state.limits.rejects_entries(expected.len()) {
                     return Err(Denial::EntryCapacityExceeded);
                 }
             }
         }
         let mut tokens = BTreeMap::new();
         for (root, member) in &expected {
-            tokens.insert(*root, RetainedMemberToken::new(member.clone()));
+            tokens.insert(*root, RetainedMemberToken::clone_admitted(member)?);
         }
         let mut entries = Vec::with_capacity(expected.len());
         let mut keys = Vec::with_capacity(expected.len());

@@ -121,6 +121,23 @@ pub(super) fn execution_failed(
             return request_authority_denied(subject, authority.clone());
         }
     }
+    let interruption = match &error {
+        MutationHandlerExecutionDenial::Projection(projection) => projection
+            .invariant_denial()
+            .and_then(|denial| denial.source_retention_interruption()),
+        MutationHandlerExecutionDenial::Attempt(attempt) => attempt.source_retention_interruption(),
+        _ => None,
+    };
+    if let Some(interruption) = interruption {
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+        let kind = match interruption {
+            WorthQueryRequestInterruption::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+            WorthQueryRequestInterruption::DeadlineExceeded => {
+                WorthQueryOutputDemandDenialKind::TimedOut
+            }
+        };
+        return request_admission_rejected(denial(kind, format!("{subject}: {error:?}")));
+    }
     if matches!(
         error,
         MutationHandlerExecutionDenial::Attempt(ref denial)

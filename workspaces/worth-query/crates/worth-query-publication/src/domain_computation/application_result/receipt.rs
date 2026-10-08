@@ -4,6 +4,7 @@ use super::WorthQueryApplicationQueryPublicationInspection;
 use super::WorthQueryPublishedApplicationBasis;
 use super::WorthQueryPublishedApplicationDisclosure;
 use super::WorthQueryPublishedApplicationQueryTerminalRelease;
+use super::WorthQueryPublishedApplicationReadWork;
 use crate::application_aftermath::WorthQueryPublishedCanonicalWork;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -41,6 +42,8 @@ pub struct WorthQueryApplicationQueryPublicationReceipt {
     basis: WorthQueryPublishedApplicationBasis,
     result_count: usize,
     ordinary_work_units: usize,
+    read_work: WorthQueryPublishedApplicationReadWork,
+    authorization_work_units: usize,
     disclosure: WorthQueryPublishedApplicationDisclosure,
     publication_work: WorthQueryPublishedCanonicalWork,
     terminal_release: WorthQueryPublishedApplicationQueryTerminalRelease,
@@ -55,6 +58,8 @@ impl WorthQueryApplicationQueryPublicationReceipt {
             basis: WorthQueryPublishedApplicationBasis::capture(terminal),
             result_count: terminal.result_count(),
             ordinary_work_units: terminal.total_work_units(),
+            read_work: WorthQueryPublishedApplicationReadWork::capture(terminal),
+            authorization_work_units: terminal.authorization_work().observation_work_units(),
             disclosure,
             publication_work: WorthQueryPublishedCanonicalWork::from_owner(
                 terminal.canonical_work().publication(),
@@ -81,6 +86,12 @@ impl WorthQueryApplicationQueryPublicationReceipt {
     }
     pub(super) const fn ordinary_work_units(&self) -> usize {
         self.ordinary_work_units
+    }
+    pub(super) const fn read_work(&self) -> WorthQueryPublishedApplicationReadWork {
+        self.read_work
+    }
+    pub(super) const fn authorization_work_units(&self) -> usize {
+        self.authorization_work_units
     }
     pub(super) const fn omission_posture(
         &self,

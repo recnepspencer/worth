@@ -246,6 +246,31 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Reads independently scoped intents at this same observation, publishing
+    /// only a complete ordered batch. Duplicate scopes are independently billed.
+    pub fn query_batch<Intent>(
+        &self,
+        intents: Vec<Intent>,
+    ) -> super::WorthQueryApplicationQueryBatchRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+    >
+    where
+        Intent: ApplicationQueryIntent<Schema>,
+    {
+        super::WorthQueryApplicationQueryBatchRequest::new(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
+            std::sync::Arc::clone(&self.observation),
+            intents,
+        )
+    }
+
     pub fn query<Intent>(
         &self,
         intent: Intent,

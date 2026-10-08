@@ -6,7 +6,7 @@ use im::OrdSet;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::{
-    admission::IndexAdmission,
+    admission::RetainedIndexAdmission,
     index_capacity,
     mark_state::{EqualOutputLink, FullVerificationReason, MarkState, SettlementMarks},
     SettlementRegistrationStop,
@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::output_lineage::{
 pub(super) fn certify(
     state: &mut MarkState,
     equality: &StableEqualityConsequence<'_>,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<(), SettlementRegistrationStop> {
     let predecessor = equality.predecessor();
     let successor = equality.successor();
@@ -79,12 +79,19 @@ pub(super) fn certify(
         }
     }
 
-    admission.bytes(
+    admission.index_bytes(
         index_capacity::arc_bytes::<EqualOutputLink>()
             .and_then(|bytes| bytes.checked_mul(2))
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
     )?;
-    admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<EqualOutputLink>>(
+    // These links can keep identities after their lineage records retire.
+    // Their creation was already prepared by the lineage owner.
+    admission.record_index_bytes(
+        index_capacity::arc_bytes::<RecordedSettlementIdentity>()
+            .and_then(|bytes| bytes.checked_mul(2))
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+    )?;
+    admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<EqualOutputLink>>(
         state.equal_links.len(),
     )?;
     state.equal_links.insert(
@@ -94,7 +101,7 @@ pub(super) fn certify(
             next: Some(Arc::clone(successor)),
         }),
     );
-    admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<EqualOutputLink>>(
+    admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<EqualOutputLink>>(
         state.equal_links.len(),
     )?;
     state.equal_links.insert(
@@ -110,7 +117,7 @@ pub(super) fn certify(
 pub(super) fn discharge_selected_downstream(
     state: &mut MarkState,
     predecessor: &Arc<RecordedSettlementIdentity>,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<(), SettlementRegistrationStop> {
     admission.ordered_read(state.downstream.len())?;
     let Some(targets) = state.downstream.get(predecessor).cloned() else {
@@ -126,17 +133,16 @@ pub(super) fn discharge_selected_downstream(
         if !existing.pending_upstream.contains(predecessor) {
             continue;
         }
-        admission.bytes(
+        admission.index_bytes(
             index_capacity::arc_bytes::<SettlementMarks>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
-        admission.ordered_remove::<Arc<RecordedSettlementIdentity>, ()>(
-            existing.pending_upstream.len(),
-        )?;
+        admission
+            .index_remove::<Arc<RecordedSettlementIdentity>, ()>(existing.pending_upstream.len())?;
         let mut row = (**existing).clone();
         row.pending_upstream.remove(predecessor);
         state.pending_edge_count -= 1;
-        admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
+        admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
             state.settlements.len(),
         )?;
         state.settlements.insert(target, Arc::new(row));

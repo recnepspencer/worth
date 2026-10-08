@@ -135,6 +135,34 @@ update and validation, generated agent-context validation, dirty Rust line caps,
 formatting and diff checks passed. Complete dirty-source function scrutiny retained
 all advisories and reviewed changed bodies; no advisory threshold was raised.
 
+## Integrated retained-query callers
+
+The retained-native slice now composes with the incoming retained query batch,
+source-root quoting, current-owner refresh and settlement/index reclamation
+owners. Direct bounded reads and retained admissions share one finite item ledger.
+Each attempted admitted read consumes one slot; retained execution carries its
+admission token instead of consuming a second slot. Both result storage owners
+use the tighter installed-plan and per-item batch byte limit.
+
+The merged Query workspace and external topology consumer all-target checks
+passed. Six real retained-owner proofs passed, followed by thirteen Host batch
+proofs and nine external queue/index/retention proofs. The direct Host controls
+cover both direct/retained orderings, exhausted reuse without work or effects,
+successful small results under a narrow limit, actual oversized-result refusal,
+and an independently adequate retry. Typed retained-source cancellation and
+deadline stops remain local to the requesting caller, preserving the shared row
+for later settlement. The original tight-custody cancellation/retry oracle passes.
+Ordinary allocation custody and checked
+source-bound recorded retry passed through the merged application entry.
+Boundary snapshots, context validation, dirty Rust caps, formatting and source
+composition scrutiny passed on this integrated source.
+
+The external exhaustion court separately proves a finite typed refusal sweep,
+window release with ample capacity and held-address release/retry. It does not
+prove that one capacity-refused native profile later succeeds at the same
+capacity solely through window advancement. Private pin/build/headless acceptance
+and the independent scale and allocation exclusions below remain separate.
+
 ## Remaining independent owners
 
 Nested input/value/key heaps, temporary maps and vectors, lower selection candidate

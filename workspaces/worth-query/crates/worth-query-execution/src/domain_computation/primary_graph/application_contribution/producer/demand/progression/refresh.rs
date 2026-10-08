@@ -59,6 +59,15 @@ where
             request_admission,
         )?;
         refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
+        refreshed.checkpoint_readmission_work_units = refreshed
+            .checkpoint_readmission_work_units
+            .saturating_add(demand.checkpoint_readmission_work_units);
+        refreshed.checkpoint_readmission_work_bound = refreshed
+            .checkpoint_readmission_work_bound
+            .saturating_add(demand.checkpoint_readmission_work_bound);
+        refreshed.checkpoint_readmission_charged_preparation_bytes = refreshed
+            .checkpoint_readmission_charged_preparation_bytes
+            .max(demand.checkpoint_readmission_charged_preparation_bytes);
         refreshed.settled = demand.settled;
         if let Some(interest) = demand.interest.as_ref() {
             self.output_demands.finish_replaced_interest(

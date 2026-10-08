@@ -5,6 +5,7 @@
 
 use super::super::logical_marking::NativeMarkingPrecision;
 use super::super::mark_state::FullVerificationReason;
+use super::super::source_alignment::SnapshotAlignedMarkState;
 use super::marking_ceiling::{unwatched_accounts, world_installing};
 use super::*;
 use crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation;
@@ -94,7 +95,13 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
             "the discontinuity cannot leak into the retained earlier snapshot"
         );
 
-        register(owner, later.clone(), facts, &after, OrdSet::new());
+        register(
+            owner,
+            later.clone(),
+            Arc::clone(&facts),
+            &after,
+            OrdSet::new(),
+        );
         assert!(
             matches!(
                 currentness(owner, &after, &later),
@@ -111,6 +118,75 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
             ),
             "the earlier reader stays behind the discontinuity until it is verified"
         );
+        // Full source verification at the actual new snapshot proves the
+        // unchanged native field; it does not manufacture a replacement fact.
+        assert_eq!(
+            field_fact(runtime, &after_handle, entity, status.clone()),
+            facts[0]
+        );
+        let cell = owner
+            .cell_for_read(&after, &mut owner.edit_admission())
+            .unwrap()
+            .unwrap();
+        let prior = cell.read_image();
+        let prior_row = Arc::clone(prior.payload().current.settlements.get(&earlier).unwrap());
+        let mut admission = owner.edit_admission();
+        assert!(owner
+            .reestablish_verified(
+                runtime,
+                &after_handle,
+                &after,
+                &earlier,
+                facts.as_ref(),
+                &mut admission,
+            )
+            .unwrap());
+        assert!(admission.charged_index_bytes() > 0);
+        assert!(admission.charged_bytes() > admission.charged_index_bytes());
+        assert!(matches!(
+            currentness(owner, &after, &earlier),
+            SourceSettlementCurrentness::Clean
+        ));
+        assert!(matches!(
+            currentness(owner, &before, &earlier),
+            SourceSettlementCurrentness::Clean
+        ));
+        let current = cell.read_image();
+        let row = current.payload().current.settlements.get(&earlier).unwrap();
+        assert!(Arc::ptr_eq(&row.facts, &facts));
+        assert_eq!(row.read_basis.as_ref(), &after);
+        assert_eq!(row.delivery_epoch, current.payload().current.delivery_epoch);
+        let basis_bytes = super::super::index_capacity::arc_bytes::<
+            worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        >()
+        .unwrap()
+            + after.branch_id().0.len() as u64;
+        assert!(current.payload().current.maximum_basis_allocation_bytes >= basis_bytes);
+        assert!(Arc::ptr_eq(
+            prior.payload().current.settlements.get(&earlier).unwrap(),
+            &prior_row
+        ));
+        assert_eq!(prior_row.read_basis.as_ref(), &before);
+        assert!(matches!(
+            SnapshotAlignedMarkState::observe_image(&prior, &after)
+                .unwrap()
+                .currentness(&earlier),
+            super::super::mark_state::SettlementCurrentness::FullVerificationRequired(
+                FullVerificationReason::DeclaredChangeUnavailable
+            )
+        ));
+        let index_bytes = admission.charged_index_bytes();
+        assert!(owner
+            .reestablish_verified(
+                runtime,
+                &after_handle,
+                &after,
+                &earlier,
+                facts.as_ref(),
+                &mut admission,
+            )
+            .unwrap());
+        assert_eq!(admission.charged_index_bytes(), index_bytes);
         for snapshot in [before_handle, after_handle] {
             runtime.snapshots().release_snapshot(&snapshot).unwrap();
         }

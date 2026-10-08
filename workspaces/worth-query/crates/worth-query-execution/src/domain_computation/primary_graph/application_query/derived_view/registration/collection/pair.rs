@@ -21,6 +21,7 @@ mod reconcile;
 mod reconstruct;
 mod reconstruct_lazy;
 mod reconstruct_parallel;
+mod refresh_batch;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -102,6 +103,83 @@ where
             Some(first_query.identity().clone()),
             Some(second_query.identity().clone()),
             product,
+        )
+    }
+
+    /// Opens the ordinary pair lifecycle with checked actual image storage.
+    /// No caller-local entry or byte ceiling is imposed. Logical image quotes
+    /// are not allocator/RSS limits or funding from another owner's pool.
+    pub fn open_owner_sized_managed_derived_collection_pair<
+        MembershipQuery,
+        MembershipParameters,
+        MembershipResult,
+        MembershipScope,
+        FirstQuery,
+        FirstParameters,
+        FirstResult,
+        FirstScope,
+        SecondQuery,
+        SecondParameters,
+        SecondResult,
+        SecondScope,
+        Value,
+    >(
+        &self,
+        name: &'static str,
+        membership_query: &WorthQueryInstalledApplicationQuery<
+            Schema,
+            MembershipQuery,
+            MembershipParameters,
+            MembershipResult,
+            MembershipScope,
+        >,
+        first_query: &WorthQueryInstalledApplicationQuery<
+            Schema,
+            FirstQuery,
+            FirstParameters,
+            FirstResult,
+            FirstScope,
+        >,
+        second_query: &WorthQueryInstalledApplicationQuery<
+            Schema,
+            SecondQuery,
+            SecondParameters,
+            SecondResult,
+            SecondScope,
+        >,
+        product: &WorthQueryProductBranchLease,
+    ) -> Result<WorthQueryManagedDerivedView<MembershipQuery, Value>, Denial>
+    where
+        Value: WorthQueryManagedDerivedValue,
+    {
+        for valid in [
+            self.installed_schema
+                .validate_installed_query(first_query)
+                .is_ok(),
+            self.installed_schema
+                .validate_installed_query(second_query)
+                .is_ok(),
+        ] {
+            if !valid {
+                return Err(Denial::ForeignInstallation);
+            }
+        }
+        if !matches!(
+            first_query.authorization(),
+            WorthQueryInstalledApplicationQueryAuthorization::Public
+        ) || !matches!(
+            second_query.authorization(),
+            WorthQueryInstalledApplicationQueryAuthorization::Public
+        ) {
+            return Err(Denial::AuthorizationRequired);
+        }
+        self.open_managed_derived_view_with_policy(
+            name,
+            membership_query,
+            Some(first_query.identity().clone()),
+            Some(second_query.identity().clone()),
+            product,
+            super::super::super::retention::ManagedStoragePolicy::OwnerSized,
         )
     }
 

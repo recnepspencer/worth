@@ -285,7 +285,7 @@ impl SourceInvalidationOwner {
             }
             SettlementReadAlignment::Retained
         };
-        let before = admission.charged_bytes();
+        let before = admission.index_checkpoint();
         admission.bytes(
             index_capacity::arc_bytes::<super::mark_state::MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,

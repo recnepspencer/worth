@@ -785,6 +785,7 @@ dependencies = [
  "worth-query-consumer-values",
  "worth-query-decl",
  "worth-query-host",
+ "worth-relational",
 ]
 
 [[package]]

@@ -99,15 +99,25 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             locator: status.clone(),
             native_revision: Some(original_source),
         }];
+        let mut recovery_admission = owner.edit_admission();
+        let comparison_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
+            &correspondence, layout, &facts, &mut recovery_admission,
+        ).unwrap();
+        assert!(recovery_admission.charged_work() > 0, "ceiling derivation is charged");
+        let reconstruction_start = recovery_admission.charged_work();
         let restored = SealedNativeOutputWitness::from_checkpoint_facts(
             &correspondence,
             layout,
             &facts,
             owner,
-            &mut owner.edit_admission(),
+            &mut recovery_admission,
         )
         .unwrap()
         .expect("complete old native facts reconstruct the witness");
+        assert!(restored.get().unwrap().checkpoint_facts_current_in(
+            runtime, &before, &facts, &mut recovery_admission,
+        ).unwrap());
+        assert!(recovery_admission.charged_work() - reconstruction_start <= comparison_bound);
         assert!(restored
             .get()
             .unwrap()
@@ -138,6 +148,23 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(witness.checkpoint_facts_current_in(runtime, &before,
             &[indexed.clone(), indexed.clone()], &mut sparse).unwrap());
         assert_eq!(sparse.remaining_work(), 0, "two one-row selections spend six units beyond the witness");
+        let mut duplicate_facts = facts.clone();
+        duplicate_facts.extend([indexed.clone(), indexed.clone()]);
+        let duplicate_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
+            &correspondence, layout, &duplicate_facts, &mut recovery_admission,
+        ).unwrap();
+        assert!(duplicate_bound >= 200_006,
+            "both authentic 100001 candidate limits contribute, not their one-row results");
+        let duplicate_start = recovery_admission.charged_work();
+        let duplicate_witness = SealedNativeOutputWitness::from_checkpoint_facts(
+            &correspondence, layout, &duplicate_facts, owner, &mut recovery_admission,
+        ).unwrap().unwrap();
+        assert!(duplicate_witness.get().unwrap().checkpoint_facts_current_in(
+            runtime, &before, &duplicate_facts, &mut recovery_admission,
+        ).unwrap());
+        let duplicate_work = recovery_admission.charged_work() - duplicate_start;
+        assert!(duplicate_work <= duplicate_bound);
+        assert!(duplicate_work < 100_001, "the declared worst case is not prepaid");
         let mut exhausted = owner.read_admission(witness_work + 2);
         assert!(matches!(witness.checkpoint_facts_current_in(runtime, &before,
             std::slice::from_ref(&indexed), &mut exhausted),

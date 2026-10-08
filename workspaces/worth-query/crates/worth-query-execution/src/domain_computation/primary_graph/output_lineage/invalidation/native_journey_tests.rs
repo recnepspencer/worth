@@ -32,6 +32,8 @@ mod precommit_chain;
 mod replay_propagation;
 #[path = "native_journey_tests/required_hints.rs"]
 mod required_hints;
+#[path = "native_journey_tests/retained_categories.rs"]
+mod retained_categories;
 #[path = "native_journey_tests/shared_versions.rs"]
 mod shared_versions;
 #[path = "native_journey_tests/unchanged_history.rs"]

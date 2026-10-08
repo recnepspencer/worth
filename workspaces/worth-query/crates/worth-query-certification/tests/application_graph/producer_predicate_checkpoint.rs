@@ -49,6 +49,12 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             panic!("the bounded producer must settle");
         };
         assert_eq!(settled.producer_contacts_in_this_demand(), 1);
+        assert_eq!(settled.checkpoint_readmission_work_units(), 0);
+        assert_eq!(settled.checkpoint_readmission_work_bound(), 0);
+        assert_eq!(
+            settled.checkpoint_readmission_charged_preparation_bytes(),
+            0
+        );
         assert!(settled.application_commit_receipt().is_some());
         let subject = settled
             .outputs_of::<RetentionAssessmentOutputs>()
@@ -108,6 +114,18 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         settled.application_commit_receipt().is_none(),
         "this authority came from the checkpoint"
     );
+    assert!(
+        settled.checkpoint_readmission_work_units() > 0,
+        "the public settlement must carry the real checkpoint comparison's charged work"
+    );
+    assert!(
+        settled.checkpoint_readmission_work_units() <= settled.checkpoint_readmission_work_bound(),
+        "accepted readmission work must remain within its owner-computed ceiling"
+    );
+    assert!(
+        settled.checkpoint_readmission_charged_preparation_bytes() > 0,
+        "the public settlement must carry the real readmission owner's admitted scratch"
+    );
     assert_eq!(
         settled
             .outputs_of::<RetentionAssessmentOutputs>()
@@ -150,6 +168,12 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         panic!("changed source must produce a fresh assessment");
     };
     assert_eq!(refreshed.producer_contacts_in_this_demand(), 1);
+    assert_eq!(refreshed.checkpoint_readmission_work_units(), 0);
+    assert_eq!(refreshed.checkpoint_readmission_work_bound(), 0);
+    assert_eq!(
+        refreshed.checkpoint_readmission_charged_preparation_bytes(),
+        0
+    );
     assert!(refreshed.application_commit_receipt().is_some());
     let current = request.retain_read().unwrap();
     request
