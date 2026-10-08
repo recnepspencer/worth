@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use std::sync::Arc;
 
 mod capture;
 mod encode;
@@ -38,9 +39,11 @@ const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
 ///
 /// Query alone defines and admits the payload. Hosts retain and transport the
 /// bytes without interpreting model facts or reconstructing a partial runtime.
+/// Clones share immutable byte backing. Decoding retains that same backing for
+/// the embedded native region; native recovery still owns fresh readmission.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCheckpoint {
-    bytes: Box<[u8]>,
+    bytes: Arc<Box<[u8]>>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct DecodedApplicationCheckpoint {
@@ -53,7 +56,7 @@ pub(in crate::domain_computation::primary_graph) struct DecodedApplicationCheckp
 impl WorthQueryApplicationCheckpoint {
     pub fn from_untrusted_bytes(bytes: impl Into<Box<[u8]>>) -> Self {
         Self {
-            bytes: bytes.into(),
+            bytes: Arc::new(bytes.into()),
         }
     }
 

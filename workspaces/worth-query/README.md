@@ -32,6 +32,14 @@ handles, and pending cleanup are memory-resident. Process loss releases those
 capabilities. Restart durability belongs to Store and requires fresh owner
 readmission; Query does not serialize live authority.
 
+`WorthQueryApplicationCheckpoint` clones share immutable byte backing. Query
+capture wraps its final boxed buffer once; decode verifies the existing framing
+and checksum before handing the same backing to the embedded native checkpoint.
+The native region retains the enclosing buffer until its last owner drops.
+Constructing shared custody allocates an Arc header without copying the moved
+payload. Byte-value equality, wire format, native recovery admission and graph
+authority remain unchanged; sharing does not fund or release resource tickets.
+
 Required output progression rechecks native consumer decision facts before
 following its previously consumed dependencies. Sealed child entity/field content
 is excluded from the independent-fact check. Changed consumer fields or

@@ -2,6 +2,8 @@ mod compatibility;
 
 use sha2::{Digest, Sha256};
 
+#[path = "tests/backing.rs"]
+mod backing;
 #[path = "tests/fact_versions.rs"]
 mod fact_versions;
 
@@ -46,24 +48,6 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
 fn accepted_output_count_is_bounded_before_allocation() {
     let body = checkpoint_body(1, Vec::new());
     assert_denied(body, "accepted-output count exceeds its payload");
-}
-
-#[test]
-fn decoded_native_payload_uses_the_verified_query_buffer() {
-    let mut body = Vec::new();
-    body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
-    body.extend_from_slice(&1_u64.to_be_bytes());
-    body.extend_from_slice(&3_u64.to_be_bytes());
-    body.extend_from_slice(&0_u64.to_be_bytes());
-    body.extend_from_slice(b"abc");
-    let checkpoint = checkpoint_from_body(body);
-    let expected = checkpoint
-        .bytes()
-        .as_ptr()
-        .wrapping_add(super::HEADER_BYTES);
-    let decoded = checkpoint.decode().expect("Query framing is valid");
-    assert_eq!(decoded.native.bytes(), b"abc");
-    assert_eq!(decoded.native.bytes().as_ptr(), expected);
 }
 
 #[test]

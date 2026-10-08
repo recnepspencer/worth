@@ -91,6 +91,14 @@ Worth Store integration.
 
 ## Validated transitions before recovered installation
 
+`RelationalNativeCheckpoint` retains immutable byte backing. Clones share that
+backing and preserve the selected byte region and any runtime capture-section
+metadata. `from_untrusted_bytes_region` accepts `Arc<Box<[u8]>>` so an enclosing
+checkpoint can pass the same backing without copying its payload. Wrapping a
+moved box allocates an Arc header, not another payload buffer. Equality compares
+selected byte values. Byte custody does not confer recovery authority; each
+restore still authenticates and readmits the native checkpoint.
+
 `restore_native_checkpoint_with_authority` issues linear recovery authority
 for the verified runtime's exact branch images. Applications that must change
 that image before installing their recovered world can prepare a normal native

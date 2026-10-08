@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use std::sync::Arc;
 use worth_relational::facade::durability::{DurabilityError, RecoveryFailureClass};
 
 use super::{
@@ -47,7 +48,7 @@ impl WorthQueryApplicationCheckpoint {
         debug_assert_eq!(sections.total_bytes(), bytes.len());
         Ok((
             Self {
-                bytes: bytes.into_boxed_slice(),
+                bytes: Arc::new(bytes.into_boxed_slice()),
             },
             sections,
         ))
