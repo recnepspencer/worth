@@ -9,60 +9,19 @@ use crate::indexes::projected_field_values::join_endpoints;
 use crate::runtime::VisibilityProjectionView;
 use crate::storage::data::RelationReadRecord;
 
-use super::{changes::ChangedRecords, entry_edits::edit, reads, work::MaintenanceWork};
+use super::{
+    change_routing::ChangeRouting, entry_edits::edit, reads, record_metadata, work::MaintenanceWork,
+};
 
 pub(super) fn refresh(
     entries: &mut DerivedIndexEntryMap<RelationJoinKey, RelationJoinEntry>,
     definition: RelationJoinDefinition,
-    changes: &ChangedRecords,
+    changes: &ChangeRouting,
     before: Option<&VisibilityProjectionView<'_>>,
     after: &VisibilityProjectionView<'_>,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
-    let mut affected = BTreeSet::new();
-    for relation_id in &changes.relations {
-        for view in before.into_iter().chain(std::iter::once(after)) {
-            let Some(relation) = reads::relation(Some(view), *relation_id, work)? else {
-                continue;
-            };
-            for leg in [definition.left(), definition.right()] {
-                if relation.kind.kind_id == leg.relation_kind() {
-                    work.charge(1)?;
-                    affected.insert(join_endpoints(&relation, leg.shared_endpoint()).0);
-                }
-            }
-        }
-    }
-    for entity_id in &changes.entities {
-        let old_kind = reads::entity(before, *entity_id, work)?.map(|record| record.kind.kind_id);
-        let new_kind =
-            reads::entity(Some(after), *entity_id, work)?.map(|record| record.kind.kind_id);
-        if old_kind == new_kind {
-            continue;
-        }
-        if old_kind == Some(definition.shared_entity_kind())
-            || new_kind == Some(definition.shared_entity_kind())
-        {
-            work.charge(1)?;
-            affected.insert(*entity_id);
-        }
-        for leg in [definition.left(), definition.right()] {
-            if old_kind != Some(leg.external_entity_kind())
-                && new_kind != Some(leg.external_entity_kind())
-            {
-                continue;
-            }
-            for view in before.into_iter().chain(std::iter::once(after)) {
-                let outgoing = leg.shared_endpoint() == RelationJoinSharedEndpoint::Target;
-                for relation in
-                    reads::adjacency(view, *entity_id, leg.relation_kind(), outgoing, work)?
-                {
-                    work.charge(1)?;
-                    affected.insert(join_endpoints(&relation, leg.shared_endpoint()).0);
-                }
-            }
-        }
-    }
+    let affected = affected_shared(definition, changes, before, after, work)?;
     for shared in affected {
         let old = rows_for_shared(before, shared, definition, work)?;
         let new = rows_for_shared(Some(after), shared, definition, work)?;
@@ -80,6 +39,73 @@ pub(super) fn refresh(
     Ok(())
 }
 
+fn affected_shared(
+    definition: RelationJoinDefinition,
+    changes: &ChangeRouting,
+    before: Option<&VisibilityProjectionView<'_>>,
+    after: &VisibilityProjectionView<'_>,
+    work: &mut MaintenanceWork,
+) -> Result<BTreeSet<EntityId>, Denial> {
+    let mut affected = BTreeSet::new();
+    let legs = [definition.left(), definition.right()];
+    for (i, leg) in legs.iter().enumerate() {
+        if i == 1 && leg.relation_kind() == legs[0].relation_kind() {
+            continue;
+        }
+        for change in changes.relations(leg.relation_kind(), work)? {
+            work.charge(1)?;
+            for relation in change.old.into_iter().chain(change.new) {
+                if relation.kind != leg.relation_kind() {
+                    continue;
+                }
+                for matched in legs.iter().filter(|l| l.relation_kind() == relation.kind) {
+                    let shared = match matched.shared_endpoint() {
+                        RelationJoinSharedEndpoint::Source => relation.source,
+                        RelationJoinSharedEndpoint::Target => relation.target,
+                    };
+                    work.charge(1)?;
+                    work.ordered::<EntityId, ()>(affected.len(), 1, 0)?;
+                    affected.insert(shared);
+                }
+            }
+        }
+    }
+    let kinds = [
+        definition.shared_entity_kind(),
+        legs[0].external_entity_kind(),
+        legs[1].external_entity_kind(),
+    ];
+    for (i, kind) in kinds.iter().enumerate() {
+        if kinds[..i].contains(kind) {
+            continue;
+        }
+        for change in changes.entities(*kind, work)? {
+            work.charge(1)?;
+            if change.old == change.new {
+                continue;
+            }
+            if *kind == definition.shared_entity_kind() {
+                work.charge(1)?;
+                work.ordered::<EntityId, ()>(affected.len(), 1, 0)?;
+                affected.insert(change.id);
+            }
+            for leg in legs.iter().filter(|l| l.external_entity_kind() == *kind) {
+                for view in before.into_iter().chain(std::iter::once(after)) {
+                    let outgoing = leg.shared_endpoint() == RelationJoinSharedEndpoint::Target;
+                    for relation in
+                        reads::adjacency(view, change.id, leg.relation_kind(), outgoing, work)?
+                    {
+                        work.charge(1)?;
+                        work.ordered::<EntityId, ()>(affected.len(), 1, 0)?;
+                        affected.insert(join_endpoints(&relation, leg.shared_endpoint()).0);
+                    }
+                }
+            }
+        }
+    }
+    Ok(affected)
+}
+
 fn rows_for_shared(
     view: Option<&VisibilityProjectionView<'_>>,
     shared: EntityId,
@@ -89,7 +115,7 @@ fn rows_for_shared(
     let Some(view) = view else {
         return Ok(BTreeMap::new());
     };
-    if reads::entity(Some(view), shared, work)?.map(|record| record.kind.kind_id)
+    if record_metadata::entity_kind(Some(view), shared, work)?
         != Some(definition.shared_entity_kind())
     {
         return Ok(BTreeMap::new());
@@ -135,8 +161,7 @@ fn insert_leg(
     if observed_shared != shared {
         return Ok(());
     }
-    if reads::entity(Some(view), external, work)?.map(|record| record.kind.kind_id)
-        != Some(leg.external_entity_kind())
+    if record_metadata::entity_kind(Some(view), external, work)? != Some(leg.external_entity_kind())
     {
         return Ok(());
     }

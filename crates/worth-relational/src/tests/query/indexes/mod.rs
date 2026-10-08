@@ -15,6 +15,7 @@ mod historical_relation_field_lookup;
 mod main_branch_unique_recovery;
 mod maintenance;
 mod maintenance_admission;
+mod maintenance_kind_routing;
 mod maintenance_lifecycle;
 mod maintenance_locality;
 mod maintenance_slot_reuse;

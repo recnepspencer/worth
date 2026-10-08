@@ -1,4 +1,4 @@
-use super::{changes::ChangedRecords, join, ordering, work::MaintenanceWork};
+use super::{change_routing::ChangeRouting, join, ordering, work::MaintenanceWork};
 use crate::indexes::data::{
     DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexKind,
     DerivedIndexMaintenanceDenialKind,
@@ -22,7 +22,7 @@ pub(super) fn empty_entries(kind: &DerivedIndexKind) -> DerivedIndexEntries {
 pub(super) fn update_entries(
     definition: &DerivedIndexDefinition,
     entries: &mut DerivedIndexEntries,
-    changes: &ChangedRecords,
+    changes: &ChangeRouting,
     before: Option<&VisibilityProjectionView<'_>>,
     after: &VisibilityProjectionView<'_>,
     work: &mut MaintenanceWork,
