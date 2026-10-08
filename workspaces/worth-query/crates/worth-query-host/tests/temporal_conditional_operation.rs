@@ -24,6 +24,8 @@ mod schema;
 mod selected_product_lifecycle;
 #[path = "temporal_conditional_operation/selected_product_reads.rs"]
 mod selected_product_reads;
+#[path = "temporal_conditional_operation/retained_query_batch.rs"]
+mod retained_query_batch;
 #[path = "temporal_conditional_operation/shared_root_progress.rs"]
 mod shared_root_progress;
 #[path = "temporal_conditional_operation/world.rs"]

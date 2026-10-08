@@ -10,6 +10,12 @@ mod authorization_observation;
 mod authorization_work;
 mod authorized_read;
 mod basis;
+mod batch;
+pub use batch::{
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
+    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial,
+    WorthQueryApplicationQueryBatchWork,
+};
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 mod continuation;
@@ -98,6 +104,7 @@ pub use observed_source::{
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
 };
 pub use one_shot::{
+    WorthQueryApplicationBatchReadDenial,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
     WorthQueryApplicationOneShotResult,
 };

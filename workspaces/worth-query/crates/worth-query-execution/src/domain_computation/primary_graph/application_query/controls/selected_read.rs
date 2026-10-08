@@ -38,6 +38,7 @@ impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,
             maximum_work,
+            maximum_inline_result_bytes: None,
             request_scope,
             _schema: PhantomData,
         })

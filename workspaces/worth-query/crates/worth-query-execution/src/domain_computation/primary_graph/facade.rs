@@ -99,6 +99,10 @@ pub use super::application_program::{
 #[cfg(feature = "test-query-execution-observer")]
 pub use super::application_query::query_read_kernel_entries_on_this_thread_for_test;
 pub use super::application_query::{
+    WorthQueryApplicationBatchReadDenial,
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
+    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial,
+    WorthQueryApplicationQueryBatchWork,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
@@ -257,7 +261,7 @@ pub use super::product_operation::{
     WorthQueryPerformedBranchAdoption, WorthQueryPerformedConditionalDefinitionPublication,
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
     WorthQueryPreparedProgramMigration, WorthQueryProductEntry, WorthQueryProductHistory,
-    WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
+    WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
     WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,

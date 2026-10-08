@@ -3,6 +3,9 @@ use std::sync::{
     Arc,
 };
 
+use super::super::batch::{
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchMemory,
+};
 use super::lifecycle_count::{acquire, release};
 
 #[derive(Default)]
@@ -55,6 +58,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationRes
     retained_bytes: usize,
     peak_bytes: usize,
     released: bool,
+    batch: Option<WorthQueryApplicationQueryBatchAdmission>,
+    batch_buffer: Option<WorthQueryApplicationQueryBatchMemory>,
 }
 
 /// Bytes admitted by a query result buffer and retained by a disclosed source.
@@ -62,6 +67,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 {
     state: Arc<ResultBufferRegistryState>,
     bytes: usize,
+    _batch: Option<WorthQueryApplicationQueryBatchMemory>,
 }
 
 impl WorthQueryApplicationResultBufferRegistry {
@@ -85,7 +91,24 @@ impl WorthQueryApplicationResultBufferRegistry {
             retained_bytes: 0,
             peak_bytes: 0,
             released: false,
+            batch: None,
+            batch_buffer: None,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn reserve_in_batch(
+        &self,
+        limit_bytes: usize,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+    ) -> WorthQueryApplicationResultBufferReservation {
+        let mut reservation = self.reserve(limit_bytes);
+        reservation.batch = Some(batch.retained_meter());
+        reservation.batch_buffer = Some(
+            batch
+                .claim_memory(0)
+                .expect("a zero claim cannot exceed an admitted allowance"),
+        );
+        reservation
     }
 }
 
@@ -145,7 +168,13 @@ impl WorthQueryApplicationResultBufferReservation {
             self.record_rejected(claimed);
             return Err(());
         }
+        if let Some(batch) = &mut self.batch_buffer {
+            batch.grow(bytes).map_err(|_| ())?;
+        }
         if acquire(&self.registry.state.retained_bytes, bytes).is_err() {
+            if let Some(batch) = &mut self.batch_buffer {
+                batch.release(bytes);
+            }
             self.record_rejected(usize::MAX);
             return Err(());
         }
@@ -166,6 +195,12 @@ impl WorthQueryApplicationResultBufferReservation {
         &self,
         bytes: usize,
     ) -> Result<WorthQueryRetainedSourceCharge, ()> {
+        let batch = self
+            .batch
+            .as_ref()
+            .map(|batch| batch.claim_memory(bytes))
+            .transpose()
+            .map_err(|_| ())?;
         if acquire(&self.registry.state.retained_bytes, bytes).is_err() {
             self.record_rejected(usize::MAX);
             return Err(());
@@ -173,6 +208,7 @@ impl WorthQueryApplicationResultBufferReservation {
         Ok(WorthQueryRetainedSourceCharge {
             state: Arc::clone(&self.registry.state),
             bytes,
+            _batch: batch,
         })
     }
 
@@ -194,6 +230,9 @@ impl WorthQueryApplicationResultBufferReservation {
         release(&self.registry.state.retained_bytes, bytes)
             .expect("global result-buffer retention cannot underflow");
         self.retained_bytes -= bytes;
+        if let Some(batch) = &mut self.batch_buffer {
+            batch.release(bytes);
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn verify_retained(
@@ -223,6 +262,7 @@ impl WorthQueryApplicationResultBufferReservation {
         release(&self.registry.state.active_buffers, 1)
             .expect("live application-query result-buffer count cannot underflow");
         self.retained_bytes = 0;
+        self.batch_buffer = None;
         self.released = true;
     }
 }

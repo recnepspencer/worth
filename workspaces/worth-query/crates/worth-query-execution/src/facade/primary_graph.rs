@@ -40,6 +40,10 @@ pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
 pub use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationBatchReadDenial,
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
+    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial,
+    WorthQueryApplicationQueryBatchWork,
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler,
     WorthQueryAdmittedApplicationCapabilityAccess,
@@ -202,7 +206,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode, WorthQueryPriorOutputFamilyMember,
     WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
     WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
-    WorthQueryProductQueryControls, WorthQueryProductStaleApplication,
+    WorthQueryProductQueryControls, WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryProductStaleApplication,
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
     WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
     WorthQueryProgramCustodyDisposition, WorthQueryProgramCustodyDispositionInventory,
