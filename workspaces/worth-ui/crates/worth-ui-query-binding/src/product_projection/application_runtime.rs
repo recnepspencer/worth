@@ -129,7 +129,7 @@ fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
     .expect("the UI product resources are statically valid");
     WorthQueryInMemoryApplicationLimits::new(
         world,
-        WorthQueryApplicationCandidateResourceProfile::bounded(512, 131_072, 4_096)
+        WorthQueryApplicationCandidateResourceProfile::physical_resources(512, 131_072)
             .expect("the UI candidate limits are statically non-zero"),
         WorthQueryApplicationQueryResourceProfile::bounded(512, 8_192, 8_192, 16)
             .expect("the UI query limits are statically non-zero"),

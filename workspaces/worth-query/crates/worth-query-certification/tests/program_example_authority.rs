@@ -3,7 +3,6 @@ pub mod product_workflow_support;
 
 mod execution_memory;
 mod mutation_attempt_report;
-mod optional_validator_work;
 
 use product_workflow_support::adapters::ClockSource;
 use product_workflow_support::application::{example_limits, seed_graph};

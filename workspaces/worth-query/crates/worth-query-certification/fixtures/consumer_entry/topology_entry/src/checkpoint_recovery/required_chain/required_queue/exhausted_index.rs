@@ -163,7 +163,7 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
             scope_key: "anchor-c".to_owned(),
             operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
                 body_key: "anchor-c".to_owned(), replacement_y: length(y),
-            }]), validator_work: 4_096,
+            }]),
         })).expect_source(selected.observed_sources()[0].clone())
             .idempotency(&(0x9176_3e80_u64 + position))
             .execute_in_program::<program::ChainProgram>(

@@ -124,16 +124,7 @@ fn application_resource_contract(
             candidate_demand.candidate_items(),
         )
         .with(WorthQuerySemanticScaleAxis::BatchWidth, program_width);
-    let scale = match candidate_demand
-        .candidate_ceiling()
-        .and_then(|c| c.resources().maximum_validator_work())
-    {
-        Some(_) => scale.with(
-            WorthQuerySemanticScaleAxis::WorkItems,
-            candidate_demand.validator_work(),
-        ),
-        None => scale,
-    };
+
     let envelope = WorthQueryExecutionResourceEnvelope::atomic(
         scale,
         WorthQueryResourceLimitRequest::selective()

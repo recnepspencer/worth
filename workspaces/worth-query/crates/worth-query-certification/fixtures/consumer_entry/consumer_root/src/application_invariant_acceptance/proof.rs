@@ -91,7 +91,6 @@ pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>
 
     typed_invariant_access_is_bounded(&request, &world);
     typed_domain_denial_has_no_publication(&request, &world);
-    insufficient_work_is_denied_before_owner(&request, &world);
     publication::create_and_reject_cycles(&request, &world.application);
     prior_output_family::branch_local_inventory_drives_real_publications(
         &world.application,
@@ -134,7 +133,7 @@ pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>
         output_correspondence::observed_source(&foreign_request, "anchor-a"),
     );
     output_correspondence::run(&request, &world.application);
-    println!("Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, early work exhaustion, and idempotency");
+    println!("Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, idempotency");
 }
 
 fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation::ConsumerWorld) {
@@ -145,7 +144,7 @@ fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation
     require_invariant_access_failure(mutate(
         request,
         &world.application,
-        adjust("anchor-a", 2, 4096),
+        adjust("anchor-a", 2),
         901,
     ));
     world
@@ -154,7 +153,7 @@ fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation
     require_invariant_access_failure(mutate(
         request,
         &world.application,
-        adjust("anchor-a", 2, 4096),
+        adjust("anchor-a", 2),
         902,
     ));
     world
@@ -193,7 +192,6 @@ fn typed_domain_denial_has_no_publication(
         PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::CreateCycle(Vec::new()),
-            validator_work: 4096,
         },
         2,
     );
@@ -207,43 +205,12 @@ fn typed_domain_denial_has_no_publication(
     assert_eq!(world.invariant_calls.load(Ordering::SeqCst), calls);
 }
 
-fn insufficient_work_is_denied_before_owner(
-    request: &Request<'_>,
-    world: &installation::ConsumerWorld,
-) {
-    let calls = world.invariant_calls.load(Ordering::SeqCst);
-    let before = source_version(request);
-    let outcome = mutate(request, &world.application, adjust("anchor-a", 2, 1), 1);
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-        denial,
-    )) = outcome
-    else {
-        panic!("insufficient validator work must deny at invariant admission: {outcome:?}")
-    };
-    assert!(matches!(denial.kind(),
-        WorthQueryApplicationCommitDenialKind::CandidateValidatorWorkExceeded {
-            maximum_work: 1, required_work,
-        } if required_work > 1
-    ));
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::InvariantExecution
-    );
-    assert_eq!(
-        world.invariant_calls.load(Ordering::SeqCst),
-        calls,
-        "a rejected work reservation must not invoke the custom rule"
-    );
-    assert_eq!(source_version(request), before);
-    assert_eq!(read_y(request, "anchor-a"), 1);
-}
-
 fn actual_candidate_checks_untouched_neighbors(
     request: &Request<'_>,
     world: &installation::ConsumerWorld,
 ) {
     let calls = world.invariant_calls.load(Ordering::SeqCst);
-    let valid = adjust("anchor-a", 2, 4096);
+    let valid = adjust("anchor-a", 2);
     let source = output_correspondence::observed_source(request, &valid.scope_key);
     let outcome = request
         .mutate(PlanarEdit(valid.clone()))
@@ -278,12 +245,7 @@ fn actual_candidate_checks_untouched_neighbors(
     assert!(recovered.is_same_authoritative_commit(&receipt));
 
     let before = source_version(request);
-    let malformed = mutate(
-        request,
-        &world.application,
-        adjust("anchor-a", 12, 4096),
-        11,
-    );
+    let malformed = mutate(request, &world.application, adjust("anchor-a", 12), 11);
     require_planar_violation(malformed);
     assert_eq!(
         source_version(request),
@@ -350,14 +312,13 @@ fn mutate(
         .expect("the typed request reaches the actual mutation owner")
 }
 
-fn adjust(key: &str, y: u64, validator_work: usize) -> PlanarMutation {
+fn adjust(key: &str, y: u64) -> PlanarMutation {
     PlanarMutation {
         scope_key: "anchor-a".to_owned(),
         operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
             body_key: key.to_owned(),
             replacement_y: length(y),
         }]),
-        validator_work,
     }
 }
 

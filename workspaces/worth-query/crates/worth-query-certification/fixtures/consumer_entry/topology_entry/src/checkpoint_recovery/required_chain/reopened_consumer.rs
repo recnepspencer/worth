@@ -131,7 +131,6 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
                     value: length(9),
                 },
             ),
-            validator_work: 4_096,
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_3381_u64)

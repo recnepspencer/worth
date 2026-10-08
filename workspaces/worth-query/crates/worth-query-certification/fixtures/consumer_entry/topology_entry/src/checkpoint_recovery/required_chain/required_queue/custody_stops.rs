@@ -285,7 +285,6 @@ fn overwrite_middle_output(
                 body_key: "anchor-b".to_owned(),
                 value: length(value),
             }),
-            validator_work: 4_096,
         }))
         .expect_source(selected.observed_sources()[0].clone())
         .idempotency(&idempotency)

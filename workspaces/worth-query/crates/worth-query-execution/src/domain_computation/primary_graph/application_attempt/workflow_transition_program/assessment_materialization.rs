@@ -253,7 +253,7 @@ where
             WorkflowInstanceState::Ready,
             |effect| { effects.push(effect); Ok::<(), WorthQueryApplicationAttemptDenial>(()) },
         )?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         let progress_update = admitted.prepare_progress_update(
             worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
             None,
@@ -265,7 +265,6 @@ where
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-            validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

@@ -814,13 +814,15 @@ descriptive history.
 
 ### 9.9 Resources and budgets
 
-Every resource is bounded, and caller limits can only restrict installed policy.
+Declared resource limits and independent algorithm controls are enforced by their
+owners; caller limits can only restrict the installed policy where that policy applies.
 
 Ordinary callers do not calculate Query's internal traversal or validator work.
 Installed host profiles supply finite operational safeguards; declarations state
 semantic result/effect scope and may add deliberate tighter caps. Candidate
-validator allowances derive from the installed invariant closure. Composed demand
-admission intersects host, caller and child ceilings, then checks the child's
+validation has no aggregate work quota or descriptor-max prediction; installed
+invariants retain their own algorithm controls and actual execution evidence.
+Composed demand admission intersects host, caller and child ceilings, then checks the child's
 required resources. Work counters are safeguards and diagnostics, not claims
 about elapsed performance or total process memory.
 

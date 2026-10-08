@@ -9,7 +9,6 @@ use worth_query_declaration::facade::application_operation::{
 pub(in crate::application_operation) struct WorthQueryApplicationCandidateDemand {
     candidate_items: u64,
     retained_representation_bytes: u64,
-    validator_work: u64,
     candidate_ceiling: Option<ApplicationCandidateRequirements>,
     workflow_settlement_ceiling: Option<ApplicationCandidateRequirements>,
 }
@@ -18,14 +17,12 @@ pub(in crate::application_operation) struct WorthQueryApplicationCandidateDemand
 // declared writer reservation; it bounds one local workflow settlement.
 const WORKFLOW_SETTLEMENT_ITEMS: u64 = 13;
 const WORKFLOW_SETTLEMENT_RETAINED_BYTES: u64 = 65_536;
-const WORKFLOW_SETTLEMENT_VALIDATOR_WORK: u64 = 13;
 
 fn workflow_settlement_ceiling() -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(1, 0, 2, 1, 9, 0),
-        ApplicationCandidateResourceCeiling::bounded(
+        ApplicationCandidateResourceCeiling::representation_bytes(
             WORKFLOW_SETTLEMENT_RETAINED_BYTES as usize,
-            WORKFLOW_SETTLEMENT_VALIDATOR_WORK as usize,
         ),
     )
 }
@@ -67,19 +64,6 @@ impl WorthQueryApplicationCandidateDemand {
                         0
                     })
                     .ok_or(())?,
-                    validator_work: u64::try_from(
-                        requirements
-                            .resources()
-                            .maximum_validator_work()
-                            .unwrap_or(0),
-                    )
-                    .map_err(|_| ())?
-                    .checked_add(if workflow_settlement {
-                        WORKFLOW_SETTLEMENT_VALIDATOR_WORK
-                    } else {
-                        0
-                    })
-                    .ok_or(())?,
                     candidate_ceiling: Some(requirements),
                     workflow_settlement_ceiling: workflow_settlement
                         .then(workflow_settlement_ceiling),
@@ -94,7 +78,6 @@ impl WorthQueryApplicationCandidateDemand {
                         retained_representation_bytes: maximum
                             .retained_representation_bytes
                             .max(candidate.retained_representation_bytes),
-                        validator_work: maximum.validator_work.max(candidate.validator_work),
                         candidate_ceiling: match (
                             maximum.candidate_ceiling,
                             candidate.candidate_ceiling,
@@ -125,12 +108,8 @@ impl WorthQueryApplicationCandidateDemand {
             let bytes = retained_bytes(ceiling)?
                 .checked_add(sidecar.map_or(Ok(0), retained_bytes)?)
                 .ok_or(())?;
-            let work = validator_units(ceiling)?
-                .checked_add(sidecar.map_or(Ok(0), validator_units)?)
-                .ok_or(())?;
             self.candidate_items = self.candidate_items.max(items);
             self.retained_representation_bytes = self.retained_representation_bytes.max(bytes);
-            self.validator_work = self.validator_work.max(work);
         }
         Ok(())
     }
@@ -141,10 +120,6 @@ impl WorthQueryApplicationCandidateDemand {
 
     pub(in crate::application_operation) const fn retained_representation_bytes(self) -> u64 {
         self.retained_representation_bytes
-    }
-
-    pub(in crate::application_operation) const fn validator_work(self) -> u64 {
-        self.validator_work
     }
 
     pub(in crate::application_operation) const fn candidate_ceiling(
@@ -165,16 +140,6 @@ fn retained_bytes(requirements: ApplicationCandidateRequirements) -> Result<u64,
         requirements
             .resources()
             .maximum_retained_representation_bytes(),
-    )
-    .map_err(|_| ())
-}
-
-fn validator_units(requirements: ApplicationCandidateRequirements) -> Result<u64, ()> {
-    u64::try_from(
-        requirements
-            .resources()
-            .maximum_validator_work()
-            .unwrap_or(0),
     )
     .map_err(|_| ())
 }
@@ -230,15 +195,7 @@ fn maximum_resources(
     let bytes = left
         .maximum_retained_representation_bytes()
         .max(right.maximum_retained_representation_bytes());
-    match (
-        left.maximum_validator_work(),
-        right.maximum_validator_work(),
-    ) {
-        (Some(left), Some(right)) => {
-            ApplicationCandidateResourceCeiling::bounded(bytes, left.max(right))
-        }
-        _ => ApplicationCandidateResourceCeiling::representation_bytes(bytes),
-    }
+    ApplicationCandidateResourceCeiling::representation_bytes(bytes)
 }
 
 #[cfg(test)]
@@ -293,11 +250,11 @@ mod tests {
     fn complementary_workflow_quote_covers_both_admitted_ceilings() {
         let first = ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(7, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::bounded(32, 7),
+            ApplicationCandidateResourceCeiling::representation_bytes(32),
         );
         let second = ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 11, 0),
-            ApplicationCandidateResourceCeiling::bounded(64, 11),
+            ApplicationCandidateResourceCeiling::representation_bytes(64),
         );
         for ceiling in [
             maximum_requirements(first, second),
@@ -306,14 +263,12 @@ mod tests {
             let mut demand = WorthQueryApplicationCandidateDemand {
                 candidate_items: 20,
                 retained_representation_bytes: 65_568,
-                validator_work: 20,
                 candidate_ceiling: Some(ceiling),
                 workflow_settlement_ceiling: Some(workflow_settlement_ceiling()),
             };
             demand.include_platform_ceiling().unwrap();
             assert_eq!(demand.candidate_items(), 31);
             assert_eq!(demand.retained_representation_bytes(), 65_600);
-            assert_eq!(demand.validator_work(), 24);
         }
         #[cfg(target_pointer_width = "64")]
         {
@@ -328,19 +283,6 @@ mod tests {
             let before = demand;
             assert_eq!(demand.include_platform_ceiling(), Err(()));
             assert_eq!(demand, before);
-        }
-    }
-
-    #[test]
-    fn any_omitted_binding_keeps_shared_operation_work_budget_absent() {
-        let automatic = ApplicationCandidateResourceCeiling::representation_bytes(16);
-        let explicit = ApplicationCandidateResourceCeiling::bounded(32, 7);
-        for resources in [
-            maximum_resources(automatic, explicit),
-            maximum_resources(explicit, automatic),
-        ] {
-            assert_eq!(resources.maximum_validator_work(), None);
-            assert_eq!(resources.maximum_retained_representation_bytes(), 32);
         }
     }
 }

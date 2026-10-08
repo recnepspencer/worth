@@ -30,7 +30,6 @@ fn atomic_batch_width_does_not_enlarge_actual_candidate_reservation() {
             envelope.resource_ceiling(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
             ),
-            None,
         )
     };
     let mut reservation = reserve(requirements(1)).unwrap();

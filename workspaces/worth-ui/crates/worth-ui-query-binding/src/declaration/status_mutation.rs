@@ -84,7 +84,7 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusUpdat
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 1),
-            ApplicationCandidateResourceCeiling::bounded(65_544, 256),
+            ApplicationCandidateResourceCeiling::representation_bytes(65_544),
         );
 
     fn scope_field() -> ApplicationFieldRef<

@@ -30,6 +30,27 @@ impl<T> Run<T> {
         key: &AdmittedFactKey,
         policy: super::StorageControl<'_, '_>,
     ) -> Result<Option<&Slot<T>>, StoreDenial> {
+        policy.check_live()?;
+        if self.used == 0 {
+            return Ok(None);
+        }
+        if self.slots[0]
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .key
+            .compare(key, policy)?
+            .is_gt()
+            || self.slots[self.used - 1]
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .key
+                .compare(key, policy)?
+                .is_lt()
+        {
+            return Ok(None);
+        }
         let mut low = 0;
         let mut high = self.used;
         while low < high {
@@ -95,8 +116,9 @@ impl<T> Run<T> {
             .checked_add(right.used)
             .ok_or(StoreDenial::Representability)?;
         // Both old arrays/tickets stay live while replacement admission happens.
-        let mut merged = Self::empty(count, policy)?;
-        while merged.used < count {
+        policy.check_live()?;
+        let mut merged = ExecutionArrayBuilder::allocate(count, policy.policy())?;
+        for _ in 0..count {
             policy.check_live()?;
             let from_left = match (left.head(), right.head()) {
                 (Some(a), Some(b)) => !a
@@ -115,10 +137,13 @@ impl<T> Run<T> {
             } else {
                 right.take_head()
             };
-            *merged.slots[merged.used].borrow_mut() = Some(value);
-            merged.used += 1;
+            merged.push(RefCell::new(Some(value)))?;
         }
         policy.check_live()?;
-        Ok(merged)
+        Ok(Self {
+            slots: merged.seal()?,
+            used: count,
+            cursor: Cell::new(0),
+        })
     }
 }

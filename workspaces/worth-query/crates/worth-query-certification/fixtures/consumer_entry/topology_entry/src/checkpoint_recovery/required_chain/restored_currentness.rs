@@ -56,7 +56,6 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
                 body_key: "anchor-a".to_owned(),
                 value: length(99),
             }),
-            validator_work: 4_096,
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_3301_u64)

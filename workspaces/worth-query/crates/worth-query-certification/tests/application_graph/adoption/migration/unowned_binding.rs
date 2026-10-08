@@ -63,7 +63,7 @@ impl
     const CANDIDATES: worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements =
         worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements::fixed_shape(
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::bounded(0, 0),
+            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(0),
         );
 
     fn scope_field(

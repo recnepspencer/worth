@@ -105,7 +105,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatus
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::bounded(1_024, 1_024),
+            ApplicationCandidateResourceCeiling::representation_bytes(1_024),
         );
 
     fn scope_field() -> ApplicationFieldRef<

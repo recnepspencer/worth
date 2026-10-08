@@ -124,7 +124,6 @@ struct WorthQueryProviderAttemptPreparation {
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
-    validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
@@ -172,7 +171,6 @@ where
         emission_retained_bytes_ceiling,
         conditional_definition,
         effect_posture,
-        validator_work_admission,
         output_correspondence,
         retain_output_demand_observation,
         retain_client_observation,
@@ -254,7 +252,6 @@ where
                 preimage_demand,
                 conditional_definition,
                 effect_posture,
-                validator_work_admission,
                 output_correspondence,
                 retain_output_demand_observation,
                 retain_client_observation,

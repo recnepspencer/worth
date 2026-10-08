@@ -151,7 +151,6 @@ pub(super) fn caller_disposal_before_progress_recovers(
                     y: length(3),
                 },
             ]),
-            validator_work: 4_096,
         }))
         .expect_source(unrelated_source)
         .idempotency(&10_012)

@@ -166,7 +166,6 @@ fn execute_verification(
     let input = PlanarMutation {
         scope_key: "anchor-a".to_owned(),
         operation: PlanarOperation::VerifyCurrentOutputs(expectations.to_vec()),
-        validator_work: 4096,
     };
     request
         .mutate(PlanarEdit(input))

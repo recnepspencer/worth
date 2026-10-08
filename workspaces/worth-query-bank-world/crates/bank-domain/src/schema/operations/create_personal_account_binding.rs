@@ -181,7 +181,7 @@ worth_query_mutation_binding!(
     field InstitutionIdentityField::reference(),
     value institution_scope,
     candidates creates 1, deletes 0, links 2, unlinks 0, writes 5, emits 0,
-    resources retained_representation_bytes CREATE_PERSONAL_ACCOUNT_RETAINED_BYTES, validator_work 16
+    resources retained_representation_bytes CREATE_PERSONAL_ACCOUNT_RETAINED_BYTES
 );
 
 fn derive_identity<const N: usize>(

@@ -21,11 +21,7 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// An installed custom invariant refused the candidate; see
     /// `custom_invariant_denial()`.
     CustomInvariantDenied,
-    /// Validating the candidate needed more work than its budget allows.
-    CandidateValidatorWorkExceeded {
-        maximum_work: usize,
-        required_work: usize,
-    },
+
     /// The workflow step this commit carries could not be settled; `kind` says why.
     WorkflowSettlementDenied {
         kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,

@@ -45,12 +45,7 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// budget allows.
     ExecutionBudgetExceeded,
     /// Validating the candidate would take more work than the validator bound.
-    CandidateValidatorWorkExceeded {
-        /// The validator's work bound.
-        maximum_work: usize,
-        /// The work this candidate needed.
-        required_work: usize,
-    },
+
     /// The provider has no port for this kind of invariant execution.
     ProviderUnsupported,
     /// The provider, or Relational behind it, refused the load, the touches, or

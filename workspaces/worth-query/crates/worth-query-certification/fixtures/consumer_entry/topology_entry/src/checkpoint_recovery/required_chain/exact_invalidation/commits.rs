@@ -78,7 +78,6 @@ impl Court<'_, '_, '_, '_> {
                     body_key: body.to_owned(),
                     value: length(value),
                 }),
-                validator_work: 4_096,
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
@@ -153,7 +152,6 @@ impl Court<'_, '_, '_, '_> {
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: anchor,
                 operation: PlanarOperation::CreateCycle(ring_world::vertices(index)),
-                validator_work: 4_096,
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())

@@ -20,7 +20,6 @@ pub(super) fn prepare_application_provider_attempt(
         preparation.emission_retained_bytes_ceiling,
         preparation.preimage_demand,
         preparation.conditional_definition,
-        preparation.validator_work_admission,
         preparation.output_correspondence,
         preparation.retain_output_demand_observation,
         preparation.retain_client_observation,

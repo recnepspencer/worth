@@ -6,6 +6,7 @@ use worth_execution::ExecutionAllocationPolicy as Policy;
 mod capture;
 mod custody;
 mod endpoints;
+mod run_lookup;
 mod streaming;
 
 struct Body {
@@ -64,18 +65,21 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
             )
             .unwrap();
     }
-    // This key is in an older directory run, not the current author chunk.
-    store
-        .insert(
-            key(b"fact-070", None, policy),
-            Body {
-                scalar: 70,
-                roles: 2,
-            },
-            policy,
-            merge,
-        )
-        .unwrap();
+    // Boundary and interior keys are in directory runs, not the author chunk.
+    for value in [0, 70, 95] {
+        let locator = format!("fact-{value:03}");
+        store
+            .insert(
+                key(locator.as_bytes(), None, policy),
+                Body {
+                    scalar: value,
+                    roles: 2,
+                },
+                policy,
+                merge,
+            )
+            .unwrap();
+    }
     let canonical = store.finish(policy).unwrap();
     assert_eq!(canonical.len(), 96);
     for (expected, record) in canonical.iter().enumerate() {
@@ -84,7 +88,14 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
             format!("fact-{expected:03}").as_bytes()
         );
         assert_eq!(record.value.scalar, expected as u64);
-        assert_eq!(record.value.roles, if expected == 70 { 3 } else { 1 });
+        assert_eq!(
+            record.value.roles,
+            if [0, 70, 95].contains(&expected) {
+                3
+            } else {
+                1
+            }
+        );
     }
     let authored = restore_authored_order(canonical, policy).unwrap();
     for (ordinal, record) in authored.iter().enumerate() {
@@ -96,37 +107,40 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
 #[test]
 fn conflicting_body_refuses_the_entire_attempt() {
     let policy = control(Policy::SystemAllocation);
-    let mut conflict = RetainedFactStore::new(policy).unwrap();
-    for value in 0..64 {
-        let locator = format!("fact-{value:03}");
-        conflict
-            .insert(
+    for conflicting_value in [0, 10, 63] {
+        let mut conflict = RetainedFactStore::new(policy).unwrap();
+        for value in 0..64 {
+            let locator = format!("fact-{value:03}");
+            conflict
+                .insert(
+                    key(locator.as_bytes(), None, policy),
+                    Body {
+                        scalar: value,
+                        roles: 1,
+                    },
+                    policy,
+                    merge,
+                )
+                .unwrap();
+        }
+        let locator = format!("fact-{conflicting_value:03}");
+        assert!(matches!(
+            conflict.insert(
                 key(locator.as_bytes(), None, policy),
                 Body {
-                    scalar: value,
-                    roles: 1,
+                    scalar: 999,
+                    roles: 1
                 },
                 policy,
-                merge,
-            )
-            .unwrap();
+                merge
+            ),
+            Err(StoreDenial::ConflictingBody)
+        ));
+        assert!(matches!(
+            conflict.finish(policy),
+            Err(StoreDenial::ConflictingBody)
+        ));
     }
-    assert!(matches!(
-        conflict.insert(
-            key(b"fact-010", None, policy),
-            Body {
-                scalar: 999,
-                roles: 1
-            },
-            policy,
-            merge
-        ),
-        Err(StoreDenial::ConflictingBody)
-    ));
-    assert!(matches!(
-        conflict.finish(policy),
-        Err(StoreDenial::ConflictingBody)
-    ));
 }
 
 fn control<'scope, 'authority>(

@@ -135,7 +135,6 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
                         output_key: "final:anchor-a".into(),
                     },
                 ]),
-                validator_work: 4096,
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&command)
@@ -164,7 +163,6 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
                 body_key: "final:anchor-a".into(),
                 value: support::length(12),
             }),
-            validator_work: 4096,
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_6203_u64)

@@ -98,9 +98,9 @@ fn installed_mutation_binding_resolves_exact_callback_free_contracts() {
         128,
         "candidate bytes must derive from the installed binding"
     );
-    assert!(
-        envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems) >= 4,
-        "validator work must admit the installed binding"
+    assert_eq!(
+        envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
+        None,
     );
     assert_eq!(
         binding.handler_identity(),

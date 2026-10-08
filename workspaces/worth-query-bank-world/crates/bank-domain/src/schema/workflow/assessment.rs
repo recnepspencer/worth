@@ -130,7 +130,7 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::bounded(1_024, 512),
+            ApplicationCandidateResourceCeiling::representation_bytes(1_024),
         );
 
     fn scope_field() -> ApplicationFieldRef<

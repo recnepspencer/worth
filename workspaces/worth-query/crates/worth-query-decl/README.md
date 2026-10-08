@@ -29,10 +29,11 @@ finite work safeguard. `bounded(n, work)` (macro `limits results n, work w`)
 adds a deliberate cap; ordinary code does not count internal traversal work.
 
 For candidate resources, `ApplicationCandidateResourceCeiling::representation_bytes(n)`
-lets Query derive validator allowance from installed invariant contracts. The
-mutation-binding macro likewise allows `resources retained_representation_bytes n`
-without `validator_work`. Explicit validator caps, effect cardinalities and byte
-limits remain enforced. These declarations grant no runtime capacity or authority.
+bounds the retained candidate representation. The mutation-binding macro uses
+`resources retained_representation_bytes n`. Effect cardinalities and byte limits
+remain enforced. Installed invariants validate the actual candidate under their
+own algorithm controls; no aggregate validator-work allowance is declared or
+predicted. These declarations grant no runtime capacity or authority.
 
 ## Application Program Meaning
 

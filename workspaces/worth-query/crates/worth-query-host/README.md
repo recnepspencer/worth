@@ -65,8 +65,9 @@ construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 
 `WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
 candidate profile, an application query profile, and a conditional evaluation
-budget. Candidate cardinality, retained representation bytes, and validator work
-remain distinct bounds. Installed handlers implement `decide`,
+budget. Candidate cardinality and retained representation bytes remain distinct
+bounds; `WorthQueryApplicationCandidateResourceProfile::physical_resources(items,
+bytes)` configures those existing capacities. Installed handlers implement `decide`,
 `candidate_requirements`, and `build_candidate`: decision reads retain facts,
 reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
@@ -148,11 +149,12 @@ its own advance authority; unfinished execution still requires the successor
 mode and installed producer edition to match.
 
 For ordinary candidate declarations, use
-`ApplicationCandidateResourceCeiling::representation_bytes(bytes)` (or omit
-`validator_work` in the mutation-binding macro). Installation derives validator
-allowance from the selected invariant contracts. Explicit validator caps can
-restrict that allowance; effect cardinality, bytes, actual closure checks, and
-host capacity remain enforced.
+`ApplicationCandidateResourceCeiling::representation_bytes(bytes)` and the mutation
+binding macro's `resources retained_representation_bytes bytes`. Effect cardinality,
+bytes, actual closure checks, and host capacity remain enforced. There is no
+aggregate candidate-validator-work quota or predicted descriptor-max allowance.
+Each installed invariant retains its own algorithm controls and actual execution
+work evidence.
 
 `application.discovery()` exposes declaration-derived `mutations()`, `queries()`,
 `query_requests()`, and `fields()`. These describe portable input/result and typed

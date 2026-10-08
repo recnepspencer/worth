@@ -26,7 +26,6 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     let source = WorthQueryCancellationSource::new();
     let request =
         WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(30), source.token());
-    assert_eq!(request.candidate_validator_work_budget(), None);
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
     let rejected = admitted_program(&world, &principal, &account, &request, "after-staging");

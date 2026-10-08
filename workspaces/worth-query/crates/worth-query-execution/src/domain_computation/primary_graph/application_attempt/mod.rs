@@ -88,7 +88,7 @@ pub(in crate::domain_computation::primary_graph) use effect_program::{
     OutputRoleUse, WorthQueryAdmittedApplicationEmissionBatch,
     WorthQueryApplicationCreationPartition, WorthQueryApplicationEmission,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationRealizedEffect,
-    WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
+    WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,

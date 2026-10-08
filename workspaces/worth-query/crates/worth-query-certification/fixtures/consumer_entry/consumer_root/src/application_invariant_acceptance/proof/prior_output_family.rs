@@ -264,7 +264,6 @@ fn create_cycle_from_points(
     let input = PlanarMutation {
         scope_key: "anchor-a".to_owned(),
         operation: PlanarOperation::CreateCycle(vertices),
-        validator_work: 4096,
     };
     let outcome = super::mutate(request, application, input, command);
     assert!(matches!(

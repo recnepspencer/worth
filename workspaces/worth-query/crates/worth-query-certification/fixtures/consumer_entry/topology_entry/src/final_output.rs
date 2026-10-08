@@ -70,8 +70,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.final-planar-mutation.v2";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.final-planar-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.final-planar-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements =
-        super::requirements(3, 3, 0, 12, 4096, 4096);
+    const CANDIDATES: ApplicationCandidateRequirements = super::requirements(3, 3, 0, 12, 4096);
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,

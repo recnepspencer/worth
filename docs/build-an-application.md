@@ -471,7 +471,7 @@ let runtime = application_installation::in_memory_program(
 // Same file: limits.
 application_installation::WorthQueryInMemoryApplicationLimits::new(
     product_world_resources(),
-    runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
+    runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(5_120, 2_048)
         .expect("valid candidate limits"),
     runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
         .expect("valid query limits"),

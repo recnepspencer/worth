@@ -209,7 +209,10 @@ fn provider_compare_denied(
         match failure.kind() {
             Kind::IndexMaintenanceBudgetExceeded => {
                 return WorthQueryProviderProgressionOutcome::Denied(
-                    Denial::index_maintenance_budget_exceeded(DenialStage::ProviderCommit),
+                    Denial::index_maintenance_budget_exceeded(
+                        DenialStage::ProviderCommit,
+                        provider_detail,
+                    ),
                 );
             }
             Kind::IndexGenerationIdentityExhausted => {
@@ -325,6 +328,11 @@ mod index_preparation_tests {
         assert_eq!(
             denial.kind(),
             crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
+        );
+        assert_eq!(denial.stage(), DenialStage::ProviderCommit);
+        assert_eq!(
+            denial.detail(),
+            Some("candidate index work exceeded its finite budget")
         );
     }
 }

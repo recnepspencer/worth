@@ -17,14 +17,6 @@ pub(super) enum CandidateItemKind {
 pub(super) struct WorthQueryCandidateReservation {
     remaining: ApplicationCandidateCardinalityCeiling,
     remaining_retained_representation_bytes: usize,
-    validator_work: WorthQueryCandidateValidatorWorkAdmission,
-}
-
-#[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryCandidateValidatorWorkAdmission {
-    UnreservedInternal,
-    NoAggregateLimit,
-    Reserved { maximum_work: usize },
 }
 
 impl WorthQueryCandidateReservation {
@@ -33,17 +25,10 @@ impl WorthQueryCandidateReservation {
         ceiling: ApplicationCandidateRequirements,
         candidate_item_capacity: u64,
         retained_representation_byte_capacity: u64,
-        validator_work_capacity: Option<u64>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let requested_cardinality = requested.cardinality();
         let ceiling_cardinality = ceiling.cardinality();
         let requested_total = total(requested_cardinality).ok_or_else(capacity_denial)?;
-        let declared_work = ceiling.resources().maximum_validator_work();
-        let requested_cap = requested.resources().maximum_validator_work();
-        let requested_work = match (declared_work, requested_cap) {
-            (Some(left), Some(right)) => Some(left.min(right)),
-            (left, right) => left.or(right),
-        };
         let within_binding = requested_cardinality.maximum_creates()
             <= ceiling_cardinality.maximum_creates()
             && requested_cardinality.maximum_deletes() <= ceiling_cardinality.maximum_deletes()
@@ -54,8 +39,7 @@ impl WorthQueryCandidateReservation {
             && requested
                 .resources()
                 .maximum_retained_representation_bytes()
-                <= ceiling.resources().maximum_retained_representation_bytes()
-            && declared_work.is_none_or(|cap| requested_cap.is_none_or(|work| work <= cap));
+                <= ceiling.resources().maximum_retained_representation_bytes();
         let within_runtime = u64::try_from(requested_total)
             .is_ok_and(|count| count <= candidate_item_capacity)
             && u64::try_from(
@@ -67,35 +51,16 @@ impl WorthQueryCandidateReservation {
         if !within_binding || !within_runtime {
             return Err(capacity_denial());
         }
-        let requested_work = match (requested_work, validator_work_capacity) {
-            (Some(work), Some(host)) => {
-                Some(work.min(usize::try_from(host).map_err(|_| capacity_denial())?))
-            }
-            (None, Some(host)) => Some(usize::try_from(host).map_err(|_| capacity_denial())?),
-            (work, None) => work,
-        };
         Ok(Self {
             remaining: requested_cardinality,
             remaining_retained_representation_bytes: requested
                 .resources()
                 .maximum_retained_representation_bytes(),
-            validator_work: match requested_work {
-                Some(maximum_work) => {
-                    WorthQueryCandidateValidatorWorkAdmission::Reserved { maximum_work }
-                }
-                None => WorthQueryCandidateValidatorWorkAdmission::NoAggregateLimit,
-            },
         })
     }
 
     pub(super) fn total_items(&self) -> usize {
         total(self.remaining).unwrap_or(usize::MAX)
-    }
-
-    pub(super) const fn validator_work_admission(
-        &self,
-    ) -> WorthQueryCandidateValidatorWorkAdmission {
-        self.validator_work
     }
 
     pub(super) fn charge(
@@ -209,19 +174,6 @@ impl WorthQueryCandidateReservation {
             .ok_or_else(reservation_denial)?;
         self.remaining_retained_representation_bytes = remaining;
         Ok(())
-    }
-}
-
-impl WorthQueryCandidateValidatorWorkAdmission {
-    pub(in crate::domain_computation::primary_graph) const fn unreserved_internal() -> Self {
-        Self::UnreservedInternal
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn maximum_work(self) -> Option<usize> {
-        match self {
-            Self::UnreservedInternal | Self::NoAggregateLimit => None,
-            Self::Reserved { maximum_work } => Some(maximum_work),
-        }
     }
 }
 

@@ -33,8 +33,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    validator_work_admission:
-        super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     indexed_rebase_work_budget: usize,
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
@@ -137,12 +135,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn decision_fact_count(&self) -> usize {
         self.decision_facts.decision_fact_count()
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn validator_work_admission(
-        &self,
-    ) -> super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission {
-        self.validator_work_admission
     }
 
     pub(in crate::domain_computation::primary_graph) const fn indexed_rebase_work_budget(
@@ -298,7 +290,6 @@ impl WorthQueryPrimaryGraphProvider {
             preimage_demand,
             aftermath_causality,
             conditional_definition,
-            validator_work_admission,
             indexed_rebase_work_budget,
             retain_output_demand_observation,
             retain_client_observation,
@@ -344,7 +335,6 @@ impl WorthQueryPrimaryGraphProvider {
                 aftermath_causality,
                 dispatch_outbox,
                 conditional_definition,
-                validator_work_admission,
                 indexed_rebase_work_budget,
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,

@@ -36,7 +36,7 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
     let input = replacement("anchor-b", "replacement-b", 11, 1);
     let source = observed_source(request, "anchor-a");
     require_missing_source(request, application, input.clone(), 405);
-    let sibling = mutate(request, application, adjust("sibling-a", 22, 4096), 406);
+    let sibling = mutate(request, application, adjust("sibling-a", 22), 406);
     assert!(matches!(
         sibling,
         WorthQueryApplicationMutationOutcome::Committed { .. }
@@ -247,7 +247,7 @@ fn preserved_identity(
     y: u64,
     command: u64,
 ) -> EntityId {
-    let mut input = adjust(key, y, 4096);
+    let mut input = adjust(key, y);
     input.scope_key = key.to_owned();
     let outcome = mutate(request, application, input, command);
     let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = outcome else {

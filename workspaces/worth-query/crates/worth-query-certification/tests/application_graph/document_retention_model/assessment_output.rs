@@ -147,7 +147,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for RetentionAssessment
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::bounded(512, 256),
+            ApplicationCandidateResourceCeiling::representation_bytes(512),
         );
 
     fn scope_field() -> ApplicationFieldRef<

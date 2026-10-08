@@ -295,7 +295,7 @@ where
             demand.observe(effect)?;
         }
         let reservation = admit_platform_effects(&self, demand)?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         Ok(PreparedWorkflowInstanceStart {
             program_revision: *resumed.program_revision(),
             definition: resumed.definition(),
@@ -312,7 +312,6 @@ where
                 emission_retained_bytes_ceiling: 0,
                 conditional_definition: None,
                 effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-                validator_work_admission,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
                 retain_client_observation: false,

@@ -32,7 +32,6 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -110,7 +109,6 @@ pub(super) fn prepare_provider_attempt(
     conditional_definition: Option<
         crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
     >,
-    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
@@ -140,7 +138,6 @@ pub(super) fn prepare_provider_attempt(
         effects: completed,
         preimage_demand,
         conditional_definition,
-        validator_work_admission,
         retain_output_demand_observation,
         retain_client_observation,
         producer_required_invariants,

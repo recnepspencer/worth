@@ -258,7 +258,7 @@ pub(super) fn limits_with_room(
             invalidation,
         )
         .unwrap(),
-        WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 8_192, 4_096).unwrap(),
+        WorthQueryApplicationCandidateResourceProfile::physical_resources(4_096, 8_192).unwrap(),
         WorthQueryApplicationQueryResourceProfile::bounded(4_096, 4_096, 4_096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )

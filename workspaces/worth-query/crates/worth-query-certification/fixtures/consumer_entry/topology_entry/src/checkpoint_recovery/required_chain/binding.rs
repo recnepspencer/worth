@@ -108,7 +108,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for Chain
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.consumed-chain-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.consumed-chain-command.v1";
-    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 8_192, 4_096);
+    const CANDIDATES: ApplicationCandidateRequirements = requirements(0, 0, 0, 1, 8_192);
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,

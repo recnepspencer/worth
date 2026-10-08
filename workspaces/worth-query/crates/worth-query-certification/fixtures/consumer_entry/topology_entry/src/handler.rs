@@ -203,7 +203,7 @@ where
             PlanarOperation::VerifyCurrentOutputs(_)
             | PlanarOperation::VerifyFinalCurrentOutputs(_) => (0, 0, 0, 0),
         };
-        requirements(creates, links, unlinks, writes, 8192, input.validator_work)
+        requirements(creates, links, unlinks, writes, 8192)
     }
     fn build_candidate(
         &self,

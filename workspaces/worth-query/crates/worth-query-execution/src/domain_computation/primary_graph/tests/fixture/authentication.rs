@@ -6,14 +6,17 @@ use std::time::{Duration, SystemTime};
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
-use super::{external_identity, IdentityExecutionSchema};
+use super::external_identity;
+use worth_query_installation::facade::ApplicationSchema;
 
-pub(super) fn authenticate_external(
-    schema: &WorthQueryInstalledApplicationSchema<IdentityExecutionSchema>,
+pub(in crate::domain_computation::primary_graph) fn authenticate_external<
+    Schema: ApplicationSchema,
+>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
     subject: &str,
     lifetime: Duration,
     scope: &WorthQueryRequestScope,
-) -> WorthQueryAuthenticatedExternalPrincipal<IdentityExecutionSchema> {
+) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(

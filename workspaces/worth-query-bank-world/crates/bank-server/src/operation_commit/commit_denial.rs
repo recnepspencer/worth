@@ -9,10 +9,6 @@ use worth_query_host::facade::primary_graph::{
 pub enum BankCommitDenialKind {
     ProviderRejected,
     CustomInvariantDenied,
-    CandidateValidatorWorkExceeded {
-        maximum_work: usize,
-        required_work: usize,
-    },
     WorkflowSettlementDenied {
         kind: WorthQueryApplicationAttemptDenialKind,
     },
@@ -79,13 +75,6 @@ pub(crate) const fn denial_kind(
     match kind {
         Query::ProviderRejected => BankCommitDenialKind::ProviderRejected,
         Query::CustomInvariantDenied => BankCommitDenialKind::CustomInvariantDenied,
-        Query::CandidateValidatorWorkExceeded {
-            maximum_work,
-            required_work,
-        } => BankCommitDenialKind::CandidateValidatorWorkExceeded {
-            maximum_work,
-            required_work,
-        },
         Query::WorkflowSettlementDenied { kind } => {
             BankCommitDenialKind::WorkflowSettlementDenied { kind }
         }

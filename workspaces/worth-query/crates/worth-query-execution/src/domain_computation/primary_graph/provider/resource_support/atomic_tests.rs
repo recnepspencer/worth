@@ -15,10 +15,11 @@ fn refusal(
     items: u64,
     batch: u64,
 ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceAdmissionDenial {
-    let profile = WorthQueryApplicationCandidateResourceProfile::bounded(maximum_items, 64, 99)
-        .unwrap()
-        .with_maximum_operation_width(maximum_batch)
-        .unwrap();
+    let profile =
+        WorthQueryApplicationCandidateResourceProfile::physical_resources(maximum_items, 64)
+            .unwrap()
+            .with_maximum_operation_width(maximum_batch)
+            .unwrap();
     let (support, capacity) = component_support(
         "independent-width",
         std::num::NonZeroUsize::new(1).unwrap(),

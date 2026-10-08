@@ -160,7 +160,6 @@ pub fn planar_producer_input(source: &super::PlanarReadResult) -> super::PlanarM
             )
             .expect("a positive planar source has a positive successor"),
         }),
-        validator_work: 4_096,
     }
 }
 

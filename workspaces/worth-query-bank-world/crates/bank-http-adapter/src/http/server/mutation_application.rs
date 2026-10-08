@@ -346,8 +346,7 @@ pub(super) fn commit_denial(
                 BankHttpNextAction::ContactOperator,
             ),
         ),
-        Denial::CandidateValidatorWorkExceeded { .. }
-        | Denial::WorkflowSettlementDenied { .. }
+        Denial::WorkflowSettlementDenied { .. }
         | Denial::PreparedRootBudgetExhausted { .. }
         | Denial::ElevationTransitionRequired
         | Denial::ElevationRequestProgramMismatch

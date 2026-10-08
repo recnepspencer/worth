@@ -4,9 +4,6 @@ macro_rules! worth_query_mutation_binding {
     (@candidate_resources $bytes:expr) => {
         $crate::facade::application_operation::ApplicationCandidateResourceCeiling::representation_bytes($bytes)
     };
-    (@candidate_resources $bytes:expr, $work:expr) => {
-        $crate::facade::application_operation::ApplicationCandidateResourceCeiling::bounded($bytes, $work)
-    };
     (
         $vis:vis $Binding:ident for $Input:ty, schema generic $Schema:ident: $SchemaBound:path,
         identity $identity:literal,
@@ -30,7 +27,7 @@ macro_rules! worth_query_mutation_binding {
         candidates creates $maximum_creates:expr, deletes $maximum_deletes:expr,
             links $maximum_links:expr, unlinks $maximum_unlinks:expr, writes $maximum_writes:expr,
             emits $maximum_emits:expr,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr $(, validator_work $maximum_validator_work:expr)?
+        resources retained_representation_bytes $maximum_retained_representation_bytes:expr
     ) => {
         $vis struct $Binding<$Schema>(::std::marker::PhantomData<fn() -> $Schema>);
 
@@ -72,7 +69,7 @@ macro_rules! worth_query_mutation_binding {
                         $maximum_writes, $maximum_emits,
                     ),
                     $crate::worth_query_mutation_binding!(@candidate_resources
-                        $maximum_retained_representation_bytes $(, $maximum_validator_work)?
+                        $maximum_retained_representation_bytes
                     ),
                 );
 
@@ -128,7 +125,7 @@ macro_rules! worth_query_mutation_binding {
         candidates creates $maximum_creates:expr, deletes $maximum_deletes:expr,
             links $maximum_links:expr, unlinks $maximum_unlinks:expr, writes $maximum_writes:expr,
             emits $maximum_emits:expr,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr $(, validator_work $maximum_validator_work:expr)?
+        resources retained_representation_bytes $maximum_retained_representation_bytes:expr
     ) => {
         $crate::worth_query_mutation_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
@@ -148,7 +145,7 @@ macro_rules! worth_query_mutation_binding {
             candidates creates $maximum_creates, deletes $maximum_deletes,
                 links $maximum_links, unlinks $maximum_unlinks, writes $maximum_writes,
                 emits $maximum_emits,
-            resources retained_representation_bytes $maximum_retained_representation_bytes $(, validator_work $maximum_validator_work)?
+            resources retained_representation_bytes $maximum_retained_representation_bytes
         );
 
         impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
@@ -187,7 +184,7 @@ macro_rules! worth_query_mutation_binding {
         candidates creates $maximum_creates:expr, deletes $maximum_deletes:expr,
             links $maximum_links:expr, unlinks $maximum_unlinks:expr, writes $maximum_writes:expr,
             emits $maximum_emits:expr,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr $(, validator_work $maximum_validator_work:expr)?
+        resources retained_representation_bytes $maximum_retained_representation_bytes:expr
     ) => {
         $crate::worth_query_mutation_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
@@ -207,7 +204,7 @@ macro_rules! worth_query_mutation_binding {
             candidates creates $maximum_creates, deletes $maximum_deletes,
                 links $maximum_links, unlinks $maximum_unlinks, writes $maximum_writes,
                 emits $maximum_emits,
-            resources retained_representation_bytes $maximum_retained_representation_bytes $(, validator_work $maximum_validator_work)?
+            resources retained_representation_bytes $maximum_retained_representation_bytes
         );
 
         impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
@@ -243,7 +240,7 @@ macro_rules! worth_query_mutation_binding {
         candidates creates $maximum_creates:expr, deletes $maximum_deletes:expr,
             links $maximum_links:expr, unlinks $maximum_unlinks:expr, writes $maximum_writes:expr,
             emits $maximum_emits:expr,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr $(, validator_work $maximum_validator_work:expr)?
+        resources retained_representation_bytes $maximum_retained_representation_bytes:expr
     ) => {
         $vis struct $Binding;
 
@@ -286,7 +283,7 @@ macro_rules! worth_query_mutation_binding {
                         $maximum_emits,
                     ),
                     $crate::worth_query_mutation_binding!(@candidate_resources
-                        $maximum_retained_representation_bytes $(, $maximum_validator_work)?
+                        $maximum_retained_representation_bytes
                     ),
                 );
 

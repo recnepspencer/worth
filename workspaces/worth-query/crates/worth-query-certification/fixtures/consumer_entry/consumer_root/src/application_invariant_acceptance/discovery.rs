@@ -15,7 +15,7 @@ pub(super) fn verify(application: &WorthQueryPrimaryGraphApplicationRuntime<Cons
     let definition = mutation.declaration();
     assert_eq!(
         definition.input_identity().as_str(),
-        "worth.query.certification.planar-mutation-input.v1"
+        "worth.query.certification.planar-mutation-input.v2"
     );
     assert_eq!(
         definition.result_identity().as_str(),

@@ -38,7 +38,6 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
                         output_key: "anchor-a".into(),
                     },
                 ]),
-                validator_work: 4096,
             }))
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&command)

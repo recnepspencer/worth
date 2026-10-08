@@ -71,12 +71,6 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         self.attempt.producer_required_invariants()
     }
 
-    pub(in crate::domain_computation::primary_graph::provider) const fn validator_work_admission(
-        &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryCandidateValidatorWorkAdmission{
-        self.attempt.validator_work_admission()
-    }
-
     pub(in crate::domain_computation::primary_graph::provider) fn aftermath_causality(
         &self,
     ) -> Option<

@@ -200,7 +200,6 @@ fn mutate_anchor<'application>(
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation,
-            validator_work: 4_096,
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&idempotency)

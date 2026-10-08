@@ -95,8 +95,6 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
     /// platform contract, or both within one candidate.
     pub(in crate::domain_computation::primary_graph::application_attempt) effect_posture:
         crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
-    pub(in crate::domain_computation::primary_graph::application_attempt) validator_work_admission:
-        super::WorthQueryCandidateValidatorWorkAdmission,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation:

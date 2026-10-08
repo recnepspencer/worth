@@ -144,7 +144,7 @@ macro_rules! mutation_binding {
             const CANDIDATES: ApplicationCandidateRequirements =
                 ApplicationCandidateRequirements::fixed_shape(
                     ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-                    ApplicationCandidateResourceCeiling::bounded($bytes, 4),
+                    ApplicationCandidateResourceCeiling::representation_bytes($bytes),
                 );
 
             fn scope_field() -> ApplicationFieldRef<

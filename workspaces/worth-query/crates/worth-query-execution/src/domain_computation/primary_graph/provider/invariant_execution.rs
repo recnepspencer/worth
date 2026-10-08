@@ -4,9 +4,7 @@ mod material;
 mod receipt_closure;
 mod relational_validation;
 mod validation_control;
-mod work_admission;
 use material::{ApplicationInvariantCandidateMaterial, ApplicationInvariantSemanticMaterial};
-use work_admission::admit_candidate_validator_work;
 
 use super::invariant_execution_failure::{
     map_transaction_admission_failure, map_transaction_staging_failure, map_validation_failure,
@@ -151,9 +149,9 @@ impl WorthQueryPrimaryGraphProvider {
         material: ApplicationInvariantCandidateMaterial,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        let host_budget = self.resource_support.graph().envelope()
-            .optional_scale_ceiling(worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::WorkItems);
-        let semantic_work = admit_candidate_validator_work(&material, host_budget)?;
+        let semantic_work = u64::try_from(material.semantic.expected.len()).map_err(|_| {
+            closure_failure("candidate semantic cardinality exceeds work representation")
+        })?;
         let candidate = self.validate_relational_candidate(
             material.batch,
             &material.branch,

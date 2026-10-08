@@ -52,7 +52,9 @@ fn run() {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    assert_eq!(declaration.erased().members().len(), 128);
+    // Eight production Topology operation fact-quota members were retired.
+    // The recovery-chain declaration is cfg(test); Parameter remains unchanged.
+    assert_eq!(declaration.erased().members().len(), 120);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY

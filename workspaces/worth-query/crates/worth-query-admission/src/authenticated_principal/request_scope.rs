@@ -119,7 +119,6 @@ impl Drop for WorthQueryCancellationFuture<'_> {
 pub struct WorthQueryRequestScope {
     deadline: Instant,
     cancellation: WorthQueryCancellationToken,
-    candidate_validator_work_budget: Option<std::num::NonZeroU64>,
 }
 
 impl WorthQueryRequestScope {
@@ -127,19 +126,7 @@ impl WorthQueryRequestScope {
         Self {
             deadline,
             cancellation,
-            candidate_validator_work_budget: None,
         }
-    }
-
-    /// Limits aggregate candidate validation only for this execution attempt.
-    /// Omission supplies no aggregate work refusal; physical capacities remain.
-    pub fn with_candidate_validator_work_budget(mut self, maximum: std::num::NonZeroU64) -> Self {
-        self.candidate_validator_work_budget = Some(maximum);
-        self
-    }
-
-    pub const fn candidate_validator_work_budget(&self) -> Option<std::num::NonZeroU64> {
-        self.candidate_validator_work_budget
     }
 
     pub fn deadline(&self) -> Instant {
@@ -169,7 +156,6 @@ impl WorthQueryRequestScope {
     /// source and exact deadline.
     pub fn same_request(&self, other: &Self) -> bool {
         self.deadline == other.deadline
-            && self.candidate_validator_work_budget == other.candidate_validator_work_budget
             && Arc::ptr_eq(&self.cancellation.state, &other.cancellation.state)
     }
 }
@@ -179,10 +165,6 @@ impl std::fmt::Debug for WorthQueryRequestScope {
         formatter
             .debug_struct("WorthQueryRequestScope")
             .field("deadline", &self.deadline)
-            .field(
-                "candidate_validator_work_budget",
-                &self.candidate_validator_work_budget,
-            )
             .field("cancelled", &self.cancellation.is_cancelled())
             .finish()
     }

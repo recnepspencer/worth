@@ -80,13 +80,14 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn index_maintenance_budget_exceeded(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn index_maintenance_budget_exceeded(
         stage: WorthQueryApplicationCommitDenialStage,
+        detail: impl Into<std::sync::Arc<str>>,
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
             stage,
-            detail: None,
+            detail: Some(detail.into()),
             cause: None,
         }
     }

@@ -109,10 +109,7 @@ macro_rules! payment_workflow_control {
             const CANDIDATES: ApplicationCandidateRequirements =
                 ApplicationCandidateRequirements::fixed_shape(
                     ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
-                    ApplicationCandidateResourceCeiling::bounded(
-                        2 * 1_024 * 1_024,
-                        1_048_576,
-                    ),
+                    ApplicationCandidateResourceCeiling::representation_bytes(2 * 1_024 * 1_024),
                 );
 
             fn scope_field() -> ApplicationFieldRef<

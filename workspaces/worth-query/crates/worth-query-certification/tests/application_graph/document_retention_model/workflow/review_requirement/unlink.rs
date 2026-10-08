@@ -44,7 +44,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for UnlinkReviewRequire
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 1, 0, 0),
-            ApplicationCandidateResourceCeiling::bounded(1024, 1024),
+            ApplicationCandidateResourceCeiling::representation_bytes(1024),
         );
 
     fn scope_field() -> ApplicationFieldRef<

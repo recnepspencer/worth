@@ -91,10 +91,7 @@ fn component_support(
             WorthQuerySemanticScaleAxis::BatchWidth,
             candidate_resources.maximum_operation_width(),
         );
-    let scale = match candidate_resources.maximum_validator_work() {
-        Some(maximum) => scale.with(WorthQuerySemanticScaleAxis::WorkItems, maximum),
-        None => scale,
-    };
+
     let support = WorthQueryExecutionResourceSupport::new(
         WorthQueryExecutionProviderFamily::new(APPLICATION_EXECUTION_PROVIDER_FAMILY)
             .expect("static provider family is canonical"),

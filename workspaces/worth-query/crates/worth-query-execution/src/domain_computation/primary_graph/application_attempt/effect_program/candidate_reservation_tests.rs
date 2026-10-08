@@ -7,11 +7,10 @@ use worth_query_declaration::facade::application_operation::{
 
 #[test]
 fn capacity_denies_before_a_reservation_exists() {
-    let ceiling = requirements(1, 1, 64, 8);
-    let denial =
-        WorthQueryCandidateReservation::admit(requirements(2, 1, 64, 8), ceiling, 16, 64, Some(8))
-            .err()
-            .expect("the binding ceiling must deny excess creation");
+    let ceiling = requirements(1, 1, 64);
+    let denial = WorthQueryCandidateReservation::admit(requirements(2, 1, 64), ceiling, 16, 64)
+        .err()
+        .expect("the binding ceiling must deny excess creation");
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded
@@ -22,11 +21,10 @@ fn capacity_denies_before_a_reservation_exists() {
 fn admitted_reservation_charges_each_effect_family_exactly() {
     let requirements = ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(1, 1, 1, 1, 1, 1),
-        ApplicationCandidateResourceCeiling::bounded(64, 8),
+        ApplicationCandidateResourceCeiling::representation_bytes(64),
     );
-    let mut reservation =
-        WorthQueryCandidateReservation::admit(requirements, requirements, 6, 64, Some(8))
-            .expect("the exact finite reservation is admitted");
+    let mut reservation = WorthQueryCandidateReservation::admit(requirements, requirements, 6, 64)
+        .expect("the exact finite reservation is admitted");
     for kind in [
         CandidateItemKind::Create,
         CandidateItemKind::Delete,
@@ -54,10 +52,10 @@ fn equal_cardinality_payload_twin_denies_bytes_without_consuming_reservation() {
     let oversized_value = worth_foundational::facade::AspectValue::String("large".into());
     let candidate_bytes = small_value.semantic_byte_width();
     assert!(oversized_value.semantic_byte_width() > candidate_bytes);
-    let requirement = requirements(0, 1, candidate_bytes, 8);
+    let requirement = requirements(0, 1, candidate_bytes);
     let runtime_bytes = u64::try_from(candidate_bytes).unwrap();
     let mut small =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes, Some(8))
+        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes)
             .expect("the small candidate reservation is admitted");
     small
         .charge_retained_representation(
@@ -68,7 +66,7 @@ fn equal_cardinality_payload_twin_denies_bytes_without_consuming_reservation() {
         .expect("the equal-cardinality small value fits");
 
     let mut oversized =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes, Some(8))
+        WorthQueryCandidateReservation::admit(requirement, requirement, 1, runtime_bytes)
             .expect("the oversized twin starts from the same reservation");
     let denial = oversized
         .charge_retained_representation(
@@ -99,13 +97,12 @@ fn coalesced_write_replaces_its_retained_semantic_width() {
         replacement.semantic_byte_width()
     );
     let bytes = first.semantic_byte_width();
-    let requirement = requirements(0, 2, bytes, 8);
+    let requirement = requirements(0, 2, bytes);
     let mut reservation = WorthQueryCandidateReservation::admit(
         requirement,
         requirement,
         2,
         u64::try_from(bytes).unwrap(),
-        Some(8),
     )
     .expect("both writes share one retained field slot");
     reservation
@@ -120,42 +117,9 @@ fn coalesced_write_replaces_its_retained_semantic_width() {
         .expect("replacement is charged once for the retained field slot");
 }
 
-fn requirements(
-    creates: usize,
-    writes: usize,
-    bytes: usize,
-    validator_work: usize,
-) -> ApplicationCandidateRequirements {
+fn requirements(creates: usize, writes: usize, bytes: usize) -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
         ApplicationCandidateCardinalityCeiling::fixed(creates, 0, 0, 0, writes, 0),
-        ApplicationCandidateResourceCeiling::bounded(bytes, validator_work),
+        ApplicationCandidateResourceCeiling::representation_bytes(bytes),
     )
-}
-
-#[test]
-fn omitted_aggregate_work_remains_absent_without_derived_fallback() {
-    let automatic = ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-        ApplicationCandidateResourceCeiling::representation_bytes(64),
-    );
-    let admitted =
-        WorthQueryCandidateReservation::admit(automatic, automatic, 1, 64, None).unwrap();
-    assert_eq!(admitted.validator_work_admission().maximum_work(), None);
-    let restricted = requirements(0, 1, 64, 7);
-    for (requested, binding) in [(automatic, restricted), (restricted, automatic)] {
-        let admitted =
-            WorthQueryCandidateReservation::admit(requested, binding, 1, 64, None).unwrap();
-        assert_eq!(admitted.validator_work_admission().maximum_work(), Some(7));
-    }
-    assert!(WorthQueryCandidateReservation::admit(
-        requirements(0, 1, 64, 8),
-        restricted,
-        1,
-        64,
-        None
-    )
-    .is_err());
-    let hosted =
-        WorthQueryCandidateReservation::admit(automatic, automatic, 1, 64, Some(5)).unwrap();
-    assert_eq!(hosted.validator_work_admission().maximum_work(), Some(5));
 }

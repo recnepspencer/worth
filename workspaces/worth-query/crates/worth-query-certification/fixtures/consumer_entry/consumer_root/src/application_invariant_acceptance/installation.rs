@@ -40,7 +40,8 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
@@ -87,7 +88,8 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
@@ -135,7 +137,8 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(4096, 8192, 4096).unwrap(),
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(4096, 8192)
+            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
@@ -277,10 +280,9 @@ fn install_with_resource_bytes(
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
             4096,
             candidate_bytes,
-            4096,
         )
         .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, query_bytes, 4096, 32)

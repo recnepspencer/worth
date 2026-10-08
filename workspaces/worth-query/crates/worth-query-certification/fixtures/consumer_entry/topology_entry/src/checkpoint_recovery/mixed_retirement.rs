@@ -136,7 +136,6 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
                         value: length(value),
                     },
                 ),
-                validator_work: 4096,
             }))
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&command)
