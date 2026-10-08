@@ -65,8 +65,8 @@ mod tests {
     use super::*;
 
     /// Absence is explicit: an empty Produced seal cannot be constructed.
-    /// The earlier None-typed run was forged; production writes Unmeasured
-    /// where recording discards an unmeasurable state.
+    /// Recording writes Unmeasured when it discards unmeasurable state;
+    /// sealing carries the dropping site's reason unchanged.
     #[test]
     fn seal_preserves_the_reason_written_by_each_dropping_site() {
         for reason in [
@@ -75,6 +75,8 @@ mod tests {
             PriorAbsence::Suppressed(Suppression::Policy),
             PriorAbsence::Suppressed(Suppression::Several),
             PriorAbsence::Suppressed(Suppression::Collision),
+            PriorAbsence::Suppressed(Suppression::NoProducerPrior),
+            PriorAbsence::Suppressed(Suppression::PriorAlreadyTaken),
         ] {
             let expected = reason.clone();
             let sealed = CompletedComputationRetention::Absent(reason)

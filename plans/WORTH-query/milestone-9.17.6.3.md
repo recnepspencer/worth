@@ -2583,9 +2583,11 @@ The next phase may trust that the touched graph alone decides what recomputes.
     World recovery carries the original result, including a nondefault
     absence. Republication continues exact performed records with opaque
     readers or request-context use without inventing input-cutoff proofs.
-  - A born-stale demand refreshes and reports the lasting result of that
-    refresh. Its contact count includes every producer execution it initiated,
-    including executions before a rejoin or required-wave successor.
+  - An ordinary born-stale demand refreshes and reports its lasting result.
+    Recovery names one exact publication and refuses a refresh. A handle's
+    contact count includes its own producer executions over its lifetime,
+    including canceled executions and executions before a rejoin or successor.
+    Upstream work run by another caller is counted by no demand handle.
   - Managed computation access prevents whole-input cutoff. An edit, an
     input-preserving source change and a second edit keep the performed
     record's prior and run incrementally; no alias transfers its custody.
@@ -2597,26 +2599,40 @@ The next phase may trust that the touched graph alone decides what recomputes.
     Restore and republication run after seeded edit prefixes; full lifecycle
     interleaving belongs to 6.12. Empty produced seals are unrepresentable;
     recording and retained-byte measurement have their own absence proofs.
-- **6.10** Report the tree work that ran, apart from the charge. *Completed.*
-  - Charged work stays the full-build count. Every exit of a tree update
-    (completed, denied, interrupted, rebuilt) yields one report holding
-    every attempt's metrics; an exit that omits them does not compile.
-  - Partition execution and tree execution are separate dimensions of the
-    observer: tree execution is Edited(metrics) or Rebuilt(cause, metrics).
-    Both completed and stopped tree executions expose every attempted
-    combine, including a failed edit before a rebuild. Report sums use wide
-    counters and never substitute for the contractual full-build charge.
-  - The test's reducer counts its own combines, and reported work must
-    reconcile with that count. An update recombines at most its root path
-    and stops at an unchanged aggregate; insert and delete recombine their
-    root path with no cutoff. Per-edit bounds derive from the preceding
-    Cartesian shape: update search depth, deletion depth, and insertion
-    search depth plus rotations plus one. Independent reducer entries
-    reconcile with reported combines, including stops and rebuilds.
+- **6.10** Report canonical tree work apart from the charge. *Completed.*
+  - Charged work stays the full-build count. Every edit and rebuild path
+    returns its outcome and work together. Owned attempt composition
+    preserves successful and failed native attempts; terminal construction
+    consumes the returned path once. Omitting an advancing attempt's
+    handover prevents continuing its consumed edit state.
+  - Partition execution and tree execution are separate observer dimensions.
+    Full partition execution has Full(cause, metrics); incremental execution
+    has Edited(metrics) or Rebuilt(cause, metrics). FullBuild is not an
+    incremental rebuild cause. Wide report sums never substitute for the
+    contractual full-build charge.
+  - Reports describe canonical serial-prefix work, excluding discarded
+    speculative parallel work. Independent reducer entries and completed
+    combine pairs reconcile completed runs exactly on every worker count,
+    and stopped serial runs exactly. Stopped parallel reports equal the
+    serial report at the same stop and do not exceed independent counts.
+    Every captured oracle run is reconciled, including faults and
+    differential histories.
+  - An edit refusal or arithmetic overflow falls back to a rebuild, which
+    decides the outcome; request interruption stays terminal. Rebuild causes
+    use Query's own denial classes, normalize equivalent native spellings,
+    and reserve WorkCounterOverflow for a native attempt counter. An
+    unrepresentable full-build estimate exceeds every u64 work ceiling.
+  - An update recombines at most its root path and stops at an unchanged
+    aggregate; insert and delete recombine their root path with no cutoff.
+    Per-edit bounds derive from the preceding Cartesian shape: update search
+    depth, deletion depth, and exact insertion search depth plus rotations
+    plus one. Recomputed identical bits perform zero combines.
   - Uniform sampled identity sets at 1,024, 2,048 and 4,096 partitions use
     128 independent sets per size. Random-treap depth moments determine the
     mean ceiling of 2 ln P before execution, with a three-size Chebyshev
-    bound below 0.0037; fixtures never fit a measured ceiling.
+    bound below 0.0037; fixtures never fit a measured ceiling. Carrying
+    workloads derive encoding declarations, kernel costs and Cartesian shape
+    work before execution.
 - **6.11** A fork reuses its parent's retained state. *Completed.*
   - In place already: the tree is retained under the lineage ledger with
     eviction, and a recomputed partition with the same canonical bits
@@ -2631,11 +2647,16 @@ The next phase may trust that the touched graph alone decides what recomputes.
   - A child's first run uses its local record first, including a named
     absence. With none, it follows captured fork origins recursively through
     the same comparator and basis checks as any other reuse. Existing fork
-    horizons pin the captured record; registration copies no state. A parent
-    publication uses a prepaid scan of the live horizons and reserves a
-    distinct full state when pinned. If forks exceed the prepared allowance,
-    it reserves afresh without scanning. Deletion and history retirement
-    preserve reachable ancestors.
+    horizons pin the captured record; registration copies no state. Every
+    preparation, for any branch or slot, prepays a scan of 2 * forks + 1; a
+    denial fails publication. Publication reserves a distinct full state
+    when pinned. If forks exceed the prepared allowance, it reserves afresh
+    without scanning. Deletion and history retirement preserve reachable
+    ancestors.
+  - A stable alias co-holds its state, so the successor after an alias
+    always reserves afresh. A superseded pinned parent state stays charged
+    after its last descendant is deleted, until it leaves the history
+    window.
   - Two concurrent first writers of one branch cell both keep their
     publication's marks, and a poisoned registration lock recovers the same
     way at every acquisition.

@@ -14,15 +14,21 @@ use super::super::tree_report::{
 use super::super::tree_update::next_tree;
 use super::*;
 
+#[path = "tree_admission.rs"]
+mod admission;
 #[path = "tree_attempts.rs"]
 mod attempts;
+#[path = "tree_causes.rs"]
+mod causes;
 #[path = "tree_mean.rs"]
 mod mean;
 #[path = "tree_shape.rs"]
-mod shape;
+pub(super) mod shape;
 
 thread_local! {
     static CALLS: Cell<u64> = const { Cell::new(0) };
+    static NODES: Cell<u64> = const { Cell::new(0) };
+    static PAIR: Cell<bool> = const { Cell::new(false) };
     static PANIC_AT: Cell<Option<u64>> = const { Cell::new(None) };
 }
 
@@ -31,9 +37,14 @@ fn counted(left: &u64, right: &u64) -> u64 {
     CALLS.set(entered);
     if PANIC_AT.get() == Some(entered) {
         PANIC_AT.set(None);
+        PAIR.set(false);
         panic!("one refused combine attempt");
     }
-    left + right
+    let value = left + right;
+    if PAIR.replace(!PAIR.get()) {
+        NODES.set(NODES.get() + 1);
+    }
+    value
 }
 
 type Retained = RetainedPartitions<
@@ -115,6 +126,11 @@ fn run(
 
 fn reconcile(report: TreeRun) {
     assert_eq!(
+        report.metrics().recombined_nodes,
+        u128::from(NODES.get()),
+        "independently completed combine pairs"
+    );
+    assert_eq!(
         report.metrics().combine_calls,
         u128::from(CALLS.get()),
         "reported combine entries equal independent reducer entries"
@@ -128,7 +144,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
     let retained = retained(&template, &keys);
     let shape = shape::Shape::from_sorted(&keys);
     for key in &keys {
-        CALLS.set(0);
+        reset_counts();
         let next = run(&retained, &keys, BTreeMap::from([(*key, 2)]), u64::MAX);
         reconcile(next.report);
         let TreeRun::Edited(metrics) = next.report else {
@@ -138,7 +154,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         assert!(metrics.recombined_nodes <= u128::try_from(path.len()).unwrap());
         assert_eq!(metrics.combine_calls, 2 * metrics.recombined_nodes);
         assert_eq!(*next.outcome.unwrap().result(), 129);
-        CALLS.set(0);
+        reset_counts();
         let same = run(&retained, &keys, BTreeMap::from([(*key, 1)]), u64::MAX);
         reconcile(same.report);
         assert_eq!(
@@ -148,7 +164,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         );
         assert_eq!(same.report.metrics().combine_calls, 0);
         let deleted: Vec<_> = keys.iter().copied().filter(|id| id != key).collect();
-        CALLS.set(0);
+        reset_counts();
         let next = run(&retained, &deleted, BTreeMap::new(), u64::MAX);
         reconcile(next.report);
         assert!(matches!(next.report, TreeRun::Edited(_)));
@@ -167,7 +183,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         inserted.push(key);
         inserted.sort();
         let bound = shape::Shape::depth(&shape, key) + shape::Shape::rotations(&shape, key) + 1;
-        CALLS.set(0);
+        reset_counts();
         let next = run(&retained, &inserted, BTreeMap::from([(key, 2)]), u64::MAX);
         reconcile(next.report);
         assert!(matches!(next.report, TreeRun::Edited(_)));
@@ -175,7 +191,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
             next.report.metrics().combine_calls,
             2 * next.report.metrics().recombined_nodes
         );
-        assert!(next.report.metrics().recombined_nodes <= u128::from(bound));
+        assert_eq!(next.report.metrics().recombined_nodes, u128::from(bound));
         assert_eq!(*next.outcome.unwrap().result(), 130);
     }
 }
@@ -187,14 +203,20 @@ fn public_incremental_observation_reports_actual_work_apart_from_charge() {
     let first = first_run(&world, &installed);
     let charge = first.outcome.as_ref().unwrap().1;
     *installed.owner.bump.lock().unwrap() = 10;
-    CALLS.set(0);
+    reset_counts();
     let next = attempt(&world, &installed, Some(prior_of(first, true)));
     assert_eq!(next.runs, [(Run::Incremental, None)]);
-    let [(partitions, tree)] = next.tree_runs.as_slice() else {
+    let [tree] = next.tree_runs.as_slice() else {
         panic!("one terminal report")
     };
-    assert_eq!(*partitions, Run::Incremental);
+    assert_eq!(tree.partitions(), Run::Incremental);
     reconcile(*tree);
     assert!(matches!(tree, TreeRun::Edited(_)));
     assert_eq!(next.outcome.unwrap().1, charge);
+}
+
+fn reset_counts() {
+    CALLS.set(0);
+    NODES.set(0);
+    PAIR.set(false);
 }

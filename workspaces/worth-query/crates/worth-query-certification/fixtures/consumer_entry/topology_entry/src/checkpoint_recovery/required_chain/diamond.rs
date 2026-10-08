@@ -189,7 +189,7 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
         assert_eq!(
             settled.producer_contacts_in_this_demand(),
             1,
-            "the {name} root retains its initial execution; the refresh belongs to the dependent"
+            "the {name} root retains its initial execution; the upstream refresh is counted by no demand handle"
         );
     }
     assert_eq!(
@@ -251,7 +251,7 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     assert_eq!(
         settled.producer_contacts_in_this_demand(),
         1,
-        "the left root retains its initial execution; its refresh belonged to the dependent"
+        "the left root retains its initial execution; the upstream refresh is counted by no demand handle"
     );
     drop((left, right, join));
 }

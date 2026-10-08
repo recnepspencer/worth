@@ -16,6 +16,7 @@ use super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryProducerOutputFamily,
 };
+mod contacts;
 mod held;
 mod prepared;
 mod progress;
@@ -33,7 +34,9 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 
-pub(in crate::domain_computation::primary_graph) use held::{resume_held_upstream, HeldUpstream};
+pub(in crate::domain_computation::primary_graph) use held::{
+    resume_held_upstream, ContinuationCustody, HeldUpstream,
+};
 
 pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
     Advanced,
@@ -226,6 +229,7 @@ pub(in crate::domain_computation::primary_graph) struct RequiredFreshProgress<Sc
 where
     Schema: ApplicationSchema,
 {
+    contacts: contacts::ContactAttribution,
     outcome: Option<RequiredFreshOutcome>,
     successor: Box<dyn ErasedRequiredSuccessor<Schema>>,
     // This field must drop after `successor`; the Box owns physical backing.

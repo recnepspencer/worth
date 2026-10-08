@@ -1,3 +1,5 @@
+mod current_commit;
+use current_commit::reacquire_current_committed_output;
 mod current_accepted;
 mod receipt_custody;
 use receipt_custody::SettlementReceiptCustody;
@@ -164,8 +166,10 @@ impl WorthQueryOutputDemandSettlement {
         self.readiness_delivery.as_ref()
     }
 
-    /// Number of installed producer executions initiated by this admitted demand.
-    /// This is not the producing commit's historical readiness evidence.
+    /// Executions of this demand's own producer over the handle's lifetime,
+    /// including an execution cancelled after entering its handler. Advancing
+    /// a settled handle reports the same lifetime count. An upstream execution
+    /// run by another caller's advance is counted by no demand handle.
     pub const fn producer_contacts_in_this_demand(&self) -> usize {
         self.producer_contacts_in_this_demand
     }
@@ -179,6 +183,7 @@ impl WorthQueryOutputDemandSettlement {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         restored: &super::WorthQueryRestoredAcceptedOutput,
         output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
     ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -214,7 +219,7 @@ impl WorthQueryOutputDemandSettlement {
             output_correspondence: Arc::clone(&restored.correspondence),
             restored_source: Some(restored.into()),
             readiness_delivery: None,
-            producer_contacts_in_this_demand: 0,
+            producer_contacts_in_this_demand,
             observation: WorthQueryApplicationReadObservation::from_product(
                 runtime,
                 product.read_lease(),
@@ -228,6 +233,7 @@ impl WorthQueryOutputDemandSettlement {
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         producer_identity: &str,
         output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
     ) -> Arc<Self>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -245,50 +251,13 @@ impl WorthQueryOutputDemandSettlement {
             readiness_delivery: Some(
                 WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
             ),
-            producer_contacts_in_this_demand: 0,
+            producer_contacts_in_this_demand,
             observation: WorthQueryApplicationReadObservation::from_product(
                 runtime,
                 selected.product().read_lease(),
             ),
         })
     }
-}
-
-fn reacquire_current_committed_output<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    receipt: &WorthQueryApplicationCommitReceipt,
-) -> Result<Option<WorthQueryProductObservationLease>, WorthQueryOutputDemandDenial>
-where
-    Schema: worth_query_installation::facade::ApplicationSchema,
-{
-    let committed = receipt.committed_product_publication();
-    let selected = runtime
-        .on_branch(receipt.product_branch())
-        .select()
-        .map_err(|error| {
-            WorthQueryOutputDemandDenial::product_selection(
-                error,
-                "settled output product observation could not be reacquired",
-            )
-        })?;
-    let observation = selected.product().observation();
-    let original_publication_is_current = committed.is_selected_at(observation);
-    let retained_output_is_current = runtime
-        .primary_provider
-        .graph
-        .output_lineage
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .current_output_matches_receipt(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
-            observation,
-            receipt,
-        );
-    Ok(
-        (original_publication_is_current || retained_output_is_current)
-            .then(|| selected.product().read_lease()),
-    )
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

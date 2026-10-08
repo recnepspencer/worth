@@ -223,13 +223,7 @@ where
     }
 }
 
-/// A prior run's state, its typed half downcast once, where the comparator
-/// took it.
-pub(super) struct TypedPrior<Key, Item, Reduced> {
-    pub(super) typed: Arc<RetainedPartitions<Key, Item, Reduced>>,
-    // Field drop order releases the independent typed Arc before its custody.
-    pub(super) state: Arc<CustodiedComputation>,
-}
+pub(super) use super::typed_prior::TypedPrior;
 
 /// One run's state, retained on the record its attempt published.
 pub(in crate::domain_computation) struct RetainedComputation {
@@ -307,63 +301,7 @@ impl RetainedComputation {
     pub(in crate::domain_computation::primary_graph) fn overflow_bytes_for_test(&mut self) {
         self.bytes = None;
     }
-
-    pub(in crate::domain_computation::primary_graph) fn fixture_byte_formula(&self) -> u64 {
-        use super::super::attribution_tests::{Number, Parity};
-        use worth_execution::KeyedPartitioner;
-        let typed = self
-            .typed
-            .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
-            .unwrap();
-        assert_eq!(
-            (
-                typed.items.len(),
-                typed.item_keys.len(),
-                typed.partitions.len()
-            ),
-            (4, 4, 2)
-        );
-        let size = |bytes: usize| u64::try_from(bytes).unwrap();
-        let items = 4
-            * (size(std::mem::size_of::<(PartitionItemId, Number)>())
-                + size(std::mem::size_of::<(PartitionItemId, [u8; 32])>()));
-        let keys = 4 * size(std::mem::size_of::<(PartitionItemId, RetainedCall)>())
-            + typed
-                .item_keys
-                .values()
-                .map(|call| call.charge.additional_bytes().unwrap())
-                .sum::<u64>();
-        // Parity(0/1): newtype tag, one-byte name length, name, unsigned
-        // tag, and a one-byte varint value. Domain framing is not key storage.
-        let parity_bytes = 1 + 1 + size("Parity".len()) + 1 + 1;
-        let partitions = 2
-            * (size(std::mem::size_of::<RetainedPartition<Parity>>()) + parity_bytes)
-            + typed
-                .partitions
-                .values()
-                .map(|part| part.gather.additional_bytes().unwrap())
-                .sum::<u64>();
-        // Each immutable u64 node contains its identity, value, aggregate,
-        // two Arc child links and retained-byte sum, plus two Arc counters.
-        let node = size(std::mem::size_of::<PartitionIdentity>())
-            + 3 * size(std::mem::size_of::<u64>())
-            + 4 * size(std::mem::size_of::<usize>());
-        // The state's one Arc allocation contains its inline state and ticket,
-        // with the two Arc counters and alignment padding declared by Arc.
-        use crate::domain_computation::primary_graph::output_lineage::CustodiedComputation;
-        let alignment =
-            std::mem::align_of::<CustodiedComputation>().max(std::mem::align_of::<usize>());
-        let header = 2 * std::mem::size_of::<usize>();
-        let offset = header.div_ceil(alignment) * alignment;
-        let capsule =
-            (offset + std::mem::size_of::<CustodiedComputation>()).div_ceil(alignment) * alignment;
-        items
-            + keys
-            + partitions
-            + typed.membership.charge.additional_bytes().unwrap()
-            + KeyedPartitioner::<[u8; 32]>::retained_bytes(4, 2, 0).unwrap()
-            + 2 * node
-            + self.facts.charged_bytes().unwrap()
-            + size(capsule)
-    }
 }
+
+#[cfg(test)]
+mod fixture_bytes;

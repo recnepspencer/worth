@@ -2,7 +2,7 @@
 //! records popped from the shared queue as frames.
 
 use super::super::super::required_continuations::{
-    resume_held_upstream, HeldUpstream, RequiredContinuations,
+    resume_held_upstream, ContinuationCustody, HeldUpstream, RequiredContinuations,
 };
 use super::super::super::RequiredFreshOutcome;
 use super::super::{
@@ -103,14 +103,14 @@ where
         admission
             .charge_external_work(3)
             .map_err(|_| work_denial())?;
-        let producer_contacts_in_this_demand = if current.is_none() {
-            // The first Ready settlement reports this demand's real contact.
-            // Successful discharge resets it, so later Clean certification
-            // reports no new producer contact.
-            demand.producer_contacts_in_this_demand
-        } else {
-            current_contacts
-        };
+        let producer_contacts_in_this_demand =
+            if current.is_none() || current_role == FrameRole::CallerSuccessor {
+                // Every certification reports the caller handle's lifetime count.
+                // Queue and upstream executions are not this caller's producer.
+                demand.producer_contacts_in_this_demand
+            } else {
+                current_contacts
+            };
         // The typed executor may admit and execute Fresh inside this call.
         // Reserve its custody before dispatch, even if it returns Current.
         let custody = if queue.active() {
@@ -124,7 +124,18 @@ where
             .reserve_external_work(installation_work)
             .map_err(admission_denial)?;
         let resolved = resolved_on_wave.view(slot.entries());
-        let result = certify_required_ready(
+        let caller_execution = !queue.active()
+            && stack.frames.is_empty()
+            && (current.is_none() || current_role == FrameRole::CallerSuccessor);
+        let refresh_permission = super::super::refresh::permit_refresh(
+            if caller_execution {
+                demand.admission_kind
+            } else {
+                crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required
+            },
+            Family::IDENTITY,
+        );
+        let mut result = certify_required_ready(
             runtime,
             principal,
             request_scope,
@@ -133,8 +144,13 @@ where
             current.is_none().then_some(demand.installed_entry.as_ref()),
             resolved.as_ref(),
             producer_contacts_in_this_demand,
+            refresh_permission,
             installation.admission(),
         );
+        if let (true, Ok(RequiredWaveStep::Fresh(progress))) = (caller_execution, &mut result) {
+            // Account before installation, refusal, or any custody disposal.
+            progress.attribute_to_caller(&mut demand.producer_contacts_in_this_demand);
+        }
         installation
             .settle(if matches!(&result, Ok(RequiredWaveStep::Fresh(_))) {
                 installation_work
@@ -162,7 +178,7 @@ where
                         selected,
                         current_role == FrameRole::CallerSuccessor,
                         current.is_none(),
-                        current_contacts,
+                        producer_contacts_in_this_demand,
                         commit_authority,
                         installed_edition,
                         admission,
@@ -193,9 +209,10 @@ where
                     }
                     resolved_on_wave.push(resolved, settlement, admission)?;
                     if let Some(downstream) = stack.pop() {
-                        current = Some(downstream);
-                        current_contacts = 0;
-                        current_role = FrameRole::Reached;
+                        let (ready, role, contacts) = downstream.into_parts();
+                        current = Some(ready);
+                        current_contacts = contacts;
+                        current_role = role;
                     }
                     // An empty stack returns to the retained caller Ready.
                     continue;
@@ -214,7 +231,14 @@ where
                     finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
                 }
                 if let Some(downstream) = current.take() {
-                    if !stack.push(downstream, admission)? {
+                    if !stack.push(
+                        RequiredWaveFrame {
+                            ready: downstream,
+                            role: current_role,
+                            contacts: current_contacts,
+                        },
+                        admission,
+                    )? {
                         if queue.active() {
                             hold_queue_frame!('required, None)
                         }
@@ -263,16 +287,11 @@ where
                         runtime
                             .output_demands
                             .clear_required_stop(successor.interest().key());
-                        let prior_contacts = if successor_role == FrameRole::CallerSuccessor {
-                            if current_role == FrameRole::CallerSuccessor {
-                                current_contacts
-                            } else {
-                                demand.producer_contacts_in_this_demand
-                            }
+                        current_contacts = if successor_role == FrameRole::CallerSuccessor {
+                            demand.producer_contacts_in_this_demand
                         } else {
-                            0
+                            successor.producer_contacts()
                         };
-                        current_contacts = prior_contacts + successor.producer_contacts();
                         if committed_ready(&ready, admission)? {
                             wave = reselect_required_wave(runtime, wave, admission)?;
                             resolved_on_wave.clear();
@@ -304,9 +323,12 @@ where
             RequiredWaveStep::Held(head) => {
                 drop(slot);
                 let custody = if queue.active() {
-                    &mut *frame_custody
+                    ContinuationCustody::Queue(&mut *frame_custody)
                 } else {
-                    &mut demand.required_continuations
+                    ContinuationCustody::Caller(
+                        &mut demand.required_continuations,
+                        &mut demand.producer_contacts_in_this_demand,
+                    )
                 };
                 match resume_held_upstream(
                     runtime,
@@ -346,16 +368,6 @@ where
             }
         }
     }
-}
-
-/// What the current frame is to this wave. A caller successor is a refresh
-/// of the caller's Ready, or of an earlier caller successor, reached with no
-/// stacked downstream outside queue work.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum FrameRole {
-    Reached,
-    Successor,
-    CallerSuccessor,
 }
 
 /// A committed Ready moved the wave past its selected position.

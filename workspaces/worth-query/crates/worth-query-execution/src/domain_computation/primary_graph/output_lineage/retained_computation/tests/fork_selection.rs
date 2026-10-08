@@ -177,6 +177,18 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         "pin-scan work is admitted before publication"
     );
     drop(prior);
+    lineage.release_occurrence(parent.occurrence);
+    assert!(!lineage.by_source[&source].contains_key(&child.lifecycle_incarnation()));
+    assert!(!lineage.by_source[&source].contains_key(&nested.lifecycle_incarnation()));
+    assert!(
+        Arc::ptr_eq(&select(&lineage, &child), &captured),
+        "a child with no local record selects the deleted ancestor's exact cell"
+    );
+    assert!(
+        Arc::ptr_eq(&select(&lineage, &nested), &captured),
+        "nested no-local inheritance still selects the same deleted ancestor cell"
+    );
+    assert_eq!(lineage.retention.retained_bytes(), bytes);
     restored(&mut lineage, &child);
     let local = select(&lineage, &child);
     assert!(!Arc::ptr_eq(&local, &captured));
@@ -188,7 +200,6 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         "local typed absence stops ancestor reuse"
     );
     assert!(Arc::ptr_eq(&select(&lineage, &nested), &local));
-    lineage.release_occurrence(parent.occurrence);
     assert!(
         lineage.by_source[&source].contains_key(&parent.occurrence),
         "live descendants preserve ancestor history"

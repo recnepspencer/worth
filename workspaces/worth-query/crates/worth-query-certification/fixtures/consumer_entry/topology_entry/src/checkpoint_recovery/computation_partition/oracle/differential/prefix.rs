@@ -24,7 +24,15 @@ pub(super) fn apply<const WORK: usize, const RUNS: usize, const MODE: u8>(
 pub(in super::super) fn run<const MODE: u8>(
     application: &Application<false, TOTALS_WORK, 1, MODE>,
 ) -> (Model, Vec<OracleRun>) {
+    let (model, runs, _) = run_with_history(application);
+    (model, runs)
+}
+
+pub(in super::super) fn run_with_history<const MODE: u8>(
+    application: &Application<false, TOTALS_WORK, 1, MODE>,
+) -> (Model, Vec<OracleRun>, reference::Reference) {
     let mut model = model();
+    let mut history = reference::Reference::new(&model);
     let mut rng = Lcg(SEED ^ 0x6969);
     let mut kinds = KINDS;
     for place in (1..kinds.len()).rev() {
@@ -33,6 +41,7 @@ pub(in super::super) fn run<const MODE: u8>(
     let (scope, principal) = authenticate(application);
     let request = application.request(&principal, &scope);
     let mut last = demand(&request, application).1;
+    history.demanded(None);
     let mut command = 0x6900;
     for kind in kinds.into_iter().take(8).flat_map(|kind| match kind {
         Kind::Fault => vec![Kind::Fault, Kind::Repair],
@@ -40,6 +49,9 @@ pub(in super::super) fn run<const MODE: u8>(
         kind => vec![kind],
     }) {
         let step = model.step(kind, &mut rng);
+        for change in &step.changes {
+            history.edit(change);
+        }
         apply(application, step.changes, &mut command);
         arm_own_write(step.own_write);
         let next = demand(&request, application).1;
@@ -47,6 +59,7 @@ pub(in super::super) fn run<const MODE: u8>(
             last = next;
         }
         arm_own_write(None);
+        history.demanded(step.own_write);
         if let Some(write) = step.own_write {
             model.written(write);
         }
@@ -55,7 +68,7 @@ pub(in super::super) fn run<const MODE: u8>(
         last.last().unwrap().outcome.is_ok(),
         "the seeded prefix ends after repair or relief"
     );
-    (model, last)
+    (model, last, history)
 }
 
 pub(in super::super) fn value_edit(model: &Model) -> EntryEdit {
@@ -70,12 +83,12 @@ pub(in super::super) fn value_edit(model: &Model) -> EntryEdit {
 pub(in super::super) fn work_boundary<const MODE: u8>(
     application: &Application<false, TOTALS_WORK, 1, MODE>,
     mut model: Model,
+    mut history: reference::Reference,
 ) {
-    let fresh = installation::install_variant::<false, TOTALS_WORK, 1, MODE>(
-        Some(application.capture_application_checkpoint().unwrap()),
-        Default::default(),
-        |_| panic!("checkpoint restore does not reseed"),
-    );
+    let fresh = history
+        .install::<false, TOTALS_WORK, 1, MODE>(Default::default(), |graph, model| {
+            model.seed(graph)
+        });
     let step = model.step(Kind::Ceiling, &mut Lcg(SEED ^ 0xce11));
     let (scope, principal) = authenticate(application);
     let request = application.request(&principal, &scope);
@@ -88,6 +101,7 @@ pub(in super::super) fn work_boundary<const MODE: u8>(
             unreachable!("ceiling is an entry creation")
         };
         command += 1;
+        history.edit(&Change::Entry(change.clone()));
         edit(&request, application, change.clone(), command);
         edit(&fresh_request, &fresh, change, command);
     }

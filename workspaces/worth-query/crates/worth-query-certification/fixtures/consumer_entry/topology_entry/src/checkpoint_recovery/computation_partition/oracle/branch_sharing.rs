@@ -120,5 +120,7 @@ fn with_own_write<T>(
 
 mod basis_drift;
 mod eviction;
+mod ledger;
+mod pin;
 mod seeded;
 mod tree_identity;

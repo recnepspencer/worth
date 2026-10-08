@@ -265,18 +265,19 @@ impl QueryDispatch<'_> {
             .map(|seed| (seed, kernel.clone(), identity.clone(), combine.clone()));
         let ceiling = ExecutionWorkCeiling::new(ceiling);
         let held = tree.held.as_mut();
+        let mapped = super::partitioned_computation::FullTreeMapWork::default();
         let run = |lease: Option<&ExecutionResourceLease<'_>>| {
             let outcome = map.run_reduce_holding(
                 lease,
                 inputs.held,
                 held,
-                kernel,
+                |input, context| mapped.kernel(input, context, &kernel),
                 identity,
                 combine,
                 max_value_bytes,
                 0,
             );
-            super::partitioned_computation::observe_full_tree(cause, &outcome);
+            super::partitioned_computation::observe_full_tree(cause, &outcome, &mapped);
             outcome
         };
         let reduced = match &self.form {

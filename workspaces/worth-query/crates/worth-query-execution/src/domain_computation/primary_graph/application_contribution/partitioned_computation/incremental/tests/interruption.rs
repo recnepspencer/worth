@@ -69,10 +69,13 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
     assert_eq!(stopped.gathered, [0, 1, 2, 3]);
     assert_eq!(stopped.outcome, cancelled());
     assert_eq!(combines, 1, "no combine runs after the cancelling one");
-    let [(partitions, tree)] = stopped.tree_runs.as_slice() else {
+    let [tree] = stopped.tree_runs.as_slice() else {
         panic!("one stopped tree report")
     };
-    assert!(matches!(partitions, Run::Full(_)));
+    assert!(matches!(
+        tree,
+        super::super::tree_report::WorthQueryPartitionedTreeRun::Full(Cause::NoProducerPrior, _)
+    ));
     assert_eq!(tree.metrics().combine_calls, 1);
     assert_eq!(tree.metrics().recombined_nodes, 0);
 }
@@ -104,10 +107,10 @@ fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() 
     );
     assert_eq!(stopped.outcome, cancelled());
     assert_eq!(combines, 1, "neither a second recombine nor a rebuild ran");
-    let [(partitions, tree)] = stopped.tree_runs.as_slice() else {
+    let [tree] = stopped.tree_runs.as_slice() else {
         panic!("one stopped tree report")
     };
-    assert_eq!(*partitions, Run::Incremental);
+    assert_eq!(tree.partitions(), Run::Incremental);
     assert!(matches!(
         tree,
         super::super::tree_report::WorthQueryPartitionedTreeRun::Edited(_)

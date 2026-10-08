@@ -29,6 +29,7 @@ where
             outcome,
             successor,
             capacity,
+            contacts: _,
         } = self;
         debug_assert!(outcome.is_none(), "only an installed progress is promoted");
         // This trait has one private concrete implementer. The preceding

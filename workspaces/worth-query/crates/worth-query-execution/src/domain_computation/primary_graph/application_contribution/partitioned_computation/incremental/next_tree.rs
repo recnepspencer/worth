@@ -200,7 +200,7 @@ where
             basis,
             prior,
         } = self;
-        let retained = &*prior.typed;
+        let retained = prior.typed();
         let exhausted = |partition| WorthQueryPartitionedComputationDenial::Partition {
             partition,
             cause: WorthQueryComputationPartitionStop::Resource(
@@ -326,10 +326,7 @@ where
             execution,
             &mut results_memory,
         );
-        observe_tree(
-            WorthQueryPartitionedComputationRun::Incremental,
-            tree.report,
-        );
+        observe_tree(tree.report);
         let tree = tree.outcome?;
         // The results are the tree's now: the hold settles to what the tree
         // keeps, as a full run's tree is handed over when its run ends.
@@ -371,7 +368,7 @@ where
                     typed_bytes: typed.charged_bytes(),
                     typed: Arc::new(typed),
                     carried: Some(CarriedCalls {
-                        prior: prior.state,
+                        prior: prior.into_state(),
                         membership: next.carried_membership,
                         items: next.carried_items,
                         partitions: carried,

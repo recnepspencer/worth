@@ -3,14 +3,14 @@
 
 use worth_foundational::facade::PartitionIdentity as Id;
 
-pub(super) struct Shape {
+pub(in super::super) struct Shape {
     key: Id,
     left: Option<Box<Shape>>,
     right: Option<Box<Shape>>,
 }
 
 impl Shape {
-    pub(super) fn from_sorted(keys: &[Id]) -> Option<Box<Self>> {
+    pub(in super::super) fn from_sorted(keys: &[Id]) -> Option<Box<Self>> {
         let root = keys
             .iter()
             .enumerate()
@@ -21,6 +21,23 @@ impl Shape {
             left: Self::from_sorted(&keys[..root]),
             right: Self::from_sorted(&keys[root + 1..]),
         }))
+    }
+
+    // Initialization, monotone-stack and BFS each visit every node. Stack
+    // comparisons count n-R pops and n-L comparisons that retain their top.
+    pub(in super::super) fn shape_work(root: &Option<Box<Self>>, count: usize) -> u64 {
+        let mut left = root.as_deref();
+        let mut right = root.as_deref();
+        let (mut l, mut r) = (0, 0);
+        while let Some(node) = left {
+            l += 1;
+            left = node.left.as_deref();
+        }
+        while let Some(node) = right {
+            r += 1;
+            right = node.right.as_deref();
+        }
+        5 * count as u64 - l - r
     }
 
     pub(super) fn update_path(root: &Option<Box<Self>>, key: Id) -> Vec<Id> {

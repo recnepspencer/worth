@@ -13,13 +13,17 @@ use super::*;
 type Ran = (
     Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
     Vec<WorthQueryPartitionedComputationRun>,
+    Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun>,
 );
 
 /// Each demand of the sequence: its producer contacts and its runs.
 fn demands() -> Vec<(usize, Vec<Ran>)> {
     let mut demands = Vec::new();
     sequence(false, |_, demanded| {
-        let runs = demanded.runs.into_iter().map(|run| (run.outcome, run.runs));
+        let runs = demanded
+            .runs
+            .into_iter()
+            .map(|run| (run.outcome, run.runs, run.tree_runs));
         demands.push((demanded.contacts, runs.collect()));
     });
     demands
@@ -34,7 +38,7 @@ fn every_demand_of_the_sequence_runs_the_same_at_every_worker_count() {
         serial
             .iter()
             .flat_map(|(_, runs)| runs)
-            .any(|(outcome, _)| outcome.is_err()),
+            .any(|(outcome, _, _)| outcome.is_err()),
         "the sequence meets a failing partition"
     );
     for placement in placements {

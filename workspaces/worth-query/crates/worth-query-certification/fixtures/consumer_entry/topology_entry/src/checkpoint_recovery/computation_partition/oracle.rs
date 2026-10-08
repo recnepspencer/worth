@@ -39,6 +39,8 @@ mod installation;
 mod republication;
 mod restoration;
 mod seeded_absence;
+mod tree_count;
+mod tree_stop;
 mod tree_work;
 use installation::{
     install, install_with_reuse, Application, OracleProgram, Request, EVEN_Y, ODD_Y, SCOPE,
@@ -176,9 +178,10 @@ impl<const WORK: usize, const MODE: u8>
     fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {
         WorthQueryDeterministicReducer::canonical(
             || -0.0,
-            |left, right| {
-                COMBINES.fetch_add(1, Ordering::Relaxed);
-                left + right
+            if MODE == 4 {
+                tree_count::faulting_sum
+            } else {
+                tree_count::sum
             },
         )
     }
@@ -196,11 +199,11 @@ struct OracleRun {
     outcome: Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
     runs: Vec<WorthQueryPartitionedComputationRun>,
     calls: OwnerCalls,
-    tree_runs: Vec<(
-        WorthQueryPartitionedComputationRun,
-        worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun,
-    )>,
+    tree_runs:
+        Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun>,
     combines: usize,
+    tree_nodes: usize,
+    placement: worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest,
 }
 
 /// The runs of the current demand. The tests that fill it hold the
@@ -209,6 +212,19 @@ static ROOM: Mutex<Vec<OracleRun>> = Mutex::new(Vec::new());
 
 fn room() -> MutexGuard<'static, Vec<OracleRun>> {
     ROOM.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// The one room take reconciles every captured run before exposing it.
+fn take_runs(
+    serial_tree: Option<
+        &[worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun],
+    >,
+) -> Vec<OracleRun> {
+    let runs = std::mem::take(&mut *room());
+    for run in &runs {
+        tree_work::assert_reconciled(run, tree_work::stop_kind(run, serial_tree));
+    }
+    runs
 }
 
 /// Seeds the entry numbered `number` as a member of each of `sets`.
@@ -225,6 +241,16 @@ fn seed_entry(graph: &mut Graph, sets: &[&str], number: usize, entry: RegionEntr
 fn demand<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
     request: &Request<'_, '_, '_>,
     application: &Application<REUSE, WORK, RUNS, MODE>,
+) -> (usize, Vec<OracleRun>) {
+    demand_reconciled(request, application, None)
+}
+
+fn demand_reconciled<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
+    request: &Request<'_, '_, '_>,
+    application: &Application<REUSE, WORK, RUNS, MODE>,
+    serial_tree: Option<
+        &[worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun],
+    >,
 ) -> (usize, Vec<OracleRun>) {
     room().clear();
     published_states();
@@ -248,7 +274,7 @@ fn demand<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u
         })
         .expect("the region output demand settles");
     let contacts = settled.producer_contacts_in_this_demand();
-    let mut runs = std::mem::take(&mut *room());
+    let mut runs = take_runs(serial_tree);
     if let Some(last) = runs.last_mut() {
         last.published = published_states();
     }

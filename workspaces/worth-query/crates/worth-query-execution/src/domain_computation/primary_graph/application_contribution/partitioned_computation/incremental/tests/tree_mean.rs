@@ -75,7 +75,7 @@ fn mean_reported_update_nodes_obey_the_random_treap_depth_law() {
                 "unique sampled identities"
             );
             let retained = retained(&template, &keys);
-            CALLS.set(0);
+            reset_counts();
             let next = run(
                 &retained,
                 &keys,

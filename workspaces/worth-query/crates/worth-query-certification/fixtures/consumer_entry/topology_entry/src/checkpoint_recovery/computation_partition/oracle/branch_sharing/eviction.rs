@@ -15,7 +15,17 @@ fn a_child_eviction_is_local_and_does_not_release_its_parents_state() {
         });
     let parent = kept.current_world();
     let full_parent = fresh.current_world();
-    judge(&run(&kept, parent), &run(&fresh, full_parent), None);
+    let retained = run(&kept, parent);
+    let reference = run(&fresh, full_parent);
+    judge(&retained, &reference, None);
+    let reference_bytes = super::ledger::state_bytes(&reference);
+    drop(reference);
+    let parent_bytes = super::ledger::state_bytes(&retained);
+    drop(retained);
+    assert_eq!(
+        kept.output_lineage_retained_bytes_for_test(),
+        fresh.output_lineage_retained_bytes_for_test() - reference_bytes + parent_bytes
+    );
     let child = fork(&kept, parent);
     let full_child = fork(&fresh, full_parent);
     let extra = LARGEST_SET - 16 - model.len();
@@ -40,6 +50,11 @@ fn a_child_eviction_is_local_and_does_not_release_its_parents_state() {
         .with_available_lineage_bytes_for_test(256 * 1024, || run(&fresh, full_child))
         .unwrap();
     judge(&a, &b, Some(Run::Incremental));
+    assert_eq!(
+        kept.output_lineage_retained_bytes_for_test(),
+        fresh.output_lineage_retained_bytes_for_test() - reference_bytes + parent_bytes,
+        "child eviction retains exactly the parent's state charge"
+    );
     let mut child_model = model.clone();
     let step = child_model.step(Kind::Value, &mut rng);
     let mut changes = vec![Change::Entry(EntryEdit::delete(1000).batch(extra))];

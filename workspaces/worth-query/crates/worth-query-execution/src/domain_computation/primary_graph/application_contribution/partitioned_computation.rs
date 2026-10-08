@@ -18,7 +18,7 @@
 //! the test observer is shown.
 
 mod compute;
-pub(super) use incremental::observe_full_tree;
+pub(super) use incremental::{observe_full_tree, FullTreeMapWork};
 #[cfg(feature = "test-query-execution-observer")]
 mod certification_reuse;
 mod denial;

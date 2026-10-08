@@ -61,6 +61,14 @@ pub(in crate::domain_computation) fn observe_discarded(
 }
 
 impl WorthQueryPublishedComputationStateForTest {
+    /// The measured full state charge, including the custodied allocation.
+    /// This reads payload measurement, not the runtime ledger or ticket.
+    pub fn retained_bytes(&self) -> Option<u64> {
+        self.state
+            .as_ref()
+            .and_then(|state| CustodiedComputation::retained_bytes_for(state))
+    }
+
     /// Compare the fields the next run reads under the supplied item binding
     /// correspondence. Each state's stored digests must encode its actual
     /// items: different installations intentionally encode different authority

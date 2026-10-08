@@ -9,7 +9,10 @@
 //! cancellation or budgets) or to a moment (a stale publication, deferred
 //! scheduling, exhausted publication capacity) stays with that advance. The
 //! newest row of the occurrence decides: its own stopped state, or the recorded
-//! stop, which its successful certification or refresh clears.
+//! stop, which its successful certification or refresh clears. An exact
+//! recovery refused at a Ready row records that row's supersession as any
+//! caller's would be; the Ready row answers its dependents ahead of the
+//! record, and an ordinary demand's refresh clears it.
 
 use std::collections::BTreeMap;
 

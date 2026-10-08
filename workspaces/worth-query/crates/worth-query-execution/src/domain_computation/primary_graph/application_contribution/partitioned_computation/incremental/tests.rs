@@ -173,7 +173,7 @@ struct Attempt {
     /// The work the projection's reader charged.
     work: crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork,
     runs: Vec<(Run, Option<ExecutionReport>)>,
-    tree_runs: Vec<(Run, super::tree_report::WorthQueryPartitionedTreeRun)>,
+    tree_runs: Vec<super::tree_report::WorthQueryPartitionedTreeRun>,
     gathered: Vec<u64>,
     sealed: Result<Option<SealedComputationRun>, ()>,
 }

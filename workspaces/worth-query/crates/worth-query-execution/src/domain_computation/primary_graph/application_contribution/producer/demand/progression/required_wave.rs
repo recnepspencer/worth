@@ -41,6 +41,8 @@ pub(super) struct RequiredWaveSelection<'runtime, Schema> {
 mod caller;
 mod caller_settlement;
 mod drive;
+mod frame;
+use frame::{FrameRole, RequiredWaveFrame};
 mod queued;
 mod resolved;
 mod selection;
@@ -65,34 +67,34 @@ pub(super) enum RequiredWaveStep<Schema: ApplicationSchema> {
 
 /// Only the exact dependency chain currently being resolved is held here.
 /// It never enumerates unrelated required or clean records.
-pub(super) struct RequiredWaveStack {
-    frames: Vec<SelectedReadyReadmission>,
+struct RequiredWaveStack {
+    frames: Vec<RequiredWaveFrame>,
 }
 
 impl RequiredWaveStack {
-    pub(super) fn new() -> Self {
+    fn new() -> Self {
         Self { frames: Vec::new() }
     }
 
     /// A repeated live registry member is a pending cycle, not authority to
     /// discharge any edge. The caller keeps its original interest for retry.
-    pub(super) fn push(
+    fn push(
         &mut self,
-        next: SelectedReadyReadmission,
+        next: RequiredWaveFrame,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         admission
             .charge_external_work(3)
             .map_err(|_| work_denial())?;
         for prior in &self.frames {
-            if prior.same_record(&next, admission)? {
+            if prior.ready.same_record(&next.ready, admission)? {
                 return Ok(false);
             }
         }
         let old_bytes = self
             .frames
             .capacity()
-            .checked_mul(std::mem::size_of::<SelectedReadyReadmission>())
+            .checked_mul(std::mem::size_of::<RequiredWaveFrame>())
             .ok_or_else(capacity_denial)?;
         let next_len = self
             .frames
@@ -105,7 +107,7 @@ impl RequiredWaveStack {
             // coexist during reserve; the selected pin is then written once.
             let next_capacity = self.frames.capacity().saturating_mul(2).max(next_len);
             let new_bytes = next_capacity
-                .checked_mul(std::mem::size_of::<SelectedReadyReadmission>())
+                .checked_mul(std::mem::size_of::<RequiredWaveFrame>())
                 .ok_or_else(capacity_denial)?;
             let peak = old_bytes
                 .checked_add(new_bytes)
@@ -116,7 +118,7 @@ impl RequiredWaveStack {
             let moved_and_written = old_bytes
                 .checked_mul(2)
                 .ok_or_else(work_denial)?
-                .checked_add(std::mem::size_of::<SelectedReadyReadmission>())
+                .checked_add(std::mem::size_of::<RequiredWaveFrame>())
                 .and_then(|work| work.checked_add(3))
                 .ok_or_else(work_denial)?;
             admission
@@ -134,7 +136,7 @@ impl RequiredWaveStack {
         } else {
             admission
                 .charge_external_work(
-                    u64::try_from(std::mem::size_of::<SelectedReadyReadmission>() + 1)
+                    u64::try_from(std::mem::size_of::<RequiredWaveFrame>() + 1)
                         .map_err(|_| work_denial())?,
                 )
                 .map_err(|_| work_denial())?;
@@ -143,7 +145,7 @@ impl RequiredWaveStack {
         Ok(true)
     }
 
-    pub(super) fn pop(&mut self) -> Option<SelectedReadyReadmission> {
+    fn pop(&mut self) -> Option<RequiredWaveFrame> {
         self.frames.pop()
     }
 }
@@ -197,6 +199,7 @@ pub(super) fn certify_required_ready<Schema>(
     caller_installed: Option<&InstalledProducerProvider<Schema>>,
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
+    refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<RequiredWaveStep<Schema>, WorthQueryOutputDemandDenial>
 where
@@ -245,6 +248,7 @@ where
             installed,
             wave.branch,
             producer_contacts_in_this_demand,
+            refresh_permission,
             admission,
         )
         .map_err(|stop| match stop {

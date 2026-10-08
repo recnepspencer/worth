@@ -63,7 +63,9 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
     );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    demand(&request, &application);
+    let mut last = demand(&request, &application).1;
+    let mut history = differential::reference::Reference::new(&model);
+    history.demanded(None);
     let mut command = 0x69_0000;
     let mut checked = 0;
     let mut ceilings = 0;
@@ -80,10 +82,13 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
             if kind == Kind::Evict && matches!(boundary, Boundary::Evict) && model.odd {
                 model.odd = false;
                 command += 1;
+                history.edit(&Change::Ordinate(EVEN_Y));
                 adjust(&request, &application, EVEN_Y, command);
             }
             if kind == Kind::ObservationOverBudget && MODE == 1 {
                 let wide = model.wide_entry();
+                history.edit(&Change::Entry(EntryEdit::delete(wide.entry)));
+                history.edit(&Change::Entry(wide.clone()));
                 command += 1;
                 edit(
                     &request,
@@ -93,12 +98,27 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 );
                 command += 1;
                 edit(&request, &application, wide, command);
-                demand(&request, &application);
+                let prime = demand(&request, &application).1;
+                let fresh = history
+                    .install::<REUSE, WORK, RUNS, MODE>(profile(boundary), |graph, model| {
+                        seed(graph, model, boundary)
+                    });
+                let (fs, fp) = authenticate(&fresh);
+                let fr = fresh.request(&fp, &fs);
+                let reference = demand(&fr, &fresh).1;
+                compare_prime(if prime.is_empty() { &last } else { &prime }, &reference);
+                if !prime.is_empty() {
+                    last = prime;
+                }
+                history.demanded(None);
             }
             let enlarged = if kind == Kind::Evict && matches!(boundary, Boundary::Evict) {
                 // Leave the model's two-set edges inside the existing invariant
                 // budget; the large even set still exceeds the typed-state ledger.
                 let extra = LARGEST_SET - 16 - model.len();
+                history.edit(&Change::Entry(
+                    EntryEdit::create(&["even"], 1000, 1000, 1.0_f64.to_bits(), 1).batch(extra),
+                ));
                 command += 1;
                 edit(
                     &request,
@@ -116,6 +136,18 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                     .unwrap();
                 assert!(enlarged[0].outcome.is_ok(), "eviction prime: {enlarged:?}");
                 assert_eq!(enlarged.last().unwrap().published.len(), 1);
+                let fresh = history
+                    .install::<REUSE, WORK, RUNS, MODE>(profile(boundary), |graph, model| {
+                        seed(graph, model, boundary)
+                    });
+                let (fs, fp) = authenticate(&fresh);
+                let fr = fresh.request(&fp, &fs);
+                let reference = fresh
+                    .with_available_lineage_bytes_for_test(256 * 1024, || demand(&fr, &fresh).1)
+                    .unwrap();
+                compare_prime(&enlarged, &reference);
+                history.demanded(None);
+                last = enlarged;
                 extra
             } else {
                 0
@@ -128,34 +160,33 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 model.step(kind, &mut rng)
             };
             for change in step.changes {
+                history.edit(&change);
                 command += 1;
                 match change {
                     Change::Entry(change) => edit(&request, &application, change, command),
                     Change::Ordinate(y) => adjust(&request, &application, y, command),
                 }
             }
-            // A fresh record from the same application checkpoint preserves
-            // entity binding while withholding all typed computation state.
-            let checkpoint = application.capture_application_checkpoint().unwrap();
-            let fresh = installation::install_variant::<REUSE, WORK, RUNS, MODE>(
-                Some(checkpoint),
-                profile(boundary),
-                |_| panic!("checkpoint does not reseed"),
-            );
+            let fresh = history
+                .install::<REUSE, WORK, RUNS, MODE>(profile(boundary), |graph, model| {
+                    seed(graph, model, boundary)
+                });
             let (fs, fp) = authenticate(&fresh);
             let fr = fresh.request(&fp, &fs);
             if kind == Kind::Unretained {
                 unretained(&application, &fresh, &model, &mut command);
             }
             arm_own_write(step.own_write);
-            let kept = demand(&request, &application).1;
+            let (contacts, kept) = demand(&request, &application);
             arm_own_write(step.own_write);
             let reference = demand(&fr, &fresh).1;
             arm_own_write(None);
+            history.demanded(step.own_write);
             if let Some(write) = step.own_write {
                 model.written(write);
             }
             if enlarged > 0 {
+                history.edit(&Change::Entry(EntryEdit::delete(1000).batch(enlarged)));
                 command += 1;
                 edit(
                     &request,
@@ -164,8 +195,20 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                     command,
                 );
             }
+            let target = match boundary {
+                Boundary::Evict => Kind::Evict,
+                Boundary::Observation => Kind::ObservationOverBudget,
+                Boundary::Several => Kind::Several,
+            };
             if kept.is_empty() {
-                assert_ne!(kind, Kind::Evict, "eviction edit must run");
+                assert_ne!(kind, target, "every boundary event must execute");
+                assert_eq!(contacts, 0, "a kept output initiated no execution");
+                assert_eq!(
+                    last.last().unwrap().outcome,
+                    reference.last().unwrap().outcome,
+                    "{boundary:?}, {kind:?}: kept result equals fresh computation"
+                );
+                assert_published_state(&last, &reference);
                 continue;
             }
             assert_eq!(
@@ -185,11 +228,6 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 cause: worth_query_host::facade::application_contribution::WorthQueryComputationPartitionStop::Resource(
                     worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted), ..
             })) { ceilings += 1; }
-            let target = match boundary {
-                Boundary::Evict => Kind::Evict,
-                Boundary::Observation => Kind::ObservationOverBudget,
-                Boundary::Several => Kind::Several,
-            };
             if kind == target {
                 assert!(
                     kept[0].outcome.is_ok(),
@@ -207,9 +245,13 @@ fn run<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>(
                 );
                 checked += 1;
             }
+            last = kept;
         }
     }
-    assert!(checked > 0, "{boundary:?} reached its exact cause");
+    assert_eq!(
+        checked, 2,
+        "each round's boundary event asserted its exact cause"
+    );
     assert!(
         ceilings > 0,
         "{boundary:?} compared the named partition at a work stop"
@@ -257,7 +299,8 @@ fn unretained<const REUSE: bool, const WORK: usize, const RUNS: usize, const MOD
         assert_eq!(outcome.len(), 1);
         outcomes.push(outcome);
         // An ordinary mutation has no producer row. Its computed result is
-        // explicitly Policy-suppressed at admission and publishes no state.
+        // configured Unretained at installation: policy suppresses retention
+        // before prior delivery, and it publishes no state.
         assert!(
             published_states().is_empty(),
             "no producer row is published"
@@ -286,4 +329,15 @@ fn seeded_observation_steps_equal_fresh_state_and_work_boundaries() {
 fn seeded_several_steps_equal_fresh_state_and_work_boundaries() {
     let _guard = checkpoint_recovery_test_guard();
     run::<false, TOTALS_WORK, 2, 0>(Boundary::Several);
+}
+
+/// A prime that reused its previous output still proves its retained result
+/// and published state against a model-derived fresh computation.
+fn compare_prime(kept: &[OracleRun], reference: &[OracleRun]) {
+    assert_eq!(
+        kept.last().unwrap().outcome,
+        reference.last().unwrap().outcome,
+        "prime outcome"
+    );
+    assert_published_state(kept, reference);
 }

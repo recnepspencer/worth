@@ -19,7 +19,9 @@ impl CustodiedComputation {
         Arc::new(Self { state, capacity })
     }
 
-    pub(super) fn retained_bytes_for(state: &RetainedComputation) -> Option<u64> {
+    pub(in crate::domain_computation::primary_graph) fn retained_bytes_for(
+        state: &RetainedComputation,
+    ) -> Option<u64> {
         state
             .retained_bytes()?
             .checked_add(super::prepared_slot::arc_bytes::<Self>()?)
