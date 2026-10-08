@@ -69,9 +69,10 @@ macro_rules! settled_within_eight_advances {
 fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let _guard = checkpoint_recovery_test_guard();
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    // Eight rows keep the settled chain, and are too few for the last
-    // consumer's caller to refresh all of it at once.
-    let (application, _invalidation) = limited_application(8 * row, 128 * 1_024 * 1_024, 8);
+    // Six actual Ready layout slots keep the initial chain, but cannot hold
+    // its first upstream successor beside the settled custody. Eight slots
+    // permit an upstream publication, which legitimately makes a stop retryable.
+    let (application, _invalidation) = limited_application(6 * row, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (a, b, mut c) = chain!(application, request);
@@ -114,6 +115,100 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let mut b = start_consumer!(application, request, "anchor-b");
     settled_within_eight_advances!(b, request, "the middle after closing the last consumer");
     drop((a, b));
+}
+
+#[test]
+fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() {
+    let _guard = checkpoint_recovery_test_guard();
+    let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
+    let (application, _invalidation) = limited_application(8 * row, 128 * 1_024 * 1_024, 8);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let (a, b, mut c) = chain!(application, request);
+    let settled_custody = application.required_custody_bytes_for_test();
+    change_root_input!(request, application, 2, 0x9176_4080_u64);
+    let source_commit = request.retain_read().unwrap().selected_commit().clone();
+    drop((a, b));
+    take_decisions("anchor-b");
+
+    // Eight slots permit genuine upstream progress before the final consumer
+    // meets pressure. That progress justifies a retry; it does not guarantee
+    // the remaining chain fits. Later unproductive attempts must be terminal.
+    let stopped = c.advance(&request);
+    assert!(
+        matches!(
+            &stopped,
+            Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                if denial.kind() == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                    && denial.recovery_posture()
+                        == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+        ),
+        "the partially published refresh offers a retry: {:?}",
+        stopped.as_ref().err()
+    );
+    assert_ne!(
+        request.retain_read().unwrap().selected_commit().clone(),
+        source_commit,
+        "the stopped advance actually published an upstream output"
+    );
+    let root = request
+        .query(PlanarOutputRead {
+            body_key: "anchor-a".to_owned(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(
+        root.rows()[0].value,
+        length(3),
+        "the published root uses the changed input"
+    );
+    let stopped_custody = application.required_custody_bytes_for_test();
+    assert!(
+        stopped_custody <= 8 * row,
+        "partial publication retains {stopped_custody} bytes within its declared {}-byte allowance; the earlier settled baseline was {settled_custody}",
+        8 * row
+    );
+    let published_commit = request.retain_read().unwrap().selected_commit().clone();
+    let mut held_custody = stopped_custody;
+    for attempt in 0..2 {
+        let entries = query_entries();
+        let stopped = c.advance(&request);
+        assert!(
+            matches!(
+                &stopped,
+                Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                    if denial.kind() == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                        && denial.recovery_posture()
+                            == primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+            ),
+            "attempt {attempt}: no further progress permits a retry: {:?}",
+            stopped.as_ref().err()
+        );
+        assert!(
+            query_entries() > entries,
+            "the terminal attempt re-enters the real source query"
+        );
+        assert_eq!(
+            request.retain_read().unwrap().selected_commit(),
+            &published_commit,
+            "a terminal attempt publishes no further output"
+        );
+        let after = application.required_custody_bytes_for_test();
+        assert!(
+            after <= held_custody,
+            "terminal attempt custody grows from {held_custody} to {after}"
+        );
+        held_custody = after;
+    }
+    assert!(
+        take_decisions("anchor-b").is_empty(),
+        "the budget-refused middle produces no completed decision"
+    );
+    drop(c);
+    assert!(
+        application.required_custody_bytes_for_test() <= held_custody,
+        "closing the stopped caller retains no excess custody"
+    );
 }
 
 #[test]

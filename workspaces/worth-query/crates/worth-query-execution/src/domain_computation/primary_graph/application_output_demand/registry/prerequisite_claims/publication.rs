@@ -11,11 +11,7 @@ impl PreparedPrerequisiteClaims {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         assert!(self.reserved_identity.is_none());
         let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
-        let mut state = owner
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let (posting, cleanup) = state.reserve_settlement_vacancy(identity, admission)?;
+        let (posting, cleanup) = owner.reserve_settlement_vacancy(identity, admission)?;
         self.reserved_identity = Some(Arc::clone(identity));
         self.reserved_posting = Some(posting);
         self.reserved_cleanup = Some(cleanup);
@@ -31,11 +27,11 @@ impl PreparedPrerequisiteClaims {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
+        let (posting, cleanup) = owner.reserve_settlement_vacancy(identity, admission)?;
         let mut state = owner
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let (posting, cleanup) = state.reserve_settlement_vacancy(identity, admission)?;
         let previous = self.reserved_cleanup.replace(cleanup);
         self.reserved_posting = Some(posting);
         self.reserved_identity = Some(Arc::clone(identity));
