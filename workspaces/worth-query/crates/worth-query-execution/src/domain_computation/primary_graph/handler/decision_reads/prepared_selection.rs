@@ -8,16 +8,15 @@ use worth_query_installation::facade::{
 use super::DecisionReader;
 use crate::domain_computation::primary_graph::{
     HandlerExecutionDenial, WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryInvariantEntityIdentity,
+    WorthQueryInvariantEntityIdentity, WorthQueryPreparedEntitySelection,
 };
 
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
-    /// Read the complete equality result under a finite candidate budget.
-    /// Presence and absence are retained for publication-time comparison.
-    /// An overflowing result denies; it never masquerades as a complete set.
-    pub fn select_entities<Entity, Aspect, Field, Value, Write, Unit>(
+    /// Prepare one declared equality target at this exact admitted projection.
+    /// Each selected value still retains complete membership or absence.
+    pub fn prepare_entity_selection<Entity, Aspect, Field, Value, Write, Unit>(
         &mut self,
         field: ApplicationFieldRef<
             Schema,
@@ -27,6 +26,39 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             Value,
             Write,
             EqualityPredicate,
+            Unit,
+        >,
+    ) -> Result<
+        WorthQueryPreparedEntitySelection<
+            Schema,
+            Binding::Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            Unit,
+        >,
+        HandlerExecutionDenial,
+    >
+    where
+        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Write: WritePosture,
+        Unit: ApplicationFieldUnit,
+    {
+        self.reader.prepare_entity_selection(field)
+    }
+
+    pub fn select_entities_prepared<Entity, Aspect, Field, Value, Write, Unit>(
+        &mut self,
+        prepared: &WorthQueryPreparedEntitySelection<
+            Schema,
+            Binding::Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
             Unit,
         >,
         value: Value,
@@ -38,51 +70,21 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         Unit: ApplicationFieldUnit,
     {
         self.reader
-            .decision_select_entities(field, value, candidate_limit)
+            .decision_select_entities_prepared(prepared, value, candidate_limit)
     }
 
-    /// Resolve one identity while retaining both its field and complete
-    /// equality selection, so a concurrent competing match makes it stale.
-    pub fn resolve_entity<Entity, Aspect, Field, Value, Write, Unit>(
+    /// The same zero-or-one contract as ordinary resolution, including the
+    /// selected identity field read and the complete competing-match predicate.
+    pub fn resolve_optional_entity_prepared<Entity, Aspect, Field, Value, Write, Unit>(
         &mut self,
-        field: ApplicationFieldRef<
+        prepared: &WorthQueryPreparedEntitySelection<
             Schema,
+            Binding::Operation,
             Entity,
             Aspect,
             Field,
             Value,
             Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, HandlerExecutionDenial>
-    where
-        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        self.resolve_optional_entity(field, value)?.ok_or_else(|| {
-            HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::UnknownEntity,
-                field.field(),
-            ))
-        })
-    }
-
-    /// Resolve zero or one identity while retaining absence as a predicate
-    /// dependency. Ambiguity and resource exhaustion remain denials.
-    pub fn resolve_optional_entity<Entity, Aspect, Field, Value, Write, Unit>(
-        &mut self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
             Unit,
         >,
         value: Value,
@@ -93,9 +95,10 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let field = prepared.field();
         let mut matches = self
-            .select_entities(field, value, 2)
-            .map_err(|denial| resolution_denial(denial, field.field()))?;
+            .select_entities_prepared(prepared, value, 2)
+            .map_err(|denial| super::indexed_selection::resolution_denial(denial, field.field()))?;
         if matches.len() > 1 {
             return Err(HandlerExecutionDenial::new(
                 WorthQueryEntityResolutionDenial::new(
@@ -111,26 +114,5 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 .map_err(HandlerExecutionDenial::new)?;
         }
         Ok(identity)
-    }
-}
-
-pub(super) fn resolution_denial(
-    denial: HandlerExecutionDenial,
-    subject: &str,
-) -> HandlerExecutionDenial {
-    match denial.downcast::<WorthQueryEntityResolutionDenial>() {
-        Ok(denial)
-            if matches!(
-                denial.kind(),
-                WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded { .. }
-            ) =>
-        {
-            HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::AmbiguousEntity,
-                subject,
-            ))
-        }
-        Ok(denial) => HandlerExecutionDenial::new(denial),
-        Err(denial) => denial,
     }
 }

@@ -18,6 +18,16 @@ pub(super) fn with_reader<Output>(
         &mut DecisionReader<'_, '_, '_, IdentityExecutionSchema, ProgramRequiredMutationBinding>,
     ) -> Output,
 ) -> Output {
+    try_with_reader(world, request, action).unwrap()
+}
+
+pub(super) fn try_with_reader<Output>(
+    world: &AuthorizationWorld,
+    request: &WorthQueryRequestScope,
+    action: impl FnOnce(
+        &mut DecisionReader<'_, '_, '_, IdentityExecutionSchema, ProgramRequiredMutationBinding>,
+    ) -> Output,
+) -> Result<Output, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial> {
     let principal = authenticated_principal(world, request);
     let account = resolved_account(world, "open", request);
     let operation = world
@@ -62,7 +72,5 @@ pub(super) fn with_reader<Output>(
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap()
-        .into_parts()
-        .0
+        .map(|completed| completed.into_parts().0)
 }

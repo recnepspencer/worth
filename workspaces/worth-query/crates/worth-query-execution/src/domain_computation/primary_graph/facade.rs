@@ -219,7 +219,8 @@ pub use super::invariant_projection::{
     WorthQueryInvariantProjectionDenialKind, WorthQueryInvariantProjectionTraversalDenial,
     WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWork,
     WorthQueryInvariantRelation, WorthQueryOperationProjectionDenial,
-    WorthQueryOperationProjectionDenialKind, WorthQueryPriorOutputFamilyMember,
+    WorthQueryOperationProjectionDenialKind, WorthQueryPreparedEntitySelection,
+    WorthQueryPriorOutputFamilyMember,
 };
 pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,

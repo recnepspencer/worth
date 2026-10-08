@@ -689,6 +689,7 @@ exports = [
     "WorthQueryPerformedExternalRedispatch",
     "WorthQueryPreparedBranchAdoption",
     "WorthQueryPreparedBranchSetAdoption",
+    "WorthQueryPreparedEntitySelection",
     "WorthQueryPreparedProgramMigration",
     "WorthQueryPreparedRequiredOutputSource",
     "WorthQueryPrimaryGraph",

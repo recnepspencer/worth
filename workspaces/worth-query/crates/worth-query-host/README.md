@@ -389,6 +389,20 @@ decoder runs. Its callback also borrows the same request checkpoint. See
 [Tracked scalar predecode admission](docs/scalar-predecode-admission.md) for the
 typed outcomes, allocation responsibility and staging complexity contracts.
 
+For repeated equality predicates on one declared target, call
+`DecisionReader::prepare_entity_selection(field)` once, then
+`select_entities_prepared(&prepared, value, candidate_limit)` or
+`resolve_optional_entity_prepared(&prepared, value)`. The opaque token retains
+the selected native root and installed index generation. It belongs to that
+exact runtime, snapshot, schema binding and operation admission; it grants no
+latest-head authority. Every value still performs its exact native comparison
+and retains a complete membership or absence predicate for commit and recovery.
+Each call uses the current reader's cancellation, deadline, allocation policy
+and finite selection/work contract. Preparation changes no installed declaration
+or serialized source-fact meaning. Native temporary comparison-key and result
+buffers retain their existing allocation ownership; the token does not claim
+physical admission of those buffers.
+
 Invariant factories resolve installed typed field and relation bindings. Their
 proposed and committed views expose decoded fields and complete bounded relation
 traversals while enforcing binding, prepared scope, entity kind, declared access,

@@ -105,53 +105,20 @@ impl IndexAccess<'_> {
         };
         charge(&mut prepare, seek, 0)?;
         let rows = entries.get(&key);
-        let indexed_count = rows.map_or(0, |rows| rows.len());
-        let examined = indexed_count.min(limit);
-        let result_bytes = width(examined)?
-            .checked_mul(
-                u64::try_from(std::mem::size_of::<EntityId>())
-                    .map_err(|_| Stop::AccountingOverflow)?,
-            )
-            .and_then(|bytes| bytes.checked_mul(2))
-            .ok_or(Stop::AccountingOverflow)?;
-        charge(
-            &mut prepare,
-            width(examined)?
-                .checked_mul(2)
-                .ok_or(Stop::AccountingOverflow)?,
-            result_bytes,
-        )?;
-        let mut seen = Vec::with_capacity(examined);
-        let mut candidates = Vec::with_capacity(examined);
-        if let Some(rows) = rows {
-            for (ordinal, entity) in rows.iter().take(limit).enumerate() {
-                charge(&mut prepare, width(seen.len() + 1)?, 0)?;
-                let Some((_, actual_kind, matches)) =
-                    borrowed_matches(view, *entity, locator, value, &mut prepare)?
-                else {
-                    return Err(Stop::Lookup(
-                        BoundedEntityFieldLookupDenial::new(Denial::CorruptIndexEntries, index)
-                            .with_examined_entry_count(ordinal + 1),
-                    ));
-                };
-                if seen.contains(entity) || !matches {
-                    return Err(Stop::Lookup(
-                        BoundedEntityFieldLookupDenial::new(Denial::CorruptIndexEntries, index)
-                            .with_examined_entry_count(ordinal + 1),
-                    ));
-                }
-                seen.push(*entity);
-                if actual_kind == kind {
-                    candidates.push(*entity);
-                }
-            }
-        }
+        let mut read = AdmittedCollectionRead {
+            view,
+            locator,
+            value,
+            prepare: &mut prepare,
+        };
+        let (candidates, examined, overflowed) =
+            super::entity_field_collection::collect(rows, index, kind, limit, &mut read)?;
         let outcome = BoundedEntityFieldLookupOutcome::new(
             definition,
             generation.generation_id,
             candidates,
             examined,
-            indexed_count > limit,
+            overflowed,
             parity,
         );
         if parity == BoundedIndexParityMode::Certification {
@@ -171,6 +138,45 @@ impl IndexAccess<'_> {
         }
         self.runtime.performance_access().count_query_index_path();
         Ok(outcome)
+    }
+}
+
+struct AdmittedCollectionRead<'a, 'runtime, F> {
+    view: &'a VisibilityProjectionView<'runtime>,
+    locator: &'a AspectFieldLocator,
+    value: &'a AspectValue,
+    prepare: &'a mut F,
+}
+impl<E, F: FnMut(u64, u64) -> Result<(), E>>
+    super::entity_field_collection::EntityFieldCollectionRead<E>
+    for AdmittedCollectionRead<'_, '_, F>
+{
+    fn prepare_results(&mut self, examined: usize) -> Result<(), Stop<E>> {
+        let bytes = width(examined)?
+            .checked_mul(
+                u64::try_from(std::mem::size_of::<EntityId>())
+                    .map_err(|_| Stop::AccountingOverflow)?,
+            )
+            .and_then(|bytes| bytes.checked_mul(2))
+            .ok_or(Stop::AccountingOverflow)?;
+        charge(
+            self.prepare,
+            width(examined)?
+                .checked_mul(2)
+                .ok_or(Stop::AccountingOverflow)?,
+            bytes,
+        )
+    }
+    fn compare(
+        &mut self,
+        entity: EntityId,
+        previous: usize,
+    ) -> Result<Option<(KindId, bool)>, Stop<E>> {
+        charge(self.prepare, width(previous + 1)?, 0)?;
+        Ok(
+            borrowed_matches(self.view, entity, self.locator, self.value, self.prepare)?
+                .map(|(_, kind, matches)| (kind, matches)),
+        )
     }
 }
 

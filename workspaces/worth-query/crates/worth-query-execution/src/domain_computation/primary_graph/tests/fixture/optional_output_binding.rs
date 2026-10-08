@@ -152,11 +152,11 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
             return HandlerResult::ExecutionDenied(denial);
         }
         if input.plan == OptionalOutputPlan::RequiredAfterIndexedAbsence {
-            match reader.select_entities(
-                AccountStatus::reference(),
-                "pending-membership".to_owned(),
-                2,
-            ) {
+            let prepared = match reader.prepare_entity_selection(AccountStatus::reference()) {
+                Ok(prepared) => prepared,
+                Err(denial) => return HandlerResult::ExecutionDenied(denial),
+            };
+            match reader.select_entities_prepared(&prepared, "pending-membership".to_owned(), 2) {
                 Ok(matches) if matches.is_empty() => {}
                 Ok(_) => return HandlerResult::DomainDenied(input.clone()),
                 Err(denial) => return HandlerResult::ExecutionDenied(denial),

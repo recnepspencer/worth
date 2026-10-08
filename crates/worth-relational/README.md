@@ -77,6 +77,17 @@ savepoint-count and physical allocation checks remain. Transaction overlay and
 footprint quotas do not add another admission gate. Query forwards the caller's
 actual allocation policy and live request control through native validation.
 
+Repeated equality selections can prepare an installed entity-field index with
+`index_access().prepare_entity_field_lookup(&view, index, kind, &locator)`.
+The opaque owner retains the exact admitted view's root and index generation;
+both preparation and execution reject another runtime's authority.
+`execute_prepared_entity_field_lookup` borrows that retained root for each value,
+preserves complete finite selection and corruption checks, and polls the supplied
+live callback. Certification still compares against authoritative storage at
+that same root. This callback controls interruption, not temporary buffer
+allocation admission. The separate admitted lookup retains its existing
+64-candidate work/storage contract.
+
 ## Mental model
 
 - `RelationalRuntimeApi::builder()` is the setup door

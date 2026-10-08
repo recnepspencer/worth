@@ -58,7 +58,8 @@ pub use operation_reader::{
     WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,
     WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
     WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryPriorOutputFamilyMember,
+    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryPreparedEntitySelection,
+    WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
 pub use work::WorthQueryInvariantProjectionWork;

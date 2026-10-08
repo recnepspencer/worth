@@ -20,6 +20,7 @@ mod maintenance_lifecycle;
 mod maintenance_locality;
 mod maintenance_slot_reuse;
 mod parity_observability;
+mod prepared_entity_field_lookup;
 mod recovery_and_execution_models;
 mod related_entity_ordered_lookup;
 mod related_entity_schema_recovery;

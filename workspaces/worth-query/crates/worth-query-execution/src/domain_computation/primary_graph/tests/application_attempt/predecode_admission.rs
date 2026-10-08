@@ -1,4 +1,6 @@
 //! Actual installed decision projections; admission precedes decoder allocation.
+#[path = "predecode_admission/prepared_selection.rs"]
+mod prepared_selection;
 #[path = "predecode_admission/projection.rs"]
 mod projection;
 #[path = "predecode_admission/request.rs"]

@@ -20,6 +20,7 @@ pub use current_output::{
 };
 pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
+    WorthQueryPreparedEntitySelection,
 };
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;

@@ -117,12 +117,44 @@ impl<Schema: ApplicationSchema, Operation>
                 field.field(),
             ));
         }
+        self.retain_entity_selection(
+            field,
+            layout.entity_kind,
+            layout.locator.clone(),
+            value,
+            candidate_limit,
+            outcome,
+        )
+    }
+
+    pub(super) fn retain_entity_selection<Entity, Aspect, Field, Value, Write, Unit>(
+        &mut self,
+        field: ApplicationFieldRef<
+            Schema,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            EqualityPredicate,
+            Unit,
+        >,
+        kind: worth_relational::facade::identity::KindId,
+        locator: worth_foundational::facade::AspectFieldLocator,
+        value: worth_foundational::facade::AspectValue,
+        candidate_limit: usize,
+        outcome: worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
+    ) -> Result<Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    where
+        Unit: ApplicationFieldUnit,
+    {
+        let index_id = outcome.retain_definition().index_id;
         let mut identities = Vec::with_capacity(outcome.candidate_entity_ids().len());
         for entity_id in outcome.candidate_entity_ids() {
             self.reader.realized_scope.record(*entity_id);
             identities.push(WorthQueryInvariantEntityIdentity {
                 entity_id: *entity_id,
-                kind: layout.entity_kind,
+                kind,
                 entity: Arc::from(field.entity()),
                 authority_identity: self.reader.authority_identity,
                 _marker: PhantomData,
@@ -131,8 +163,8 @@ impl<Schema: ApplicationSchema, Operation>
         let fact = WorthQueryApplicationObservedFact::IndexedEntitySelection {
             index_id,
             definition: outcome.retain_definition(),
-            entity_kind: layout.entity_kind,
-            locator: layout.locator.clone(),
+            entity_kind: kind,
+            locator,
             value,
             candidate_limit,
             candidates: outcome.into_candidate_entity_ids(),
@@ -144,7 +176,7 @@ impl<Schema: ApplicationSchema, Operation>
         Ok(identities)
     }
 
-    fn require_selection_budget(
+    pub(super) fn require_selection_budget(
         &mut self,
         limit: usize,
         subject: &str,
@@ -165,7 +197,7 @@ impl<Schema: ApplicationSchema, Operation>
     }
 }
 
-fn selection_denial(
+pub(super) fn selection_denial(
     kind: WorthQueryEntityResolutionDenialKind,
     subject: &str,
 ) -> HandlerExecutionDenial {
