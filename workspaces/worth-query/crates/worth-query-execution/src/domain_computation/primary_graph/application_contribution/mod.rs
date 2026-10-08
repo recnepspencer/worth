@@ -78,6 +78,10 @@ pub use request_execution::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest,
 };
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use request_execution::{
+    test_authority, test_policy,
+};
 pub use setup::WorthQueryApplicationContributionSetup;
 
 #[cfg(test)]

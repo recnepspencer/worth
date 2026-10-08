@@ -2,7 +2,9 @@
 use super::super::*;
 use super::{Case, Observation, ScopeInterruption};
 mod verification;
-use crate::domain_computation::primary_graph::tests::fixture::{test_authority, test_policy};
+use crate::domain_computation::primary_graph::application_contribution::{
+    test_authority, test_policy,
+};
 use crate::domain_computation::primary_graph::tests::fixture::{
     NestedAccountQuery, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };

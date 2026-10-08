@@ -71,10 +71,10 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
         ];
         for (index, serial) in requests.into_iter().enumerate() {
             let lease = workers.map(|workers| {
-                crate::domain_computation::primary_graph::tests::fixture::test_authority()
+                crate::domain_computation::primary_graph::application_contribution::test_authority()
                     .request_lease(worth_execution::LeaseRequest {
                         policy:
-                            crate::domain_computation::primary_graph::tests::fixture::test_policy(
+                            crate::domain_computation::primary_graph::application_contribution::test_policy(
                                 std::num::NonZeroUsize::new(workers).unwrap(),
                                 serial.memory().limit(),
                             ),

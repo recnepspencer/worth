@@ -2,9 +2,10 @@
 use super::*;
 #[test]
 fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
-    use crate::domain_computation::primary_graph::tests::fixture::{
-        isolated_request_owner, test_authority, test_policy,
+    use crate::domain_computation::primary_graph::application_contribution::{
+        test_authority, test_policy,
     };
+    use crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner;
     let _owner = isolated_request_owner();
     let world = installed_authorization_world(true);
     let scope = live_scope();
