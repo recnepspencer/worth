@@ -21,6 +21,7 @@ use super::output_facts::RegisteredOutputFacts;
 use super::source_alignment::BranchMarkRoot;
 use super::InvalidationEditAdmission;
 
+mod posting_removal;
 mod postings;
 
 pub(super) enum SettlementReadAlignment {
@@ -247,42 +248,7 @@ pub(super) fn remove(
     let Some(row) = state.settlements.get(identity).cloned() else {
         return Ok(());
     };
-    for (key, ordinals) in &row.posting_ordinals {
-        admission.work(1)?;
-        admission.key_read(key, state.postings.len())?;
-        let Some(mut postings) = state.postings.get(key).cloned() else {
-            continue;
-        };
-        for ordinal in ordinals {
-            let posting = FactPosting {
-                settlement: Arc::clone(identity),
-                ordinal: *ordinal,
-            };
-            admission.work(1)?;
-            admission.index_remove::<FactPosting, ()>(postings.len())?;
-            if postings.remove(&posting).is_some() {
-                debit(&mut state.posting_count, 1)?;
-            }
-        }
-        if postings.is_empty() {
-            admission.key_index_remove::<Arc<FactPostingKey>, OrdSet<FactPosting>>(
-                key,
-                state.postings.len(),
-            )?;
-            state.postings.remove(key);
-            let key_bytes = key
-                .owned_payload_capacity_bytes()
-                .and_then(|n| n.checked_add(index_capacity::arc_bytes::<FactPostingKey>()?))
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            debit(&mut state.key_payload_bytes, key_bytes)?;
-        } else {
-            admission.key_index_edit::<Arc<FactPostingKey>, OrdSet<FactPosting>>(
-                key,
-                state.postings.len(),
-            )?;
-            state.postings.insert(Arc::clone(key), postings);
-        }
-    }
+    posting_removal::remove(state, identity, &row, admission)?;
     for upstream in &row.consumed_upstream {
         admission.work(1)?;
         admission.ordered_read(state.downstream.len())?;

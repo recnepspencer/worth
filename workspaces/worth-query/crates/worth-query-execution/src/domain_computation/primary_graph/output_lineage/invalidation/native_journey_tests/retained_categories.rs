@@ -125,6 +125,22 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
     overflowing.maximum_basis_allocation_bytes = u64::MAX;
     assert!(super::super::retention::state_bound(&overflowing).is_none());
     assert!(Arc::ptr_eq(cell.read_image().payload(), after.payload()));
+    // Removing the last user drops its posting bucket, while the retained
+    // nonempty image remains usable and owns its original tree and fact.
+    assert_eq!(
+        owner.retire_settlements(&[Arc::clone(&second)], &mut admission),
+        vec![Arc::clone(&second)]
+    );
+    let empty = cell.read_image();
+    assert!(empty.payload().current.postings.is_empty());
+    assert!(empty.payload().current.settlements.is_empty());
+    assert_eq!(after.payload().current.settlements.len(), 1);
+    assert!(after
+        .payload()
+        .current
+        .postings
+        .values()
+        .all(|postings| postings.len() == 1));
     handle.with_runtime_mut(|runtime| {
         runtime
             .snapshots()

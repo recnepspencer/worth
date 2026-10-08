@@ -23,18 +23,6 @@ pub(in super::super) trait RetainedIndexAdmission: IndexAdmission {
         )
     }
 
-    fn key_index_edit<K, V>(
-        &mut self,
-        key: &super::super::fact_key::FactPostingKey,
-        entries: usize,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.key_edit::<K, V>(key, entries)?;
-        self.record_index_bytes(
-            index_capacity::ordered_insertion_bytes::<K, V>(entries)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )
-    }
-
     fn index_remove<K, V>(&mut self, entries: usize) -> Result<(), CompanionPreflightStop> {
         self.ordered_remove::<K, V>(entries)?;
         self.record_index_bytes(
@@ -43,15 +31,4 @@ pub(in super::super) trait RetainedIndexAdmission: IndexAdmission {
         )
     }
 
-    fn key_index_remove<K, V>(
-        &mut self,
-        key: &super::super::fact_key::FactPostingKey,
-        entries: usize,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.key_remove::<K, V>(key, entries)?;
-        self.record_index_bytes(
-            index_capacity::ordered_edit_bytes::<K, V>(entries)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )
-    }
 }

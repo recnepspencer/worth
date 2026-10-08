@@ -129,5 +129,38 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
                 + (keys as u64) * index_capacity::arc_bytes::<FactPostingKey>().unwrap();
         assert_eq!(admission.charged_index_bytes(), expected);
         assert!(admission.charged_bytes() > expected);
+        let (_, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+        let mut state = MarkState::initial();
+        let prior = state.postings.clone();
+        let before_index = admission.charged_index_bytes();
+        let before_preparation = admission.charged_bytes();
+        prepared
+            .install(&mut state, &identity, &mut admission)
+            .unwrap();
+        assert!(prior.is_empty());
+        assert_eq!(state.posting_count, keys * copies);
+        assert_eq!(state.postings.len(), keys);
+        assert!(state.postings.values().all(|postings| {
+            postings.len() == copies
+                && postings
+                    .iter()
+                    .all(|posting| Arc::ptr_eq(&posting.settlement, &identity))
+        }));
+        // The new global tree and every independently rooted posting bucket
+        // fit their final stable trees, even after many paths were prepared.
+        let whole = index_capacity::retained_map_bytes::<
+            Arc<FactPostingKey>,
+            im::OrdSet<super::super::super::mark_state::FactPosting>,
+        >(keys)
+        .unwrap()
+            + keys as u64
+                * index_capacity::retained_map_bytes::<
+                    super::super::super::mark_state::FactPosting,
+                    (),
+                >(copies)
+                .unwrap();
+        let installed = admission.charged_index_bytes() - before_index;
+        assert!(installed > 0 && installed <= whole);
+        assert!(admission.charged_bytes() - before_preparation > installed);
     }
 }

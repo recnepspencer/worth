@@ -180,10 +180,12 @@ impl PreparedPostingOrdinals {
         identity: &Arc<RecordedSettlementIdentity>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(OrdMap<Arc<FactPostingKey>, OrdSet<usize>>, u64), CompanionPreflightStop> {
+        use super::super::admission::PreparedTreeEdits;
         let Self {
             ordinals,
             posting_payload_bytes,
         } = self;
+        let mut map_edits = PreparedTreeEdits::<Arc<FactPostingKey>, OrdSet<FactPosting>>::new();
         for (key, own) in &ordinals {
             admission.work(1)?;
             admission.key_read(key, state.postings.len())?;
@@ -193,6 +195,7 @@ impl PreparedPostingOrdinals {
             };
             admission.work(1)?;
             let mut changed = false;
+            let mut set_edits = PreparedTreeEdits::<FactPosting, ()>::new();
             for ordinal in own {
                 admission.work(1)?;
                 let posting = FactPosting {
@@ -201,7 +204,7 @@ impl PreparedPostingOrdinals {
                 };
                 admission.ordered_read(postings.len())?;
                 if !postings.contains(&posting) {
-                    admission.index_edit::<FactPosting, ()>(postings.len())?;
+                    set_edits.insert(postings.len(), admission)?;
                     let next_count = state
                         .posting_count
                         .checked_add(1)
@@ -212,6 +215,7 @@ impl PreparedPostingOrdinals {
                 }
             }
             if changed {
+                set_edits.retain(postings.len(), admission)?;
                 let next_payload = if new_key {
                     Some(
                         state
@@ -222,16 +226,14 @@ impl PreparedPostingOrdinals {
                 } else {
                     None
                 };
-                admission.key_index_edit::<Arc<FactPostingKey>, OrdSet<FactPosting>>(
-                    &stored,
-                    state.postings.len(),
-                )?;
+                map_edits.key_insert(&stored, state.postings.len(), admission)?;
                 state.postings.insert(stored, postings);
                 if let Some(payload) = next_payload {
                     state.key_payload_bytes = payload;
                 }
             }
         }
+        map_edits.retain(state.postings.len(), admission)?;
         Ok((ordinals, posting_payload_bytes))
     }
 }
