@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_execution::ExecutionImmutableBytes;
 
 #[cfg(test)]
 mod tests;
@@ -12,7 +13,7 @@ mod tests;
 /// Clones share immutable byte backing and retain the same selected region;
 /// they do not clone or confer recovery authority.
 pub struct RelationalNativeCheckpoint {
-    bytes: Arc<Box<[u8]>>,
+    bytes: ExecutionImmutableBytes,
     region: std::ops::Range<usize>,
     captured_sections: Option<NativeCheckpointSectionBytes>,
 }
@@ -33,7 +34,7 @@ pub struct NativeCheckpointSectionBytes {
 impl Clone for RelationalNativeCheckpoint {
     fn clone(&self) -> Self {
         Self {
-            bytes: Arc::clone(&self.bytes),
+            bytes: self.bytes.clone(),
             region: self.region.clone(),
             captured_sections: self.captured_sections,
         }
@@ -62,7 +63,7 @@ impl RelationalNativeCheckpoint {
         let bytes = bytes.into();
         let region = 0..bytes.len();
         Self {
-            bytes: Arc::new(bytes),
+            bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes)),
             region,
             captured_sections: None,
         }
@@ -72,7 +73,7 @@ impl RelationalNativeCheckpoint {
     /// The caller shares immutable backing; the selected range stays private.
     /// Recovery still authenticates and readmits the selected native bytes.
     pub fn from_untrusted_bytes_region(
-        bytes: Arc<Box<[u8]>>,
+        bytes: ExecutionImmutableBytes,
         region: std::ops::Range<usize>,
     ) -> Result<Self, &'static str> {
         if bytes.get(region.clone()).is_none() {
@@ -101,7 +102,7 @@ impl RelationalNativeCheckpoint {
     ) -> Self {
         let region = 0..bytes.len();
         Self {
-            bytes: Arc::new(bytes.into_boxed_slice()),
+            bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into_boxed_slice())),
             region,
             captured_sections: Some(sections),
         }

@@ -91,7 +91,7 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
     checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
     checkpoint_transition: Option<
-        super::bootstrap::checkpoint_transition::CheckpointTransition<'_, Schema>,
+        super::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>,
     >,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where

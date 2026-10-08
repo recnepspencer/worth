@@ -13,8 +13,10 @@ mod report;
 
 pub use authority::{
     CancellationToken, ConstructionDenial, EquivalencePredicate, ExecutionAuthority,
-    ExecutionAuthorityConfig, ExecutionLeaseStatus, ExecutionMemoryReservation,
-    ExecutionResourceLease, LeaseDenial, LeaseRequest,
+    ExecutionAuthorityConfig, ExecutionByteAllocationDenial, ExecutionByteAllocationDenialKind,
+    ExecutionByteAllocationPolicy, ExecutionByteBuffer, ExecutionImmutableBytes,
+    ExecutionLeaseStatus, ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial,
+    LeaseRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 

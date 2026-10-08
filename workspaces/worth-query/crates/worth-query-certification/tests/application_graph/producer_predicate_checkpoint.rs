@@ -5,6 +5,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryOutputCurrentnessDenial,
 };
 use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 use worth_relational::facade::identity::EntityId;
 
@@ -56,7 +57,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             .unwrap()
             .entity_id();
         let (checkpoint, sections) = runtime
-            .capture_application_checkpoint_with_sections()
+            .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
             .unwrap();
         assert_eq!(
             sections.accepted_output_count(),
@@ -78,7 +79,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
     .expect("the producer and output are readmitted by their installed owners");
     let runtime = restored.runtime();
     let (recaptured, sections) = runtime
-        .capture_application_checkpoint_with_sections()
+        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
         .unwrap();
     assert_eq!(sections.accepted_output_count(), 1);
     assert_captured_document_predicate(

@@ -1,9 +1,12 @@
 //! Real native predecessor -> target World -> ordinary target reopen journey.
+#[path = "checkpoint_transition/admission.rs"]
+mod admission;
 use super::*;
 use application_installation::{
     WorthQueryCheckpointProgramPredecessor as Predecessor,
     WorthQueryCheckpointTransitionResources as Resources,
 };
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 struct LegacyTemporalProgram;
 impl ApplicationProgramDefinition<TemporalHostSchema> for LegacyTemporalProgram {
@@ -55,7 +58,9 @@ fn source() -> (
     )
     .unwrap();
     (
-        application.capture_application_checkpoint().unwrap(),
+        application
+            .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+            .unwrap(),
         predecessor,
     )
 }
@@ -84,6 +89,7 @@ fn transition(
         checkpoint,
         predecessor,
         resources,
+        CapturePolicy::SystemAllocation,
         author,
     )
 }
@@ -121,7 +127,9 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
         .on_branch(migrated.current_world())
         .select()
         .is_ok());
-    let checkpoint = migrated.capture_application_checkpoint().unwrap();
+    let checkpoint = migrated
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(migrated);
     let reopened = application_installation::in_memory_program_from_checkpoint(
         validated_program(),
@@ -265,10 +273,10 @@ fn checkpoint_transition_deferred_settlement_retains_repair_without_rerunning_au
     };
     pending.fail_next_durable_append_for_test();
     let pending = pending
-        .repair_to_checkpoint()
+        .repair_to_checkpoint(CapturePolicy::SystemAllocation)
         .expect_err("a refused repair retains the same capsule");
     let checkpoint = pending
-        .repair_to_checkpoint()
+        .repair_to_checkpoint(CapturePolicy::SystemAllocation)
         .expect("native repair acknowledges the existing performed transition");
     let reopened = application_installation::in_memory_program_from_checkpoint(
         validated_program(),
@@ -308,6 +316,7 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
             source,
             predecessor,
             Resources::bounded(512, 32, 4096).unwrap(),
+            CapturePolicy::SystemAllocation,
             |writer, _| {
                 writer.bind_entity(
                     primary_graph::WorthQueryApplicationEntitySeed::new(

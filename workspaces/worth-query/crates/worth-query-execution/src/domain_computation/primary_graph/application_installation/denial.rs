@@ -27,6 +27,8 @@ pub enum WorthQueryInMemoryApplicationDenial {
     CheckpointTransitionDeferred(Box<super::WorthQueryCheckpointTransitionRecovery>),
     /// Native target settlement acknowledged, but checkpoint capture stopped.
     CheckpointTransitionCaptureStopped(Box<super::WorthQueryCheckpointTransitionRecovery>),
+    /// Caller stop policy refused before native transition performance.
+    CheckpointTransitionPolicyStopped(super::super::WorthQueryCheckpointCaptureDenial),
     InitialState(WorthQueryPrimaryGraphInstallationDenial),
     Publication(WorthQueryPrimaryGraphInstallationDenial),
     ConditionalPublication(
@@ -64,6 +66,7 @@ impl std::error::Error for WorthQueryInMemoryApplicationDenial {
             | Self::CheckpointTransitionCaptureStopped(_)
             | Self::CheckpointTransitionSettlementFailed(_) => None,
             Self::CheckpointTransitionAcknowledged { cause, .. } => Some(cause.as_ref()),
+            Self::CheckpointTransitionPolicyStopped(error) => Some(error),
             Self::Schema(error) => Some(error),
             Self::Contributions(error)
             | Self::Graph(error)

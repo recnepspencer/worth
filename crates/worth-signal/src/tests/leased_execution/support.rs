@@ -19,7 +19,7 @@ pub(crate) fn shared_authority() -> &'static Arc<ExecutionAuthority> {
         Arc::new(
             ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
                 max_workers: NonZeroUsize::new(4).unwrap(),
-                charged_memory_bytes: 512 * 1024 * 1024,
+                charged_memory_bytes: Some(512 * 1024 * 1024),
             })
             .expect("one Signal test process authority"),
         )

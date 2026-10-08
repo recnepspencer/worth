@@ -149,7 +149,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     let authority = Arc::new(
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: 16 * 1024 * 1024,
+            charged_memory_bytes: Some(16 * 1024 * 1024),
         })
         .unwrap(),
     );

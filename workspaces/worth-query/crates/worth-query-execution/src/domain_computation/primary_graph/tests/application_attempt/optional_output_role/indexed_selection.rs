@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     tests::fixture::{publish_relational_mutation_on_application, restored_world, AccountStatus},
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use crate::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding,
 };
@@ -99,7 +100,10 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     ));
 
     let durable = encode_producer_facts(&facts).expect("all rebased handler reads are durable");
-    let checkpoint = world.application.capture_application_checkpoint().unwrap();
+    let checkpoint = world
+        .application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(world);
     let reopened = restored_world(checkpoint).expect("the real native application reopens");
     let restored = decode_producer_facts(&durable).unwrap();

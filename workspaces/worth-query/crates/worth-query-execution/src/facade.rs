@@ -41,6 +41,7 @@ pub mod runtime {
     };
     pub use worth_execution::{
         CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
+        ExecutionByteAllocationDenial, ExecutionByteAllocationDenialKind,
         ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial, LeaseRequest,
     };
     pub use worth_runtime_world::facade::{

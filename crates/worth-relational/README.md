@@ -93,9 +93,11 @@ Worth Store integration.
 
 `RelationalNativeCheckpoint` retains immutable byte backing. Clones share that
 backing and preserve the selected byte region and any runtime capture-section
-metadata. `from_untrusted_bytes_region` accepts `Arc<Box<[u8]>>` so an enclosing
+metadata. `from_untrusted_bytes_region` accepts `ExecutionImmutableBytes` so an enclosing
 checkpoint can pass the same backing without copying its payload. Wrapping a
-moved box allocates an Arc header, not another payload buffer. Equality compares
+moved external box allocates an Arc header, not another payload buffer. Imported
+native bytes remain uncharged; an admitted enclosing backing retains its whole
+payload reservation through region clones until the last shared owner drops. Equality compares
 selected byte values. Byte custody does not confer recovery authority; each
 restore still authenticates and readmits the native checkpoint.
 

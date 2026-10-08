@@ -637,11 +637,28 @@ explains a transition; it does not perform the transition.
 
 An installed application runtime can capture its opaque Query checkpoint and
 encoder-owned section report together with
-`capture_application_checkpoint_with_sections()`. The report splits Query
+`capture_application_checkpoint_with_sections(policy)`. The report splits Query
 framing, native Relational bytes and accepted-output identities; a locally
 captured native checkpoint also reports envelope, branch-root, branch-cell,
 partition-mirror, derived-index and framing bytes. These sizes describe the
 same encoding pass. They cannot validate received bytes or authorize restore.
+
+The caller supplies `WorthQueryCheckpointCapturePolicy::SystemAllocation` or
+`Execution(&lease)` for capture, program transition and every repair attempt.
+System allocation is fallible and uncharged. Execution mode checks the live
+caller lease, reserves the checked exact final-frame payload before allocating,
+and retains that one charge until its last Query or embedded native byte owner
+drops. Neither mode charges native codec temporaries, decoded rows or allocator
+metadata. There is no fallback from an exhausted or stopped lease to system
+allocation.
+
+`WorthQueryCheckpointCaptureDenial` preserves either the native durability
+error or the typed physical allocation refusal and its available payload quote.
+An acknowledged transition whose capture fails returns its unpublished repair
+capsule, with `capture_denial()` identifying the latest capture failure. A later
+native settlement failure clears that obsolete capture cause. Repair takes a
+fresh explicit policy, retains its current phase on refusal and never reruns
+authoring; a captured successor still requires ordinary target readmission.
 
 The application owns the enclosing artifact, transport, compatibility check
 and fresh installed-schema readmission. Relational verifies and rebuilds

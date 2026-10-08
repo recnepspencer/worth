@@ -30,8 +30,14 @@ guidance = "C.11 mechanism crates depend downward; only Store composes Blob, Lay
 [[source_dependency_allowlists]]
 workspace_manifest = "Cargo.toml"
 sources = ["worth-execution"]
-allowed_targets = ["rayon", "trybuild", "worth-foundational", "worth-proof"]
-guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, portable vocabulary, proof doors and compile-fail test support"
+allowed_targets = ["allocator-api2", "rayon", "trybuild", "worth-foundational", "worth-proof"]
+guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, the exactly pinned fresh payload allocator, portable vocabulary, proof doors and compile-fail test support. Payload layout and reservation precede allocation; higher runtime or graph owners remain forbidden."
+
+[[source_dependency_allowlists.dependency_contracts]]
+target = "allocator-api2"
+version_requirement = "=0.2.21"
+uses_default_features = true
+features = []
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"

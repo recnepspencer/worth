@@ -76,7 +76,7 @@ fn world_retains_the_host_execution_authority() {
 
     let config = ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: 4096,
+        charged_memory_bytes: Some(4096),
     };
     let authority = Arc::new(ExecutionAuthority::try_construct(config).unwrap());
     let mut fixture = crate::branch::reference_test_fixture::real_fixture(4, 4);

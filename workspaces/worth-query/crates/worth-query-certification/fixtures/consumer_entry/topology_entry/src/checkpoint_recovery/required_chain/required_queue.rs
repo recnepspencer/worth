@@ -3,6 +3,7 @@
 
 use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::primary_graph::inexact_native_deliveries_on_this_thread_for_test as inexact_deliveries;
 
 macro_rules! settle {
@@ -169,7 +170,7 @@ fn ready_chain_checkpoint() -> application_installation::WorthQueryApplicationCh
         let _demands = chain_with_unrelated!(application, request);
     }
     application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the settled required chain is checkpointable")
 }
 

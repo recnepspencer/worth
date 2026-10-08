@@ -108,6 +108,23 @@ Capture admits the required native prior locators before best-effort reuse facts
 If those optional facts exhaust their remaining allowance, the checkpoint retains
 prior custody and the output starts fresh after reopening.
 
+Capture and transition installation require an explicit
+`application_installation::WorthQueryCheckpointCapturePolicy`. Choose
+`SystemAllocation` for fallible uncharged storage or `Execution(&lease)` for
+admitted final-frame payload backing. The same immutable bytes and their one
+charge survive Query clones and embedded native-region ownership. The last
+byte owner frees the backing before releasing its charge; imports and native
+codec temporaries remain uncharged. No exhausted or stopped lease falls back
+to system allocation. Typed capture denials retain native durability errors or
+the lower physical refusal and available checked payload quote.
+
+Every consuming `repair_to_checkpoint(policy)` attempt selects its policy anew.
+An early stopped policy preserves the unpublished native settlement phase.
+Capture refusal after acknowledgment retains the exact successor in its repair
+capsule, with the current cause available through `capture_denial()`. Repair
+never reruns authoring and returns no World; ordinary target admission still
+authenticates a successfully captured successor.
+
 Query frames a captured native checkpoint directly in its final byte buffer,
 preserving the format-8 wire layout and checksum. Capture reports
 `CheckpointSizeOverflow` when encoded lengths cannot fit this host or wire

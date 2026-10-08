@@ -9,6 +9,7 @@
 //! answers that the key's commit took effect, names that commit, and commits
 //! nothing a second time.
 
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 #[path = "restored_replay/cross_process.rs"]
 mod cross_process;
 
@@ -55,7 +56,7 @@ fn a_key_committed_before_capture_keeps_its_intent_after_restore() {
     let commit = original.committed_changes().commit_reference().commit_id;
     let checkpoint = host
         .runtime()
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the host captures");
     drop(host);
 

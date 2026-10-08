@@ -1,5 +1,6 @@
 //! Host-selected staging limits govern the same ordinary installed mutation.
 use std::num::{NonZeroU64, NonZeroUsize};
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 use super::amendment;
 use super::product_workflow_support::{
@@ -60,7 +61,10 @@ fn restore(checkpoint: WorthQueryApplicationCheckpoint, staging: Resources) -> E
 #[test]
 fn installed_mutation_staging_limits_refuse_without_effect_and_reselect_on_restore() {
     let mut seeded = ExampleApplication::publish("blocked");
-    let checkpoint = seeded.runtime.capture_application_checkpoint().unwrap();
+    let checkpoint = seeded
+        .runtime
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     seeded.runtime.close_conditional_runtime().unwrap();
     drop(seeded);
 
@@ -125,7 +129,10 @@ fn installed_mutation_staging_limits_refuse_without_effect_and_reselect_on_resto
         assert_eq!(before.selected_commit(), after.selected_commit());
         assert_eq!(read_input(&app, branch, &principal, &scope), input);
         drop((before, after, request));
-        let refused_checkpoint = app.runtime.capture_application_checkpoint().unwrap();
+        let refused_checkpoint = app
+            .runtime
+            .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+            .unwrap();
         app.runtime.close_conditional_runtime().unwrap();
         drop(app);
 
@@ -150,7 +157,10 @@ fn installed_mutation_staging_limits_refuse_without_effect_and_reselect_on_resto
             ),
             "staged"
         );
-        let committed_checkpoint = adequate.runtime.capture_application_checkpoint().unwrap();
+        let committed_checkpoint = adequate
+            .runtime
+            .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+            .unwrap();
         adequate.runtime.close_conditional_runtime().unwrap();
         drop(adequate);
 

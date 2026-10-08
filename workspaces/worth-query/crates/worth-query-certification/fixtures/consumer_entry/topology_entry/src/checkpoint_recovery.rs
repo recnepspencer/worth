@@ -8,6 +8,7 @@ use worth_query_decl::facade::application_program::{
 };
 use worth_query_decl::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_decl::facade::worth_query_application;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_entry::{
@@ -125,7 +126,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
     drop(scope);
 
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready output is checkpointable");
     drop(application);
 
@@ -198,7 +199,7 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready output is checkpointable");
     drop(application);
 
@@ -238,7 +239,7 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the ready output is checkpointable");
     drop(application);
 
@@ -278,7 +279,7 @@ fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("both parameter partitions are checkpointable");
     drop(application);
 

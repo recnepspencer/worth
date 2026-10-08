@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact as Fact, WorthQueryApplicationOutputCorrespondence,
     WorthQueryPrincipalResolutionMode,
 };
+use crate::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use std::any::TypeId;
 use worth_relational::facade::{
     identity::EntityId,
@@ -43,7 +44,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
     }
     let bytes = source
         .application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .unwrap()
         .bytes()
         .to_vec();

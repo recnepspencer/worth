@@ -3,6 +3,7 @@ use super::*;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationPerformedMutationOutcome,
 };
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{application_contribution, primary_graph};
 
 mod producer;
@@ -110,7 +111,7 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
             .expect("preserved and created members stay live");
     }
     let bytes = application
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .unwrap()
         .bytes()
         .to_vec();

@@ -1,5 +1,6 @@
 //! Actual installed Worlds reuse one host ledger; graph allocations are not metered here.
 use std::{cell::Cell, num::NonZeroUsize, sync::Arc};
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 use super::product_workflow_support::{self, principal, read_input, ExampleApplication};
 use product_workflow_support::adapters::ClockSource;
@@ -117,7 +118,7 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
     let authority = Arc::new(
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(1).unwrap(),
-            charged_memory_bytes: 128,
+            charged_memory_bytes: Some(128),
         })
         .unwrap(),
     );
@@ -150,7 +151,10 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
             "shared-process refusal precedes payload growth"
         );
     }
-    let checkpoint = first.runtime.capture_application_checkpoint().unwrap();
+    let checkpoint = first
+        .runtime
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     first.runtime.close_conditional_runtime().unwrap();
     drop(first);
     second.runtime.close_conditional_runtime().unwrap();

@@ -6,6 +6,7 @@ use worth_query_consumer_values::{
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationOutputDemandProgress,
 };
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
 fn preserved_family_head_reopens_for_current_output_before_any_demand() {
@@ -34,7 +35,9 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
     drop(request);
     drop(principal);
     drop(scope);
-    let initial_checkpoint = application.capture_application_checkpoint().unwrap();
+    let initial_checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     let initial_bytes = initial_checkpoint.bytes().to_vec();
     drop((initial_checkpoint, application));
 
@@ -98,7 +101,9 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
     drop(request);
     drop(principal);
     drop(scope);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     let bytes = checkpoint.bytes().to_vec();
     drop((checkpoint, application));
 

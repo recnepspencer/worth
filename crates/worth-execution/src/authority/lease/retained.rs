@@ -39,7 +39,13 @@ impl ExecutionResourceLease<'_> {
             .checked_sub(reservation.memory_bytes)
             .and_then(|used| used.checked_add(memory_bytes))
             .ok_or(LeaseDenial::ResourceExhausted)?;
-        if process_after > self.authority.inner.config.charged_memory_bytes {
+        if self
+            .authority
+            .inner
+            .config
+            .charged_memory_bytes
+            .is_some_and(|cap| process_after > cap)
+        {
             return Err(LeaseDenial::ResourceExhausted);
         }
         for node in &lineage {

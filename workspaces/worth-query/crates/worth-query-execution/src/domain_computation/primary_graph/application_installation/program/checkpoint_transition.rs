@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
     },
     bootstrap::checkpoint_transition::CheckpointTransition,
     WorthQueryApplicationCheckpoint, WorthQueryApplicationContributionTuple,
-    WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryCheckpointCapturePolicy, WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_query_declaration::facade::{
     application_program::{
@@ -37,6 +37,7 @@ pub fn in_memory_rostered_program_from_checkpoint_with_transition<Schema, Progra
     checkpoint: WorthQueryApplicationCheckpoint,
     predecessor: WorthQueryCheckpointProgramPredecessor,
     resources: WorthQueryCheckpointTransitionResources,
+    capture_policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     author: impl FnOnce(
         &mut WorthQueryCheckpointMigrationWriter<'_, Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
@@ -49,6 +50,9 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
+    capture_policy.check_live().map_err(|error| {
+        WorthQueryInMemoryApplicationDenial::CheckpointTransitionPolicyStopped(error.into())
+    })?;
     let recovery = std::rc::Rc::new(std::cell::RefCell::new(None));
     let result = in_memory_program_with_optional_authorization_time_source(
         program,
@@ -63,6 +67,7 @@ where
             recovery: std::rc::Rc::clone(&recovery),
             predecessor,
             resources,
+            capture_policy,
             author: Box::new(author),
         }),
     );

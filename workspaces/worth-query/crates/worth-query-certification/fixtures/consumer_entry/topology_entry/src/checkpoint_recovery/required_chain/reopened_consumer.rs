@@ -1,5 +1,6 @@
 //! An ordinary reopened downstream renews its actual checkpoint prerequisites.
 use super::*;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
 fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_demand() {
@@ -64,7 +65,9 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         principal,
         scope,
     ));
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
 
     let reopened = support::install_program::<program::ChainProgram>(Some(checkpoint), profile);

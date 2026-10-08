@@ -21,5 +21,6 @@ pub use crate::domain_computation::primary_graph::application_installation::{
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
+    WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };

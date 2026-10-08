@@ -6,16 +6,16 @@ use super::super::super::{
     },
     WorthQueryApplicationOutputPosture, WorthQueryPrimaryGraphPublication,
 };
-use super::super::{resources, FORMAT_VERSION};
+use super::super::{resources, WorthQueryCheckpointCaptureDenial, FORMAT_VERSION};
 use super::sizing::ValidatedCheckpointSize;
 
 pub(super) fn write(
-    bytes: &mut Vec<u8>,
+    bytes: &mut worth_execution::ExecutionByteBuffer,
     native: &[u8],
     publication: &WorthQueryPrimaryGraphPublication,
     accepted_outputs: &[WorthQueryAcceptedOutputCheckpointIdentity],
     size: &ValidatedCheckpointSize,
-) -> Result<(), DurabilityError> {
+) -> Result<(), WorthQueryCheckpointCaptureDenial> {
     let mut writer = ReservedFrameWriter::new(bytes, size.total())?;
     writer.bytes(&FORMAT_VERSION.to_be_bytes())?;
     writer.bytes(&publication.bootstrap_commit_id().0.to_be_bytes())?;
@@ -58,29 +58,32 @@ pub(super) fn write(
 }
 
 /// Only appends inside the already reserved frame; a wire-size mismatch cannot
-/// trigger Vec growth or escape as a partially encoded checkpoint.
+/// grow the fixed backing or escape as a partially encoded checkpoint.
 struct ReservedFrameWriter<'a> {
-    bytes: &'a mut Vec<u8>,
+    bytes: &'a mut worth_execution::ExecutionByteBuffer,
     total: usize,
 }
 
 impl<'a> ReservedFrameWriter<'a> {
-    fn new(bytes: &'a mut Vec<u8>, total: usize) -> Result<Self, DurabilityError> {
-        if bytes.capacity() < total || bytes.len() > total {
-            return Err(size_mismatch());
+    fn new(
+        bytes: &'a mut worth_execution::ExecutionByteBuffer,
+        total: usize,
+    ) -> Result<Self, WorthQueryCheckpointCaptureDenial> {
+        if bytes.capacity() != total || bytes.len() > total {
+            return Err(size_mismatch().into());
         }
         Ok(Self { bytes, total })
     }
 
-    fn bytes(&mut self, payload: &[u8]) -> Result<(), DurabilityError> {
+    fn bytes(&mut self, payload: &[u8]) -> Result<(), WorthQueryCheckpointCaptureDenial> {
         if payload.len() > self.total - self.bytes.len() {
-            return Err(size_mismatch());
+            return Err(size_mismatch().into());
         }
-        self.bytes.extend_from_slice(payload);
+        self.bytes.extend_from_slice(payload)?;
         Ok(())
     }
 
-    fn length(&mut self, length: usize) -> Result<(), DurabilityError> {
+    fn length(&mut self, length: usize) -> Result<(), WorthQueryCheckpointCaptureDenial> {
         let wire = u64::try_from(length).map_err(|_| size_mismatch())?;
         self.bytes(&wire.to_be_bytes())
     }
@@ -88,7 +91,7 @@ impl<'a> ReservedFrameWriter<'a> {
     fn scope(
         &mut self,
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    ) -> Result<(), DurabilityError> {
+    ) -> Result<(), WorthQueryCheckpointCaptureDenial> {
         self.bytes(&scope.partition_id().to_be_bytes())?;
         self.bytes(&scope.local_slot().to_be_bytes())?;
         self.bytes(&scope.generation().to_be_bytes())
@@ -97,17 +100,17 @@ impl<'a> ReservedFrameWriter<'a> {
     fn entity(
         &mut self,
         entity: worth_relational::facade::identity::EntityId,
-    ) -> Result<(), DurabilityError> {
+    ) -> Result<(), WorthQueryCheckpointCaptureDenial> {
         self.bytes(&entity.partition_value().to_be_bytes())?;
         self.bytes(&entity.local_slot_value().to_be_bytes())?;
         self.bytes(&entity.generation_value().to_be_bytes())
     }
 
-    fn finish(self) -> Result<(), DurabilityError> {
+    fn finish(self) -> Result<(), WorthQueryCheckpointCaptureDenial> {
         if self.bytes.len() == self.total {
             Ok(())
         } else {
-            Err(size_mismatch())
+            Err(size_mismatch().into())
         }
     }
 }

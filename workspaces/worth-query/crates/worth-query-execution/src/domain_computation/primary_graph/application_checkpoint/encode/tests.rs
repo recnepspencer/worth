@@ -8,6 +8,9 @@ use worth_relational::facade::{
     identity::{EntityId, PartitionId},
 };
 
+use super::super::{
+    WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy as CapturePolicy,
+};
 use super::{reserve_buffer, sizing::ValidatedCheckpointSize};
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationObservedFact, WorthQueryCheckpointOutputRole},
@@ -79,6 +82,7 @@ fn checkpoint_one_buffer_matches_independent_v8_grammar_and_sections() {
         RelationalNativeCheckpoint::from_untrusted_bytes(native.to_vec().into_boxed_slice()),
         world.application.publication(),
         &rows,
+        CapturePolicy::SystemAllocation,
     )
     .unwrap();
     assert_eq!(checkpoint.bytes(), expected);
@@ -93,14 +97,14 @@ fn checkpoint_one_buffer_matches_independent_v8_grammar_and_sections() {
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
     assert_eq!(sections.native_sections(), None);
 
-    // Observe this platform's real reserved capacity before boxing. The Vec
-    // contract allows excess capacity; the claim is no growth while writing.
-    let size = ValidatedCheckpointSize::new(native.len(), &rows).unwrap();
-    let mut buffer = reserve_buffer(size.total()).unwrap();
+    // Observe the byte owner's actual capacity without growth or conversion.
+    let size =
+        ValidatedCheckpointSize::new(native.len(), &rows, CapturePolicy::SystemAllocation).unwrap();
+    let mut buffer = reserve_buffer(size.total(), CapturePolicy::SystemAllocation).unwrap();
     let capacity = buffer.capacity();
-    assert!(capacity >= expected.len());
-    buffer.extend_from_slice(b"WQAPCP01");
-    buffer.extend_from_slice(&[0; 32]);
+    assert_eq!(capacity, expected.len());
+    buffer.extend_from_slice(b"WQAPCP01").unwrap();
+    buffer.extend_from_slice(&[0; 32]).unwrap();
     super::body::write(
         &mut buffer,
         native,
@@ -114,11 +118,12 @@ fn checkpoint_one_buffer_matches_independent_v8_grammar_and_sections() {
 
     // A stale size witness cannot permit even one byte beyond its quoted
     // frame. Exercise the real writer guard rather than allocator injection.
-    let short_size = ValidatedCheckpointSize::new(3, &[]).unwrap();
-    let mut short_buffer = reserve_buffer(short_size.total()).unwrap();
+    let short_size = ValidatedCheckpointSize::new(3, &[], CapturePolicy::SystemAllocation).unwrap();
+    let mut short_buffer =
+        reserve_buffer(short_size.total(), CapturePolicy::SystemAllocation).unwrap();
     let short_capacity = short_buffer.capacity();
-    short_buffer.extend_from_slice(b"WQAPCP01");
-    short_buffer.extend_from_slice(&[0; 32]);
+    short_buffer.extend_from_slice(b"WQAPCP01").unwrap();
+    short_buffer.extend_from_slice(&[0; 32]).unwrap();
     let denial = super::body::write(
         &mut short_buffer,
         b"abcd",
@@ -128,7 +133,7 @@ fn checkpoint_one_buffer_matches_independent_v8_grammar_and_sections() {
     )
     .unwrap_err();
     assert_eq!(
-        denial.class,
+        durability(&denial).class,
         RecoveryFailureClass::CheckpointFrameSizeMismatch
     );
     assert_capture_context(&denial);
@@ -137,30 +142,46 @@ fn checkpoint_one_buffer_matches_independent_v8_grammar_and_sections() {
 }
 
 #[test]
-fn checkpoint_impossible_vec_reservation_is_a_typed_reservation_refusal() {
-    // Vec's actual capacity-overflow guard refuses this without trying to
-    // exhaust host memory. This is not a synthetic allocator fault hook.
-    let denial = reserve_buffer(usize::MAX).unwrap_err();
+fn checkpoint_impossible_payload_layout_is_a_typed_allocation_refusal() {
+    // The actual Layout overflow guard refuses before host allocation.
+    let denial = reserve_buffer(usize::MAX, CapturePolicy::SystemAllocation).unwrap_err();
+    let WorthQueryCheckpointCaptureDenial::Allocation(denial) = denial else {
+        panic!("exact lower allocation refusal must survive");
+    };
     assert_eq!(
-        denial.class,
-        RecoveryFailureClass::CheckpointAllocationUnavailable
+        denial.kind(),
+        worth_execution::ExecutionByteAllocationDenialKind::Layout
     );
-    assert_capture_context(&denial);
+    assert_eq!(denial.requested_payload_bytes(), None);
 }
 
 #[test]
 fn checkpoint_native_length_overflow_is_a_typed_sizing_refusal() {
     for native_len in [usize::MAX, isize::MAX as usize] {
-        let denial = match ValidatedCheckpointSize::new(native_len, &[]) {
-            Ok(_) => panic!("framing cannot fit beside this native length"),
-            Err(denial) => denial,
-        };
-        assert_eq!(denial.class, RecoveryFailureClass::CheckpointSizeOverflow);
+        let denial =
+            match ValidatedCheckpointSize::new(native_len, &[], CapturePolicy::SystemAllocation) {
+                Ok(_) => panic!("framing cannot fit beside this native length"),
+                Err(denial) => denial,
+            };
+        assert_eq!(
+            durability(&denial).class,
+            RecoveryFailureClass::CheckpointSizeOverflow
+        );
         assert_capture_context(&denial);
     }
 }
 
-fn assert_capture_context(denial: &worth_relational::facade::durability::DurabilityError) {
+fn durability(
+    denial: &WorthQueryCheckpointCaptureDenial,
+) -> &worth_relational::facade::durability::DurabilityError {
+    let WorthQueryCheckpointCaptureDenial::Durability(denial) = denial else {
+        panic!("wire framing must retain the native durability class");
+    };
+    denial
+}
+
+fn assert_capture_context(denial: &WorthQueryCheckpointCaptureDenial) {
+    let denial = durability(denial);
     assert_eq!(denial.context.subsystem, RelationalSubsystem::Durability);
     assert_eq!(denial.context.operation, ErrorOperation::WriteDurableStore);
     assert_eq!(denial.context.suggested_fix, None);

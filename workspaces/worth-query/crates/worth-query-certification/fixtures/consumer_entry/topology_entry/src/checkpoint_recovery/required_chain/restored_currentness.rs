@@ -2,6 +2,7 @@
 
 use super::*;
 use worth_query_consumer_values::{PlanarDerivedOutput, PlanarOperation};
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
 fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
@@ -85,7 +86,9 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         principal,
         scope,
     ));
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
 
     super::super::producer::reset_provider_contacts();

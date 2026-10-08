@@ -38,7 +38,7 @@ fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: 64 * 1024 * 1024,
+            charged_memory_bytes: Some(64 * 1024 * 1024),
         })
         .expect("one authority for this integration binary")
     })

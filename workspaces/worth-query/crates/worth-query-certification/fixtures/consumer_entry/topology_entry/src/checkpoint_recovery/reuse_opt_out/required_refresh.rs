@@ -1,5 +1,6 @@
 //! A held required artifact follows its family's actual Preserve binding.
 use super::*;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
 fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
@@ -125,7 +126,9 @@ fn held_required_initial_refreshes_through_preserve_and_reopens_current() {
         WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
     drop(initial);
-    let checkpoint = application.capture_application_checkpoint().unwrap();
+    let checkpoint = application
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .unwrap();
     drop(application);
     let reopened = install_no_reuse(Some(checkpoint));
     let (scope, principal) = support::authenticate(&reopened);
