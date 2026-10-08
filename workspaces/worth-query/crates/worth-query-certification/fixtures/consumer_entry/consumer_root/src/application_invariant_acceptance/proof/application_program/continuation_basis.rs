@@ -60,7 +60,10 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
             })
             .expect_source(source)
             .idempotency(&idempotency)
-            .execute_performed::<ConsumerProgram, ConsumerProgramRoot>(&world.application)
+            .execute_performed::<ConsumerProgram, ConsumerProgramRoot>(
+                &world.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("the source revision publishes");
         let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = performed else {
             panic!("the source revision is fresh")

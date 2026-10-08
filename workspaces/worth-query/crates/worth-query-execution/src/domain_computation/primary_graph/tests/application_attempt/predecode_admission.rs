@@ -161,7 +161,9 @@ fn ordinary_field_allocation(world: &super::super::fixture::AuthorizationWorld) 
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     (actual, allocated)
 }

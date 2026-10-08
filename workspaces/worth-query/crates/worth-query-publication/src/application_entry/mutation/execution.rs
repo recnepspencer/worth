@@ -8,6 +8,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -60,6 +61,7 @@ where
     pub fn prepare_program_migration(
         mut self,
         target: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationProgramMigrationPreparationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -95,6 +97,7 @@ where
                 &identities,
                 &prepared.principal_identity,
                 prepared.admission,
+                allocation_policy,
             )
             .map_err(|denial| {
                 WorthQueryApplicationProgramMigrationPreparationDenial::Request(
@@ -134,6 +137,7 @@ where
 
     pub fn execute(
         self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -141,12 +145,13 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        self.execute_report().into_outcome()
+        self.execute_report(allocation_policy).into_outcome()
     }
 
     /// Executes the same ordinary mutation and preserves this attempt's decision work.
     pub fn execute_report(
         self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> super::WorthQueryApplicationMutationAttemptReport<
         Result<
             WorthQueryApplicationMutationOutcome<
@@ -172,8 +177,13 @@ where
         self.execute_with_preparation_and_commit_report(
             super::authorization::prepare,
             |application, program, binding| {
-                application.compare_and_commit_application(program, binding.idempotency())
+                application.compare_and_commit_application(
+                    program,
+                    binding.idempotency(),
+                    allocation_policy,
+                )
             },
+            allocation_policy,
         )
     }
 
@@ -197,6 +207,7 @@ where
             >,
             &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
         ) -> WorthQueryApplicationCommitOutcome,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -204,7 +215,7 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        self.execute_with_preparation_and_commit_report(prepare, commit)
+        self.execute_with_preparation_and_commit_report(prepare, commit, allocation_policy)
             .into_outcome()
     }
 
@@ -228,6 +239,7 @@ where
             >,
             &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
         ) -> WorthQueryApplicationCommitOutcome,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> super::WorthQueryApplicationMutationAttemptReport<
         Result<
             WorthQueryApplicationMutationOutcome<
@@ -241,10 +253,13 @@ where
             worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
         let outcome = (|| {
             let application = self.request.application;
-            let candidate = match self.prepare_candidate(prepare, &mut decision_work)? {
-                super::preparation::CandidatePreparation::Prepared(candidate) => candidate,
-                super::preparation::CandidatePreparation::Settled(outcome) => return Ok(outcome),
-            };
+            let candidate =
+                match self.prepare_candidate(prepare, &mut decision_work, allocation_policy)? {
+                    super::preparation::CandidatePreparation::Prepared(candidate) => candidate,
+                    super::preparation::CandidatePreparation::Settled(outcome) => {
+                        return Ok(outcome)
+                    }
+                };
             let super::preparation::PreparedCandidate {
                 program,
                 result,

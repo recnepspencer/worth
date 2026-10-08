@@ -100,7 +100,7 @@ fn captured_native_clones_preserve_sections_and_share_payload_custody() {
 fn native_region_retains_the_whole_admitted_enclosing_backing_charge() {
     use std::num::NonZeroUsize;
     use worth_execution::{
-        CancellationToken, ExecutionByteAllocationPolicy, ExecutionByteBuffer, LeaseDenial,
+        CancellationToken, ExecutionAllocationPolicy, ExecutionByteBuffer, LeaseDenial,
         LeaseRequest,
     };
     use worth_foundational::{
@@ -118,11 +118,9 @@ fn native_region_retains_the_whole_admitted_enclosing_backing_charge() {
             cancellation: CancellationToken::new(),
         })
         .unwrap();
-    let mut builder = ExecutionByteBuffer::allocate(
-        payload.len(),
-        ExecutionByteAllocationPolicy::Execution(&lease),
-    )
-    .unwrap();
+    let mut builder =
+        ExecutionByteBuffer::allocate(payload.len(), ExecutionAllocationPolicy::Execution(&lease))
+            .unwrap();
     builder.extend_from_slice(payload).unwrap();
     let backing = builder.seal().unwrap();
     let expected = backing.bytes().as_ptr().wrapping_add(6);

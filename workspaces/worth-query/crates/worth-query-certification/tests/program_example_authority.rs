@@ -133,7 +133,7 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
         .mutate(intent.clone())
         .without_source()
         .idempotency(&idempotency_key)
-        .execute()
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
         .expect_err("the plain entry must deny a program-owned action");
     assert!(matches!(
         denial,
@@ -196,6 +196,7 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
             &identities,
             resolved_principal.principal_identity(),
             admission,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the admitted mutation handler must complete")
     else {
@@ -322,7 +323,10 @@ fn program_action_from_another_runtime_cannot_commit_this_product() {
         .mutate(amendment("must-not-publish", 2))
         .without_source()
         .idempotency(&0x72_u64)
-        .execute_in_program(&second.runtime);
+        .execute_in_program(
+            &second.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(matches!(
         result,
         Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch)

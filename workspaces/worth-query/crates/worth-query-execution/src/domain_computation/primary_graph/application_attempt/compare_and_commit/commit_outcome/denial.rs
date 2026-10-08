@@ -1,6 +1,7 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod capacity;
+mod decision_read_set;
 mod invariant_execution;
 mod program_binding;
 mod recorded_idempotency;

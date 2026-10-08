@@ -139,7 +139,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let mut demand = PlatformEffectDemand::default();
         for effect in &effects {
             demand.observe(effect)?;

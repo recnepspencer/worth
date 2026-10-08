@@ -19,9 +19,12 @@ fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor
     let baseline = commits();
     let program = admitted_program(&world, &principal, &account, &request, "recovered");
     world.application.fail_next_durable_append_for_test();
-    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = world
-        .application
-        .compare_and_commit_application(program, idempotency(191, 191))
+    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(191, 191),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the fault must retain the exact World partial");
     };
@@ -92,9 +95,11 @@ fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
         "performed-before-durable-fault",
     );
     world.application.fail_next_durable_append_for_test();
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, idempotency(91, 91));
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(91, 91),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
         panic!("owner movement without settled product publication must retain partial custody: {outcome:?}");
     };
@@ -232,9 +237,11 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
         "drop-then-idempotent-retry",
     );
     world.application.fail_next_durable_append_for_test();
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, idempotency(96, 96));
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(96, 96),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
         panic!("durable append failure must retain the unpublished owner occurrence: {outcome:?}");
     };
@@ -252,17 +259,17 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
         .readmit_product_publication_recovery(row.handle())
         .unwrap();
     assert!(recovery.inspect().unwrap().relational_requires_settlement());
-    assert_idempotency_refuses_unpublished(
-        world
-            .application
-            .compare_and_commit_application(retry_before, idempotency(96, 96)),
-    );
+    assert_idempotency_refuses_unpublished(world.application.compare_and_commit_application(
+        retry_before,
+        idempotency(96, 96),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
     recovery.continue_owner_settlement().unwrap();
-    assert_idempotency_refuses_unpublished(
-        world
-            .application
-            .compare_and_commit_application(retry_after, idempotency(96, 96)),
-    );
+    assert_idempotency_refuses_unpublished(world.application.compare_and_commit_application(
+        retry_after,
+        idempotency(96, 96),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ));
     let current = world
         .application
         .product_runtime()

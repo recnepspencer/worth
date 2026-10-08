@@ -46,9 +46,11 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
         Some(0),
     );
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(set, super::idempotency(71, 71)),
+        world.application.compare_and_commit_application(
+            set,
+            super::idempotency(71, 71),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let present = query(&world, &principal, "account-2", &request);
@@ -58,9 +60,11 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let current = super::resolved_account(&world, "unrelated", &request);
     let clear = program(&world, &principal, &current, &request, None, None);
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(clear, super::idempotency(72, 72)),
+        world.application.compare_and_commit_application(
+            clear,
+            super::idempotency(72, 72),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let absent = query(&world, &principal, "account-2", &request);
@@ -106,7 +110,9 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
@@ -123,9 +129,11 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         .write_optional_field(&account, AccountScore::reference(), Some(5))
         .unwrap();
 
-    let outcome = world
-        .application
-        .compare_and_commit_application(effects.finish().unwrap(), super::idempotency(75, 75));
+    let outcome = world.application.compare_and_commit_application(
+        effects.finish().unwrap(),
+        super::idempotency(75, 75),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(matches!(
         outcome,
         WorthQueryApplicationCommitOutcome::Committed(_)
@@ -159,15 +167,19 @@ fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
     );
 
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(winner, super::idempotency(73, 73)),
+        world.application.compare_and_commit_application(
+            winner,
+            super::idempotency(73, 73),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     super::assert_changed_decision(
-        world
-            .application
-            .compare_and_commit_application(loser, super::idempotency(74, 74)),
+        world.application.compare_and_commit_application(
+            loser,
+            super::idempotency(74, 74),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         "a presence change after the losing product was selected",
     );
     let result = query(&world, &principal, "account-2", &request);
@@ -215,7 +227,9 @@ fn program(
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();

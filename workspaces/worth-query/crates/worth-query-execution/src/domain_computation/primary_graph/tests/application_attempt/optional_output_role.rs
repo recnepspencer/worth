@@ -147,9 +147,12 @@ fn committed_outputs(plan: OptionalOutputPlan) -> WorthQueryApplicationOutputCor
         panic!("the handler completes its candidate");
     };
     let (program, _) = completed.into_parts();
-    let WorthQueryApplicationCommitOutcome::Committed(committed) = world
-        .application
-        .compare_and_commit_application(program, idempotency)
+    let WorthQueryApplicationCommitOutcome::Committed(committed) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the completed candidate commits");
     };
@@ -245,6 +248,7 @@ fn execute_report_for_input(
             &identities,
             principal.principal_identity(),
             admission,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     (execution, idempotency)
 }

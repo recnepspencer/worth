@@ -53,9 +53,11 @@ fn current_capability_progresses_through_the_real_application_commit() {
     assert!(evidence.requires_capability);
     assert_eq!(evidence.ability_count, 0);
 
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, idempotency(41, 41));
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(41, 41),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
         "current exact capability authority must commit: {outcome:?}"
@@ -289,7 +291,9 @@ pub(super) fn build_touch_program(
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();

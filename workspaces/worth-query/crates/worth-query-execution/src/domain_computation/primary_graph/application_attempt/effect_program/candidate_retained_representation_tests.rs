@@ -214,7 +214,9 @@ fn reserved_external_builder(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_reserved_effect_program(requirement, requirement)
         .unwrap()
@@ -260,7 +262,9 @@ fn reserved_touch_builder(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_reserved_effect_program(requirement, requirement)
         .unwrap()

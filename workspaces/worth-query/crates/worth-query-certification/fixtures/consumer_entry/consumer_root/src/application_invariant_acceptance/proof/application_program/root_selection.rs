@@ -35,7 +35,10 @@ pub(in crate::application_invariant_acceptance::proof) fn result_set_source_bind
         })
         .expect_result_set(source)
         .idempotency(&10_009)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the result-set source is admissible for the declared query");
     assert!(matches!(
         outcome,
@@ -85,6 +88,7 @@ pub(in crate::application_invariant_acceptance::proof) fn foreign_program_is_den
         .idempotency(&10_004)
         .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &other_world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     let Err(denial) = outcome else {
         panic!("foreign program meaning must be denied before source publication")
@@ -132,6 +136,7 @@ pub(in crate::application_invariant_acceptance::proof) fn undeclared_root_is_den
         .idempotency(&10_007)
         .execute_performed::<crate::ConsumerProgram, crate::ConsumerUndeclaredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     let Err(denial) = denial else {
         panic!("a required connection absent from the installed root set must be denied")
@@ -184,6 +189,7 @@ pub(in crate::application_invariant_acceptance::proof) fn truncated_root_is_deni
         .idempotency(&10_008)
         .execute_performed::<crate::ConsumerProgram, crate::ConsumerTruncatedProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     let Err(denial) = outcome else {
         panic!("a caller cannot truncate a declared root's dependent graph")

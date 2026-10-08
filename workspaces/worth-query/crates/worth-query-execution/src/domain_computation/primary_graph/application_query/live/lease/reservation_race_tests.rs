@@ -147,6 +147,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         world.application.compare_and_commit_application(
             program,
             WorthQueryApplicationIdempotencyBinding::new([228; 32], [92; 32]),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     else {
         panic!("the no-subscriber application must commit");

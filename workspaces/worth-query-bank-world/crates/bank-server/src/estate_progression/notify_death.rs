@@ -70,7 +70,10 @@ impl BankIdentityRuntime {
                     estate, notice, subject,
                 ))
                 .idempotency(key)
-                .execute_capability_in_program(self.application_program()),
+                .execute_capability_in_program(
+                    self.application_program(),
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                ),
             "NotifyDeathEstateOperation",
             |denial| {
                 denial

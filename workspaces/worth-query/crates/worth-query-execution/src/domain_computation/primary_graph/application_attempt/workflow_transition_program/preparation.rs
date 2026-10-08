@@ -195,7 +195,9 @@ where
             .application()
             .begin_projected_application_read_attempt(admission, projection)
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
         if selected_occurrence
             != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
@@ -270,7 +272,9 @@ where
             .application()
             .begin_projected_application_read_attempt(admission, projection)
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
         if selected_occurrence
             != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(

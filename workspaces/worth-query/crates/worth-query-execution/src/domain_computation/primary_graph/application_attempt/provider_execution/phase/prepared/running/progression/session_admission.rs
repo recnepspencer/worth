@@ -149,13 +149,14 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> super::WorthQueryProviderProgressionCompletion
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
     {
         super::WorthQueryProviderProgressionCompletion {
-            outcome: self.registered.progress(authority),
+            outcome: self.registered.progress(authority, allocation_policy),
             cleanup: super::WorthQueryApplicationMutationCleanupOwner::ProviderBound(
                 self.mutation_run,
             ),

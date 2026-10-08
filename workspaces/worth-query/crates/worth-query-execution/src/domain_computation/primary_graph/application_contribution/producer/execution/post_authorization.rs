@@ -173,6 +173,7 @@ where
                 principal.principal_identity(),
                 admission,
                 || *producer_contacts += 1,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(|error| execution_failed(Binding::IDENTITY, error))?,
         |domain_denial| provider.domain_denial_reason(domain_denial),
@@ -214,9 +215,11 @@ where
         .with_output_demand_observation()
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
     let outcome = match commit_authority {
-        WorthQueryProducerCommitAuthority::Ordinary => {
-            runtime.compare_and_commit_application(program, idempotency)
-        }
+        WorthQueryProducerCommitAuthority::Ordinary => runtime.compare_and_commit_application(
+            program,
+            idempotency,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         WorthQueryProducerCommitAuthority::ProgramOutput => runtime
             .compare_and_commit_application_for_program_output_producer(program, idempotency, None),
         WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => runtime

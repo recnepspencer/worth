@@ -58,9 +58,12 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
         .begin_effect_program()
         .finish()
         .unwrap();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(ordinary, idempotency(173, 173))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            ordinary,
+            idempotency(173, 173),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("ordinary compare-and-commit must reject approval lifecycle authority");
     };
@@ -119,7 +122,9 @@ fn approval_reads(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
 }
 

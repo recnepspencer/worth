@@ -70,6 +70,7 @@ pub(in crate::domain_computation::primary_graph) fn commit_live_activity_on_prod
     match world.application.compare_and_commit_application(
         program,
         WorthQueryApplicationIdempotencyBinding::new([idempotency_key; 32], [request_digest; 32]),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     ) {
         WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
         unexpected => panic!("live activity fixture must commit: {unexpected:?}"),
@@ -117,7 +118,9 @@ pub(in crate::domain_computation::primary_graph) fn live_activity_program(
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();

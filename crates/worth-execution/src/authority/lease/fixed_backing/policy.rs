@@ -1,18 +1,18 @@
 use super::super::{ExecutionLeaseStatus, ExecutionResourceLease};
-use super::{ExecutionByteAllocationDenial, ExecutionByteAllocationDenialKind};
+use super::{ExecutionAllocationDenial, ExecutionAllocationDenialKind};
 
 /// The caller chooses before allocation. There is no fallback or default.
 /// System allocation remains uncharged; Execution admits only payload backing,
-/// not allocator, Arc, or ledger metadata and not graph/model authority.
+/// not nested element heaps, allocator/Arc/ledger metadata, or graph/model authority.
 #[derive(Clone, Copy, Debug)]
-pub enum ExecutionByteAllocationPolicy<'scope, 'authority> {
+pub enum ExecutionAllocationPolicy<'scope, 'authority> {
     SystemAllocation,
     Execution(&'scope ExecutionResourceLease<'authority>),
 }
 
-impl ExecutionByteAllocationPolicy<'_, '_> {
+impl ExecutionAllocationPolicy<'_, '_> {
     /// Check before a layout quote exists; a stop therefore carries no quote.
-    pub fn check_live(self) -> Result<(), ExecutionByteAllocationDenial> {
+    pub fn check_live(self) -> Result<(), ExecutionAllocationDenial> {
         match self {
             Self::SystemAllocation => Ok(()),
             Self::Execution(lease) => check_status(&lease.status(), None),
@@ -23,15 +23,15 @@ impl ExecutionByteAllocationPolicy<'_, '_> {
 pub(super) fn check_status(
     status: &ExecutionLeaseStatus,
     quote: Option<u64>,
-) -> Result<(), ExecutionByteAllocationDenial> {
+) -> Result<(), ExecutionAllocationDenial> {
     let kind = if status.is_cancelled() {
-        Some(ExecutionByteAllocationDenialKind::Cancelled)
+        Some(ExecutionAllocationDenialKind::Cancelled)
     } else if status.deadline_elapsed() {
-        Some(ExecutionByteAllocationDenialKind::DeadlineElapsed)
+        Some(ExecutionAllocationDenialKind::DeadlineElapsed)
     } else {
         None
     };
     kind.map_or(Ok(()), |kind| {
-        Err(ExecutionByteAllocationDenial::new(kind, quote))
+        Err(ExecutionAllocationDenial::new(kind, quote))
     })
 }

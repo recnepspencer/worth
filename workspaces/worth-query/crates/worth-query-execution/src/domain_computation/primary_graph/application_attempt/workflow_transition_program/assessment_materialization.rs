@@ -182,7 +182,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let subject = coverage.subject;
         let admitted = admit_workflow_transition(
             self,
@@ -244,7 +247,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         assessment::bind_currentness_facts(&mut self, &currentness, selected.node_path())?;
         let admitted = admit_workflow_transition(
             self,

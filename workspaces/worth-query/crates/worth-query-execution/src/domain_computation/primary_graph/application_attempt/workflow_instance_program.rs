@@ -174,7 +174,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(compile_facts);
+        self.append_completed_facts(
+            compile_facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let subject = self.admission.scope_entity_id();
         let (instance_identity, instance_intent_identity) =
             intent_identity::instance_identity(&compiled, subject, start_key_identity).map_err(

@@ -38,9 +38,11 @@ fn handler_projection_work_survives_candidate_denials_and_domain_refusal() {
     };
     let (program, _) = completed.into_parts();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, key),
+        world.application.compare_and_commit_application(
+            program,
+            key,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 

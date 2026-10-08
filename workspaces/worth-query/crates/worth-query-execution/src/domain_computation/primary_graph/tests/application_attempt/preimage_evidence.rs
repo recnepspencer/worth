@@ -95,9 +95,11 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     );
 
     world.faults.lose_next_commit_response();
-    let outcome = world
-        .application
-        .compare_and_commit_application(first, idempotency(81, 82));
+    let outcome = world.application.compare_and_commit_application(
+        first,
+        idempotency(81, 82),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Committed(original) = outcome else {
         panic!("response-loss recovery must return the authoritative commit: {outcome:?}");
     };
@@ -108,9 +110,11 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         .unwrap();
     assert_ne!(after_original.selected_commit(), selected.selected_commit());
     assert_eq!(commit_count(), baseline + 1);
-    let outcome = world
-        .application
-        .compare_and_commit_application(interleaved, idempotency(83, 84));
+    let outcome = world.application.compare_and_commit_application(
+        interleaved,
+        idempotency(83, 84),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Committed(interleave_receipt) = outcome else {
         panic!("independent retained decision must commit: {outcome:?}");
     };
@@ -118,15 +122,20 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     assert_retained_status(&interleave_receipt, "unrelated");
 
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(readmitted_interleave, idempotency(83, 84)),
+        world.application.compare_and_commit_application(
+            readmitted_interleave,
+            idempotency(83, 84),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(81, 82))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(81, 82),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("later equivalent resolution must reopen the original evidence");
     };
@@ -157,9 +166,11 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         "first-commit",
         RetentionMutationBreadth::Narrow,
     );
-    let first_outcome = world
-        .application
-        .compare_and_commit_application(first, idempotency(85, 86));
+    let first_outcome = world.application.compare_and_commit_application(
+        first,
+        idempotency(85, 86),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(
             first_outcome,
@@ -184,15 +195,21 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         "later-commit",
         RetentionMutationBreadth::Narrow,
     );
-    let WorthQueryApplicationCommitOutcome::Committed(later_receipt) = world
-        .application
-        .compare_and_commit_application(later, idempotency(87, 88))
+    let WorthQueryApplicationCommitOutcome::Committed(later_receipt) =
+        world.application.compare_and_commit_application(
+            later,
+            idempotency(87, 88),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the later exact-evidence target commits");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(87, 88))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(87, 88),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the later commit must not select the first stored entry");
     };
@@ -246,9 +263,11 @@ fn demanded_mutation_work(
     let account = resolved_account(&world, "open", &request);
     let program =
         retained_status_program(&world, &principal, &account, &request, "frozen", breadth);
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, idempotency(key, key));
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(key, key),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("demanded mutation commits: {outcome:?}");
     };
@@ -334,7 +353,9 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     effects.prepare_output_contract_for_test::<RetentionOutputs>();

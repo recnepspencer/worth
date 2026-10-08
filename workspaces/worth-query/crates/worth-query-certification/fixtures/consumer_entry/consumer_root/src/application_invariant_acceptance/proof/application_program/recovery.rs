@@ -54,7 +54,10 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .mutate(intent.clone())
         .expect_source(source.clone())
         .idempotency(&10_002)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("source publication admits its required output");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must be fresh")
@@ -65,7 +68,10 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .mutate(intent)
         .expect_source(source)
         .idempotency(&10_002)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the retry reaches the committed source");
     let WorthQueryApplicationPerformedMutationOutcome::NotPerformed(replay) = replay else {
         panic!("the source retry must not perform twice")
@@ -149,7 +155,10 @@ pub(super) fn caller_disposal_before_progress_recovers(
         }))
         .expect_source(unrelated_source)
         .idempotency(&10_012)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("an intervening ordinary commit lands on the same branch");
     let recovered_once = request
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
@@ -232,7 +241,10 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         })
         .expect_source(source)
         .idempotency(&10_018)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the source publication prepares its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must be fresh")
@@ -253,7 +265,10 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         })
         .expect_source(changed_source)
         .idempotency(&10_019)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("a distinct program source action changes the same occurrence");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(changed) = changed else {
         panic!("the distinct source action must publish a fresh revision")

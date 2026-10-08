@@ -42,7 +42,9 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
         .begin_projected_application_read_attempt(admission, snapshot)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let target = effects.existing_entity(&account).unwrap();
@@ -58,15 +60,19 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
         ("open", "winner"),
     );
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(winner, idempotency(201, 201)),
+        world.application.compare_and_commit_application(
+            winner,
+            idempotency(201, 201),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     assert_changed_decision(
-        world
-            .application
-            .compare_and_commit_application(loser, idempotency(202, 202)),
+        world.application.compare_and_commit_application(
+            loser,
+            idempotency(202, 202),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         "the admitted predecode source field changed",
     );
 }
@@ -79,15 +85,19 @@ fn absence_skips_admission_and_stales_after_a_competing_presence_change() {
     assert!(!called.get(), "absence never invokes scalar admission");
     let winner = optional_program(&world, "winner", &called);
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(winner, idempotency(203, 203)),
+        world.application.compare_and_commit_application(
+            winner,
+            idempotency(203, 203),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     assert_changed_decision(
-        world
-            .application
-            .compare_and_commit_application(loser, idempotency(204, 204)),
+        world.application.compare_and_commit_application(
+            loser,
+            idempotency(204, 204),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         "the predecode-observed absent field became present",
     );
 }
@@ -144,7 +154,9 @@ fn optional_program(
         .begin_projected_application_read_attempt(admission, snapshot)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let target = effects.existing_entity(&account).unwrap();

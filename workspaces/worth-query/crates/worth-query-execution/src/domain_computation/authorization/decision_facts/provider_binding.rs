@@ -1,6 +1,7 @@
 //! Atomic binding of authorization observations to provider read-set facts.
 
 use std::collections::BTreeMap;
+use worth_execution::ExecutionArray;
 
 use super::{WorthQueryAuthorizationDecisionFact, WorthQueryPrincipalCurrentnessDependency};
 use crate::domain_computation::primary_graph::{
@@ -37,19 +38,21 @@ impl WorthQueryProviderAuthorizationDecisionFacts {
 
     pub(in crate::domain_computation) fn bind_application_facts(
         self,
-        installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
-        application: Vec<WorthQueryApplicationObservedFact>,
+        installed_read_scopes: ExecutionArray<WorthQueryOperationGraphReadScope>,
+        application: ExecutionArray<WorthQueryApplicationObservedFact>,
     ) -> Result<WorthQueryProviderDecisionFactBinding, &'static str> {
         if installed_read_scopes.len() > application.len() {
             return Err("installed read scopes exceed retained application facts");
         }
         let installed_count = installed_read_scopes.len();
         let retained_authorization_fact_count = 1usize.saturating_add(self.decisions.len());
-        let mut application = application;
-        let source_facts = application.split_off(installed_count);
+        // One owning iterator keeps the admitted backing/ticket alive across
+        // both roles. Temporary merge maps, request Vecs and nested values are
+        // still separate uncharged allocation owners in this slice.
+        let mut application = application.into_iter();
         let mut facts = installed_read_scopes
             .into_iter()
-            .zip(application)
+            .zip(application.by_ref().take(installed_count))
             .map(|(read_scope, fact)| {
                 WorthQueryPrimaryGraphApplicationDecisionFact::application(read_scope, fact)
             })
@@ -62,7 +65,7 @@ impl WorthQueryProviderAuthorizationDecisionFacts {
         if fact_indices.len() != facts.len() {
             return Err("application decision facts contain duplicate structural locators");
         }
-        for source in source_facts {
+        for source in application {
             let locator = source.dependency_locator_identity();
             if let Some(index) = fact_indices.get(&locator).copied() {
                 facts[index] = facts[index].clone().retain_observed_source_role(source)?;

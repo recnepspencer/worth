@@ -11,6 +11,7 @@ use crate::domain_computation::authorization::{
 #[derive(Debug)]
 pub(super) enum DenialCause {
     InvariantExecution(crate::domain_computation::WorthQueryInvariantExecutionFailure),
+    DecisionReadSet(crate::domain_computation::WorthQueryDecisionReadSetFailure),
     /// The request's own authorization stopped the commit: its security
     /// basis on the branch, or what it may do there.
     RequestAuthority(WorthQueryOperationAuthorizationDenialKind),

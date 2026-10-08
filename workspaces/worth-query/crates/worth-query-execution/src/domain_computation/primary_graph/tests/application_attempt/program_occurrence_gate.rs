@@ -66,6 +66,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
             &presented,
             program,
             idempotency(73, 73),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     assert_unresolved_activation(
         outcome,
@@ -104,6 +105,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
             &presented,
             program,
             idempotency(71, 71),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
 
     assert_unresolved_activation(outcome, "branch program activation was never published");
@@ -140,6 +142,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
             &presented,
             program,
             idempotency(72, 72),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
 
     assert_unresolved_activation(outcome, "branch program activation was never published");

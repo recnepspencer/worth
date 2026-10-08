@@ -141,7 +141,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
             approver: principal_id(APPROVER),
         })
         .idempotency(&key("approve"))
-        .execute();
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
     assert!(matches!(
         approval,
         Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)

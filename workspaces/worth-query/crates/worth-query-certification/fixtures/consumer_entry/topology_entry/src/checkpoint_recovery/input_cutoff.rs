@@ -79,7 +79,10 @@ fn exercise(
         })
         .expect_source(changed_source.observed_sources()[0].clone())
         .idempotency(&91_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&application)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the independently selected successor edit publishes");
     let edited = request
         .query(PlanarRead {
@@ -161,7 +164,10 @@ fn exercise(
             })
             .expect_source(successor.observed_sources()[0].clone())
             .idempotency(&92_u64)
-            .execute_performed::<CheckpointProgram, CheckpointRoot>(&application)
+            .execute_performed::<CheckpointProgram, CheckpointRoot>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("the successor edit invalidates the first stable alias");
         drop(successor);
         let second_basis = request.retain_read().unwrap();

@@ -1,3 +1,4 @@
+use worth_execution::ExecutionAllocationPolicy;
 use worth_query_installation::facade::{
     ApplicationRelationRef, OperationReads, WorthQueryOperationGraphReadScope,
 };
@@ -27,6 +28,7 @@ impl<Schema, Operation, Input, Scope>
     /// operation projection. No caller can add, remove, or replace a fact key.
     pub fn complete_projected_dependencies(
         mut self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompleteApplicationReadSet<
             Schema,
@@ -44,11 +46,20 @@ impl<Schema, Operation, Input, Scope>
             )
         })?;
         for key in expected {
+            self.admission
+                .validate_current_authority()
+                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+            allocation_policy.check_live().map_err(|denial| {
+                WorthQueryApplicationAttemptDenial::allocation_denied(
+                    self.admission.operation(),
+                    denial,
+                )
+            })?;
             let (read_scope, fact) = self.observe_projected_fact(key)?;
             self.installed_read_scopes.insert(key.clone(), read_scope);
             self.facts.insert(key.clone(), fact);
         }
-        self.complete()
+        self.complete(allocation_policy)
     }
 
     fn observe_projected_fact(

@@ -63,7 +63,10 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&idempotency)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+            .execute_performed::<program::ChainProgram, program::ChainRoot>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         drop(source);
         let mut refresh = request
@@ -201,5 +204,8 @@ fn mutate_anchor<'application>(
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&idempotency)
-        .execute_in_program::<program::ChainProgram>(application)
+        .execute_in_program::<program::ChainProgram>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
 }

@@ -35,7 +35,9 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
         .mutate(amendment("next", 2))
         .without_source()
         .idempotency(&0x81_u64)
-        .execute_report();
+        .execute_report(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert_eq!(
         *preflight.decision_work(),
         WorthQueryMutationHandlerWork::NotStarted
@@ -49,7 +51,10 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
         .mutate(amendment("refused", 1))
         .without_source()
         .idempotency(&0x82_u64)
-        .execute_in_program_report(&app.runtime);
+        .execute_in_program_report(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     let (outcome, work) = domain.into_parts();
     captured(work);
     assert!(matches!(
@@ -63,7 +68,10 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
         .mutate(amendment("next", 2))
         .without_source()
         .idempotency(&key)
-        .execute_in_program_report(&app.runtime);
+        .execute_in_program_report(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     let (outcome, work) = fresh.into_parts();
     captured(work);
     let outcome = outcome.unwrap();
@@ -77,7 +85,10 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
         .mutate(amendment("next", 2))
         .without_source()
         .idempotency(&key)
-        .execute_in_program_report(&app.runtime);
+        .execute_in_program_report(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert_eq!(
         *replay.decision_work(),
         WorthQueryMutationHandlerWork::NotStarted
@@ -108,8 +119,18 @@ fn mutation_attempt_report_keeps_preparation_capture_on_late_duplicate() {
         .mutate(amendment("prepared", 2))
         .without_source()
         .idempotency(&key);
-    let (first, first_work) = first.prepare_in_program_report(&app.runtime).into_parts();
-    let (second, second_work) = second.prepare_in_program_report(&app.runtime).into_parts();
+    let (first, first_work) = first
+        .prepare_in_program_report(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .into_parts();
+    let (second, second_work) = second
+        .prepare_in_program_report(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .into_parts();
     captured(first_work);
     captured(second_work);
     let Preparation::Prepared(first) = first.unwrap() else {
@@ -118,10 +139,18 @@ fn mutation_attempt_report_keeps_preparation_capture_on_late_duplicate() {
     let Preparation::Prepared(second) = second.unwrap() else {
         panic!("second candidate must prepare")
     };
-    let (fresh, committed_work) = first.commit_report().into_parts();
+    let (fresh, committed_work) = first
+        .commit_report(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .into_parts();
     assert_eq!(committed_work, first_work);
     assert!(matches!(fresh, Outcome::Committed { .. }));
-    let (duplicate, duplicate_work) = second.commit_report().into_parts();
+    let (duplicate, duplicate_work) = second
+        .commit_report(
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .into_parts();
     assert_eq!(duplicate_work, second_work);
     assert!(matches!(duplicate, Outcome::AlreadyCommitted(_)));
     assert!(duplicate.result().is_none());

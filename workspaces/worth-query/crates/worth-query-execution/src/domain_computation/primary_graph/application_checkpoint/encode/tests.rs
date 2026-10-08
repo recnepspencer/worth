@@ -150,7 +150,7 @@ fn checkpoint_impossible_payload_layout_is_a_typed_allocation_refusal() {
     };
     assert_eq!(
         denial.kind(),
-        worth_execution::ExecutionByteAllocationDenialKind::Layout
+        worth_execution::ExecutionAllocationDenialKind::Layout
     );
     assert_eq!(denial.requested_payload_bytes(), None);
 }

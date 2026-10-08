@@ -31,9 +31,12 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
         Some("account-activity"),
     );
 
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(program, idempotency(31, 31))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(31, 31),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("typed emission attempt must commit");
     };
@@ -74,9 +77,11 @@ fn rejection_before_transaction_publishes_no_emit_causality() {
     );
 
     world.faults.reject_next_commit_before_transaction();
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, idempotency(32, 32));
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(32, 32),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         !matches!(
             outcome,
@@ -118,15 +123,21 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     );
 
     world.faults.lose_next_commit_response();
-    let WorthQueryApplicationCommitOutcome::Committed(original) = world
-        .application
-        .compare_and_commit_application(first, idempotency(33, 33))
+    let WorthQueryApplicationCommitOutcome::Committed(original) =
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(33, 33),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("idempotency must recover the response-lost emit commit");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(33, 33))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(33, 33),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("retry must recover the exact emit commit");
     };
@@ -176,9 +187,12 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         "first-emitted",
         Some("recover-after-eviction"),
     );
-    let WorthQueryApplicationCommitOutcome::Committed(original) = world
-        .application
-        .compare_and_commit_application(first, idempotency(40, 40))
+    let WorthQueryApplicationCommitOutcome::Committed(original) =
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(40, 40),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("first emitted transaction must commit");
     };
@@ -197,9 +211,11 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             None,
         );
         assert!(matches!(
-            world
-                .application
-                .compare_and_commit_application(program, idempotency(ordinal + 64, ordinal + 64)),
+            world.application.compare_and_commit_application(
+                program,
+                idempotency(ordinal + 64, ordinal + 64),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+            ),
             WorthQueryApplicationCommitOutcome::Committed(_)
         ));
         current_status = replacement;
@@ -221,9 +237,12 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         "evicting the only nonempty batch must release its accounted payload bytes"
     );
 
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(40, 40))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(40, 40),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("provider idempotency must recover after live-source eviction");
     };
@@ -265,9 +284,12 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
     let account = resolved_account(&world, "open", &request);
     let first =
         admitted_program_with_emit(&world, &principal, &account, &request, "historical", None);
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(first, idempotency(41, 41))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(41, 41),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("historical transaction must commit");
     };
@@ -283,9 +305,12 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
         "advanced",
         None,
     );
-    let WorthQueryApplicationCommitOutcome::Committed(advanced) = world
-        .application
-        .compare_and_commit_application(advanced, idempotency(42, 42))
+    let WorthQueryApplicationCommitOutcome::Committed(advanced) =
+        world.application.compare_and_commit_application(
+            advanced,
+            idempotency(42, 42),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("advancing transaction must commit");
     };
@@ -338,7 +363,9 @@ fn cumulative_variable_width_payloads_are_denied_before_provider_commit() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let first = String::with_capacity(140_000);

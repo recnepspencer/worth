@@ -37,7 +37,10 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_3300_u64)
-        .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+        .execute_performed::<program::ChainProgram, program::ChainRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     drop(source);
     let source = request
@@ -57,7 +60,10 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_3301_u64)
-        .execute_in_program::<program::ChainProgram>(&application)
+        .execute_in_program::<program::ChainProgram>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the independent output edit is admitted");
     let after_source = request
         .query(PlanarRead {

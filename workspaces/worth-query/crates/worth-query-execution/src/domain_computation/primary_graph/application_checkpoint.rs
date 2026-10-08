@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) use facts::encode as encode_pro
 pub use section_bytes::{
     WorthQueryApplicationCheckpointSectionBytes, WorthQueryNativeCheckpointSectionBytes,
 };
-pub use worth_execution::ExecutionByteAllocationPolicy as WorthQueryCheckpointCapturePolicy;
+pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
 const FORMAT_VERSION: u16 = 8;

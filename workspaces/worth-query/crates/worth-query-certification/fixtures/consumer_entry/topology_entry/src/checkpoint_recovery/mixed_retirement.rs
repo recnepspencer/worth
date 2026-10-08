@@ -53,7 +53,10 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_7302_u64)
-        .execute_performed::<MixedProgram, MixedRoot>(&application)
+        .execute_performed::<MixedProgram, MixedRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = performed else {
         panic!("real source command must perform")
@@ -137,7 +140,10 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
             }))
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&command)
-            .execute_in_program(&application)
+            .execute_in_program(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let changed = request.retain_read().unwrap();
         assert!(

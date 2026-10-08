@@ -65,7 +65,10 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
         })
         .without_source()
         .idempotency(&0x9175_2102)
-        .prepare_program_migration(&target)
+        .prepare_program_migration(
+            &target,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the target-owned migration must prepare")
     {
         WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,
@@ -138,7 +141,10 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
         })
         .without_source()
         .idempotency(&0x9175_2111)
-        .prepare_program_migration(&target)
+        .prepare_program_migration(
+            &target,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("migration prepares on the original source")
     {
         WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,
@@ -208,7 +214,10 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
         })
         .without_source()
         .idempotency(&0x9175_2122)
-        .prepare_program_migration(&target)
+        .prepare_program_migration(
+            &target,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("migration prepares")
     {
         WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,

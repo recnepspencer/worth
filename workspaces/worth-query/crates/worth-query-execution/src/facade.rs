@@ -40,8 +40,8 @@ pub mod runtime {
         WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal,
     };
     pub use worth_execution::{
-        CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
-        ExecutionByteAllocationDenial, ExecutionByteAllocationDenialKind,
+        CancellationToken, ExecutionAllocationDenial, ExecutionAllocationDenialKind,
+        ExecutionAllocationPolicy, ExecutionAuthority, ExecutionAuthorityConfig,
         ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial, LeaseRequest,
     };
     pub use worth_runtime_world::facade::{

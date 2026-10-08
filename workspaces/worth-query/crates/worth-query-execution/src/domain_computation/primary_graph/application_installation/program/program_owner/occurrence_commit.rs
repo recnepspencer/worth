@@ -32,6 +32,7 @@ pub(super) fn commit_program_action<Schema, Binding, Owner>(
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryApplicationCommitOutcome
 where
     Schema: ApplicationSchema,
@@ -56,13 +57,19 @@ where
         Ok(presented) => presented,
         Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
-    runtime.compare_and_commit_application_for_program_action(&presented, program, idempotency)
+    runtime.compare_and_commit_application_for_program_action(
+        &presented,
+        program,
+        idempotency,
+        allocation_policy,
+    )
 }
 
 pub(super) fn commit_program_action_retained<Schema, Binding, Owner>(
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryApplicationRetainedCommitOutcome
 where
     Schema: ApplicationSchema,
@@ -74,6 +81,7 @@ where
         owner,
         program.with_client_observation(),
         idempotency,
+        allocation_policy,
     );
     owner.owned_runtime().retained_commit_outcome(outcome)
 }

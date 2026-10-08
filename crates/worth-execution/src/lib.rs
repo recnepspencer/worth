@@ -12,11 +12,11 @@ mod reduction;
 mod report;
 
 pub use authority::{
-    CancellationToken, ConstructionDenial, EquivalencePredicate, ExecutionAuthority,
-    ExecutionAuthorityConfig, ExecutionByteAllocationDenial, ExecutionByteAllocationDenialKind,
-    ExecutionByteAllocationPolicy, ExecutionByteBuffer, ExecutionImmutableBytes,
-    ExecutionLeaseStatus, ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial,
-    LeaseRequest,
+    CancellationToken, ConstructionDenial, EquivalencePredicate, ExecutionAllocationDenial,
+    ExecutionAllocationDenialKind, ExecutionAllocationPolicy, ExecutionArray,
+    ExecutionArrayBuilder, ExecutionArrayIntoIter, ExecutionAuthority, ExecutionAuthorityConfig,
+    ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionLeaseStatus, ExecutionMemoryReservation,
+    ExecutionResourceLease, LeaseDenial, LeaseRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 

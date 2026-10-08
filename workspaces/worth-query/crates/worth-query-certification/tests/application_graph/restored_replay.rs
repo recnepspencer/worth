@@ -120,7 +120,10 @@ fn assert_the_key_resolves_by_its_durable_record(
         })
         .without_source()
         .idempotency(&KEY)
-        .execute_in_program(restored);
+        .execute_in_program(
+            restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(
         matches!(
             &refused,

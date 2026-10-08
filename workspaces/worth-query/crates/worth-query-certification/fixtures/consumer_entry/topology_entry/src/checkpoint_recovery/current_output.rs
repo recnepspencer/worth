@@ -42,7 +42,10 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
             }))
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&command)
-            .execute_in_program(&restored)
+            .execute_in_program(
+                &restored,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
     };
     let outcome =
         verify(901_u64).expect("restored lineage is available to the ordinary tracked reader");
@@ -72,7 +75,10 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&902_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let denial = verify(903_u64).expect_err("restored facts must still reject a changed source");
     use std::error::Error;

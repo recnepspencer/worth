@@ -12,6 +12,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryApplicationEffectProgram,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) type CandidateProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
@@ -70,6 +71,7 @@ where
             WorthQueryApplicationRequestMutationDenial,
         >,
         decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         CandidatePreparation<'request, Schema, Intent::Binding>,
         WorthQueryApplicationRequestMutationDenial,
@@ -107,6 +109,7 @@ where
                 &identities,
                 &principal_identity,
                 admission,
+                allocation_policy,
             )
             .into_parts();
         *decision_work = work;
@@ -137,7 +140,7 @@ where
         let (mut program, result) = completed.into_parts();
         if let Some(authority) = workflow_authority.as_ref() {
             program = program
-                .bind_workflow_operation_authority(authority)
+                .bind_workflow_operation_authority(authority, allocation_policy)
                 .map_err(
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;

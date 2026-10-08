@@ -18,15 +18,17 @@ use worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork;
 /// ```compile_fail,E0599
 /// use worth_query_publication::facade::application_entry::WorthQueryApplicationMutationRequestWithIdempotency;
 /// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+/// use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 /// use worth_query_declaration::facade::{application_operation::ApplicationMutationIntent,
 ///     application_program::ApplicationProgramDefinition};
 /// use worth_query_installation::facade::ApplicationSchema;
 /// fn cannot_publish_without_source<'a, Schema, Intent, Program, Root>(
 ///     request: WorthQueryApplicationMutationRequestWithIdempotency<'a, 'a, 'a, 'a, Schema, Intent>,
 ///     application: &'a WorthQueryProgramApplicationRuntime<Schema, Program>,
+///     allocation_policy: ExecutionAllocationPolicy<'_, '_>,
 /// ) where Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>,
 ///     Program: ApplicationProgramDefinition<Schema> {
-///     let _ = request.execute_performed_report::<Program, Root>(application);
+///     let _ = request.execute_performed_report::<Program, Root>(application, allocation_policy);
 /// }
 /// ```
 #[derive(Debug)]

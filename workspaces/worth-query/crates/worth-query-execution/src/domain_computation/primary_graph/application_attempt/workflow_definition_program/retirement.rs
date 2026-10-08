@@ -84,7 +84,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(observed.facts);
+        self.append_completed_facts(
+            observed.facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let program_revision = *installed.program_revision();
         let workflow_intent_identity = intent_identity::workflow_definition_retirement_identity::<
             Spec,

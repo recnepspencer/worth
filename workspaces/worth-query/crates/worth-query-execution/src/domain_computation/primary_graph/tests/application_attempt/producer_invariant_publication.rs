@@ -24,9 +24,11 @@ fn producer_requirement_denies_before_first_publication_and_leaves_retry_clean()
     let account = resolved_account(&world, "open", &request);
     let candidate = admitted_program(&world, &principal, &account, &request, "published")
         .with_producer_required_invariants(REQUIRED);
-    let outcome = world
-        .application
-        .compare_and_commit_application(candidate, idempotency(231, 231));
+    let outcome = world.application.compare_and_commit_application(
+        candidate,
+        idempotency(231, 231),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("missing producer rule published a candidate: {outcome:?}");
     };
@@ -38,9 +40,11 @@ fn producer_requirement_denies_before_first_publication_and_leaves_retry_clean()
 
     let retry = admitted_program(&world, &principal, &account, &request, "published");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(231, 231)),
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(231, 231),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 }

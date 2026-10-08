@@ -72,6 +72,7 @@ pub(super) fn compare_provider_read_set<'run, Schema, Operation, Input, Scope>(
         Input,
         Scope,
     >,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderReadSetProgression<'run>
 where
     Schema: ApplicationSchema,
@@ -81,7 +82,14 @@ where
         let _ = staged.abort();
         return WorthQueryProviderReadSetProgression::Terminal(outcome);
     }
-    let receipt = match staged.read_authority().capture_decision_read_set(requests) {
+    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
+        authority.admission().publication_request(),
+        allocation_policy,
+    );
+    let receipt = match staged
+        .read_authority()
+        .capture_decision_read_set(requests, allocation_control.policy())
+    {
         Ok(receipt) => receipt,
         Err(failure) => {
             let _ = staged.abort();
@@ -110,24 +118,9 @@ where
 fn decision_read_set_denied(
     failure: crate::domain_computation::WorthQueryDecisionReadSetFailure,
 ) -> WorthQueryProviderProgressionOutcome {
-    match failure.kind() {
-        crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => WorthQueryProviderProgressionOutcome::Denied(
-            WorthQueryApplicationCommitDenial::active_snapshot_capacity_exhausted(
-                DenialStage::DecisionReadSet,
-                maximum_active_snapshots,
-            ),
-        ),
-        crate::domain_computation::WorthQueryDecisionReadSetDenialKind::RetentionCapacityExhausted => {
-            WorthQueryProviderProgressionOutcome::Denied(
-                WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
-                    DenialStage::DecisionReadSet,
-                ),
-            )
-        }
-        _ => progression_denied(DenialStage::DecisionReadSet),
-    }
+    WorthQueryProviderProgressionOutcome::Denied(
+        WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
+    )
 }
 
 fn resolve_stale_provider_read_set<'run, Schema, Operation, Input, Scope>(

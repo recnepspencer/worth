@@ -62,7 +62,7 @@ where
             .begin_projected_application_read_attempt(projected.admission, projected.projection)
             .map_err(|denial| denial.to_string())?;
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
             .map_err(|denial| denial.to_string())?
             .begin_effect_program();
         isolate_invoker(|| {

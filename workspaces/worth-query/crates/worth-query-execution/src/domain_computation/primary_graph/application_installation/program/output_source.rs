@@ -1,5 +1,6 @@
 use super::WorthQueryProgramApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
+use crate::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
     ApplicationProgramOutputsShape,
@@ -87,6 +88,7 @@ where
         idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
         root_kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
         discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
     where
         Source: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
@@ -112,6 +114,7 @@ where
                 &presented,
                 program,
                 idempotency,
+                allocation_policy,
             ) {
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Committed(
                 mut receipt,

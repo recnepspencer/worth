@@ -7,6 +7,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 
+mod storage;
+pub(super) use storage::SourceFacts;
+
 #[cfg(test)]
 mod indexed_selection;
 #[cfg(test)]
@@ -37,7 +40,7 @@ pub(super) fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,
     mut dependent: BTreeMap<WorthQueryApplicationFactStorageKey, WorthQueryApplicationObservedFact>,
     operation: &str,
-) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
+) -> Result<SourceFacts, WorthQueryApplicationAttemptDenial> {
     // The projection already keyed and deduplicated its retained observations.
     // Move that allocation through the handoff; only admitted sources need keys.
     for fact in admitted {
@@ -56,5 +59,5 @@ pub(super) fn merge_source_facts(
             }
         }
     }
-    Ok(dependent.into_values().collect())
+    Ok(SourceFacts::Projected(dependent))
 }

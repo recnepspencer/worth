@@ -32,6 +32,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .idempotency(&10_038)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the discovered publication retains its own custody");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {
@@ -119,6 +120,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
         .idempotency(&10_032)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the source publication prepares discovered roots");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {
@@ -145,7 +147,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
         }))
         .expect_source(changed)
         .idempotency(&10_033)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("an ordinary edit advances the discovered source");
     let mut recovered = request
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
@@ -212,6 +217,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn f
         .idempotency(&10_034)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &owner.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the owner publishes a source");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {
@@ -243,6 +249,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn f
         .idempotency(&10_034)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &other.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the second runtime publishes a matching authored edit");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(other_performed) = other_outcome
@@ -303,6 +310,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         .idempotency(&10_035)
         .execute_performed_discovered::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the two-root source publication succeeds");
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {

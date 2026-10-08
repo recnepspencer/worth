@@ -86,7 +86,10 @@ fn installed_mutation_staging_limits_refuse_without_effect_and_reselect_on_resto
             .mutate(amendment("staged", 2))
             .without_source()
             .idempotency(&key)
-            .execute_in_program_report(&app.runtime)
+            .execute_in_program_report(
+                &app.runtime,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .into_parts();
         let WorthQueryMutationHandlerWork::Captured(capture) = work else {
             panic!("staging refusal must follow the installed decision: {outcome:?}");
@@ -144,7 +147,10 @@ fn installed_mutation_staging_limits_refuse_without_effect_and_reselect_on_resto
             .mutate(amendment("staged", 2))
             .without_source()
             .idempotency(&key)
-            .execute_in_program(&adequate.runtime)
+            .execute_in_program(
+                &adequate.runtime,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
         assert_eq!(outcome.result().unwrap().revision, 2);
@@ -181,7 +187,10 @@ fn installed_mutation_staging_limits_refuse_without_effect_and_reselect_on_resto
             .mutate(amendment("restored", 3))
             .without_source()
             .idempotency(&0x86_u64)
-            .execute_in_program(&reopened.runtime)
+            .execute_in_program(
+                &reopened.runtime,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
         assert_eq!(outcome.result().unwrap().revision, 3);

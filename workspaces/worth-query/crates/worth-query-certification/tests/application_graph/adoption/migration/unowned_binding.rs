@@ -138,7 +138,10 @@ fn target_program_must_own_the_exact_migration_binding() {
         })
         .without_source()
         .idempotency(&0x9175_2100)
-        .prepare_program_migration(&target)
+        .prepare_program_migration(
+            &target,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("operation identity cannot substitute for exact binding ownership");
     assert!(matches!(

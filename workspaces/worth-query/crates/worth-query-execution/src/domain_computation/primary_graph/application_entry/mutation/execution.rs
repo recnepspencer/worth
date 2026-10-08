@@ -80,6 +80,7 @@ where
             Binding::Input,
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         HandlerResult<WorthQueryCompletedMutationCandidate<Schema, Binding>, Binding::Denial>,
         MutationHandlerExecutionDenial,
@@ -87,8 +88,13 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        self.execute_mutation_handler_report::<Binding>(identities, principal_identity, admission)
-            .into_outcome()
+        self.execute_mutation_handler_report::<Binding>(
+            identities,
+            principal_identity,
+            admission,
+            allocation_policy,
+        )
+        .into_outcome()
     }
 
     /// Runs the installed handler once, retaining actual decision projection
@@ -103,6 +109,7 @@ where
             Binding::Input,
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryMutationHandlerExecutionReport<
         WorthQueryCompletedMutationCandidate<Schema, Binding>,
         Binding::Denial,
@@ -115,6 +122,7 @@ where
             principal_identity,
             admission,
             || {},
+            allocation_policy,
         )
     }
 
@@ -133,6 +141,7 @@ where
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
         on_contact: impl FnOnce(),
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         HandlerResult<WorthQueryCompletedMutationCandidate<Schema, Binding>, Binding::Denial>,
         MutationHandlerExecutionDenial,
@@ -145,6 +154,7 @@ where
             principal_identity,
             admission,
             on_contact,
+            allocation_policy,
         )
         .into_outcome()
     }
@@ -160,6 +170,7 @@ where
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
         on_contact: impl FnOnce(),
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryMutationHandlerExecutionReport<
         WorthQueryCompletedMutationCandidate<Schema, Binding>,
         Binding::Denial,
@@ -188,6 +199,10 @@ where
 
         let input = identities.mutation_input();
         let request = admission.publication_request();
+        let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
+            request,
+            allocation_policy,
+        );
         let operation_scope_binding = admission.operation_scope_binding().clone();
         let context_use = std::cell::Cell::new(
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
@@ -241,7 +256,7 @@ where
             let reads = self
                 .begin_projected_application_read_attempt(admission, projection)
                 .map_err(MutationHandlerExecutionDenial::Attempt)?
-                .complete_projected_dependencies()
+                .complete_projected_dependencies(allocation_control.policy())
                 .map_err(MutationHandlerExecutionDenial::Attempt)?;
             let requirements = handler.candidate_requirements(input, &decision);
             let mut candidate = reads

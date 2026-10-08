@@ -27,6 +27,7 @@ static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
 static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 mod adversarial;
+mod controlled_child;
 mod nesting;
 mod prepared_map;
 

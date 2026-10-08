@@ -124,6 +124,9 @@ fn edit_successor(
         })
         .expect_source(selected.observed_sources()[0].clone())
         .idempotency(&idempotency)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(application)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the successor edit publishes");
 }

@@ -214,6 +214,7 @@ where
             &presented,
             program,
             idempotency.bind_workflow_definition(&workflow_intent_identity),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         match outcome.landed() {
             Ok((receipt, replayed)) => project_published(

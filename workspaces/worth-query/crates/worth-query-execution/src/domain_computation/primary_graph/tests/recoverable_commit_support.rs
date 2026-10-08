@@ -91,10 +91,11 @@ fn commit_with_observation(
     } else {
         program
     };
-    match world
-        .application
-        .compare_and_commit_application(program, idempotency(seed, seed.wrapping_add(1)))
-    {
+    match world.application.compare_and_commit_application(
+        program,
+        idempotency(seed, seed.wrapping_add(1)),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    ) {
         WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
         unexpected => panic!("real recoverable fixture must commit through World: {unexpected:?}"),
     }

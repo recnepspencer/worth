@@ -1,9 +1,8 @@
 //! Separate process because the physical authority is constructed once per process.
 use std::num::NonZeroUsize;
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
-    ExecutionByteAllocationDenialKind, ExecutionByteAllocationPolicy, ExecutionByteBuffer,
-    LeaseDenial, LeaseRequest,
+    CancellationToken, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, LeaseDenial, LeaseRequest,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -31,17 +30,17 @@ fn explicit_zero_process_memory_preserves_zero_and_refuses_positive_payloads() {
         Err(LeaseDenial::MemoryLimitExceedsParent)
     ));
     let lease = authority.request_lease(request(0)).unwrap();
-    let bytes = ExecutionByteBuffer::allocate(0, ExecutionByteAllocationPolicy::Execution(&lease))
+    let bytes = ExecutionByteBuffer::allocate(0, ExecutionAllocationPolicy::Execution(&lease))
         .unwrap()
         .seal()
         .unwrap();
     assert!(bytes.is_empty());
     assert_eq!(bytes.charged_payload_bytes(), Some(0));
-    let denied = ExecutionByteBuffer::allocate(1, ExecutionByteAllocationPolicy::Execution(&lease))
-        .unwrap_err();
+    let denied =
+        ExecutionByteBuffer::allocate(1, ExecutionAllocationPolicy::Execution(&lease)).unwrap_err();
     assert_eq!(
         denied.kind(),
-        ExecutionByteAllocationDenialKind::Lease(LeaseDenial::ResourceExhausted)
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::ResourceExhausted)
     );
     assert_eq!(denied.requested_payload_bytes(), Some(1));
 }

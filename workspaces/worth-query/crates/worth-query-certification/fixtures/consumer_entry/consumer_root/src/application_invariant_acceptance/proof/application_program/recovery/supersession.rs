@@ -57,7 +57,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         })
         .expect_source(current.observed_sources()[0].clone())
         .idempotency(&10_046)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the new source intent commits through the installed program");
     assert!(matches!(
         &replacement,

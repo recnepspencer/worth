@@ -84,7 +84,10 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
             })
             .expect_source(source.clone())
             .idempotency(&key)
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+            .execute_performed::<program::ChainProgram, program::ChainRoot>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
     };
     let recover = |receipt| {
         request.recover_required_outputs::<program::ChainProgram, program::ChainRoot>(

@@ -12,8 +12,8 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_query_host::facade::runtime::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
-    ExecutionByteAllocationDenialKind as AllocationKind, LeaseDenial, LeaseRequest,
+    CancellationToken, ExecutionAllocationDenialKind as AllocationKind, ExecutionAuthority,
+    ExecutionAuthorityConfig, LeaseDenial, LeaseRequest,
 };
 
 static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();

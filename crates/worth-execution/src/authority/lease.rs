@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     collections::HashMap,
     num::NonZeroUsize,
     sync::{Arc, Mutex, OnceLock},
@@ -15,19 +14,20 @@ use super::{equivalence::EquivalenceRegistry, CancellationToken, EquivalencePred
 
 static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
+mod array_backing;
 mod byte_backing;
+mod fixed_backing;
 mod limits;
 mod memory_reservation;
 mod retained;
 mod worker_context;
-pub use byte_backing::{
-    ExecutionByteAllocationDenial, ExecutionByteAllocationDenialKind,
-    ExecutionByteAllocationPolicy, ExecutionByteBuffer, ExecutionImmutableBytes,
+pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
+pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
+pub use fixed_backing::{
+    ExecutionAllocationDenial, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
 };
 pub use memory_reservation::ExecutionMemoryReservation;
-thread_local! {
-    static ACTIVE_WORKER: RefCell<Vec<(usize, u64)>> = const { RefCell::new(Vec::new()) };
-}
+use worker_context::ACTIVE_WORKER;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExecutionAuthorityConfig {

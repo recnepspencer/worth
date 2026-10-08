@@ -82,7 +82,10 @@ fn invariant_rejection_after_handler_stages_neither_mutation_nor_transition() {
         .idempotency(&2_111_u64)
         .for_workflow_operation(&application, &required)
         .expect("the exact proposed operation binds")
-        .execute_in_program(application.program_runtime())
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the handler must reach the commit boundary");
     assert!(matches!(
         result,

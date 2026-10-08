@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_program::ApplicationProgramDefi
 use worth_query_execution::facade::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner, WorthQuerySelectedProgramOwner,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -61,11 +62,13 @@ pub enum WorthQueryApplicationProgramMutationPreparation<
 /// use worth_query_declaration::facade::{application_operation::ApplicationMutationBinding,
 ///     application_program::ApplicationProgramDefinition};
 /// use worth_query_installation::facade::ApplicationSchema;
+/// use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 /// fn publish<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>,
 ///     Program: ApplicationProgramDefinition<Schema>>(
 ///     candidate: WorthQueryPreparedProgramMutation<'_, '_, Schema, Binding, Program>,
+///     allocation_policy: ExecutionAllocationPolicy<'_, '_>,
 /// ) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result>
-/// where Binding::Input: Clone + Send + Sync { candidate.commit() }
+/// where Binding::Input: Clone + Send + Sync { candidate.commit(allocation_policy) }
 /// ```
 pub struct WorthQueryPreparedProgramMutation<
     'request,
@@ -88,13 +91,17 @@ where
 {
     /// Consumes this candidate through the authoritative program commit path.
     /// Denial, cancellation and duplicate replay never release the candidate result.
-    pub fn commit(self) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
-        self.commit_report().into_outcome()
+    pub fn commit(
+        self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result> {
+        self.commit_report(allocation_policy).into_outcome()
     }
 
     /// Publishes once, retaining the original preparation's work even on duplicate commit.
     pub fn commit_report(
         self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> super::WorthQueryApplicationMutationAttemptReport<
         WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result>,
     > {
@@ -111,11 +118,13 @@ where
                 program,
                 binding.identities(),
                 |idempotency| binding.extension().apply(idempotency),
+                allocation_policy,
             ),
             None => self.application.compare_and_commit_program_action(
                 program,
                 binding.identities(),
                 |idempotency| binding.extension().apply(idempotency),
+                allocation_policy,
             ),
         };
         let outcome = match outcome.landed() {
@@ -154,6 +163,7 @@ where
     pub fn prepare_in_program<'request, Program>(
         &'request mut self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationProgramMutationPreparation<
             'request,
@@ -167,13 +177,15 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        self.prepare_in_program_report(application).into_outcome()
+        self.prepare_in_program_report(application, allocation_policy)
+            .into_outcome()
     }
 
     /// Reports decision work without releasing the candidate's unpublished result.
     pub fn prepare_in_program_report<'request, Program>(
         &'request mut self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> super::WorthQueryApplicationMutationAttemptReport<
         Result<
             WorthQueryApplicationProgramMutationPreparation<
@@ -191,7 +203,8 @@ where
     {
         let mut decision_work =
             worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
-        let outcome = self.prepare_in_program_with_work(application, &mut decision_work);
+        let outcome =
+            self.prepare_in_program_with_work(application, &mut decision_work, allocation_policy);
         super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
     }
 
@@ -199,6 +212,7 @@ where
         &'request mut self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationProgramMutationPreparation<
             'request,
@@ -233,6 +247,7 @@ where
                 super::authorization::prepare_selected(request, identities, staged, &selected)
             },
             decision_work,
+            allocation_policy,
         )? {
             CandidatePreparation::Prepared(candidate) => {
                 Ok(WorthQueryApplicationProgramMutationPreparation::Prepared(

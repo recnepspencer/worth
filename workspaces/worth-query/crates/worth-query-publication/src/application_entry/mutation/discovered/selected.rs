@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{discovered_outcome, RootConnection, WorthQueryApplicationDiscoveredMutationOutcome};
@@ -44,6 +45,7 @@ where
     pub fn execute_performed_discovered<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationDiscoveredMutationOutcome<'application, Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
@@ -97,9 +99,11 @@ where
                                 program,
                                 binding.idempotency(),
                                 retained_discovery,
+                                allocation_policy,
                             ),
                     )
                 },
+                allocation_policy,
             )
             .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)?;
         Ok(discovered_outcome(application, discovery, outcome, source))

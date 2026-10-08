@@ -70,7 +70,10 @@ pub(super) fn performed_source_settles_required_output(
         })
         .expect_source(source)
         .idempotency(&10_001)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the source edit reaches publication");
     let performed = match outcome {
         WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,

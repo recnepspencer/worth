@@ -16,6 +16,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
     WorthQueryApplicationRequiredOutputSource,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -64,6 +65,7 @@ where
     pub fn execute_performed<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
@@ -88,7 +90,7 @@ where
                     <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query,
                 > + Clone,
     {
-        self.execute_performed_report::<Program, Root>(application)
+        self.execute_performed_report::<Program, Root>(application, allocation_policy)
             .into_outcome()
     }
 
@@ -96,6 +98,7 @@ where
     pub fn execute_performed_report<Program, Root>(
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport<Result<
         WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
@@ -115,8 +118,11 @@ where
     {
         let mut decision_work =
             worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
-        let outcome =
-            self.execute_performed_with_work::<Program, Root>(application, &mut decision_work);
+        let outcome = self.execute_performed_with_work::<Program, Root>(
+            application,
+            &mut decision_work,
+            allocation_policy,
+        );
         crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport::new(
             outcome,
             decision_work,
@@ -127,6 +133,7 @@ where
         self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
@@ -186,9 +193,11 @@ where
                                 &owner,
                                 program,
                                 binding.idempotency(),
+                                allocation_policy,
                             ),
                     )
                 },
+                allocation_policy,
             )
             .into_parts();
         *decision_work = work;

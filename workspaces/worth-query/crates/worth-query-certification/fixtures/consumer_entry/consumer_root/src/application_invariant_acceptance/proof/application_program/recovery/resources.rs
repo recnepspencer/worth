@@ -40,7 +40,10 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
         })
         .expect_source(source)
         .idempotency(&10_003)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the source operation reaches its installed program");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source publication must succeed before derived admission")

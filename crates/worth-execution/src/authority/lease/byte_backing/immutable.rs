@@ -1,5 +1,4 @@
-use super::super::ExecutionMemoryReservation;
-use allocator_api2::vec::Vec;
+use super::super::fixed_backing::OwnedFixedBacking;
 use std::{ops::Deref, sync::Arc};
 
 /// Shared immutable byte custody; imported bytes carry no execution charge.
@@ -18,13 +17,7 @@ pub struct ExecutionImmutableBytes {
 #[derive(Clone)]
 enum Backing {
     External(Arc<Box<[u8]>>),
-    Allocated(Arc<OwnedBacking>),
-}
-
-pub(super) struct OwnedBacking {
-    // Rust drops fields in declaration order: deallocate before releasing charge.
-    pub(super) bytes: Vec<u8>,
-    pub(super) reservation: Option<ExecutionMemoryReservation>,
+    Allocated(Arc<OwnedFixedBacking<u8>>),
 }
 
 impl ExecutionImmutableBytes {
@@ -35,7 +28,7 @@ impl ExecutionImmutableBytes {
             backing: Backing::External(bytes),
         }
     }
-    pub(super) fn from_owned(backing: OwnedBacking) -> Self {
+    pub(super) fn from_owned(backing: OwnedFixedBacking<u8>) -> Self {
         Self {
             backing: Backing::Allocated(Arc::new(backing)),
         }
@@ -43,7 +36,7 @@ impl ExecutionImmutableBytes {
     pub fn bytes(&self) -> &[u8] {
         match &self.backing {
             Backing::External(bytes) => bytes,
-            Backing::Allocated(backing) => &backing.bytes,
+            Backing::Allocated(backing) => backing.elements(),
         }
     }
     /// Actual retained payload charge. None distinguishes external/system bytes;
@@ -51,10 +44,7 @@ impl ExecutionImmutableBytes {
     pub fn charged_payload_bytes(&self) -> Option<u64> {
         match &self.backing {
             Backing::External(_) => None,
-            Backing::Allocated(backing) => backing
-                .reservation
-                .as_ref()
-                .map(ExecutionMemoryReservation::charged_bytes),
+            Backing::Allocated(backing) => backing.charged_payload_bytes(),
         }
     }
 }

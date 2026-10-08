@@ -253,7 +253,9 @@ impl BankIdentityRuntime {
             .begin_projected_application_read_attempt(admission, projection)
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         reads
-            .complete_projected_dependencies()?
+            .complete_projected_dependencies(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )?
             .materialize_capability_delegation_program()
             .map_err(BankEstateProgressionDenial::from_attempt)
     }

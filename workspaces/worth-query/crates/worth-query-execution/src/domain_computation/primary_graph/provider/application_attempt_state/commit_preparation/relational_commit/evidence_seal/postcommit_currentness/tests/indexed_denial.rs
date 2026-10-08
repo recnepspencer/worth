@@ -53,6 +53,7 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
             &identities,
             principal.principal_identity(),
             admission,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     let HandlerResult::Completed(completed) = completed else {
@@ -60,9 +61,12 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
     };
     let (candidate, _) = completed.into_parts();
     let key = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities);
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(candidate, key)
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            candidate,
+            key,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the installed indexed decision must commit");
     };

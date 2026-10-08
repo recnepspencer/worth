@@ -30,7 +30,10 @@ fn optional_validator_work_refuses_without_effect_then_same_identity_commits() {
         .mutate(amendment("budget-retry", 2))
         .without_source()
         .idempotency(&key)
-        .execute_in_program_report(&app.runtime)
+        .execute_in_program_report(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .into_outcome()
         .unwrap();
     let Outcome::Commit(Uncommitted::Denied(denial)) = denied else {
@@ -47,7 +50,10 @@ fn optional_validator_work_refuses_without_effect_then_same_identity_commits() {
         .mutate(amendment("budget-retry", 2))
         .without_source()
         .idempotency(&key)
-        .execute_in_program(&app.runtime)
+        .execute_in_program(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(
         matches!(fresh, Outcome::Committed { .. }),
@@ -60,7 +66,10 @@ fn optional_validator_work_refuses_without_effect_then_same_identity_commits() {
         .mutate(amendment("budget-retry", 2))
         .without_source()
         .idempotency(&key)
-        .execute_in_program(&app.runtime)
+        .execute_in_program(
+            &app.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(
         matches!(replay, Outcome::AlreadyCommitted(_)),

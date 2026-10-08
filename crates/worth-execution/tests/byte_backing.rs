@@ -5,9 +5,9 @@ use std::{
     time::{Duration, Instant},
 };
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
-    ExecutionByteAllocationDenialKind as Kind, ExecutionByteAllocationPolicy as Policy,
-    ExecutionByteBuffer, ExecutionImmutableBytes, LeaseDenial, LeaseRequest,
+    CancellationToken, ExecutionAllocationDenialKind as Kind, ExecutionAllocationPolicy as Policy,
+    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
+    LeaseDenial, LeaseRequest,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -155,4 +155,23 @@ fn invalid_layout_and_incomplete_emission_never_seal_a_partial_payload() {
     let denied = buffer.seal().unwrap_err();
     assert_eq!(denied.kind(), Kind::IncompleteSeal);
     assert_eq!(denied.requested_payload_bytes(), Some(3));
+}
+
+#[test]
+fn chunked_byte_authoring_keeps_pointer_and_overwrites_exact_written_range() {
+    let mut builder =
+        ExecutionByteBuffer::allocate(2 * 64 * 1024 + 5, Policy::SystemAllocation).unwrap();
+    let prefix = vec![0x31; 64 * 1024 + 3];
+    let suffix = vec![0x72; 64 * 1024 + 2];
+    builder.extend_from_slice(&prefix).unwrap();
+    let pointer = builder.bytes().as_ptr();
+    builder.extend_from_slice(&suffix).unwrap();
+    assert_eq!(builder.bytes().as_ptr(), pointer);
+    let checksum_region = vec![0xa5; 64 * 1024 + 1];
+    builder.overwrite(2, &checksum_region).unwrap();
+    let sealed = builder.seal().unwrap();
+    assert_eq!(sealed.bytes().as_ptr(), pointer);
+    assert_eq!(&sealed[..2], &[0x31; 2]);
+    assert_eq!(&sealed[2..64 * 1024 + 3], checksum_region.as_slice());
+    assert!(sealed[64 * 1024 + 3..].iter().all(|byte| *byte == 0x72));
 }

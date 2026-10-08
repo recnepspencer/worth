@@ -49,16 +49,22 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
         "the same input always reports the same deterministic work",
     );
 
-    let WorthQueryApplicationCommitOutcome::Committed(committed) = world
-        .application
-        .compare_and_commit_application(first, idempotency(81, 81))
+    let WorthQueryApplicationCommitOutcome::Committed(committed) =
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(81, 81),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the first governed-input attempt must commit");
     };
     assert_admission_only_work(committed.canonical_work(), first_admission.canonical_work);
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(81, 81))
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(81, 81),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("an equal input under the same key must recover the commit");
     };
@@ -83,9 +89,11 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
         drifted_input,
     );
 
-    let first_outcome = world
-        .application
-        .compare_and_commit_application(first, idempotency(83, 83));
+    let first_outcome = world.application.compare_and_commit_application(
+        first,
+        idempotency(83, 83),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(
             first_outcome,
@@ -93,9 +101,12 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
         ),
         "the first governed-input attempt must commit: {first_outcome:?}"
     );
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(drifted, idempotency(83, 83))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            drifted,
+            idempotency(83, 83),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("a changed serialized field under the same key must be denied");
     };
@@ -183,6 +194,7 @@ fn execute_touch_handler(
             &identities,
             principal.principal_identity(),
             admission,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
 }
 

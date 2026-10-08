@@ -8,6 +8,7 @@ use super::{
     WorthQueryDecisionReadSetDenialKind, WorthQueryDecisionReadSetFailure,
 };
 use crate::domain_computation::provider_session::WorthQuerySessionReadAuthority;
+use worth_execution::{ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder};
 use worth_query_installation::facade::WorthQueryDecisionFactCardinality;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -44,7 +45,7 @@ impl WorthQueryDecisionReadSetCounters {
 pub struct WorthQueryCompleteDecisionReadSetReceipt {
     identity: Arc<str>,
     session_binding_identity: Arc<str>,
-    evidence: Arc<[WorthQueryDecisionFactEvidence]>,
+    evidence: Arc<ExecutionArray<WorthQueryDecisionFactEvidence>>,
     counters: WorthQueryDecisionReadSetCounters,
 }
 
@@ -118,11 +119,16 @@ impl WorthQuerySessionReadAuthority<'_> {
     pub fn capture_decision_read_set(
         &self,
         requests: impl IntoIterator<Item = WorthQueryDecisionFactRequest>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<WorthQueryCompleteDecisionReadSetReceipt, WorthQueryDecisionReadSetFailure> {
         let binding = self.binding();
         let (requests, mut counters) = admit_requests(self, requests)?;
-        let mut evidence = Vec::with_capacity(requests.len());
+        let mut evidence = ExecutionArrayBuilder::allocate(requests.len(), allocation_policy)
+            .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?;
         for request in requests {
+            evidence
+                .check_live()
+                .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?;
             counters.provider_calls += 1;
             let admission = WorthQueryDecisionFactAdmission::new(request.clone(), binding);
             let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -138,12 +144,19 @@ impl WorthQuerySessionReadAuthority<'_> {
                     WorthQueryDecisionReadSetDenialKind::EvidenceSubstitution,
                 ));
             }
-            evidence.push(fact);
+            evidence
+                .push(fact)
+                .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?;
         }
+        let evidence = Arc::new(
+            evidence
+                .seal()
+                .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?,
+        );
         Ok(WorthQueryCompleteDecisionReadSetReceipt {
             identity: binding.canonical_identity().into(),
             session_binding_identity: binding.canonical_identity().into(),
-            evidence: evidence.into(),
+            evidence,
             counters,
         })
     }
@@ -208,7 +221,7 @@ fn admit_requests(
     requests: impl IntoIterator<Item = WorthQueryDecisionFactRequest>,
 ) -> Result<
     (
-        Vec<WorthQueryDecisionFactRequest>,
+        BTreeSet<WorthQueryDecisionFactRequest>,
         WorthQueryDecisionReadSetCounters,
     ),
     WorthQueryDecisionReadSetFailure,
@@ -260,7 +273,6 @@ fn admit_requests(
             | WorthQueryDecisionFactCardinality::Bounded { .. } => {}
         }
     }
-    let requests = requests.into_iter().collect::<Vec<_>>();
     let requested_facts = requests.len();
     Ok((
         requests,

@@ -1,8 +1,8 @@
 //! Actual Query capture, native-region custody and ordinary fresh readmission.
 use std::{num::NonZeroUsize, sync::OnceLock};
 use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
-    ExecutionByteAllocationDenialKind, LeaseDenial, LeaseRequest,
+    CancellationToken, ExecutionAllocationDenialKind, ExecutionAuthority, ExecutionAuthorityConfig,
+    LeaseDenial, LeaseRequest,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -52,7 +52,7 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen(
     };
     assert_eq!(
         refusal.kind(),
-        ExecutionByteAllocationDenialKind::Lease(LeaseDenial::ResourceExhausted)
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::ResourceExhausted)
     );
     assert!(refusal.requested_payload_bytes().unwrap() > 0);
     drop(zero);

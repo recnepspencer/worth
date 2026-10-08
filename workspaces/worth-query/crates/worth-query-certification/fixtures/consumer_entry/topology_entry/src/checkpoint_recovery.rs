@@ -168,7 +168,10 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&77_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the recovered source accepts a fresh edit");
     let current = request
         .retain_read()
@@ -220,7 +223,10 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
         })
         .expect_source(unrelated.observed_sources()[0].clone())
         .idempotency(&88_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the unrelated edit settles");
 
     super::producer::reset_provider_contacts();
@@ -259,7 +265,10 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
         })
         .expect_source(unrelated.observed_sources()[0].clone())
         .idempotency(&89_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &restored,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the unrelated edit settles before adoption");
 
     super::producer::reset_provider_contacts();

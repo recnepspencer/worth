@@ -83,7 +83,7 @@ pub(super) fn adopt_p2_after_completed_payment(
         .on_branch(branch)
         .mutate(authority)
         .idempotency(&key("p2:ordinary-payment-after-completion"))
-        .execute();
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
     assert!(matches!(
         ordinary,
         Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)

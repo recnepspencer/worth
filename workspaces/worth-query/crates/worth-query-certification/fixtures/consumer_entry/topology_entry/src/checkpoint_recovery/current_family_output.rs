@@ -63,7 +63,10 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&0x9176_6201_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&application)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     drop(observed);
     let mut demand = request
@@ -136,7 +139,10 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&command)
-            .execute_in_program(&reopened)
+            .execute_in_program(
+                &reopened,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
     };
     assert!(matches!(
         verify(0x9176_6202_u64).unwrap(),
@@ -162,7 +168,10 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_6203_u64)
-        .execute_in_program(&reopened)
+        .execute_in_program(
+            &reopened,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert_stale(verify(0x9176_6204_u64).unwrap_err());
     assert_eq!(super::super::producer::provider_contacts(), 0);

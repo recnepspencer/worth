@@ -1,3 +1,4 @@
+use crate::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::application_schema::OperationReads;
 
 use super::super::super::application_attempt::idempotency;
@@ -180,7 +181,7 @@ pub(super) fn close_reads(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
 }
 
@@ -247,7 +248,7 @@ pub(super) fn review_reads(
         .application
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
 }
 

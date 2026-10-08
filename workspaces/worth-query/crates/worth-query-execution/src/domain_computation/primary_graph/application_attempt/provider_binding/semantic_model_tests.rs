@@ -18,8 +18,8 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
     let prepared = prepare_provider_attempt(
         PartitionId::main(),
         world.effects.len(),
-        Vec::new(),
-        world.facts,
+        admitted(Vec::new()),
+        admitted(world.facts),
         Vec::new(),
         world.effects,
         world.retained_bytes,
@@ -44,8 +44,8 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
     let prepared = prepare_provider_attempt(
         PartitionId::main(),
         world.alternate_effects.len(),
-        Vec::new(),
-        world.facts,
+        admitted(Vec::new()),
+        admitted(world.facts),
         Vec::new(),
         world.alternate_effects,
         world.retained_bytes,
@@ -69,8 +69,8 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
     let prepared = prepare_provider_attempt(
         PartitionId(7),
         world.effects.len(),
-        Vec::new(),
-        world.facts,
+        admitted(Vec::new()),
+        admitted(world.facts),
         Vec::new(),
         world.effects,
         world.retained_bytes,
@@ -126,8 +126,8 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
     let prepared = prepare_provider_attempt(
         PartitionId::main(),
         effects.len(),
-        Vec::new(),
-        facts,
+        admitted(Vec::new()),
+        admitted(facts),
         Vec::new(),
         effects,
         0,
@@ -144,4 +144,16 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
     .expect("both relation deletes are authorized by the observed adjacency");
 
     assert_eq!(prepared.effects.expected_steps().len(), 1);
+}
+
+fn admitted<T>(values: Vec<T>) -> worth_execution::ExecutionArray<T> {
+    let mut array = worth_execution::ExecutionArrayBuilder::allocate(
+        values.len(),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
+    for value in values {
+        array.push(value).unwrap();
+    }
+    array.seal().unwrap()
 }

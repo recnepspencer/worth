@@ -106,7 +106,10 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         })
         .without_source()
         .idempotency(&0x86_u64)
-        .execute_performed_report::<OrdinaryAssessmentProgram, OrdinaryRoot>(&host);
+        .execute_performed_report::<OrdinaryAssessmentProgram, OrdinaryRoot>(
+            &host,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     let WorthQueryMutationHandlerWork::Captured(work) = report.decision_work() else {
         panic!("the performed source must carry its actual execution capture")
     };

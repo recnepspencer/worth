@@ -73,7 +73,10 @@ fn assert_grant_change_denies_wait(
         .idempotency(&(key + 20))
         .for_workflow_operation(&application, &required)
         .expect("the operation binding remains exact")
-        .execute_in_program(application.program_runtime());
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(
         matches!(
             &effect,
@@ -109,7 +112,10 @@ fn change_approval_grant(
         })
         .without_source()
         .idempotency(&key)
-        .execute_in_program(application.program_runtime())
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("grant change must prepare through its installed ordinary operation");
     assert!(
         matches!(

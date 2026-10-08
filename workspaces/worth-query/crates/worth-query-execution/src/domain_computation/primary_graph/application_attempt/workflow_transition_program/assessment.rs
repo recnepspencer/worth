@@ -184,7 +184,22 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     }
     ensure_current(read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
-    for fact in std::mem::take(&mut read_set.facts) {
+    // This unchanged workflow seam selects explicit system allocation. The
+    // empty replacement is sealed custody, never a mutable/default extraction.
+    let empty = super::super::read_set::admit_array(
+        0,
+        std::iter::empty(),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        subject,
+        || {
+            read_set
+                .admission
+                .validate_current_authority()
+                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+        },
+    )?;
+    let original = std::mem::replace(&mut read_set.facts, empty);
+    for fact in original {
         let locator = fact.dependency_key();
         match merged.entry(locator) {
             std::collections::btree_map::Entry::Vacant(entry) => {
@@ -211,7 +226,20 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
             ));
         }
     }
-    read_set.facts = merged.into_values().collect();
+    // Temporary keyed merge backing/nested values remain uncharged. Its exact
+    // canonical value order moves into the final admitted inline array.
+    read_set.facts = super::super::read_set::admit_array(
+        merged.len(),
+        merged.into_values(),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        subject,
+        || {
+            read_set
+                .admission
+                .validate_current_authority()
+                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+        },
+    )?;
     Ok(())
 }
 

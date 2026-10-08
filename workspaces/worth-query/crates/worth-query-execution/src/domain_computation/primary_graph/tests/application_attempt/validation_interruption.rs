@@ -33,9 +33,11 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     // This observer cancels the actual admitted request after push_batch succeeds.
     // It neither injects a failure nor bypasses the provider's validator.
     world.faults.cancel_next_staged_validation(source);
-    let outcome = world
-        .application
-        .compare_and_commit_application(rejected, idempotency(94, 94));
+    let outcome = world.application.compare_and_commit_application(
+        rejected,
+        idempotency(94, 94),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("post-staging cancellation must deny the real publication: {outcome:?}");
     };
@@ -63,9 +65,11 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     let retry = admitted_program(&world, &principal, &unchanged, &fresh, "after-staging");
     assert!(
         matches!(
-            world
-                .application
-                .compare_and_commit_application(retry, idempotency(94, 94)),
+            world.application.compare_and_commit_application(
+                retry,
+                idempotency(94, 94),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+            ),
             WorthQueryApplicationCommitOutcome::Committed(_)
         ),
         "cancelled attempt must not consume its key"

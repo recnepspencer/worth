@@ -85,6 +85,7 @@ macro_rules! candidate {
                 &identities,
                 principal.principal_identity(),
                 admission,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("the handler runs")
         else {
@@ -145,6 +146,7 @@ fn a_program_built_by_one_binding_cannot_commit_under_another() {
         program,
         &identities::<SetRetentionBinding>(&key, &request),
         std::convert::identity,
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("a program must not commit under a binding other than its handler's");
@@ -164,6 +166,7 @@ fn a_program_built_by_one_binding_cannot_commit_under_another() {
         program,
         &identities::<SetRetentionBinding>(&key, &request),
         std::convert::identity,
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
@@ -185,6 +188,7 @@ fn one_key_and_input_do_not_replay_across_bindings() {
             program,
             &identities::<SetRetentionBinding>(&key, &request),
             std::convert::identity,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
@@ -226,6 +230,7 @@ fn a_program_decided_on_one_input_cannot_commit_under_another_inputs_idempotency
         program,
         &identities::<SetRetentionBinding>(&key, &requested),
         std::convert::identity,
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("a program must not commit under another input's idempotency binding");
@@ -245,6 +250,7 @@ fn a_program_decided_on_one_input_cannot_commit_under_another_inputs_idempotency
         program,
         &identities::<SetRetentionBinding>(&key, &decided),
         std::convert::identity,
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),

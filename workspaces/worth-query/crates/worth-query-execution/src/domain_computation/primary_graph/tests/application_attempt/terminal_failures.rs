@@ -54,9 +54,12 @@ fn preparation_rejection_is_denied_without_effect_or_idempotency_residue() {
     );
 
     world.faults.reject_next_session_prepare();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(rejected, idempotency(19, 19))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            rejected,
+            idempotency(19, 19),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("provider preparation rejection must be a typed denial");
     };
@@ -74,9 +77,11 @@ fn preparation_rejection_is_denied_without_effect_or_idempotency_residue() {
         "prepared-replacement",
     );
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(19, 19)),
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(19, 19),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 }
@@ -91,18 +96,22 @@ fn pretransaction_commit_failure_is_proved_aborted_and_applies_nothing() {
 
     world.faults.reject_next_commit_before_transaction();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(rejected, idempotency(20, 20)),
+        world.application.compare_and_commit_application(
+            rejected,
+            idempotency(20, 20),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Aborted
     ));
     let _still_open = resolved_account(&world, "open", &live_scope());
 
     let retry = admitted_program(&world, &principal, &account, &request, "atomic-replacement");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(retry, idempotency(20, 20)),
+        world.application.compare_and_commit_application(
+            retry,
+            idempotency(20, 20),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 }
@@ -135,6 +144,7 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
             program,
             idempotency(29, 29),
             pending.clone(),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     else {
         panic!("owner reconstruction must recover the causal commit");
@@ -175,9 +185,11 @@ fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
         .cloned()
         .expect("fixture head");
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(first, idempotency(30, 30)),
+        world.application.compare_and_commit_application(
+            first,
+            idempotency(30, 30),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 
@@ -187,6 +199,7 @@ fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
             retry,
             idempotency(30, 30),
             WorthQueryPendingAftermathCausality::undo_of(parent),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     else {
         panic!("a plain idempotency row cannot impersonate a causal commit");
@@ -212,9 +225,12 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
     );
 
     world.faults.skip_next_invariant_owner_execution();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(rejected, idempotency(22, 22))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            rejected,
+            idempotency(22, 22),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("missing owner admission must deny before semantic execution");
     };
@@ -248,9 +264,12 @@ fn relational_invariant_violation_denies_before_provider_commit() {
     );
 
     world.faults.violate_next_relational_invariant();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(rejected, idempotency(23, 23))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            rejected,
+            idempotency(23, 23),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the installed Relational invariant violation must deny");
     };
@@ -271,9 +290,12 @@ fn zero_semantic_invariants_still_require_relational_candidate_validation() {
     let rejected = admitted_mutation_free_program(&world, &principal, &account, &request);
 
     world.faults.violate_next_relational_invariant();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(rejected, idempotency(25, 25))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            rejected,
+            idempotency(25, 25),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("zero semantic requirements must not bypass Relational validation");
     };
@@ -301,9 +323,12 @@ fn zero_semantic_invariants_commit_after_owner_candidate_admission() {
     let account = resolved_account(&world, "open", &request);
     let program = admitted_mutation_free_program(&world, &principal, &account, &request);
 
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(program, idempotency(26, 26))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(26, 26),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("owner-admitted candidate with no semantic requirements must commit");
     };
@@ -335,9 +360,12 @@ fn owner_validated_application_touch_outside_installed_ceiling_is_denied() {
     );
 
     world.faults.add_next_undeclared_application_touch();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(rejected, idempotency(24, 24))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            rejected,
+            idempotency(24, 24),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("an undeclared performed application touch must deny");
     };

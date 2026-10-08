@@ -168,7 +168,9 @@ impl FinancialCourtroomWorld {
             .begin_projected_application_read_attempt(admission, projection)
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .begin_effect_program();
         let record = effects.existing_entity(&record).unwrap();
@@ -234,10 +236,11 @@ impl FinancialCourtroomWorld {
                 _,
             >(&self.amendment_ordinal, &self.amendment_ordinal)
             .unwrap();
-        match self
-            .application
-            .compare_and_commit_application(effects.finish().unwrap(), idempotency)
-        {
+        match self.application.compare_and_commit_application(
+            effects.finish().unwrap(),
+            idempotency,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        ) {
             primary_graph::WorthQueryApplicationCommitOutcome::Committed(_) => {}
             outcome => panic!("financial market amendment was not committed: {outcome:?}"),
         }

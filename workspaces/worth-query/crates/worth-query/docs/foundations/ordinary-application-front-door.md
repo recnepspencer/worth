@@ -74,7 +74,7 @@ The main owners remain separate:
 
 ## Preparing a program action before publication
 
-A keyed mutation request may call `prepare_in_program(&runtime)` when its
+A keyed mutation request may call `prepare_in_program(&runtime, allocation)` when its
 installed candidate must wait before publication. Match
 `WorthQueryApplicationProgramMutationPreparation`: `Prepared` carries a sealed
 `WorthQueryPreparedProgramMutation`; `Settled` carries an ordinary replay,
@@ -88,7 +88,7 @@ borrowed until the handle is consumed or dropped. Its one-shot source and
 preconditions are consumed once: preparing that same request again returns
 `PreparationSpent`; build a fresh request with the same key for a real retry.
 
-Call `candidate.commit()` to compare and publish. The result is inaccessible
+Call `candidate.commit(allocation)` to compare and publish. The result is inaccessible
 before an accepted new commit. Drop discards it; stale basis, revoked authority,
 changed program, cancellation, deadline and duplicate replay never release it.
 Any intervening same-branch commit conservatively rejects the prepared basis,
@@ -98,6 +98,16 @@ recovery. Those use their existing source, workflow, and publication owners.
 
 ## How It Executes
 
+Ordinary mutation execution, preparation and publication take an explicit
+`ExecutionAllocationPolicy`. A host may choose `SystemAllocation`, or supply
+`Execution(&lease)` from its caller-owned process authority. The policy governs
+the completed decision and provider read-set arrays; it grants no graph authority
+and does not charge nested metadata or temporary maps. Preparation retains its
+payload charge with the candidate. Publication takes a fresh policy for its
+provider comparison. An admitted idempotent replay returns before new allocation.
+Request cancellation and deadlines constrain a child lease without changing the
+caller's parent policy or shortening payload custody to the request's lifetime.
+
 ### Observing installed mutation work
 
 Use `execute_in_program_report` when a caller needs the installed handler's
@@ -105,10 +115,11 @@ decision projection evidence alongside the ordinary outcome:
 
 ```rust,ignore
 use worth_query_host::facade::primary_graph::WorthQueryMutationHandlerWork;
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 let report = request.mutate(mutation_intent)
     .without_source().idempotency(&command_id)
-    .execute_in_program_report(&application);
+    .execute_in_program_report(&application, ExecutionAllocationPolicy::SystemAllocation);
 if let WorthQueryMutationHandlerWork::Captured(capture) = report.decision_work() {
     let projection = capture.projection_work();
     println!("{} fields read", projection.field_reads());
@@ -164,6 +175,7 @@ installed program commits through the branch-resolved program lane:
 
 ```rust,ignore
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 let request = application.request(&external_principal, &request_scope);
 let result = request.query(query_intent).execute()?;
@@ -171,10 +183,10 @@ let outcome = request
     .mutate(mutation_intent)
     .without_source()
     .idempotency(&command_id)
-    .execute_in_program(&application)?;
+    .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)?;
 ```
 
-`execute()` without a program serves only mutations that require no
+`execute(allocation)` without a program serves only mutations that require no
 application program; for a program-owned action it returns
 `WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired`.
 
@@ -314,22 +326,24 @@ request's exact branch, resolves the commit owner from the program that branch
 carries, and commits through that installed owner:
 
 ```rust,ignore
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
+
 let outcome = application
     .request(&principal, &scope)
     .on_branch(branch)
     .mutate(intent)
     .without_source()
     .idempotency(&command_id)
-    .execute_in_program(&application)?;
+    .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)?;
 ```
 
 | Lane | Use it for |
 |---|---|
-| `execute_in_program(&runtime)` | An ordinary mutation committed through the branch's program owner. |
-| `execute_capability_in_program(&runtime)` | The same lane for a binding that implements `ApplicationCapabilityMutationBinding`. |
-| `execute_retained_in_program(&runtime)` | A mutation whose committed outcome also returns a retained read observation (`WorthQueryApplicationRetainedMutationOutcome`). |
-| `execute_performed::<Program, Root>(&runtime)` | A source mutation that commits and starts the required outputs declared under `Root`. |
-| `execute_performed_discovered::<Program, Root>(&runtime)` | The discovered-output counterpart of `execute_performed`. |
+| `execute_in_program(&runtime, allocation)` | An ordinary mutation committed through the branch's program owner. |
+| `execute_capability_in_program(&runtime, allocation)` | The same lane for a binding that implements `ApplicationCapabilityMutationBinding`. |
+| `execute_retained_in_program(&runtime, allocation)` | A mutation whose committed outcome also returns a retained read observation (`WorthQueryApplicationRetainedMutationOutcome`). |
+| `execute_performed::<Program, Root>(&runtime, allocation)` | A source mutation that commits and starts the required outputs declared under `Root`. |
+| `execute_performed_discovered::<Program, Root>(&runtime, allocation)` | The discovered-output counterpart of `execute_performed`. |
 
 Each lane takes the `WorthQueryProgramApplicationRuntime` that the request was
 built from. A different runtime returns `ApplicationProgramMismatch`, or

@@ -59,7 +59,10 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_3301_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(&application)
+        .execute_performed::<CheckpointProgram, CheckpointRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let WorthQueryApplicationPerformedMutationOutcome::Performed(_) = outcome else {
         panic!("real source revision must perform")

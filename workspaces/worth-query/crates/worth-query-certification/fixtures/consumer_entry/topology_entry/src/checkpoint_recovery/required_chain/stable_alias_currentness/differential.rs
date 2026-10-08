@@ -67,7 +67,7 @@ fn seeded_native_source_edits_agree_with_plain_model_and_full_output_verificatio
                     })
                     .expect_source(source.observed_sources()[0].clone())
                     .idempotency(&idempotency)
-                    .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+                    .execute_performed::<program::ChainProgram, program::ChainRoot>(&application, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .expect("the selected source edit commits through the real mutation owner");
                 model_y[index] = replacement;
             }

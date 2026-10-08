@@ -229,7 +229,10 @@ where
                     self.admission.operation(),
                 ));
             }
-            self.facts.extend(facts);
+            self.append_completed_facts(
+                facts,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )?;
             return Ok(PreparedWorkflowAdvance::ReplayOnly {
                 read_set: self,
                 transition_identity_locator: layout.transition.identity.clone(),
@@ -329,7 +332,10 @@ where
                 self.admission.operation(),
             ));
         }
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         super::assessment::bind_currentness_facts(
             &mut self,
             &inputs.currentness,

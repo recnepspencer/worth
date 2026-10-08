@@ -54,7 +54,10 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_3380_u64)
-        .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+        .execute_performed::<program::ChainProgram, program::ChainRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     drop((
         source,
@@ -132,7 +135,10 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_3381_u64)
-        .execute_in_program(&reopened)
+        .execute_in_program(
+            &reopened,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let changed = request.retain_read().unwrap();
     assert!(request

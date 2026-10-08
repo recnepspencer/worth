@@ -38,7 +38,9 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
@@ -52,9 +54,12 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let program = effects.finish().unwrap();
     let predecessor = world.selected_product().product().selected_commit().clone();
 
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(program, idempotency(37, 37))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(37, 37),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("a declaration-required program must deny the raw commit entry");
     };
@@ -92,9 +97,12 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
     let account = resolved_account(&world, "open", &request);
     let predecessor = world.selected_product().product().selected_commit().clone();
     let program = admitted_program(&world, &principal, &account, &request, "program-owned");
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(program, idempotency(38, 38))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(38, 38),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("an installed program must deny every raw commit entry");
     };

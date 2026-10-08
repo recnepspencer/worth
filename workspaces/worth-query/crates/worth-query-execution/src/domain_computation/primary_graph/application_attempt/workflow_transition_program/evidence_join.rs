@@ -190,7 +190,10 @@ where
         } else {
             worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::EvidenceFailed
         };
-        self.facts.extend(facts);
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         super::assessment::bind_currentness_facts(
             &mut self,
             &evidence_currentness,

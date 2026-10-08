@@ -45,7 +45,10 @@ fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_6102_u64)
-        .execute_performed::<NoReuseProgram, program::Root>(&application)
+        .execute_performed::<NoReuseProgram, program::Root>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     drop(source);
     let second = (0..64)
@@ -102,7 +105,10 @@ fn held_required_initial_refreshes_through_preserve_and_reopens_current() {
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x9176_6101_u64)
-        .execute_performed::<NoReuseProgram, program::Root>(&application)
+        .execute_performed::<NoReuseProgram, program::Root>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     drop(source);
     let second = (0..64)

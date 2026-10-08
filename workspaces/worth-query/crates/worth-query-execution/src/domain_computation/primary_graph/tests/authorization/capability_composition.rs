@@ -162,9 +162,12 @@ fn new_prior_actor_denies_final_commit_before_effect_authority() {
         "selected-prior",
     );
 
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(program, idempotency(75, 75))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(75, 75),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("a late prior actor must deny before effect authority");
     };
@@ -199,9 +202,11 @@ fn unrelated_published_actor_drift_preserves_the_prepared_product_mutation() {
         "other-prior",
     );
 
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, idempotency(76, 76));
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(76, 76),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
         "unrelated actor edges must preserve current authorization and decision: {outcome:?}"
@@ -276,7 +281,9 @@ fn composed_program(
         .begin_projected_application_read_attempt(admission, projection)
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();

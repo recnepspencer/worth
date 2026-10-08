@@ -317,7 +317,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
             .application
             .begin_projected_application_read_attempt(admission, projection)
             .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
             .materialize_elevation_approval_program()
             .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?;
