@@ -1498,6 +1498,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "stats_alloc",
  "trybuild",
  "worth-proof",
 ]
