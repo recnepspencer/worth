@@ -75,12 +75,21 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .product_runtime
             .security_observation_for(self.product())
             .map_err(|_| Admission(unavailable()))?;
+        let planned_item = batch
+            .take_planned_read(
+                application.runtime.authority_identity().as_u64(),
+                &application.installed_schema.binding_identity(),
+                query.identity(),
+                controls.maximum_work.get(),
+                controls.maximum_results.get(),
+            )
+            .map_err(Resource)?;
         let application_basis = retained
             .application_basis_mut()
             .retain_in_batch(batch)
             .map_err(Resource)?;
         let product = retained.product().retained_clone();
-        application
+        let mut plan = application
             .admit_application_query(
                 query,
                 access,
@@ -95,6 +104,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 )
                 .limit_inline_result_bytes(batch.maximum_result_bytes_per_item()),
             )
-            .map_err(Admission)
+            .map_err(Admission)?;
+        plan.carry_planned_batch_item(planned_item);
+        Ok(plan)
     }
 }

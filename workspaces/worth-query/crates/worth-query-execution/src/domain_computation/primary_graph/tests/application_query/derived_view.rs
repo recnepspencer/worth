@@ -29,6 +29,7 @@ mod member_token_reconciliation;
 mod membership_reconciliation;
 mod native_collection;
 mod optional_owner;
+mod owner_sized;
 mod scoped_query;
 struct SceneLabel(String);
 

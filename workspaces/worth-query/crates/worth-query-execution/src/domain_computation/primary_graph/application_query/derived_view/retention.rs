@@ -21,6 +21,10 @@ mod member_token;
 mod publication;
 mod reconcile;
 mod refresh;
+mod storage_quote;
+use storage_quote::image_quote;
+pub(super) use storage_quote::ManagedStoragePolicy;
+pub use storage_quote::WorthQueryManagedDerivedStorageQuote;
 
 pub use denial::{
     WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedViewDenial,
@@ -65,7 +69,7 @@ pub(super) struct ManagedDerivedViewState<Key, Value> {
     pub(super) branch: BranchId,
     pub(super) product_branch: ProductBranchIdentity,
     pub(super) incarnation: ProductBranchIncarnation,
-    pub(super) limits: ApplicationDerivedViewLimits,
+    pub(super) limits: ManagedStoragePolicy,
     retained: Mutex<RetainedView<Key, Value>>,
 }
 
@@ -84,7 +88,7 @@ where
         product_branch: ProductBranchIdentity,
         incarnation: ProductBranchIncarnation,
         commit: CompositeCommitIdentity,
-        limits: ApplicationDerivedViewLimits,
+        limits: ManagedStoragePolicy,
     ) -> Self {
         Self {
             runtime_authority,
@@ -147,30 +151,24 @@ where
         {
             return Err(WorthQueryManagedDerivedViewDenial::IncompleteDependencies);
         }
-        if entries.len() > self.limits.maximum_entries() {
+        if self.limits.rejects_entries(entries.len()) {
             return Err(WorthQueryManagedDerivedViewDenial::EntryCapacityExceeded);
         }
-        let mut replacement = BTreeMap::new();
-        let mut bytes = std::mem::size_of::<Key>().saturating_add(
-            membership
+        // Complete the checked owner quote before copying values into retained
+        // Arcs or constructing the dependency index.
+        let bytes = image_quote::<Key, Value>(
+            entries
                 .iter()
-                .map(ViewDependency::retained_bytes)
-                .fold(0usize, usize::saturating_add),
-        );
+                .map(|(_, value, dependencies)| (value, dependencies)),
+            entries.len(),
+            &membership,
+            member_tokens.as_ref(),
+        )?;
+        if self.limits.rejects_bytes(bytes) {
+            return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
+        }
+        let mut replacement = BTreeMap::new();
         for (key, value, dependencies) in entries {
-            bytes = bytes
-                .saturating_add(value.retained_bytes())
-                .saturating_add(std::mem::size_of::<(Key, RetainedEntry<Value>)>())
-                .saturating_add(4 * std::mem::size_of::<usize>())
-                .saturating_add(
-                    dependencies
-                        .iter()
-                        .map(ViewDependency::retained_bytes)
-                        .fold(0usize, usize::saturating_add),
-                );
-            if bytes > self.limits.maximum_retained_bytes() {
-                return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
-            }
             if replacement
                 .insert(
                     key,
@@ -190,26 +188,6 @@ where
                 .iter()
                 .map(|(key, entry)| (key, &entry.dependencies)),
         );
-        let maximum_dirty_bytes = replacement
-            .len()
-            .saturating_mul(std::mem::size_of::<Key>() + 4 * std::mem::size_of::<usize>());
-        let index_bound = membership
-            .iter()
-            .chain(
-                replacement
-                    .values()
-                    .flat_map(|entry| entry.dependencies.iter()),
-            )
-            .fold(0usize, |bytes, dependency| {
-                bytes.saturating_add(DependencyIndex::<Key>::entry_insertion_bound(dependency))
-            });
-        bytes = bytes
-            .saturating_add(index_bound)
-            .saturating_add(maximum_dirty_bytes)
-            .saturating_add(member_tokens.as_ref().map_or(0, token_charge));
-        if bytes > self.limits.maximum_retained_bytes() {
-            return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
-        }
         retained.entries = replacement;
         retained.membership_key = Some(membership_key);
         retained.member_tokens = member_tokens;

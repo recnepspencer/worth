@@ -1,6 +1,8 @@
 //! Public ordinary batch courts using the existing installed temporal world.
 #[path = "retained_query_batch/inline_result.rs"]
 mod inline_result;
+#[path = "retained_query_batch/installed_profile.rs"]
+mod installed_profile;
 use super::{
     adapters::block_on,
     schema::current_read::TemporalIntentReadRequest,

@@ -5,7 +5,7 @@ use super::*;
 pub struct WorthQueryApplicationQueryBatchMemory {
     totals: Arc<Mutex<BatchTotals>>,
     bytes: usize,
-    maximum: usize,
+    policy: BatchPolicy,
 }
 
 impl WorthQueryApplicationQueryBatchAdmission {
@@ -24,10 +24,10 @@ impl WorthQueryApplicationQueryBatchAdmission {
             .bytes
             .checked_add(bytes)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-        if required > self.limits.maximum_retained_bytes() {
+        if required > self.policy.maximum_bytes() {
             let denial = WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit {
                 required,
-                maximum: self.limits.maximum_retained_bytes(),
+                maximum: self.policy.maximum_bytes(),
             };
             totals.memory_denial = Some(denial);
             return Err(denial);
@@ -37,7 +37,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
         Ok(WorthQueryApplicationQueryBatchMemory {
             totals: Arc::clone(&self.totals),
             bytes,
-            maximum: self.limits.maximum_retained_bytes(),
+            policy: self.policy.clone(),
         })
     }
 
@@ -45,7 +45,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
         &self,
     ) -> Self {
         Self {
-            limits: self.limits,
+            policy: self.policy.clone(),
             totals: Arc::clone(&self.totals),
         }
     }
@@ -75,10 +75,10 @@ impl WorthQueryApplicationQueryBatchMemory {
             .bytes
             .checked_add(bytes)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-        if required > self.maximum {
+        if required > self.policy.maximum_bytes() {
             let denial = WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit {
                 required,
-                maximum: self.maximum,
+                maximum: self.policy.maximum_bytes(),
             };
             totals.memory_denial = Some(denial);
             return Err(denial);

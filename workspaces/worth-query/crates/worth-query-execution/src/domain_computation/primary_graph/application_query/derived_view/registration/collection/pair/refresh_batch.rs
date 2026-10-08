@@ -87,7 +87,59 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let first_result = self
             .execute_application_query_one_shot_in_batch(first, batch)
             .map_err(Denial::Read)?;
-        let (first_result, _first_claim) = first_result.into_parts();
+        self.refresh_managed_derived_collection_pair_entry_from_batch_result(
+            view,
+            product,
+            key,
+            first_result,
+            batch,
+            second_for,
+            first_link,
+            second_link,
+            project,
+        )
+    }
+
+    /// Refreshes from an intact first result issued by the supplied loan. The
+    /// caller may inspect its genuine receipt before moving this sealed bundle.
+    /// Both actual result claims remain live through projection and installation.
+    pub fn refresh_managed_derived_collection_pair_entry_from_batch_result<
+        MembershipQuery,
+        FirstQuery,
+        FirstResult,
+        SecondQuery,
+        SecondResult,
+        Value,
+        LinkKey,
+    >(
+        &self,
+        view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        key: &WorthQueryManagedDerivedViewKey,
+        first: WorthQueryApplicationBatchResult<FirstQuery, FirstResult>,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+        second_for: impl FnOnce(
+            &FirstResult,
+            &WorthQueryApplicationQueryBatchAdmission,
+        ) -> Result<
+            WorthQueryApplicationBatchResult<SecondQuery, SecondResult>,
+            Denial,
+        >,
+        first_link: impl FnOnce(&FirstResult) -> LinkKey,
+        second_link: impl FnOnce(&SecondResult) -> LinkKey,
+        project: impl FnOnce(&FirstResult, &SecondResult) -> Value,
+    ) -> Result<std::sync::Arc<Value>, Denial>
+    where
+        FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery>,
+        SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery>,
+        Value: WorthQueryManagedDerivedValue,
+        LinkKey: Eq,
+    {
+        view.state
+            .requires_entry_refresh(key, product.selected_commit())?;
+        self.admit_view_product(view, product)?;
+        let (first_result, _first_claim) =
+            first.into_parts_for(batch).ok_or(Denial::ForeignBatch)?;
         let mut second_claim = None;
         let mut second_denial = None;
         let read = self.read_managed_entry_pair_from_result(

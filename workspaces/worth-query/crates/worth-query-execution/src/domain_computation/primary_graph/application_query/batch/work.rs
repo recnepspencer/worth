@@ -17,8 +17,8 @@ impl WorthQueryApplicationQueryBatchAdmission {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let remaining = self
-            .limits
-            .maximum_read_work()
+            .policy
+            .maximum_work()
             .checked_sub(totals.work)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::WorkAccountingMismatch)?;
         if remaining == 0 {
@@ -27,7 +27,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
                     .work
                     .checked_add(1)
                     .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?,
-                maximum: self.limits.maximum_read_work(),
+                maximum: self.policy.maximum_work(),
             });
         }
         let maximum = declared_maximum.min(remaining);

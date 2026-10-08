@@ -14,7 +14,7 @@ impl WorthQueryApplicationBasisLease {
             let bytes = crate::domain_computation::primary_graph::output_lineage::invalidation::arc_bytes::<BasisLeaseCore>()
                 .and_then(|n| usize::try_from(n).ok())
                 .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-            let claim = batch.claim_memory(bytes)?;
+            let claim = batch.claim_source_memory(bytes)?;
             let BasisCustody::Exclusive(mut core) =
                 std::mem::replace(&mut self.custody, BasisCustody::Transitioning)
             else {
@@ -38,7 +38,7 @@ impl WorthQueryApplicationBasisLease {
             .and_then(|n| n.checked_add(descriptor.branch_id().0.len()))
             .and_then(|n| n.checked_add(descriptor.reference().branch_id().as_str().len()))
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-        let claim = batch.claim_memory(bytes)?;
+        let claim = batch.claim_source_memory(bytes)?;
         let BasisCustody::Shared(core) = &self.custody else {
             unreachable!("a retained batch share follows promotion")
         };

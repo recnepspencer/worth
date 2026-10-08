@@ -30,7 +30,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &self,
-        plan: WorthQueryAdmittedApplicationQueryPlan<
+        mut plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
             Query,
@@ -49,6 +49,25 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
         use WorthQueryApplicationBatchReadDenial::{Execution, Resource};
+        match plan.planned_batch_item.take() {
+            Some(item) if !item.belongs_to(batch) => {
+                return Err(Resource(
+                    WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan,
+                ))
+            }
+            Some(_) => {}
+            None => {
+                batch
+                    .take_planned_read(
+                        plan.runtime_authority.as_u64(),
+                        plan.query.binding_identity(),
+                        plan.query.identity(),
+                        plan.controls.maximum_work().get(),
+                        plan.controls.maximum_result_count().get(),
+                    )
+                    .map_err(Resource)?;
+            }
+        }
         let rows = batch
             .claim_memory(
                 plan.graph_read_plan()

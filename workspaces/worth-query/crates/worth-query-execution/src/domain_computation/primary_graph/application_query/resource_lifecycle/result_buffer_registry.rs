@@ -198,7 +198,7 @@ impl WorthQueryApplicationResultBufferReservation {
         let batch = self
             .batch
             .as_ref()
-            .map(|batch| batch.claim_memory(bytes))
+            .map(|batch| batch.claim_source_memory(bytes))
             .transpose()
             .map_err(|_| ())?;
         if acquire(&self.registry.state.retained_bytes, bytes).is_err() {

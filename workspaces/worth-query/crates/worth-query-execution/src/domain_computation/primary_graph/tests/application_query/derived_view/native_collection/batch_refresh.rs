@@ -25,10 +25,10 @@ pub(super) fn refuse_then_refresh(
     projections: &Cell<usize>,
     snapshot: &WorthQueryManagedDerivedViewSnapshot<SceneLabel>,
     key: &WorthQueryManagedDerivedViewKey,
-    mut refresh: impl FnMut(&Batch, &Batch) -> Result<Arc<SceneLabel>, Denial>,
+    mut refresh: impl FnMut(&Batch, &Batch, &Batch) -> Result<Arc<SceneLabel>, Denial>,
 ) {
     let work_limited = batch(first_work, 262_144);
-    let denial = refresh(&work_limited, &work_limited).err();
+    let denial = refresh(&work_limited, &work_limited, &work_limited).err();
     assert!(
         matches!(
             denial,
@@ -51,7 +51,7 @@ pub(super) fn refuse_then_refresh(
 
     let memory_limited = batch(100_000, first_memory.get());
     assert!(matches!(
-        refresh(&memory_limited, &memory_limited),
+        refresh(&memory_limited, &memory_limited, &memory_limited),
         Err(Denial::Read(
             WorthQueryApplicationBatchReadDenial::Resource(Resource::MemoryLimit { .. })
         ))
@@ -64,8 +64,25 @@ pub(super) fn refuse_then_refresh(
 
     let original = batch(100_000, 262_144);
     let foreign = batch(100_000, 262_144);
+    let previous_memory = first_memory.get();
     assert!(matches!(
-        refresh(&original, &foreign),
+        refresh(&foreign, &original, &original),
+        Err(Denial::ForeignBatch)
+    ));
+    assert_eq!(
+        first_memory.get(),
+        previous_memory,
+        "second callback did not run"
+    );
+    assert_eq!(projections.get(), 0);
+    assert_eq!(original.observe().read_work_units(), 0);
+    assert_eq!(foreign.observe().retained_bytes(), 0);
+    assert_eq!(
+        snapshot.get(key).err(),
+        Some(ViewDenial::EntryRefreshRequired)
+    );
+    assert!(matches!(
+        refresh(&original, &original, &foreign),
         Err(Denial::ForeignBatch)
     ));
     assert_eq!(projections.get(), 0);
@@ -78,7 +95,7 @@ pub(super) fn refuse_then_refresh(
     );
 
     let complete = batch(100_000, 262_144);
-    let refreshed = refresh(&complete, &complete).unwrap();
+    let refreshed = refresh(&complete, &complete, &complete).unwrap();
     assert_eq!(refreshed.0, "primary-changed");
     assert_eq!(projections.get(), 1);
     assert!(complete.observe().read_work_units() > first_work);

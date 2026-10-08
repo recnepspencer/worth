@@ -11,13 +11,13 @@ mod authorization_work;
 mod authorized_read;
 mod basis;
 mod batch;
-pub use batch::{
-    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
-    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial,
-    WorthQueryApplicationQueryBatchWork,
-};
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
+pub use batch::{
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
+    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchReadPlan,
+    WorthQueryApplicationQueryBatchResourceDenial, WorthQueryApplicationQueryBatchWork,
+};
 mod continuation;
 mod control_validation;
 mod controls;
@@ -74,8 +74,8 @@ pub use denial::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
 };
 pub use derived_view::{
-    WorthQueryManagedDerivedCollectionBatchRefreshDenial,
-    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
+    WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
     WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
     WorthQueryManagedDerivedViewSnapshot,
