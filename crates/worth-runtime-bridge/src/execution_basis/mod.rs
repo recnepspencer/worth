@@ -6,6 +6,7 @@ mod finalization;
 mod interruption;
 mod lifecycle_observation;
 mod managed_declaration;
+mod posture;
 mod queue_occupancy;
 mod queue_pressure;
 mod readmission;
@@ -15,7 +16,7 @@ mod safe_point;
 mod step_contract;
 mod yield_authority;
 
-pub(crate) use admission::admit_managed_execution_basis;
+pub(crate) use admission::{admit_atomic_execution_basis, admit_managed_execution_basis};
 pub use authority::{BridgeBoundExecutionBasis, BridgeExecutionBasisIdentity};
 pub use counters::BridgeExecutionBasisCounters;
 pub use denial::{BridgeExecutionBasisDenial, BridgeExecutionBasisDenialKind};
@@ -35,6 +36,7 @@ pub use lifecycle_observation::{
     BridgeExecutionBasisLifecycleObservationFailureKind, BridgeExecutionBasisLifecycleObserver,
     BridgeExecutionBasisLifecycleSignalStatus,
 };
+pub use posture::BridgeExecutionPosture;
 pub use queue_occupancy::{
     BridgeManagedQueueAdmission, BridgeManagedQueueOccupancy, BridgeManagedQueueReleaseFailure,
 };

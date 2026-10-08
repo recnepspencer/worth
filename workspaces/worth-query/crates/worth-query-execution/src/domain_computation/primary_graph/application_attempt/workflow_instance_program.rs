@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -163,17 +164,10 @@ where
                 });
             }
         }
-        if self.facts.len().saturating_add(compile_facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.append_completed_facts(
             compile_facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,

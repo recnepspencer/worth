@@ -130,6 +130,13 @@ pub struct WorthQuerySemanticScaleRequest {
 }
 
 impl WorthQuerySemanticScaleRequest {
+    /// States only the explicitly inserted dimensions.
+    pub fn selective() -> Self {
+        Self {
+            values: BTreeMap::new(),
+        }
+    }
+
     pub fn bounded(value: u64) -> Self {
         Self {
             values: WorthQuerySemanticScaleAxis::ALL
@@ -165,6 +172,13 @@ pub struct WorthQueryResourceLimitRequest {
 }
 
 impl WorthQueryResourceLimitRequest {
+    /// States only the explicitly inserted dimensions.
+    pub fn selective() -> Self {
+        Self {
+            values: BTreeMap::new(),
+        }
+    }
+
     pub fn bounded(value: u64) -> Self {
         Self {
             values: WorthQueryResourceDimension::ALL

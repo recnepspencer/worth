@@ -11,6 +11,7 @@ pub enum WorthQueryExecutionResourceAdmissionDenialKind {
     DifferentProviderRequired,
     DifferentAccessProductRequired,
     DifferentAllocatorRequired,
+    ExecutionBoundaryUnsupported,
     ExecutionModeUnsupported,
     CancellationSafePointUnsupported,
     DegradationPostureUnsupported,

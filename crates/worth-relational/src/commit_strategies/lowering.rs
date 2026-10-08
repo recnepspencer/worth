@@ -55,7 +55,6 @@ pub(crate) fn lower_execution(
         .footprint
         .derive_validation_dependencies(
             &merged_plan,
-            transaction.maximum_footprint_loci,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map_err(|denial| StrategyLoweringError::mutation_conflict(denial.into_conflict()))?;

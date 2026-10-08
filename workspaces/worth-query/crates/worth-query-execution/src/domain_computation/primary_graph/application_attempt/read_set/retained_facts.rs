@@ -1,8 +1,8 @@
 use super::{
-    admit_array, denial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
+    admit_array, WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
     WorthQueryCompleteApplicationReadSet,
 };
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_execution::ExecutionAllocationPolicy;
 
 impl<Schema, Operation, Input, Scope, Phase>
@@ -26,15 +26,14 @@ impl<Schema, Operation, Input, Scope, Phase>
             return Ok(());
         }
         let operation = self.admission.operation();
+        check_request_live(self.admission.publication_request(), operation)?;
         let count = self
             .facts
             .len()
             .checked_add(additional.len())
             .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                    operation,
-                )
+                super::super::retained_decision_facts::StoreDenial::Representability
+                    .into_attempt_denial(operation)
             })?;
         // Allocate final backing before moving the old owner. The sealed empty
         // replacement uses the same explicit policy; it is not a Default lane.

@@ -68,7 +68,7 @@ worth_query_application_schema! {
                         .no_aftermath()
                         .finish(),
                 )
-                .operation_decision_fact_budget(PublicationOperation::reference(), 1)
+
                 .operation_projection_work_budget(PublicationOperation::reference(), 16)
                 .operation_read_field(PublicationOperation::reference(), ResourceLabelField::reference())
                 .operation_write(PublicationOperation::reference(), ResourceLabelField::reference());

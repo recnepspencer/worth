@@ -47,30 +47,9 @@ pub(super) fn staging(
         | Denial::InputDirectoryAllocationDenied { .. } => {
             WorthQueryWorkspaceErrorKind::Unclassified
         }
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => WorthQueryWorkspaceErrorKind::TransactionOverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryWorkspaceErrorKind::TransactionFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             WorthQueryWorkspaceErrorKind::SavepointCapacityExhausted { maximum_savepoints }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryWorkspaceErrorKind::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             WorthQueryWorkspaceErrorKind::SavepointIdentityExhausted
         }

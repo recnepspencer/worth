@@ -25,20 +25,8 @@ pub enum EffectExecutionDenialKind {
     TransactionSavepointIdentityExhausted,
     TransactionMaterializationAuthorityRequired,
     TransactionMaterializationModeMismatch,
-    TransactionOverlayBudgetExceeded {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
-    TransactionFootprintBudgetExceeded {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
     TransactionSavepointBudgetExceeded {
         maximum_savepoints: usize,
-    },
-    TransactionSavepointFootprintBudgetExceeded {
-        maximum_loci: usize,
-        required_loci: usize,
     },
     PreparedRootBudgetExceeded {
         maximum_bytes: u64,
@@ -82,15 +70,8 @@ impl EffectExecutionDenialKind {
             Self::TransactionMaterializationModeMismatch => {
                 "transaction_materialization_mode_mismatch"
             }
-            Self::TransactionOverlayBudgetExceeded { .. } => "transaction_overlay_budget_exceeded",
-            Self::TransactionFootprintBudgetExceeded { .. } => {
-                "transaction_footprint_budget_exceeded"
-            }
             Self::TransactionSavepointBudgetExceeded { .. } => {
                 "transaction_savepoint_budget_exceeded"
-            }
-            Self::TransactionSavepointFootprintBudgetExceeded { .. } => {
-                "transaction_savepoint_footprint_budget_exceeded"
             }
             Self::PreparedRootBudgetExceeded { .. } => "prepared_root_budget_exceeded",
             Self::RelationalExactBasisStale => "relational_exact_basis_stale",

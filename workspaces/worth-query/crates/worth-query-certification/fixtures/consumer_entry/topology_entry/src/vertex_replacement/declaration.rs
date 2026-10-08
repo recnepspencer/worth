@@ -15,7 +15,6 @@ pub(crate) fn declare_vertex_replacement<Schema: TopologySchemaBinding>(
         )
         // Indexed identity predicates, coordinates and both complete successor
         // adjacencies are retained before the three mutation targets are admitted.
-        .operation_decision_fact_budget(operation, 32)
         .operation_projection_work_budget(operation, 128)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())

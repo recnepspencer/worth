@@ -25,10 +25,6 @@ pub(super) struct WorthQueryInvariantWorkMint {
     _private: (),
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryCandidateAdmission {
-    _private: (),
-}
-
 impl WorthQueryInvariantExecutionProvider for Arc<WorthQueryPrimaryGraphProvider> {
     fn load_invariant_state(
         &self,
@@ -103,13 +99,12 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         session: WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<WorthQueryPrimaryCandidateAdmission, WorthQueryInvariantExecutionFailure> {
+    ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
         let material = self.invariant_candidate_material(session)?;
-        self.validate_and_retain_candidate(session, material, allocation_policy)?;
-        Ok(WorthQueryPrimaryCandidateAdmission { _private: () })
+        self.validate_and_retain_candidate(session, material, allocation_policy)
     }
 
     fn invariant_candidate_material(
@@ -203,8 +198,7 @@ impl WorthQueryPrimaryGraphProvider {
             material.expected_step_preparation_work,
             touch_admission,
         );
-        self.retain_validated_candidate(session, candidate, work)?;
-        Ok(())
+        self.retain_validated_candidate(session, candidate, work)
     }
 
     fn retain_validated_candidate(

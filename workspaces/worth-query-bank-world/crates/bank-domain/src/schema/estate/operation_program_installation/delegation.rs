@@ -8,7 +8,6 @@ pub(super) fn install(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = DelegateEstateCapabilityOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 8)
         .operation_projection_work_budget(operation, 160)
         .operation_read_field(operation, AccountIdentity::reference())
         .operation_read_field(operation, InstitutionIdentityField::reference())

@@ -25,14 +25,11 @@ impl DetachedRelationalTransactionOverlay {
         &self,
         batch: &WorkerIntentBatch,
         footprint: &RelationalTransactionFootprint,
-        maximum_loci: usize,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(OrderedStore<IndexRow>, RelationalTransactionFootprint), Denial> {
         let mut index = Author::new(&self.index, policy)?;
-        let footprint =
-            footprint.for_staged_batch(batch, self.batches.len(), maximum_loci, policy, |row| {
-                index.insert(row)
-            })?;
+        let footprint = footprint
+            .for_staged_batch(batch, self.batches.len(), policy, |row| index.insert(row))?;
         Ok((index.finish()?, footprint))
     }
     pub(super) fn reserve_input_directory(&mut self) -> Result<(), Denial> {

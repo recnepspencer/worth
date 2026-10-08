@@ -64,7 +64,6 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
             scalar: 1,
             roles: 1,
         },
-        None,
         control(Policy::Execution(&zero)),
         merge,
     ) {
@@ -146,7 +145,6 @@ fn final_array_and_key_charges_survive_child_drop_and_exhausted_iterator() {
                         scalar: ordinal as u64,
                         roles: 1,
                     },
-                    None,
                     policy,
                     merge,
                 )
@@ -202,7 +200,6 @@ fn live_child_stop_refuses_partial_success_without_stopping_parent() {
             scalar: 1,
             roles: 1,
         },
-        None,
         policy,
         merge,
     );

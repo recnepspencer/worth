@@ -252,3 +252,6 @@ fn reservation_denial() -> WorthQueryApplicationAttemptDenial {
 #[cfg(test)]
 #[path = "candidate_reservation_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod atomic_tests;

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::RelationId;
 
@@ -67,17 +68,10 @@ where
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.append_completed_facts(
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,

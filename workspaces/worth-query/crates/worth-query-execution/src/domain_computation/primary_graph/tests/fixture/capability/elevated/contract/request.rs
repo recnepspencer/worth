@@ -24,7 +24,6 @@ pub(super) fn install(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
     schema
-        .operation_decision_fact_budget(RequestCapabilityElevationOperation::reference(), 1)
         .operation_projection_work_budget(RequestCapabilityElevationOperation::reference(), 32)
         .operation_read_field(
             RequestCapabilityElevationOperation::reference(),

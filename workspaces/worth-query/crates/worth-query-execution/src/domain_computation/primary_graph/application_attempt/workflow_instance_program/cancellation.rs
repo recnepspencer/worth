@@ -2,6 +2,7 @@
 //! rollback: every effect the instance performed remains, and the outcome
 //! reports each one. A cancellation prepared before a step settles goes stale,
 //! and a step admitted before the cancellation commits goes stale in turn.
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 mod close;
 mod publication;
@@ -128,17 +129,10 @@ where
             },
             None => self.close_live_workflow_instance(installed, &layout, &instance, &identity)?,
         };
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.append_completed_facts(
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,

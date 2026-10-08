@@ -19,3 +19,5 @@ pub(crate) use overlay_lease::WorthQueryProvisionalOverlayLease;
 pub use proposal_basis::*;
 pub use proposed_state::*;
 pub use provider_port::*;
+
+pub(in crate::domain_computation) use invariant_execution::check_invariant_request_live;

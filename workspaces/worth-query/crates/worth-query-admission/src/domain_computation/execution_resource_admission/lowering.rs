@@ -1,6 +1,6 @@
+use super::capacity_diagnostics::capacity_mismatch_detail;
 use worth_query_declaration::facade::domain_computation::{
-    WorthQueryExecutionMode, WorthQueryExecutionResourceRequest, WorthQueryResourceDimension,
-    WorthQuerySemanticScaleAxis,
+    WorthQueryExecutionMode, WorthQueryExecutionResourceRequest,
 };
 use worth_query_installation::facade::{
     WorthQueryExecutionResourceContract, WorthQueryExecutionStrategyContract,
@@ -41,11 +41,14 @@ pub(crate) fn prepare_execution_resource_plan(
     contract.validate().map_err(|detail| {
         WorthQueryExecutionResourceAdmissionDenial::new(Kind::ResourceContract, detail, counters)
     })?;
+    request.validate().map_err(|detail| {
+        WorthQueryExecutionResourceAdmissionDenial::new(Kind::ResourceContract, detail, counters)
+    })?;
     let mut fitting = Vec::new();
     for strategy in contract.strategies() {
         counters.strategy_checks += 1;
         counters.envelope_dimension_checks +=
-            WorthQuerySemanticScaleAxis::ALL.len() + WorthQueryResourceDimension::ALL.len();
+            request.scale().iter().count() + request.limits().iter().count();
         if strategy.envelope().admits(request) {
             fitting.push(strategy);
         }
@@ -97,6 +100,11 @@ fn support_mismatch(
             Kind::DifferentAllocatorRequired,
             format!("{subject} requires a different allocator family"),
         )
+    } else if actual.envelope().boundary() != strategy.envelope().boundary() {
+        (
+            Kind::ExecutionBoundaryUnsupported,
+            format!("{subject} does not support the strategy execution boundary"),
+        )
     } else if actual.envelope().mode() != strategy.envelope().mode() {
         (
             Kind::ExecutionModeUnsupported,
@@ -144,41 +152,22 @@ fn support_mismatch(
     WorthQueryExecutionResourceAdmissionDenial::new(kind, detail, counters)
 }
 
-fn capacity_mismatch_detail(
-    subject: &str,
-    strategy: &WorthQueryExecutionStrategyContract,
-    actual: &super::WorthQueryExecutionResourceSupport,
-) -> String {
-    for axis in WorthQuerySemanticScaleAxis::ALL {
-        let Some(required) = strategy.envelope().optional_scale_ceiling(axis) else {
-            continue;
-        };
-        let Some(supported) = actual.envelope().optional_scale_ceiling(axis) else {
-            continue;
-        };
-        if supported < required {
-            return format!(
-                "{subject} supports {axis:?}={supported}, below the required {required}"
-            );
-        }
-    }
-    for dimension in WorthQueryResourceDimension::ALL {
-        let supported = actual.envelope().resource_ceiling(dimension);
-        let required = strategy.envelope().resource_ceiling(dimension);
-        if supported < required {
-            return format!(
-                "{subject} supports {dimension:?}={supported}, below the required {required}"
-            );
-        }
-    }
-    format!("{subject} capacity changed during resource admission")
-}
-
 fn classify_request_mismatch(
     contract: &WorthQueryExecutionResourceContract,
     request: &WorthQueryExecutionResourceRequest,
     counters: WorthQueryExecutionResourceAdmissionCounters,
 ) -> WorthQueryExecutionResourceAdmissionDenial {
+    if contract
+        .strategies()
+        .iter()
+        .all(|strategy| strategy.envelope().boundary() != request.boundary())
+    {
+        return WorthQueryExecutionResourceAdmissionDenial::new(
+            Kind::ExecutionBoundaryUnsupported,
+            "no installed strategy supports the requested execution boundary",
+            counters,
+        );
+    }
     let capacity = contract
         .strategies()
         .iter()
@@ -286,12 +275,13 @@ fn request_fits_capacity(
     request: &WorthQueryExecutionResourceRequest,
     strategy: &WorthQueryExecutionStrategyContract,
 ) -> bool {
-    request
-        .scale()
-        .iter()
-        .all(|(axis, value)| strategy.envelope().admits_scale(axis, value))
+    request.boundary() == strategy.envelope().boundary()
+        && request
+            .scale()
+            .iter()
+            .all(|(axis, value)| strategy.envelope().admits_scale(axis, value))
         && request
             .limits()
             .iter()
-            .all(|(dimension, value)| value <= strategy.envelope().resource_ceiling(dimension))
+            .all(|(dimension, value)| strategy.envelope().admits_resource(dimension, value))
 }

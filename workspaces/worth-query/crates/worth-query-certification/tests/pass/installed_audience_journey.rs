@@ -63,6 +63,7 @@ fn phase_seven_through_ten_consumer_journey(
             .capture_decision_read_set(
                 requests,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                None,
             )
             .unwrap();
         match reads.compare_decision_read_set(captured).unwrap() {
@@ -82,7 +83,7 @@ fn phase_seven_through_ten_consumer_journey(
     let receipt = inspection
         .select_installed_invariant(invariant_slot)
         .unwrap()
-        .admit_state_load_plan(state_load)
+        .admit_state_load_plan(state_load, None)
         .unwrap()
         .execute()
         .unwrap();

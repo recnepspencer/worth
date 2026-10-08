@@ -100,14 +100,29 @@ pub(super) fn encode_contract(
             for (load_index, family) in requirement.state_load_families().iter().enumerate() {
                 basis.text(format!("{prefix}.state-load[{load_index}]"), family)?;
             }
-            basis.unsigned_usize(
-                format!("{prefix}.maximum-state-facts"),
-                requirement.max_state_facts(),
-            )?;
-            basis.unsigned_u64(
-                format!("{prefix}.maximum-work-units"),
-                requirement.max_work_units(),
-            )?;
+            match (requirement.max_state_facts(), requirement.max_work_units()) {
+                (Some(state), Some(work)) if state > 0 && work > 0 => {
+                    basis.unsigned_usize(format!("{prefix}.maximum-state-facts"), state)?;
+                    basis.unsigned_u64(format!("{prefix}.maximum-work-units"), work)?;
+                }
+                (state, work) => {
+                    basis.text(format!("{prefix}.bounds-form"), "optional-v1")?;
+                    basis.text(
+                        format!("{prefix}.state-presence"),
+                        if state.is_some() { "some" } else { "none" },
+                    )?;
+                    if let Some(state) = state {
+                        basis.unsigned_usize(format!("{prefix}.maximum-state-facts"), state)?;
+                    }
+                    basis.text(
+                        format!("{prefix}.work-presence"),
+                        if work.is_some() { "some" } else { "none" },
+                    )?;
+                    if let Some(work) = work {
+                        basis.unsigned_u64(format!("{prefix}.maximum-work-units"), work)?;
+                    }
+                }
+            }
         }
     }
     Ok(())

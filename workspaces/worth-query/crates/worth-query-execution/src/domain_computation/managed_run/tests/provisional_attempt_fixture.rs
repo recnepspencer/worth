@@ -342,6 +342,7 @@ pub(super) fn staged_with_fresh_read_set<'run>(
                     .unwrap()
                 }),
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                None,
             )
             .unwrap();
         match reads.compare_decision_read_set(receipt).unwrap() {

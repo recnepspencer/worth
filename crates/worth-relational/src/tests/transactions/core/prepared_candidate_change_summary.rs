@@ -359,8 +359,6 @@ fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
             max_patch_records_per_commit: 4_096,
             max_published_snapshot_handles: 1,
             max_active_snapshot_handles: 8,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 0,

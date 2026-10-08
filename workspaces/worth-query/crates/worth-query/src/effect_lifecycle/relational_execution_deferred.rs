@@ -62,30 +62,9 @@ pub(super) fn transaction_staging(
         Denial::AllocationDenied(_)
         | Denial::CardinalityOverflow
         | Denial::InputDirectoryAllocationDenied { .. } => return denied(&denial),
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => EffectExecutionDenialKind::TransactionOverlayBudgetExceeded {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => EffectExecutionDenialKind::TransactionFootprintBudgetExceeded {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             EffectExecutionDenialKind::TransactionSavepointBudgetExceeded { maximum_savepoints }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => EffectExecutionDenialKind::TransactionSavepointFootprintBudgetExceeded {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             return RelationalEffectExecutionFailure::Denied {
                 kind: EffectExecutionDenialKind::TransactionSavepointIdentityExhausted,
@@ -211,23 +190,6 @@ mod tests {
 
     #[test]
     fn resource_pressure_remains_typed_across_the_effect_boundary() {
-        let staging = transaction_staging(
-            RelationalTransactionStagingDenial::OverlayCapacityExhausted {
-                maximum_bytes: 64,
-                required_bytes: 65,
-            },
-        );
-        assert!(matches!(
-            staging,
-            RelationalEffectExecutionFailure::Denied {
-                kind: EffectExecutionDenialKind::TransactionOverlayBudgetExceeded {
-                    maximum_bytes: 64,
-                    required_bytes: 65,
-                },
-                ..
-            }
-        ));
-
         let publication = publication(RelationalPublicationDeferred::CandidateCapacityExhausted {
             maximum_candidates: 7,
         });

@@ -70,7 +70,7 @@ fn keyed(
 ) -> Option<RetainedSourceFacts> {
     let mut store = AuthoringSourceFacts::new(control()).unwrap();
     for fact in facts {
-        store.capture(fact, None, control()).unwrap();
+        store.capture(fact, control()).unwrap();
     }
     Some(store.finish(control()).unwrap())
 }

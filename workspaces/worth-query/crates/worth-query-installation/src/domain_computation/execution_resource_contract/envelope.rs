@@ -1,12 +1,14 @@
 use worth_query_declaration::facade::domain_computation::{
-    WorthQueryCancellationSafePointFamily, WorthQueryExecutionDegradation, WorthQueryExecutionMode,
-    WorthQueryExecutionResourceRequest, WorthQueryPartialEffectPosture,
-    WorthQueryResourceDimension, WorthQueryResourceLimitRequest, WorthQueryRetainedProgressPosture,
-    WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest, WorthQueryYieldedStatePosture,
+    WorthQueryCancellationSafePointFamily, WorthQueryExecutionBoundary,
+    WorthQueryExecutionDegradation, WorthQueryExecutionMode, WorthQueryExecutionResourceRequest,
+    WorthQueryPartialEffectPosture, WorthQueryResourceDimension, WorthQueryResourceLimitRequest,
+    WorthQueryRetainedProgressPosture, WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest,
+    WorthQueryYieldedStatePosture,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryExecutionResourceEnvelope {
+    boundary: WorthQueryExecutionBoundary,
     scale_ceilings: WorthQuerySemanticScaleRequest,
     resource_ceilings: WorthQueryResourceLimitRequest,
     mode: WorthQueryExecutionMode,
@@ -26,6 +28,7 @@ impl WorthQueryExecutionResourceEnvelope {
         cancellation_safe_point: WorthQueryCancellationSafePointFamily,
     ) -> Self {
         Self {
+            boundary: WorthQueryExecutionBoundary::BoundedStep,
             scale_ceilings,
             resource_ceilings,
             mode,
@@ -35,6 +38,33 @@ impl WorthQueryExecutionResourceEnvelope {
             retained_progress_posture: WorthQueryRetainedProgressPosture::ReleaseAfterAttempt,
             cancellation_safe_point,
         }
+    }
+
+    pub fn atomic(
+        scale_ceilings: WorthQuerySemanticScaleRequest,
+        resource_ceilings: WorthQueryResourceLimitRequest,
+        cancellation_safe_point: WorthQueryCancellationSafePointFamily,
+    ) -> Self {
+        let mut envelope = Self::new(
+            scale_ceilings,
+            resource_ceilings,
+            WorthQueryExecutionMode::Synchronous,
+            None,
+            cancellation_safe_point,
+        );
+        envelope.boundary = WorthQueryExecutionBoundary::Atomic;
+        envelope
+    }
+
+    pub const fn boundary(&self) -> WorthQueryExecutionBoundary {
+        self.boundary
+    }
+    pub fn optional_resource_ceiling(&self, dimension: WorthQueryResourceDimension) -> Option<u64> {
+        self.resource_ceilings.get(dimension)
+    }
+    pub fn admits_resource(&self, dimension: WorthQueryResourceDimension, value: u64) -> bool {
+        self.optional_resource_ceiling(dimension)
+            .is_some_and(|maximum| value <= maximum)
     }
 
     pub fn bounded(
@@ -58,8 +88,10 @@ impl WorthQueryExecutionResourceEnvelope {
     }
 
     pub fn admits_scale(&self, axis: WorthQuerySemanticScaleAxis, value: u64) -> bool {
-        self.optional_scale_ceiling(axis)
-            .is_none_or(|maximum| value <= maximum)
+        match self.optional_scale_ceiling(axis) {
+            Some(maximum) => value <= maximum,
+            None => axis == WorthQuerySemanticScaleAxis::WorkItems,
+        }
     }
 
     pub fn scale_ceiling(&self, axis: WorthQuerySemanticScaleAxis) -> u64 {
@@ -139,14 +171,16 @@ impl WorthQueryExecutionResourceEnvelope {
     }
 
     pub fn admits(&self, request: &WorthQueryExecutionResourceRequest) -> bool {
-        request
-            .scale()
-            .iter()
-            .all(|(axis, value)| self.admits_scale(axis, value))
+        self.boundary == request.boundary()
+            && request.validate().is_ok()
+            && request
+                .scale()
+                .iter()
+                .all(|(axis, value)| self.admits_scale(axis, value))
             && request
                 .limits()
                 .iter()
-                .all(|(dimension, value)| value <= self.resource_ceiling(dimension))
+                .all(|(dimension, value)| self.admits_resource(dimension, value))
             && request.modes().contains(&self.mode)
             && self
                 .degradation

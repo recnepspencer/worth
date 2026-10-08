@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::{
 mod admitted_arrays;
 mod binding_proof;
 mod completion;
+pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
 mod decision_reuse;
@@ -76,7 +77,7 @@ pub struct WorthQueryApplicationReadAttempt<
 /// The sealed decision read set of one admitted operation: exactly the facts its
 /// installed reads cover, observed on one snapshot.
 ///
-/// Sealing checked the fact budget, that the facts cover the declared reads, and
+/// Sealing checked that the facts cover the declared reads and
 /// the operation's mutation preconditions. In the projected-mutation phase it
 /// begins the effect program that authors the candidate; an ordinary read-phase
 /// set cannot author effects.

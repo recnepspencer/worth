@@ -62,10 +62,6 @@ fn external_owner_members(reconciliation: &str) -> Vec<ApplicationSchemaMember> 
                 entity: "Audit".to_owned(),
             },
         },
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation: "freeze".to_owned(),
-            maximum_fact_count: 4,
-        },
         ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation: "freeze".to_owned(),
             maximum_work_units: 16,

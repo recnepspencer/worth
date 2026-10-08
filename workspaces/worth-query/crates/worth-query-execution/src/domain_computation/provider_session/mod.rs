@@ -54,3 +54,5 @@ pub(crate) use tests::{
     execution_resource_support_with_yield,
     execution_resource_support_with_yield_and_partial_effects,
 };
+
+pub(in crate::domain_computation) use provisional_attempt::check_invariant_request_live;

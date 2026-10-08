@@ -268,7 +268,6 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 32)
         // The actual consumed-output lookup verifies upstream lineage/native
         // currentness inside the handler's projection allowance.
         .operation_projection_work_budget(operation, 4_096)

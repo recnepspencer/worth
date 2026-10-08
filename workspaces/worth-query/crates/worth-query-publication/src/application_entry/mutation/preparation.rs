@@ -99,10 +99,7 @@ where
             workflow_authority
                 .as_ref()
                 .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?
-                .validate_before_handler(
-                    self.request.application,
-                    admission.allowed_graph_contract().decision_fact_budget(),
-                )
+                .validate_before_handler(self.request.application, self.request.scope)
                 .map_err(
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;

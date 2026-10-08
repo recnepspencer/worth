@@ -47,12 +47,6 @@ impl<T> RetainedFactStore<T> {
         store.count = count;
         Ok(store)
     }
-    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
-        self.count
-    }
-    pub(in crate::domain_computation::primary_graph) fn failure(&self) -> Option<&StoreDenial> {
-        self.failure.as_ref()
-    }
     fn directory_slots(&self) -> &[std::cell::RefCell<Option<Run<T>>>] {
         self.directory
             .as_ref()
@@ -64,14 +58,13 @@ impl<T> RetainedFactStore<T> {
         &mut self,
         key: AdmittedFactKey,
         value: T,
-        quota: Option<usize>,
         policy: super::StorageControl<'_, '_>,
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
     ) -> Result<(), StoreDenial> {
         if let Some(denial) = &self.failure {
             return Err(denial.clone());
         }
-        let result = self.insert_inner(key, value, quota, policy, duplicate);
+        let result = self.insert_inner(key, value, policy, duplicate);
         if let Err(denial) = &result {
             self.failure = Some(denial.clone());
         }
@@ -81,7 +74,6 @@ impl<T> RetainedFactStore<T> {
         &mut self,
         key: AdmittedFactKey,
         value: T,
-        quota: Option<usize>,
         policy: super::StorageControl<'_, '_>,
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
     ) -> Result<(), StoreDenial> {
@@ -94,12 +86,6 @@ impl<T> RetainedFactStore<T> {
             .count
             .checked_add(1)
             .ok_or(StoreDenial::Representability)?;
-        if let Some(maximum) = quota.filter(|maximum| count > *maximum) {
-            return Err(StoreDenial::ExplicitCountPolicy {
-                maximum,
-                attempted: count,
-            });
-        }
         if self.chunk.is_none() {
             self.chunk = Some(Run::empty(AUTHOR_CHUNK, policy)?);
         }
@@ -107,6 +93,7 @@ impl<T> RetainedFactStore<T> {
         *chunk.slots[chunk.used].borrow_mut() = Some(RetainedFact {
             key,
             value,
+            #[cfg(test)]
             ordinal: self.count,
         });
         chunk.used += 1;

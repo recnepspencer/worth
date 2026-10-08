@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 
@@ -245,7 +246,7 @@ impl WorkflowOperationAuthority {
     pub fn validate_before_handler<Schema>(
         &self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        maximum_facts: usize,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -262,15 +263,7 @@ impl WorkflowOperationAuthority {
         if runtime.runtime.authority_identity().as_u64() != self.runtime_authority {
             return Err(mismatch());
         }
-        if self.facts.len() > maximum_facts {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                format!(
-                    "workflow operation authority: {} facts exceed budget {maximum_facts}",
-                    self.facts.len()
-                ),
-            ));
-        }
+        check_request_live(request, "workflow operation authority")?;
         let selected = runtime
             .on_branch(self.observation.product_branch())
             .select()
@@ -316,11 +309,15 @@ impl WorkflowOperationAuthority {
                 WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())
             })?;
         lease.handle().with_runtime(|runtime| {
-            if self
-                .facts
-                .iter()
-                .all(|fact| fact.remains_equal_in(runtime, lease.snapshot()))
-            {
+            let mut current = true;
+            for fact in self.facts.iter() {
+                check_request_live(request, "workflow operation authority")?;
+                if !fact.remains_equal_in(runtime, lease.snapshot()) {
+                    current = false;
+                    break;
+                }
+            }
+            if current {
                 return Ok(());
             }
             // An instance that ended since is named before any fact it left

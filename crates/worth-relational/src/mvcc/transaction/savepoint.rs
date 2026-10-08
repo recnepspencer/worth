@@ -39,10 +39,6 @@ impl RelationalTransactionSavepoint {
     pub(crate) fn footprint(&self) -> &super::RelationalTransactionFootprint {
         &self.footprint
     }
-
-    pub(crate) fn footprint_loci(&self) -> usize {
-        self.footprint.total_locus_count()
-    }
 }
 
 impl super::BranchBoundRelationalTransaction {
@@ -65,19 +61,6 @@ impl super::BranchBoundRelationalTransaction {
             .next_savepoint_ordinal
             .checked_add(1)
             .ok_or(super::RelationalTransactionStagingDenial::SavepointIdentityExhausted)?;
-        let footprint_loci = self.footprint.total_locus_count();
-        let required_loci = self
-            .savepoint_footprint_loci
-            .checked_add(footprint_loci)
-            .ok_or(super::RelationalTransactionStagingDenial::CardinalityOverflow)?;
-        if required_loci > self.maximum_footprint_loci {
-            return Err(
-                super::RelationalTransactionStagingDenial::SavepointFootprintCapacityExhausted {
-                    maximum_loci: self.maximum_footprint_loci,
-                    required_loci,
-                },
-            );
-        }
         self.savepoints.push(RelationalTransactionSavepoint::new(
             savepoint_id,
             self.batches().len(),
@@ -85,7 +68,6 @@ impl super::BranchBoundRelationalTransaction {
             self.overlay.index.clone(),
             self.overlay.normalization_generation,
         ));
-        self.savepoint_footprint_loci = required_loci;
         self.next_savepoint_ordinal = next_savepoint_ordinal;
         Ok(savepoint_id)
     }
@@ -117,22 +99,10 @@ impl super::BranchBoundRelationalTransaction {
                 .prefix_index(batch_len)
                 .map_err(super::RelationalTransactionStagingDenial::into_conflict)?
         };
-        let released_savepoint_loci = self.savepoints[index..]
-            .iter()
-            .map(RelationalTransactionSavepoint::footprint_loci)
-            .sum::<usize>();
         let drained = self.overlay.truncate_batches(batch_len, restored_index);
-        let released_bytes = drained
-            .iter()
-            .map(crate::transactions::data::WorkerIntentBatch::resident_capacity_bytes)
-            .sum::<u64>();
-        self.overlay_bytes = self.overlay_bytes.saturating_sub(released_bytes);
         self.footprint = restored_footprint;
         self.last_merged_plan = None;
         self.savepoints.truncate(index);
-        self.savepoint_footprint_loci = self
-            .savepoint_footprint_loci
-            .saturating_sub(released_savepoint_loci);
         let effects = drained
             .into_iter()
             .flat_map(|batch| batch.intents.into_iter())

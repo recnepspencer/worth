@@ -78,10 +78,6 @@ impl RelationalTransactionFootprint {
         Ok(())
     }
 
-    pub(super) fn total_locus_count(&self) -> usize {
-        self.reads.len().saturating_add(self.writes.len())
-    }
-
     pub(crate) fn validation_partitions(&self) -> BTreeSet<PartitionId> {
         let mut partitions = self
             .write_partitions

@@ -112,32 +112,11 @@ pub(super) fn map_bootstrap_staging_denial(
         | Denial::InputDirectoryAllocationDenied { .. } => {
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
         }
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => WorthQueryPrimaryGraphInstallationDenialKind::TransactionOverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryPrimaryGraphInstallationDenialKind::TransactionFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             WorthQueryPrimaryGraphInstallationDenialKind::SavepointCapacityExhausted {
                 maximum_savepoints,
             }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryPrimaryGraphInstallationDenialKind::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             WorthQueryPrimaryGraphInstallationDenialKind::SavepointIdentityExhausted
         }

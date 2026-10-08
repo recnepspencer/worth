@@ -148,7 +148,7 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     );
     assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
 
-    let committed_key = 0xb0ad_0002;
+    let committed_key = 0xb0ad_0003;
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(branch)

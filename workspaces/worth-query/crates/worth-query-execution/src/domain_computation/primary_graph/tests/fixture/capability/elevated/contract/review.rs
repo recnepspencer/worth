@@ -34,7 +34,6 @@ pub(super) fn install(
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
     let operation = CompleteCapabilityReviewOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 96)
         .operation_read_field(operation, CapabilityElevationIdentity::reference())
         .operation_read_field(operation, CapabilityElevationReason::reference())

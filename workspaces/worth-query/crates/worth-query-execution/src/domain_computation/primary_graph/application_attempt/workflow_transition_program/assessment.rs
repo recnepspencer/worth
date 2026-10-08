@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -58,20 +59,10 @@ where
         durable_currentness_facts.extend(self.applicability_dependencies.iter().cloned());
         let durable_currentness_facts: std::sync::Arc<[_]> = durable_currentness_facts.into();
         let read_set = self.admitted.read_set();
-        if read_set.facts.len().saturating_add(
-            crate::domain_computation::primary_graph::workflow::evidence_dependency::evidence_dependency_observation_facts(
-                durable_currentness_facts.len(),
-            ),
-        ) > read_set
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.required.node_path(),
-            ));
-        }
+        check_request_live(
+            read_set.admission.publication_request(),
+            self.required.node_path(),
+        )?;
         let mut meaning = evidence_meaning(
             &self.required,
             self.admitted.subject(),
@@ -172,16 +163,7 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     currentness_facts: &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let fact_budget = read_set
-        .admission
-        .allowed_graph_contract()
-        .decision_fact_budget();
-    if read_set.facts.len().saturating_add(currentness_facts.len()) > fact_budget {
-        return Err(WorthQueryApplicationAttemptDenial::new(
-            WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-            subject,
-        ));
-    }
+    check_request_live(read_set.admission.publication_request(), subject)?;
     ensure_current(read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
     // This unchanged workflow seam selects explicit system allocation. The
@@ -257,10 +239,14 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
     subject: &str,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let current = read_set.lease.handle().with_runtime(|runtime| {
-        currentness_facts
-            .iter()
-            .all(|fact| fact.remains_equal_in(runtime, read_set.lease.snapshot()))
-    });
+        for fact in currentness_facts {
+            check_request_live(read_set.admission.publication_request(), subject)?;
+            if !fact.remains_equal_in(runtime, read_set.lease.snapshot()) {
+                return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+            }
+        }
+        Ok(true)
+    })?;
     if current {
         Ok(())
     } else {

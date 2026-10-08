@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -48,11 +49,11 @@ where
                 "selected assessment subject differs from authored requirement",
             ));
         }
-        let remaining = self
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget()
-            .saturating_sub(self.facts.len().saturating_add(facts.len()));
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        let observation_request = self.admission.publication_request();
         let subject = super::assessment_coverage::observe_subject(
             compiled,
             layout,
@@ -61,18 +62,13 @@ where
             self.admission.scope_entity_id(),
             self.lease.handle(),
             self.lease.snapshot(),
-            remaining,
+            observation_request,
         )?;
-        let remaining = self
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget()
-            .saturating_sub(
-                self.facts
-                    .len()
-                    .saturating_add(facts.len())
-                    .saturating_add(subject.facts.len()),
-            );
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        let observation_request = self.admission.publication_request();
         let applicability = self.lease.handle().with_runtime(|runtime| {
             super::assessment_applicability::observe(
                 node,
@@ -81,7 +77,7 @@ where
                 self.lease.snapshot(),
                 subject.resource,
                 subject.related,
-                remaining,
+                observation_request,
             )
         })?;
         let applicability_dependencies = applicability
@@ -97,17 +93,10 @@ where
             .collect();
         facts.extend(subject.facts);
         facts.extend(applicability.facts);
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         if !applicability.applicable {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
@@ -118,26 +107,26 @@ where
         let coverage = subject.coverage;
         let proposal_identity = subject.proposal_identity;
         if let Some(evidence_locator) = progress.latest_assessment_evidence(selected.node()) {
-            let maximum_facts = self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-                .saturating_sub(self.facts.len().saturating_add(facts.len()));
+            check_request_live(
+                self.admission.publication_request(),
+                self.admission.operation(),
+            )?;
+            let observation_request = self.admission.publication_request();
             let (evidence, mut retained_facts) = self.lease.handle().with_runtime(|runtime| {
                 super::super::workflow_instance_observation::observe_retained_assessment_evidence(
                     runtime,
                     self.lease.snapshot(),
                     layout,
                     evidence_locator,
-                    maximum_facts,
+                    observation_request,
                 )
             })?;
             facts.append(&mut retained_facts);
-            let maximum_facts = self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-                .saturating_sub(self.facts.len().saturating_add(facts.len()));
+            check_request_live(
+                self.admission.publication_request(),
+                self.admission.operation(),
+            )?;
+            let observation_request = self.admission.publication_request();
             let coverage_state = super::assessment_coverage::observe(
                 node,
                 &program_revision,
@@ -146,7 +135,7 @@ where
                 layout,
                 self.lease.handle(),
                 self.lease.snapshot(),
-                maximum_facts,
+                observation_request,
             )?;
             facts.extend(coverage_state.facts);
             if coverage_state.current {
@@ -171,17 +160,10 @@ where
                 );
             }
         }
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.append_completed_facts(
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -236,17 +218,10 @@ where
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.append_completed_facts(
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,

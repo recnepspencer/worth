@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use std::marker::PhantomData;
 use worth_execution::ExecutionAllocationPolicy;
 
@@ -17,17 +18,10 @@ impl<Schema, Operation, Input, Scope, Phase>
         WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.facts.len().saturating_add(self.source_facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         if self
             .expected_facts
             .as_ref()
@@ -97,10 +91,8 @@ impl<Schema, Operation, Input, Scope, Phase>
             .len()
             .checked_add(self.source_facts.len())
             .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                    operation,
-                )
+                super::super::retained_decision_facts::StoreDenial::Representability
+                    .into_attempt_denial(operation)
             })?;
         let check_authority = || {
             self.admission

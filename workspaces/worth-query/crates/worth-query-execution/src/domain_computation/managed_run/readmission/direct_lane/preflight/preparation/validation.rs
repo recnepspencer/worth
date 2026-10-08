@@ -80,7 +80,7 @@ pub(super) fn validate_direct_resume_preflight(
     };
     let contract = match admit_managed_step_contract(
         parts.execution.contract().clone(),
-        bridge.step_contract(),
+        Some(bridge.step_contract()),
     ) {
         Ok(contract) => contract,
         Err(denial) => {

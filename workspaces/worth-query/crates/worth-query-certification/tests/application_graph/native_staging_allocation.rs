@@ -109,7 +109,7 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
     else {
         panic!("read-set quote probe must refuse before native staging");
     };
-    assert_eq!(denial.stage(), Stage::DecisionReadSet);
+    assert_eq!(denial.stage(), Stage::DecisionReadSet, "{denial:?}");
     let failure = denial
         .decision_read_set_failure()
         .expect("full read-set cause");

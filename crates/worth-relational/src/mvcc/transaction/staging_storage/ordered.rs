@@ -32,15 +32,6 @@ impl<T> Clone for OrderedStore<T> {
     }
 }
 impl<T: Ord> OrderedStore<T> {
-    pub(crate) fn len(&self) -> usize {
-        self.len
-    }
-    pub(crate) fn contains(&self, value: &T) -> bool {
-        self.runs()
-            .iter()
-            .flatten()
-            .any(|run| run.binary_search_by(|row| row.value().cmp(value)).is_ok())
-    }
     pub(crate) fn iter(&self) -> OrderedIter<'_, T> {
         self.range_by(|_| std::cmp::Ordering::Equal)
     }

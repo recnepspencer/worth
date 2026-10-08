@@ -84,8 +84,12 @@ impl BridgeBoundExecutionBasis {
                 return Err(BridgeManagedQueueReleaseFailure::new(failure, occupancy));
             }
         };
-        self.managed_queue_occupancy_width = self
-            .managed_queue_occupancy_width
+        let managed = self
+            .posture
+            .managed_mut()
+            .expect("released queue occupancy proves managed posture");
+        managed.occupancy_width = managed
+            .occupancy_width
             .checked_sub(occupancy.width)
             .expect("queue occupancy can only be released by its exact move-only authority");
         Ok(mutation)

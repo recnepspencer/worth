@@ -1,5 +1,5 @@
 use super::super::retained_decision_facts::{
-    AuthoringSourceFacts, RetainedSourceFacts, StorageControl,
+    AuthoringSourceFacts, RetainedSourceFacts, StorageControl, StoreDenial,
 };
 use super::{denial, WorthQueryApplicationSnapshotLease};
 use crate::domain_computation::primary_graph::{
@@ -21,6 +21,11 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
     let facts = admission.take_source_facts();
     for fact in &facts {
+        if let Some(stop) = admission.publication_request().interruption() {
+            return Err(
+                StoreDenial::RequestInterruption(stop).into_attempt_denial(admission.operation())
+            );
+        }
         let fresh = lease
             .handle()
             .with_runtime(|runtime| fact.remains_equal_in(runtime, lease.snapshot()));
@@ -55,7 +60,7 @@ pub(super) fn merge_source_facts(
     .map_err(|denial| denial.into_attempt_denial(operation))?;
     for fact in admitted {
         dependent
-            .capture(fact, None, control)
+            .capture(fact, control)
             .map_err(|denial| denial.into_attempt_denial(operation))?;
     }
     let facts = dependent

@@ -167,6 +167,7 @@ impl AdmittedAdjacencyEndpoints {
             sorted_unique: true,
         })
     }
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn charged_payload_bytes(
         &self,
     ) -> Option<u64> {

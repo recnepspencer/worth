@@ -34,6 +34,7 @@ fn invalid_completeness_and_kind_deny_before_provider_contact() {
         .capture_decision_read_set(
             [request(0, &kinds[0])],
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .err()
         .expect("every required family must be represented");
@@ -50,6 +51,7 @@ fn invalid_completeness_and_kind_deny_before_provider_contact() {
         .capture_decision_read_set(
             [mismatch],
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .err()
         .expect("installed family kind cannot be substituted");
@@ -83,6 +85,7 @@ fn exact_family_count_and_duplicate_discovery_are_prevalidated_canonically() {
         .capture_decision_read_set(
             [one.clone(), one],
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .err()
         .expect("duplicate discovery cannot satisfy a two-fact family");
@@ -112,6 +115,7 @@ fn duplicate_discovery_for_one_fact_calls_the_provider_once() {
         .capture_decision_read_set(
             [one.clone(), one],
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .expect("set semantics should canonicalize duplicate discovery");
     assert_eq!(receipt.fact_count(), 1);
@@ -142,6 +146,7 @@ fn bounded_family_accepts_attempt_exact_sets_only_within_installed_ceiling() {
         .capture_decision_read_set(
             std::iter::empty(),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .expect("bounded families permit an attempt with no realized facts");
     assert_eq!(empty.fact_count(), 0);
@@ -149,6 +154,7 @@ fn bounded_family_accepts_attempt_exact_sets_only_within_installed_ceiling() {
         .capture_decision_read_set(
             [bounded_request(0)],
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .expect("one exact observed fact is within the installed ceiling");
     assert_eq!(one.fact_count(), 1);
@@ -156,6 +162,7 @@ fn bounded_family_accepts_attempt_exact_sets_only_within_installed_ceiling() {
         .capture_decision_read_set(
             [bounded_request(0), bounded_request(1)],
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .expect("two exact observed facts reach the installed ceiling");
     assert_eq!(two.fact_count(), 2);
@@ -164,6 +171,7 @@ fn bounded_family_accepts_attempt_exact_sets_only_within_installed_ceiling() {
         .capture_decision_read_set(
             [bounded_request(0), bounded_request(1), bounded_request(2)],
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .err()
         .expect("the installed ceiling must deny before provider contact");

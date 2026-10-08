@@ -35,9 +35,11 @@ impl AdmittedFactKey {
         };
         Ok(Self { locator, predicate })
     }
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn locator(&self) -> &[u8] {
         self.locator.bytes()
     }
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn predicate_material(
         &self,
     ) -> Option<(&[u8], usize)> {

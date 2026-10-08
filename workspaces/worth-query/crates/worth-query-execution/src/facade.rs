@@ -221,8 +221,6 @@ pub mod integration {
                 max_patch_records_per_commit: 4_096,
                 max_published_snapshot_handles: 256,
                 max_active_snapshot_handles: maximum_active_snapshots,
-                max_transaction_overlay_bytes: 268_435_456,
-                max_transaction_footprint_loci: 262_144,
                 max_transaction_savepoints: 4_096,
                 max_prepared_candidates: 1_024,
                 candidate_max_lifetime_millis: 30_000,

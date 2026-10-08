@@ -9,16 +9,6 @@ impl From<String> for FactDecodeDenial {
         Self::Format(error)
     }
 }
-impl FactDecodeDenial {
-    pub(in crate::domain_computation::primary_graph) fn allocation_denial(
-        &self,
-    ) -> Option<&worth_execution::ExecutionAllocationDenial> {
-        match self {
-            Self::Retention(StoreDenial::Allocation(denial)) => Some(denial),
-            _ => None,
-        }
-    }
-}
 impl std::fmt::Display for FactDecodeDenial {
     fn fmt(&self, writer: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

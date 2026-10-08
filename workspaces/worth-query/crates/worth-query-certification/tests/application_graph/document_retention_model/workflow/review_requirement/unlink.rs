@@ -176,7 +176,6 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 32)
         .operation_read_field(operation, DocumentIdentityField::reference())
         .operation_read_relation(operation, ReviewRequired::reference())

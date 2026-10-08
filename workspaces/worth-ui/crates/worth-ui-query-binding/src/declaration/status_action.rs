@@ -205,7 +205,6 @@ pub(crate) fn declare_status_action(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 16)
         .operation_read_entity(operation, WorthUiRecord::reference())
         .operation_read_field(operation, IdentityIdField::reference())

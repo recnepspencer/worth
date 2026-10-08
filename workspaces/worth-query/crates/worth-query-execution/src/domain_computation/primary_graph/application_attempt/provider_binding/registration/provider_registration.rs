@@ -50,9 +50,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     source_fact_rebase: Option<crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase>,
-    output_currentness_facts: Option<
-        std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
-    >,
     consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
 }
 
@@ -82,19 +79,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             .take()
             .expect("registered pre-effect source rebase is consumed once")
     }
-    pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
-        &self,
-    ) -> Vec<super::super::super::WorthQueryApplicationObservedFact> {
-        if let Some(facts) = &self.output_currentness_facts {
-            return facts.to_vec();
-        }
-        self.decision_facts
-            .facts()
-            .values()
-            .filter_map(|fact| fact.observed_source_fact().cloned())
-            .collect()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn consumed_outputs(
         &self,
     ) -> &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]
@@ -319,7 +303,6 @@ impl WorthQueryPrimaryGraphProvider {
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
-            output_currentness_facts,
             mut consumed_outputs,
             source_fact_rebase,
         } = registration;
@@ -369,7 +352,6 @@ impl WorthQueryPrimaryGraphProvider {
                 retain_output_demand_observation,
                 retain_client_observation,
                 producer_required_invariants,
-                output_currentness_facts,
                 source_fact_rebase: Some(source_fact_rebase),
                 consumed_outputs: std::sync::Arc::from(consumed_outputs),
             },

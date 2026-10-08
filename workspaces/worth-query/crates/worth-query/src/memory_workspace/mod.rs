@@ -350,20 +350,8 @@ pub enum WorthQueryWorkspaceErrorKind {
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
-    TransactionOverlayCapacityExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
-    TransactionFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
     SavepointCapacityExhausted {
         maximum_savepoints: usize,
-    },
-    SavepointFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
     },
     SavepointIdentityExhausted,
     TransactionMaterializationAuthorityRequired,

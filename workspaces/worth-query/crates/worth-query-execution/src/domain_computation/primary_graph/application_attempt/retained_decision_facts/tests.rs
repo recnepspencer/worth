@@ -59,7 +59,6 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
                     scalar: value,
                     roles: 1,
                 },
-                None,
                 policy,
                 merge,
             )
@@ -73,7 +72,6 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
                 scalar: 70,
                 roles: 2,
             },
-            None,
             policy,
             merge,
         )
@@ -96,32 +94,8 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
 }
 
 #[test]
-fn explicit_zero_quota_and_conflicting_body_refuse_the_entire_attempt() {
+fn conflicting_body_refuses_the_entire_attempt() {
     let policy = control(Policy::SystemAllocation);
-    let mut zero = RetainedFactStore::new(policy).unwrap();
-    assert!(matches!(
-        zero.insert(
-            key(b"a", None, policy),
-            Body {
-                scalar: 1,
-                roles: 1
-            },
-            Some(0),
-            policy,
-            merge
-        ),
-        Err(StoreDenial::ExplicitCountPolicy {
-            maximum: 0,
-            attempted: 1
-        })
-    ));
-    assert!(matches!(
-        zero.finish(policy),
-        Err(StoreDenial::ExplicitCountPolicy {
-            maximum: 0,
-            attempted: 1
-        })
-    ));
     let mut conflict = RetainedFactStore::new(policy).unwrap();
     for value in 0..64 {
         let locator = format!("fact-{value:03}");
@@ -132,7 +106,6 @@ fn explicit_zero_quota_and_conflicting_body_refuse_the_entire_attempt() {
                     scalar: value,
                     roles: 1,
                 },
-                None,
                 policy,
                 merge,
             )
@@ -145,7 +118,6 @@ fn explicit_zero_quota_and_conflicting_body_refuse_the_entire_attempt() {
                 scalar: 999,
                 roles: 1
             },
-            None,
             policy,
             merge
         ),
@@ -178,7 +150,6 @@ fn sealed_canonical_seed_moves_into_merge_without_cloning_values() {
                     scalar: value,
                     roles: 1,
                 },
-                None,
                 policy,
                 merge,
             )
@@ -193,7 +164,6 @@ fn sealed_canonical_seed_moves_into_merge_without_cloning_values() {
                 scalar: 64,
                 roles: 2,
             },
-            None,
             policy,
             merge,
         )
@@ -205,7 +175,6 @@ fn sealed_canonical_seed_moves_into_merge_without_cloning_values() {
                 scalar: 65,
                 roles: 1,
             },
-            None,
             policy,
             merge,
         )

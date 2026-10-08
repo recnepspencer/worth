@@ -71,31 +71,10 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     RetentionIdentityExhausted,
     /// Relational has no snapshot identities left.
     SnapshotIdentityExhausted,
-    /// The transaction overlay would exceed its byte bound.
-    TransactionOverlayCapacityExhausted {
-        /// The byte bound.
-        maximum_bytes: u64,
-        /// The bytes this attempt needed.
-        required_bytes: u64,
-    },
-    /// The transaction footprint would exceed its locus bound.
-    TransactionFootprintCapacityExhausted {
-        /// The locus bound.
-        maximum_loci: usize,
-        /// The loci this attempt needed.
-        required_loci: usize,
-    },
     /// The transaction already holds the maximum number of savepoints.
     SavepointCapacityExhausted {
         /// The savepoint bound.
         maximum_savepoints: usize,
-    },
-    /// A savepoint's footprint would exceed its locus bound.
-    SavepointFootprintCapacityExhausted {
-        /// The locus bound.
-        maximum_loci: usize,
-        /// The loci this attempt needed.
-        required_loci: usize,
     },
     /// Relational has no savepoint identities left.
     SavepointIdentityExhausted,

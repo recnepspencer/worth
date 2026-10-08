@@ -153,7 +153,6 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(PublishOrdinaryRetentionAssessment::reference(), 8)
         .operation_projection_work_budget(PublishOrdinaryRetentionAssessment::reference(), 8)
         .operation_read_field(
             PublishOrdinaryRetentionAssessment::reference(),

@@ -7,6 +7,7 @@ use crate::domain_computation::WorthQueryInvariantStateLocator;
 pub(super) fn progress_invariant_candidate<'run>(
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     fresh: crate::domain_computation::WorthQueryFreshDecisionReadSet,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
     provider: &std::sync::Arc<
         crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
@@ -40,13 +41,24 @@ pub(super) fn progress_invariant_candidate<'run>(
         .facts()
         .iter()
         .map(|fact| {
+            crate::domain_computation::provider_session::check_invariant_request_live(Some(
+                request,
+            ))?;
             WorthQueryInvariantStateLocator::new("application-proposed-state", fact.identity())
         })
         .collect::<Result<Vec<_>, _>>();
-    let _candidate_admission = match provider
-        .admit_primary_candidate(inspection.provider_session_view(), allocation_policy)
-    {
-        Ok(admission) => admission,
+    let candidate = locators
+        .as_ref()
+        .map(|_| ())
+        .map_err(Clone::clone)
+        .and_then(|()| {
+            crate::domain_computation::provider_session::check_invariant_request_live(Some(request))
+        })
+        .and_then(|()| {
+            provider.admit_primary_candidate(inspection.provider_session_view(), allocation_policy)
+        });
+    match candidate {
+        Ok(()) => (),
         Err(failure) => {
             inspection.discard();
             return Err(WorthQueryProviderProgressionOutcome::Denied(
@@ -58,25 +70,36 @@ pub(super) fn progress_invariant_candidate<'run>(
         }
     };
     let receipts = match locators.and_then(|locators| {
-        let slots = inspection
-            .installed_invariant_requirements()
-            .iter()
-            .map(|requirement| requirement.slot().to_owned())
-            .collect::<Vec<_>>();
+        let slots =
+                inspection
+                    .installed_invariant_requirements()
+                    .iter()
+                    .map(|requirement| {
+                        crate::domain_computation::provider_session::check_invariant_request_live(
+                            Some(request),
+                        )?;
+                        Ok(requirement.slot().to_owned())
+                    })
+                    .collect::<Result<
+                        Vec<_>,
+                        crate::domain_computation::WorthQueryInvariantExecutionFailure,
+                    >>()?;
         slots
             .into_iter()
             .map(|slot| {
                 inspection
                     .select_installed_invariant(&slot)?
-                    .admit_state_load_plan(locators.clone())?
+                    .admit_state_load_plan(locators.clone(), Some(request))?
                     .execute()
             })
             .collect::<Result<Vec<_>, _>>()
     }) {
         Ok(receipts) => receipts,
-        Err(_) => {
+        Err(failure) => {
             inspection.discard();
-            return Err(progression_denied(DenialStage::InvariantExecution));
+            return Err(WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                    DenialStage::InvariantExecution, failure)));
         }
     };
     let progression = match inspection.admit_invariant_progression(receipts) {

@@ -226,7 +226,6 @@ pub(crate) fn declare_alternate_output<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 8)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())

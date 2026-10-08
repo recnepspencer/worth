@@ -16,8 +16,8 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
     WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
     WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
-    WorthQueryTransactionStagingResources, WorthQueryWorkflowApplicationRuntime,
-    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
+    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryWorkflowVocabulary,
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,

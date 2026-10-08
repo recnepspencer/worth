@@ -171,8 +171,6 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
             max_patch_records_per_commit,
             max_published_snapshot_handles: 256,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 268_435_456,
-            max_transaction_footprint_loci: 262_144,
             max_transaction_savepoints: 4_096,
             max_prepared_candidates: 1_024,
             candidate_max_lifetime_millis: 30_000,

@@ -2,24 +2,8 @@
 pub enum RelationalTransactionStagingDenial {
     AllocationDenied(worth_execution::ExecutionAllocationDenial),
     CardinalityOverflow,
-    InputDirectoryAllocationDenied {
-        requested_batches: usize,
-    },
-    OverlayCapacityExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
-    FootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
-    SavepointCapacityExhausted {
-        maximum_savepoints: usize,
-    },
-    SavepointFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
+    InputDirectoryAllocationDenied { requested_batches: usize },
+    SavepointCapacityExhausted { maximum_savepoints: usize },
     SavepointIdentityExhausted,
     MaterializationAuthorityRequired,
     MaterializationModeMismatch,
@@ -31,32 +15,11 @@ impl RelationalTransactionStagingDenial {
             Self::AllocationDenied(denial) => crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
             Self::CardinalityOverflow => crate::transactions::data::ConflictClass::TransactionStagingCardinalityOverflow,
             Self::InputDirectoryAllocationDenied { requested_batches } => crate::transactions::data::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches },
-            Self::FootprintCapacityExhausted {
-                maximum_loci,
-                required_loci,
-            } => crate::transactions::data::ConflictClass::TransactionFootprintBudgetExceeded {
-                maximum_loci,
-                required_loci,
-            },
-            Self::OverlayCapacityExhausted {
-                maximum_bytes,
-                required_bytes,
-            } => crate::transactions::data::ConflictClass::TransactionOverlayBudgetExceeded {
-                maximum_bytes,
-                required_bytes,
-            },
             Self::SavepointCapacityExhausted { maximum_savepoints } => {
                 crate::transactions::data::ConflictClass::TransactionSavepointBudgetExceeded {
                     maximum_savepoints,
                 }
             }
-            Self::SavepointFootprintCapacityExhausted {
-                maximum_loci,
-                required_loci,
-            } => crate::transactions::data::ConflictClass::TransactionSavepointFootprintBudgetExceeded {
-                maximum_loci,
-                required_loci,
-            },
             Self::SavepointIdentityExhausted => {
                 crate::transactions::data::ConflictClass::TransactionSavepointIdentityExhausted
             }

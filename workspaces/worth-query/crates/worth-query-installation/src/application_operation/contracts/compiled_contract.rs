@@ -32,7 +32,6 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) decision_facts: WorthQueryOperationDecisionFactContract,
     pub(super) invariant_execution: WorthQueryInvariantExecutionContract,
     pub(super) resources: WorthQueryExecutionResourceContract,
-    pub(super) decision_fact_budget: usize,
     pub(super) projection_work_budget: usize,
     pub(super) additional_authorization_fact_count: usize,
     pub(super) mutation_preconditions: Vec<WorthQueryInstalledMutationPrecondition>,
@@ -154,10 +153,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             return None;
         };
         Some(strategy)
-    }
-
-    pub const fn decision_fact_budget(&self) -> usize {
-        self.decision_fact_budget
     }
 
     pub const fn projection_work_budget(&self) -> usize {

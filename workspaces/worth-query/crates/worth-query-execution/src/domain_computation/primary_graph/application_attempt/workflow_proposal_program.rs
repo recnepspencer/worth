@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
@@ -183,17 +184,7 @@ where
             *maximum_transitions = transition_count;
         }
         facts.extend(observed.facts);
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                Operation::IDENTIFIER,
-            ));
-        }
+        check_request_live(self.admission.publication_request(), Operation::IDENTIFIER)?;
         self.append_completed_facts(
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -278,7 +269,13 @@ where
         let mut match_found = None;
         let mut latest_occurrence = None;
         let replays = observed.replays.materialize();
+        check_request_live(
+            self.admission.publication_request(),
+            "workflow proposal replay",
+        )?;
+        let observation_request = self.admission.publication_request();
         for transition in &observed.transitions {
+            check_request_live(observation_request, "workflow proposal replay")?;
             let Some(replay) = usize::try_from(transition.settlement.occurrence())
                 .ok()
                 .and_then(|index| replays.get(index))
@@ -310,8 +307,10 @@ where
                     layout,
                     transition.entity,
                     &proposal,
+                    observation_request,
                 )
             });
+            check_request_live(observation_request, "workflow proposal replay")?;
             if let Ok(proposal_facts) = proposal_facts {
                 let replace = latest_occurrence
                     .map(|prior| selected.occurrence() > prior)

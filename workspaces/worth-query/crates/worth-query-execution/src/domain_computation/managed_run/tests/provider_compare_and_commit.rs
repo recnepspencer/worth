@@ -137,7 +137,7 @@ fn execute_installed_invariant(
     inspection
         .select_installed_invariant("closed-loop")
         .unwrap()
-        .admit_state_load_plan([locator("base")])
+        .admit_state_load_plan([locator("base")], None)
         .unwrap()
         .execute()
         .unwrap()

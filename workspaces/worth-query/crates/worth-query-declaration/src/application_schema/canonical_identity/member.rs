@@ -43,7 +43,6 @@ pub(super) fn append_member(
         | ApplicationSchemaMember::OperationProgram { .. }
         | ApplicationSchemaMember::OperationDecisionRead { .. }
         | ApplicationSchemaMember::OperationMutationPrecondition { .. }
-        | ApplicationSchemaMember::OperationDecisionFactBudget { .. }
         | ApplicationSchemaMember::OperationProjectionWorkBudget { .. }
         | ApplicationSchemaMember::OperationExternalEffect { .. }
         | ApplicationSchemaMember::OperationInboundOccurrence { .. }

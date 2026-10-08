@@ -122,7 +122,6 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 3)
         .operation_projection_work_budget(operation, 8)
         .operation_requires_ability(operation, ViewAccount::reference())
         .operation_write(operation, AccountStatus::reference())

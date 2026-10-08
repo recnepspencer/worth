@@ -167,12 +167,14 @@ fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
             .capture_decision_read_set(
                 requests.clone(),
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                None,
             )
             .expect("all installed fact families should capture");
         let second = reads
             .capture_decision_read_set(
                 requests.into_iter().rev(),
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                None,
             )
             .expect("discovery order must not affect capture");
         assert_eq!(first.identity(), second.identity());
@@ -208,6 +210,7 @@ fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh(
                 .capture_decision_read_set(
                     requests(&kinds),
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 )
                 .expect("complete decision facts should capture");
             {
@@ -232,6 +235,7 @@ fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh(
                 .capture_decision_read_set(
                     requests(&kinds),
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
                 )
                 .expect("complete decision facts should recapture");
             versions

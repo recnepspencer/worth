@@ -1,3 +1,4 @@
+mod identity;
 mod installation;
 
 use std::sync::Arc;
@@ -48,51 +49,13 @@ impl WorthQueryExecutionResourceSupport {
         envelope: WorthQueryExecutionResourceEnvelope,
         capacity: Arc<dyn WorthQueryExecutionCapacityPort>,
     ) -> Self {
-        let identity = Arc::<str>::from(hash_parts(&[
-            "worth_query_execution_resource_support_v1".into(),
-            format!("provider:{}", provider.as_str()),
-            format!("access:{}", access_product.as_str()),
-            format!("allocator:{}", allocator.as_str()),
-            format!("capacity:{}", capacity.capacity_subject_identity()),
-            format!("mode:{}", envelope.mode().as_str()),
-            format!("safe-point:{}", envelope.cancellation_safe_point().as_str()),
-            format!(
-                "degradation:{}",
-                envelope
-                    .degradation()
-                    .map_or("complete", |degradation| degradation.as_str())
-            ),
-            format!(
-                "partial-effect:{}",
-                envelope.partial_effect_posture().as_str()
-            ),
-            format!(
-                "yielded-state:{}",
-                envelope.yielded_state_posture().as_str()
-            ),
-            format!(
-                "retained-progress:{}",
-                envelope.retained_progress_posture().as_str()
-            ),
-            format!(
-                "scale:{}",
-                envelope
-                    .scale_ceilings()
-                    .iter()
-                    .map(|(axis, value)| format!("{}={value}", axis.as_str()))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            format!(
-                "resources:{}",
-                envelope
-                    .resource_ceilings()
-                    .iter()
-                    .map(|(dimension, value)| format!("{}={value}", dimension.as_str()))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-        ]));
+        let identity = identity::support_identity(
+            &provider,
+            &access_product,
+            &allocator,
+            &envelope,
+            capacity.as_ref(),
+        );
         Self {
             provider,
             access_product,
@@ -174,14 +137,15 @@ fn covers(
     support: &WorthQueryExecutionResourceEnvelope,
     admitted: &WorthQueryExecutionResourceEnvelope,
 ) -> bool {
-    admitted
-        .scale_ceilings()
-        .iter()
-        .all(|(axis, value)| support.admits_scale(axis, value))
+    admitted.boundary() == support.boundary()
+        && admitted
+            .scale_ceilings()
+            .iter()
+            .all(|(axis, value)| support.admits_scale(axis, value))
         && admitted
             .resource_ceilings()
             .iter()
-            .all(|(dimension, value)| value <= support.resource_ceiling(dimension))
+            .all(|(dimension, value)| support.admits_resource(dimension, value))
         && admitted.mode() == support.mode()
         && admitted.cancellation_safe_point() == support.cancellation_safe_point()
         && admitted.degradation() == support.degradation()

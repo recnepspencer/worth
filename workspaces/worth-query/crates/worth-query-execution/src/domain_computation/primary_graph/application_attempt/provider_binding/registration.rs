@@ -33,9 +33,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     source_fact_rebase: crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase,
-    output_currentness_facts: Option<
-        std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
-    >,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
 }
 
@@ -115,7 +112,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             .filter_map(|fact| fact.observed_source_fact().cloned())
             .collect(),
     };
-    // Exact existing observed_source_facts() order after authorization merge.
+    // Preserve producer source order or authorization-merged decision fact order.
     // Temporary Vec/other nested heaps remain separately uncharged.
     let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
     let source_fact_rebase = match crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
@@ -156,7 +153,6 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
-            output_currentness_facts,
             source_fact_rebase,
             consumed_outputs,
         },

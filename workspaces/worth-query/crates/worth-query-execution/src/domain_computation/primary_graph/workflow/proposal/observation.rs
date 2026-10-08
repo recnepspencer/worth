@@ -1,4 +1,6 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -21,6 +23,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
     expected_operation: &str,
     expected_input_type: &str,
     expected_node_path: &str,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<([u8; 32], Vec<WorthQueryApplicationObservedFact>), WorthQueryApplicationAttemptDenial>
 {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
@@ -125,6 +128,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
             source_identity,
         ),
         &mut facts,
+        observation_request,
     )?;
     let expected = super::derive_workflow_proposal(
         transition_identity,
@@ -142,6 +146,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
     {
         return Err(denial("workflow operation input proposal changed"));
     }
+    check_request_live(observation_request, "workflow operation input")?;
     Ok((input_identity, facts))
 }
 
@@ -151,6 +156,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
     layout: &WorthQueryWorkflowLayout,
     transition: EntityId,
     expected: &super::WorkflowProposalMeaning,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
     let relations = observe_adjacency(
@@ -219,10 +225,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
             expected.source_identity.as_deref(),
         ),
         &mut facts,
+        observation_request,
     )?;
     if coverages.as_slice() != expected.coverages.as_ref() {
         return Err(denial("workflow proposal coverage changed"));
     }
+    check_request_live(observation_request, "workflow proposal")?;
     Ok(facts)
 }
 

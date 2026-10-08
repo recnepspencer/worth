@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
         .capture_decision_read_set(
             requests,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            None,
         )
         .expect("real registered facts must produce a decision read set");
     let fresh = match staged

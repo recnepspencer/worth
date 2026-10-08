@@ -37,22 +37,42 @@ impl WorthQueryAdmittedInvariantStateLoadPlan {
         identity: impl Into<Arc<str>>,
         locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,
         allowed_families: &[String],
+        request: Option<
+            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        >,
     ) -> Result<Self, WorthQueryInvariantExecutionFailure> {
         let mut locators = locators.into_iter().collect::<Vec<_>>();
-        locators.sort();
+        let mut stopped = None;
+        locators.sort_by(|left, right| {
+            if stopped.is_none() {
+                stopped = super::request_control::check_live(request).err();
+            }
+            left.cmp(right)
+        });
+        if let Some(stop) = stopped {
+            return Err(stop);
+        }
+        super::request_control::check_live(request)?;
         locators.dedup();
         // Empty plans are lawful for emit-only / outbox-only commits (R8.55):
         // there are no proposed graph mutation facts to load, and the provider
         // still validates the registered scaffolding batch under the same
         // invariant owner path.
-        if locators.iter().any(|locator| {
-            !allowed_families
-                .iter()
-                .any(|family| family == locator.family())
-        }) {
-            return Err(failure(
-                WorthQueryInvariantExecutionDenialKind::UndeclaredStateLoadFamily,
-            ));
+        for locator in &locators {
+            super::request_control::check_live(request)?;
+            let mut admitted = false;
+            for family in allowed_families {
+                super::request_control::check_live(request)?;
+                if family == locator.family() {
+                    admitted = true;
+                    break;
+                }
+            }
+            if !admitted {
+                return Err(failure(
+                    WorthQueryInvariantExecutionDenialKind::UndeclaredStateLoadFamily,
+                ));
+            }
         }
         Ok(Self {
             identity: identity.into(),

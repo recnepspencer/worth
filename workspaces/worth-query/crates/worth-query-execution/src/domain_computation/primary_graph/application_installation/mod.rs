@@ -6,7 +6,6 @@ mod limits;
 mod profile;
 mod program;
 pub(in crate::domain_computation::primary_graph) mod program_admission;
-mod transaction_staging;
 pub use super::bootstrap::checkpoint_transition::{
     WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,
     WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
@@ -32,7 +31,6 @@ pub use program::{
     WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
-pub use transaction_staging::WorthQueryTransactionStagingResources;
 
 use super::application_contribution::{
     WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
@@ -156,10 +154,10 @@ where
     }
     let mut relational_builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .profile(limits.profile.relational_profile());
-    if let Some(publication) = limits.profile.publication_override(
-        limits.maximum_publication_records,
-        limits.transaction_staging,
-    ) {
+    if let Some(publication) = limits
+        .profile
+        .publication_override(limits.maximum_publication_records)
+    {
         relational_builder = relational_builder.publication(publication);
     }
     if let Some(scope_budget) = limits.profile.relation_integrity_scope_budget() {

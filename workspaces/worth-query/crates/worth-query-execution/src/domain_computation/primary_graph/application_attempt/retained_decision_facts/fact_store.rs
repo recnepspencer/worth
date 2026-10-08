@@ -41,13 +41,12 @@ impl AuthoringSourceFacts {
     pub(in crate::domain_computation::primary_graph) fn capture(
         &mut self,
         fact: Fact,
-        quota: Option<usize>,
         control: StorageControl<'_, '_>,
     ) -> Result<(), StoreDenial> {
         if let Some(failure) = &self.failure {
             return Err(failure.clone());
         }
-        let result = self.capture_inner(fact, quota, control);
+        let result = self.capture_inner(fact, control);
         if let Err(failure) = &result {
             self.failure = Some(failure.clone());
         }
@@ -56,7 +55,6 @@ impl AuthoringSourceFacts {
     fn capture_inner(
         &mut self,
         fact: Fact,
-        quota: Option<usize>,
         control: StorageControl<'_, '_>,
     ) -> Result<(), StoreDenial> {
         let predicate = match &fact {
@@ -73,7 +71,7 @@ impl AuthoringSourceFacts {
             control,
         )?;
         self.store
-            .insert(key, fact, quota, control, |existing, duplicate| {
+            .insert(key, fact, control, |existing, duplicate| {
                 // Storage compared ALL typed-key bytes first; this callback may
                 // change only non-key fields. Endpoint union admits its own nested
                 // payload while both originals remain retained.

@@ -26,7 +26,7 @@ fn interleaved_sessions_load_their_own_provisional_overlays() {
     let first_receipt = first
         .select_installed_invariant("closed-loop")
         .unwrap()
-        .admit_state_load_plan([locator("base")])
+        .admit_state_load_plan([locator("base")], None)
         .unwrap()
         .execute()
         .unwrap();
@@ -49,7 +49,7 @@ fn interleaved_sessions_load_their_own_provisional_overlays() {
     let second_receipt = second
         .select_installed_invariant("closed-loop")
         .unwrap()
-        .admit_state_load_plan([locator("base")])
+        .admit_state_load_plan([locator("base")], None)
         .unwrap()
         .execute()
         .unwrap();

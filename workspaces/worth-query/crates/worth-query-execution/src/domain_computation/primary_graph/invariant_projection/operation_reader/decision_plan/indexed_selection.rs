@@ -139,7 +139,7 @@ impl<Schema: ApplicationSchema, Operation>
         };
         self.reader
             .dependent_source_facts
-            .capture(fact, None, self.reader.retention_control)
+            .capture(fact, self.reader.retention_control)
             .map_err(HandlerExecutionDenial::new)?;
         Ok(identities)
     }

@@ -5,6 +5,7 @@
 //! A fork continuation is the same succession for a fork's copy of an
 //! instance started on another branch. It ends only that copy, on the fork;
 //! the instance on its own branch is untouched.
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 mod lineage;
 
@@ -280,17 +281,10 @@ where
                 )?
             }
         };
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.append_completed_facts(
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,

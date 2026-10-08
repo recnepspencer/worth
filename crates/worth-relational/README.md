@@ -50,6 +50,8 @@ use worth_relational::facade::{
     transactions::WorkerIntentBatch,
 };
 
+use worth_execution::ExecutionAllocationPolicy as Allocation;
+
 let runtime = RelationalRuntimeApi::builder()
     .schema_registry(RelationalSchemaRegistry::new())
     .build();
@@ -60,14 +62,20 @@ let mut tx = runtime.begin_branch_transaction(
     &basis,
     RelationalTransactionIntent::ordinary(),
 )?;
-tx.push_batch(WorkerIntentBatch::new("example"))?;
-let _outcome = tx.commit(&runtime)?;
+tx.push_batch(WorkerIntentBatch::new("example"), Allocation::SystemAllocation)?;
+let _outcome = tx.commit(&runtime, Allocation::SystemAllocation)?;
 
 let _truth = runtime.read_truth();
 let _snapshots = runtime.snapshots();
 let _history = runtime.history();
 let _inspection = runtime.inspect_what_happened();
 ```
+
+Staging and commitment require an explicit allocation policy selecting System
+allocation or an actual process lease. Native branch, schema, materialization,
+savepoint-count and physical allocation checks remain. Transaction overlay and
+footprint quotas do not add another admission gate. Query forwards the caller's
+actual allocation policy and live request control through native validation.
 
 ## Mental model
 

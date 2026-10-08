@@ -130,11 +130,7 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
     let mut footprint = retained.clone();
     let before = footprint.clone();
     let denial = footprint
-        .derive_validation_dependencies(
-            &plan,
-            transaction.maximum_footprint_loci,
-            Policy::Execution(&limited),
-        )
+        .derive_validation_dependencies(&plan, Policy::Execution(&limited))
         .unwrap_err();
     assert_eq!(
         denial.allocation_denial().unwrap().kind(),

@@ -1,72 +1,7 @@
-//! A revalidation demand is bounded and accounted like every other demand a
-//! transaction stages.
+//! Revalidation demands preserve observation, rollback, and touched-slot semantics.
 
 use super::fixtures::*;
-use crate::facade::mvcc::RelationalTransactionStagingDenial;
 use crate::tests::support::*;
-
-#[test]
-fn staged_demands_consume_footprint_capacity_and_exhaust_it_by_name() {
-    let runtime = strictness_runtime_with_footprint_ceiling(4);
-    let records = [
-        create_entity(&runtime, COMPLIANT_NAME),
-        create_entity(&runtime, "second"),
-        create_entity(&runtime, "third"),
-        create_entity(&runtime, "fourth"),
-        create_entity(&runtime, "fifth"),
-    ];
-
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            revalidation_batch("within-ceiling", records[..4].to_vec()),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("four demands fit the ceiling exactly");
-
-    assert_eq!(
-        transaction.push_batch(
-            revalidation_batch("over-ceiling", [records[4]]),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation
-        ),
-        Err(
-            RelationalTransactionStagingDenial::FootprintCapacityExhausted {
-                maximum_loci: 4,
-                required_loci: 5,
-            }
-        ),
-        "a fifth demand must be refused by name, not admitted unbounded"
-    );
-}
-
-#[test]
-fn a_refused_demand_leaves_no_staging_residue() {
-    let runtime = strictness_runtime_with_footprint_ceiling(4);
-    let first = create_entity(&runtime, COMPLIANT_NAME);
-    let second = create_entity(&runtime, "second");
-    let third = create_entity(&runtime, "third");
-    let fourth = create_entity(&runtime, "fourth");
-    let fifth = create_entity(&runtime, "fifth");
-
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            revalidation_batch("within-ceiling", [first, second, third, fourth]),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("four demands fit the ceiling");
-    let batch_count = transaction.batches().len();
-    let read_count = transaction.footprint().reads().len();
-
-    assert!(transaction
-        .push_batch(
-            revalidation_batch("over-ceiling", [fifth]),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation
-        )
-        .is_err());
-    assert_eq!(transaction.batches().len(), batch_count);
-    assert_eq!(transaction.footprint().reads().len(), read_count);
-}
 
 #[test]
 fn a_demand_claims_a_read_locus_and_never_a_write_locus() {

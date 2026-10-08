@@ -15,7 +15,7 @@ pub(super) fn install(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(ProgramRequiredOperation::reference(), 1)
+
         .operation_projection_work_budget(ProgramRequiredOperation::reference(), 8)
         .operation_requires_ability(
             ProgramRequiredOperation::reference(),
@@ -36,7 +36,7 @@ pub(super) fn install(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(TouchAccountOperation::reference(), 2)
+
         .operation_projection_work_budget(TouchAccountOperation::reference(), 32)
         .operation_read_entity(TouchAccountOperation::reference(), Account::reference())
         .operation_requires_ability(TouchAccountOperation::reference(), ViewAccount::reference())
@@ -76,7 +76,7 @@ pub(super) fn install(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(PatchAccountDraftOperation::reference(), 2)
+
         .operation_projection_work_budget(PatchAccountDraftOperation::reference(), 16)
         .operation_requires_ability(
             PatchAccountDraftOperation::reference(),
@@ -105,7 +105,7 @@ pub(super) fn install(
                 .aftermath(schema_types::wrong_field_retention::aftermath())
                 .finish(),
         )
-        .operation_decision_fact_budget(WrongFieldRetentionOperation::reference(), 2)
+
         .operation_projection_work_budget(WrongFieldRetentionOperation::reference(), 16)
         .operation_requires_ability(
             WrongFieldRetentionOperation::reference(),
@@ -136,7 +136,7 @@ pub(super) fn install(
                 .aftermath(schema_types::exact_preimage_retention::status_with_external_owner())
                 .finish(),
         )
-        .operation_decision_fact_budget(ExactStatusRetentionOperation::reference(), 2)
+
         .operation_projection_work_budget(ExactStatusRetentionOperation::reference(), 32)
         .operation_requires_ability(
             ExactStatusRetentionOperation::reference(),
@@ -169,7 +169,7 @@ pub(super) fn install(
                 .aftermath(schema_types::exact_preimage_retention::two_field_inverse())
                 .finish(),
         )
-        .operation_decision_fact_budget(MultiFieldRetentionOperation::reference(), 2)
+
         .operation_projection_work_budget(MultiFieldRetentionOperation::reference(), 32)
         .operation_requires_ability(
             MultiFieldRetentionOperation::reference(),
@@ -198,7 +198,7 @@ pub(super) fn install(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(MultiTouchOperation::reference(), 2)
+
         .operation_projection_work_budget(MultiTouchOperation::reference(), 32)
         .operation_requires_ability(MultiTouchOperation::reference(), ViewAccount::reference())
         .operation_requires_ability(MultiTouchOperation::reference(), EditAccount::reference())
@@ -211,7 +211,7 @@ pub(super) fn install(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(ChangeOwnershipOperation::reference(), 2)
+
         .operation_projection_work_budget(ChangeOwnershipOperation::reference(), 32)
         .operation_requires_ability(
             ChangeOwnershipOperation::reference(),
@@ -246,7 +246,7 @@ pub(super) fn install(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(MutationFreeEmitOperation::reference(), 1)
+
         .operation_projection_work_budget(MutationFreeEmitOperation::reference(), 8)
         .operation_emit(
             MutationFreeEmitOperation::reference(),

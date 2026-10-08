@@ -15,6 +15,13 @@ impl BridgeBoundExecutionBasis {
     pub fn yield_execution_basis(
         mut self,
     ) -> Result<BridgeYieldedExecutionBasis, BridgeExecutionBasisFinalizationFailure> {
+        if self.step_contract().is_none() {
+            return Err(BridgeExecutionBasisFinalizationFailure::new(
+                super::BridgeExecutionBasisFinalizationFailureKind::AtomicExecutionUnsupported,
+                "atomic execution cannot yield",
+                self,
+            ));
+        }
         let (signal_terminal, signal_transition_performed) = match finalize_signal_request(
             &self,
             BridgeExecutionBasisTerminalDisposition::Yielded,
@@ -56,7 +63,9 @@ impl BridgeYieldedExecutionBasis {
     }
 
     pub fn step_contract(&self) -> &BridgeManagedExecutionStepContract {
-        self.basis.step_contract()
+        self.basis
+            .step_contract()
+            .expect("yield admission proves managed step authority")
     }
 
     pub fn receipt(&self) -> &BridgeExecutionBasisFinalizationReceipt {

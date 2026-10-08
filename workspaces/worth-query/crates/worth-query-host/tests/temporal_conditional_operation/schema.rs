@@ -13,7 +13,6 @@ use worth_query_host::facade::{
     worth_query_relation, worth_query_structured_value_binding,
 };
 
-const SCALED_AMENDMENT_DECISION_FACT_BUDGET: usize = 128;
 const SCALED_AMENDMENT_PROJECTION_WORK_BUDGET: usize = 256;
 
 #[path = "schema/live_intent_query.rs"]
@@ -81,11 +80,11 @@ worth_query_application_contribution! {
                         .finish(),
                 )
                 .operation(RevokeTemporalPrincipal::reference().definition().no_external_effect().no_aftermath().finish())
-                .operation_decision_fact_budget(RevokeTemporalPrincipal::reference(), 1)
+
                 .operation_projection_work_budget(RevokeTemporalPrincipal::reference(), 3)
                 .operation_read_field(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
                 .operation_write(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
-                .operation_decision_fact_budget(ExecuteTemporal::reference(), 4)
+
                 .operation_projection_work_budget(ExecuteTemporal::reference(), 16)
                 .operation_read_field(ExecuteTemporal::reference(), IntentIdentityField::reference())
                 .operation_read_field(ExecuteTemporal::reference(), IntentRevisionField::reference())
@@ -95,10 +94,7 @@ worth_query_application_contribution! {
                 .operation_write(ExecuteTemporal::reference(), IntentLifecycleField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentEffectField::reference())
                 .operation_emit(ExecuteTemporal::reference(), TemporalExecutionEffect::reference())
-                .operation_decision_fact_budget(
-                    AmendTemporal::reference(),
-                    SCALED_AMENDMENT_DECISION_FACT_BUDGET,
-                )
+
                 .operation_projection_work_budget(
                     AmendTemporal::reference(),
                     SCALED_AMENDMENT_PROJECTION_WORK_BUDGET,
@@ -113,7 +109,7 @@ worth_query_application_contribution! {
                 .operation_write(AmendTemporal::reference(), IntentGateField::reference())
                 .operation_write(AmendTemporal::reference(), IntentDueField::reference())
                 .operation_write(AmendTemporal::reference(), IntentInputField::reference())
-                .operation_decision_fact_budget(AmendTemporalAndPublishDefinition::reference(), 5)
+
                 .operation_projection_work_budget(AmendTemporalAndPublishDefinition::reference(), 12)
                 .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentRevisionField::reference())
                 .operation_read_field(AmendTemporalAndPublishDefinition::reference(), IntentLifecycleField::reference())

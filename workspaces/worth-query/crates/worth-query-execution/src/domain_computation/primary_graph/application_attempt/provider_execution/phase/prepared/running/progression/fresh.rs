@@ -46,6 +46,7 @@ pub(super) enum WorthQueryProviderReadSetProgression<'run> {
 pub(super) struct WorthQueryFreshProviderAttempt<'run> {
     staged: WorthQuerySessionBoundReadsAndEffects<'run>,
     read_set: WorthQueryFreshDecisionReadSet,
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
 
 impl<'run> WorthQueryFreshProviderAttempt<'run> {
@@ -61,6 +62,7 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
         super::invariant::progress_invariant_candidate(
             self.staged,
             self.read_set,
+            &self.request,
             steps,
             provider,
             allocation_policy,
@@ -93,10 +95,11 @@ where
         authority.admission().publication_request(),
         allocation_policy,
     );
-    let receipt = match staged
-        .read_authority()
-        .capture_decision_read_set(requests, allocation_control.policy())
-    {
+    let receipt = match staged.read_authority().capture_decision_read_set(
+        requests,
+        allocation_control.policy(),
+        Some(authority.admission().publication_request()),
+    ) {
         Ok(receipt) => receipt,
         Err(failure) => {
             let _ = staged.abort();
@@ -110,6 +113,7 @@ where
             WorthQueryProviderReadSetProgression::Fresh(WorthQueryFreshProviderAttempt {
                 staged,
                 read_set,
+                request: authority.admission().publication_request().clone(),
             })
         }
         Ok(WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale)) => {

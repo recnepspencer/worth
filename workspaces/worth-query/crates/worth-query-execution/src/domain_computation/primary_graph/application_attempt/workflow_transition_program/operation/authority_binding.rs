@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use crate::domain_computation::primary_graph::application_attempt::read_set::{
     MutationHandlerBindingProof, WorkflowOperationBindingProof,
 };
@@ -36,16 +37,26 @@ impl<Schema, Operation, Input, Scope>
             return Err(mismatch("workflow operation authority"));
         }
         let current = self.read_set.lease.handle().with_runtime(|runtime| {
-            authority
-                .facts()
-                .iter()
-                .all(|fact| fact.remains_equal_in(runtime, self.read_set.lease.snapshot()))
-        });
+            for fact in authority.facts() {
+                check_request_live(
+                    self.read_set.admission.publication_request(),
+                    "workflow operation authority",
+                )?;
+                if !fact.remains_equal_in(runtime, self.read_set.lease.snapshot()) {
+                    return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+                }
+            }
+            Ok(true)
+        })?;
         if !current {
             return Err(mismatch("workflow operation authority"));
         }
         let mut locators = std::collections::BTreeMap::new();
         for (index, fact) in self.read_set.facts.iter().enumerate() {
+            check_request_live(
+                self.read_set.admission.publication_request(),
+                "workflow operation authority",
+            )?;
             let locator = fact.dependency_key();
             if locators.insert(locator, index).is_some() {
                 return Err(mismatch("workflow operation authority"));
@@ -54,6 +65,10 @@ impl<Schema, Operation, Input, Scope>
         let original_count = self.read_set.facts.len();
         let mut additions = Vec::new();
         for fact in authority.facts() {
+            check_request_live(
+                self.read_set.admission.publication_request(),
+                "workflow operation authority",
+            )?;
             let locator = fact.dependency_key();
             match locators.entry(locator) {
                 std::collections::btree_map::Entry::Vacant(entry) => {
@@ -72,18 +87,10 @@ impl<Schema, Operation, Input, Scope>
                 std::collections::btree_map::Entry::Occupied(_) => {}
             }
         }
-        if original_count.saturating_add(additions.len())
-            > self
-                .read_set
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                "workflow operation authority",
-            ));
-        }
+        check_request_live(
+            self.read_set.admission.publication_request(),
+            "workflow operation authority",
+        )?;
         // References only: cloning nested source values retains its previous
         // semantic owner and is outside the inline array payload charge.
         self.read_set

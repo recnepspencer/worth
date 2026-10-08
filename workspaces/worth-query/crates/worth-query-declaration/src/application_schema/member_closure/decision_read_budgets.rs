@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use super::super::{ApplicationSchemaDeclarationDenial, ApplicationSchemaMember};
 
-pub(super) fn validate_decision_fact_budgets(
+pub(super) fn validate_projection_work_budgets(
     members: &[ApplicationSchemaMember],
     operations: &BTreeSet<&str>,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
@@ -16,19 +16,6 @@ pub(super) fn validate_decision_fact_budgets(
         })
         .collect::<BTreeSet<_>>();
     for operation in read_operations {
-        let budgets = members
-            .iter()
-            .filter_map(|member| match member {
-                ApplicationSchemaMember::OperationDecisionFactBudget {
-                    operation: candidate,
-                    maximum_fact_count,
-                } if candidate == operation => Some(*maximum_fact_count),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-        if budgets.len() != 1 || budgets[0] == 0 || !operations.contains(operation) {
-            return Err(ApplicationSchemaDeclarationDenial::InvalidOperationDecisionFactBudget);
-        }
         let projection_budgets = members
             .iter()
             .filter_map(|member| match member {
@@ -39,7 +26,10 @@ pub(super) fn validate_decision_fact_budgets(
                 _ => None,
             })
             .collect::<Vec<_>>();
-        if projection_budgets.len() != 1 || projection_budgets[0] == 0 {
+        if projection_budgets.len() != 1
+            || projection_budgets[0] == 0
+            || !operations.contains(operation)
+        {
             return Err(ApplicationSchemaDeclarationDenial::InvalidOperationProjectionWorkBudget);
         }
     }

@@ -33,7 +33,6 @@ pub enum ApplicationSchemaDeclarationDenial {
     MissingOperationProgramDependency,
     MissingOperationDecisionReadDependency,
     MissingOperationMutationPreconditionDependency,
-    InvalidOperationDecisionFactBudget,
     InvalidOperationProjectionWorkBudget,
     DuplicateOperationExternalEffect,
     DuplicateOperationAftermath,

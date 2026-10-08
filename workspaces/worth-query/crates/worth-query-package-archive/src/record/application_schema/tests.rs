@@ -1,6 +1,7 @@
 mod fixture;
 mod invariant;
 mod mutation_description;
+mod retired_fact_budget;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationRelationIntegrity, ApplicationSchemaMember,
@@ -93,11 +94,11 @@ fn noncanonical_nested_capability_values_are_encoded_and_decoded_without_normali
 #[test]
 fn version_one_application_schema_member_tags_are_frozen() {
     let record = fixture::complete_untrusted_schema_record();
-    let tags = record.members()[..24]
+    let tags = record.members()[..23]
         .iter()
         .map(super::member::member_tag)
         .collect::<Vec<_>>();
-    let mut expected = (1_u16..=24).collect::<Vec<_>>();
+    let mut expected = (1_u16..=24).filter(|tag| *tag != 15).collect::<Vec<_>>();
     expected[2] = 25;
     assert_eq!(tags, expected);
 
@@ -147,7 +148,7 @@ fn inbound_occurrence_round_trips_under_new_tag_without_changing_old_effect_tag(
     assert_eq!(super::member::member_tag(&member), 30);
     assert_eq!(decode_member(&encode_member(&member)), member);
     assert_eq!(
-        super::member::member_tag(&fixture::complete_untrusted_schema_record().members()[16]),
+        super::member::member_tag(&fixture::complete_untrusted_schema_record().members()[15]),
         17,
     );
 }

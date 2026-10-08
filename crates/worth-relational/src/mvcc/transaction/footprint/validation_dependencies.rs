@@ -10,7 +10,6 @@ impl RelationalTransactionFootprint {
     pub(crate) fn derive_validation_dependencies(
         &mut self,
         plan: &crate::transactions::data::MergedCommitPlan,
-        maximum_loci: usize,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), Denial> {
         allocation_policy.check_live()?;
@@ -26,13 +25,6 @@ impl RelationalTransactionFootprint {
                 RelationalTransactionReadLocus::ValidationPartition(*partition),
                 allocation_policy,
             )?;
-        }
-        let required_loci = candidate.total_locus_count();
-        if required_loci > maximum_loci {
-            return Err(Denial::FootprintCapacityExhausted {
-                maximum_loci,
-                required_loci,
-            });
         }
         allocation_policy.check_live()?;
         *self = candidate;

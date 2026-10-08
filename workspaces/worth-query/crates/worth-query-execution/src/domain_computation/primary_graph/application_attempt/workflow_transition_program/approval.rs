@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{PreparedWorkflowAdvance, RequiredWorkflowApproval};
@@ -7,8 +8,8 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
+    WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,
+    WorthQueryProjectedApplicationMutation,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -33,17 +34,10 @@ where
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         self.append_completed_facts(
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,

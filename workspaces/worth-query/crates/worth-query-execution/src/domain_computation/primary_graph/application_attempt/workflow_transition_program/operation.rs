@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIdentities},
     application_schema::ApplicationOperationMarkerIdentity,
@@ -96,6 +97,8 @@ where
         if source_settlement.occurrence() != source_transition.settlement().occurrence() {
             return Err(mismatch(selected.node_path()));
         }
+        check_request_live(self.admission.publication_request(), selected.node_path())?;
+        let input_request = self.admission.publication_request();
         let (input_identity, mut input_facts) = self.lease.handle().with_runtime(|runtime| {
             observe_workflow_operation_input(
                 runtime,
@@ -106,6 +109,7 @@ where
                 source_operation,
                 source_input_type,
                 source.path(),
+                input_request,
             )
         })?;
         facts.append(&mut input_facts);
@@ -149,11 +153,11 @@ where
             )
         })?;
         facts.push(custody);
-        let remaining = self
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget()
-            .saturating_sub(self.facts.len().saturating_add(facts.len()));
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        let observation_request = self.admission.publication_request();
         let approval_authority = match super::approval_decision::observe_operation_approval_inputs(
             compiled,
             layout,
@@ -165,7 +169,7 @@ where
             &operation.operation,
             self.lease.handle(),
             self.lease.snapshot(),
-            remaining,
+            observation_request,
         ) {
             Ok((mut observed, authority)) => {
                 facts.append(&mut observed);
@@ -182,17 +186,10 @@ where
             }
             Err(denial) => return Err(denial),
         };
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         authority_facts.extend_from_slice(&facts[handoff_start..]);
         self.append_completed_facts(
             facts,

@@ -17,7 +17,7 @@ mod target_closure;
 
 use super::capability_member_closure::validate_application_capability_members;
 use super::query_member_closure::validate_application_query_members;
-use decision_read_budgets::validate_decision_fact_budgets;
+use decision_read_budgets::validate_projection_work_budgets;
 use member_collections::{
     collect_abilities, collect_aspects, collect_effects, collect_entities, collect_fields,
     collect_operations, collect_policies, collect_principal_entities, collect_relations,
@@ -39,7 +39,7 @@ pub(super) fn validate_member_closure(
     super::mutation_description_validation::validate_dependencies(members)?;
     validate_application_query_members(members)?;
     validate_application_capability_members(members)?;
-    validate_decision_fact_budgets(members, &index.operations)?;
+    validate_projection_work_budgets(members, &index.operations)?;
     Ok(())
 }
 
@@ -170,11 +170,6 @@ impl<'a> ClosureIndex<'a> {
                 Err(
                     ApplicationSchemaDeclarationDenial::MissingOperationMutationPreconditionDependency,
                 )
-            }
-            ApplicationSchemaMember::OperationDecisionFactBudget { operation, .. }
-                if !self.operations.contains(operation.as_str()) =>
-            {
-                Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency)
             }
             ApplicationSchemaMember::OperationProjectionWorkBudget { operation, .. }
                 if !self.operations.contains(operation.as_str()) =>

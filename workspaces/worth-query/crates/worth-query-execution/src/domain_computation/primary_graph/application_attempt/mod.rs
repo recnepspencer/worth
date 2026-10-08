@@ -38,6 +38,7 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 pub(in crate::domain_computation::primary_graph) use read_set::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,

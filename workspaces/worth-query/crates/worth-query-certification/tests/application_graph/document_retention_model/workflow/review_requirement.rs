@@ -239,7 +239,6 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(LinkReviewRequirement::reference(), 16)
         .operation_projection_work_budget(LinkReviewRequirement::reference(), 32)
         .operation_read_field(
             LinkReviewRequirement::reference(),

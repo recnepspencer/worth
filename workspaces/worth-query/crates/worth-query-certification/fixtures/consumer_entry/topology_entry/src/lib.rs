@@ -132,7 +132,7 @@ worth_query_application_contribution! {
                 .relation(MappingTarget::reference::<Schema>(), ExternalPrincipalMapping::reference::<Schema>(), Principal::reference::<Schema>())
                 .principal_binding(ConsumerPrincipalBinding::reference::<Schema>())
                 .operation(MutatePlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
-                .operation_decision_fact_budget(MutatePlanar::reference::<Schema>(), 64)
+
                 .operation_projection_work_budget(MutatePlanar::reference::<Schema>(), 256)
                 .operation_read_entity(MutatePlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_read_field(MutatePlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
@@ -149,7 +149,7 @@ worth_query_application_contribution! {
                 .operation_unlink(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
                 .operation(EditPlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
-                .operation_decision_fact_budget(EditPlanar::reference::<Schema>(), 64)
+
                 .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 8_192)
                 .operation_read_entity(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())

@@ -25,7 +25,6 @@ pub enum BankOperationInstallationDenialKind {
     OperationMeaningChanged,
     MissingAbilityPolicy,
     MissingProgram,
-    MissingDecisionFactBudget,
     MissingProjectionWorkBudget,
     ConflictingAuthorizationContract,
     InvalidMutationPreconditionContract,
@@ -91,7 +90,6 @@ impl BankOperationInstallationDenial {
             Bank::OperationMeaningChanged => "operation-meaning-changed",
             Bank::MissingAbilityPolicy => "missing-ability-policy",
             Bank::MissingProgram => "missing-program",
-            Bank::MissingDecisionFactBudget => "missing-decision-fact-budget",
             Bank::MissingProjectionWorkBudget => "missing-projection-work-budget",
             Bank::ConflictingAuthorizationContract => "conflicting-authorization-contract",
             Bank::InvalidMutationPreconditionContract => "invalid-mutation-precondition-contract",
@@ -156,7 +154,6 @@ impl BankOperationInstallationDenial {
             QueryKind::OperationMeaningChanged => Bank::OperationMeaningChanged,
             QueryKind::MissingAbilityPolicy => Bank::MissingAbilityPolicy,
             QueryKind::MissingProgram => Bank::MissingProgram,
-            QueryKind::MissingDecisionFactBudget => Bank::MissingDecisionFactBudget,
             QueryKind::MissingProjectionWorkBudget => Bank::MissingProjectionWorkBudget,
             QueryKind::ConflictingAuthorizationContract => Bank::ConflictingAuthorizationContract,
             QueryKind::InvalidMutationPreconditionContract => {

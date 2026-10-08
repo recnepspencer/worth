@@ -29,6 +29,7 @@ const AUTHOR_CHUNK: usize = 32;
 pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
     pub(in crate::domain_computation::primary_graph) key: AdmittedFactKey,
     pub(in crate::domain_computation::primary_graph) value: T,
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) ordinal: usize,
 }
 
@@ -38,12 +39,9 @@ pub(in crate::domain_computation::primary_graph) enum StoreDenial {
     RequestInterruption(
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
     ),
-    ExplicitCountPolicy {
-        maximum: usize,
-        attempted: usize,
-    },
     Representability,
     ConflictingBody,
+    #[cfg(test)]
     InvalidOrdinal,
 }
 
@@ -86,7 +84,6 @@ impl StoreDenial {
         let kind = match &self {
             Self::Allocation(_) => Kind::AllocationDenied,
             Self::RequestInterruption(_) => Kind::CurrentAuthorityDenied,
-            Self::ExplicitCountPolicy { .. } => Kind::DecisionFactBudgetExceeded,
             Self::ConflictingBody => Kind::DecisionDependencyMismatch,
             _ => Kind::RetainedSourceStorageDenied,
         };

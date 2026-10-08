@@ -331,8 +331,14 @@ pub enum WorthQueryDecisionReadSetDenialKind {
     IncompleteRequiredFamilies,
     IncompleteRequiredFacts,
     DecisionFactBudgetExceeded,
+    FactCountOverflow,
+    RequestInterrupted(
+        worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
+    ),
     AllocationDenied,
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,

@@ -9,25 +9,13 @@ impl RelationalTransactionFootprint {
     pub(crate) fn admit_read(
         &mut self,
         locus: RelationalTransactionReadLocus,
-        maximum_loci: usize,
     ) -> Result<(), Denial> {
-        let required_loci = self
-            .total_locus_count()
-            .checked_add(usize::from(!self.reads.contains(&locus)))
-            .ok_or(Denial::CardinalityOverflow)?;
-        if required_loci > maximum_loci {
-            return Err(Denial::FootprintCapacityExhausted {
-                maximum_loci,
-                required_loci,
-            });
-        }
         self.record_read(locus, ExecutionAllocationPolicy::SystemAllocation)
     }
     pub(super) fn for_staged_batch(
         &self,
         batch: &WorkerIntentBatch,
         batch_index: usize,
-        maximum_loci: usize,
         policy: ExecutionAllocationPolicy<'_, '_>,
         mut emit: impl FnMut(IndexRow) -> Result<(), Denial>,
     ) -> Result<Self, Denial> {
@@ -49,16 +37,6 @@ impl RelationalTransactionFootprint {
         let reads = reads.finish()?;
         let writes = writes.finish()?;
         let write_partitions = partitions.finish()?;
-        let required_loci = reads
-            .len()
-            .checked_add(writes.len())
-            .ok_or(Denial::CardinalityOverflow)?;
-        if required_loci > maximum_loci {
-            return Err(Denial::FootprintCapacityExhausted {
-                maximum_loci,
-                required_loci,
-            });
-        }
         Ok(Self {
             basis: self.basis.clone(),
             reads,

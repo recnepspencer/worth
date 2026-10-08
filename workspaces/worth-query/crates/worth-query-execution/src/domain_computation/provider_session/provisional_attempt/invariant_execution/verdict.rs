@@ -16,6 +16,9 @@ pub struct WorthQueryInvariantVerdictAdmission {
     pub(super) requirement: WorthQueryInstalledInvariantExecutionRequirement,
     pub(super) binding: WorthQueryInvariantReceiptBinding,
     pub(super) load_counters: WorthQueryInvariantStructuralCounters,
+    pub(super) max_work_units: Option<u64>,
+    pub(super) request:
+        Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope>,
 }
 
 #[derive(Clone)]
@@ -105,15 +108,19 @@ impl WorthQueryInvariantVerdictAdmission {
         self,
         evidence: WorthQueryInvariantVerdictEvidence,
     ) -> Result<WorthQueryInvariantReceiptMaterial, WorthQueryInvariantExecutionFailure> {
+        super::request_control::check_live(self.request.as_ref())?;
         let total_work = self
             .load_counters
             .load_work_units()
             .checked_add(evidence.counters.execution_work_units())
             .ok_or_else(execution_budget_exhausted)?;
-        if total_work > self.requirement.max_work_units() {
+        if self
+            .max_work_units
+            .is_some_and(|maximum| total_work > maximum)
+        {
             return Err(WorthQueryInvariantExecutionFailure::exhausted(
                 WorthQueryInvariantExecutionDenialKind::ExecutionBudgetExceeded,
-                "invariant load and validator exhausted their shared installed work budget",
+                "invariant load and validator exhausted the installed requirement work restriction",
             ));
         }
         let identity = Arc::clone(&evidence.physical_execution_evidence);
@@ -221,6 +228,6 @@ fn failure(kind: WorthQueryInvariantExecutionDenialKind) -> WorthQueryInvariantE
 fn execution_budget_exhausted() -> WorthQueryInvariantExecutionFailure {
     WorthQueryInvariantExecutionFailure::exhausted(
         WorthQueryInvariantExecutionDenialKind::ExecutionBudgetExceeded,
-        "invariant load and validator work overflowed their shared installed budget",
+        "invariant load and validator work overflowed checked representability",
     )
 }

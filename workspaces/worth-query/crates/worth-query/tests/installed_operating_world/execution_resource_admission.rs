@@ -95,3 +95,5 @@ fn request(
     installed::operation::WorthQueryExecutionResourceRequest::new(scale, resources, safe_point)
         .unwrap()
 }
+
+mod atomic;

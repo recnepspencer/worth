@@ -209,10 +209,6 @@ impl AftermathInstall {
                     entity: "FixtureEntity".to_owned(),
                 },
             },
-            ApplicationSchemaMember::OperationDecisionFactBudget {
-                operation: self.operation_slot.to_owned(),
-                maximum_fact_count: 8,
-            },
             ApplicationSchemaMember::OperationProjectionWorkBudget {
                 operation: self.operation_slot.to_owned(),
                 maximum_work_units: 16,

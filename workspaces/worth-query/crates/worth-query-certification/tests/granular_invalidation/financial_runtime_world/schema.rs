@@ -57,7 +57,7 @@ worth_query_application_schema! {
                 .operation(
                     AmendMarket::reference().definition().no_external_effect().no_aftermath().finish(),
                 )
-                .operation_decision_fact_budget(ExecuteFinancial::reference(), 4)
+
                 .operation_projection_work_budget(ExecuteFinancial::reference(), 16)
                 .operation_read_field(ExecuteFinancial::reference(), MarketIdentityField::reference())
                 .operation_read_field(ExecuteFinancial::reference(), MarketRevisionField::reference())
@@ -66,7 +66,7 @@ worth_query_application_schema! {
                 .operation_write(ExecuteFinancial::reference(), MarketRevisionField::reference())
                 .operation_write(ExecuteFinancial::reference(), MarketLifecycleField::reference())
                 .operation_write(ExecuteFinancial::reference(), RiskValueField::reference())
-                .operation_decision_fact_budget(AmendMarket::reference(), 10)
+
                 .operation_projection_work_budget(AmendMarket::reference(), 16)
                 .operation_read_field(AmendMarket::reference(), MarketRevisionField::reference())
                 .operation_read_field(AmendMarket::reference(), MarketDueField::reference())

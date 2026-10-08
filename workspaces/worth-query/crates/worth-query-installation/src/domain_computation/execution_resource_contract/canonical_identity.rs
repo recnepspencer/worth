@@ -6,7 +6,15 @@ pub(super) fn canonical_resource_contract_token(
     contract: &WorthQueryExecutionResourceContract,
 ) -> String {
     let mut hasher = Sha256::new();
-    hash_text(&mut hasher, "worth_query_execution_resource_contract_v2");
+    let atomic = contract.strategies().iter().any(|s| s.envelope().boundary() == worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary::Atomic);
+    hash_text(
+        &mut hasher,
+        if atomic {
+            "worth_query_execution_resource_contract_v3"
+        } else {
+            "worth_query_execution_resource_contract_v2"
+        },
+    );
     let WorthQueryExecutionResourceContract::Declared { strategies } = contract else {
         hash_text(&mut hasher, "undeclared");
         return format!("{:x}", hasher.finalize());
@@ -51,9 +59,22 @@ pub(super) fn canonical_resource_contract_token(
             &mut hasher,
             strategy.envelope().retained_progress_posture().as_str(),
         );
+        if atomic {
+            hash_text(&mut hasher, strategy.envelope().boundary().as_str());
+            hash_u64(
+                &mut hasher,
+                strategy.envelope().scale_ceilings().iter().count() as u64,
+            );
+        }
         for (axis, value) in strategy.envelope().scale_ceilings().iter() {
             hash_text(&mut hasher, axis.as_str());
             hash_u64(&mut hasher, value);
+        }
+        if atomic {
+            hash_u64(
+                &mut hasher,
+                strategy.envelope().resource_ceilings().iter().count() as u64,
+            );
         }
         for (dimension, value) in strategy.envelope().resource_ceilings().iter() {
             hash_text(&mut hasher, dimension.as_str());

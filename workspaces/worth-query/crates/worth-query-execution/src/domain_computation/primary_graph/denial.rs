@@ -46,23 +46,8 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     RetentionRootSetTooLarge,
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
-    /// The transaction overlay would exceed its byte limit.
-    TransactionOverlayCapacityExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
-    /// The transaction footprint would exceed its locus limit.
-    TransactionFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
     /// The savepoint limit was reached.
     SavepointCapacityExhausted { maximum_savepoints: usize },
-    /// A savepoint footprint would exceed its locus limit.
-    SavepointFootprintCapacityExhausted {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
     /// The runtime ran out of savepoint identities.
     SavepointIdentityExhausted,
     /// The provider's candidate limit was reached.

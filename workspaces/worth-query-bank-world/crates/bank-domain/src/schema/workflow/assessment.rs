@@ -270,7 +270,6 @@ pub(crate) fn install_approved_payment_assessment(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(PublishApprovedPaymentAssessment::reference(), 256)
         .operation_projection_work_budget(PublishApprovedPaymentAssessment::reference(), 1_024)
         .operation_read_field(
             PublishApprovedPaymentAssessment::reference(),

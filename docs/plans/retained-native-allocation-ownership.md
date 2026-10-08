@@ -3,6 +3,14 @@
 Status: scoped implementation and verification passed. Native and Query owner
 proofs, ordinary application lifecycle, Bank callers and enforcement passed.
 Base: `0594c317ea9fdaf1e7a1515b0399ce677b325051`.
+The follow-on quota removal and Atomic admission changes passed current-source
+verification. Query and Relational/Bridge/World all-target checks, Bank and external
+application consumers, boundary/context guards, scoped formatting, line caps and
+source composition review passed. Focused owner tests preserve ordinary leased
+mutation and native staging refusal, source-bound recorded retry, native shared
+footprint custody, actual Atomic request completion/drop cleanup and historical
+archive meaning. Retired fact-budget records are refused rather than silently
+converted.
 
 The typed decision-array batch admits ordinary mutation arrays under an explicit
 allocation policy. This continuation addresses the retained canonical keys,
@@ -170,9 +178,21 @@ buffers, native input batch directories, normalization/interner helpers, canonic
 merge helpers and rollback output storage remain separately uncovered. Existing
 ordinary read APIs without a physical policy remain explicitly uncharged.
 
-Existing aggregate fact/transaction count gates and the native overlay estimator
-remain open. Their removal requires actual owner/caller completion; increasing
-limits or substituting an encoded-byte estimate is not this plan's destination.
+Aggregate decision-fact quotas and transaction overlay/footprint quotas are
+removed from declarations, request scopes, observation, staging and rollback.
+Their optional controls, count denials and enforcement counters are removed too.
+Declared read authorization, exact family completeness, checked storage sizing,
+cancellation/deadlines, actual allocation custody and independently declared
+algorithm controls remain. Canonical commit allocation still uses the mutation
+capacity calculation; the transaction quota estimator and cumulative counters
+are removed.
+Ordinary synchronous operations install Atomic envelopes and admit a genuine
+queue-free Bridge request lifecycle. The lower basis retains exact intent,
+resource attempt, source and truth bindings. Managed queue, safe-point and yield
+authority remain exclusive to bounded execution, with typed rejection before
+effects when an Atomic basis reaches a managed-only entry. Completed, cancelled
+and abandoned Atomic runs retain the existing terminal cleanup and reservation
+release path.
 Nonempty raw-key normalization now has selected-policy custody for typed index and
 footprint backing. Its interner, alias map, temporary collections and retained
 input rewrite remain separate owners. The native proof requires a nonzero leased

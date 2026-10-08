@@ -39,32 +39,11 @@ pub(super) fn map_transaction_staging_failure(
                 "Relational staging owner refused backing or cardinality",
             );
         }
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => WorthQueryInvariantExecutionDenialKind::TransactionOverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryInvariantExecutionDenialKind::TransactionFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             WorthQueryInvariantExecutionDenialKind::SavepointCapacityExhausted {
                 maximum_savepoints,
             }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryInvariantExecutionDenialKind::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             WorthQueryInvariantExecutionDenialKind::SavepointIdentityExhausted
         }
@@ -231,12 +210,10 @@ fn provider_failure(detail: impl Into<std::sync::Arc<str>>) -> WorthQueryInvaria
 }
 
 #[cfg(test)]
-#[path = "invariant_execution_failure/staging_tests.rs"]
-mod staging_tests;
-
-#[cfg(test)]
 mod tests {
-    use super::{map_custom_invariant_failure, map_invariant_failure};
+    use super::{
+        map_custom_invariant_failure, map_invariant_failure, map_transaction_staging_failure,
+    };
     use crate::domain_computation::WorthQueryCustomInvariantDenial;
     use worth_relational::facade::transactions::{
         CustomInvariantFailureIdentity, CustomInvariantFailurePhase, CustomInvariantRuleId,
@@ -317,6 +294,30 @@ mod tests {
             failure.detail(),
             "relation endpoint deletion leaves an incident edge"
         );
+    }
+
+    #[test]
+    fn invariant_materialization_refusal_is_not_exhaustion() {
+        for (owner_denial, expected_detail) in [
+            (
+                worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationAuthorityRequired,
+                "Relational invariant transaction requires materialization authority",
+            ),
+            (
+                worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationModeMismatch,
+                "Relational invariant transaction materialization mode does not match its intents",
+            ),
+        ] {
+            let failure = map_transaction_staging_failure(owner_denial);
+            let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+                failure,
+            );
+            let retained = denial.invariant_execution_failure().unwrap();
+            assert_eq!(retained.kind(), crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProviderRejected);
+            assert_eq!(retained.posture(), crate::domain_computation::WorthQueryInvariantExecutionFailurePosture::Denied);
+            assert_eq!(retained.detail(), expected_detail);
+        }
     }
 
     fn semantic_identity() -> CustomInvariantSemanticIdentity {

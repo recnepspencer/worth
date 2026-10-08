@@ -6,7 +6,7 @@ use worth_query_host::facade::domain::{
 };
 
 #[test]
-fn every_bank_action_reserves_its_installed_validator_scope() {
+fn every_bank_action_keeps_algorithm_work_without_an_installed_aggregate_state_quota() {
     let declaration = BankSchema::declaration().expect("bank schema should declare");
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         "WORTH.bank",
@@ -36,11 +36,10 @@ fn every_bank_action_reserves_its_installed_validator_scope() {
                 .installed_operation(<$operation>::reference())
                 .expect("bank action should install");
             let requirements = operation.contracts().invariant_execution().requirements();
-            let semantic_scope = requirements
-                .iter()
-                .map(|requirement| requirement.max_state_facts())
-                .max()
-                .unwrap_or(0);
+            for requirement in requirements {
+                assert_eq!(requirement.max_state_facts(), None);
+                assert_eq!(requirement.max_work_units(), None);
+            }
             let custom_work = requirements
                 .iter()
                 .filter_map(|requirement| requirement.application_invariant())
@@ -48,12 +47,8 @@ fn every_bank_action_reserves_its_installed_validator_scope() {
                     total.checked_add(invariant.maximum_work_units().get())
                 })
                 .expect("installed invariant work should fit u64");
-            let required = semantic_scope
-                .checked_add(
-                    usize::try_from(custom_work)
-                        .expect("installed invariant work should fit the host"),
-                )
-                .expect("bank validator work should fit the host");
+            let required_algorithms =
+                usize::try_from(custom_work).expect("installed invariant work should fit the host");
             let declared = declaration
                 .member_provenance()
                 .mutation_bindings()
@@ -63,8 +58,15 @@ fn every_bank_action_reserves_its_installed_validator_scope() {
                 .candidates()
                 .resources()
                 .maximum_validator_work();
-            if declared != Some(required) {
-                mismatches.push((operation.operation().to_owned(), declared, required));
+            // Bank still explicitly authors this independent validator policy.
+            // It must cover the actual installed algorithm descriptors, without
+            // fabricating a state/fact quota to reconstruct an exact total.
+            if !declared.is_some_and(|work| work >= required_algorithms) {
+                mismatches.push((
+                    operation.operation().to_owned(),
+                    declared,
+                    required_algorithms,
+                ));
             }
         }};
     }

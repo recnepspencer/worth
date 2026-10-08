@@ -89,3 +89,5 @@ fn optional_work_presence_and_noncanonical_record_tags_are_refused() {
         Kind::NonCanonicalRecordSequence
     );
 }
+
+mod atomic;
