@@ -11,7 +11,10 @@ use crate::tests::support::*;
 fn recovered_world() -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority) {
     let source = persisted_runtime_with_test_schema();
     create_entity(&source, "checkpoint-predecessor");
-    let checkpoint = source.durability_authority().native_checkpoint().unwrap();
+    let checkpoint = source
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     let mut target = persisted_runtime_with_test_schema();
     let (_, authority) = target
         .durability_recovery()
@@ -77,7 +80,10 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
                 .count(),
             1
         );
-        runtime.durability_authority().native_checkpoint().unwrap();
+        runtime
+            .durability_authority()
+            .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
         if admit_successor {
             assert!(successor_authority
                 .admit_basis(main_basis(&runtime))
@@ -194,13 +200,12 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
     let successor = main_basis(&runtime).descriptor().clone();
     let count = runtime.history().immutable_commit_count();
     assert_eq!(runtime.visibility.published_snapshot_handle_count(), 1);
-    assert_eq!(
-        runtime
-            .durability_authority()
-            .native_checkpoint()
-            .unwrap_err()
-            .class,
-        crate::durability::data::RecoveryFailureClass::PerformedPublicationRequiresSettlement
+    let denial = runtime
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap_err();
+    assert!(
+        matches!(denial, crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(ref error) if error.class == crate::durability::data::RecoveryFailureClass::PerformedPublicationRequiresSettlement)
     );
     let mut foreign = persisted_runtime_with_test_schema();
     let refusal = foreign
@@ -235,7 +240,10 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
             .count(),
         1
     );
-    runtime.durability_authority().native_checkpoint().unwrap();
+    runtime
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     assert!(acknowledged
         .into_parts()
         .1

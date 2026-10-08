@@ -110,33 +110,56 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
             },
         )
         .err()
-        .expect("zero caller payload budget refuses the final checkpoint, not the effect");
+        .expect("zero caller payload budget refuses checkpoint capture after the effect");
     let InstallationDenial::CheckpointTransitionCaptureStopped(pending) = denial else {
         panic!("acknowledged publication must retain its exact repair custody: {denial:?}");
     };
     let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
-        panic!("exact final allocation cause must survive: {pending:?}");
+        panic!("exact native allocation cause must survive: {pending:?}");
     };
     assert_eq!(
         denied.kind(),
         AllocationKind::Lease(LeaseDenial::ResourceExhausted)
     );
-    let quoted = denied
+    let native_quote = denied
         .requested_payload_bytes()
-        .expect("checked real final payload quote");
-    assert!(quoted > 0);
+        .expect("checked real native payload quote");
+    assert!(native_quote > 0);
     assert_eq!(
         calls, 1,
         "capture refusal follows actual authoring and acknowledgment"
     );
+    let native_only = authority()
+        .request_lease(request(native_quote, CancellationToken::new()))
+        .unwrap();
+    let pending = pending
+        .repair_to_checkpoint(CapturePolicy::Execution(&native_only))
+        .expect_err("the final frame is admitted while native backing remains live");
+    let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
+        panic!("exact final-frame allocation cause must survive: {pending:?}");
+    };
+    assert_eq!(
+        denied.kind(),
+        AllocationKind::Lease(LeaseDenial::ResourceExhausted)
+    );
+    let frame_quote = denied
+        .requested_payload_bytes()
+        .expect("checked real final-frame payload quote");
+    assert!(frame_quote > native_quote);
+    let released = native_only.reserve_memory(native_quote).unwrap();
+    drop(released);
+    drop(native_only);
     let repair = authority()
-        .request_lease(request(quoted, CancellationToken::new()))
+        .request_lease(request(
+            native_quote.checked_add(frame_quote).unwrap(),
+            CancellationToken::new(),
+        ))
         .unwrap();
     let checkpoint = pending
         .repair_to_checkpoint(CapturePolicy::Execution(&repair))
         .expect("a different explicit admitted policy captures the existing successor");
-    assert_eq!(checkpoint.bytes().len() as u64, quoted);
-    assert_eq!(checkpoint.charged_payload_bytes(), Some(quoted));
+    assert_eq!(checkpoint.bytes().len() as u64, frame_quote);
+    assert_eq!(checkpoint.charged_payload_bytes(), Some(frame_quote));
     assert_target_record(checkpoint, 127);
     assert_eq!(calls, 1, "repair cannot rerun authoring");
 }

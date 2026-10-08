@@ -69,8 +69,14 @@ fn embedded_native_payload_rejects_invalid_ranges_without_retaining_them() {
 
 #[test]
 fn captured_native_clones_preserve_sections_and_share_payload_custody() {
-    let bytes = vec![7; 32];
-    let expected = bytes.as_ptr();
+    let mut buffer = worth_execution::ExecutionByteBuffer::allocate(
+        32,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
+    buffer.extend_from_slice(&[7; 32]).unwrap();
+    let bytes = buffer.seal().unwrap();
+    let expected = bytes.bytes().as_ptr();
     let sections = NativeCheckpointSectionBytes {
         total: 32,
         envelopes: 8,

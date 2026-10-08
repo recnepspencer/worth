@@ -171,7 +171,7 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
             graph
                 .graph
                 .integration_handle()
-                .with_runtime(|runtime| runtime.durability_authority().native_checkpoint())
+                .with_runtime(|runtime| runtime.durability_authority().native_checkpoint(capture_policy))
                 .map_err(crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial::from)
         })
         .and_then(|native| {

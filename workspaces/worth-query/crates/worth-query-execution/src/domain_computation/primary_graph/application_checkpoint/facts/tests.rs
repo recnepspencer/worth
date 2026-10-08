@@ -121,8 +121,8 @@ fn fact_decode_rejects_unbounded_count_and_foreign_kind_before_allocation() {
 }
 
 #[test]
-fn complete_large_decisions_round_trip_at_the_total_fact_ceiling() {
-    let facts = (1..=MAXIMUM_FACTS)
+fn complete_large_decisions_round_trip_above_the_former_total_fact_ceiling() {
+    let facts = (1..=65_537)
         .map(|slot| Fact::SourceEntity {
             entity_id: EntityId::new(
                 worth_relational::facade::identity::PartitionId(0),
@@ -131,8 +131,9 @@ fn complete_large_decisions_round_trip_at_the_total_fact_ceiling() {
             ),
         })
         .collect::<Vec<_>>();
-    let encoded = encode(&facts).expect("bounded decisions retain every dependency");
-    assert!(encoded.len() > 1024 * 1024);
+    let encoded = encode(&facts).expect("complete decisions retain every dependency");
+    assert_eq!(&encoded[..4], &65_537u32.to_be_bytes());
+    assert_eq!(encoded.len(), 4 + 65_537 * 17);
     assert_eq!(
         decode(
             &encoded,
@@ -143,11 +144,8 @@ fn complete_large_decisions_round_trip_at_the_total_fact_ceiling() {
         .as_ref(),
         facts.as_slice()
     );
-    let mut excessive = facts;
-    excessive.push(excessive[0].clone());
-    assert!(encode(&excessive).is_none());
     let mut forged = encoded;
-    forged[..4].copy_from_slice(&((MAXIMUM_FACTS + 1) as u32).to_be_bytes());
+    forged[..4].copy_from_slice(&65_538u32.to_be_bytes());
     assert!(decode(
         &forged,
         None,

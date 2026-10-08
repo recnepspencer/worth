@@ -173,6 +173,19 @@ and the independent scale and allocation exclusions below remain separate.
 
 ## Remaining independent owners
 
+The [checkpoint allocation plan](checkpoint-allocation-custody.md) now includes
+native encoded-byte custody under the same explicit System or leased policy as
+the final Query frame. Native capture counts and emits one immutable image into
+fixed backing, preserves the exact typed allocation cause and shares that
+backing through clones. Native and final-frame payloads coexist during final
+emission; two native owner proofs and eight Host checkpoint-transition tests
+passed, including actual N + F repair and cancellation. The Host compiler-profile
+adjustment changed no runtime assertions or policies and supplies no performance
+claim. Captured image, alias/serializer metadata,
+House compression and transport allocations remain separate, and unchanged wire
+does not establish 100k/million acceptance
+or repair of the historically unlocated allocation abort.
+
 Nested input/value/key heaps, temporary maps and vectors, lower selection candidate
 buffers, native input batch directories, normalization/interner helpers, canonical
 merge helpers and rollback output storage remain separately uncovered. Existing
@@ -186,6 +199,17 @@ cancellation/deadlines, actual allocation custody and independently declared
 algorithm controls remain. Canonical commit allocation still uses the mutation
 capacity calculation; the transaction quota estimator and cumulative counters
 are removed.
+The distinct checkpoint fact encoder/decoder and producer/performed merge now
+remove their 65,536-total-fact quota, with no replacement count policy. Seven
+existing fact-wire tests passed, including a complete literal 65,537-fact round
+trip and forged-payload refusal. The existing leased frame/clone/native-handoff/
+reopen proof and all eight Host transition tests passed; the two earlier native
+allocation/wire proofs remain unchanged. Boundary/context checks, formatting,
+line caps and actual composition review passed across 25 Rust files, retaining
+21 function advisories with zero hard failures. Checked u32 wire counts, actual remaining-input shape,
+complete payload framing and independent byte/per-selection/work controls remain.
+See the checkpoint allocation plan for exact results and the compiler-only
+profile exception. These proofs retain the separate heap and scale exclusions.
 Ordinary synchronous operations install Atomic envelopes and admit a genuine
 queue-free Bridge request lifecycle. The lower basis retains exact intent,
 resource attempt, source and truth bindings. Managed queue, safe-point and yield

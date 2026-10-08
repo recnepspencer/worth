@@ -72,7 +72,7 @@ where
             policy.check_live()?;
             runtime
                 .durability_authority()
-                .native_checkpoint()
+                .native_checkpoint(policy)
                 .map_err(WorthQueryCheckpointCaptureDenial::from)
                 .and_then(|checkpoint| {
                     let mut accepted = self.output_demands.accepted_checkpoint_records();

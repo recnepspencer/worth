@@ -21,11 +21,9 @@ mod indexed_selection;
 /// row is verified against its own source facts and claims nothing upstream.
 /// Earlier versions made no such promise, and their payload is never read.
 pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 8;
-// A complete producer decision may span many individually bounded sets. Keep
-// total checkpoint capacity separate from each adjacency or indexed selection;
-// the former 4,096-fact cap discarded otherwise reusable large-model decisions.
 pub(super) const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
-pub(super) const MAXIMUM_FACTS: usize = 65_536;
+// SourceEntity is the smallest v8 fact: one tag and a 16-byte EntityId.
+const MINIMUM_FACT_WIRE_BYTES: usize = 17;
 const MAXIMUM_SET_ENTITIES: usize = 4096;
 const MAXIMUM_TEXT: usize = 4096;
 const MAXIMUM_FIELD_DEPTH: usize = 32;
@@ -35,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) fn encode(facts: &[Fact]) -> Op
 }
 
 pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Vec<u8>> {
-    if facts.is_empty() || facts.len() > MAXIMUM_FACTS {
+    if facts.is_empty() {
         return None;
     }
     let mut bytes = Vec::with_capacity(capacity);
@@ -160,7 +158,7 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
     let mut cursor = CheckpointCursor::new(bytes);
     let count = usize::try_from(cursor.next_u32()?)
         .map_err(|_| "checkpoint producer fact count exceeds host".to_owned())?;
-    if count == 0 || count > MAXIMUM_FACTS || count > bytes.len().saturating_sub(4) {
+    if count == 0 || count > cursor.remaining.len() / MINIMUM_FACT_WIRE_BYTES {
         return Err("checkpoint producer fact count is invalid"
             .to_owned()
             .into());

@@ -31,9 +31,15 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
 fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images() {
     let source = persisted_runtime_with_test_schema();
     let entity = create_entity(&source, "work-seed");
-    let small = source.durability_authority().native_checkpoint().unwrap();
+    let small = source
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     create_entity_in_partition(&source, "work-secondary", PartitionId(41));
-    let grown = source.durability_authority().native_checkpoint().unwrap();
+    let grown = source
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     assert!(
         grown.captured_sections().unwrap().partition_mirror
             > small.captured_sections().unwrap().partition_mirror
@@ -44,7 +50,10 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let sibling = create_branch_from_main(&source, "work-sibling");
     let sibling_commit = create_entity_outcome_on_branch(&source, "work-fork", sibling);
     release_test_commit_snapshot(&source, &sibling_commit);
-    let native = source.durability_authority().native_checkpoint().unwrap();
+    let native = source
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     assert!(
         native.captured_sections().unwrap().envelopes
             > grown.captured_sections().unwrap().envelopes

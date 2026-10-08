@@ -99,6 +99,15 @@ Worth Store integration.
 
 ## Validated transitions before recovered installation
 
+`native_checkpoint(policy)` captures one immutable image and counts its actual
+MessagePack wire before allocating the final fixed byte backing. The same wire
+writer emits into that backing and seals it without a payload copy. The caller
+explicitly chooses System allocation or an Execution lease; allocation and live
+control refusals preserve the original typed cause and payload quote through
+`RelationalNativeCheckpointCaptureDenial`. Captured image, partition-alias and
+serializer metadata heaps are separate from this payload admission. Imported
+bytes do not acquire a charge or recovery authority.
+
 `RelationalNativeCheckpoint` retains immutable byte backing. Clones share that
 backing and preserve the selected byte region and any runtime capture-section
 metadata. `from_untrusted_bytes_region` accepts `ExecutionImmutableBytes` so an enclosing

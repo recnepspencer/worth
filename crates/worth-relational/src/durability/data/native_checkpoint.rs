@@ -97,12 +97,12 @@ impl RelationalNativeCheckpoint {
     }
 
     pub(crate) fn from_captured_bytes(
-        bytes: Vec<u8>,
+        bytes: ExecutionImmutableBytes,
         sections: NativeCheckpointSectionBytes,
     ) -> Self {
         let region = 0..bytes.len();
         Self {
-            bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes.into_boxed_slice())),
+            bytes,
             region,
             captured_sections: Some(sections),
         }

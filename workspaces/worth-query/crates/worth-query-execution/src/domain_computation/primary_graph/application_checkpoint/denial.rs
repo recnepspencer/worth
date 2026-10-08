@@ -1,5 +1,7 @@
 use worth_execution::ExecutionAllocationDenial;
-use worth_relational::facade::durability::DurabilityError;
+use worth_relational::facade::durability::{
+    DurabilityError, RelationalNativeCheckpointCaptureDenial,
+};
 
 /// Exact refusal from native checkpoint capture, framing or final byte allocation.
 /// An allocation refusal never authorizes a different capture policy.
@@ -7,6 +9,15 @@ use worth_relational::facade::durability::DurabilityError;
 pub enum WorthQueryCheckpointCaptureDenial {
     Durability(DurabilityError),
     Allocation(ExecutionAllocationDenial),
+}
+
+impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptureDenial {
+    fn from(error: RelationalNativeCheckpointCaptureDenial) -> Self {
+        match error {
+            RelationalNativeCheckpointCaptureDenial::Durability(error) => Self::Durability(error),
+            RelationalNativeCheckpointCaptureDenial::Allocation(error) => Self::Allocation(error),
+        }
+    }
 }
 
 impl From<DurabilityError> for WorthQueryCheckpointCaptureDenial {
