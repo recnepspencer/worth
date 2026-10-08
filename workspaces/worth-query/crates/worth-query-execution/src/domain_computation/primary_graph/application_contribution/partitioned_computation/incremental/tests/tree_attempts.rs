@@ -11,7 +11,7 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
     // First edit completes, then the second attempt enters a combine and
     // panics. The one-shot fault permits the fallback build to complete.
     let failed_entry = 2 * first_depth + 1;
-    CALLS.set(0);
+    reset_counts();
     PANIC_AT.set(Some(failed_entry));
     let next = run(
         &retained,
@@ -60,7 +60,7 @@ fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebui
     let reducer = WorthQueryDeterministicReducer::canonical(|| 0, counted);
     let plan = plan(&keys);
     let work = plan.checked_build_work();
-    CALLS.set(0);
+    reset_counts();
     let next = next_tree::<_, _, _, u32>(
         &retained,
         plan,
@@ -102,7 +102,7 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
     )
     .unwrap()
     .0;
-    CALLS.set(0);
+    reset_counts();
     PANIC_AT.set(Some(1));
     // A reducer panic in each pass: the edit has one entered
     // combine and no completed node; the rebuilt tree then panics on its
@@ -140,9 +140,14 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
 fn phase_panicking(left: &u64, right: &u64) -> u64 {
     CALLS.set(CALLS.get() + 1);
     if PANIC_AT.get().is_some() {
+        PAIR.set(false);
         panic!("rebuild combine refused");
     }
-    left + right
+    let value = left + right;
+    if PAIR.replace(!PAIR.get()) {
+        NODES.set(NODES.get() + 1);
+    }
+    value
 }
 
 #[test]
@@ -150,7 +155,7 @@ fn a_work_stopped_rebuild_reports_the_work_it_entered() {
     let template = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);
-    CALLS.set(0);
+    reset_counts();
     let next = run(
         &retained,
         &keys,

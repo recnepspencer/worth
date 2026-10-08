@@ -28,6 +28,8 @@ impl PriorAbsence {
             Self::Suppressed(Suppression::Policy) => Cause::RetentionPolicy,
             Self::Suppressed(Suppression::Several) => Cause::SeveralComputations,
             Self::Suppressed(Suppression::Collision) => Cause::CollisionSuppressed,
+            Self::Suppressed(Suppression::NoProducerPrior) => Cause::NoProducerPrior,
+            Self::Suppressed(Suppression::PriorAlreadyTaken) => Cause::NoPriorHanded,
             Self::Stopped => Cause::Stopped,
         }
     }
@@ -45,6 +47,8 @@ pub(in crate::domain_computation) enum Suppression {
     Policy,
     Several,
     Collision,
+    NoProducerPrior,
+    PriorAlreadyTaken,
 }
 
 /// A run writes its result where it completes or drops its state.

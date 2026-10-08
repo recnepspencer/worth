@@ -100,9 +100,15 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
     for status in [0, 1] {
         let world = installed_authorization_world(true);
         let installed = installed(StatusRead::Gather(status), sum);
-        *installed.owner.work.lock().unwrap() = [100, 100];
+        assert_eq!(Computation::RESOURCES.maximum_work(), WORK_CEILING);
+        *installed.owner.work.lock().unwrap() = [KERNEL_WORK, KERNEL_WORK];
+        let (declared, full_tree_work) = declared_cost(&world);
         let first = first_run(&world, &installed);
-        let charged = first.outcome.as_ref().unwrap().1;
+        assert_eq!(
+            first.outcome.as_ref().unwrap().1,
+            declared,
+            "cost declared before the run"
+        );
         let moved = first
             .sealed
             .as_ref()
@@ -117,30 +123,10 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
                 _ => None,
             })
             .expect("one gather reads the status");
-        let state = &first.sealed.as_ref().unwrap().as_ref().unwrap().state;
-        let typed =
-            state
-                .typed
-                .downcast_ref::<super::super::retained::RetainedPartitions<
-                    Parity,
-                    <Owner as WorthQueryPartitionedComputationOwner<
-                        Schema,
-                        Feature,
-                        Computation,
-                    >>::Item,
-                    u64,
-                >>()
-                .unwrap();
-        let full_tree_work = worth_execution::ReductionPlan::try_from_sorted_unique(
-            typed.partitions.keys().copied().collect(),
-        )
-        .unwrap()
-        .checked_build_work()
-        .unwrap();
-        // Exceed the full-run charge by its entire tree work plus one. When
-        // the moved partition runs first, fewer than 100 units remain for the carried kernel.
-        let grown = 4_096 + 100 + usize::try_from(full_tree_work).unwrap() + 1
-            - usize::try_from(charged).unwrap();
+        // Exceed the declared full-run charge by the tree work plus one,
+        // putting the stop inside a kernel in either identity ordering.
+        let grown = WORK_CEILING + KERNEL_WORK + usize::try_from(full_tree_work).unwrap() + 1
+            - usize::try_from(declared).unwrap();
         installed.owner.work.lock().unwrap()[usize::from(status == 0)] = grown;
 
         let next = attempt(&world, &installed, Some(prior_of(first, true)));
@@ -164,3 +150,71 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
         "one ceiling falls on the carried partition"
     );
 }
+
+/// Declare preparation and reduction costs before executing the owner.
+fn declared_cost(world: &AuthorizationWorld) -> (u64, u64) {
+    use worth_query_declaration::facade::application_operation::{
+        application_computation_input_digest, application_computation_item_digest,
+        application_computation_partition_identity, CanonicalEncodingCharge,
+    };
+    let mut encodings = 0;
+    let mut declare = |charge| {
+        if let CanonicalEncodingCharge::Work(units) = charge {
+            encodings += units;
+        }
+        Ok::<_, ()>(())
+    };
+    let request = live_scope();
+    let principal = authenticated_principal(world, &request);
+    let account = resolved_account(world, "open", &request);
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(TouchAccountOperation::reference())
+        .unwrap();
+    let admission = world
+        .selected_product()
+        .authorize_operation(
+            &principal,
+            &account,
+            &operation,
+            Default::default(),
+            &request,
+        )
+        .unwrap();
+    world
+        .invariant
+        .project_admitted_operation(&admission, |_, root| {
+            application_computation_input_digest::<Input, _, _>(root, &mut declare).unwrap();
+            Ok::<_, ()>(())
+        })
+        .unwrap()
+        .into_parts()
+        .0
+        .unwrap();
+    for n in 1..=4 {
+        application_computation_item_digest(&Number(n), &mut declare).unwrap();
+        application_computation_partition_identity(&Parity(n % 2), &mut declare).unwrap();
+    }
+    // Identity encoding declares its own work independently of Query's run.
+    // Each of four new routes visits one member and reroutes one item.
+    let routing = 2 * 4;
+    let mut keys: Vec<_> = (0..2)
+        .map(|n| {
+            application_computation_partition_identity(&Parity(n), &mut |_| Ok::<_, ()>(()))
+                .unwrap()
+                .partition()
+        })
+        .collect();
+    keys.sort();
+    let tree = super::tree_work::shape::Shape::from_sorted(&keys);
+    let tree_work =
+        super::tree_work::shape::Shape::shape_work(&tree, keys.len()) + 4 * keys.len() as u64;
+    (
+        encodings + routing + 2 * KERNEL_WORK as u64 + tree_work,
+        tree_work,
+    )
+}
+
+const WORK_CEILING: usize = 4_096;
+const KERNEL_WORK: usize = 100;

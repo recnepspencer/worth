@@ -83,6 +83,8 @@ impl PublicationCompanionRegistrationPort {
             } if *active == generation => {}
             _ => return Err(Stop::Superseded),
         }
+        // Admission is this owner's own code and runs under the exclusion;
+        // only the derived installation below is isolated from it.
         let basis = runtime
             .admit_branch_basis(branch)
             .map_err(|_| Stop::HeadUnavailable)?;

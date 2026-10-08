@@ -80,6 +80,14 @@ pub(in crate::domain_computation::primary_graph) enum HeldUpstream {
     GaveBack,
 }
 
+pub(in crate::domain_computation::primary_graph) enum ContinuationCustody<
+    'a,
+    Schema: ApplicationSchema,
+> {
+    Caller(&'a mut RequiredContinuations<Schema>, &'a mut usize),
+    Queue(&'a mut RequiredContinuations<Schema>),
+}
+
 /// Resume the successor that refreshes `key`'s row: from `custody`, or from
 /// the registry, where a queue frame left it. A finished successor is
 /// `custody`'s newest entry: the predecessor edge its dependents still name
@@ -90,15 +98,20 @@ pub(in crate::domain_computation::primary_graph) fn resume_held_upstream<Schema>
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
-    custody: &mut RequiredContinuations<Schema>,
+    custody: ContinuationCustody<'_, Schema>,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
+    let (custody, caller_contacts) = match custody {
+        ContinuationCustody::Caller(custody, contacts) => (custody, Some(contacts)),
+        ContinuationCustody::Queue(custody) => (custody, None),
+    };
     if let Some(index) = custody.position_of(key, admission)? {
         let result = custody.entries[index].resume(runtime, principal, request, branch, admission);
+        custody.entries[index].report_caller_contacts(caller_contacts);
         let finished = matches!(result, Ok(Some(_)));
         if finished || result.is_err() {
             let moved = (custody.entries.len() - index)
@@ -136,6 +149,7 @@ where
     let result = held
         .progress
         .resume(runtime, principal, request, branch, admission);
+    held.progress.report_caller_contacts(None);
     let ready = match result {
         Ok(Some(ready)) => ready,
         Err(stop)

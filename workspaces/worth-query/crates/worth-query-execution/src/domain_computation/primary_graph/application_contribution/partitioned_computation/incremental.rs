@@ -37,16 +37,19 @@ pub use published_state::{
 mod recording;
 mod retained;
 mod sealing;
+mod typed_prior;
 pub(in crate::domain_computation::primary_graph) use deposit::ComputationDeposit;
 pub(in crate::domain_computation::primary_graph) use prior_absence::CompletedComputationRetention;
 pub(in crate::domain_computation) use prior_absence::{
     PriorAbsence, SealedComputationRetention, Suppression,
 };
+mod tree_attempt;
+mod tree_edits;
 mod tree_report;
 mod tree_update;
-pub(in super::super) use observed::observe_full_tree;
 #[cfg(feature = "test-query-execution-observer")]
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
+pub(in super::super) use observed::{observe_full_tree, FullTreeMapWork};
 #[cfg(feature = "test-query-execution-observer")]
 pub use tree_report::{
     WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
@@ -71,7 +74,7 @@ pub(in crate::domain_computation) use retained::{
     ComputationPrior, RetainedComputation, SealedComputationRun,
 };
 
-use self::retained::{RetainedBasis, RetainedPartitions, TypedPrior};
+use self::retained::{RetainedBasis, TypedPrior};
 use super::remaining_work::RemainingWork;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationRead, FactMovement, Movement, WorthQueryApplicationFactKey,
@@ -152,10 +155,10 @@ where
 {
     let prior = match reader.take_computation_prior() {
         Ok(prior) => prior,
-        Err(cause) => {
+        Err(reason) => {
             return Begun::Full {
-                basis: Err(Suppression::Policy),
-                cause,
+                basis: Err(reason.suppression()),
+                cause: reason.full_cause(),
             }
         }
     };
@@ -187,15 +190,10 @@ where
     }
     // The installation fixes the state's type, so its own owner's state
     // always downcasts.
-    let typed = Arc::clone(&retained.typed)
-        .downcast::<RetainedPartitions<Key, Item, Reduced>>()
-        .expect("the installation fixes the retained owner, item, key and result types");
+    let prior = TypedPrior::from_state(Arc::clone(&retained));
     let mut run = IncrementalRun {
         basis,
-        prior: TypedPrior {
-            state: Arc::clone(&retained),
-            typed,
-        },
+        prior,
         membership_moved: false,
         moved_items: BTreeSet::new(),
         marked: BTreeSet::new(),

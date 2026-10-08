@@ -54,9 +54,10 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
             for _ in 0..RUNS {
                 take_calls();
                 COMBINES.store(0, Ordering::Relaxed);
+                tree_count::reset();
                 worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test();
                 let outcome = (|| {
-                    let prepared = if MODE == 3 {
+                    let prepared = if MODE == 3 || super::differential::reference::model_replay() {
                         installed.prepare_without_reuse_for_test(reader, set)?
                     } else if super::branch_sharing::reinstallation_requested() {
                         installed.prepare_after_reinstallation_for_test(reader, set)?
@@ -76,6 +77,8 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                     calls: take_calls(),
                     tree_runs: worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test(),
                     combines: COMBINES.swap(0, Ordering::Relaxed),
+                tree_nodes: tree_count::take_nodes(),
+                placement: tree_count::placement(),
                 });
             }
             last_value

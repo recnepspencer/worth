@@ -126,7 +126,19 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
     );
     // The interrupted refresh gives its reservation back before the one that
     // replaces it reserves: the same caller's next advance settles.
-    settled_in_one_advance!(b, request, "the cancelled caller");
+    let settled = settled_in_one_advance!(b, request, "the cancelled caller");
+    assert_eq!(
+        settled.producer_contacts_in_this_demand(),
+        3,
+        "initial, cancelled refresh, and successful retry all entered B's handler"
+    );
+    let again = settled_in_one_advance!(b, request, "the settled caller advanced again");
+    assert_eq!(
+        again.producer_contacts_in_this_demand(),
+        3,
+        "a handle reports its lifetime count"
+    );
+    drop((settled, again));
     settled_in_one_advance!(c, request, "the last consumer");
     settled_in_one_advance!(a, request, "the open root demand");
     drop((a, b, c));

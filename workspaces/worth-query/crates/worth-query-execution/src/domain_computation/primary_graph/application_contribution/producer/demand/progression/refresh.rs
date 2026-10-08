@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+mod recovery_refresh_observation;
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -23,14 +26,7 @@ where
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        // Recovery initially selects an exact publication. If its output is
-        // born stale, disclosure has established the current source and the
-        // demand must refresh under ordinary admission to find a lasting result.
-        let admission_kind = match demand.admission_kind {
-            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery =>
-                crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
-            kind => kind,
-        };
+        permit_refresh(demand.admission_kind, Family::IDENTITY)?;
         let interest = demand
             .interest
             .as_ref()
@@ -46,7 +42,7 @@ where
             profile_kind,
             demand.limits,
             None,
-            admission_kind,
+            demand.admission_kind,
             None,
             predecessor,
             demand.retained_program_basis.clone(),
@@ -69,4 +65,19 @@ where
         *demand = refreshed;
         Ok(())
     }
+}
+
+/// Every route creating a successor preserves exact-publication recovery.
+pub(super) fn permit_refresh(
+    kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
+    subject: &'static str,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    use crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind;
+    if kind == DemandAdmissionKind::Recovery {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            subject,
+        ));
+    }
+    Ok(())
 }

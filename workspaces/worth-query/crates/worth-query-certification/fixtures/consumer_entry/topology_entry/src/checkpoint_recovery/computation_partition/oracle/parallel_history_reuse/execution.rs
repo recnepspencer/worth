@@ -36,6 +36,7 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
         let handler = RegionOutputHandler::running(move |reader, set| {
             take_calls();
             COMBINES.store(0, Ordering::Relaxed);
+            tree_count::reset();
             worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test();
             let outcome = (|| {
                 let computed = installed
@@ -61,6 +62,8 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
                 calls: take_calls(),
                 tree_runs: worth_query_host::facade::primary_graph::partitioned_computation_tree_work_on_this_thread_for_test(),
                 combines: COMBINES.swap(0, Ordering::Relaxed),
+                tree_nodes: tree_count::take_nodes(),
+                placement: tree_count::placement(),
             });
             value
         });
@@ -165,9 +168,10 @@ pub(super) fn demand(
         })
         .expect("the region output demand settles");
     let contacts = settled.producer_contacts_in_this_demand();
+    let runs = take_runs(None);
     (
         contacts,
-        std::mem::take(&mut *room()),
+        runs,
         REPORTS.with(|reports| std::mem::take(&mut *reports.borrow_mut())),
     )
 }

@@ -4,12 +4,10 @@ use super::super::{
     retained_computation::{PriorComputationRecord, RecordedComputation},
 };
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::{
-    sealed_run_for_lineage_test, PriorAbsence,
-};
+use crate::domain_computation::primary_graph::application_contribution::sealed_run_for_lineage_test;
 
 #[test]
-fn a_cancelled_prepared_publication_cannot_take_its_priors_custody() {
+fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let (mut lineage, prior_identity) = recorded_settlement();
     let source = prior_identity.source().clone();
     let (occurrence, generation, old_slot) = prior_identity.address();
@@ -71,10 +69,7 @@ fn a_cancelled_prepared_publication_cannot_take_its_priors_custody() {
         actual_resources: None,
         prior_computation: None,
         filled: false,
-        computation: Some(SealedComputationRetention::Absent(
-            PriorAbsence::NotProduced,
-        )),
-        computation_assigned: false,
+        computation: PreparedComputationCustody::Unassigned,
         computation_fork_scan_bound,
     };
     prepared.retain_computation(

@@ -93,7 +93,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         .field_locator(reference.entity(), reference.aspect(), reference.field())
         .unwrap()
         .clone();
-    let (visible, expected) = handle.with_runtime_mut(|runtime| {
+    let result: Result<_, &'static str> = handle.with_runtime_mut(|runtime| {
         // A real Native fork has no Query lookup cell before its first write.
         // No derived table, Native head or existing registration is erased.
         let branch = BranchId("concurrent-first-native-fork".to_owned());
@@ -125,7 +125,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         let first = candidate(runtime, &branch, entity, status.clone(), "first");
         let second = candidate(runtime, &branch, entity, status, "second");
         let port = runtime.publication_port();
-        let (performed, second) = std::thread::scope(|threads| {
+        let (performed, second, hang_guard) = std::thread::scope(|threads| {
             let first_thread = threads.spawn(|| {
                 let published = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     port.compare_and_publish(first)
@@ -138,24 +138,32 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
                 .is_err()
             {
                 let _ = release_first.send(());
-                if let RelationalPublicationOutcome::Performed(performed) =
-                    first_thread.join().unwrap()
-                {
+                let published = first_thread
+                    .join()
+                    .map_err(|_| "hang guard: first candidate panicked before reaching its gate")?;
+                if let RelationalPublicationOutcome::Performed(performed) = published {
                     let committed = runtime.settle_performed_publication(performed).unwrap();
                     release_test_commit_snapshot(runtime, &committed);
                 }
-                panic!("the first candidate did not reach its prepared gate");
+                return Err("hang guard: the first candidate did not reach its prepared gate");
             }
             let second_thread = threads.spawn(|| port.compare_and_publish(second));
             let overlapping = observe_second.recv_timeout(std::time::Duration::from_secs(10));
             release_first.send(()).unwrap();
-            let results = (first_thread.join().unwrap(), second_thread.join().unwrap());
-            assert!(
-                overlapping.is_ok(),
-                "both candidates reached preflight before the first performed"
-            );
-            results
-        });
+            let first = first_thread
+                .join()
+                .map_err(|_| "first candidate panicked")?;
+            let second = second_thread
+                .join()
+                .map_err(|_| "second candidate panicked")?;
+            let results = (first, second);
+            // Timeouts diagnose a hung gate only. Native outcomes come from
+            // the joined publications, never from elapsed time.
+            let hang_guard = overlapping
+                .err()
+                .map(|_| "hang guard: the second candidate did not reach preflight");
+            Ok((results.0, results.1, hang_guard))
+        })?;
         let RelationalPublicationOutcome::Performed(performed) = performed else {
             panic!("the first candidate performs");
         };
@@ -182,8 +190,11 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         );
         release_test_commit_snapshot(runtime, &committed);
         drop(registration);
-        (visible, expected)
+        Ok((visible, expected, hang_guard))
     });
+    // Report hang guards on the test thread after releasing the runtime lock.
+    let (visible, expected, hang_guard) = result.expect("first-candidate hang guard");
+    assert!(hang_guard.is_none(), "{}", hang_guard.unwrap_or("no hang"));
     assert_eq!(
         visible,
         Some(expected),

@@ -18,4 +18,5 @@ worth-foundational = { path = "../../../../../../../crates/worth-foundational" }
 serde.workspace = true
 
 [dev-dependencies]
+worth-query-host = { workspace = true, features = ["test-output-delivery-faults"] }
 worth-execution = { path = "../../../../../../../crates/worth-execution" }

@@ -12,6 +12,8 @@ use super::super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
 mod controls;
+#[cfg(test)]
+mod exact_refresh;
 mod resources;
 mod settlement;
 mod snapshot_pressure;

@@ -9,18 +9,100 @@ use worth_query_host::facade::application_contribution::WorthQueryPartitionedTre
 #[path = "tree_shape.rs"]
 mod shape;
 
+pub(super) enum TreeStop<'a> {
+    Exact,
+    BeforeTree,
+    ParallelBuild { serial: &'a [TreeRun] },
+}
+
+pub(super) fn stop_kind<'a>(run: &OracleRun, serial: Option<&'a [TreeRun]>) -> TreeStop<'a> {
+    use worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement;
+    if run.outcome.is_err() && run.tree_runs.is_empty() {
+        TreeStop::BeforeTree
+    } else if run.outcome.is_err()
+        && matches!(run.tree_runs.as_slice(), [TreeRun::Full(_, _)])
+        && matches!(run.placement, Placement::Leased(n) | Placement::Certified { workers: n, .. } if n.get() > 1)
+    {
+        TreeStop::ParallelBuild {
+            serial: serial.expect("a stopped parallel build requires its serial witness"),
+        }
+    } else {
+        TreeStop::Exact
+    }
+}
+
 pub(super) fn assert_counted(run: &OracleRun) {
-    let reported: u128 = run
+    assert_reconciled(run, TreeStop::Exact);
+}
+
+pub(super) fn assert_reconciled(run: &OracleRun, stop: TreeStop<'_>) {
+    use worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement;
+    let full_completed = run
+        .runs
+        .iter()
+        .any(|run| matches!(run, WorthQueryPartitionedComputationRun::Full(_)));
+    // Two diagnostic certification builds follow the reported boundary.
+    // The owner independently gathered P leaves; each diagnostic build
+    // completes P valid f64 pairs. Exclude those later calls from this run.
+    let certified_leaves = if full_completed && matches!(run.placement, Placement::Certified { .. })
+    {
+        assert_eq!(run.calls.kernels, 3 * run.calls.gathers);
+        u128::try_from(run.calls.gathers).unwrap()
+    } else {
+        0
+    };
+    let reported_calls: u128 = run
         .tree_runs
         .iter()
-        .map(|(_, tree)| tree.metrics().combine_calls)
+        .map(|tree| tree.metrics().combine_calls)
         .sum();
-    assert_eq!(
-        reported,
-        u128::try_from(run.combines).unwrap(),
-        "every real reducer entry is reported: {:?}",
-        run.tree_runs
-    );
+    let reported_nodes: u128 = run
+        .tree_runs
+        .iter()
+        .map(|tree| tree.metrics().recombined_nodes)
+        .sum();
+    let counted_calls = u128::try_from(run.combines)
+        .unwrap()
+        .checked_sub(4 * certified_leaves)
+        .unwrap();
+    let counted_nodes = u128::try_from(run.tree_nodes)
+        .unwrap()
+        .checked_sub(2 * certified_leaves)
+        .unwrap();
+    if let TreeStop::ParallelBuild { serial } = stop {
+        assert_eq!(
+            run.tree_runs, serial,
+            "stopped parallel work equals the serial prefix"
+        );
+        assert!(
+            reported_calls <= counted_calls,
+            "canonical calls exceed independently entered calls: {run:?}"
+        );
+        assert!(
+            reported_nodes <= counted_nodes,
+            "canonical nodes exceed independently completed pairs: {run:?}"
+        );
+    } else {
+        if matches!(stop, TreeStop::BeforeTree) {
+            assert_eq!(
+                (reported_calls, reported_nodes, counted_calls, counted_nodes),
+                (0, 0, 0, 0),
+                "map-stage stops do no tree work"
+            );
+        }
+        assert_eq!(
+            reported_calls, counted_calls,
+            "every reducer entry reconciles: {run:?}"
+        );
+        assert_eq!(
+            reported_nodes, counted_nodes,
+            "every completed combine pair reconciles: {run:?}"
+        );
+    }
+}
+
+pub(super) fn priority(key: Id) -> (u64, Id) {
+    shape::priority(key)
 }
 
 pub(super) fn identity(region: u32) -> Id {
@@ -57,9 +139,7 @@ pub(super) fn delete_bound(keys: &[Id], key: Id) -> u64 {
 
 pub(super) fn assert_edited(run: &OracleRun, bound: u64) {
     assert_counted(run);
-    let [(WorthQueryPartitionedComputationRun::Incremental, TreeRun::Edited(metrics))] =
-        run.tree_runs.as_slice()
-    else {
+    let [TreeRun::Edited(metrics)] = run.tree_runs.as_slice() else {
         panic!(
             "partition reuse has its own tree-edit dimension: {:?}",
             run.tree_runs

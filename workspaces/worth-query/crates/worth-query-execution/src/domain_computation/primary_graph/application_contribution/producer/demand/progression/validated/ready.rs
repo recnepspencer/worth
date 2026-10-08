@@ -8,8 +8,8 @@ use crate::domain_computation::primary_graph::application_output_demand::{
 enum ReadyVerdict {
     Settled(std::sync::Arc<Settlement>),
     /// A superseded output, or an exhausted source-currentness allowance,
-    /// leaves no current proof. The demand refreshes into fresh execution
-    /// instead of stopping terminally.
+    /// leaves no current proof. Movable demands refresh into fresh execution;
+    /// exact-publication recovery refuses that refresh.
     Unavailable,
 }
 
@@ -145,11 +145,13 @@ where
                 &current,
                 &demand.selected.identity,
                 Family::IDENTITY,
+                demand.producer_contacts_in_this_demand,
             ))?,
             Authority::Restored(restored) => alias(Settlement::from_restoration(
                 self,
                 restored,
                 Family::IDENTITY,
+                demand.producer_contacts_in_this_demand,
             )?)?,
         };
         let Some(settlement) = settlement else {

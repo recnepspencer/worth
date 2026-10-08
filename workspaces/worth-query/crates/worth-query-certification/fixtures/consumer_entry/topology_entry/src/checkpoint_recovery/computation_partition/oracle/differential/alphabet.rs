@@ -140,6 +140,7 @@ pub(in super::super) struct Model {
 }
 
 /// What a step changes: entry facts or entries, or the scope's ordinate.
+#[derive(Clone)]
 pub(in super::super) enum Change {
     Entry(EntryEdit),
     Ordinate(u64),

@@ -1,3 +1,5 @@
+#[cfg(test)]
+use super::PreparedComputationCustody;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
 use std::any::TypeId;
 
@@ -61,10 +63,7 @@ impl PreparedOutputLineageSlot {
         mut self,
     ) -> PreparedLineageRecoveryMetadata {
         let metadata = PreparedLineageRecoveryMetadata {
-            computation: self
-                .computation
-                .take()
-                .expect("unfilled recovery slot owns its retention result"),
+            computation: self.computation.take(),
             prior_computation: self.prior_computation.take(),
             handler: self.completed_handler_facts.take(),
             decision_reuse: self.completed_decision_reuse.take(),
@@ -81,12 +80,7 @@ impl PreparedOutputLineageSlot {
         assert!(self.completed_handler_facts.is_none());
         assert!(self.completed_decision_reuse.is_none());
         assert!(self.prepared_input_reuse_key.is_none());
-        assert!(
-            !self.computation_assigned,
-            "recovery fills a fresh prepared slot"
-        );
-        self.computation_assigned = true;
-        self.computation = Some(metadata.computation);
+        self.computation.assign(metadata.computation);
         self.prior_computation = metadata.prior_computation.take();
         self.completed_handler_facts = metadata.handler.take();
         self.completed_decision_reuse = metadata.decision_reuse.take();
@@ -175,10 +169,7 @@ mod tests {
                 actual_resources: None,
                 prior_computation: None,
                 filled: false,
-                computation: Some(SealedComputationRetention::Absent(
-                    PriorAbsence::NotProduced,
-                )),
-                computation_assigned: false,
+                computation: PreparedComputationCustody::Unassigned,
                 computation_fork_scan_bound: lineage.prepay_computation_fork_scan_for_test(),
             }
         };
@@ -195,14 +186,16 @@ mod tests {
             assert_eq!(
                 matches!(
                     &replacement.computation,
-                    Some(SealedComputationRetention::Produced(_))
+                    PreparedComputationCustody::Assigned(SealedComputationRetention::Produced(_))
                 ),
                 produced
             );
             if !produced {
                 assert!(matches!(
                     replacement.computation,
-                    Some(SealedComputationRetention::Absent(PriorAbsence::Stopped))
+                    PreparedComputationCustody::Assigned(SealedComputationRetention::Absent(
+                        PriorAbsence::Stopped
+                    ))
                 ));
             }
         }
