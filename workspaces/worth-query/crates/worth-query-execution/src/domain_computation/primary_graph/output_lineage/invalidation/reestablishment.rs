@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 
 use super::super::{RecordedSettlementIdentity, SealedNativeOutputWitness};
 use super::{
-    admission::IndexAdmission,
+    admission::{IndexAdmission, RetainedIndexAdmission},
     index_capacity,
     mark_state::{FullVerificationReason, MarkState, SettlementCurrentness, SettlementMarks},
     source_alignment::{EqualOutputCurrentness, SnapshotAlignedMarkState},
@@ -155,7 +155,7 @@ impl SourceInvalidationOwner {
             }
         }
 
-        let before = admission.charged_bytes();
+        let before = admission.index_checkpoint();
         admission.bytes(
             index_capacity::arc_bytes::<SettlementMarks>()
                 .and_then(|bytes| {
@@ -165,14 +165,23 @@ impl SourceInvalidationOwner {
                 .and_then(|bytes| bytes.checked_add(branch_bytes))
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
         )?;
+        let basis_bytes = index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
+            .and_then(|bytes| bytes.checked_add(branch_bytes))
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        admission.record_index_bytes(
+            index_capacity::arc_bytes::<SettlementMarks>()
+                .and_then(|bytes| bytes.checked_add(basis_bytes))
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
+        )?;
         let mut replacement = (**row).clone();
         replacement.dirty_ordinals = im::OrdSet::new();
         replacement.read_basis = Arc::new(selected.clone());
         replacement.verification_requirement = None;
         let mut next = (**state).clone();
+        next.maximum_basis_allocation_bytes = next.maximum_basis_allocation_bytes.max(basis_bytes);
         replacement.delivery_epoch = next.delivery_epoch;
         next.dirty_ordinal_count -= row.dirty_ordinals.len();
-        admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
+        admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
             next.settlements.len(),
         )?;
         next.settlements

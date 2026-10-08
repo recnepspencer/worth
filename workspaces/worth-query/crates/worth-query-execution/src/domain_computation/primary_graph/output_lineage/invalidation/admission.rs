@@ -2,6 +2,9 @@ use worth_relational::facade::mvcc::{CompanionPreflightStop, PublicationCompanio
 
 use super::index_capacity;
 
+mod retained;
+pub(super) use retained::RetainedIndexAdmission;
+
 /// Both publication preparation and same-position derived edits use this
 /// boundary. Capacity forecasts are admitted before a persistent path is edited.
 pub(super) trait IndexAdmission {

@@ -187,7 +187,7 @@ impl SourceInvalidationOwner {
             }));
         }
 
-        let before = admission.charged_bytes();
+        let before = admission.index_checkpoint();
         admission.bytes(
             index_capacity::arc_bytes::<MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,

@@ -96,3 +96,38 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
         .iter()
         .all(|posting| Arc::ptr_eq(&posting.settlement, &identity)));
 }
+
+#[test]
+fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch() {
+    use super::super::super::index_capacity;
+    for (keys, copies) in [(1usize, 1usize), (1, 128), (128, 1)] {
+        let facts: Vec<_> = (0..keys)
+            .flat_map(|key| {
+                std::iter::repeat_n(
+                    Fact::SourceEntity {
+                        entity_id: EntityId::new(PartitionId::main(), key as u64 + 1, 1),
+                    },
+                    copies,
+                )
+            })
+            .collect();
+        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
+            maximum_work_visits: 1_000_000,
+            maximum_preparation_bytes: 64 * 1024 * 1024,
+        });
+        let prepared =
+            PreparedPostingOrdinals::prepare(&facts, None, &mut None, &mut admission).unwrap();
+        assert_eq!(prepared.ordinals.len(), keys);
+        assert!(prepared
+            .ordinals
+            .values()
+            .all(|ordinals| ordinals.len() == copies));
+        let expected =
+            index_capacity::retained_map_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(keys)
+                .unwrap()
+                + index_capacity::retained_forest_bytes::<usize, ()>(keys * copies, keys).unwrap()
+                + (keys as u64) * index_capacity::arc_bytes::<FactPostingKey>().unwrap();
+        assert_eq!(admission.charged_index_bytes(), expected);
+        assert!(admission.charged_bytes() > expected);
+    }
+}
