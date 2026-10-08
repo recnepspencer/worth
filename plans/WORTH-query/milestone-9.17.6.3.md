@@ -2688,7 +2688,9 @@ The next phase may trust that partition-granular reuse is exact.
 - **7.4** Derived-view reconstruction runs as a leased map over unique roots in
   canonical order, and its worker pool is deleted. A worker receives a
   sealed prepared read; projection stays on the owner in entity order.
-  Empty the ratchet list.
+  Empty the ratchet list. Every safe point and charge in a worker is the
+  caller's request. Reads still serialize at each installed source until
+  7.6 adds Relational's pinned read. *Completed.*
 - **7.5** The workflow frontier runs on the authority.
   - The execution map takes owned `Send` inputs through the one backend the
     borrowed map uses, under every law of the borrowed map. *Completed.*
@@ -2709,7 +2711,9 @@ The next phase may trust that partition-granular reuse is exact.
     its final delivery. One carrier holds it for that whole scope, and a
     seam cannot be entered without it.
   - Relational's seams take it: query plan execution, index build and
-    commit.
+    commit. Relational offers one sealed pinned read capability, taken
+    under the source's lock and read without it; 7.4's workers hold it
+    in place of the owner's port, so their reads run concurrently.
   - Bridge's, Signal's and World's seams take it.
 - **7.7** Run the `compute` steps of each dependency-ready wave concurrently
   under the request lease, with nested partition work.
