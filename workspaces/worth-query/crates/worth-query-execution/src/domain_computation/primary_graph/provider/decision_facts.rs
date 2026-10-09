@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+mod comparison;
+
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{
     WorthQueryDecisionFactAdmission, WorthQueryDecisionFactComparisonAdmission,

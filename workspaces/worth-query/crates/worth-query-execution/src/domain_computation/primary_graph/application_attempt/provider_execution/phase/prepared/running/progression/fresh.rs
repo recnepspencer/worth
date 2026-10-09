@@ -108,7 +108,12 @@ where
             ));
         }
     };
-    match staged.read_authority().compare_decision_read_set(receipt) {
+    match authority.provider().compare_application_read_set(
+        &staged.read_authority(), receipt,
+        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
+            allocation_control.policy(), Some(authority.admission().publication_request()),
+        ),
+    ) {
         Ok(WorthQueryDecisionReadSetFreshnessOutcome::Fresh(read_set)) => {
             WorthQueryProviderReadSetProgression::Fresh(WorthQueryFreshProviderAttempt {
                 staged,

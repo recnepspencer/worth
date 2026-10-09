@@ -173,3 +173,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
 #[cfg(test)]
 #[path = "session_admission/overlay_conflict_tests.rs"]
 mod overlay_conflict_tests;
+
+#[cfg(test)]
+#[path = "session_admission/comparison_scope_tests.rs"]
+mod comparison_scope_tests;

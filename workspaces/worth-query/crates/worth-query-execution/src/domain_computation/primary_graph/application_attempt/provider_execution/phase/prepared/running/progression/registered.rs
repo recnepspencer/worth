@@ -168,3 +168,7 @@ mod overlay_conflict_tests;
 
 #[cfg(test)]
 pub(super) use overlay_conflict_tests::assert_second_real_overlay_is_rejected;
+
+#[cfg(test)]
+#[path = "registered/comparison_tests.rs"]
+mod comparison_tests;

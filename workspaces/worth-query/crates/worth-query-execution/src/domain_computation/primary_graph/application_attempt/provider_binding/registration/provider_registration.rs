@@ -64,10 +64,18 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         &self.affinity
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn facts(
+    pub(in crate::domain_computation::primary_graph) fn facts(
         &self,
     ) -> &std::collections::BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact> {
         self.decision_facts.facts()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn shared_facts(
+        &self,
+    ) -> std::sync::Arc<
+        std::collections::BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>,
+    > {
+        self.decision_facts.shared_facts()
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_source_fact_rebase(

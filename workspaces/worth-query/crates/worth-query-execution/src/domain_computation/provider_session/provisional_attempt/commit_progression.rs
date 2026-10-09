@@ -124,16 +124,27 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
     }
 
     pub fn compare_and_commit(
-        mut self,
+        self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryProviderCompareAndCommitOutcome {
+        self.compare_and_commit_with(allocation_policy, |authority, fresh| {
+            authority.recompare_fresh_decision_read_set(fresh)
+        })
+    }
+
+    pub(crate) fn compare_and_commit_with(
+        mut self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        compare: impl FnOnce(
+            &crate::domain_computation::provider_session::WorthQuerySessionReadAuthority<'_>,
+            crate::domain_computation::WorthQueryFreshDecisionReadSet,
+        ) -> Result<
+            WorthQueryDecisionReadSetFreshnessOutcome,
+            crate::domain_computation::WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> WorthQueryProviderCompareAndCommitOutcome {
         let fresh = self.proposed.attempt.read_set;
-        let compared = self
-            .proposed
-            .attempt
-            .staged
-            .read_authority()
-            .recompare_fresh_decision_read_set(fresh);
+        let compared = compare(&self.proposed.attempt.staged.read_authority(), fresh);
         match compared {
             Ok(WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale)) => {
                 let _ = self.proposed.attempt.overlay.discard();

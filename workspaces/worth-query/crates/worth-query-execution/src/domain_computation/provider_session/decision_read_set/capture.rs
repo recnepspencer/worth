@@ -159,8 +159,8 @@ impl WorthQuerySessionReadAuthority<'_> {
                 .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?,
         );
         Ok(WorthQueryCompleteDecisionReadSetReceipt {
-            identity: binding.canonical_identity().into(),
-            session_binding_identity: binding.canonical_identity().into(),
+            identity: binding.retain_canonical_identity(),
+            session_binding_identity: binding.retain_canonical_identity(),
             evidence,
             counters,
             request: request.cloned(),
@@ -171,11 +171,24 @@ impl WorthQuerySessionReadAuthority<'_> {
         &self,
         receipt: WorthQueryCompleteDecisionReadSetReceipt,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
-        if receipt.session_binding_identity.as_ref() != self.binding().canonical_identity() {
-            return Err(denial(
-                WorthQueryDecisionReadSetDenialKind::EvidenceSubstitution,
-            ));
-        }
+        self.compare_decision_read_set_with(receipt, |evidence, admission| {
+            self.provider()
+                .compare_decision_fact(self.session(), evidence, admission)
+        })
+    }
+
+    pub(crate) fn compare_decision_read_set_with(
+        &self,
+        receipt: WorthQueryCompleteDecisionReadSetReceipt,
+        mut compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            WorthQueryDecisionFactComparisonEvidence,
+            WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        self.validate_decision_read_set_receipt(&receipt)?;
         let mut counters = receipt.counters;
         let mut stale = Vec::new();
         for evidence in receipt.evidence.iter() {
@@ -183,8 +196,7 @@ impl WorthQuerySessionReadAuthority<'_> {
             counters.provider_calls += 1;
             counters.compared_facts += 1;
             let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                self.provider().compare_decision_fact(
-                    self.session(),
+                compare(
                     evidence.view(),
                     WorthQueryDecisionFactComparisonAdmission::new(evidence),
                 )
@@ -214,6 +226,39 @@ impl WorthQuerySessionReadAuthority<'_> {
                 },
             ))
         }
+    }
+
+    pub(crate) fn validate_decision_read_set_receipt(
+        &self,
+        receipt: &WorthQueryCompleteDecisionReadSetReceipt,
+    ) -> Result<(), WorthQueryDecisionReadSetFailure> {
+        if receipt.session_binding_identity.as_ref() != self.binding().canonical_identity() {
+            return Err(denial(
+                WorthQueryDecisionReadSetDenialKind::EvidenceSubstitution,
+            ));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_fresh_decision_read_set(
+        &self,
+        fresh: &WorthQueryFreshDecisionReadSet,
+    ) -> Result<(), WorthQueryDecisionReadSetFailure> {
+        self.validate_decision_read_set_receipt(&fresh.receipt)
+    }
+
+    pub(crate) fn recompare_fresh_decision_read_set_with(
+        &self,
+        fresh: WorthQueryFreshDecisionReadSet,
+        compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            WorthQueryDecisionFactComparisonEvidence,
+            WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        self.compare_decision_read_set_with(fresh.receipt, compare)
     }
 
     pub(crate) fn recompare_fresh_decision_read_set(

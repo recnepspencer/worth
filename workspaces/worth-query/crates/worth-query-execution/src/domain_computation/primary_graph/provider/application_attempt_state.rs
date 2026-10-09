@@ -106,6 +106,29 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         ))
     }
 
+    pub(super) fn shared_observed_facts(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+    ) -> Option<(
+        Arc<BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>>,
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    )>{
+        let attempt = self.attempt(session)?;
+        Some((
+            attempt.shared_facts(),
+            attempt.affinity().product_publication().clone(),
+        ))
+    }
+
+    pub(super) fn retains_observed_facts(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+        expected: &Arc<BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>>,
+    ) -> bool {
+        self.attempt(session)
+            .is_some_and(|attempt| Arc::ptr_eq(&attempt.shared_facts(), expected))
+    }
+
     pub(super) fn idempotency_basis(
         &self,
         session: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,

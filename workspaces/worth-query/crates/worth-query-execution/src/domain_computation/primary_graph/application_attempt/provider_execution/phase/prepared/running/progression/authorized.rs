@@ -168,7 +168,14 @@ where
                 authority.admission().publication_request(), allocation_policy,
             );
             finish_authorized_compare(
-            candidate.compare_and_commit(control.policy()),
+            candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
+                authority.provider().recompare_application_read_set(
+                    read_authority, fresh,
+                    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
+                        control.policy(), Some(authority.admission().publication_request()),
+                    ),
+                )
+            }),
             WorthQueryAuthorizedCompareContext::from_progression(
                 authority,
                 dispatch_outbox,

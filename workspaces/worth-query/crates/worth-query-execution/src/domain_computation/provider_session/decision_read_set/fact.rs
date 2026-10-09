@@ -151,7 +151,7 @@ impl WorthQueryDecisionFactAdmission {
     ) -> Self {
         Self {
             request,
-            binding_identity: binding.canonical_identity().into(),
+            binding_identity: binding.retain_canonical_identity(),
         }
     }
 

@@ -1,6 +1,6 @@
 //! Atomic binding of authorization observations to provider read-set facts.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionArray;
 
 use super::{WorthQueryAuthorizationDecisionFact, WorthQueryPrincipalCurrentnessDependency};
@@ -20,7 +20,7 @@ pub(in crate::domain_computation) struct WorthQueryProviderAuthorizationDecision
 }
 
 pub(in crate::domain_computation) struct WorthQueryProviderDecisionFactBinding {
-    facts: BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>,
+    facts: Arc<BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>>,
     requests: Vec<WorthQueryDecisionFactRequest>,
     retained_authorization_fact_count: usize,
 }
@@ -98,7 +98,7 @@ impl WorthQueryProviderAuthorizationDecisionFacts {
             return Err("decision facts contain duplicate structural locators");
         }
         Ok(WorthQueryProviderDecisionFactBinding {
-            facts,
+            facts: Arc::new(facts),
             requests,
             retained_authorization_fact_count,
         })
@@ -126,10 +126,16 @@ impl WorthQueryProviderDecisionFactBinding {
         Ok(())
     }
 
-    pub(in crate::domain_computation) const fn facts(
+    pub(in crate::domain_computation) fn facts(
         &self,
     ) -> &BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact> {
         &self.facts
+    }
+
+    pub(in crate::domain_computation) fn shared_facts(
+        &self,
+    ) -> Arc<BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>> {
+        Arc::clone(&self.facts)
     }
 
     pub(in crate::domain_computation) fn decision_fact_count(&self) -> usize {
