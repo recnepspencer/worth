@@ -34,21 +34,6 @@ impl WorthQueryInMemoryApplicationProfile {
         Some(policy)
     }
 
-    pub(super) fn relation_integrity_scope_budget(
-        self,
-    ) -> Option<worth_relational::facade::config::RelationIntegrityScopeBudget> {
-        (self == Self::WorkflowScale).then(|| {
-            let mut budget = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
-                self.relational_profile(),
-                Default::default(),
-            )
-            .execution
-            .relation_integrity_scope_budget;
-            budget.max_planned_edges = 80_000;
-            budget
-        })
-    }
-
     pub(super) const fn relational_profile(
         self,
     ) -> worth_relational::facade::config::RelationalRuntimeProfile {
@@ -92,14 +77,10 @@ mod tests {
     }
 
     #[test]
-    fn workflow_scale_has_finite_publication_and_integrity_envelopes() {
+    fn workflow_scale_has_finite_publication_retention_envelope() {
         let profile = WorthQueryInMemoryApplicationProfile::WorkflowScale;
         let publication = profile.publication_override(None).unwrap();
         assert_eq!(publication.max_patch_records_per_commit, 240_000);
         assert_eq!(publication.max_prepared_root_bytes, 512 * 1024 * 1024);
-        let integrity = profile.relation_integrity_scope_budget().unwrap();
-        assert_eq!(integrity.max_planned_edges, 80_000);
-        assert_eq!(integrity.max_touched_entities, 32_768);
-        assert_eq!(integrity.max_scanned_relations, 131_072);
     }
 }

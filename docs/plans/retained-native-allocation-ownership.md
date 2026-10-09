@@ -199,6 +199,23 @@ cancellation/deadlines, actual allocation custody and independently declared
 algorithm controls remain. Canonical commit allocation still uses the mutation
 capacity calculation; the transaction quota estimator and cumulative counters
 are removed.
+Relation-integrity preparation also removes its profile-selected aggregate
+entity, relation, edge and traversal-count quotas. Complete affected scopes now
+carry the transaction's actual cancellation/deadline control and selected
+allocation policy through collection and completion. A supplied allocation stop
+retains its typed cause. The removed synthetic budget invariant is not replaced
+by a wider count ceiling; declared connectivity, minimum cardinality, symmetry,
+uniqueness, cycles and visited-set termination remain in their native owners.
+The focused native scope/control, selection, custom-work and catalog/profile
+proofs passed (37 tests), together with nine certification proofs for proposed
+state, selected branch, uniqueness and the separate publication patch limit.
+Seven installed Query profile/bootstrap/resolution proofs also passed. Native
+affected-target and complete Query workspace target checks, boundary/context
+enforcement, scoped formatting and dirty Rust line caps passed.
+These results do not establish the private 100k or million-member lifecycle.
+Preparation's existing BTree/Vec and adjacency-copy heaps remain physically
+uncharged by the new liveness checks; root bytes and companion retention retain
+their independent admission controls.
 The distinct checkpoint fact encoder/decoder and producer/performed merge now
 remove their 65,536-total-fact quota, with no replacement count policy. Seven
 existing fact-wire tests passed, including a complete literal 65,537-fact round

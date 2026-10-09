@@ -77,6 +77,16 @@ savepoint-count and physical allocation checks remain. Transaction overlay and
 footprint quotas do not add another admission gate. Query forwards the caller's
 actual allocation policy and live request control through native validation.
 
+Relation-integrity preparation retains complete affected scopes without a
+profile-selected aggregate entity, relation, edge or traversal-count quota.
+Transaction cancellation/deadline and the selected allocation policy are checked
+through preparation; allocation stops retain their typed cause. Declared relation
+rules, visited-set termination, and leased execution work, scratch and result
+admission remain. Preparation's existing BTree/Vec and adjacency-copy heaps are
+not admitted by these liveness checks. Patch-count, prepared-root bytes and live
+companion retention limits remain separate; this change does not establish a
+100,000-member or million-member lifecycle result.
+
 Repeated equality selections can prepare an installed entity-field index with
 `index_access().prepare_entity_field_lookup(&view, index, kind, &locator)`.
 The opaque owner retains the exact admitted view's root and index generation;

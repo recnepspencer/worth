@@ -29,7 +29,6 @@ pub enum RecordKindTag {
 pub enum InvariantRule {
     LiveRecordRequiresSidecar(RecordKindTag),
     MaxMergedIntents(usize),
-    RelationIntegrityScopeBudget(usize),
     MaxSnapshotEntities(usize),
     UniqueEntityAspectField {
         #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator")]
@@ -74,9 +73,6 @@ impl InvariantRule {
                 NativeInvariantRuleId::LiveRecordRequiresSidecarRelation
             }
             Self::MaxMergedIntents(_) => NativeInvariantRuleId::MaxMergedIntents,
-            Self::RelationIntegrityScopeBudget(_) => {
-                NativeInvariantRuleId::RelationIntegrityScopeBudget
-            }
             Self::MaxSnapshotEntities(_) => NativeInvariantRuleId::MaxSnapshotEntities,
             Self::UniqueEntityAspectField { .. } => NativeInvariantRuleId::UniqueEntityField,
             Self::EndpointKindContract(_) => NativeInvariantRuleId::EndpointKindContract,
@@ -127,7 +123,6 @@ impl InvariantRule {
             semantics: match self {
                 Self::LiveRecordRequiresSidecar(_)
                 | Self::MaxMergedIntents(_)
-                | Self::RelationIntegrityScopeBudget(_)
                 | Self::MaxSnapshotEntities(_)
                 | Self::UniqueEntityAspectField { .. } => InvariantSemanticsClass::NativeAlwaysOn,
                 Self::EndpointKindContract(_)
@@ -154,11 +149,6 @@ impl InvariantRule {
             },
             Self::MaxMergedIntents(_) => InvariantRuleMetadata {
                 groups: InvariantGroupSet::of(InvariantGroup::PublicationCoherence),
-                cost: InvariantCostClass::Touched,
-            },
-            Self::RelationIntegrityScopeBudget(_) => InvariantRuleMetadata {
-                groups: InvariantGroupSet::of(InvariantGroup::RelationIntegrity)
-                    .union(InvariantGroupSet::of(InvariantGroup::PublicationCoherence)),
                 cost: InvariantCostClass::Touched,
             },
             Self::MaxSnapshotEntities(_) => InvariantRuleMetadata {
@@ -239,9 +229,6 @@ impl InvariantRule {
                 execution_point == InvariantExecutionPoint::CommitBoundary
                     || execution_point == InvariantExecutionPoint::HarnessAudit
             }
-            Self::RelationIntegrityScopeBudget(_) => {
-                execution_point == InvariantExecutionPoint::CommitBoundary
-            }
             Self::UniqueEntityAspectField { .. } => {
                 execution_point == InvariantExecutionPoint::MutationSensitive
                     || execution_point == InvariantExecutionPoint::CommitBoundary
@@ -283,7 +270,6 @@ impl InvariantRule {
                 left == right
             }
             (Self::MaxMergedIntents(_), Self::MaxMergedIntents(_))
-            | (Self::RelationIntegrityScopeBudget(_), Self::RelationIntegrityScopeBudget(_))
             | (Self::MaxSnapshotEntities(_), Self::MaxSnapshotEntities(_))
             | (Self::UniqueEntityAspectField { .. }, Self::UniqueEntityAspectField { .. }) => true,
             (Self::EndpointKindContract(left), Self::EndpointKindContract(right)) => {

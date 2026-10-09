@@ -4,18 +4,16 @@ use crate::identity::data::RelationId;
 use crate::transactions::data::EntityReference;
 use crate::validation::engine::request::PreparedVisibleRelationEdge;
 
-use super::{
-    relation_scope_details_for_id, PreparedRelationIntegrityScopeBudgetExceeded,
-    RelationIntegrityScopeAccumulator,
-};
+use super::{relation_scope_details_for_id, RelationIntegrityScopeAccumulator};
 
-impl RelationIntegrityScopeAccumulator<'_, '_> {
+impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     pub(super) fn scan_touched_relations(
         &mut self,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         let mut scanned_sources = BTreeSet::new();
         let mut scanned_targets = BTreeSet::new();
         loop {
+            self.check_live()?;
             if let Some(entity_id) = self.touched_relation_sources.pop_first() {
                 if !scanned_sources.insert(entity_id) {
                     continue;
@@ -52,14 +50,15 @@ impl RelationIntegrityScopeAccumulator<'_, '_> {
     fn scan_relation_ids(
         &mut self,
         relation_ids: impl IntoIterator<Item = RelationId>,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         for relation_id in relation_ids {
+            self.check_live()?;
             if !self.scanned_relations.insert(relation_id)
                 || self.deleted_relations.contains(&relation_id)
             {
                 continue;
             }
-            self.ensure_budget()?;
+            self.check_live()?;
             let Some((kind_id, source, target)) =
                 relation_scope_details_for_id(&self.state_view, relation_id)
             else {
@@ -95,18 +94,17 @@ impl RelationIntegrityScopeAccumulator<'_, '_> {
                     .is_some_and(|kinds| !kinds.is_empty())
             }) {
                 scope.minimum_touched_entities.insert(survivor);
-                self.touched_entities.insert(survivor);
                 self.touched_relation_sources.insert(survivor);
                 self.touched_relation_targets.insert(survivor);
             }
-            self.ensure_budget()?;
+            self.check_live()?;
         }
         Ok(())
     }
 
     pub(super) fn scan_required_visible_successors(
         &mut self,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         let required_kinds = self
             .scopes
             .iter()
@@ -123,6 +121,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_> {
                 .relation_slot_scan_count(partition_id)
                 .unwrap_or_default();
             for slot in 0..slot_count {
+                self.check_live()?;
                 let Some(metadata) = self
                     .state_view
                     .relation_metadata_for_slot(partition_id, slot)
@@ -137,7 +136,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_> {
                     continue;
                 }
                 self.scanned_relations.insert(metadata.relation_id);
-                self.ensure_budget()?;
+                self.check_live()?;
                 self.scopes
                     .get_mut(&metadata.kind_id)
                     .expect("required relation kind scope must be prepared")
@@ -148,7 +147,9 @@ impl RelationIntegrityScopeAccumulator<'_, '_> {
             }
         }
         for scope in self.scopes.values_mut() {
+            self.control.check()?;
             for successors in scope.visible_successors.values_mut() {
+                self.control.check()?;
                 successors.sort();
                 successors.dedup();
             }
