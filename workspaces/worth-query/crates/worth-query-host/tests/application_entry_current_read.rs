@@ -133,3 +133,56 @@ fn request_targets_the_selected_product_occurrence() {
         .expect("the request selects the exact child occurrence");
     assert_eq!(inherited.rows()[0].input, "payload");
 }
+
+#[test]
+fn receipt_selected_read_lease_survives_request_and_branch_advancement() {
+    let world = CourtroomWorld::publish("ready");
+    let scope = world::request_scope();
+    let authentication = world::admit_identity_adapter(world.application.installed_schema());
+    let external = block_on(authentication.authenticate((), &scope)).unwrap();
+    let branch = world.application.current_world();
+    let receipt = world
+        .change_input_on_branch_with_ordinal(branch, "receipt-payload", 0xC1)
+        .require_committed()
+        .expect("the receipt-bearing change commits");
+    world
+        .change_input_on_branch_with_ordinal(branch, "newer-payload", 0xC2)
+        .require_committed()
+        .expect("the branch advances before selecting the earlier receipt");
+
+    let request = world
+        .application
+        .request(&external, &scope)
+        .on_branch(branch);
+    let observation = {
+        let historical = request
+            .at_commit(&receipt, NonZeroUsize::new(2).unwrap())
+            .expect("bounded history contains the earlier receipt");
+        historical.retain_read()
+    };
+    assert_eq!(
+        observation.selected_commit(),
+        receipt.committed_product_publication().composite_commit()
+    );
+    drop(receipt);
+    world
+        .change_input_on_branch_with_ordinal(branch, "latest-payload", 0xC3)
+        .require_committed()
+        .expect("the retained lease does not prevent another publication");
+
+    let retained = request
+        .at(&observation)
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
+        .execute()
+        .expect("the independent read lease still selects the historical data");
+    let fresh = request
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
+        .execute()
+        .expect("an ordinary request reads the latest publication");
+    assert_eq!(retained.rows()[0].input, "receipt-payload");
+    assert_eq!(fresh.rows()[0].input, "latest-payload");
+}

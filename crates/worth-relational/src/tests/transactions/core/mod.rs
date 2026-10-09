@@ -18,6 +18,7 @@ mod entity_field_patch_denials;
 mod entity_field_patch_evidence;
 mod exact_commit_snapshots;
 mod failure_boundaries;
+mod mixed_graph_payload_custody;
 mod native_aspect_conflicts;
 mod native_aspect_mutations;
 mod native_durability;

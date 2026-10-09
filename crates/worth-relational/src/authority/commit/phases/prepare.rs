@@ -11,7 +11,7 @@ use crate::transactions::data::{
     CommitTopology, CreateIntent, EntityMutationIntent, MergedCommitPlan, MutationIntent,
     TransactionCommitError,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::time::Instant;
 
 pub(crate) struct PreparedWorkingStateScope {
@@ -27,8 +27,9 @@ pub(crate) struct PreparedWorkingStateScope {
 const AOSOA_ENTITY_CHUNK_WIDTH_SMALL: usize = 128;
 const AOSOA_ENTITY_CHUNK_WIDTH_MEDIUM: usize = 256;
 const AOSOA_ENTITY_CHUNK_WIDTH_LARGE: usize = 512;
-const AOSOA_SPARSE_ENTITY_SLOT_LIMIT: usize = 1024;
-const AOSOA_SPARSE_PARTITION_LIMIT: usize = 8;
+#[path = "prepare/entity_payload.rs"]
+mod entity_payload;
+use entity_payload::sparse_entity_slots_for_plan;
 
 fn select_entity_working_set_layout(
     clone_mode: PartitionCloneMode,
@@ -50,66 +51,6 @@ fn select_entity_working_set_layout(
     };
 
     EntityWorkingSetLayout::AoSoACandidate { chunk_width }
-}
-
-fn sparse_entity_slots_for_plan(
-    clone_mode: PartitionCloneMode,
-    merged_plan: &MergedCommitPlan,
-    footprint: Option<&crate::mvcc::RelationalTransactionFootprint>,
-) -> Option<BTreeMap<crate::identity::data::PartitionId, BTreeSet<usize>>> {
-    if !matches!(
-        clone_mode,
-        PartitionCloneMode::EntityOnly | PartitionCloneMode::GraphSparseEntities
-    ) {
-        return None;
-    }
-
-    let mut slots_by_partition = BTreeMap::new();
-    for intent in &merged_plan.merged_intents {
-        match intent {
-            MutationIntent::Entity(EntityMutationIntent::UpdateFields(spec)) => {
-                slots_by_partition
-                    .entry(spec.entity_id.partition_id)
-                    .or_insert_with(BTreeSet::new)
-                    .insert(spec.entity_id.slot_index());
-            }
-            // A revalidation demand writes no field, but it marks the
-            // record's slot touched, and a touched slot must be materialized
-            // in the working state. Naming its slot here keeps the sparse
-            // clone both correct and narrow: without this arm the plan falls
-            // back to cloning every slot in the partition to cover one record
-            // the demand never changed.
-            MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
-                slots_by_partition
-                    .entry(spec.entity_id.partition_id)
-                    .or_insert_with(BTreeSet::new)
-                    .insert(spec.entity_id.slot_index());
-            }
-            MutationIntent::Create(_)
-                if matches!(clone_mode, PartitionCloneMode::GraphSparseEntities) => {}
-            _ => return None,
-        }
-    }
-
-    if let Some(footprint) = footprint {
-        for read in footprint.reads() {
-            if let crate::mvcc::RelationalTransactionReadLocus::Existing(
-                crate::transactions::data::RecordRef::Entity(entity),
-            ) = read
-            {
-                slots_by_partition
-                    .entry(entity.partition_id)
-                    .or_insert_with(BTreeSet::new)
-                    .insert(entity.slot_index());
-            }
-        }
-    }
-
-    let total_slots: usize = slots_by_partition.values().map(BTreeSet::len).sum();
-    (total_slots > 0
-        && total_slots <= AOSOA_SPARSE_ENTITY_SLOT_LIMIT
-        && slots_by_partition.len() <= AOSOA_SPARSE_PARTITION_LIMIT)
-        .then_some(slots_by_partition)
 }
 
 fn sparse_relation_overlay_partitions_for_plan(
@@ -276,6 +217,18 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
                 .unwrap_or(0)
         })
         .sum();
+    let entity_payload = sparse_entity_slots_for_plan(clone_mode, merged_plan, footprint);
+    let sparse_entity_slots = entity_payload.selected_slots();
+    let sparse_relation_overlay_partitions =
+        sparse_relation_overlay_partitions_for_plan(clone_mode, merged_plan, footprint);
+    let clone_mode = if matches!(clone_mode, PartitionCloneMode::GraphSparseEntities)
+        && (entity_payload.requires_complete_payload()
+            || (sparse_entity_slots.is_none() && sparse_relation_overlay_partitions.is_none()))
+    {
+        PartitionCloneMode::Full
+    } else {
+        clone_mode
+    };
     let cloned_relation_slots = if matches!(clone_mode, PartitionCloneMode::Full) {
         structural_summary
             .touched_partitions
@@ -289,17 +242,6 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
             .sum()
     } else {
         0
-    };
-    let sparse_entity_slots = sparse_entity_slots_for_plan(clone_mode, merged_plan, footprint);
-    let sparse_relation_overlay_partitions =
-        sparse_relation_overlay_partitions_for_plan(clone_mode, merged_plan, footprint);
-    let clone_mode = if matches!(clone_mode, PartitionCloneMode::GraphSparseEntities)
-        && sparse_entity_slots.is_none()
-        && sparse_relation_overlay_partitions.is_none()
-    {
-        PartitionCloneMode::Full
-    } else {
-        clone_mode
     };
     let sparse_entity_slot_count = sparse_entity_slots
         .as_ref()
@@ -319,7 +261,7 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
         runtime.config.storage.adjacency_policy.clone(),
         clone_mode,
         entity_working_set_layout,
-        sparse_entity_slots.as_ref(),
+        sparse_entity_slots,
         sparse_relation_overlay_partitions.as_ref(),
     );
     phase_timing.draft_working_state_clone_micros = clone_started.elapsed().as_micros() as u64;
