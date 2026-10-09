@@ -2755,7 +2755,7 @@ The next phase may trust that partition-granular reuse is exact.
   with a serial backing.
   - The request opens before an advancement's first read and closes after
     its final delivery. One carrier holds it for that whole scope, and a
-    seam cannot be entered without it.
+    seam cannot be entered without it. *Completed.*
   - Relational's seams take it: query plan execution, index build and
     commit. Relational offers one sealed pinned read capability, taken
     under the source's lock and read without it; 7.4's workers hold it
