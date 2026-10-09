@@ -246,6 +246,14 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Retains another read-only lease for this request's exact observation.
+    /// Unlike an ordinary request's `retain_read`, this does not select branch
+    /// head or traverse history. The lease survives this request and later
+    /// branch publications; it grants no mutation authority.
+    pub fn retain_read(&self) -> super::WorthQueryApplicationReadObservation {
+        super::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.observation))
+    }
+
     /// Reads independently scoped intents at this same observation, publishing
     /// only a complete ordered batch. Duplicate scopes are independently billed.
     pub fn query_batch<Intent>(
