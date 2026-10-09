@@ -109,7 +109,9 @@ impl SignalGraph {
             fallback: crate::data::comparator::VersionComparatorPolicy::Exact,
             custom: &mut comparator,
         };
-        let serial = self.bounded_serial_request();
+        let serial = crate::data::host_execution::declared_serial_request(
+            self.installed_runtime_policy().requested_policy(),
+        );
         execute_prepared_plan_with_precompute(
             self,
             plan,

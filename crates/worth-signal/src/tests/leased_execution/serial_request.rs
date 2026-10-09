@@ -48,9 +48,10 @@ fn supplied_serial_cancellation_stops_after_the_evaluator_runs() {
         .build_evaluation_plan(&targets, EvaluationRequestMode::Default)
         .unwrap();
     let cancellation = worth_execution::CancellationSource::new();
-    let request = graph
-        .bounded_serial_request()
-        .with_cancellation(cancellation.token());
+    let request = crate::data::host_execution::declared_serial_request(
+        graph.installed_runtime_policy().requested_policy(),
+    )
+    .with_cancellation(cancellation.token());
     let mut hook = crate::data::comparator::DefaultComparatorResolver;
     let mut resolver = crate::data::comparator::DefaultComparatorPolicyResolver {
         fallback: crate::data::comparator::VersionComparatorPolicy::Exact,

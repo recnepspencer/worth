@@ -70,7 +70,14 @@ where
             },
             runtime_ctx,
             evaluator,
-            worth_execution::ExecutionRequest::serial(&self.runtime.graph.bounded_serial_request()),
+            worth_execution::ExecutionRequest::serial(
+                &crate::data::host_execution::declared_serial_request(
+                    self.runtime
+                        .graph
+                        .installed_runtime_policy()
+                        .requested_policy(),
+                ),
+            ),
         )
     }
 
@@ -118,7 +125,12 @@ where
                 runtime_ctx,
                 evaluator,
                 worth_execution::ExecutionRequest::serial(
-                    &self.runtime.graph.bounded_serial_request(),
+                    &crate::data::host_execution::declared_serial_request(
+                        self.runtime
+                            .graph
+                            .installed_runtime_policy()
+                            .requested_policy(),
+                    ),
                 ),
             )?;
         }
@@ -154,7 +166,12 @@ where
                 runtime_ctx,
                 evaluator,
                 worth_execution::ExecutionRequest::serial(
-                    &self.runtime.graph.bounded_serial_request(),
+                    &crate::data::host_execution::declared_serial_request(
+                        self.runtime
+                            .graph
+                            .installed_runtime_policy()
+                            .requested_policy(),
+                    ),
                 ),
             )?;
         }

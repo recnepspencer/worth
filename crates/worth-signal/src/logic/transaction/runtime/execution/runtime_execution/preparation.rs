@@ -78,7 +78,11 @@ where
             },
             runtime_ctx,
             evaluator,
-            worth_execution::ExecutionRequest::serial(&self.graph.bounded_serial_request()),
+            worth_execution::ExecutionRequest::serial(
+                &crate::data::host_execution::declared_serial_request(
+                    self.graph.installed_runtime_policy().requested_policy(),
+                ),
+            ),
         )?;
         apply_strategy_maintenance(&mut self.graph, strategy);
         Ok(report)

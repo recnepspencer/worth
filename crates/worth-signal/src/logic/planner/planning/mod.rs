@@ -40,7 +40,9 @@ pub fn build_evaluation_plan_with_policy_resolver(
     request_mode: EvaluationRequestMode,
     resolver: &mut impl ComparatorPolicyResolver,
 ) -> Result<EvaluationPlan, SignalError> {
-    let serial = graph.bounded_serial_request();
+    let serial = crate::data::host_execution::declared_serial_request(
+        graph.installed_runtime_policy().requested_policy(),
+    );
     super::execution::run_signal_preparation_request(
         worth_execution::ExecutionRequest::serial(&serial),
         |work, _, preparation| {
