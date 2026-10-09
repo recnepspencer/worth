@@ -23,6 +23,11 @@ use super::{
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
 };
 
+mod blocked;
+pub(super) mod recovery;
+pub use blocked::WorthQueryBlockedProgramSource;
+pub use recovery::WorthQueryProgramSourceRecoveryProgress;
+
 type PreparedCustody = (
     WorthQueryPreparedRequiredOutputSource,
     Arc<WorthQueryApplicationReadObservation>,
@@ -87,15 +92,25 @@ impl PerformedSourceCommit {
     /// The prepared custody of a committed source, or why it has none.
     pub(super) fn into_custody(
         self,
-    ) -> Result<PreparedCustody, WorthQueryRequiredOutputPreparationDenial> {
+    ) -> Result<
+        PreparedCustody,
+        (
+            WorthQueryRequiredOutputPreparationDenial,
+            Option<WorthQueryRequiredOutputSourcePreparationFailure>,
+        ),
+    > {
         if let Some(failure) = self.failure.into_inner() {
-            return Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(
-                failure.denial().clone(),
+            return Err((
+                WorthQueryRequiredOutputPreparationDenial::DemandExecution(
+                    failure.denial().clone(),
+                ),
+                Some(failure),
             ));
         }
-        self.prepared
-            .into_inner()
-            .ok_or(WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery)
+        self.prepared.into_inner().ok_or((
+            WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery,
+            None,
+        ))
     }
 
     pub(super) fn take_unpublished(&self) -> Option<worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource>{

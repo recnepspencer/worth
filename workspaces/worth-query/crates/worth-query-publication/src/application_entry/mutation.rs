@@ -35,11 +35,16 @@ pub use execution::{
 pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryPerformedApplicationMutation,
-    WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
-    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
-    WorthQueryStartedRequiredOutputs,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryRecoveredRequiredOutputs,
+    WorthQueryRequiredOutputPreparation, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputRetentionFailure,
+    WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
+    WorthQueryUnpublishedRequiredApplicationMutation,
 };
 pub use performed_outputs::WorthQueryApplicationProgramOutputHandle;
+pub use performed_source::{
+    WorthQueryBlockedProgramSource, WorthQueryProgramSourceRecoveryProgress,
+};
 pub use program_output_settlement::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
 };

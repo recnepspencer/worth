@@ -8,13 +8,9 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramOutputsShape,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
-use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryManagedApplicationRecoveryDenial,
-    WorthQueryManagedApplicationRecoveryOutcome,
-};
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::unpublished::{DiscoveredRecoveryPhase, RecoveredCarrier};
 use super::super::{
     RootConnection, WorthQueryDiscoveredRecoveryProgress,
     WorthQueryUnpublishedDiscoveredApplicationMutation,
@@ -63,55 +59,16 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
-        let prepared = self.authorize_discovered_recovery(application, recovery)?;
-        let partial = match &recovery.phase {
-            DiscoveredRecoveryPhase::Unpublished(partial) => partial,
-            DiscoveredRecoveryPhase::Performed { .. } => {
-                return Ok(WorthQueryDiscoveredRecoveryProgress::Performed)
-            }
-        };
-        // A native successor may return one independently failed prior cleanup.
-        // Reserve its storage before World can move; never allocate aftereffect
-        // merely to keep the returned mandatory owner alive.
-        recovery.prior_cleanup.try_reserve(1).map_err(|_| {
-            WorthQueryApplicationRecoveryRequestDenial::Recovery(
-                WorthQueryManagedApplicationRecoveryDenial::ProviderCapacity,
-            )
-        })?;
-        let (outcome, carrier) = self
-            .request
-            .application
-            .recover_admitted_unpublished_discovered_source(
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                partial,
+        let prepared =
+            self.authorize_discovered_source::<Program, Root>(application, &recovery.source)?;
+        recovery
+            .phase
+            .advance(
+                self.request.application,
                 &prepared.admission,
                 prepared.idempotency,
+                &mut recovery.prior_cleanup,
             )
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)?;
-        Ok(match outcome {
-            WorthQueryManagedApplicationRecoveryOutcome::NoEffect => {
-                WorthQueryDiscoveredRecoveryProgress::NoEffect
-            }
-            WorthQueryManagedApplicationRecoveryOutcome::ProductUnpublished {
-                next,
-                prior_cleanup_failure,
-            } => {
-                recovery.phase = DiscoveredRecoveryPhase::Unpublished(next);
-                if let Some(failure) = prior_cleanup_failure {
-                    recovery.prior_cleanup.push(failure);
-                }
-                WorthQueryDiscoveredRecoveryProgress::ProductUnpublished
-            }
-            WorthQueryManagedApplicationRecoveryOutcome::Performed(outcome) => {
-                recovery.phase = DiscoveredRecoveryPhase::Performed {
-                    carrier: match carrier {
-                        Some(carrier) => RecoveredCarrier::Retained(carrier),
-                        None => RecoveredCarrier::Unavailable,
-                    },
-                    outcome,
-                };
-                WorthQueryDiscoveredRecoveryProgress::Performed
-            }
-        })
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)
     }
 }

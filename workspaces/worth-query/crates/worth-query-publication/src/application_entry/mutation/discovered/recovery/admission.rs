@@ -13,7 +13,7 @@ use worth_query_execution::facade::primary_graph::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{RootConnection, WorthQueryUnpublishedDiscoveredApplicationMutation};
+use super::super::RootConnection;
 use crate::application_entry::mutation::authorization::PreparedMutation;
 use crate::application_entry::mutation::{
     WorthQueryApplicationMutationRequestWithIdempotency, WorthQueryApplicationRecoveryRequestDenial,
@@ -40,18 +40,13 @@ where
             <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    pub(in crate::application_entry::mutation::discovered) fn authorize_discovered_recovery<
+    pub(in crate::application_entry::mutation::discovered) fn authorize_discovered_source<
         Program,
         Root,
     >(
         &mut self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        recovery: &WorthQueryUnpublishedDiscoveredApplicationMutation<
-            Schema,
-            Intent,
-            Program,
-            Root,
-        >,
+        source: &worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource,
     ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
     where
         Program: ApplicationProgramDefinition<Schema>,
@@ -97,7 +92,7 @@ where
             .validate_unpublished_discovered_source::<Root, Intent::Binding>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &owner,
-                &recovery.source,
+                source,
                 prepared.idempotency,
                 self.request.branch,
             )

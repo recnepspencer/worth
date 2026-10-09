@@ -52,7 +52,7 @@ fn installed_large_parent_allowance_composes_with_small_child_artifact() {
         )
         .expect("broad parent allowance admits its actual smaller child");
     let settled = (0..256)
-        .find_map(|_| match output.advance(&request).unwrap() {
+        .find_map(|_| match output.advance(&application, &request).unwrap() {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         })
@@ -208,7 +208,7 @@ fn installed_child_excess_is_denied_without_publishing_the_child() {
     // again and publishes nothing.
     let mut before = request.retain_read().unwrap();
     for call in ["the call that settles the parent", "the next call"] {
-        match output.advance(&request) {
+        match output.advance(&application, &request) {
             Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
                 WorthQueryApplicationOutputDemandDenial::Demand(denial),
             )) if denial.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded => {}

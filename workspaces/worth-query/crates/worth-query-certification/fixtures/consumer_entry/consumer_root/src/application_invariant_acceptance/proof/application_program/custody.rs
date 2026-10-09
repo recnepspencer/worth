@@ -58,7 +58,7 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
         "recovery consumes the exact prepared carrier"
     );
     let recovered_settlement = crate::application_invariant_acceptance::proof::settle(|| {
-        match recovered.advance(&request).unwrap() {
+        match recovered.advance(&world.application, &request).unwrap() {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
@@ -98,7 +98,7 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
         "the successor retires older unconsumed custody"
     );
     let failure = older
-        .start_required_outputs(&request, controls())
+        .start_required_outputs(&world.application, &request, controls())
         .err()
         .expect("the retired predecessor cannot consume successor custody");
     let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
@@ -114,7 +114,7 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
     drop(failure);
 
     let mut successor = successor
-        .start_required_outputs(&request, controls())
+        .start_required_outputs(&world.application, &request, controls())
         .unwrap_or_else(|failure| panic!("successor starts: {:?}", failure.denial()));
     assert_eq!(
         world
@@ -122,7 +122,7 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
             .prepared_required_output_source_count_for_test(),
         0
     );
-    let settled = settle(&mut successor, &request);
+    let settled = settle(&world.application, &mut successor, &request);
     assert_eq!(
         request
             .at(settled.observation())
@@ -182,19 +182,14 @@ pub(super) fn close_before_required_output_start_is_typed(
         0
     );
     let failure = prepared
-        .start_required_outputs(&request, controls())
+        .start_required_outputs(&world.application, &request, controls())
         .err()
         .expect("retired occurrence denies its prepared source");
-    let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::SourceQuery(
-        worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ProductSelection(denial),
-    ) = failure.denial()
-    else {
-        panic!("retired occurrence must preserve the exact product-selection cause")
-    };
-    assert_eq!(
-        *denial,
-        worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::RetiredBranch
-    );
+    let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+        worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
+    ) = failure.denial() else { panic!("retired occurrence must preserve the exact native preflight cause") };
+    assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
+        worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::RetiredBranch));
     drop(failure);
     if let Some(cleanup) = pending_cleanup {
         cleanup
@@ -216,14 +211,12 @@ type ProgramApplication =
         crate::ConsumerProgram,
     >;
 
-type Prepared<'a> =
-    worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
-        'a,
-        ConsumerSchema,
-        PlanarSourceAdjustment,
-        crate::ConsumerProgram,
-        crate::ConsumerProgramRoot,
-    >;
+type Prepared = worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
+    ConsumerSchema,
+    PlanarSourceAdjustment,
+    crate::ConsumerProgram,
+    crate::ConsumerProgramRoot,
+>;
 
 fn prepare<'a>(
     request: &'a Request<'a>,
@@ -231,7 +224,7 @@ fn prepare<'a>(
     key: &str,
     y: u64,
     command: u64,
-) -> Prepared<'a> {
+) -> Prepared {
     let source = request
         .query(PlanarRead {
             body_key: key.to_owned(),
@@ -266,9 +259,8 @@ fn controls() -> WorthQueryOutputDemandControls {
 }
 
 fn settle<'a>(
-    performed: &mut worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<
-        'a,
-        ConsumerSchema,
+    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, crate::ConsumerProgram>,
+    performed: &mut worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<ConsumerSchema,
         PlanarSourceAdjustment,
         crate::ConsumerProgram,
         crate::ConsumerProgramRoot,
@@ -279,7 +271,10 @@ fn settle<'a>(
 >{
     crate::application_invariant_acceptance::proof::settle(|| {
         crate::application_invariant_acceptance::proof::settled(
-            performed.required_output_mut().advance(request).unwrap(),
+            performed
+                .required_output_mut()
+                .advance(application, request)
+                .unwrap(),
         )
     })
 }

@@ -116,7 +116,7 @@ where
                 ))
             }
         };
-        let (prepared, retained) = match application.promote_unpublished_discovered_source(
+        let (prepared, retained) = match application.promote_program_output_source(
             &worth_query_execution::publication_boundary::program_publication_access(),
             source,
             carrier,
@@ -182,7 +182,8 @@ where
         if !matches!(recovery.phase, DiscoveredRecoveryPhase::Performed { .. }) {
             return Err(binding_mismatch());
         }
-        let prepared = self.authorize_discovered_recovery(application, recovery)?;
+        let prepared =
+            self.authorize_discovered_source::<Program, Root>(application, &recovery.source)?;
         let read = self
             .request
             .application

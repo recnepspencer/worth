@@ -4,12 +4,9 @@ use worth_query_declaration::facade::application_operation::ApplicationMutationI
 use worth_query_declaration::facade::application_program::{
     ApplicationDiscoveredOutputRoot, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
-use worth_query_execution::facade::application_installation::{
-    WorthQueryRecoveredProgramOutputSource, WorthQueryUnpublishedProgramOutputSource,
-};
+use worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource;
 use worth_query_execution::facade::domain_computation::{
-    WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
-    WorthQueryProductUnpublishedRecoveryReleaseFailure,
+    WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryManagedApplicationRecoveryPerformed,
@@ -19,18 +16,9 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{Discovery, RootConnection};
 
-pub(super) enum DiscoveredRecoveryPhase {
-    Unpublished(WorthQueryProductUnpublishedRecovery),
-    Performed {
-        carrier: RecoveredCarrier,
-        outcome: WorthQueryManagedApplicationRecoveryPerformed,
-    },
-}
-
-pub(super) enum RecoveredCarrier {
-    Retained(WorthQueryRecoveredProgramOutputSource),
-    Unavailable,
-}
+pub(super) use crate::application_entry::mutation::performed_source::recovery::{
+    ProgramSourceRecoveryPhase as DiscoveredRecoveryPhase, RecoveredCarrier,
+};
 
 /// Original discovered-root preparation and exact native partial. Recovery
 /// never reruns the handler. Promotion consumes this move-only owner.
@@ -94,10 +82,5 @@ where
     }
 }
 
-/// World progress. All independent failures remain in the move-only owner.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryDiscoveredRecoveryProgress {
-    NoEffect,
-    ProductUnpublished,
-    Performed,
-}
+/// Native program-source progress, shared with fixed required roots.
+pub type WorthQueryDiscoveredRecoveryProgress = crate::application_entry::mutation::performed_source::recovery::WorthQueryProgramSourceRecoveryProgress;

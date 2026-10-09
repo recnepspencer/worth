@@ -364,7 +364,7 @@ fn settle_for<'application, 'principal, 'scope>(
     (0..256)
         .find_map(|_| {
             match output
-                .advance(request)
+                .advance(application, request)
                 .expect("the program output advances")
             {
                 WorthQueryApplicationProgramOutputProgress::Pending => None,

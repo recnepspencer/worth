@@ -47,7 +47,7 @@ where
     /// Commits a required-output source under the branch-selected program.
     pub fn compare_and_commit_selected_required_output_source<Root, Source>(
         &self,
-        _: &WorthQueryProgramPublicationAccess,
+        access: &WorthQueryProgramPublicationAccess,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -72,6 +72,7 @@ where
             }
         };
         self.compare_and_commit_output_source::<Source>(
+            access,
             Some(presented),
             program,
             idempotency,
@@ -84,7 +85,7 @@ where
     /// Commits a discovered-output source under the branch-selected program.
     pub fn compare_and_commit_selected_discovered_output_source<Root, Source>(
         &self,
-        _: &WorthQueryProgramPublicationAccess,
+        access: &WorthQueryProgramPublicationAccess,
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -110,6 +111,7 @@ where
             }
         };
         self.compare_and_commit_output_source::<Source>(
+            access,
             Some(presented),
             program,
             idempotency,

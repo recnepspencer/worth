@@ -99,7 +99,26 @@ the original performed carrier into an output handle once. Refused promotion
 returns the owner. Successful promotion also returns the raw performed recovery
 and all prior cleanup failures: starting outputs does not discharge those
 independent obligations. No original handler or candidate is executed again.
-Required fixed-root and workflow recovery remain outside this entrance.
+Fixed required roots use `execute_performed`, which now owns its original
+preparation independently of the starting request and runtime borrow. Start and
+advance it with an explicit program runtime and fresh request. A genuine
+`ProductUnpublished` fixed source retains its typed demand and native partial;
+`recover_unpublished_required_in_program` and `promote_recovered_required_outputs`
+perform the same checked native transition and original-carrier handoff as the
+discovered lane. The promoted starter is result-free: it does not recreate the
+original handler result. All independent read, publication and cleanup results
+remain owned by the returned recovery result. A committed retention refusal
+keeps its original result, preparation and carrier for a fresh exact-key
+`retry_required_output_retention`; it is not an unpublished outcome.
+The `RequiredOutputDenied` variant carries an opaque
+`WorthQueryRequiredOutputRetentionFailure`. Its borrowed receipt, result and
+denial accessors leave the original demand and native custody paired; pass the
+whole failure to the retry entrance, which returns complete custody on refusal.
+
+Both output-source lanes retain unsupported `SettlementDeferred` and
+`Indeterminate` outcomes with their original preparation in non-actionable
+`Blocked` custody. They are not no-effect outcomes or evidence that recovery
+finished. Workflow recovery remains outside these entrances.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through

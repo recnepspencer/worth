@@ -804,7 +804,10 @@ descriptive history.
 - **Required outputs.** After `execute_performed`, `start_required_outputs`
   produces the outputs the operation requires, and `recover_required_outputs`
   resumes that work. Those outputs join the required set until their demand
-  closes.
+  closes. The continuation owns its source custody independently of the starting
+  request. Starting and advancing it supply the original installed program runtime
+  and a fresh request explicitly. Unpublished source recovery retains the native
+  preparation and effects; it never repeats the original mutation handler.
 - **Discovered outputs.** `execute_performed_discovered` returns owned source
   custody. `start_required_outputs(&program, &request, controls)` creates an
   owned continuation without querying or admitting its roots. Each

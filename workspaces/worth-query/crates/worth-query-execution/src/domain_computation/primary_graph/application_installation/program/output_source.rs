@@ -82,6 +82,7 @@ where
     /// unless it is the program this occurrence runs.
     fn compare_and_commit_output_source<Source>(
         &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         presented: Option<
             crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram<'_>,
         >,
@@ -117,6 +118,20 @@ where
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
         let selected_program = presented.rendering().clone();
+        let payload = match (root_kind, discovery) {
+            (crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(root), None) => recovery::ProgramOutputSourcePayload::Required(root),
+            (crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(root), Some(discovery)) => recovery::ProgramOutputSourcePayload::Discovered { root, discovery },
+            _ => unreachable!("the typed program source entrance supplies its matching payload"),
+        };
+        let pending = WorthQueryUnpublishedProgramOutputSource {
+            runtime_authority: self.runtime.runtime.authority_identity().as_u64(),
+            program: selected_program,
+            binding: std::any::TypeId::of::<Source>(),
+            idempotency,
+            branch,
+            payload,
+            preparation: source_preparation,
+        };
         match self
             .runtime
             .compare_and_commit_application_for_required_output_source(
@@ -129,25 +144,15 @@ where
                 mut receipt,
             ) => {
                 let descriptive = receipt.clone();
-                let Some(change) = receipt.take_performed_relational_product_change() else {
-                    return Err(crate::domain_computation::primary_graph::WorthQueryRequiredOutputSourcePreparationFailure {
-                        receipt: descriptive,
-                        denial: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                            "committed required-output source has no performed-change carrier",
-                        ),
-                    });
-                };
-                let prepared = match self
-                    .runtime
-                    .retain_required_output_source(receipt, change, &source_preparation, root_kind, discovery)
-                {
+                let carrier = WorthQueryRecoveredProgramOutputSource::from_committed(&mut receipt);
+                let prepared = match self.promote_program_output_source(
+                    access, pending, carrier, receipt,
+                ) {
                     Ok(prepared) => prepared,
-                    Err(denial) => {
+                    Err((denial, source, carrier)) => {
                         return Err(crate::domain_computation::primary_graph::WorthQueryRequiredOutputSourcePreparationFailure {
-                            receipt: descriptive,
-                            denial,
-                        })
+                            receipt: descriptive, denial, source, carrier,
+                        });
                     }
                 };
                 Ok((
@@ -158,18 +163,10 @@ where
                     None,
                 ))
             }
-            outcome @ crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(_) => {
-                let pending = discovery.map(|discovery| WorthQueryUnpublishedProgramOutputSource {
-                    runtime_authority: self.runtime.runtime.authority_identity().as_u64(),
-                    program: selected_program,
-                    binding: std::any::TypeId::of::<Source>(),
-                    idempotency,
-                    branch,
-                    root: root_kind,
-                    preparation: source_preparation,
-                    discovery,
-                });
-                Ok((outcome, None, pending))
+            outcome @ (crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
+                | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
+                | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Indeterminate(_)) => {
+                Ok((outcome, None, Some(pending)))
             }
             outcome => Ok((outcome, None, None)),
         }

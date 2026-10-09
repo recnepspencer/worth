@@ -111,7 +111,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
     let mut settled = None;
     for _ in 0..64 {
         match recovered
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("recovered output advances")
         {
             WorthQueryApplicationProgramOutputProgress::Pending => {}

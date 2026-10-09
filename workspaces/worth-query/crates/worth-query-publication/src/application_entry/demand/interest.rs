@@ -73,7 +73,7 @@ where
 
     pub(in crate::application_entry) fn start_for_program<Program, Root>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         (
             super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
@@ -115,7 +115,7 @@ where
 
     pub(in crate::application_entry) fn start_recovery<Program, Root>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         (
@@ -123,6 +123,7 @@ where
             std::sync::Arc<
                 worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
             >,
+            worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         ),
         WorthQueryApplicationOutputDemandDenial,
     >
@@ -187,12 +188,13 @@ where
         Ok((
             super::WorthQueryApplicationProgramDemandHandle::new(admitted, self.demand, None),
             observation,
+            prepared,
         ))
     }
 
     pub(in crate::application_entry) fn start_dependent<Program, ParentDemand, Connection>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent: &worth_query_execution::facade::application_installation::WorthQuerySettledProgramOutput<
             Schema,
             Program,
@@ -273,7 +275,7 @@ where
 
     pub(in crate::application_entry) fn start_performed<Program, Root>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         source_result: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Demand>,

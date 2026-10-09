@@ -19,7 +19,7 @@ use crate::domain_computation::{
 
 enum RecoveredPublicationDelivery {
     Ordinary,
-    DiscoveredSource,
+    ProgramSource,
 }
 
 /// A performed World successor has been handed to the normal Query pending
@@ -119,8 +119,8 @@ where
     }
 
     /// Retains the original performed output carrier before optional Query
-    /// projection. Only the discovered program owner uses this handoff.
-    pub fn recover_admitted_unpublished_discovered_source<Operation, Input, Scope>(
+    /// projection. Only the program-source owner uses this handoff.
+    pub fn recover_admitted_unpublished_program_source<Operation, Input, Scope>(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         recovery: &WorthQueryProductUnpublishedRecovery,
@@ -133,7 +133,7 @@ where
             recovery,
             admission,
             idempotency,
-            RecoveredPublicationDelivery::DiscoveredSource,
+            RecoveredPublicationDelivery::ProgramSource,
         )
     }
 
@@ -249,7 +249,7 @@ where
                 let session = guard.take_attempt().complete(publication, None);
                 let source = match delivery {
                     RecoveredPublicationDelivery::Ordinary => None,
-                    RecoveredPublicationDelivery::DiscoveredSource => {
+                    RecoveredPublicationDelivery::ProgramSource => {
                         Some(session.take_recovered_output_source())
                     }
                 };

@@ -67,7 +67,15 @@ where
         receipt: WorthQueryApplicationCommitReceipt,
         result: MutationResult<Schema, Intent>,
         denial: WorthQueryRequiredOutputPreparationDenial,
+        custody: Option<worth_query_execution::facade::primary_graph::WorthQueryRequiredOutputSourcePreparationFailure>,
+        discovery: Discovery<Schema, Root>,
     },
+    /// Performed or unresolved native outcome whose recovery is not supported here.
+    Blocked(super::performed_source::WorthQueryBlockedProgramSource<
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+        MutationResult<Schema, Intent>,
+        Discovery<Schema, Root>,
+    >),
     NotPerformed(
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -196,15 +204,26 @@ where
         }
         other => other,
     };
+    if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::SettlementDeferred(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_))) {
+        if let Some(preparation) = source.take_unpublished() {
+            return WorthQueryApplicationDiscoveredMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: discovery, outcome });
+        }
+    }
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         return WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(outcome);
     };
     match source.into_custody() {
-        Err(denial) => WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied {
-            receipt,
-            result,
-            denial,
-        },
+        Err((denial, custody)) => {
+            WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied {
+                receipt,
+                result,
+                denial,
+                custody,
+                discovery,
+            }
+        }
         Ok((prepared, retained_source)) => {
             WorthQueryApplicationDiscoveredMutationOutcome::Performed(
                 WorthQueryPerformedDiscoveredApplicationMutation {

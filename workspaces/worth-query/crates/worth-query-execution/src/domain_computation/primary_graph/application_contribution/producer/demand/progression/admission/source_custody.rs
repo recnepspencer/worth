@@ -30,55 +30,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub(in crate::domain_computation::primary_graph) fn retain_required_output_source(
-        &self,
-        receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        change: crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
-        preparation: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRequiredOutputSourcePreparation,
-        root_kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
-        discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
-    ) -> Result<
-        (
-            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
-            std::sync::Arc<
-                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-            >,
-        ),
-        WorthQueryOutputDemandDenial,
-    > {
-        let publication = receipt.committed_product_publication();
-        let same_runtime =
-            std::sync::Arc::ptr_eq(&change.root_identity, &self.product_runtime.root_identity());
-        let same_publication = change.product_branch_identity() == publication.product_branch()
-            && change.product_commit() == publication.composite_commit();
-        if !same_runtime || !same_publication {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                "performed source does not belong to its application publication",
-            ));
-        }
-        let observation = publication
-            .take_output_demand_observation()
-            .filter(|observation| {
-                observation.branch_identity() == change.product_branch_identity()
-                    && observation.selected_commit() == change.product_commit()
-            })
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "performed source publication did not retain its exact output-demand basis",
-                )
-            })?;
-        self.retain_required_output_source_carrier(
-            receipt,
-            std::sync::Arc::new(change),
-            observation,
-            preparation,
-            root_kind,
-            discovery,
-        )
-    }
-
     pub(in crate::domain_computation::primary_graph) fn retain_required_output_source_carrier(
         &self,
         receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,

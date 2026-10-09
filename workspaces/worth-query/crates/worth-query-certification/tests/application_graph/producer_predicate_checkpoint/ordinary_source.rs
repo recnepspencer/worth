@@ -147,7 +147,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         )
         .expect("caller disposal must leave exact source custody recoverable by its owner");
     let WorthQueryApplicationProgramOutputProgress::Settled(settled) =
-        recovered.settle(&request).unwrap()
+        recovered.settle(&host, &request).unwrap()
     else {
         panic!("the existing installed assessment producer must settle")
     };
@@ -172,3 +172,6 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         .entity::<AssessmentOutput>()
         .is_ok());
 }
+
+#[path = "ordinary_source/unpublished.rs"]
+mod unpublished;

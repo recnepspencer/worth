@@ -19,6 +19,7 @@ mod program_contract;
 mod readiness_recovery;
 mod recovery;
 mod required_basis;
+mod required_unpublished;
 pub(super) mod root_selection;
 pub(super) mod selected_root_selection;
 mod settlement;
@@ -37,6 +38,7 @@ pub(super) fn performed_source_settles_required_output(
     discovered::recovery::foreign_runtime_cannot_recover_discovered_source(foreign);
     discovered::recovery::interrupted_discovery_recovers_both_consumed_roots(foreign);
     discovered::unpublished::original_partial_recovers_discovered_outputs(foreign);
+    required_unpublished::original_partial_recovers_required_outputs(foreign);
     discovered::initial_unpublished::initial_partial_recovers_discovered_outputs(foreign);
     discovered::publication_lifecycle::unchanged_roots_join_new_publication(foreign);
     discovered::publication_lifecycle::older_publication_starts_after_newer_root_binding(foreign);
@@ -100,6 +102,7 @@ fn secondary_root_settles_independently(
     };
     let mut primary_started = primary_performed
         .start_required_outputs(
+            &world.application,
             &request,
             WorthQueryOutputDemandControls::new(
                 NonZeroUsize::new(4_096).unwrap(),
@@ -138,13 +141,13 @@ fn secondary_root_settles_independently(
         NonZeroUsize::new(8_192).unwrap(),
     );
     let mut secondary_started = secondary_performed
-        .start_required_outputs(&secondary_request, controls)
+        .start_required_outputs(&world.application, &secondary_request, controls)
         .unwrap_or_else(|failure| panic!("secondary root starts: {:?}", failure.denial()));
     super::settle(|| {
         super::settled(
             secondary_started
                 .required_output_mut()
-                .advance(&secondary_request)
+                .advance(&world.application, &secondary_request)
                 .expect("the selected secondary root advances"),
         )
     });
@@ -152,7 +155,7 @@ fn secondary_root_settles_independently(
         super::settled(
             primary_started
                 .required_output_mut()
-                .advance(&request)
+                .advance(&world.application, &request)
                 .expect("the primary root remains live while its sibling settles"),
         )
     });

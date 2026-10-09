@@ -45,8 +45,7 @@ where
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
-        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-            'application, Schema, Program, Root,
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema, Program, Root,
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     >
@@ -88,7 +87,6 @@ where
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
         Ok(
             crate::application_entry::WorthQueryApplicationProgramOutputHandle::new_initial(
-                application,
                 crate::application_entry::WorthQueryApplicationReadObservation::new(retained),
                 root,
                 root_demand,
@@ -106,9 +104,7 @@ where
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
-        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-            'application,
-            Schema,
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema,
             Program,
             Root,
         >,
@@ -144,15 +140,15 @@ where
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::UndeclaredOutputRoot,
             );
         }
-        let (root, observation) = self
+        let (root, observation, preparation) = self
             .demand(root_demand.clone())
             .controls(controls)
             .start_recovery::<Program, Root>(application, source_receipt)
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
         Ok(
             crate::application_entry::WorthQueryApplicationProgramOutputHandle::new(
-                application,
                 source_receipt.clone(),
+                preparation,
                 crate::application_entry::WorthQueryApplicationReadObservation::new(observation),
                 root,
                 root_demand,

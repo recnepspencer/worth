@@ -136,8 +136,14 @@ fn chain_journey(invalidation_bytes: u64) -> Journey {
             Ok(Performed::NotPerformed(other)) => {
                 panic!("unexpected root mutation outcome: {other:?}")
             }
-            Ok(Performed::RequiredOutputDenied { denial, .. }) => {
-                panic!("required source custody is ample: {denial:?}")
+            Ok(Performed::RequiredOutputDenied(failure)) => {
+                panic!("required source custody is ample: {:?}", failure.denial())
+            }
+            Ok(Performed::ProductUnpublished(partial)) => {
+                panic!("unexpected native partial: {:?}", partial.initial_cause())
+            }
+            Ok(Performed::Blocked(blocked)) => {
+                panic!("unexpected unresolved source: {:?}", blocked.outcome())
             }
             Err(other) => panic!("unexpected root mutation denial: {other:?}"),
         };
