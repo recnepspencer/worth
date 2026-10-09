@@ -58,7 +58,7 @@ fn graph_with_settled_sources(
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
-            &bootstrap,
+            worth_execution::ExecutionRequest::leased(&bootstrap),
         )
         .expect("source facts settle before the backpressure request");
     drop(bootstrap);
@@ -116,7 +116,7 @@ fn run_trial(workers: usize, memory_bytes: u64) -> Result<Trial, SignalError> {
             })?;
             Ok(AspectVersion::zero().with(VALUE, value))
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     );
     let report = match outcome {
         Ok(report) => report,

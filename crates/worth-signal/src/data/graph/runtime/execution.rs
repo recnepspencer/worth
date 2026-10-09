@@ -6,11 +6,11 @@ use crate::logic::evaluation::IntoEvaluationOutput;
 use crate::logic::planner::precompute::callback::{CheckedPrecompute, LegacyPrecompute};
 use crate::logic::planner::{
     build_evaluation_plan, execute_prepared_plan, execute_prepared_plan_in_scope,
-    execute_prepared_plan_with_precompute, run_signal_request_scope, EvaluationPlan,
+    execute_prepared_plan_with_precompute, run_signal_execution_request_scope, EvaluationPlan,
     ExecutionReport, TemporalLoweringContext,
 };
 use crate::logic::prepared::{ExecutionReadView, PreparedEvaluation};
-use worth_execution::ExecutionResourceLease;
+use worth_execution::ExecutionRequest;
 
 use super::graph::SignalGraph;
 
@@ -21,7 +21,7 @@ impl SignalGraph {
         request_mode: EvaluationRequestMode,
         domain_ctx: &Ctx,
         evaluator: &F,
-        lease: &ExecutionResourceLease<'_>,
+        request: ExecutionRequest<'_, '_>,
     ) -> Result<ExecutionReport, SignalError>
     where
         Ctx: Sync,
@@ -37,22 +37,25 @@ impl SignalGraph {
             fallback: crate::data::comparator::VersionComparatorPolicy::Exact,
             custom: &mut comparator,
         };
-        let result = run_signal_request_scope(lease, |work, disposition, preparation| {
-            let plan = crate::logic::planner::planning::build_evaluation_plan_with_policy_resolver_and_work(
+        let result = run_signal_execution_request_scope(
+            request,
+            |work, disposition, preparation| {
+                let plan = crate::logic::planner::planning::build_evaluation_plan_with_policy_resolver_and_work(
                     self, targets, request_mode, &mut resolver, Some(&mut *work), Some(&mut *preparation),
                 )?;
-            execute_prepared_plan_in_scope(
-                self,
-                &plan,
-                &CheckedPrecompute::new(domain_ctx, evaluator),
-                &mut resolver,
-                TemporalLoweringContext::graph_only(),
-                lease,
-                work,
-                disposition,
-                preparation,
-            )
-        });
+                execute_prepared_plan_in_scope(
+                    self,
+                    &plan,
+                    &CheckedPrecompute::new(domain_ctx, evaluator),
+                    &mut resolver,
+                    TemporalLoweringContext::graph_only(),
+                    request,
+                    work,
+                    disposition,
+                    preparation,
+                )
+            },
+        );
         self.record_checked_execution_result(&result);
         result
     }
@@ -144,7 +147,7 @@ impl SignalGraph {
         plan: &EvaluationPlan,
         domain_ctx: &Ctx,
         evaluator: &F,
-        lease: &ExecutionResourceLease<'_>,
+        request: ExecutionRequest<'_, '_>,
     ) -> Result<ExecutionReport, SignalError>
     where
         Ctx: Sync,
@@ -166,7 +169,7 @@ impl SignalGraph {
             &CheckedPrecompute::new(domain_ctx, evaluator),
             &mut resolver,
             TemporalLoweringContext::graph_only(),
-            worth_execution::ExecutionRequest::leased(lease),
+            request,
         );
         self.record_checked_execution_result(&result);
         result

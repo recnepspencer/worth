@@ -48,7 +48,7 @@ fn fixture() -> (SignalGraph, Vec<NodeId>, Vec<NodeId>) {
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
-            &bootstrap,
+            worth_execution::ExecutionRequest::leased(&bootstrap),
         )
         .unwrap();
     drop(bootstrap);
@@ -102,7 +102,7 @@ fn trial(base: &SignalGraph, sources: &[NodeId], targets: &[NodeId], memory: u64
                     .with_output_identity(format!("{value}:{}", "x".repeat(1024))),
             )
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     ) {
         Ok(report) => report,
         Err(SignalError::ExecutionStopped(stop))

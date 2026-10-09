@@ -1,6 +1,5 @@
 use worth_execution::{
-    ChargedBytes, ExecutionMap, ExecutionResourceLease, MapKernelContext, MapKernelFailure,
-    MapOutcome, MapPartition, PreparedExecutionMap,
+    ChargedBytes, ExecutionMap, MapKernelContext, MapKernelFailure, MapOutcome, MapPartition,
 };
 use worth_foundational::PartitionIdentity;
 
@@ -23,23 +22,25 @@ use crate::logic::planner::types::{
 use super::super::workspace::StageScratch;
 use super::concurrent_packets;
 
-pub(in crate::logic::planner) type PreparedSignalApplyMap<'authority> = PreparedExecutionMap<
-    'authority,
-    usize,
-    crate::data::proof::invalidation::progression::GraphProposalKey,
-    crate::logic::planner::apply::workspace::GroupLocalApplyPacket,
-    SignalError,
->;
+pub(in crate::logic::planner) type PreparedSignalApplyMap<'request, 'authority> =
+    crate::data::prepared_request_map::PreparedRequestMap<
+        'request,
+        'authority,
+        usize,
+        crate::data::proof::invalidation::progression::GraphProposalKey,
+        crate::logic::planner::apply::workspace::GroupLocalApplyPacket,
+        SignalError,
+    >;
 
-pub(in crate::logic::planner) fn prepare_checked_apply_map<'authority>(
+pub(in crate::logic::planner) fn prepare_checked_apply_map<'request, 'authority>(
     tasks: &[EligibleTask],
     batch: &DisjointGraphBatch,
     apply: &CheckedApplyCapacity,
-    lease: &ExecutionResourceLease<'authority>,
+    request: worth_execution::ExecutionRequest<'request, 'authority>,
     policy: &ResolvedSignalPlannerPolicy,
     request_work: Option<&mut MapKernelContext<'_, '_>>,
     preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
-) -> Result<PreparedSignalApplyMap<'authority>, SignalError> {
+) -> Result<PreparedSignalApplyMap<'request, 'authority>, SignalError> {
     crate::logic::planner::precompute::work::checkpoint(
         request_work,
         tasks
@@ -60,21 +61,9 @@ pub(in crate::logic::planner) fn prepare_checked_apply_map<'authority>(
     let posture = if tasks.len() < policy.full_parallel_min_tasks() {
         worth_foundational::ExecutionPosture::Serial
     } else {
-        lease.policy().posture()
+        request.resolved_posture()
     };
-    let child = lease
-        .child(worth_execution::LeaseRequest {
-            policy: worth_foundational::ExecutionRequestPolicy::new(
-                posture,
-                lease.policy().determinism(),
-                lease.policy().budget(),
-            ),
-            deadline: None,
-            cancellation: worth_execution::CancellationToken::new(),
-        })
-        .map_err(SignalError::execution_admission_denied)?;
-    map.prepare_run(child)
-        .map_err(SignalError::execution_admission_denied)
+    crate::data::prepared_request_map::PreparedRequestMap::prepare(map, request, posture)
 }
 
 pub(super) fn run_grouped_concurrent_apply_pass(
@@ -86,8 +75,8 @@ pub(super) fn run_grouped_concurrent_apply_pass(
     _policy: &ResolvedSignalPlannerPolicy,
     _batch: &DisjointGraphBatch,
     apply: &CheckedApplyCapacity,
-    prepared_map: PreparedSignalApplyMap<'_>,
-    candidates: crate::data::graph::PreparedCandidateEpoch<'_>,
+    prepared_map: PreparedSignalApplyMap<'_, '_>,
+    candidates: crate::data::graph::PreparedCandidateEpoch<'_, '_>,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     stage_identities: &[StageSemanticIdentity],
     report: &mut ExecutionReport,

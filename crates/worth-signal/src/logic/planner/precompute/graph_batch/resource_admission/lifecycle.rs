@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_execution::{CancellationToken, ExecutionResourceLease, LeaseRequest};
+use worth_execution::{CancellationToken, LeaseRequest};
 
 use crate::data::error::SignalError;
 use crate::data::request_preparation::SignalPreparationBudget;
@@ -25,15 +25,23 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
 
     pub(in crate::logic::planner::precompute::graph_batch) fn new(
         budget: &SignalPreparationBudget,
-        lease: &'lease ExecutionResourceLease<'authority>,
+        lease: worth_execution::ExecutionRequest<'lease, 'authority>,
     ) -> Result<Self, SignalError> {
         let candidate_lease = lease
-            .child(LeaseRequest {
-                policy: *lease.policy(),
-                deadline: None,
-                cancellation: CancellationToken::new(),
+            .in_scope(|scoped| {
+                scoped
+                    .map(|lease| {
+                        lease
+                            .child(LeaseRequest {
+                                policy: *lease.policy(),
+                                deadline: None,
+                                cancellation: CancellationToken::new(),
+                            })
+                            .map_err(SignalError::execution_admission_denied)
+                    })
+                    .transpose()
             })
-            .map_err(SignalError::execution_admission_denied)?;
+            .map_err(SignalError::execution_scope_denied)??;
         Ok(Self {
             available: budget.remaining(),
             fixed: 0,

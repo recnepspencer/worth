@@ -162,7 +162,7 @@ fn candidate_publication_uses_its_pre_callback_host_reservation() {
                     .with_changed_aspect_region(VALUE, ChangedRegion::new("desk")),
             )
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     );
     let (release, thread) = blocker.lock().unwrap().take().expect("callback ran once");
     release.send(()).unwrap();

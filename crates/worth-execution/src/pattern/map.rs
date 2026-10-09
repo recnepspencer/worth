@@ -111,6 +111,24 @@ impl<R, E> From<BatchOutcome<R, E>> for MapOutcome<R, E> {
 }
 
 impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
+    /// Prospective serial dispatch shape, including its active parent context.
+    pub fn declared_memory_requirement_in_serial_scope<R, E>(
+        count: usize,
+        input_heap: u64,
+        kernel_scratch_bytes: u64,
+        declared_result_bytes: u64,
+        access_memory_bytes: u64,
+    ) -> Option<u64> {
+        Self::declared_memory_requirement::<R, E>(
+            count,
+            input_heap,
+            kernel_scratch_bytes,
+            declared_result_bytes,
+            access_memory_bytes,
+        )?
+        .checked_add(crate::backend::RunLimits::framework_context_bytes_for_serial_scope(count)?)
+    }
+
     /// Query the exact generic execution reservation for a declared shape.
     /// The checked run performs the authoritative reservation before dispatch.
     pub fn declared_memory_requirement<R, E>(

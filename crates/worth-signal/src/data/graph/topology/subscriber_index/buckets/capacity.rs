@@ -101,7 +101,7 @@ pub(crate) fn candidate_map_memory_requirement(
     prior: &[CandidateEpochBasis],
     candidate: &CandidateEpochBasis,
     output_heap_grant: u64,
-    lease: &ExecutionResourceLease<'_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Option<u64> {
     let mut count = 0_usize;
     let mut scratch = 0_u64;
@@ -118,10 +118,17 @@ pub(crate) fn candidate_map_memory_requirement(
         .checked_add(size_of::<Vec<u8>>())?
         .checked_add(size_of::<(PartitionIdentity, Vec<u8>)>())?;
     let access = u64::try_from(access_per_key.checked_mul(count)?).ok()?;
-    ExecutionMap::<CandidateTask, u8>::declared_memory_requirement_for_lease::<
-        ReverseSubscriptionQuery,
-        SignalError,
-    >(lease, count, 0, scratch, result, access)
+    if let Some(lease) = lease {
+        ExecutionMap::<CandidateTask, u8>::declared_memory_requirement_for_lease::<
+            ReverseSubscriptionQuery,
+            SignalError,
+        >(lease, count, 0, scratch, result, access)
+    } else {
+        ExecutionMap::<CandidateTask, u8>::declared_memory_requirement_in_serial_scope::<
+            ReverseSubscriptionQuery,
+            SignalError,
+        >(count, 0, scratch, result, access)
+    }
 }
 
 pub(super) struct CandidateCapacity {

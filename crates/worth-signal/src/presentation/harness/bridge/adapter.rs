@@ -175,7 +175,7 @@ impl HarnessAdapter for SignalHarnessBridge {
                     EvaluationRequestMode::Default,
                     &(),
                     &|ctx| checked.evaluate_checked(ctx),
-                    &lease,
+                    worth_execution::ExecutionRequest::leased(&lease),
                 )?
             }
         };

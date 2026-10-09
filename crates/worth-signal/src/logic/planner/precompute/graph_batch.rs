@@ -67,7 +67,7 @@ pub(crate) fn epoch_width<'a>(
     tasks: &'a [EligibleTask],
     task_offset: usize,
     checked: bool,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    request: worth_execution::ExecutionRequest<'_, '_>,
     comparator: &impl ComparatorPolicyResolver,
     mut preparation: Option<&mut SignalPreparationBudget>,
     mut work: Option<&mut MapKernelContext<'_, '_>>,
@@ -79,15 +79,13 @@ pub(crate) fn epoch_width<'a>(
     }
     super::work::checkpoint(work.as_deref_mut(), 1)?;
     if !checked {
-        if lease.is_some() {
+        if request.is_leased() {
             return Err(SignalError::invalid_input(
                 "a leased Signal request requires a checked evaluator",
             ));
         }
         return Ok(EpochAdmission::LegacySerial);
     }
-    let lease =
-        lease.ok_or_else(|| SignalError::invalid_input("checked epoch requires a lease"))?;
     let can_group = bounded_eligible(graph, &tasks[0])?;
     graph.prepare_epoch_topology_storage_readiness(
         work.as_deref_mut(),
@@ -95,7 +93,7 @@ pub(crate) fn epoch_width<'a>(
     )?;
     let budget = preparation
         .ok_or_else(|| SignalError::invalid_input("checked epoch requires request preparation"))?;
-    let mut resources = resource_admission::ResourceAdmission::new(budget, lease)?;
+    let mut resources = resource_admission::ResourceAdmission::new(budget, request)?;
     if !resources.consider(graph, &tasks[0], comparator, work.as_deref_mut(), budget)? {
         return Err(SignalError::internal(
             "singleton epoch admission declined its task",

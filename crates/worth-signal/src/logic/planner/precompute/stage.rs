@@ -8,17 +8,18 @@ use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::proof::{invalidation::progression::DisjointGraphBatch, SingleConsumer};
 use crate::data::request_preparation::SignalPreparationBudget;
-use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_execution::MapKernelContext;
 
-pub(in crate::logic::planner) enum PreparedStageEpoch<'tasks, 'lease, 'authority> {
+pub(in crate::logic::planner) enum PreparedStageEpoch<'tasks, 'request, 'authority> {
     Checked {
         metadata: EpochMetadata<'tasks>,
         proposals: StageExecutionData,
         batch: DisjointGraphBatch,
-        lease: &'lease ExecutionResourceLease<'authority>,
+        request: worth_execution::ExecutionRequest<'request, 'authority>,
         apply: super::graph_batch::CheckedApplyCapacity,
-        prepared_map: crate::logic::planner::apply::stage::PreparedSignalApplyMap<'authority>,
-        candidates: crate::data::graph::PreparedCandidateEpoch<'authority>,
+        prepared_map:
+            crate::logic::planner::apply::stage::PreparedSignalApplyMap<'request, 'authority>,
+        candidates: crate::data::graph::PreparedCandidateEpoch<'request, 'authority>,
         reports: Vec<worth_foundational::ExecutionReport>,
     },
     LegacySerial {
@@ -50,24 +51,24 @@ impl PreparedStageEpoch<'_, '_, '_> {
     }
 }
 
-pub(in crate::logic::planner) struct StagePrecomputeResult<'tasks, 'lease, 'authority> {
-    pub(in crate::logic::planner) prepared: PreparedStageEpoch<'tasks, 'lease, 'authority>,
+pub(in crate::logic::planner) struct StagePrecomputeResult<'tasks, 'request, 'authority> {
+    pub(in crate::logic::planner) prepared: PreparedStageEpoch<'tasks, 'request, 'authority>,
     pub(in crate::logic::planner) snapshot_nanos: u128,
     pub(in crate::logic::planner) precompute_nanos: u128,
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'lease, 'authority>(
+pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'request, 'authority>(
     graph: &mut SignalGraph,
     summary: &PlanSummary,
-    stage: AdmittedEpoch<'tasks, 'lease, 'authority>,
+    stage: AdmittedEpoch<'tasks, 'request, 'authority>,
     precompute: &impl SignalPrecompute,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: &TemporalLoweringContext,
     policy: &ResolvedSignalPlannerPolicy,
     request_work: Option<&mut MapKernelContext<'_, '_>>,
     preparation: Option<&mut SignalPreparationBudget>,
-) -> Result<StagePrecomputeResult<'tasks, 'lease, 'authority>, SignalError> {
+) -> Result<StagePrecomputeResult<'tasks, 'request, 'authority>, SignalError> {
     let started = crate::clock::RuntimeInstant::now();
     let stage_index = stage.index();
     let prepared = super::read_preparation::prepare_epoch(
@@ -89,7 +90,7 @@ pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'lease, 'autho
             metadata,
             values,
             batch,
-            lease,
+            request,
             apply,
             prepared_map,
             candidates,
@@ -98,7 +99,7 @@ pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'lease, 'autho
             metadata,
             proposals: StageExecutionData::Prepared(SingleConsumer::new(values)),
             batch,
-            lease,
+            request,
             apply,
             prepared_map,
             candidates,

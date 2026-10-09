@@ -48,7 +48,7 @@ fn framework_preparation_denial_precedes_evaluator_and_publication() {
                 calls.fetch_add(1, Ordering::SeqCst);
                 Ok(AspectVersion::zero().with(VALUE, 99))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap_err();
     let SignalError::ExecutionStopped(stop) = error else {
@@ -103,7 +103,7 @@ fn later_epoch_stop_preserves_committed_graph_prefix_in_the_outcome() {
                 let _ignored = ctx.read(producer, Aspect::new(1));
                 Ok(AspectVersion::zero().with(VALUE, 902))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap_err();
     let SignalError::ExecutionStopped(stop) = error else {

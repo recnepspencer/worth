@@ -68,7 +68,7 @@ fn checked_apply_consumes_the_policy_resolved_before_callbacks() {
             &CheckedPrecompute::new(&(), &evaluator),
             &mut resolver,
             TemporalLoweringContext::graph_only(),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
             work,
             progress,
             preparation,

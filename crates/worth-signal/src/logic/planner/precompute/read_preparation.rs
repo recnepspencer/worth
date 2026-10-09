@@ -9,22 +9,23 @@ use crate::data::request_preparation::{self as preparation_budget, SignalPrepara
 use crate::logic::planner::execution::{AdmittedEpoch, EpochMetadata};
 use crate::logic::planner::types::{EligibleTask, ResolvedSignalPlannerPolicy};
 use crate::logic::prepared::{ExecutionSnapshot, PreparedEvaluation};
-use worth_execution::{ExecutionResourceLease, MapKernelContext, MapKernelFailure, MapOutcome};
+use worth_execution::{MapKernelContext, MapKernelFailure, MapOutcome};
 
 mod capacity;
 mod map_declaration;
 pub(super) use capacity::{checked_map_memory_requirement, PrecomputeMapBasis};
 use map_declaration::lower_checked_map;
 
-pub(super) enum PreparedEpoch<'tasks, 'lease, 'authority> {
+pub(super) enum PreparedEpoch<'tasks, 'request, 'authority> {
     Checked {
         metadata: EpochMetadata<'tasks>,
         values: Vec<PreparedEvaluation>,
         batch: DisjointGraphBatch,
-        lease: &'lease ExecutionResourceLease<'authority>,
+        request: worth_execution::ExecutionRequest<'request, 'authority>,
         apply: super::graph_batch::CheckedApplyCapacity,
-        prepared_map: crate::logic::planner::apply::stage::PreparedSignalApplyMap<'authority>,
-        candidates: crate::data::graph::PreparedCandidateEpoch<'authority>,
+        prepared_map:
+            crate::logic::planner::apply::stage::PreparedSignalApplyMap<'request, 'authority>,
+        candidates: crate::data::graph::PreparedCandidateEpoch<'request, 'authority>,
         reports: Vec<worth_foundational::ExecutionReport>,
     },
     LegacySerial {
@@ -33,16 +34,16 @@ pub(super) enum PreparedEpoch<'tasks, 'lease, 'authority> {
     },
 }
 
-pub(super) fn prepare_epoch<'tasks, 'lease, 'authority>(
+pub(super) fn prepare_epoch<'tasks, 'request, 'authority>(
     graph: &mut SignalGraph,
-    stage: AdmittedEpoch<'tasks, 'lease, 'authority>,
+    stage: AdmittedEpoch<'tasks, 'request, 'authority>,
     precompute: &impl SignalPrecompute,
     comparator: &mut impl ComparatorPolicyResolver,
     temporal: &TemporalLoweringContext,
     policy: &ResolvedSignalPlannerPolicy,
     mut request_work: Option<&mut MapKernelContext<'_, '_>>,
     mut preparation: Option<&mut SignalPreparationBudget>,
-) -> Result<PreparedEpoch<'tasks, 'lease, 'authority>, SignalError> {
+) -> Result<PreparedEpoch<'tasks, 'request, 'authority>, SignalError> {
     preparation_budget::claim_vec::<PrevalidatedTask>(
         preparation.as_deref_mut(),
         stage.tasks().len(),
@@ -72,7 +73,7 @@ pub(super) fn prepare_epoch<'tasks, 'lease, 'authority>(
             );
         }
     };
-    let lease = checked.lease();
+    let request = checked.request();
     let batch = super::graph_batch::admit(
         graph,
         checked.tasks(),
@@ -85,7 +86,7 @@ pub(super) fn prepare_epoch<'tasks, 'lease, 'authority>(
         checked.tasks(),
         &batch,
         checked.apply_capacity(),
-        checked.lease(),
+        checked.request(),
         policy,
         request_work.as_deref_mut(),
         preparation.as_deref_mut(),
@@ -96,9 +97,9 @@ pub(super) fn prepare_epoch<'tasks, 'lease, 'authority>(
         if checked.tasks().len() < policy.full_parallel_min_tasks() {
             worth_foundational::ExecutionPosture::Serial
         } else {
-            lease.policy().posture()
+            request.resolved_posture()
         },
-        lease,
+        request,
         request_work
             .as_deref_mut()
             .expect("checked request has work"),
@@ -115,24 +116,14 @@ pub(super) fn prepare_epoch<'tasks, 'lease, 'authority>(
         preparation.as_deref_mut(),
     )?;
     let snapshot = ExecutionSnapshot::new(graph);
-    let serial_lease = if map.partition_count() < policy.parallel_min_tasks() {
-        Some(
-            lease
-                .child(worth_execution::LeaseRequest {
-                    policy: worth_foundational::ExecutionRequestPolicy::new(
-                        worth_foundational::ExecutionPosture::Serial,
-                        lease.policy().determinism(),
-                        lease.policy().budget(),
-                    ),
-                    deadline: None,
-                    cancellation: worth_execution::CancellationToken::new(),
-                })
-                .map_err(SignalError::execution_admission_denied)?,
-        )
+    let posture = if map.partition_count() < policy.parallel_min_tasks() {
+        worth_foundational::ExecutionPosture::Serial
     } else {
-        None
+        request.resolved_posture()
     };
-    let outcome = map.run(serial_lease.as_ref().or(Some(lease)), |item, work| {
+    let map =
+        crate::data::prepared_request_map::PreparedRequestMap::prepare(map, request, posture)?;
+    let outcome = map.run(|item, work| {
         let task = &checked.tasks()[item.task_index];
         work.checkpoint(1).map_err(MapKernelFailure::Stop)?;
         let view = snapshot.read_view(task.node);
@@ -165,12 +156,12 @@ pub(super) fn prepare_epoch<'tasks, 'lease, 'authority>(
         preparation.as_deref_mut(),
     )?;
     preparation_budget::claim_vec::<worth_foundational::ExecutionReport>(preparation, 1)?;
-    let (metadata, lease, apply) = checked.into_prepared_parts();
+    let (metadata, request, apply) = checked.into_prepared_parts();
     Ok(PreparedEpoch::Checked {
         metadata,
         values,
         batch,
-        lease,
+        request,
         apply,
         prepared_map,
         candidates,

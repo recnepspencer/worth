@@ -3,7 +3,10 @@ use std::{
     sync::{Condvar, Mutex, OnceLock},
     time::Duration,
 };
-use worth_execution::{CancellationToken, ExecutionAuthority, LeaseRequest};
+use worth_execution::{
+    CancellationToken, ExecutionAuthority, ExecutionRequest, LeaseRequest, SerialMemoryBudget,
+    SerialRequest,
+};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -62,67 +65,88 @@ fn serial(count: usize) -> Result<(Vec<AspectVersion>, ExecutionReport), SignalE
     Ok((values, report))
 }
 
-fn leased(
+fn checked_request(
     count: usize,
     workers: usize,
     work: u64,
 ) -> Result<(Vec<AspectVersion>, ExecutionReport), SignalError> {
     let (mut graph, targets) = graph(count);
     let plan = graph.build_evaluation_plan(&targets, EvaluationRequestMode::Default)?;
-    let lease = authority()
-        .request_lease(LeaseRequest {
-            policy: ExecutionRequestPolicy::new(
-                if workers == 1 {
-                    ExecutionPosture::Serial
-                } else {
-                    ExecutionPosture::Automatic
-                },
-                DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 64 << 20, work),
-            ),
-            cancellation: CancellationToken::new(),
-            deadline: None,
-        })
-        .unwrap();
+    let lease = (workers > 0).then(|| {
+        authority()
+            .request_lease(LeaseRequest {
+                policy: ExecutionRequestPolicy::new(
+                    if workers == 1 {
+                        ExecutionPosture::Serial
+                    } else {
+                        ExecutionPosture::Automatic
+                    },
+                    DeterminismContract::CanonicalBitwise,
+                    ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 64 << 20, work),
+                ),
+                cancellation: CancellationToken::new(),
+                deadline: None,
+            })
+            .unwrap()
+    });
+    let serial = SerialRequest::from_memory(
+        SerialMemoryBudget::new(64 << 20),
+        CancellationToken::new(),
+        None,
+    );
+    let request = lease.as_ref().map_or_else(
+        || ExecutionRequest::serial(&serial),
+        ExecutionRequest::leased,
+    );
     let participants = Mutex::new(Vec::new());
     let rendezvous = (Mutex::new(0_usize), Condvar::new());
-    let report = graph.execute_prepared_plan_checked(
-        &plan,
-        &(),
-        &|context| {
-            if workers > 1 {
-                let thread = std::thread::current().id();
-                let join = {
-                    let mut seen = participants.lock().unwrap();
-                    if seen.contains(&thread) || seen.len() >= 2 {
-                        false
-                    } else {
-                        seen.push(thread);
-                        true
+    let mut evaluate = || {
+        graph.execute_prepared_plan_checked(
+            &plan,
+            &(),
+            &|context| {
+                if workers > 1 {
+                    let thread = std::thread::current().id();
+                    let join = {
+                        let mut seen = participants.lock().unwrap();
+                        if seen.contains(&thread) || seen.len() >= 2 {
+                            false
+                        } else {
+                            seen.push(thread);
+                            true
+                        }
+                    };
+                    if join {
+                        let (ready, wake) = &rendezvous;
+                        let mut ready = ready.lock().unwrap();
+                        *ready += 1;
+                        wake.notify_all();
+                        let (ready, _) = wake
+                            .wait_timeout_while(ready, Duration::from_secs(5), |n| *n < 2)
+                            .unwrap();
+                        assert_eq!(
+                            *ready, 2,
+                            "two workers must rendezvous before the bounded wait ends"
+                        );
                     }
-                };
-                if join {
-                    let (ready, wake) = &rendezvous;
-                    let mut ready = ready.lock().unwrap();
-                    *ready += 1;
-                    wake.notify_all();
-                    let (ready, _) = wake
-                        .wait_timeout_while(ready, Duration::from_secs(5), |n| *n < 2)
-                        .unwrap();
-                    assert_eq!(
-                        *ready, 2,
-                        "two workers must rendezvous before the bounded wait ends"
-                    );
                 }
-            }
-            let index = targets
-                .iter()
-                .position(|node| *node == context.node())
-                .unwrap();
-            Ok(AspectVersion::zero().with(Aspect::new(0), index as u64 + 1))
-        },
-        &lease,
-    )?;
+                let index = targets
+                    .iter()
+                    .position(|node| *node == context.node())
+                    .unwrap();
+                Ok(AspectVersion::zero().with(Aspect::new(0), index as u64 + 1))
+            },
+            request,
+        )
+    };
+    let report = if workers == 0 {
+        worth_execution::ExecutionWorkCeiling::new(work)
+            .run_serial(&serial, evaluate)
+            .map_err(SignalError::execution_scope_denied)?
+            .0?
+    } else {
+        evaluate()?
+    };
     if workers > 1 {
         assert_eq!(*rendezvous.0.lock().unwrap(), 2);
     }
@@ -150,7 +174,7 @@ fn serial_default_admits_three_hundred_tasks_and_reports_their_charge() {
 #[test]
 fn serial_entry_and_one_worker_lease_have_identical_results() {
     let serial = serial(300).unwrap();
-    let one = leased(300, 1, u64::MAX).unwrap();
+    let one = checked_request(300, 1, u64::MAX).unwrap();
     assert_eq!(serial.0, one.0);
     assert!(serial.1.execution.last().unwrap().charged_work() > 0);
     assert!(one.1.execution.last().unwrap().charged_work() > 0);
@@ -158,8 +182,8 @@ fn serial_entry_and_one_worker_lease_have_identical_results() {
 
 #[test]
 fn request_results_and_charged_work_are_identical_at_one_and_many_workers() {
-    let one = leased(32, 1, u64::MAX).unwrap();
-    let many = leased(32, 4, u64::MAX).unwrap();
+    let one = checked_request(32, 1, u64::MAX).unwrap();
+    let many = checked_request(32, 4, u64::MAX).unwrap();
     assert_eq!(one.0, many.0);
     assert_eq!(
         one.1.execution.last().unwrap().charged_work(),
@@ -171,7 +195,7 @@ fn request_results_and_charged_work_are_identical_at_one_and_many_workers() {
 fn leased_three_hundred_tasks_still_refuse_a_callers_work_ceiling() {
     // One unit cannot cover the required per-item checkpoints of 300 tasks.
     // This caller allowance is independent of a measured successful report.
-    let SignalError::ExecutionStopped(stop) = leased(300, 1, 1).unwrap_err() else {
+    let SignalError::ExecutionStopped(stop) = checked_request(300, 1, 1).unwrap_err() else {
         panic!("the caller's finite work ceiling must refuse the evaluation");
     };
     assert!(matches!(
@@ -182,4 +206,20 @@ fn leased_three_hundred_tasks_still_refuse_a_callers_work_ceiling() {
                 ..
             }
     ));
+}
+
+#[test]
+fn checked_serial_request_and_one_worker_lease_have_identical_results_and_charged_work() {
+    let serial = checked_request(300, 0, 16_000_000).unwrap();
+    let one = checked_request(300, 1, 16_000_000).unwrap();
+    assert_eq!(serial.0, one.0);
+    assert_eq!(
+        serial.1.execution.last().unwrap().charged_work(),
+        one.1.execution.last().unwrap().charged_work()
+    );
+    eprintln!(
+        "checked serial={} one-worker={}",
+        serial.1.execution.last().unwrap().charged_work(),
+        one.1.execution.last().unwrap().charged_work()
+    );
 }

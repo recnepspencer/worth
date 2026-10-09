@@ -91,7 +91,7 @@ pub(super) fn reduce_grouped_concurrent_packets(
     mut packets: Vec<GroupLocalApplyPacket>,
     reduction: ConcurrentApplyReductionPlan,
     comparator_resolver: &mut impl crate::data::comparator::ComparatorPolicyResolver,
-    candidates: crate::data::graph::PreparedCandidateEpoch<'_>,
+    candidates: crate::data::graph::PreparedCandidateEpoch<'_, '_>,
     request_work: &mut MapKernelContext<'_, '_>,
     mut preparation: Option<&mut crate::data::request_preparation::SignalPreparationBudget>,
 ) -> Result<StageScratch, SignalError> {

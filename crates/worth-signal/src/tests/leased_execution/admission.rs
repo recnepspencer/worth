@@ -40,7 +40,7 @@ fn declared_maximum_schedules_an_unsettled_producer_absent_from_current_edges() 
                 };
                 Ok(AspectVersion::zero().with(ASPECT, value))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     assert_eq!(report.tasks_executed, 2);
@@ -68,7 +68,7 @@ fn ignored_undeclared_read_error_cannot_publish_a_successful_output() {
                 let _ignored = ctx.read(producer, ASPECT);
                 Ok(AspectVersion::zero().with(ASPECT, 9))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap_err();
     let SignalError::ExecutionStopped(stop) = error else {
@@ -110,7 +110,7 @@ fn cancelled_or_exhausted_request_does_not_invoke_the_evaluator_or_publish() {
                     calls.fetch_add(1, Ordering::SeqCst);
                     Ok(AspectVersion::zero().with(ASPECT, 13))
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap_err();
         let SignalError::ExecutionStopped(stop) = error else {

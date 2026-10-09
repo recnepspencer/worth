@@ -82,7 +82,7 @@ pub(super) fn run_deep_chain(
                 };
                 Ok(version_ab(value, 0))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     summarize(
@@ -141,7 +141,7 @@ pub(super) fn run_wide_stage(
             &plan,
             &(),
             &|ctx| Ok(ctx.finish(NodeEvaluationResult::from_version(version_ab(2, 0)))),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     summarize(
@@ -279,7 +279,7 @@ pub(super) fn run_partition_tolerance(
                 };
                 Ok(result)
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     summarize(

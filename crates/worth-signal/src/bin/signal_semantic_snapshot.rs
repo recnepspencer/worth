@@ -270,7 +270,7 @@ fn main() {
                 };
                 Ok(result)
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
 

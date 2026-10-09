@@ -94,7 +94,7 @@ fn full_parallel_policy_matrix_preserves_semantic_artifacts_on_tolerance_heavy_p
                     };
                     Ok(result)
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         canonical_runtime_artifacts(&graph, target)
@@ -220,7 +220,7 @@ fn repeated_executor_policy_churn_keeps_tolerance_boundary_artifacts_stable() {
                     };
                     Ok(result)
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         canonical_runtime_artifacts(graph, target)

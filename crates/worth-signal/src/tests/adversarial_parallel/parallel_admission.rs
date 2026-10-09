@@ -37,7 +37,7 @@ fn many_thin_stages_use_one_worker_with_bounded_physical_memory_growth() {
                     };
                     Ok(version_ab(value, 0))
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         assert_eq!(
@@ -103,7 +103,7 @@ fn wide_checked_epoch_reports_resolved_parallel_admission_and_bounded_workers() 
                 }
                 Ok(version_ab(ctx.node().index() as u64 + 1, 0))
             },
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     let workers = report
@@ -145,7 +145,7 @@ fn one_worker_lease_does_not_report_parallel_dispatch_for_wide_work() {
             EvaluationRequestMode::Default,
             &(),
             &|ctx| Ok(version_ab(ctx.node().index() as u64 + 1, 0)),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     assert!(report
@@ -178,7 +178,12 @@ fn installed_threshold_keeps_small_checked_epochs_serial() {
         .unwrap();
     let lease = authority().request_lease(request(4, 2_000_000)).unwrap();
     let report = graph
-        .execute_prepared_plan_checked(&plan, &(), &|_| Ok(version_ab(2, 0)), &lease)
+        .execute_prepared_plan_checked(
+            &plan,
+            &(),
+            &|_| Ok(version_ab(2, 0)),
+            worth_execution::ExecutionRequest::leased(&lease),
+        )
         .unwrap();
     assert!(report
         .execution

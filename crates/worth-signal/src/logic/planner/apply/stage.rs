@@ -17,20 +17,20 @@ use crate::logic::planner::semantic::{finalize_serial_stage_batch, StageSemantic
 use crate::logic::planner::types::{
     ExecutionReport, PlanSummary, ResolvedSignalPlannerPolicy, StageExecutionRecord,
 };
-use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_execution::MapKernelContext;
 
 use super::serial_batch::{LoweredSerialStage, PreparedSerialStageBatch};
 use super::workspace::{StageFinalizeWork, StageScratch};
 
-pub(super) enum ApplyAdmission<'tasks, 'lease, 'authority> {
+pub(super) enum ApplyAdmission<'tasks, 'request, 'authority> {
     Checked {
         metadata: EpochMetadata<'tasks>,
         batch: crate::data::proof::invalidation::progression::DisjointGraphBatch,
         // Keep checked publication within the originating request borrow.
-        _lease: &'lease ExecutionResourceLease<'authority>,
+        _request: worth_execution::ExecutionRequest<'request, 'authority>,
         apply: crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity,
-        prepared_map: PreparedSignalApplyMap<'authority>,
-        candidates: crate::data::graph::PreparedCandidateEpoch<'authority>,
+        prepared_map: PreparedSignalApplyMap<'request, 'authority>,
+        candidates: crate::data::graph::PreparedCandidateEpoch<'request, 'authority>,
     },
     LegacySerial {
         metadata: EpochMetadata<'tasks>,
@@ -65,7 +65,7 @@ where
             metadata,
             proposals,
             batch,
-            lease,
+            request,
             apply,
             prepared_map,
             candidates,
@@ -75,7 +75,7 @@ where
             ApplyAdmission::Checked {
                 metadata,
                 batch,
-                _lease: lease,
+                _request: request,
                 apply,
                 prepared_map,
                 candidates,

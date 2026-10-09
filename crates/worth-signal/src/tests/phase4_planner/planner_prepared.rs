@@ -67,10 +67,20 @@ fn prepared_parallel_precompute_matches_serial_results() {
         |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| Ok(ctx.finish(version_ab(7, 0)));
 
     let serial_report = serial_graph
-        .execute_prepared_plan_checked(&plan, &(), &evaluator, &serial_lease)
+        .execute_prepared_plan_checked(
+            &plan,
+            &(),
+            &evaluator,
+            worth_execution::ExecutionRequest::leased(&serial_lease),
+        )
         .unwrap();
     let parallel_report = parallel_graph
-        .execute_prepared_plan_checked(&parallel_plan, &(), &evaluator, &parallel_lease)
+        .execute_prepared_plan_checked(
+            &parallel_plan,
+            &(),
+            &evaluator,
+            worth_execution::ExecutionRequest::leased(&parallel_lease),
+        )
         .unwrap();
 
     assert_eq!(
@@ -150,7 +160,12 @@ fn parallel_executor_threshold_keeps_narrow_stage_serial() {
         |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| Ok(ctx.finish(version_ab(1, 0)));
 
     let report = graph
-        .execute_prepared_plan_checked(&plan, &(), &evaluator, &parallel_lease)
+        .execute_prepared_plan_checked(
+            &plan,
+            &(),
+            &evaluator,
+            worth_execution::ExecutionRequest::leased(&parallel_lease),
+        )
         .unwrap();
 
     assert!(matches!(
@@ -194,7 +209,12 @@ fn checked_wide_epoch_preserves_serial_results_and_reports_resolved_placement() 
         |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| Ok(ctx.finish(version_ab(11, 0)));
 
     let serial_report = serial_graph
-        .execute_prepared_plan_checked(&plan, &(), &evaluator, &serial_lease)
+        .execute_prepared_plan_checked(
+            &plan,
+            &(),
+            &evaluator,
+            worth_execution::ExecutionRequest::leased(&serial_lease),
+        )
         .unwrap();
     let rendezvous =
         crate::tests::leased_execution::support::task_rendezvous::TaskRendezvous::default();
@@ -203,7 +223,12 @@ fn checked_wide_epoch_preserves_serial_results_and_reports_resolved_placement() 
         evaluator(ctx)
     };
     let parallel_report = parallel_graph
-        .execute_prepared_plan_checked(&parallel_plan, &(), &parallel_evaluator, &parallel_lease)
+        .execute_prepared_plan_checked(
+            &parallel_plan,
+            &(),
+            &parallel_evaluator,
+            worth_execution::ExecutionRequest::leased(&parallel_lease),
+        )
         .unwrap();
 
     for (serial_node, parallel_node) in serial_nodes.iter().zip(parallel_nodes.iter()) {

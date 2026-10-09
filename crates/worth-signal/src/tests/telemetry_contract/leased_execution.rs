@@ -116,7 +116,12 @@ fn checked_epoch_packet_and_reduction_counters_match_consumed_groups() {
     let before = graph.observe().metrics().execution;
     let lease = authority().request_lease(request(4, 1_000_000)).unwrap();
     let report = graph
-        .execute_prepared_plan_checked(&plan, &(), &|ctx| Ok(ctx.finish(version_ab(2, 0))), &lease)
+        .execute_prepared_plan_checked(
+            &plan,
+            &(),
+            &|ctx| Ok(ctx.finish(version_ab(2, 0))),
+            worth_execution::ExecutionRequest::leased(&lease),
+        )
         .unwrap();
     let groups = report
         .stages

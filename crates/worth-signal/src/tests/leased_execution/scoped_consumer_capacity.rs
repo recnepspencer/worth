@@ -63,7 +63,7 @@ fn fixture(segment_bytes: usize) -> Fixture {
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 1)),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .expect("input-free producer settles before scoped consumer setup");
     drop(lease);
@@ -93,7 +93,7 @@ fn fixture(segment_bytes: usize) -> Fixture {
                     Ok(AspectVersion::zero()
                         .with(VALUE, context.read_scoped(producer, VALUE, scope)? + 1))
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .expect("scoped reads install real reverse dependencies");
     }
@@ -123,7 +123,7 @@ fn completes(fixture: &Fixture, memory: u64) -> bool {
             calls.fetch_add(1, Ordering::SeqCst);
             Ok(AspectVersion::zero().with(VALUE, 2))
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     ) {
         Ok(report) => {
             assert_eq!(report.tasks_executed, 1);

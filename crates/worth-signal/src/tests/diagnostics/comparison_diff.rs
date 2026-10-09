@@ -167,10 +167,20 @@ fn serial_and_parallel_reports_are_semantically_equivalent() {
         .unwrap();
 
     let report_serial = graph_serial
-        .execute_prepared_plan_checked(&plan_serial, &(), &checked_evaluator, &serial_lease)
+        .execute_prepared_plan_checked(
+            &plan_serial,
+            &(),
+            &checked_evaluator,
+            worth_execution::ExecutionRequest::leased(&serial_lease),
+        )
         .unwrap();
     let report_parallel = graph_parallel
-        .execute_prepared_plan_checked(&plan_parallel, &(), &checked_evaluator, &parallel_lease)
+        .execute_prepared_plan_checked(
+            &plan_parallel,
+            &(),
+            &checked_evaluator,
+            worth_execution::ExecutionRequest::leased(&parallel_lease),
+        )
         .unwrap();
 
     let summary_serial = report_serial.diagnostics_summary(DiagnosticsTier::Development);
@@ -269,10 +279,20 @@ fn repeated_serial_parallel_lifecycle_parity_stays_stable() {
             .unwrap();
 
         let report_serial = graph_serial
-            .execute_prepared_plan_checked(&plan_serial, &(), &checked_evaluator, &serial_lease)
+            .execute_prepared_plan_checked(
+                &plan_serial,
+                &(),
+                &checked_evaluator,
+                worth_execution::ExecutionRequest::leased(&serial_lease),
+            )
             .unwrap();
         let report_parallel = graph_parallel
-            .execute_prepared_plan_checked(&plan_parallel, &(), &checked_evaluator, &parallel_lease)
+            .execute_prepared_plan_checked(
+                &plan_parallel,
+                &(),
+                &checked_evaluator,
+                worth_execution::ExecutionRequest::leased(&parallel_lease),
+            )
             .unwrap();
 
         assert!(serial_parallel_reports_equivalent(

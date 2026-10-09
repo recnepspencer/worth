@@ -73,7 +73,7 @@ fn rewire_targets(
             };
             Ok(version_ab(value, 0))
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     )
 }
 

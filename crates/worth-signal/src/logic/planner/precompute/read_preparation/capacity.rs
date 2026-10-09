@@ -34,7 +34,7 @@ pub(in crate::logic::planner::precompute) fn checked_map_memory_requirement(
     prior: &[PrecomputeMapBasis],
     candidate: &PrecomputeMapBasis,
     grant: u64,
-    lease: &ExecutionResourceLease<'_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Option<u64> {
     let mut count = 0_usize;
     let mut scratch = 0_u64;
@@ -50,8 +50,15 @@ pub(in crate::logic::planner::precompute) fn checked_map_memory_requirement(
             .checked_add(size_of::<(PartitionIdentity, Vec<GraphProposalKey>)>())?;
         access = access.checked_add(u64::try_from(key_bytes.checked_add(member_bytes)?).ok()?)?;
     }
-    ExecutionMap::<GraphWorkItem, GraphProposalKey>::declared_memory_requirement_for_lease::<
-        PreparedEvaluation,
-        SignalError,
-    >(lease, count, 0, scratch, result, access)
+    if let Some(lease) = lease {
+        ExecutionMap::<GraphWorkItem, GraphProposalKey>::declared_memory_requirement_for_lease::<
+            PreparedEvaluation,
+            SignalError,
+        >(lease, count, 0, scratch, result, access)
+    } else {
+        ExecutionMap::<GraphWorkItem, GraphProposalKey>::declared_memory_requirement_in_serial_scope::<
+            PreparedEvaluation,
+            SignalError,
+        >(count, 0, scratch, result, access)
+    }
 }

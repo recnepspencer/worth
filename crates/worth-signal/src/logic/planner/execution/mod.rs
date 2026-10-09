@@ -10,7 +10,7 @@ use super::precompute::callback::{LegacyPrecompute, SignalPrecompute};
 use super::types::{EvaluationPlan, ExecutionReport, PlanSummary, SessionScratch};
 use super::TemporalLoweringContext;
 use crate::data::request_preparation::SignalPreparationBudget;
-use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_execution::MapKernelContext;
 
 mod context;
 pub(crate) mod diagnostics;
@@ -71,7 +71,7 @@ pub(crate) fn execute_prepared_plan_in_scope<P: SignalPrecompute>(
     precompute: &P,
     comparator_resolver: &mut impl ComparatorPolicyResolver,
     temporal_lowering: TemporalLoweringContext,
-    lease: &ExecutionResourceLease<'_>,
+    lease: worth_execution::ExecutionRequest<'_, '_>,
     request_work: &mut MapKernelContext<'_, '_>,
     progress: &mut SignalPublicationProgress,
     preparation: &mut SignalPreparationBudget,
@@ -84,10 +84,7 @@ pub(crate) fn execute_prepared_plan_in_scope<P: SignalPrecompute>(
         .flat_map(|stage| stage.tasks.iter())
         .filter(|task| matches!(task.reason, super::types::TaskReason::MaybeStaleValidation))
         .count() as u64;
-    let policy = super::types::ResolvedSignalPlannerPolicy::for_graph(
-        graph,
-        worth_execution::ExecutionRequest::leased(lease),
-    );
+    let policy = super::types::ResolvedSignalPlannerPolicy::for_graph(graph, lease);
     run_stage_slices(
         graph,
         &plan.summary,
@@ -103,7 +100,7 @@ pub(crate) fn execute_prepared_plan_in_scope<P: SignalPrecompute>(
         first_target,
         comparator_resolver,
         temporal_lowering,
-        worth_execution::ExecutionRequest::leased(lease),
+        lease,
         policy,
         request_work,
         preparation,

@@ -45,7 +45,7 @@ fn default_apply_threshold_preserves_singleton_on_cancel_and_last_work_unit() {
                 EvaluationRequestMode::Default,
                 &(),
                 &|_| Ok(AspectVersion::zero().with(VALUE, 29)),
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         let completed_work = complete.execution.last().unwrap().charged_work();
@@ -66,7 +66,7 @@ fn default_apply_threshold_preserves_singleton_on_cancel_and_last_work_unit() {
                     calls.fetch_add(1, Ordering::SeqCst);
                     Ok(AspectVersion::zero().with(VALUE, 29))
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap_err();
         let SignalError::ExecutionStopped(stop) = error else {
@@ -99,7 +99,7 @@ fn default_apply_threshold_preserves_singleton_on_cancel_and_last_work_unit() {
                     let _ignored = ctx.work().checkpoint(1);
                     Ok(AspectVersion::zero().with(VALUE, 31))
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap_err();
         let SignalError::ExecutionStopped(stop) = error else {
