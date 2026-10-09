@@ -77,15 +77,24 @@ pub(super) fn performed_source_settles_required_output(
         .expect("the source edit reaches publication");
     let performed = match outcome {
         WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
-        WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied { denial, .. } => {
-            panic!("the fresh source publication denied required output: {denial:?}")
+        WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(failure) => {
+            panic!(
+                "the fresh source publication denied required output: {:?}",
+                failure.denial()
+            )
+        }
+        WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(partial) => {
+            panic!("unpublished: {:?}", partial.initial_cause())
+        }
+        WorthQueryApplicationPerformedMutationOutcome::Blocked(blocked) => {
+            panic!("blocked: {:?}", blocked.outcome())
         }
         WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
             panic!("the fresh source publication was not performed: {outcome:?}")
         }
     };
     let mut performed = performed
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));
     world
         .application
@@ -93,7 +102,7 @@ pub(super) fn performed_source_settles_required_output(
     assert!(matches!(
         performed
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("the producer publishes before readiness delivery is interrupted"),
         WorthQueryApplicationProgramOutputProgress::Pending
     ));
@@ -147,7 +156,7 @@ pub(super) fn performed_source_settles_required_output(
     );
     let WorthQueryApplicationProgramOutputProgress::Settled(original_settlement) = performed
         .required_output_mut()
-        .advance(&request)
+        .advance(&world.application, &request)
         .expect("the installed transitive outputs advance")
     else {
         panic!("one call settles the delivered root and every output under it")

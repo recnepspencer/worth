@@ -136,11 +136,6 @@ pub(super) fn invariant_violation_witness_key(
                     .unwrap_or("none")
             )
         }
-        InvariantViolationFields::RelationIntegrityScopeBudgetExceeded {
-            limit_name,
-            observed,
-            ..
-        } => format!("scope_budget:{limit_name}:{observed}"),
         InvariantViolationFields::CustomInvariantFailure {
             identity,
             phase,

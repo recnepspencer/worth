@@ -1,4 +1,3 @@
-pub(super) use crate::config::data::RelationIntegrityScopeBudget;
 pub(super) use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 pub(super) use crate::facade::identity::{PartitionId, RelationId};
 pub(super) use crate::facade::runtime::{InvariantCatalog, InvariantRegistration, InvariantRule};
@@ -181,15 +180,6 @@ pub(super) fn acyclicity_and_connectivity_registry() -> RelationalSchemaRegistry
 pub(super) fn runtime_with_acyclicity_and_connectivity() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(acyclicity_and_connectivity_registry())
-        .build()
-}
-
-pub(super) fn runtime_with_acyclicity_and_connectivity_budget(
-    relation_integrity_scope_budget: RelationIntegrityScopeBudget,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(acyclicity_and_connectivity_registry())
-        .relation_integrity_scope_budget(relation_integrity_scope_budget)
         .build()
 }
 

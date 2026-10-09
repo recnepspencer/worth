@@ -38,7 +38,7 @@ type DemandSource<Schema, Root> =
 
 /// Result of a source publication whose required output custody is retained by
 /// its installed program.
-pub enum WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>
+pub enum WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -49,14 +49,22 @@ where
     Intent::Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
-    Performed(WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>),
+    Performed(WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>),
+    /// Original required-root preparation and native partial remain owned.
+    ProductUnpublished(
+        WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+    ),
     /// The source publication committed before required-output custody could
     /// be prepared. The caller still receives the exact receipt and result.
-    RequiredOutputDenied {
-        receipt: WorthQueryApplicationCommitReceipt,
-        result: MutationResult<Schema, Intent>,
-        denial: WorthQueryRequiredOutputPreparationDenial,
-    },
+    RequiredOutputDenied(WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>),
+    /// Performed or unresolved native outcome whose recovery is not supported here.
+    Blocked(
+        super::performed_source::WorthQueryBlockedProgramSource<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            MutationResult<Schema, Intent>,
+            ProgramDemand<Schema, Root>,
+        >,
+    ),
     NotPerformed(
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -66,7 +74,7 @@ where
 }
 
 /// Fresh source result that can start its installed required outputs exactly once.
-pub struct WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>
+pub struct WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -77,19 +85,13 @@ where
     Intent::Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
-    receipt: WorthQueryApplicationCommitReceipt,
     result: MutationResult<Schema, Intent>,
-    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-    demand: ProgramDemand<Schema, Root>,
-    prepared: WorthQueryPreparedRequiredOutputSource,
-    retained_source: std::sync::Arc<
-        worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
-    >,
-    source_bound: bool,
+    source:
+        preparation::WorthQueryRequiredOutputPreparation<Schema, Program, Root, Intent::Binding>,
 }
 
-impl<'application, Schema, Intent, Program, Root>
-    WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>
+impl<Schema, Intent, Program, Root>
+    WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -102,12 +104,12 @@ where
 {
     /// Exact committed source evidence required to re-enter owner-held output custody.
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
-        &self.receipt
+        &self.source.receipt
     }
 }
 
 /// A performed source whose required output demand has been admitted.
-pub struct WorthQueryStartedRequiredOutputs<'application, Schema, Intent, Program, Root>
+pub struct WorthQueryStartedRequiredOutputs<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -120,16 +122,11 @@ where
 {
     receipt: WorthQueryApplicationCommitReceipt,
     result: MutationResult<Schema, Intent>,
-    required_output: crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-        'application,
-        Schema,
-        Program,
-        Root,
-    >,
+    required_output:
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>,
 }
 
-impl<'application, Schema, Intent, Program, Root>
-    WorthQueryStartedRequiredOutputs<'application, Schema, Intent, Program, Root>
+impl<Schema, Intent, Program, Root> WorthQueryStartedRequiredOutputs<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -148,10 +145,20 @@ where
         &self.result
     }
 
+    /// Transfers the exact committed result and owned fixed-output continuation.
+    pub fn into_parts(
+        self,
+    ) -> (
+        WorthQueryApplicationCommitReceipt,
+        MutationResult<Schema, Intent>,
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>,
+    ) {
+        (self.receipt, self.result, self.required_output)
+    }
+
     pub fn required_output_mut(
         &mut self,
     ) -> &mut crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-        'application,
         Schema,
         Program,
         Root,
@@ -162,7 +169,7 @@ where
 
 /// A landed mutation whose required outputs could not start. `into_performed` returns the
 /// landed mutation; `into_parts` also returns the denial.
-pub struct WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program, Root>
+pub struct WorthQueryRequiredOutputStartFailure<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -173,12 +180,12 @@ where
     Intent::Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
-    performed: WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>,
+    performed: WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>,
     denial: WorthQueryRequiredOutputPreparationDenial,
 }
 
-impl<'application, Schema, Intent, Program, Root>
-    WorthQueryRequiredOutputStartFailure<'application, Schema, Intent, Program, Root>
+impl<Schema, Intent, Program, Root>
+    WorthQueryRequiredOutputStartFailure<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -194,7 +201,7 @@ where
     }
 
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
-        &self.performed.receipt
+        &self.performed.source.receipt
     }
 
     pub const fn result(&self) -> &MutationResult<Schema, Intent> {
@@ -203,14 +210,14 @@ where
 
     pub fn into_performed(
         self,
-    ) -> WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root> {
+    ) -> WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root> {
         self.performed
     }
 
     pub fn into_parts(
         self,
     ) -> (
-        WorthQueryPerformedApplicationMutation<'application, Schema, Intent, Program, Root>,
+        WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>,
         WorthQueryRequiredOutputPreparationDenial,
     ) {
         (self.performed, self.denial)
@@ -219,15 +226,14 @@ where
 
 /// Settles a performed source's commit into its public outcome: not
 /// performed, committed without output custody, or performed with custody.
-fn performed_outcome<'application, Schema, Intent, Program, Root>(
-    application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+fn performed_outcome<Schema, Intent, Program, Root>(
     demand: ProgramDemand<Schema, Root>,
     outcome: WorthQueryApplicationMutationOutcome<
         <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
         MutationResult<Schema, Intent>,
     >,
     source: super::performed_source::PerformedSourceCommit,
-) -> WorthQueryApplicationPerformedMutationOutcome<'application, Schema, Intent, Program, Root>
+) -> WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -238,25 +244,51 @@ where
     Intent::Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
+    let outcome = match outcome {
+        WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {
+            if let Some(pending) = source.take_unpublished() {
+                return WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(
+                    WorthQueryUnpublishedRequiredApplicationMutation::new(pending, demand, partial));
+            }
+            WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial))
+        }
+        other => other,
+    };
+    if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::SettlementDeferred(_)
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_))) {
+        if let Some(preparation) = source.take_unpublished() {
+            return WorthQueryApplicationPerformedMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: demand, outcome });
+        }
+    }
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         return WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome);
     };
     match source.into_custody() {
-        Err(denial) => WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied {
-            receipt,
-            result,
-            denial,
-        },
+        Err((denial, custody)) => {
+            WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(
+                WorthQueryRequiredOutputRetentionFailure {
+                    receipt,
+                    result,
+                    denial,
+                    custody,
+                    demand,
+                    program: std::marker::PhantomData,
+                },
+            )
+        }
         Ok((prepared, retained_source)) => {
             WorthQueryApplicationPerformedMutationOutcome::Performed(
                 WorthQueryPerformedApplicationMutation {
-                    receipt,
                     result,
-                    application,
-                    demand,
-                    prepared,
-                    retained_source,
-                    source_bound: false,
+                    source: preparation::WorthQueryRequiredOutputPreparation {
+                        receipt,
+                        program: std::marker::PhantomData,
+                        demand,
+                        prepared,
+                        retained_source,
+                        source_bound: false,
+                    },
                 },
             )
         }
@@ -264,6 +296,15 @@ where
 }
 
 mod denial;
+mod denied;
+mod preparation;
+mod recovered;
+mod recovery;
 mod selected;
 mod start;
+mod unpublished;
 pub use denial::*;
+pub use denied::WorthQueryRequiredOutputRetentionFailure;
+pub use preparation::WorthQueryRequiredOutputPreparation;
+pub use recovered::WorthQueryRecoveredRequiredOutputs;
+pub use unpublished::WorthQueryUnpublishedRequiredApplicationMutation;

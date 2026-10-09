@@ -416,6 +416,16 @@ lifecycle metadata and denies new ordinary work without retiring the root.
 Composite cleanup must retain the pending state and retry through the owner. It
 cannot delete owner catalog entries itself.
 
+## Prepared root allocation and cost
+
+Preparing a root retains its actual immutable storage and publication custody.
+The reported `new_authoritative_bytes` is an observational allocation cost; it
+is not an aggregate publication ceiling or a reservation against an execution
+lease. Existing root BTree/Arc/COW heaps remain system allocations. The selected
+allocation policy still governs the backings that explicitly use it and its
+liveness checks; candidate, snapshot, branch retention and durable settlement
+owners retain their independent responsibilities.
+
 ## Exact terminal outcomes
 
 These are the complete sets the Runtime World composition owner must match on.
@@ -431,7 +441,7 @@ These are the complete sets the Runtime World composition owner must match on.
 `CandidateCapacityExhausted`, `PublishedSnapshotCapacityExhausted`.
 
 `RelationalPublicationFailureKind`: `SnapshotIdentityExhausted`,
-`CandidateIdentityExhausted`, `PreparedRootBudgetExhausted`,
+`CandidateIdentityExhausted`,
 `PreparedRootMismatch`, `PreparedBasisDescriptor`, `NextBasisAdmission`,
 `SelectedRootUnavailable`, `BranchObservation`, `PatchPositionCapacityExhausted`,
 `RetentionIdentityExhausted`, `RetentionOwner`,

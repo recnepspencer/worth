@@ -41,9 +41,9 @@ pub(super) type TestContinuation = WorthQueryApplicationQueryContinuation<
 
 pub(super) struct ContinuationTestContext {
     pub(super) world: AuthorizationWorld,
-    principal: WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
-    account: WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
-    query: WorthQueryInstalledApplicationQuery<
+    pub(super) principal: WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
+    pub(super) account: WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
+    pub(super) query: WorthQueryInstalledApplicationQuery<
         IdentityExecutionSchema,
         LiveAccountActivityQuery,
         AccountSummaryParameters,

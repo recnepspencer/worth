@@ -166,7 +166,7 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
             reports();
             let before = reads();
             let failure = performed
-                .start_required_outputs(&request, Default::default())
+                .start_required_outputs(&application, &request, Default::default())
                 .err()
                 .expect("zero budget refuses start");
             assert_cause(failure.denial(), memory, placement);
@@ -187,26 +187,35 @@ fn discovered_start_and_recovery_open_once_before_their_first_reader() {
             assert_eq!(reports().len(), 1);
             bound(None);
             let before = reads();
-            let started = performed
-                .start_required_outputs(&request, Default::default())
+            let mut started = performed
+                .start_required_outputs(&application, &request, Default::default())
                 .unwrap_or_else(|_| panic!("admitted discovery starts"));
+            assert_eq!(reads(), before, "start retains custody before discovery");
+            assert_eq!(reports().len(), 1);
+            let before = reads();
+            started
+                .required_output_mut()
+                .advance(&application, &request)
+                .unwrap();
             assert!(reads() > before);
             assert_eq!(
                 reports().len(),
                 1,
-                "all discovery and demand reads borrow the same request"
+                "discovery and demand reads borrow one advance"
             );
             drop(started);
             let before = reads();
-            drop(
-                request
-                    .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
-                        &application,
-                        &receipt,
-                        Default::default(),
-                    )
-                    .unwrap(),
-            );
+            let mut recovered = request
+                .recover_discovered_required_outputs::<DiscoveredProgram, DiscoveredRoot>(
+                    &application,
+                    &receipt,
+                    Default::default(),
+                )
+                .unwrap();
+            assert_eq!(reads(), before, "recovery retains custody before discovery");
+            assert_eq!(reports().len(), 1);
+            let before = reads();
+            recovered.advance(&application, &request).unwrap();
             assert!(reads() > before);
             assert_eq!(reports().len(), 1);
         }

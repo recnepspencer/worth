@@ -202,9 +202,6 @@ impl ConsumedOutputEvidence {
             Err(HeadCellRegistrationStop::Native(stop)) => {
                 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop;
                 return match stop {
-                    PublicationCompanionRegistrationStop::CellCapacityExhausted { .. } => {
-                        Err(ConsumedOutputVerificationStop::CapacityExhausted)
-                    }
                     PublicationCompanionRegistrationStop::HeadCellPublicationContended => Ok(()),
                     PublicationCompanionRegistrationStop::OwnerUnavailable
                     | PublicationCompanionRegistrationStop::PublicationPending

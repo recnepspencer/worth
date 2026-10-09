@@ -23,6 +23,7 @@ mod prepared;
 mod progress;
 mod promotion;
 mod slot_preparation;
+mod unavailable;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::registry::InstalledProducerProvider,
     application_output_demand::{

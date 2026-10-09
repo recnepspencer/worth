@@ -1,6 +1,7 @@
 mod basis_build;
 mod build_execution;
 mod diagnostics;
+mod discard;
 mod maintenance;
 pub(crate) use maintenance::candidate::PreparedCandidateIndexPublication;
 mod packet_planning;

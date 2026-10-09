@@ -41,6 +41,7 @@ impl Court<'_, '_, '_, '_> {
                 if start {
                     let started = performed
                         .start_required_outputs(
+                            self.application,
                             self.request,
                             WorthQueryOutputDemandControls::host_policy(),
                         )
@@ -53,8 +54,12 @@ impl Court<'_, '_, '_, '_> {
                 }
                 return;
             }
-            Ok(Performed::RequiredOutputDenied { denial, .. }) => format!("{denial:?}"),
+            Ok(Performed::RequiredOutputDenied(failure)) => format!("{:?}", failure.denial()),
             Ok(Performed::NotPerformed(refused)) => format!("{refused:?}"),
+            Ok(Performed::ProductUnpublished(partial)) => {
+                format!("unpublished: {:?}", partial.initial_cause())
+            }
+            Ok(Performed::Blocked(blocked)) => format!("blocked: {:?}", blocked.outcome()),
             Err(denial) => format!("{denial:?}"),
         };
         panic!("{at}: the Y of {body} is written: {answer}");

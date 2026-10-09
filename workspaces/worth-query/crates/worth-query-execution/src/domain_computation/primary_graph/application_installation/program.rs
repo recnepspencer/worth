@@ -7,6 +7,9 @@ mod demand;
 mod derived_artifact;
 mod output_roots;
 mod output_source;
+pub use output_source::{
+    WorthQueryRecoveredProgramOutputSource, WorthQueryUnpublishedProgramOutputSource,
+};
 mod program_owner;
 mod program_runtime;
 mod roster_authoring;

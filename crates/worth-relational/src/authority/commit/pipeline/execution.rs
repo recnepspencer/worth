@@ -13,7 +13,14 @@ pub(crate) fn prepare_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
+        &context.validation_input,
+        allocation_policy,
+        crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation,
+    );
+    scope_control.check()?;
     let runtime_instance_id = runtime.runtime_instance_id();
     let publication_binding = runtime.publication_binding();
     let transaction_id = context.transaction_id;
@@ -42,10 +49,11 @@ pub(crate) fn prepare_authoritative_commit(
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
     let admitted = admit_commit_execution(runtime, context)?;
     let prepared = prepare_commit_execution(runtime, admitted, lease)?;
-    let boundary_validated = validate_commit_boundary(runtime, prepared, lease)?;
-    let mutated = mutate_commit_execution(runtime, boundary_validated, lease)?;
+    let boundary_validated = validate_commit_boundary(runtime, prepared, lease, &scope_control)?;
+    let mutated = mutate_commit_execution(runtime, boundary_validated, lease, &scope_control)?;
     let history_bound = bind_commit_history(runtime, mutated)?;
-    let snapshot_validated = validate_snapshot_publication(runtime, history_bound, lease)?;
+    let snapshot_validated =
+        validate_snapshot_publication(runtime, history_bound, lease, &scope_control)?;
     let assembled = assemble_commit_artifacts(runtime, snapshot_validated, lease)?;
     let mut prepared = prepare_commit_publication_execution(runtime, assembled)?;
     prepared.append_diagnostics(diagnostic_capture.finish());
@@ -54,22 +62,6 @@ pub(crate) fn prepare_authoritative_commit(
     {
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
-    }
-    let required_bytes = prepared
-        .prepared_root()
-        .publication_cost()
-        .new_authoritative_bytes;
-    let maximum_bytes = runtime.config.publication.policy.max_prepared_root_bytes;
-    if required_bytes > maximum_bytes {
-        return Err(TransactionCommitError::publication_failed(
-            crate::mvcc::RelationalPublicationFailure::new(
-                crate::mvcc::RelationalPublicationFailureKind::PreparedRootBudgetExhausted {
-                    maximum_bytes,
-                    required_bytes,
-                },
-                "prepared publication root exceeds the configured byte budget",
-            ),
-        ));
     }
     let published_snapshot_slot =
         runtime
@@ -221,6 +213,11 @@ pub(crate) fn execute_authoritative_commit(
     context: AuthoritativeCommitContext,
 ) -> Result<CommitResult, TransactionCommitError> {
     let preparation = runtime.preparation_runtime_snapshot();
-    let candidate = prepare_authoritative_commit(&preparation, context, None)?;
+    let candidate = prepare_authoritative_commit(
+        &preparation,
+        context,
+        None,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )?;
     publish_prepared_authoritative_commit(runtime, candidate)
 }

@@ -10,7 +10,8 @@ use computation::PreparedComputationCustody;
 mod preparation;
 mod recovery;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
-pub(super) use capacity::{arc_bytes, denial, tree_insert_bytes, tree_work};
+pub(super) use capacity::{arc_bytes, denial};
+pub(in crate::domain_computation::primary_graph) use capacity::{tree_insert_bytes, tree_work};
 pub(in crate::domain_computation::primary_graph) use preparation::prepare;
 pub(in crate::domain_computation::primary_graph) use recovery::PreparedLineageRecoveryMetadata;
 

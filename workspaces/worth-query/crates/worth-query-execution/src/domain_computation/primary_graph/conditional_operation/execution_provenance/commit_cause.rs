@@ -22,7 +22,6 @@ pub(super) fn application_commit_cause(
         | Kind::RetentionIdentityExhausted
         | Kind::SnapshotIdentityExhausted
         | Kind::CandidateIdentityExhausted
-        | Kind::PreparedRootBudgetExhausted { .. }
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyIntentDrift

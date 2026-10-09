@@ -1,5 +1,4 @@
-use crate::capabilities::SchemaSource;
-use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy, RelationIntegrityScopeBudget};
+use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::facade::identity::PartitionId;
 use crate::facade::runtime::InvariantCatalog;
 use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
@@ -170,16 +169,6 @@ pub(super) fn relation_cardinality_runtime() -> RelationalRuntime {
         .unwrap();
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build()
-}
-
-pub(super) fn relation_integrity_runtime_with_scope_budget(
-    relation_integrity_scope_budget: RelationIntegrityScopeBudget,
-) -> RelationalRuntime {
-    let registry = relation_integrity_runtime().schema_registry().clone();
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry)
-        .relation_integrity_scope_budget(relation_integrity_scope_budget)
         .build()
 }
 

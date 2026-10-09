@@ -161,7 +161,7 @@ match request
 The names above are shortened. The outcome type is
 `WorthQueryApplicationMutationOutcome<Denial, Result>`. Mutation requests also
 take `preconditions`. A mutation that feeds the program's output graph runs
-with `execute_performed::<Program, Root>(&application)` instead; see
+with `execute_performed::<Program, Root>(&application, allocation_policy)` instead; see
 [Build an Application §5](build-an-application.md#5-run-the-program). How WORTH Works
 [§9](how-it-works.md#9-query-the-life-of-one-request) and
 [§11](how-it-works.md#11-outcomes-every-way-a-request-can-end) explain what each outcome

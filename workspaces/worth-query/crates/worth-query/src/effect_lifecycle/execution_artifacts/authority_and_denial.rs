@@ -36,10 +36,6 @@ pub enum EffectExecutionDenialKind {
     TransactionSavepointBudgetExceeded {
         maximum_savepoints: usize,
     },
-    PreparedRootBudgetExceeded {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     RelationalExactBasisStale,
     RelationalStrategyCanonicalizationFailed,
     RelationalStrategyExecutionFailed,
@@ -106,7 +102,6 @@ impl EffectExecutionDenialKind {
             Self::TransactionSavepointBudgetExceeded { .. } => {
                 "transaction_savepoint_budget_exceeded"
             }
-            Self::PreparedRootBudgetExceeded { .. } => "prepared_root_budget_exceeded",
             Self::RelationalExactBasisStale => "relational_exact_basis_stale",
             Self::RelationalStrategyCanonicalizationFailed => {
                 "relational_strategy_canonicalization_failed"

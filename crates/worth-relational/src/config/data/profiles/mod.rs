@@ -105,20 +105,6 @@ mod tests {
             RelationalConfigOverride::default(),
         );
         assert!(config.publication.policy.max_patch_records_per_commit >= 16_707);
-        assert!(
-            config
-                .execution
-                .relation_integrity_scope_budget
-                .max_touched_entities
-                >= 22_877
-        );
-        assert!(
-            config
-                .execution
-                .relation_integrity_scope_budget
-                .max_planned_edges
-                >= 38_837
-        );
     }
 
     #[test]

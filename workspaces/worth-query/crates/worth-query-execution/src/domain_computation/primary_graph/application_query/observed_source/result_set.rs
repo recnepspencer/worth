@@ -6,6 +6,16 @@ pub struct WorthQueryObservedResultSet<Query> {
     pub(super) source: WorthQueryObservedSource<Query>,
 }
 
+// Retain the same completed-set proof for a retry; cloning does not issue a
+// row proof, reobserve the graph or materialize its facts.
+impl<Query> Clone for WorthQueryObservedResultSet<Query> {
+    fn clone(&self) -> Self {
+        Self {
+            source: self.source.clone(),
+        }
+    }
+}
+
 impl<Query> WorthQueryObservedResultSet<Query> {
     pub(in crate::domain_computation::primary_graph::application_query) fn new(
         source: WorthQueryObservedSource<Query>,

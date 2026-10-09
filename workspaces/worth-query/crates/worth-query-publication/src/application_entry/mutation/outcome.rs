@@ -4,7 +4,9 @@ use worth_query_execution::facade::primary_graph::{
 };
 
 /// What executing an application mutation produced. `Committed`, `AlreadyCommitted`,
-/// and `PreviouslyCommitted` name landed commits; every other variant means nothing landed.
+/// and `PreviouslyCommitted` name published commits. A `Commit(ProductUnpublished)`
+/// retains performed owner effects awaiting product publication; an indeterminate
+/// commit retains unresolved landing evidence. Neither is permission to rerun effects.
 #[derive(Debug)]
 pub enum WorthQueryApplicationMutationOutcome<Denial, Result> {
     Committed {
@@ -19,8 +21,8 @@ pub enum WorthQueryApplicationMutationOutcome<Denial, Result> {
     DomainDenied(Denial),
     Cancelled,
     DeadlineExceeded,
-    /// The commit did not land. A landed commit is `Committed` or
-    /// `AlreadyCommitted` or `PreviouslyCommitted`.
+    /// No published commit is reported here. Unpublished owner effects and
+    /// unresolved landing retain their exact recovery posture in this outcome.
     Commit(WorthQueryApplicationUncommitted),
 }
 

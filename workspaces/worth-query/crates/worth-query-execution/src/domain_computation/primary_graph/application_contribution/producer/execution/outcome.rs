@@ -149,7 +149,6 @@ pub(super) fn commit_receipt(
                 | Kind::RetentionIdentityExhausted
                 | Kind::SnapshotIdentityExhausted
                 | Kind::CandidateIdentityExhausted
-                | Kind::PreparedRootBudgetExhausted { .. }
                 | Kind::IndexMaintenanceBudgetExceeded
                 | Kind::IndexGenerationIdentityExhausted
                 | Kind::IdempotencyReceiptNotRetained { .. }
@@ -219,8 +218,7 @@ fn refused_budget(
         Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
             Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
         }
-        Stop::CellCapacityExhausted { .. }
-        | Stop::PreparationMemoryExhausted { .. }
+        Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)

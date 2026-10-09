@@ -41,7 +41,6 @@ fn runtime_with_savepoint_limit(maximum_savepoints: usize) -> crate::runtime::Re
             max_transaction_savepoints: maximum_savepoints,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build()
 }

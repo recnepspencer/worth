@@ -76,6 +76,10 @@ pub struct WorthQueryRequiredOutputSourcePreparationFailure {
     pub(in crate::domain_computation::primary_graph) receipt:
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     pub(in crate::domain_computation::primary_graph) denial: WorthQueryOutputDemandDenial,
+    pub(in crate::domain_computation::primary_graph) source:
+        super::application_installation::WorthQueryUnpublishedProgramOutputSource,
+    pub(in crate::domain_computation::primary_graph) carrier:
+        super::application_installation::WorthQueryRecoveredProgramOutputSource,
 }
 
 impl WorthQueryRequiredOutputSourcePreparationFailure {
@@ -87,6 +91,37 @@ impl WorthQueryRequiredOutputSourcePreparationFailure {
 
     pub const fn denial(&self) -> &WorthQueryOutputDemandDenial {
         &self.denial
+    }
+    /// Original move-only preparation; descriptive access cannot promote it.
+    pub fn source(
+        &self,
+    ) -> &super::application_installation::WorthQueryUnpublishedProgramOutputSource {
+        &self.source
+    }
+    /// Reassembles a refused transfer from the exact owners returned by it.
+    pub fn returned(
+        receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        denial: WorthQueryOutputDemandDenial,
+        source: super::application_installation::WorthQueryUnpublishedProgramOutputSource,
+        carrier: super::application_installation::WorthQueryRecoveredProgramOutputSource,
+    ) -> Self {
+        Self {
+            receipt,
+            denial,
+            source,
+            carrier,
+        }
+    }
+    /// Returns every original native owner for a fresh checked retention retry.
+    pub fn into_parts(
+        self,
+    ) -> (
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        WorthQueryOutputDemandDenial,
+        super::application_installation::WorthQueryUnpublishedProgramOutputSource,
+        super::application_installation::WorthQueryRecoveredProgramOutputSource,
+    ) {
+        (self.receipt, self.denial, self.source, self.carrier)
     }
 }
 

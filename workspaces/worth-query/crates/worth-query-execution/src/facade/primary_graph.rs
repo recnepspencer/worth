@@ -4,7 +4,7 @@ pub use crate::domain_computation::primary_graph::WorthQueryExecutionLeaseDenial
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantExecutionFailurePosture,
+    WorthQueryInvariantExecutionFailurePosture, WorthQueryProviderSessionFailure,
 };
 
 #[cfg(feature = "test-query-execution-observer")]
@@ -33,6 +33,7 @@ pub use crate::domain_computation::primary_graph::{
 };
 
 pub use worth_relational::facade::{
+    indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
     publication::RecordStructuralChange,
 };

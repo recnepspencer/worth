@@ -14,6 +14,7 @@ use super::super::provider::fault_port::{
 pub(in crate::domain_computation::primary_graph) struct PrimaryGraphFaultController {
     scheduled: AtomicU16,
     staged_validation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
+    native_preparation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
     failed_post_commit_snapshot_consumptions: AtomicUsize,
     panicked_pending_publication_consumptions: AtomicUsize,
 }
@@ -24,6 +25,13 @@ impl PrimaryGraphFaultController {
         source: WorthQueryCancellationSource,
     ) {
         *self.staged_validation_cancellation.lock().unwrap() = Some(source);
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn cancel_next_native_preparation(
+        &self,
+        source: WorthQueryCancellationSource,
+    ) {
+        *self.native_preparation_cancellation.lock().unwrap() = Some(source);
     }
 
     pub(in crate::domain_computation::primary_graph) fn schedule(
@@ -93,6 +101,12 @@ impl PrimaryGraphFaultController {
 }
 
 impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
+    fn candidate_ready_for_native_preparation(&self) {
+        if let Some(source) = self.native_preparation_cancellation.lock().unwrap().take() {
+            source.cancel();
+        }
+    }
+
     fn candidate_staged_for_validation(&self) {
         if let Some(source) = self.staged_validation_cancellation.lock().unwrap().take() {
             source.cancel();

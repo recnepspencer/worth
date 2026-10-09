@@ -52,6 +52,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
     let branch = performed.receipt().product_branch();
     let mut performed = performed
         .start_required_outputs(
+            application,
             request,
             WorthQueryOutputDemandControls::new(
                 NonZeroUsize::new(4_096).unwrap(),
@@ -63,7 +64,7 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         });
     let WorthQueryApplicationProgramOutputProgress::Settled(settlement) = performed
         .required_output_mut()
-        .settle(request)
+        .settle(application, request)
         .expect("the generated output graph settles within its admitted work bound")
     else {
         panic!("the generated output graph exceeded its admitted work bound");

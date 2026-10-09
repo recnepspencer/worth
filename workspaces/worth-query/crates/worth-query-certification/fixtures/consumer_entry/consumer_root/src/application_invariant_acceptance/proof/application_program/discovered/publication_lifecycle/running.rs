@@ -43,13 +43,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         panic!("the first source publication is fresh")
     };
     let mut first = first
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the first roots start: {:?}", failure.denial()));
     world
         .application
         .delay_next_output_readiness_delivery_for_test();
     assert!(matches!(
-        first.required_output_mut().advance(&request).unwrap(),
+        first
+            .required_output_mut()
+            .advance(&world.application, &request)
+            .unwrap(),
         WorthQueryDiscoveredProgramOutputProgress::Pending
     ));
     let changed = request
@@ -99,12 +102,25 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         panic!("the newer source publication is fresh")
     };
     let mut second = second
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the newer roots bind: {:?}", failure.denial()));
+    world
+        .application
+        .delay_next_output_readiness_delivery_for_test();
+    assert!(
+        matches!(
+            second
+                .required_output_mut()
+                .advance(&world.application, &request)
+                .expect("the newer roots enter execution"),
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+        ),
+        "lazy continuation construction must advance before its roots are running"
+    );
     let first_settled = settle(|| {
         match first
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("older roots advance")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
@@ -131,7 +147,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
     let settled = settle(|| {
         match second
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("newer roots advance")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,

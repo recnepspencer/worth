@@ -1,9 +1,6 @@
 use crate::branch::SelectedRelationalBranchState;
 use crate::transactions::data::MergedCommitPlan;
-use crate::validation::data::{
-    InvariantFailureEffect, InvariantGroup, InvariantGroupSet, InvariantPlanContract,
-    InvariantVerdict,
-};
+use crate::validation::data::{InvariantGroupSet, InvariantPlanContract};
 use crate::validation::engine::{
     InvariantEngine, InvariantExecutionDisposition, InvariantExecutionRequest,
     InvariantExecutionResult, InvariantObservation, InvariantRequestProfile,
@@ -101,19 +98,13 @@ impl<'runtime> InvariantAccess<'runtime> {
             current_version_id,
             merged_plan,
             plan_contract,
-        );
-        if let Some(preparation_violation) = request.preparation_violation().cloned() {
-            return self.preparation_violation_result(
-                profile,
-                observation_kind,
-                version_id,
-                current_version_id,
-                merged_plan,
-                plan_contract,
-                &request,
-                preparation_violation,
-            );
-        }
+            &crate::validation::engine::InvariantPreparationControl::new(
+                crate::mvcc::RelationalOperationControl::uninterrupted(),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+            ),
+        )
+        .expect("uninterrupted System scope preparation");
         if !request.should_execute_anything() {
             return InvariantExecutionResult::skipped(self.execution_metadata(
                 profile,
@@ -129,54 +120,5 @@ impl<'runtime> InvariantAccess<'runtime> {
             ));
         }
         InvariantEngine::from_view(&self.view).execute(request)
-    }
-
-    fn preparation_violation_result<'state>(
-        &self,
-        profile: InvariantRequestProfile,
-        observation_kind: crate::validation::engine::InvariantObservationKind,
-        version_id: crate::identity::data::VersionId,
-        current_version_id: crate::identity::data::VersionId,
-        merged_plan: Option<&'state MergedCommitPlan>,
-        plan_contract: Option<InvariantPlanContract>,
-        request: &InvariantExecutionRequest<'state>,
-        preparation_violation: crate::validation::data::InvariantViolation,
-    ) -> InvariantExecutionResult
-    where
-        'runtime: 'state,
-    {
-        InvariantExecutionResult::executed(
-            self.execution_metadata(
-                profile,
-                observation_kind,
-                version_id,
-                current_version_id,
-                merged_plan,
-                plan_contract,
-                request.applicable_groups(),
-                request.max_cost(),
-                InvariantExecutionDisposition::Executed,
-                request.proposal_identity(),
-            ),
-            vec![crate::validation::data::InvariantCheckResult {
-                execution_point: profile.execution_point(),
-                failure_effect: InvariantFailureEffect::BlockCommit,
-                rule: crate::validation::data::InvariantReportedRule::Native(
-                    crate::validation::data::InvariantRule::RelationIntegrityScopeBudget(
-                        self.runtime
-                            .config
-                            .execution
-                            .relation_integrity_scope_budget
-                            .max_planned_edges,
-                    ),
-                ),
-                groups: InvariantGroupSet::of(InvariantGroup::RelationIntegrity)
-                    .union(InvariantGroupSet::of(InvariantGroup::PublicationCoherence)),
-                witness: preparation_violation.witness_key(),
-                cost: crate::validation::data::InvariantCostClass::Touched,
-                custom_provenance: None,
-                verdict: InvariantVerdict::Violation(preparation_violation),
-            }],
-        )
     }
 }

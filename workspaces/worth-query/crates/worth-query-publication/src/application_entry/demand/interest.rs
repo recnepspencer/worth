@@ -81,10 +81,10 @@ where
     pub(in crate::application_entry) fn start_for_program<Program, Root>(
         self,
         phase: &AdvancementPhase<'_>,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         (
-            super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+            super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
             std::sync::Arc<
                 worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
             >,
@@ -116,12 +116,7 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok((
-            super::WorthQueryApplicationProgramDemandHandle::new(
-                application,
-                admitted,
-                self.demand,
-                None,
-            ),
+            super::WorthQueryApplicationProgramDemandHandle::new(admitted, self.demand, None),
             observation,
         ))
     }
@@ -129,14 +124,15 @@ where
     pub(in crate::application_entry) fn start_recovery<Program, Root>(
         self,
         phase: &AdvancementPhase<'_>,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         (
-            super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+            super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
             std::sync::Arc<
                 worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
             >,
+            worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
         ),
         WorthQueryApplicationOutputDemandDenial,
     >
@@ -199,20 +195,16 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok((
-            super::WorthQueryApplicationProgramDemandHandle::new(
-                application,
-                admitted,
-                self.demand,
-                None,
-            ),
+            super::WorthQueryApplicationProgramDemandHandle::new(admitted, self.demand, None),
             observation,
+            prepared,
         ))
     }
 
     pub(in crate::application_entry) fn start_dependent<Program, ParentDemand, Connection>(
         self,
         phase: &AdvancementPhase<'_>,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent: &worth_query_execution::facade::application_installation::WorthQuerySettledProgramOutput<
             Schema,
             Program,
@@ -221,7 +213,7 @@ where
         basis: &crate::application_entry::WorthQueryApplicationReadObservation,
         minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
     ) -> Result<
-        super::WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>,
+        super::WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     >
     where
@@ -234,6 +226,9 @@ where
             Demand = Demand,
         >,
     {
+        if !std::ptr::eq(self.application, application.runtime()) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
         let source_observation = self
             .observation
             .as_ref()
@@ -252,7 +247,6 @@ where
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         Ok(super::WorthQueryApplicationProgramDemandHandle::new(
-            application,
             admitted,
             self.demand,
             Some(source_observation),

@@ -21,7 +21,9 @@ pub use observation::InvariantObservationKind;
 #[cfg(test)]
 pub use profile::HarnessAuditMode;
 pub(crate) use profile::InvariantRequestProfile;
-pub(crate) use request::{InvariantExecutionRequest, PreparedRelationIntegrityScopes};
+pub(crate) use request::{
+    InvariantExecutionRequest, InvariantPreparationControl, PreparedRelationIntegrityScopes,
+};
 pub use result::{
     CustomInvariantTraceArtifact, InvariantExecutionDisposition, InvariantExecutionMetadata,
     InvariantExecutionResult, InvariantFailure, InvariantFailureArtifact, InvariantPlanScopeClass,
