@@ -98,6 +98,22 @@ that same root. This callback controls interruption, not temporary buffer
 allocation admission. The separate admitted lookup retains its existing
 64-candidate work/storage contract.
 
+An installed derived index can discard its currently catalogued generations with
+`index_authority().discard_generations(DerivedIndexDiscardRequest::all_bases(index))`.
+This explicit scope removes every branch, basis and publication status for that
+index under one catalog write lock. Definitions, authoritative roots, history and
+unique-field enforcement remain. Already-held generation readers can finish;
+fresh selection refuses cold access until an admitted build publishes again.
+Rebuild uses the ordinary `build_for_basis_with_lease` path and its exact native
+basis. An old ordered continuation does not silently rebind to a new generation.
+
+Discard is cache maintenance, not a durable tombstone or a promise of total heap
+reclamation. A concurrent build may publish afterward, held readers and historical
+artifacts may share backing, and later recovery replay may publish valid artifacts.
+A checkpoint captures the catalog as it exists at capture time; reopening a
+checkpoint captured after a completed discard does not itself reconstruct the
+missing generations from source records.
+
 ## Mental model
 
 - `RelationalRuntimeApi::builder()` is the setup door

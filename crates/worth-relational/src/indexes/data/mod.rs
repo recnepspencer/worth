@@ -1,4 +1,8 @@
 mod allocation_accounting;
+mod discard;
+pub use discard::{
+    DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
+};
 mod entry_map;
 pub use entry_map::{DerivedIndexEntryMap, DerivedIndexRows};
 mod maintenance;
