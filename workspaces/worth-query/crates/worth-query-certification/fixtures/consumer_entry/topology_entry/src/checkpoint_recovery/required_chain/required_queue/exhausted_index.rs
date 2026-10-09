@@ -33,9 +33,7 @@ macro_rules! advance_recording {
                 if $stops.is_empty()
                     && denial.kind() != WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
                 {
-                    return Err(Attempt::Below(
-                        "producer unavailable before index admission",
-                    ));
+                    return Err(Attempt::Above("the first stop is not the index's refusal"));
                 }
                 $stops.push((denial.kind(), denial.recovery_posture()));
                 None
