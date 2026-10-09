@@ -86,6 +86,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .run(
                 worth_execution::ExecutionWorkCeiling::new(request.work_ceiling()),
                 |lease| {
+                    let result = (|| {
                     // The owner's staged data grows with the actual membership,
                     // plans and projected image, independently of view limit policy.
                     let mut owner_hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
@@ -321,6 +322,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         )
                     })?;
                     Ok(keys)
+                    })();
+                    crate::domain_computation::primary_graph::application_query::one_shot::retain_reconstruction_result(lease, result, denial::lease)
                 },
             )
             .map_err(denial::scope)?

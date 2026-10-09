@@ -173,8 +173,17 @@ impl AcceptedCurrentCandidate {
         let (Some(facts), Some(witness)) = (facts, self.selected.native_output_witness()) else {
             return Ok(true);
         };
+        let count = self
+            .selected
+            .completed_handler_fact_count()
+            .unwrap_or(facts.len());
+        let Some(handler_facts) = facts.get(..count) else {
+            return Ok(true);
+        };
+        // Handler evidence decides whether the old edges still apply. Source
+        // query stamps are a suffix whose meaning is checked by input equality.
         match ConsumedOutputEvidence::own_evidence_is_current(
-            &facts,
+            handler_facts,
             &self.selected.recorded().consumed_outputs,
             witness,
             runtime,

@@ -799,6 +799,7 @@ exports = [
     "advancement_requests_on_this_thread_for_test",
     "bound_advancement_requests_on_this_thread_for_test",
     "caller_pass_reports_on_this_thread_for_test",
+    "carried_read_basis_custody_for_test",
     "compensate_recovery_handle",
     "dispose_recovery_handle",
     "expire_recovery_handle",

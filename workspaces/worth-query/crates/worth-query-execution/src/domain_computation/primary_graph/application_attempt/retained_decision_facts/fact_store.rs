@@ -81,6 +81,33 @@ impl AuthoringSourceFacts {
                     .ok_or(StoreDenial::ConflictingBody)
             })
     }
+    /// A shared producer/decision dependency keeps its decision provenance.
+    pub(in crate::domain_computation::primary_graph) fn merge_existing(
+        &mut self,
+        fact: Fact,
+        control: StorageControl<'_, '_>,
+    ) -> Result<Option<Fact>, StoreDenial> {
+        let predicate = match &fact {
+            Fact::IndexedEntitySelection {
+                value,
+                candidate_limit,
+                ..
+            } => Some((value, *candidate_limit)),
+            _ => None,
+        };
+        let key = AdmittedFactKey::from_borrowed(
+            |writer| fact.write_dependency_locator(writer),
+            predicate,
+            control,
+        )?;
+        self.store
+            .merge_existing(key, fact, control, |existing, duplicate| {
+                existing
+                    .merge_after_equal_source_key(duplicate, control)?
+                    .then_some(())
+                    .ok_or(StoreDenial::ConflictingBody)
+            })
+    }
     pub(in crate::domain_computation::primary_graph) fn finish(
         self,
         control: StorageControl<'_, '_>,

@@ -189,11 +189,13 @@ where
                     && super::caller::finish_current_caller(
                         runtime,
                         demand,
-                        &wave.anchor_ready,
-                        selected,
-                        current_role == FrameRole::CallerSuccessor,
-                        current.is_none(),
-                        producer_contacts_in_this_demand,
+                        super::caller::CurrentCaller {
+                            anchor_ready: &wave.anchor_ready,
+                            selected,
+                            continues_caller: current_role == FrameRole::CallerSuccessor,
+                            caller_current: current.is_none(),
+                            current_contacts: producer_contacts_in_this_demand,
+                        },
                         admission,
                     )?
                 {
@@ -277,9 +279,11 @@ where
                             runtime,
                             custody,
                             &mut stop,
-                            selected,
-                            &wave,
-                            &resolved_on_wave,
+                            requested_refusal::RequestedDependency {
+                                selected,
+                                wave: &wave,
+                                resolved: &resolved_on_wave,
+                            },
                             admission,
                         )? {
                             requested_refusal::RequestedRefusal::Ready(upstream) => {

@@ -226,3 +226,6 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
 
 #[path = "touched_graph_closure/field_family_occurrence.rs"]
 mod field_family_occurrence;
+
+#[path = "touched_graph_closure/stale_identity.rs"]
+mod stale_identity;

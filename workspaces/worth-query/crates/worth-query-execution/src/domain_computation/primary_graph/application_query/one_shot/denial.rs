@@ -139,14 +139,10 @@ pub(super) fn authorization_denial(
 
 impl WorthQueryApplicationOneShotDenial {
     /// The shared payload and its one reservation live until the last denial clone drops.
-    pub(in crate::domain_computation::primary_graph) fn retain_custody(
-        &self,
-        hold: worth_execution::ExecutionMemoryReservation,
-    ) {
-        self.payload
-            .custody
-            .set(hold)
-            .expect("one owner stage retains denial custody");
+    fn retain_custody(&self, hold: worth_execution::ExecutionMemoryReservation) {
+        // A concurrent clone may have retained custody first. Its hold remains;
+        // the rejected second hold refunds itself when this result drops.
+        let _ = self.payload.custody.set(hold);
     }
 
     pub const fn kind(&self) -> WorthQueryApplicationOneShotDenialKind {
@@ -164,6 +160,30 @@ impl WorthQueryApplicationOneShotDenial {
     pub fn authorization_denial(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
         self.payload.authorization_denial.as_deref()
     }
+}
+
+/// Owner stages and the complete reconstruction return through this boundary.
+/// A worker's map allowance ends before its returned payload acquires custody.
+pub(in crate::domain_computation::primary_graph) fn retain_reconstruction_result<T>(
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    result: Result<T, super::super::WorthQueryManagedDerivedViewDenial>,
+    on_admission_denial: impl FnOnce(
+        worth_execution::LeaseDenial,
+    ) -> super::super::WorthQueryManagedDerivedViewDenial,
+) -> Result<T, super::super::WorthQueryManagedDerivedViewDenial> {
+    use super::super::WorthQueryManagedDerivedViewDenial as Denial;
+    use worth_execution::ChargedBytes;
+    if let Err(Denial::ReadDenied { denial, .. }) = &result {
+        if denial.payload.custody.get().is_none() {
+            let hold = worth_execution::ExecutionMemoryReservation::reserve_in_scope(
+                lease,
+                denial.additional_charged_bytes(),
+            )
+            .map_err(on_admission_denial)?;
+            denial.retain_custody(hold);
+        }
+    }
+    result
 }
 
 impl std::fmt::Display for WorthQueryApplicationOneShotDenial {

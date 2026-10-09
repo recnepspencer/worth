@@ -15,7 +15,7 @@ pub(super) struct Input {
 }
 worth_query_structured_value_binding!(pub(super) InputBinding for Input { identity: "courtroom-equal-dependent-input" });
 worth_query_operation!(pub(super) PublishDependent for Schema: TopologySchemaBinding, input InputBinding);
-worth_query_operation_reads!(PublishDependent => [Body, BodyKey, Length]);
+worth_query_operation_reads!(PublishDependent => [Body, BodyKey, Length, PositionY]);
 worth_query_operation_writes!(PublishDependent => [Length]);
 
 pub(super) struct Binding;
@@ -80,6 +80,7 @@ pub(super) fn take_calls() -> usize {
 }
 pub(super) struct Handler {
     pub(super) witnesses: usize,
+    pub(super) indexed_selection: bool,
 }
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
@@ -97,6 +98,10 @@ impl OperationHandler<Schema, Binding> for Handler {
                 worth_query_host::facade::primary_graph::WorthQueryCurrentOutputSelection::Unique(output) => output,
                 _ => return Ok(None),
             };
+            if self.indexed_selection {
+                let matches = reader.select_entities(PositionY::reference(), length(10), 8)?;
+                return Ok(Some(length(matches.len() as u64)));
+            }
             if self.witnesses == 0 {
                 return reader.field(&output, Length::reference());
             }
@@ -164,6 +169,7 @@ pub(super) fn declare(
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())
         .operation_read_field(operation, Length::reference())
+        .operation_read_field(operation, PositionY::reference())
         .operation_write(operation, Length::reference())
         .application_mutation_binding::<Binding>()
 }

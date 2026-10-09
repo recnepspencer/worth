@@ -149,9 +149,6 @@ impl RetainedInputCutoffCandidate {
         let Some(prior_context) = self.completed_decision_reuse() else {
             return Ok(None);
         };
-        let Some(count) = self.completed_handler_fact_count() else {
-            return Ok(None);
-        };
         let Some(witness) = self.native_output_witness() else {
             return Ok(None);
         };
@@ -171,6 +168,7 @@ impl RetainedInputCutoffCandidate {
         let Some(facts) = self.observed_source_facts(admission)? else {
             return Ok(None);
         };
+        let count = self.completed_handler_fact_count().unwrap_or(facts.len());
         if count > facts.len() {
             return Ok(None);
         }
@@ -202,10 +200,12 @@ impl RetainedInputCutoffCandidate {
             SourceSettlementCurrentness::Clean => {}
             SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
             SourceSettlementCurrentness::PendingUpstream(edges) => {
+                // Input equality replaces the source-query suffix. Changed
+                // handler facts still require disclosure before old edges.
                 // Source input equality does not prove handler facts equal.
                 // A changed own decision may remove the old consumed edges.
                 match ConsumedOutputEvidence::own_evidence_is_current(
-                    &facts,
+                    &facts[..count],
                     self.consumed_outputs(),
                     witness,
                     runtime,

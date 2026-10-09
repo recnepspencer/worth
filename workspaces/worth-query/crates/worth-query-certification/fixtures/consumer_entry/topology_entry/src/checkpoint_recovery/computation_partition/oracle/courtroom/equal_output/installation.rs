@@ -13,7 +13,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     fn register_members(
         builder: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        let builder = facts::declare(builder);
+        let builder = indexed_decision::declare_edit(facts::declare(builder));
         let builder = crate::source_adjustment::declare_planar_source_adjustment(builder);
         dependent_publication::declare(publication::declare(builder))
             .entity(Body::reference())
@@ -62,7 +62,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     }
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
-    type Configuration = usize;
+    type Configuration = (usize, bool);
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
@@ -73,13 +73,15 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         Ok(())
     }
     fn configure(
-        configuration: usize,
+        configuration: (usize, bool),
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<dependent_publication::Binding, _>(dependent_publication::Handler {
-            witnesses: configuration,
+            witnesses: configuration.0,
+            indexed_selection: configuration.1,
         })?;
         setup.handler::<publication::Binding, _>(publication::Handler)?;
+        setup.handler::<PlanarEditBinding<Schema>, _>(crate::PlanarHandler)?;
         setup.handler::<PlanarSourceAdjustmentBinding<Schema>, _>(PlanarSourceAdjustmentHandler)?;
         setup.producer::<Producer>(Provider)?;
         setup.producer::<counted_producer::Producer>(counted_producer::Provider)?;
@@ -104,6 +106,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
             ApplicationFeatureSpec::root::<Schema, PlanarOutputFeature>()
                 .provides::<PlanarDerivedBodyOutput>()
                 .conditional_operation::<publication::PublishRoot>()
+                .mutation::<PlanarEditBinding<Schema>>()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, graph::DependentFeature>()
                 .provides::<graph::DependentOutput>()
@@ -119,6 +122,18 @@ pub(super) fn install(
 pub(super) fn install_with_witnesses(
     witnesses: usize,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
+    install_configured(witnesses, false)
+}
+
+pub(super) fn install_with_indexed_decision(
+) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
+    install_configured(0, true)
+}
+
+fn install_configured(
+    witnesses: usize,
+    indexed_selection: bool,
+) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
     assert!(witnesses <= 2);
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .validated_program()
@@ -132,7 +147,7 @@ pub(super) fn install_with_witnesses(
         support::invalidation(128 * 1024 * 1024, 1_000_000, 4),
         support::candidates(),
     );
-    application_installation::in_memory_program(program, declaration, (witnesses,), limits, |_bootstrap_phase, graph, installed| {
+    application_installation::in_memory_program(program, declaration, ((witnesses, indexed_selection),), limits, |_bootstrap_phase, graph, installed| {
         let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<Schema>()).unwrap();
         let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner").unwrap();
         graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;

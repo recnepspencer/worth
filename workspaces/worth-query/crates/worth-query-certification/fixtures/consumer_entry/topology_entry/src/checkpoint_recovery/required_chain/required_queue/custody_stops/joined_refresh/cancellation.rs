@@ -28,7 +28,6 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
             invalidation.retained_capacity_bytes(),
             application.output_lineage_retained_bytes_for_test(),
         );
-        let custody_before = invalidation.retained_custody_breakdown_for_test();
         let ready = application.stable_ready_sources_for_test();
         let claims = application.registry_successor_claims_for_test();
         let cancellation = authentication::WorthQueryCancellationSource::new();
@@ -86,20 +85,10 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
             "cancel restores the original Ready source and publication"
         );
         if attempt == 1 {
-            let mut classes = std::collections::BTreeMap::<(&str, u32), (u64, u64)>::new();
-            for (_, file, line, bytes) in &custody_before {
-                classes.entry((*file, *line)).or_default().0 += bytes;
-            }
-            for (_, file, line, bytes) in invalidation.retained_custody_breakdown_for_test() {
-                classes.entry((file, line)).or_default().1 += bytes;
-            }
-            for ((file, line), (model, owner)) in classes {
-                eprintln!("JOINED_CUSTODY {file}:{line} model={model} owner={owner}");
-            }
-            eprintln!(
-                "JOINED_REQUIRED {:?}",
-                application.required_custody_breakdown_for_test()
-            );
+            // The live index has A/B's two generations and C/D's one each.
+            // carry_row retains one main-branch basis, one marks allocation,
+            // and one copied path; cancellation does not undo the live basis.
+
             assert_eq!(
                 application.registry_successor_claims_for_test(),
                 claims,
@@ -111,11 +100,23 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
                     invalidation.retained_capacity_bytes(),
                     application.output_lineage_retained_bytes_for_test()
                 ),
-                before,
-                "the interrupted join refunds the complete retained tuple"
+                (
+                    before.0,
+                    before.1 + primary_graph::carried_read_basis_custody_for_test("main".len(), 6),
+                    before.2,
+                ),
+                "the interrupted join refunds its custody; the live mark state retains one carried basis"
             );
         }
     }
     settled_in_one_advance!(d, request, "the restored row remains live");
     drop((a, b, c, d));
+    drop(selected);
+    drop((principal, scope));
+    drop(application);
+    assert_eq!(
+        invalidation.retained_capacity_bytes(),
+        0,
+        "ending the graph owner releases the carried basis and every index ticket"
+    );
 }

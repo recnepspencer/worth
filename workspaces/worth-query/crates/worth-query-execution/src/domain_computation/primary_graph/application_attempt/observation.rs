@@ -10,6 +10,14 @@ use worth_relational::facade::storage::RecordLifecycleState;
 use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 
 mod predecode_admission;
+#[cfg(test)]
+std::thread_local! {
+    static NATIVE_FIELD_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) fn take_native_field_contacts() -> usize {
+    NATIVE_FIELD_CONTACTS.with(|count| count.replace(0))
+}
 pub(in crate::domain_computation::primary_graph) use predecode_admission::observe_field_value_borrowed;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -25,6 +33,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
     kind: worth_relational::facade::identity::KindId,
     locator: &worth_foundational::facade::AspectFieldLocator,
 ) -> Option<WorthQueryApplicationFieldObservation> {
+    #[cfg(test)]
+    NATIVE_FIELD_CONTACTS.with(|count| count.set(count.get() + 1));
     let field = locator.field_path().fields().first()?.clone();
     let scope = ProjectionAspectScope::from_requirements([ProjectionAspectRequirement::fields(
         locator.aspect().aspect_key().clone(),

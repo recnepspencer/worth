@@ -51,20 +51,30 @@ pub(super) fn merge_source_facts(
         .check_live()
         .map_err(|denial| denial.into_attempt_denial(operation))?;
     if admitted.is_empty() {
-        return Ok(SourceFacts::Projected(dependent));
+        return Ok(SourceFacts::Projected(dependent, None));
     }
     let mut dependent = match dependent {
         Some(facts) => AuthoringSourceFacts::from_retained(facts, control),
         None => AuthoringSourceFacts::new(control),
     }
     .map_err(|denial| denial.into_attempt_denial(operation))?;
+    let mut source = AuthoringSourceFacts::new(control)
+        .map_err(|denial| denial.into_attempt_denial(operation))?;
     for fact in admitted {
-        dependent
-            .capture(fact, control)
-            .map_err(|denial| denial.into_attempt_denial(operation))?;
+        if let Some(fact) = dependent
+            .merge_existing(fact, control)
+            .map_err(|denial| denial.into_attempt_denial(operation))?
+        {
+            source
+                .capture(fact, control)
+                .map_err(|denial| denial.into_attempt_denial(operation))?;
+        }
     }
-    let facts = dependent
+    let handler = dependent
         .finish(control)
         .map_err(|denial| denial.into_attempt_denial(operation))?;
-    Ok(SourceFacts::Projected(Some(facts)))
+    let source = source
+        .finish(control)
+        .map_err(|denial| denial.into_attempt_denial(operation))?;
+    Ok(SourceFacts::Projected(Some(handler), Some(source)))
 }

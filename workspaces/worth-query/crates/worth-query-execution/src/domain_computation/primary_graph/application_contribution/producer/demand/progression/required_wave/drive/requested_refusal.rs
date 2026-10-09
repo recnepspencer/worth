@@ -6,16 +6,24 @@ pub(super) enum RequestedRefusal {
     Cycle,
     Unavailable,
 }
-#[allow(clippy::too_many_arguments)]
+/// The selected dependency and the resolutions on its current wave.
+pub(super) struct RequestedDependency<'a, 'basis, Schema: ApplicationSchema> {
+    pub selected: &'a SelectedReadyReadmission,
+    pub wave: &'a RequiredWaveSelection<'basis, Schema>,
+    pub resolved: &'a ResolvedOnWave,
+}
 pub(super) fn resolve<Schema: ApplicationSchema + 'static>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     custody: &mut RequiredContinuations<Schema>,
     stop: &mut WorthQueryOutputDemandDenial,
-    selected: &SelectedReadyReadmission,
-    wave: &RequiredWaveSelection<'_, Schema>,
-    resolved: &ResolvedOnWave,
+    dependency: RequestedDependency<'_, '_, Schema>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<RequestedRefusal, WorthQueryOutputDemandDenial> {
+    let RequestedDependency {
+        selected,
+        wave,
+        resolved,
+    } = dependency;
     let Some(requested) = stop.take_requested_output() else {
         return Ok(RequestedRefusal::Unavailable);
     };

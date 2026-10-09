@@ -79,3 +79,6 @@ pub(in crate::domain_computation::primary_graph) use verification::{
     DirtyReverification, SettlementVerificationStop,
 };
 pub(in crate::domain_computation::primary_graph) use verified_current::VerifiedCurrentCleanup;
+
+#[cfg(feature = "test-query-execution-observer")]
+pub use read_basis_carry::carried_read_basis_custody_for_test;

@@ -3,51 +3,43 @@
 use super::super::Denial;
 use std::num::NonZeroUsize;
 use worth_execution::{
-    ChargedBytes, ExecutionMemoryReservation, ExecutionRounds, MapKernelContext, MapKernelFailure,
-    MapStop, RoundsOutcome,
+    ExecutionMemoryReservation, ExecutionRounds, MapKernelContext, MapStop, RoundsOutcome,
 };
 
 pub(super) fn run<T>(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     operation: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<T, Denial>,
 ) -> Result<T, Denial> {
-    let stages =
-        ExecutionRounds::try_new(NonZeroUsize::new(1).unwrap()).map_err(super::denial::rounds)?;
-    let mut operation = Some(operation);
-    let mut value = None;
-    let outcome = stages.run(
-        lease,
-        (),
-        0,
-        0,
-        0,
-        |_, _, context| {
-            let result = operation.take().expect("one declared owner stage")(context);
-            if let Err(error) = &result {
-                let hold = ExecutionMemoryReservation::reserve_in_scope(
-                    lease,
-                    error.additional_charged_bytes(),
-                )
-                .map_err(|cause| MapKernelFailure::Domain(super::denial::lease(cause)))?;
-                if let Denial::ReadDenied { denial, .. } = error {
-                    denial.retain_custody(hold);
-                }
+    let result = (|| {
+        let stages = ExecutionRounds::try_new(NonZeroUsize::new(1).unwrap())
+            .map_err(super::denial::rounds)?;
+        let mut operation = Some(operation);
+        let mut value = None;
+        let outcome = stages.run(
+            lease,
+            (),
+            0,
+            0,
+            0,
+            |_, _, context| {
+                let result = operation.take().expect("one declared owner stage")(context);
+                value = Some(result);
+                Ok(())
+            },
+            |_, _| true,
+        );
+        match outcome {
+            RoundsOutcome::Converged { .. } | RoundsOutcome::NotConverged { .. } => {
+                value.expect("the owner stage completed")
             }
-            value = Some(result);
-            Ok(())
-        },
-        |_, _| true,
-    );
-    match outcome {
-        RoundsOutcome::Converged { .. } | RoundsOutcome::NotConverged { .. } => {
-            value.expect("the owner stage completed")
+            RoundsOutcome::Stopped { reason, .. } => Err(match reason {
+                MapStop::Admission(cause) => super::denial::lease(cause),
+                MapStop::WorkExhausted { .. } => Denial::WorkExhausted { root: None },
+                MapStop::Failure { cause, .. } => super::denial::owner(cause),
+            }),
         }
-        RoundsOutcome::Stopped { reason, .. } => Err(match reason {
-            MapStop::Admission(cause) => super::denial::lease(cause),
-            MapStop::WorkExhausted { .. } => Denial::WorkExhausted { root: None },
-            MapStop::Failure { cause, .. } => super::denial::owner(cause),
-        }),
-    }
+    })();
+    crate::domain_computation::primary_graph::application_query::one_shot::retain_reconstruction_result(lease, result, super::denial::lease)
 }
 
 use crate::domain_computation::primary_graph::application_query::derived_view::{

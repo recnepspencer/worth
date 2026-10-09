@@ -4,6 +4,49 @@ use super::fixtures::*;
 use crate::tests::support::*;
 
 #[test]
+fn a_refused_demand_leaves_no_staging_residue() {
+    use worth_execution::{CancellationToken, ExecutionAllocationPolicy as Policy, LeaseRequest};
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+    let runtime = strictness_runtime();
+    let entity = create_entity(&runtime, COMPLIANT_NAME);
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    let before_batches = transaction.batches().to_vec();
+    let before_reads = transaction.footprint().clone();
+    let lease = test_execution_authority()
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), 0, 1),
+            ),
+            deadline: None,
+            cancellation: CancellationToken::new(),
+        })
+        .unwrap();
+    let failure = transaction
+        .push_batch(
+            revalidation_batch("must-not-stage", [entity]),
+            Policy::Execution(&lease),
+        )
+        .unwrap_err();
+    assert!(
+        failure.allocation_denial().is_some(),
+        "the actual demand door refuses native backing"
+    );
+    assert_eq!(transaction.batches(), before_batches);
+    assert_eq!(transaction.footprint(), &before_reads);
+    transaction
+        .push_batch(
+            revalidation_batch("retry", [entity]),
+            Policy::SystemAllocation,
+        )
+        .unwrap();
+    assert_eq!(transaction.batches().len(), before_batches.len() + 1);
+}
+
+#[test]
 fn a_demand_claims_a_read_locus_and_never_a_write_locus() {
     let runtime = strictness_runtime();
     let entity = create_entity(&runtime, COMPLIANT_NAME);

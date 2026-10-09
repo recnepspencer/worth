@@ -261,7 +261,7 @@ where
     admission
         .charge_external_work(1)
         .map_err(admission_denial)?;
-    // Only the caller's exact InterestÃ¢â€ â€™Ready join may reuse the installed
+    // Only the caller's exact Interest→Ready join may reuse the installed
     // entry retained when that same demand was admitted. Other cues still
     // resolve their own producer through the installed table.
     let installed = match caller_installed {

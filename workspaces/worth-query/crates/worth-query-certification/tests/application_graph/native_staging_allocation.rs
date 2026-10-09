@@ -118,19 +118,23 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
         WorthQueryDecisionReadSetDenialKind::AllocationDenied
     );
     let cause = failure.allocation_denial().expect("actual provider quote");
+    // The handler's entity resolution, unique lookup, retention read and
+    // mutation target contribute four provider evidence entries.
+    let modeled_capture = 4 * std::mem::size_of::<
+        worth_query_execution::facade::provider_session::WorthQueryDecisionFactEvidence,
+    >() as u64;
     assert_eq!(
         cause.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
             worth_query_host::facade::runtime::MemoryLimitDenial {
-                requested: cause.requested_payload_bytes().unwrap(),
+                requested: modeled_capture,
                 admitted: 0,
                 level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
             }
         ))
     );
-    let read_set_bytes = cause
-        .requested_payload_bytes()
-        .expect("checked Layout quote");
+    let read_set_bytes = modeled_capture;
+    assert_eq!(cause.requested_payload_bytes(), Some(read_set_bytes));
     assert!(read_set_bytes > 0);
     assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
     assert_eq!(
@@ -167,13 +171,25 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
         panic!("expected native physical admission, got {native:?}");
     };
     assert_eq!(failure.allocation_denial(), Some(native_cause));
-    // The admitted read set occupies the complete caller policy budget.
+    // fresh.rs:95 and relational_validation.rs:42 each create a controlled
+    // child (request_allocation_control.rs:38). The four 88-byte evidence
+    // slots charge the capture child and parent, not the new staging child.
+    // room.rs:35 checks that empty child's policy before the charged parent.
+    // One mutation inserts its first write into a CHUNK32 staging array
+    // (worth-relational/staging_storage/author.rs), before later backing.
+    let staging_quote = 32
+        * std::mem::size_of::<
+            std::cell::RefCell<
+                Option<worth_relational::facade::mvcc::RelationalTransactionWriteLocus>,
+            >,
+        >() as u64;
+    let staging_child_retained = 0;
     assert_eq!(
         native_cause.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
             worth_query_host::facade::runtime::MemoryLimitDenial {
-                requested: native_cause.requested_payload_bytes().unwrap(),
-                admitted: 0,
+                requested: staging_quote,
+                admitted: read_set_bytes - staging_child_retained,
                 level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 },
             }
         ))

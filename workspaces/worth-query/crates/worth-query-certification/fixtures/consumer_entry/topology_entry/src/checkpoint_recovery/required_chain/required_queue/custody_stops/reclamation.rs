@@ -45,25 +45,21 @@ pub(super) fn overwrite_middle_output(
 }
 
 /// A chain node republishes the Length its own source reads, so its output
-/// does not vary with the root. Where `overwritten`, another writer changes
-/// the middle output every cycle: the last consumer's decision then reads a
-/// value no earlier cycle published.
+/// does not vary with the root. A middle output another writer changes
+/// releases the custody it supersedes, so no budget both funds the middle
+/// refresh and reclaims the last consumer; the upper-edge test asserts the
+/// changed value's contact.
 #[test]
 fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    for (overwritten, reclamation_rows) in [
-        (false, model.reclaim_rows()),
-        (true, model.middle_write_reclaim_rows()),
-    ] {
-        assert!(
-            !reclamation_rows.is_empty(),
-            "the reclamation schedule runs cases"
-        );
-        for rows in reclamation_rows {
-            run_reclamation(rows, overwritten, true);
-        }
-    }
+    support::capacity_region::search(
+        "reclaimed rows",
+        1,
+        64 * primary_graph::required_ready_custody_bytes_for_test(),
+        support::capacity_region::Goal::Hit,
+        |bytes| run_reclamation_budget(bytes, false, true, 20, false),
+    )
+    .require_hit("a reclaimed dependent decides over refreshed upstream");
 }
 
 #[test]
@@ -79,18 +75,36 @@ fn queue_drained_reclamation_balances_the_complete_retained_tuple() {
 #[test]
 fn the_model_upper_edge_keeps_the_cached_consumer_without_a_handler_contact() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    let rows = model.reclaim_rows().end() + 1;
-    assert!(rows * model.layout.ready >= model.root_refresh_before_reclaim());
-    assert!((rows - 1) * model.layout.ready < model.root_refresh_before_reclaim());
-    run_reclamation(rows, false, false);
-    run_reclamation(rows - 1, false, true);
-    // A World writer changes B's consumed value: held C still contacts once.
-    // Its first ordinary refresh has no typed required-successor slot. Later
-    // cycles include the written output's own history, so this edge is primed.
-    let written_rows = model.middle_write_reclaim_rows().end() + 1;
-    assert!(written_rows * model.layout.ready >= model.middle_write_refresh_before_reclaim());
-    run_reclamation_cycles(written_rows, true, false, 1);
+    for overwritten in [false, true] {
+        let row = primary_graph::required_ready_custody_bytes_for_test();
+        let band = support::capacity_region::search(
+            if overwritten {
+                "cached written upper edge"
+            } else {
+                "cached upper edge"
+            },
+            1,
+            64,
+            support::capacity_region::Goal::LowerEdge,
+            |rows| {
+                run_reclamation_budget(
+                    rows * row,
+                    overwritten,
+                    false,
+                    if overwritten { 1 } else { 20 },
+                    false,
+                )
+            },
+        );
+        let edge = band.require_hit("cached consumer upper edge");
+        if !overwritten {
+            assert_eq!(
+                run_reclamation_budget((edge - 1) * row, false, true, 20, false),
+                Attempt::Hit,
+                "one row below the band edge reclaims the cached consumer"
+            );
+        }
+    }
 }
 
 #[test]
@@ -124,7 +138,22 @@ fn run_reclamation(rows: usize, overwritten: bool, reclaims: bool) {
 
 fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles: u64) {
     let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
-    let (application, invalidation) = limited_application(rows * row, 128 * 1_024 * 1_024, 8);
+    assert_eq!(
+        run_reclamation_budget(rows * row, overwritten, reclaims, cycles, true),
+        Attempt::Hit
+    );
+}
+
+fn run_reclamation_budget(
+    budget: usize,
+    overwritten: bool,
+    reclaims: bool,
+    cycles: u64,
+    certify_closed_model: bool,
+) -> Attempt {
+    let row = worth_query_host::facade::primary_graph::required_ready_custody_bytes_for_test();
+    let rows = budget / row;
+    let (application, invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     application.consumed_output_custody_for_test();
     let branch_bytes = application
         .on_branch(application.current_world())
@@ -138,29 +167,42 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
     let native_layout = primary_graph::WorthQueryPrimaryGraphApplicationRuntime::<CheckpointSchema>::native_required_hint_layout_for_test(branch_bytes);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, c) = chain!(application, request);
+    let (a, b, c) = setup_chain!(application, request);
     drop((a, b, c));
-    assert_eq!(
-        application.required_custody_bytes_for_test(),
-        super::custody_model::ChainCustody::new().closed_chain(),
-        "the closed chain's named owners"
-    );
+    if certify_closed_model {
+        assert_eq!(
+            application.required_custody_bytes_for_test(),
+            super::custody_model::ChainCustody::new().closed_chain(),
+            "the closed chain's named owners"
+        );
+    }
     let mut custody = None;
-    let mut reclaimed_ledger = None;
-    let mut settled_ledger = None;
-    // Each retained owner has eight version positions. Two windows of
-    // refreshes retire the differently shaped priming positions; the four
-    // measured cycles then contain only this constructed repeated schedule.
+    use support::retained_inventory::{Inventory, SteadyCycles};
+    let mut steady = SteadyCycles::new();
+    let measured_cycles = cycles.saturating_sub(2 * 8) as usize;
+    let warm_up = measured_cycles != 0;
+    // Each retained owner has eight version positions. After two windows,
+    // complete inventories must repeat within 24 cycles before the four
+    // following cycles certify this repeated schedule.
     let steady_start = 2 * 8_u64;
-    for cycle in 0..cycles {
+    for cycle in 0..if warm_up {
+        24 + measured_cycles as u64 + 1
+    } else {
+        cycles
+    } {
+        let mut reclaimed_inventory = None;
         let boundary_baseline = invalidation.native_retained_allocations_for_test();
-        let at = format!("{rows} rows, cycle {cycle}, overwritten {overwritten}");
+        let at = format!("{budget} bytes, cycle {cycle}, overwritten {overwritten}");
         let y = 2 + (cycle % 2) * 3;
         let idempotency =
             0x9176_4200_u64 + u64::from(overwritten) * 0x400 + rows as u64 * 16 + cycle;
         change_root_input!(request, application, y, idempotency);
         let mut a = start_root!(application, request);
-        settled_within_eight_advances!(a, request, format!("{at}: the root"));
+        if cycle == 0 && !certify_closed_model {
+            support::capacity_region::settle!(a, request, "root refresh before consumer");
+        } else {
+            settled_within_eight_advances!(a, request, format!("{at}: the root"));
+        }
         drop(a);
         let middle = if overwritten {
             overwrite_middle_output(&application, &request, 40 + cycle, idempotency + 8);
@@ -170,7 +212,11 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
         };
         take_decisions("anchor-b");
         let mut b = start_consumer!(application, request, "anchor-b");
-        settled_within_eight_advances!(b, request, format!("{at}: the middle consumer"));
+        if cycle == 0 && !certify_closed_model {
+            support::capacity_region::settle!(b, request, "middle refresh before consumer");
+        } else {
+            settled_within_eight_advances!(b, request, format!("{at}: the middle consumer"));
+        }
         drop(b);
         assert_eq!(
             take_decisions("anchor-b"),
@@ -187,6 +233,16 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
             .execute()
             .unwrap();
         let c_root = selected_c.observed_sources()[0].root_entity_for_test();
+        if cycle == 0
+            && !certify_closed_model
+            && application.has_required_row_for_test(c_root) == reclaims
+        {
+            return if reclaims {
+                Attempt::Above("cached consumer retained")
+            } else {
+                Attempt::Below("cached consumer reclaimed")
+            };
+        }
         assert_eq!(
             application.has_required_row_for_test(c_root),
             !reclaims,
@@ -247,16 +303,11 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
                     "{at}: each named Native reservation includes its capacity ticket"
                 );
             }
-            let bytes = (
-                application.required_custody_bytes_for_test(),
-                invalidation.retained_capacity_bytes(),
+            reclaimed_inventory = Some(Inventory::new(
+                application.required_custody_breakdown_for_test(),
+                invalidation.retained_custody_breakdown_for_test(),
                 application.output_lineage_retained_bytes_for_test(),
-            );
-            assert_eq!(
-                *reclaimed_ledger.get_or_insert(bytes),
-                bytes,
-                "{at}: real reclamation balances the complete retained tuple"
-            );
+            ));
         }
         take_decisions("anchor-c");
         let owner_before = application.producer_contacts_on_this_thread_for_test();
@@ -296,16 +347,21 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
                     "{at}: each named Native reservation includes its capacity ticket"
                 );
             }
-            let bytes = (
-                application.required_custody_bytes_for_test(),
-                invalidation.retained_capacity_bytes(),
+            let settled_inventory = Inventory::new(
+                application.required_custody_breakdown_for_test(),
+                invalidation.retained_custody_breakdown_for_test(),
                 application.output_lineage_retained_bytes_for_test(),
             );
-            assert_eq!(
-                *settled_ledger.get_or_insert(bytes),
-                bytes,
-                "{at}: real supersession and re-settlement balance the complete retained tuple"
-            );
+            if warm_up
+                && steady.observe(
+                    cycle,
+                    reclaimed_inventory.unwrap(),
+                    settled_inventory,
+                    measured_cycles,
+                )
+            {
+                break;
+            }
         }
         let held = application.required_custody_bytes_for_test();
         assert_eq!(
@@ -314,44 +370,13 @@ fn run_reclamation_cycles(rows: usize, overwritten: bool, reclaims: bool, cycles
             "{at}: the closed chain holds what it held a cycle before"
         );
     }
+    assert!(
+        !warm_up || steady.settled_at.is_some(),
+        "the complete inventory reaches a steady cycle"
+    );
+    Attempt::Hit
 }
 
-fn drain_queue(
-    application: &application_installation::WorthQueryProgramApplicationRuntime<
-        CheckpointSchema,
-        program::ChainProgram,
-    >,
-    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
-        '_,
-        '_,
-        '_,
-        CheckpointSchema,
-    >,
-    c_root: worth_query_host::facade::application_invariants::EntityId,
-    at: &str,
-) {
-    if application.queued_required_work_for_test() == 0 {
-        return;
-    }
-    let held = application.has_required_row_for_test(c_root);
-    let before = application.producer_contacts_on_this_thread_for_test();
-    let mut drain = start_consumer!(application, request, "anchor-b");
-    settled_in_one_advance!(drain, request, "the queue-draining current middle consumer");
-    drop(drain);
-    // Reopening B can leave the root's retained publication cue pending.
-    // Admit that exact root once; these are two named owners, not a wait loop.
-    let mut root = start_root!(application, request);
-    settled_in_one_advance!(root, request, "the queue-draining current root");
-    drop(root);
-    if !held {
-        assert!(
-            !application.has_required_row_for_test(c_root),
-            "{at}: drainage cannot recreate the reclaimed last row"
-        );
-    }
-    assert_eq!(
-        application.producer_contacts_on_this_thread_for_test(),
-        before,
-        "{at}: queue drainage contacts no handler"
-    );
-}
+#[path = "reclamation/queue_drain.rs"]
+mod queue_drain;
+use queue_drain::drain_queue;

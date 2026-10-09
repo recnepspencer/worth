@@ -121,7 +121,10 @@ fn chain_application_with_marking_work(
 
 /// A, B and C form the dirty chain; D is required but reads none of it.
 macro_rules! chain_with_unrelated {
-    ($application:expr, $request:expr) => {{
+    ($application:expr, $request:expr) => {
+        chain_with_unrelated!($application, $request, (), ())
+    };
+    ($application:expr, $request:expr, $before:expr, $after:expr) => {{
         let mut a = $request
             .demand(PlanarOutputDemand::new("anchor-a"))
             .start_in_program::<program::ChainProgram, program::ChainRoot>(&$application)
@@ -142,18 +145,23 @@ macro_rules! chain_with_unrelated {
             .demand(PlanarOutputDemand::new("anchor-source-b"))
             .start_in_program::<program::ChainProgram, program::ChainRoot>(&$application)
             .unwrap();
+        $before;
         settle!(a, $request);
         settle!(b, $request);
         settle!(c, $request);
         settle!(d, $request);
+        $after;
         (a, b, c, d)
     }};
 }
 
+#[macro_use]
+mod capacity_setup;
+
 #[test]
 fn an_unrelated_required_advance_progresses_the_dirty_required_set() {
     let _guard = checkpoint_recovery_test_guard();
-    run_unrelated_required_advance(chain_application(), 1);
+    run_unrelated_required_advance(chain_application(), [1, 1, 1]);
 }
 
 #[test]
@@ -165,7 +173,7 @@ fn restored_required_demands_reenter_source_query_under_small_marking_work() {
     // allowance, not this independent marking ceiling.
     run_unrelated_required_advance(
         chain_application_with_marking_work(Some(checkpoint), 65_536),
-        0,
+        [0, 1, 1],
     );
 }
 
@@ -186,7 +194,7 @@ fn run_unrelated_required_advance(
         CheckpointSchema,
         program::ChainProgram,
     >,
-    initial_contacts: usize,
+    initial_contacts: [usize; 3],
 ) {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -197,8 +205,8 @@ fn run_unrelated_required_advance(
         settle!(c, request).producer_contacts_in_this_demand(),
     ];
     assert_eq!(
-        initial_counts, [initial_contacts; 3],
-        "ordinary demands each execute once; checkpoint joins execute no handler"
+        initial_counts, initial_contacts,
+        "checkpoint capture keeps the root with no consumed edge; recorded_output.rs:73-77 excludes consumed B/C outputs, so each joins with one handler contact"
     );
     let inexact = inexact_deliveries();
     change_root_input!(request, application, 2, 0x9176_3200_u64);
@@ -236,6 +244,16 @@ fn run_unrelated_required_advance(
         contacts,
         [0, initial_counts[0], initial_counts[1], initial_counts[2]],
         "the fresh demand initiated nothing; each open demand retains its initial execution count"
+    );
+    assert_eq!(
+        [
+            contacts[0],
+            contacts[1] - initial_counts[0],
+            contacts[2] - initial_counts[1],
+            contacts[3] - initial_counts[2]
+        ],
+        [0, 0, 0, 0],
+        "the refreshed chain needs no new producer contact"
     );
     assert_eq!(
         query_entries(),

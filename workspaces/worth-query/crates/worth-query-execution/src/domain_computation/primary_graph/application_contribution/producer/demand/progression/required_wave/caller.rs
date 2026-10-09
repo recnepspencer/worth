@@ -170,21 +170,32 @@ where
 
 use super::super::super::required_provenance::DemandProgressionProvenance;
 
-#[allow(clippy::too_many_arguments)]
+/// The caller's selected lineage, continuation posture and lifetime contacts.
+pub(super) struct CurrentCaller<'a> {
+    pub anchor_ready: &'a SelectedReadyReadmission,
+    pub selected: &'a SelectedReadyReadmission,
+    pub continues_caller: bool,
+    pub caller_current: bool,
+    pub current_contacts: usize,
+}
+
 pub(super) fn finish_current_caller<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-    anchor_ready: &SelectedReadyReadmission,
-    selected: &SelectedReadyReadmission,
-    continues_caller: bool,
-    caller_current: bool,
-    current_contacts: usize,
+    caller: CurrentCaller<'_>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
+    let CurrentCaller {
+        anchor_ready,
+        selected,
+        continues_caller,
+        caller_current,
+        current_contacts,
+    } = caller;
     // A Clean caller retains its lifetime contact count.
     // Promotion pays the actual demand, continuation and provenance moves.
     admission

@@ -229,4 +229,5 @@ fn changed_input_equal_output_rebuilds_the_dependent_source_without_contacting_i
     );
 }
 
+mod indexed_decision;
 mod witness;

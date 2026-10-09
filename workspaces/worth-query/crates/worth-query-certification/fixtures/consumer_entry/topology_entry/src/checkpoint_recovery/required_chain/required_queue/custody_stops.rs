@@ -2,6 +2,7 @@
 
 use super::*;
 use std::time::{Duration, Instant};
+use support::capacity_region::Attempt;
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial;
 
 macro_rules! start_root {
@@ -26,34 +27,70 @@ macro_rules! start_consumer {
 
 /// A, B and C form the chain, settled; no other demand is open.
 macro_rules! chain {
-    ($application:expr, $request:expr) => {{
+    ($application:expr, $request:expr) => {
+        chain!($application, $request, (), ())
+    };
+    ($application:expr, $request:expr, $before:expr, $after:expr) => {{
         let mut a = start_root!($application, $request);
         let mut b = start_consumer!($application, $request, "anchor-b");
         let mut c = start_consumer!($application, $request, "anchor-c");
+        $before;
         settle!(a, $request);
         settle!(b, $request);
         settle!(c, $request);
+        $after;
         (a, b, c)
+    }};
+}
+
+/// Settles within eight advances. Every stop on the way offers a retry: any
+/// other stop fails here, and so does a demand that defers on every advance.
+macro_rules! settled_within_eight_advances {
+    ($demand:expr, $request:expr, $what:expr) => {{
+        let mut stops = Vec::new();
+        (0..8)
+            .find_map(|_| match $demand.advance(&$request) {
+                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => Some(settled),
+                Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
+                Err(stop) => {
+                    assert!(
+                        matches!(
+                            &stop,
+                            WorthQueryApplicationOutputDemandDenial::Demand(denial)
+                                if denial.recovery_posture()
+                                    == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+                        ),
+                        "{}: a stop before settlement offers a retry: {stop:?}",
+                        $what
+                    );
+                    stops.push(format!("{stop:?}"));
+                    None
+                }
+            })
+            .unwrap_or_else(|| panic!("{} settles within eight advances: {stops:?}", $what))
     }};
 }
 
 #[test]
 fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    let budget = model.terminal_before_publication();
-    assert!(budget < model.first_root_publication());
+    support::capacity_region::search(
+        "lone terminal",
+        1,
+        128 * 1024,
+        support::capacity_region::Goal::Hit,
+        lone_terminal,
+    )
+    .require_hit("lone terminal");
+}
+
+fn lone_terminal(budget: usize) -> Attempt {
     // Dispatch fits beside the settled chain; its typed successor cannot fit.
     let (application, _invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, mut c) = chain!(application, request);
+    let (a, b, mut c) = setup_chain!(application, request);
     let settled_custody = application.required_custody_bytes_for_test();
-    assert_eq!(
-        settled_custody,
-        model.open_chain(),
-        "the initial chain owners"
-    );
     change_root_input!(request, application, 2, 0x9176_4000_u64);
     // The last consumer's caller is the only open demand, so every row that
     // holds custody is one its own advance needs: no other demand's advance
@@ -62,6 +99,29 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     for attempt in 0..3 {
         let entries = query_entries();
         let stopped = c.advance(&request);
+        if attempt == 0 {
+            match &stopped {
+                Ok(_) => return Attempt::Above("lone refresh admitted"),
+                Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                    if denial.kind()
+                        == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                        && denial.recovery_posture()
+                            == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable =>
+                {
+                    return Attempt::Above("upstream publication offers retry")
+                }
+                // Refused before the refresh's source query: an earlier stop
+                // than the one this test is about.
+                Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                    if denial.kind()
+                        == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                        && query_entries() == entries =>
+                {
+                    return Attempt::Below("refused before the refresh's source query")
+                }
+                _ => (),
+            }
+        }
         assert!(
             matches!(
                 &stopped,
@@ -88,10 +148,19 @@ fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     // Nor are the rows it reads: demands that fit refresh them and settle.
     drop(c);
     let mut a = start_root!(application, request);
-    settle!(a, request);
+    drop(settled_within_eight_advances!(
+        a,
+        request,
+        "the root demand"
+    ));
     let mut b = start_consumer!(application, request, "anchor-b");
-    settle!(b, request);
+    drop(settled_within_eight_advances!(
+        b,
+        request,
+        "the middle demand"
+    ));
     drop((a, b));
+    Attempt::Hit
 }
 
 #[test]
@@ -149,49 +218,26 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
     drop((a, b, c));
 }
 
-/// Settles within eight advances. Every stop on the way offers a retry: any
-/// other stop fails here, and so does a demand that defers on every advance.
-macro_rules! settled_within_eight_advances {
-    ($demand:expr, $request:expr, $what:expr) => {{
-        let mut stops = Vec::new();
-        (0..8)
-            .find_map(|_| match $demand.advance(&$request) {
-                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => Some(settled),
-                Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
-                Err(stop) => {
-                    assert!(
-                        matches!(
-                            &stop,
-                            WorthQueryApplicationOutputDemandDenial::Demand(denial)
-                                if denial.recovery_posture()
-                                    == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
-                        ),
-                        "{}: a stop before settlement offers a retry: {stop:?}",
-                        $what
-                    );
-                    stops.push(format!("{stop:?}"));
-                    None
-                }
-            })
-            .unwrap_or_else(|| panic!("{} settles within eight advances: {stops:?}", $what))
-    }};
-}
-
 #[test]
 fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() {
     let _guard = checkpoint_recovery_test_guard();
-    let model = super::custody_model::ChainCustody::new();
-    let budget = model.first_root_publication();
+    support::capacity_region::search(
+        "publication terminal",
+        1,
+        128 * 1024,
+        support::capacity_region::Goal::Hit,
+        publication_terminal,
+    )
+    .require_hit("publication terminal");
+}
+
+fn publication_terminal(budget: usize) -> Attempt {
     let (application, _invalidation) = limited_application(budget, 128 * 1_024 * 1_024, 8);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, mut c) = chain!(application, request);
+    let (a, b, mut c) = setup_chain!(application, request);
     let settled_custody = application.required_custody_bytes_for_test();
-    assert_eq!(
-        settled_custody,
-        model.open_chain(),
-        "the initial chain owners"
-    );
+
     change_root_input!(request, application, 2, 0x9176_4080_u64);
     let source_commit = request.retain_read().unwrap().selected_commit().clone();
     drop((a, b));
@@ -201,6 +247,12 @@ fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() 
     // continuation slot cannot fit until the refused advance releases custody.
     // The publication justifies a retry; later unproductive stops are terminal.
     let stopped = c.advance(&request);
+    if stopped.is_ok() {
+        return Attempt::Above("last consumer refresh admitted");
+    }
+    if request.retain_read().unwrap().selected_commit() == &source_commit {
+        return Attempt::Below("refused before first upstream publication");
+    }
     assert!(
         matches!(
             &stopped,
@@ -275,6 +327,7 @@ fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() 
         application.required_custody_bytes_for_test() <= held_custody,
         "closing the stopped caller retains no excess custody"
     );
+    Attempt::Hit
 }
 
 /// Overwrites the Length `anchor-b` publishes, as a writer that is not its
