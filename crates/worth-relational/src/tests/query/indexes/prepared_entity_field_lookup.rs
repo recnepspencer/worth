@@ -53,6 +53,21 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
             - before.generation_payload_reads,
         1
     );
+    let discarded = runtime
+        .index_authority()
+        .discard_generations(
+            crate::facade::indexes::DerivedIndexDiscardRequest::all_bases(index.index_id),
+        )
+        .unwrap();
+    assert_eq!(discarded.removed_generation_count(), 1);
+    let cold = runtime
+        .index_access()
+        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator)
+        .unwrap_err();
+    assert_eq!(
+        cold.kind(),
+        BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+    );
     drop(view);
     runtime
         .visibility_authority()

@@ -17,6 +17,11 @@ use crate::domain_computation::{
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
 };
 
+enum RecoveredPublicationDelivery {
+    Ordinary,
+    ProgramSource,
+}
+
 /// A performed World successor has been handed to the normal Query pending
 /// publication owner before this result is returned. A failed reply or pending
 /// projection remains visible in the admitted idempotency read's posture.
@@ -61,7 +66,6 @@ pub enum WorthQueryManagedApplicationRecoveryOutcome {
 /// recovery remains retained by its provider entry for a later admitted try.
 #[derive(Debug)]
 pub enum WorthQueryManagedApplicationRecoveryDenial {
-    /// The recovery call could not enter its execution request.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
     ForeignAdmission,
@@ -105,6 +109,43 @@ where
     >
     where
         Input: Clone + Send + Sync + 'static,
+    {
+        self.recover_admitted_unpublished_application_delivery(
+            recovery,
+            admission,
+            idempotency,
+            RecoveredPublicationDelivery::Ordinary,
+        )
+        .map(|(outcome, _)| outcome)
+    }
+
+    /// Retains the original performed output carrier before optional Query
+    /// projection. Only the program-source owner uses this handoff.
+    pub fn recover_admitted_unpublished_program_source<Operation, Input, Scope>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        recovery: &WorthQueryProductUnpublishedRecovery,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<(WorthQueryManagedApplicationRecoveryOutcome, Option<crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource>), WorthQueryManagedApplicationRecoveryDenial>
+    where Input: Clone + Send + Sync + 'static,
+    {
+        self.recover_admitted_unpublished_application_delivery(
+            recovery,
+            admission,
+            idempotency,
+            RecoveredPublicationDelivery::ProgramSource,
+        )
+    }
+
+    fn recover_admitted_unpublished_application_delivery<Operation, Input, Scope>(
+        &self,
+        recovery: &WorthQueryProductUnpublishedRecovery,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        delivery: RecoveredPublicationDelivery,
+    ) -> Result<(WorthQueryManagedApplicationRecoveryOutcome, Option<crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource>), WorthQueryManagedApplicationRecoveryDenial>
+    where Input: Clone + Send + Sync + 'static,
     {
         self.with_application_advancement(admission.publication_request(), |phase| {
             use WorthQueryManagedApplicationRecoveryDenial as Denial;
@@ -189,7 +230,7 @@ where
             drop(lease);
             match outcome {
                 RuntimeWorldPublicationOutcome::NoEffect(_) => {
-                    Ok(WorthQueryManagedApplicationRecoveryOutcome::NoEffect)
+                    Ok((WorthQueryManagedApplicationRecoveryOutcome::NoEffect, None))
                 }
                 RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                     let next = WorthQueryProductUnpublishedApplication::new(
@@ -202,15 +243,22 @@ where
                     let prior_cleanup_failure = self
                         .release_product_publication_recovery(recovery.clone(), 0)
                         .err();
-                    Ok(
+                    Ok((
                         WorthQueryManagedApplicationRecoveryOutcome::ProductUnpublished {
                             next,
                             prior_cleanup_failure,
                         },
-                    )
+                        None,
+                    ))
                 }
                 RuntimeWorldPublicationOutcome::Performed(publication) => {
                     let session = guard.take_attempt().complete(publication, None);
+                    let source = match delivery {
+                        RecoveredPublicationDelivery::Ordinary => None,
+                        RecoveredPublicationDelivery::ProgramSource => {
+                            Some(session.take_recovered_output_source())
+                        }
+                    };
                     let publication_failure =
                         publish_recovered(&self.primary_provider, session).err();
                     guard.finish();
@@ -220,12 +268,15 @@ where
                     drop(coordination);
                     let read =
                         self.resolve_admitted_application_idempotency(admission, idempotency);
-                    Ok(WorthQueryManagedApplicationRecoveryOutcome::Performed(
-                        WorthQueryManagedApplicationRecoveryPerformed {
-                            read,
-                            publication_failure,
-                            prior_cleanup_failure,
-                        },
+                    Ok((
+                        WorthQueryManagedApplicationRecoveryOutcome::Performed(
+                            WorthQueryManagedApplicationRecoveryPerformed {
+                                read,
+                                publication_failure,
+                                prior_cleanup_failure,
+                            },
+                        ),
+                        source,
                     ))
                 }
             }

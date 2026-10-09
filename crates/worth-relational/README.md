@@ -77,6 +77,19 @@ savepoint-count and physical allocation checks remain. Transaction overlay and
 footprint quotas do not add another admission gate. Query forwards the caller's
 actual allocation policy and live request control through native validation.
 
+Relation-integrity preparation retains complete affected scopes without a
+profile-selected aggregate entity, relation, edge or traversal-count quota.
+Transaction cancellation/deadline and the selected allocation policy are checked
+through preparation; allocation stops retain their typed cause. Declared relation
+rules, visited-set termination, and leased execution work, scratch and result
+admission remain. Preparation's existing BTree/Vec and adjacency-copy heaps are
+not admitted by these liveness checks. Prepared root byte costs remain observable
+without an aggregate admission ceiling. Companion cells retain their actual Arc
+ownership and publication coordination without a separate retained-cell byte
+counter. Patch-count, candidate, snapshot, branch retention and companion
+preflight controls remain; this does not establish a 100,000-member or
+million-member lifecycle result.
+
 Repeated equality selections can prepare an installed entity-field index with
 `index_access().prepare_entity_field_lookup(&view, index, kind, &locator)`.
 The opaque owner retains the exact admitted view's root and index generation;
@@ -87,6 +100,22 @@ live callback. Certification still compares against authoritative storage at
 that same root. This callback controls interruption, not temporary buffer
 allocation admission. The separate admitted lookup retains its existing
 64-candidate work/storage contract.
+
+An installed derived index can discard its currently catalogued generations with
+`index_authority().discard_generations(DerivedIndexDiscardRequest::all_bases(index))`.
+This explicit scope removes every branch, basis and publication status for that
+index under one catalog write lock. Definitions, authoritative roots, history and
+unique-field enforcement remain. Already-held generation readers can finish;
+fresh selection refuses cold access until an admitted build publishes again.
+Rebuild uses the ordinary `build_for_basis_with_lease` path and its exact native
+basis. An old ordered continuation does not silently rebind to a new generation.
+
+Discard is cache maintenance, not a durable tombstone or a promise of total heap
+reclamation. A concurrent build may publish afterward, held readers and historical
+artifacts may share backing, and later recovery replay may publish valid artifacts.
+A checkpoint captures the catalog as it exists at capture time; reopening a
+checkpoint captured after a completed discard does not itself reconstruct the
+missing generations from source records.
 
 ## Mental model
 

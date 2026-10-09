@@ -1,7 +1,6 @@
 use super::test_support::{
     create_entity, evaluate_main_commit_boundary_plan, evaluate_main_graph_composition_plan,
-    relation_cardinality_runtime, relation_integrity_runtime,
-    relation_integrity_runtime_with_scope_budget, relation_symmetry_runtime,
+    relation_cardinality_runtime, relation_integrity_runtime, relation_symmetry_runtime,
     runtime_with_invariants,
 };
 use crate::facade::identity::PartitionId;
@@ -11,8 +10,8 @@ use crate::schema::data::SymmetryMode;
 use crate::symbols::data::ClientKey;
 use crate::tests::support::{aspect_key, field_key};
 use crate::transactions::data::{
-    BulkRelationCreateIntent, CreateIntent, DeleteRelationIntent, EntitySpec, MergedCommitPlan,
-    MutationIntent, RelationMutationIntent, TransactionId,
+    CreateIntent, DeleteRelationIntent, EntitySpec, MergedCommitPlan, MutationIntent,
+    RelationMutationIntent, TransactionId,
 };
 use crate::validation::data::{
     InvariantCostClass, InvariantExecutionPoint, InvariantFailureEffect, InvariantVerdict,
@@ -276,71 +275,5 @@ fn commit_boundary_cardinality_failure_fields_localize_nonmanifold_like_overflow
             assert_eq!(*limit, 1);
         }
         fields => panic!("expected typed cardinality endpoint fields, got {fields:?}"),
-    }
-}
-
-#[test]
-fn commit_boundary_reports_relation_integrity_scope_budget_violation_as_blocking_failure() {
-    let runtime = relation_integrity_runtime_with_scope_budget(
-        crate::config::data::RelationIntegrityScopeBudget {
-            max_relation_kinds: 8,
-            max_touched_entities: 16,
-            max_deleted_entities: 8,
-            max_scanned_relations: 16,
-            max_planned_edges: 1,
-        },
-    );
-    let source_a = create_entity(&runtime, "source-a");
-    let target_a = create_entity(&runtime, "target-a");
-    let source_b = create_entity(&runtime, "source-b");
-    let target_b = create_entity(&runtime, "target-b");
-    let plan = MergedCommitPlan {
-        transaction_id: TransactionId(6),
-        merged_intents: vec![MutationIntent::Create(CreateIntent::BulkRelations(
-            BulkRelationCreateIntent {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(2),
-                client_keys: vec![ClientKey::raw("edge-a"), ClientKey::raw("edge-b")],
-                endpoints: vec![
-                    (
-                        crate::transactions::data::EntityReference::Existing(source_a),
-                        crate::transactions::data::EntityReference::Existing(target_a),
-                    ),
-                    (
-                        crate::transactions::data::EntityReference::Existing(source_b),
-                        crate::transactions::data::EntityReference::Existing(target_b),
-                    ),
-                ],
-                field_patches: vec![
-                    crate::transactions::data::AspectFieldPatch::default(),
-                    crate::transactions::data::AspectFieldPatch::default(),
-                ],
-            },
-        ))],
-    };
-
-    let result = evaluate_main_commit_boundary_plan(&runtime, &plan);
-    let failure = result
-        .summary()
-        .blocking_failure()
-        .expect("blocking scope budget failure");
-    assert_eq!(
-        failure.code(),
-        crate::diagnostics::data::DiagnosticCode::PreparationFailure
-    );
-    match failure.fields() {
-        crate::validation::data::InvariantViolationFields::RelationIntegrityScopeBudgetExceeded {
-            limit_name,
-            limit,
-            observed,
-            planned_edge_count,
-            ..
-        } => {
-            assert_eq!(limit_name, "max_planned_edges");
-            assert_eq!(*limit, 1);
-            assert_eq!(*observed, 2);
-            assert_eq!(*planned_edge_count, 2);
-        }
-        fields => panic!("expected typed scope budget fields, got {fields:?}"),
     }
 }

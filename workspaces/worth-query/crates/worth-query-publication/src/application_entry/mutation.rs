@@ -13,6 +13,7 @@ mod prepared_program;
 pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
 mod program_output_work;
+mod recovery;
 mod request;
 mod retained;
 mod selected_program;
@@ -23,8 +24,9 @@ pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub use discovered::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,
     WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
-    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryPerformedDiscoveredApplicationMutation,
-    WorthQueryStartedDiscoveredOutputs,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryDiscoveredRecoveryProgress,
+    WorthQueryPerformedDiscoveredApplicationMutation, WorthQueryRecoveredDiscoveredOutputs,
+    WorthQueryStartedDiscoveredOutputs, WorthQueryUnpublishedDiscoveredApplicationMutation,
 };
 pub use execution::{
     WorthQueryApplicationProgramMigrationPreparationDenial,
@@ -33,15 +35,23 @@ pub use execution::{
 pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryPerformedApplicationMutation,
-    WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
-    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
-    WorthQueryStartedRequiredOutputs,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryRecoveredRequiredOutputs,
+    WorthQueryRequiredOutputPreparation, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputRetentionFailure,
+    WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
+    WorthQueryUnpublishedRequiredApplicationMutation,
 };
-pub use performed_outputs::WorthQueryApplicationProgramOutputHandle;
+pub use performed_outputs::{
+    WorthQueryApplicationProgramOutputHandle, WorthQueryApplicationProgramOutputUnavailable,
+};
+pub use performed_source::{
+    WorthQueryBlockedProgramSource, WorthQueryProgramSourceRecoveryProgress,
+};
 pub use program_output_settlement::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
 };
 pub use program_output_work::WorthQueryApplicationProgramWork;
+pub use recovery::WorthQueryApplicationRecoveryRequestDenial;
 pub use request::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryMutationSourcePrepared,

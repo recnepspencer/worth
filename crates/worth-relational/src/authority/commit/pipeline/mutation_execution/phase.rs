@@ -60,6 +60,7 @@ pub(super) struct MutationPhaseInput<'a, 'lease> {
 pub(super) fn run_authoritative_mutation_phase(
     runtime: &RelationalPreparationRuntime,
     input: MutationPhaseInput<'_, '_>,
+    control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
     let MutationPhaseInput {
         commit_log,
@@ -87,6 +88,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposal_identity,
         prevalidated_mutation_sensitive,
         lease,
+        control,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::AuthoritativeMutation, error))?;
     commit_log.record_invariant_outcomes(mutation.invariant_results());
@@ -106,6 +108,7 @@ fn run_authoritative_mutation_for_runtime(
     proposal_identity: &crate::mvcc::RelationalMutationProposalIdentity,
     prevalidated_mutation_sensitive: Option<crate::validation::engine::InvariantExecutionResult>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
     let version_id = proposed_version_id;
     let apply_plan = AuthoritativeApplyPlan {
@@ -156,6 +159,7 @@ fn run_authoritative_mutation_for_runtime(
                 merged_plan,
                 Some(proposal_identity),
                 lease,
+                control,
             )?,
     };
 

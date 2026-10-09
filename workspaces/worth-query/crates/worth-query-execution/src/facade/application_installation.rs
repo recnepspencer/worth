@@ -14,8 +14,9 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
     WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
     WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
-    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
-    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
+    WorthQueryRecoveredProgramOutputSource, WorthQuerySelectedProgramOwner,
+    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
+    WorthQuerySupportedProgramHandle, WorthQueryUnpublishedProgramOutputSource,
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
     WorthQueryWorkflowVocabulary,
 };

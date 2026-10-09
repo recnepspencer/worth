@@ -1070,16 +1070,21 @@ let outcome = request
     .mutate(AdjustDraft { /* ... */ })
     .expect_source(source)                 // or .without_source()
     .idempotency(&key)
-    .execute_performed::<MyProgram, MyOutputRoot>(&runtime)?;
+    .execute_performed::<MyProgram, MyOutputRoot>(&runtime, allocation_policy)?;
 let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-    /* RequiredOutputDenied { .. } or NotPerformed(..): handle it */
+    /* Retain ProductUnpublished, RequiredOutputDenied(..), and Blocked
+       custody; handle NotPerformed(..) according to its native outcome. */
 };
-let mut performed = performed.start_required_outputs(&request, controls)?;
-performed.required_output_mut().advance(&request)?; // Pending, later Settled(..)
+let mut performed = performed.start_required_outputs(&runtime, &request, controls)?;
+performed.required_output_mut().advance(&runtime, &request)?; // Pending, later Settled(..)
 ```
 
 `controls` is `WorthQueryOutputDemandControls::new(NonZeroUsize, NonZeroUsize)`.
 Output progress is `WorthQueryApplicationProgramOutputProgress::{Pending, Settled}`.
+The owned continuation can outlive the starting request. Each advance supplies
+the original installed runtime and a freshly authenticated request. An unpublished
+source retains its original preparation and native recovery owner; recovery and
+promotion reuse those effects without invoking the original handler again.
 
 ---
 

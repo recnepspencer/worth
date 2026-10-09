@@ -75,7 +75,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .expect("the correct root kind still recovers the same receipt");
     let settled = settle(|| {
         match recovered
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("discovered roots advance")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
@@ -161,12 +161,15 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
             ),
         )
         .expect("the unaffected sibling remains recoverable");
-    let settled = settle(
-        || match recovered.advance(&request).expect("the sibling advances") {
+    let settled = settle(|| {
+        match recovered
+            .advance(&world.application, &request)
+            .expect("the sibling advances")
+        {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
-        },
-    );
+        }
+    });
     assert_eq!(
         settled
             .superseded_roots()
@@ -320,9 +323,19 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         NonZeroUsize::new(8_192).unwrap(),
     );
     let mut started = performed
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the two roots start: {:?}", failure.denial()));
     let receipt = started.receipt().clone();
+    world
+        .application
+        .delay_next_output_readiness_delivery_for_test();
+    assert!(matches!(
+        started
+            .required_output_mut()
+            .advance(&world.application, &request)
+            .unwrap(),
+        WorthQueryDiscoveredProgramOutputProgress::Pending
+    ));
     assert_eq!(
         world
             .application
@@ -330,13 +343,6 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         0,
         "both root identities consumed their exact prepared custody"
     );
-    world
-        .application
-        .delay_next_output_readiness_delivery_for_test();
-    assert!(matches!(
-        started.required_output_mut().advance(&request).unwrap(),
-        WorthQueryDiscoveredProgramOutputProgress::Pending
-    ));
     drop(started);
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),
@@ -350,12 +356,15 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
             controls,
         )
         .expect("the exact source receipt re-enters both admitted roots");
-    let settled = settle(
-        || match recovered.advance(&request).expect("both roots recover") {
+    let settled = settle(|| {
+        match recovered
+            .advance(&world.application, &request)
+            .expect("both roots recover")
+        {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
-        },
-    );
+        }
+    });
     assert_eq!(settled.root_outputs().count(), 3);
     assert_eq!(settled.output_count(), 6);
     assert_eq!(

@@ -24,10 +24,6 @@ pub enum BankCommitDenialKind {
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
     CandidateIdentityExhausted,
-    PreparedRootBudgetExhausted {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
     IdempotencyIntentDrift,
     /// The key is recorded with the same intent and that commit took effect,
     /// but the runtime no longer holds its receipt, as after a restore.
@@ -101,13 +97,6 @@ pub(crate) const fn denial_kind(
         Query::RetentionIdentityExhausted => BankCommitDenialKind::RetentionIdentityExhausted,
         Query::SnapshotIdentityExhausted => BankCommitDenialKind::SnapshotIdentityExhausted,
         Query::CandidateIdentityExhausted => BankCommitDenialKind::CandidateIdentityExhausted,
-        Query::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => BankCommitDenialKind::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
         Query::IdempotencyIntentDrift => BankCommitDenialKind::IdempotencyIntentDrift,
         Query::IdempotencyReceiptNotRetained { .. } => {
             BankCommitDenialKind::IdempotencyReceiptNotRetained

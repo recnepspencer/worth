@@ -342,7 +342,7 @@ where
                         NativeStop::OwnerUnavailable | NativeStop::PublicationPending
                         | NativeStop::RebindRequired | NativeStop::Superseded
                         | NativeStop::IdentityExhausted | NativeStop::ForeignRuntime
-                        | NativeStop::HeadUnavailable | NativeStop::CellCapacityExhausted { .. })) => false,
+                        | NativeStop::HeadUnavailable)) => false,
                 }
             }) {
                 let _ = source_owner.invalidation_owner.establish_verified_root(

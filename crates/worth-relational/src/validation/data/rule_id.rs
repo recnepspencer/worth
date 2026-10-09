@@ -12,7 +12,6 @@ pub enum NativeInvariantRuleId {
     LiveRecordRequiresSidecarEntity,
     LiveRecordRequiresSidecarRelation,
     MaxMergedIntents,
-    RelationIntegrityScopeBudget,
     MaxSnapshotEntities,
     UniqueEntityField,
     EndpointKindContract,

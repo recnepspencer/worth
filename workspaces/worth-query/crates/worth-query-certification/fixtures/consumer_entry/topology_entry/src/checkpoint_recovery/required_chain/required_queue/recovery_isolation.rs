@@ -105,19 +105,21 @@ fn scenario(direct: bool) {
         NonZeroUsize::new(8192).unwrap(),
     );
     let mut output = performed
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&application, &request, controls)
         .unwrap_or_else(|failure| panic!("{:?}", failure.denial()));
     let receipt = output.receipt().clone();
     let retained_source = read_source!();
     application.press_next_ready_read_with_world_snapshots_for_test();
     let stop = (0..64)
-        .find_map(|_| match output.required_output_mut().advance(&request) {
-            Err(stop) => Some(stop),
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
-            Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
-                panic!("pressure interrupts Ready")
-            }
-        })
+        .find_map(
+            |_| match output.required_output_mut().advance(&application, &request) {
+                Err(stop) => Some(stop),
+                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+                Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
+                    panic!("pressure interrupts Ready")
+                }
+            },
+        )
         .expect("the original root reaches Ready");
     assert!(
         matches!(&stop, WorthQueryRequiredOutputPreparationDenial::Demand(
@@ -180,7 +182,7 @@ fn scenario(direct: bool) {
         assert_eq!(stop.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     } else {
         let stop = (0..64)
-            .find_map(|_| match recovered.advance(&request) {
+            .find_map(|_| match recovered.advance(&application, &request) {
                 Err(stop) => Some(stop),
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {

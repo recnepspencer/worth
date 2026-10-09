@@ -92,17 +92,30 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         panic!("the newer source publication is fresh")
     };
     let mut second = second
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the newer roots bind: {:?}", failure.denial()));
+    world
+        .application
+        .delay_next_output_readiness_delivery_for_test();
+    assert!(
+        matches!(
+            second
+                .required_output_mut()
+                .advance(&world.application, &request)
+                .unwrap(),
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+        ),
+        "the newer roots are actually bound before the older publication starts"
+    );
     let mut first = first
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| {
             panic!("the older unaffected root starts: {:?}", failure.denial())
         });
     let first_settled = settle(|| {
         match first
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("older roots advance")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
@@ -126,7 +139,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     let second_settled = settle(|| {
         match second
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("newer roots advance")
         {
             WorthQueryDiscoveredProgramOutputProgress::Pending => None,
@@ -205,7 +218,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn u
         panic!("the first source publication is fresh")
     };
     let mut first = first
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the first roots start: {:?}", failure.denial()));
     let current = request
         .query(PlanarRead {
@@ -231,13 +244,13 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn u
         panic!("the second source publication is fresh")
     };
     let mut second = second
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("unchanged roots join: {:?}", failure.denial()));
     for output in [&mut first, &mut second] {
         let settled = settle(|| {
             match output
                 .required_output_mut()
-                .advance(&request)
+                .advance(&world.application, &request)
                 .expect("shared roots advance")
             {
                 WorthQueryDiscoveredProgramOutputProgress::Pending => None,

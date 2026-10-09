@@ -111,7 +111,6 @@ pub(super) const fn degrades_delivery(stop: &CompanionPreflightStop) -> bool {
         | CompanionPreflightStop::SelectedPositionUnavailable { .. }
         | CompanionPreflightStop::ForeignCell
         | CompanionPreflightStop::RegistrationChanged
-        | CompanionPreflightStop::CellCapacityExhausted { .. }
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
         | CompanionPreflightStop::Interrupted(_) => false,
     }

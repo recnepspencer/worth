@@ -68,7 +68,6 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
             max_transaction_savepoints: 8,
             max_prepared_candidates: 1,
             candidate_max_lifetime_millis: 0,
-            max_prepared_root_bytes: 268_435_456,
         })
         .build();
     let index_id = index(&runtime);

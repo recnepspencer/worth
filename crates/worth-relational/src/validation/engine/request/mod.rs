@@ -1,6 +1,7 @@
 mod admission;
 mod construction;
 mod filtering;
+mod preparation_control;
 mod relation_integrity_scopes;
 mod scope_types;
 #[cfg(test)]
@@ -11,7 +12,7 @@ mod tests;
 use crate::transactions::data::MergedCommitPlan;
 use crate::validation::data::{
     InvariantCostClass, InvariantExecutionPoint, InvariantGroupSet, InvariantPlanContract,
-    InvariantRegistration, InvariantViolation,
+    InvariantRegistration,
 };
 use crate::{
     identity::data::KindId,
@@ -21,6 +22,7 @@ use crate::{
 use super::observation::InvariantObservation;
 use super::policy::RelationalInvariantRuntime;
 pub(crate) use admission::InvariantRegistrationAdmission;
+pub(crate) use preparation_control::InvariantPreparationControl;
 pub(crate) use scope_types::{
     PlannedRelationEdge, PreparedRelationEndpointKey, PreparedRelationIntegrityScope,
     PreparedRelationIntegrityScopes, PreparedRelationPairKey, PreparedVisibleRelationEdge,
@@ -48,7 +50,6 @@ pub(crate) struct InvariantExecutionRequest<'runtime> {
     plan_contract: Option<InvariantPlanContract>,
     merged_plan: Option<&'runtime MergedCommitPlan>,
     relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
-    preparation_violation: Option<InvariantViolation>,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
 }
 
@@ -91,10 +92,6 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
 
     pub(crate) fn relation_integrity_scopes(&self) -> Option<&PreparedRelationIntegrityScopes> {
         self.relation_integrity_scopes.as_ref()
-    }
-
-    pub(crate) fn preparation_violation(&self) -> Option<&InvariantViolation> {
-        self.preparation_violation.as_ref()
     }
 
     pub(crate) fn proposal_identity(

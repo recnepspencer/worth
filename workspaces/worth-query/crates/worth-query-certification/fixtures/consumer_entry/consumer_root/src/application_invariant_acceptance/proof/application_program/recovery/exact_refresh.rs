@@ -25,11 +25,16 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
         .application
         .press_next_ready_read_with_world_snapshots_for_test();
     let interrupted = (0..64)
-        .find_map(|_| match output.required_output_mut().advance(&request) {
-            Err(stop) => Some(stop),
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
-            Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
-                panic!("Ready read pressure must preserve source custody")
+        .find_map(|_| {
+            match output
+                .required_output_mut()
+                .advance(&world.application, &request)
+            {
+                Err(stop) => Some(stop),
+                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+                Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
+                    panic!("Ready read pressure must preserve source custody")
+                }
             }
         })
         .expect("the root becomes Ready before its settlement read is stopped");
@@ -75,7 +80,7 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
         "the output-only mutation commits"
     );
     let stop = (0..64)
-        .find_map(|_| match recovered.advance(&request) {
+        .find_map(|_| match recovered.advance(&world.application, &request) {
             Err(stop) => Some(stop),
             Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {

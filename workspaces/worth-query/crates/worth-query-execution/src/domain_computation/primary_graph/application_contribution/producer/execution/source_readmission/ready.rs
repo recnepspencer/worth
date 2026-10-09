@@ -26,7 +26,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             | Stop::SelectedPositionUnavailable { .. }
             | Stop::ForeignCell
             | Stop::RegistrationChanged
-            | Stop::CellCapacityExhausted { .. }
             | Stop::PreparationMemoryExhausted { .. }
             | Stop::PreparationMemoryCounterOverflow
             | Stop::RetainedCompanionCapacityExhausted { .. } => {

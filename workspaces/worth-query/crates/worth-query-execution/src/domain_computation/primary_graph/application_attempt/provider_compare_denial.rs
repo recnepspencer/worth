@@ -36,8 +36,11 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Denial {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    let kind =
+        super::super::provider::relational_execution_denial::native_preparation_kind(&failure)
+            .unwrap_or(failure.kind());
     let detail = failure.detail();
-    let denial = match failure.kind() {
+    let denial = match kind {
         Kind::IndexMaintenanceBudgetExceeded => {
             Denial::index_maintenance_budget_exceeded(Stage::ProviderCommit, detail)
         }
@@ -62,14 +65,6 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         Kind::CandidateIdentityExhausted => {
             Denial::candidate_identity_exhausted(Stage::ProviderCommit)
         }
-        Kind::PreparedRootBudgetExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => Denial::prepared_root_budget_exhausted(
-            Stage::ProviderCommit,
-            maximum_bytes,
-            required_bytes,
-        ),
         Kind::ExecutionResource {
             denial,
             partition_identity,
@@ -128,14 +123,14 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         }
     };
     let denial = if matches!(
-        failure.kind(),
+        kind,
         Kind::ExecutionResource { .. }
             | Kind::ExecutionNestedPatternStopped { .. }
             | Kind::ExecutionWorkerPanicked { .. }
             | Kind::ExecutionUncheckedCustomKernel { .. }
             | Kind::ExecutionIdentitiesNotCanonical { .. }
     ) {
-        denial.with_provider_execution_cause(failure.kind())
+        denial.with_provider_execution_cause(kind)
     } else {
         denial
     };

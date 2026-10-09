@@ -9,7 +9,6 @@ use super::super::super::context::InvariantExecutionContext;
 use super::super::common::{contract_candidate_kind_matches, entity_reference_kind};
 use super::planned_successors::planned_successor_map;
 use super::relation_successors::PreparedSuccessorTraversal;
-use super::traversal_budget::{traversal_budget_exceeded_violation, RelationTraversalBudget};
 use super::visible_entities::visible_entities_of_kinds;
 
 pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_contract(
@@ -37,8 +36,6 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
     let traversal = PreparedSuccessorTraversal {
         scope,
         class,
-        contract_id: &contract.contract_id,
-        relation_kind_id: contract.relation_kind_id,
         planned_successors: &planned_successors,
     };
     for source in source_entities {
@@ -86,42 +83,20 @@ fn reachable_target_count_for_connectivity(
     let mut visited = BTreeSet::new();
     let mut frontier = vec![source.clone()];
     let mut reachable_targets = BTreeSet::new();
-    let mut traversal_budget = RelationTraversalBudget::for_planned_successors(
-        context.relation_integrity_scope_budget(),
-        traversal.planned_successors,
-    );
 
     visited.insert(source);
-    traversal_budget.record_entity_visit().map_err(|_| {
-        traversal_budget_exceeded_violation(
-            traversal.class,
-            traversal.contract_id,
-            traversal.relation_kind_id,
-            traversal_budget,
-            traversal.planned_successors,
-        )
-    })?;
 
     while let Some(entity_id) = frontier.pop() {
         if !context.checkpoint(1) {
             return Ok(0);
         }
-        for next in traversal.successors(&entity_id, &mut traversal_budget, context)? {
+        for next in traversal.successors(&entity_id, context) {
             if !context.checkpoint(1) {
                 return Ok(0);
             }
             if !visited.insert(next.clone()) {
                 continue;
             }
-            traversal_budget.record_entity_visit().map_err(|_| {
-                traversal_budget_exceeded_violation(
-                    traversal.class,
-                    traversal.contract_id,
-                    traversal.relation_kind_id,
-                    traversal_budget,
-                    traversal.planned_successors,
-                )
-            })?;
             if let Some(kind_id) = entity_reference_kind(context, traversal.class, &next)? {
                 if contract_candidate_kind_matches(kind_id, target_kind_ids) {
                     reachable_targets.insert(next.clone());

@@ -16,6 +16,9 @@ type Stop = (WorthQueryOutputDemandDenialKind, Posture);
 struct Journey {
     /// Every stop an advance met.
     stops: Vec<Stop>,
+    refused_consumers: usize,
+    unrecovered_consumers: usize,
+    fresh_consumer_decisions: usize,
     before_window_bytes: u64,
     after_window_bytes: u64,
     peak_retained_bytes: u64,
@@ -137,20 +140,34 @@ fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
     }
     let after_window_bytes = invalidation.retained_capacity_bytes();
     assert!(after_window_bytes <= invalidation_bytes);
+    let refused_consumers = refused[1..3].iter().filter(|value| **value).count();
+    binding::take_all_decisions();
+    let mut unrecovered_consumers = 0;
     macro_rules! claim_again {
-        ($demand:expr, $refused:expr) => {
+        ($demand:expr, $refused:expr, $consumer:expr) => {
             if $refused {
-                advance_recording!(stops, $demand, request);
+                let settled = matches!(
+                    advance_recording!(stops, $demand, request),
+                    Some(WorthQueryApplicationOutputDemandProgress::Settled(_))
+                );
+                unrecovered_consumers += usize::from($consumer && !settled);
             }
         };
     }
-    claim_again!(d, refused[0]);
-    claim_again!(c, refused[1]);
-    claim_again!(b, refused[2]);
-    claim_again!(a, refused[3]);
+    claim_again!(d, refused[0], false);
+    claim_again!(c, refused[1], true);
+    claim_again!(b, refused[2], true);
+    claim_again!(a, refused[3], false);
     drop((a, b, c, d));
+    let fresh_consumer_decisions = binding::take_all_decisions()
+        .into_iter()
+        .filter(|(scope, _)| matches!(scope.as_str(), "anchor-b" | "anchor-c"))
+        .count();
     Ok(Journey {
         stops,
+        refused_consumers,
+        unrecovered_consumers,
+        fresh_consumer_decisions,
         before_window_bytes,
         after_window_bytes,
         peak_retained_bytes,
@@ -158,7 +175,8 @@ fn chain_journey(invalidation_bytes: u64) -> Result<Journey, Attempt> {
     })
 }
 
-/// The first stop is the index's own refusal. After it a consumer whose
+/// A recorded journey's first stop is the index's own refusal; the recorder
+/// answers any other first stop as no index journey. After it a consumer whose
 /// upstream has no output is denied by the fixture's handler, and a row that
 /// refusal failed answers that its producer is unavailable. Nothing else
 /// stops an advance, and no stop offers a retry.
@@ -166,11 +184,6 @@ fn assert_index_stops(capacity: u64, stops: &[Stop]) {
     use WorthQueryOutputDemandDenialKind::{
         ProducerDomainDenied, ProducerUnavailable, RetentionBudgetExceeded,
     };
-    assert_eq!(
-        stops.first(),
-        Some(&(RetentionBudgetExceeded, Posture::Terminal)),
-        "{capacity} bytes of index: the refused advance stops for retention"
-    );
     for stop in stops {
         assert!(
             matches!(
@@ -180,7 +193,7 @@ fn assert_index_stops(capacity: u64, stops: &[Stop]) {
                     Posture::Terminal
                 )
             ),
-            "{capacity} bytes of index: an advance stops only for retention or              for what the refusal left unproduced: {stop:?}"
+            "{capacity} bytes of index: an advance stops only for retention or \n             for what the refusal left unproduced: {stop:?}"
         );
     }
 }
@@ -246,4 +259,41 @@ fn an_index_too_small_for_a_commit_stops_the_advance_for_retention() {
         refused != 0,
         "some index in the sweep is too small for the chain"
     );
+}
+
+#[test]
+fn a_consumer_with_incomplete_registration_settles_by_a_fresh_decision_after_capacity_returns() {
+    let _guard = checkpoint_recovery_test_guard();
+    search(
+        "fresh consumer capacity",
+        1,
+        2 * 1024 * 1024,
+        support::capacity_region::Goal::Hit,
+        |capacity| {
+            let journey = match chain_journey(capacity as u64) {
+                Ok(journey) => journey,
+                Err(answer) => return answer,
+            };
+            if journey.refused_consumers == 0 {
+                return Attempt::Above("consumer registration admitted");
+            }
+            if journey.unrecovered_consumers != 0 {
+                return Attempt::Below("refused consumer does not recover after the window moves");
+            }
+            assert!(
+                journey.refused_consumers > 0,
+                "a consumed-output registration was refused"
+            );
+            assert_eq!(
+                journey.unrecovered_consumers, 0,
+                "every refused consumer recovers in one advance"
+            );
+            assert!(
+                journey.fresh_consumer_decisions > 0,
+                "recovery runs a fresh consumer decision"
+            );
+            Attempt::Hit
+        },
+    )
+    .require_hit("fresh consumer registration");
 }

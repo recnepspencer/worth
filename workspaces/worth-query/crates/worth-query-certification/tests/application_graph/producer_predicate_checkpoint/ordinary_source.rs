@@ -146,8 +146,28 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
             controls,
         )
         .expect("caller disposal must leave exact source custody recoverable by its owner");
+    // A saved source and admitted root are not a terminal domain refusal.
+    assert!(matches!(
+        recovered.finish_unavailable(&host, &request),
+        Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+            worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial)
+        )) if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingDeferred
+    ));
+    let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
+    let stopped =
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
+            std::time::Instant::now() + std::time::Duration::from_secs(30),
+            cancellation.token(),
+        );
+    cancellation.cancel();
+    assert!(matches!(
+        recovered.finish_unavailable(&host, &runtime.request(&principal, &stopped)),
+        Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
+            worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial)
+        )) if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
+    ));
     let WorthQueryApplicationProgramOutputProgress::Settled(settled) =
-        recovered.settle(&request).unwrap()
+        recovered.settle(&host, &request).unwrap()
     else {
         panic!("the existing installed assessment producer must settle")
     };
@@ -164,6 +184,10 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         6
     );
     assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
+    assert!(matches!(
+        recovered.finish_unavailable(&host, &request),
+        Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed)
+    ));
     assert!(settled
         .root_receipt()
         .unwrap()
@@ -172,3 +196,6 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         .entity::<AssessmentOutput>()
         .is_ok());
 }
+
+#[path = "ordinary_source/unpublished.rs"]
+mod unpublished;
