@@ -45,11 +45,13 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
 fn restoring_existing_unverified_facts_drops_state_as_restored() {
     staged(|mut stage| {
         let facts: Arc<[Fact]> = Arc::from([source_entity(1)]);
-        let computation =
-            stage
-                .lineage
-                .retain_computation(sealed_run_for_lineage_test(), None, None);
-        assert!(matches!(computation, RecordedComputation::Retained { .. }));
+        let computation = stage.lineage.retain_computation(
+            sealed_run_for_lineage_test(),
+            None,
+            None,
+            stage.lineage.prepay_computation_fork_scan_for_test(),
+        );
+        assert!(matches!(computation, RecordedComputation::Retained(_)));
         let generation = stage.restored_generation() - 1;
         let cell = stage.retain(
             generation,

@@ -61,10 +61,13 @@ pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
+    partitioned_computation_tree_work_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest, WorthQueryPartitionedComputationFullCause,
-    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
+    WorthQueryPublishedComputationStateForTest,
 };
 pub use super::application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
@@ -346,3 +349,5 @@ pub use super::provider::relational_execution_denial::relational_execution_kind;
 pub use super::application_contribution::{
     advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
 };
+pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
+pub use worth_execution::ExecutionRequest;

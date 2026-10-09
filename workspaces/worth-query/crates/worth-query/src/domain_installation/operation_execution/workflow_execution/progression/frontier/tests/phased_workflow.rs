@@ -50,7 +50,18 @@ pub(crate) fn reference_workspace(name: &str) -> runtime::WorthQueryWorkspace {
 }
 
 pub(crate) fn phased_workspace(name: &str) -> runtime::WorthQueryWorkspace {
+    phased_workspace_with_resources(
+        name,
+        crate::consumer_kit::in_memory_test_product_world_resources(),
+    )
+}
+
+pub(crate) fn phased_workspace_with_resources(
+    name: &str,
+    resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+) -> runtime::WorthQueryWorkspace {
     world::builder()
+        .product_world_resources(resources)
         .workflow_stage_executor(
             PhaseDomain,
             PhaseOperation,

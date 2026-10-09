@@ -21,7 +21,7 @@ fn settle(
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the input-reuse producer settles");
-    (settled.posture(), std::mem::take(&mut *room()))
+    (settled.posture(), take_runs(None))
 }
 
 #[test]

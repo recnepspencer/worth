@@ -160,6 +160,8 @@ impl RootPathSourceBuilder {
         result_buffer: &mut WorthQueryApplicationResultBufferReservation,
     ) -> Result<Arc<WorthQueryObservedRootSelection>, WorthQueryApplicationReadExecutionDenial>
     {
+        // The output vectors below declare exact capacities from these map sizes.
+        // Nested field allocations use the same capacity accounting as retention.
         let retained_bytes = std::mem::size_of::<WorthQueryObservedRootSelection>()
             .saturating_add(2 * std::mem::size_of::<usize>())
             .saturating_add(
@@ -173,10 +175,7 @@ impl RootPathSourceBuilder {
                     .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>()),
             )
             .saturating_add(self.aspects.values().fold(0usize, |bytes, aspect| {
-                bytes
-                    .saturating_add(aspect.entity_name.capacity())
-                    .saturating_add(aspect.aspect.as_str().len())
-                    .saturating_add(aspect.field.as_str().len())
+                bytes.saturating_add(aspect.owned_capacity_bytes())
             }))
             .saturating_add(
                 self.adjacencies

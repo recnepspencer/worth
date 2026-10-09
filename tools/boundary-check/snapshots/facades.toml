@@ -329,6 +329,7 @@ package = "worth-query-host::primary_graph"
 exports = [
     "CandidateWriter",
     "DecisionReader",
+    "ExecutionRequest",
     "ExternalEffectCausalLink",
     "ExternalEffectClassification",
     "ExternalEffectCorrelationIdentity",
@@ -535,6 +536,7 @@ exports = [
     "WorthQueryCurrentOutputSelection",
     "WorthQueryCustomInvariantDenial",
     "WorthQueryDelegationActivationProgram",
+    "WorthQueryDerivedPairReadPlans",
     "WorthQueryDispatchOutboxDurabilityPosture",
     "WorthQueryDispatchOutboxRecord",
     "WorthQueryElevationApprovalAuthorizationDenial",
@@ -776,6 +778,7 @@ exports = [
     "installed_source_reads_on_this_thread_for_test",
     "map_ordinary_commit_conflict",
     "partitioned_computation_runs_on_this_thread_for_test",
+    "partitioned_computation_tree_work_on_this_thread_for_test",
     "place_managed_computations_on_this_thread_for_test",
     "query_read_kernel_entries_on_this_thread_for_test",
     "reconcile_recovery_handle",

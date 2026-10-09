@@ -4,8 +4,8 @@
 //! A run that completed under a producer leaves its items and their digests,
 //! its routing, its partitions' keys, the work and reach of every owner call,
 //! each kernel's work, its reduction tree and the facts the calls read as
-//! seal observed them. The next run of the same producer is handed that state by value from
-//! the record it selected. Nothing outside the comparator module reads it.
+//! seal observed them. The next run receives the selected state's custodied
+//! handle. The comparator alone decides whether its calls can be carried.
 
 use std::any::Any;
 use std::collections::{BTreeMap, BTreeSet};
@@ -17,12 +17,13 @@ use worth_foundational::facade::PartitionIdentity;
 use super::super::super::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
+pub(in crate::domain_computation) use super::carriage::ComputationPrior;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationRead, SealedComputationFacts,
 };
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
-use crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord;
+use crate::domain_computation::primary_graph::output_lineage::CustodiedComputation;
 
 /// How one run of a partitioned computation ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -222,12 +223,7 @@ where
     }
 }
 
-/// A prior run's state, its typed half downcast once, where the comparator
-/// took it.
-pub(super) struct TypedPrior<Key, Item, Reduced> {
-    pub(super) state: Arc<RetainedComputation>,
-    pub(super) typed: Arc<RetainedPartitions<Key, Item, Reduced>>,
-}
+pub(super) use super::typed_prior::TypedPrior;
 
 /// One run's state, retained on the record its attempt published.
 pub(in crate::domain_computation) struct RetainedComputation {
@@ -240,8 +236,9 @@ pub(in crate::domain_computation) struct RetainedComputation {
 }
 
 impl RetainedComputation {
-    /// The bytes the lineage ledger reserves for the state while a record
-    /// holds it. `None` when the sum overflows: the state is evicted.
+    /// The completed state's payload charge. Custody adds its own Arc
+    /// allocation, and every holder shares that full ticket until final release.
+    /// `None` when the payload sum overflows: the incoming state is evicted.
     pub(in crate::domain_computation::primary_graph) const fn retained_bytes(&self) -> Option<u64> {
         self.bytes
     }
@@ -250,10 +247,10 @@ impl RetainedComputation {
 /// A sealed run's state on its way to the record its attempt publishes.
 pub(in crate::domain_computation) struct SealedComputationRun {
     pub(in crate::domain_computation::primary_graph) state: RetainedComputation,
-    /// The prior state an incremental run built its tree from. Publication
-    /// moves the ledger reservation only from the record still holding
-    /// exactly this state.
-    pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<RetainedComputation>>,
+    /// The custodied prior an incremental run built from. Publication consumes
+    /// this holder before testing whether its exact displaced record is sole
+    /// and unpinned; shared or pinned prior custody remains intact.
+    pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<CustodiedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
     pub(in crate::domain_computation::primary_graph) tree_memory: RunTreeMemory,
@@ -268,7 +265,7 @@ pub(in crate::domain_computation) struct RunTreeMemory {
 
 /// The owner calls a run carried from `prior` without making them.
 pub(super) struct CarriedCalls {
-    pub(super) prior: Arc<RetainedComputation>,
+    pub(super) prior: Arc<CustodiedComputation>,
     pub(super) membership: bool,
     pub(super) items: BTreeSet<PartitionItemId>,
     pub(super) partitions: BTreeSet<PartitionIdentity>,
@@ -299,73 +296,12 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     pub(super) routing_memory: Option<QueryMemoryReservation>,
 }
 
-/// What a producer hands the partitioned computation its handler runs: the
-/// installed edition, the state the selected record retained, and that
-/// record.
-#[derive(Clone)]
-pub(in crate::domain_computation) struct ComputationPrior {
-    pub(super) edition: InstalledProducerEdition,
-    pub(super) retained:
-        Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
-    record: Option<PriorComputationRecord>,
-}
-
-impl ComputationPrior {
-    pub(in crate::domain_computation::primary_graph) const fn new(
-        edition: InstalledProducerEdition,
-        retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
-        record: Option<PriorComputationRecord>,
-    ) -> Self {
-        Self {
-            edition,
-            retained,
-            record,
-        }
-    }
-
-    /// The record the state was selected from.
-    pub(in crate::domain_computation::primary_graph) fn into_record(
-        self,
-    ) -> Option<PriorComputationRecord> {
-        self.record
-    }
-}
-
-#[cfg(test)]
-thread_local! {
-    static PRIOR_IN_TEST: std::cell::RefCell<Option<ComputationPrior>> =
-        const { std::cell::RefCell::new(None) };
-    static SEALED_IN_TEST: std::cell::RefCell<Option<SealedComputationRun>> =
-        const { std::cell::RefCell::new(None) };
-}
-
-/// An attempt no producer runs has no prior and keeps no run. A test hands
-/// it both here.
-#[cfg(test)]
-impl ComputationPrior {
-    pub(in crate::domain_computation) fn handed_in_test() -> Option<Self> {
-        PRIOR_IN_TEST.with(|prior| prior.borrow().clone())
-    }
-
-    pub(super) fn hand_in_test(prior: Option<Self>) {
-        PRIOR_IN_TEST.with(|handed| *handed.borrow_mut() = prior);
-    }
-}
-
-#[cfg(test)]
-impl SealedComputationRun {
-    pub(in crate::domain_computation) fn keep_in_test(run: Option<Self>) {
-        SEALED_IN_TEST.with(|kept| *kept.borrow_mut() = run);
-    }
-
-    pub(super) fn kept_in_test() -> Option<Self> {
-        SEALED_IN_TEST.with(|kept| kept.borrow_mut().take())
-    }
-}
-
 #[cfg(test)]
 impl RetainedComputation {
     pub(in crate::domain_computation::primary_graph) fn overflow_bytes_for_test(&mut self) {
         self.bytes = None;
     }
 }
+
+#[cfg(test)]
+mod fixture_bytes;

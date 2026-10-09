@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub(super) fn finalize_one_shot<
+pub(in crate::domain_computation::primary_graph::application_query) fn finalize_one_shot<
     Schema,
     Query,
     Parameters,
@@ -43,7 +43,7 @@ pub(super) fn finalize_one_shot<
     mut kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-    spent: Option<&OneShotReadWorkObservation>,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<
     WorthQueryApplicationOneShotResult<Query, QueryResult>,
     WorthQueryApplicationOneShotDenial,

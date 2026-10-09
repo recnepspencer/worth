@@ -15,6 +15,7 @@ use super::*;
 
 pub(super) mod alphabet;
 pub(super) mod prefix;
+pub(super) mod reference;
 
 use alphabet::{Change, Kind, Lcg, Model, KINDS};
 
@@ -28,14 +29,11 @@ const SEED: u64 = 0x9176_3c0b_5eed_0001;
 /// run writes the value it read, and the demand settles.
 fn full_run(
     model: &Model,
-    checkpoint: application_installation::WorthQueryApplicationCheckpoint,
+    reference: &reference::Reference,
     own_write: Option<OwnWrite>,
 ) -> Vec<OracleRun> {
-    let application = installation::install_configured::<false, TOTALS_WORK, 1>(
-        Some(checkpoint),
-        Default::default(),
-        |_| panic!("Native truth does not reseed"),
-    );
+    let application = reference
+        .install::<false, TOTALS_WORK, 1, 0>(Default::default(), |graph, seed| seed.seed(graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     arm_own_write(own_write);
@@ -81,7 +79,7 @@ fn expected(kind: Kind) -> Option<Run> {
 /// its decision writes, and what it ran.
 pub(super) struct Demanded<'model> {
     model: &'model Model,
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    reference: Option<&'model reference::Reference>,
     kind: Option<Kind>,
     moved: bool,
     own_write: Option<OwnWrite>,
@@ -98,15 +96,11 @@ pub(super) fn sequence(capture_reference: bool, mut each: impl FnMut(&str, Deman
     let application = install(|graph| model.seed(graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let checkpoint = capture_reference.then(|| {
-        application
-            .capture_native_truth_checkpoint_for_test()
-            .unwrap()
-    });
+    let mut reference = reference::Reference::new(&model);
     let (contacts, runs) = demand(&request, &application);
     let first = Demanded {
         model: &model,
-        checkpoint,
+        reference: capture_reference.then_some(&reference),
         kind: None,
         moved: true,
         own_write: None,
@@ -129,23 +123,19 @@ pub(super) fn sequence(capture_reference: bool, mut each: impl FnMut(&str, Deman
             let before = model.clone();
             let step = model.step(kind, &mut rng);
             for change in step.changes {
+                reference.edit(&change);
                 command += 1;
                 match change {
                     Change::Entry(change) => edit(&request, &application, change, command),
                     Change::Ordinate(y) => adjust(&request, &application, y, command),
                 }
             }
-            let checkpoint = capture_reference.then(|| {
-                application
-                    .capture_native_truth_checkpoint_for_test()
-                    .unwrap()
-            });
             arm_own_write(step.own_write);
             let (contacts, runs) = demand(&request, &application);
             arm_own_write(None);
             let demanded = Demanded {
                 model: &model,
-                checkpoint,
+                reference: capture_reference.then_some(&reference),
                 kind: Some(kind),
                 moved: model != before,
                 own_write: step.own_write,
@@ -153,6 +143,7 @@ pub(super) fn sequence(capture_reference: bool, mut each: impl FnMut(&str, Deman
                 runs,
             };
             each(&format!("round {round}, {kind:?}"), demanded);
+            reference.demanded(step.own_write);
             if let Some(write) = step.own_write {
                 model.written(write);
             }
@@ -169,8 +160,8 @@ fn every_reused_run_equals_a_full_run_of_the_same_facts() {
         let reference = full_run(
             demanded.model,
             demanded
-                .checkpoint
-                .expect("the full-run oracle requested precomputation Native truth"),
+                .reference
+                .expect("the full-run oracle requested independent model history"),
             demanded.own_write,
         );
         if !demanded.runs.is_empty() {
@@ -188,6 +179,10 @@ fn every_reused_run_equals_a_full_run_of_the_same_facts() {
             assert_eq!(
                 reference.outcome, last_run.outcome,
                 "{at}: the kept output is current"
+            );
+            assert_published_state(
+                std::slice::from_ref(last_run),
+                std::slice::from_ref(reference),
             );
             return;
         }

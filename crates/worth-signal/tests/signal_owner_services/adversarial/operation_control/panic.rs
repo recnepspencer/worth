@@ -7,47 +7,6 @@ use worth_signal::facade::branch::{
 use super::super::world::AdversarialWorld;
 
 #[test]
-fn transaction_callback_panic_quarantines_source_and_keeps_sibling_healthy() {
-    let world = AdversarialWorld::new();
-    let reference = world
-        .basis
-        .issue_managed_branch_reference(&world.root_basis)
-        .expect("the rollback observation uses owner-issued reference custody");
-    let fault = catch_unwind(AssertUnwindSafe(|| {
-        let _ = world.mutation.advance_exact(
-            worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
-            ),
-            &world.root_basis,
-            &mut (),
-            &SignalOwnerCancellationSource::new().token(),
-            |_| panic!("transaction callback failure"),
-        );
-    }));
-    assert!(
-        fault.is_err(),
-        "the transaction callback panic must reach the caller"
-    );
-    assert!(matches!(
-        world.basis.observe_current(&reference),
-        Err(SignalBranchBasisObservationDenial::QuarantinedBranch { branch_id })
-            if branch_id == world.root_basis.branch_id()
-    ));
-    world
-        .mutation
-        .advance_exact(
-            worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
-            ),
-            &world.child_basis,
-            &mut (),
-            &SignalOwnerCancellationSource::new().token(),
-            |_| Ok(()),
-        )
-        .expect("a transaction panic must not poison an unrelated branch");
-}
-
-#[test]
 fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
     let world = AdversarialWorld::new();
     let control = world

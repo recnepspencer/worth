@@ -31,6 +31,7 @@ pub mod identity_authority {
 }
 
 pub mod consumer_kit {
+    pub use crate::consumer_kit::workflow_proof_execution_request;
     pub use crate::consumer_kit::{
         advance_test_workspace_domain_installation_generation, compare_test_backend_write_receipts,
         in_memory_test_product_world_installation, in_memory_test_product_world_resources,

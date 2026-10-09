@@ -59,11 +59,34 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         &self,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        self.open_host_advancement(worth_execution::CancellationToken::new(), None, body)
+    }
+
+    /// Runs a scoped host call under this installed World's policy and the
+    /// caller's cancellation and deadline, lending only its branded phase.
+    pub fn with_request_advancement<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        self.open_host_advancement(
+            request.cancellation().execution_token(),
+            Some(request.deadline()),
+            body,
+        )
+    }
+
+    fn open_host_advancement<R>(
+        &self,
+        cancellation: worth_execution::CancellationToken,
+        deadline: Option<std::time::Instant>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
         QueryRequestExecution::open_control(
             self.owner.execution_placement(),
-            worth_execution::CancellationToken::new(),
-            None,
+            cancellation,
+            deadline,
         )
         .run_advancement(
             Some(self.owner.owner_identity()),

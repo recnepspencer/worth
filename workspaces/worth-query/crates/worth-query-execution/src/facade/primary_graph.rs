@@ -3,14 +3,17 @@
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::inexact_native_deliveries_on_this_thread_for_test;
 #[cfg(feature = "test-query-execution-observer")]
-pub use crate::domain_computation::primary_graph::partitioned_computation_runs_on_this_thread_for_test;
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::query_read_kernel_entries_on_this_thread_for_test;
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::required_ready_custody_bytes_for_test;
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
     bound_advancement_requests_on_this_thread_for_test,
+    partitioned_computation_runs_on_this_thread_for_test,
+    partitioned_computation_tree_work_on_this_thread_for_test,
+};
+#[cfg(feature = "test-query-execution-observer")]
+pub use crate::domain_computation::primary_graph::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest,
 };
@@ -279,3 +282,5 @@ pub use worth_signal::facade::SignalCheckpointDenial;
 
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
+pub use crate::domain_computation::primary_graph::ExecutionRequest;
+pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;

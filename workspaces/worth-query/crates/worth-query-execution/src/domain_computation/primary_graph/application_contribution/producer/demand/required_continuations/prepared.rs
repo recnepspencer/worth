@@ -85,6 +85,7 @@ where
         );
         self.successor.demand = Some(demand);
         RequiredFreshProgress {
+            contacts: super::contacts::ContactAttribution::Unowned,
             outcome: Some(outcome),
             successor: self.successor,
             capacity: self.capacity,

@@ -34,37 +34,32 @@ impl WorthQueryObservedRootSelection {
     }
 
     pub(in crate::domain_computation::primary_graph) fn retained_bytes(&self) -> usize {
-        std::mem::size_of::<Self>()
-            .saturating_add(2 * std::mem::size_of::<usize>())
-            .saturating_add(
-                self.entities
-                    .capacity()
-                    .saturating_mul(std::mem::size_of::<EntityId>()),
-            )
-            .saturating_add(
-                self.aspects
-                    .capacity()
-                    .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>()),
-            )
-            .saturating_add(self.aspects.iter().fold(0usize, |bytes, aspect| {
-                bytes
-                    .saturating_add(aspect.entity_name.capacity())
-                    .saturating_add(aspect.aspect.as_str().len())
-                    .saturating_add(aspect.field.as_str().len())
-            }))
-            .saturating_add(
-                self.adjacencies
-                    .capacity()
-                    .saturating_mul(std::mem::size_of::<WorthQueryObservedAdjacencyRevision>()),
-            )
-            .saturating_add(self.adjacencies.iter().fold(0usize, |bytes, adjacency| {
-                bytes.saturating_add(
-                    adjacency
-                        .endpoints
+        let Self {
+            entities,
+            aspects,
+            adjacencies,
+            identity: _identity,
+        } = self;
+        let base = std::mem::size_of::<Self>().saturating_add(2 * std::mem::size_of::<usize>());
+        let entities = entities
+            .capacity()
+            .saturating_mul(std::mem::size_of::<EntityId>());
+        let aspects = aspects.iter().fold(
+            aspects
+                .capacity()
+                .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>()),
+            |bytes, aspect| bytes.saturating_add(aspect.owned_capacity_bytes()),
+        );
+        adjacencies.iter().fold(
+            base.saturating_add(entities)
+                .saturating_add(aspects)
+                .saturating_add(
+                    adjacencies
                         .capacity()
-                        .saturating_mul(std::mem::size_of::<EntityId>()),
-                )
-            }))
+                        .saturating_mul(std::mem::size_of::<WorthQueryObservedAdjacencyRevision>()),
+                ),
+            |bytes, adjacency| bytes.saturating_add(adjacency.owned_capacity_bytes()),
+        )
     }
 }
 

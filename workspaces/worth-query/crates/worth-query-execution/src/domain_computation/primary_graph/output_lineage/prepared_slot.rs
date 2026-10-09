@@ -1,7 +1,11 @@
 //! An invisible lineage address prepared before the World owner is contacted.
 
 mod cancellation;
+#[cfg(test)]
+mod cancellation_custody;
 mod capacity;
+mod computation;
+use computation::PreparedComputationCustody;
 mod preparation;
 mod recovery;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
@@ -39,8 +43,9 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     pub(super) actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
     /// A sealed partitioned computation run and the record its prior state
     /// came from. World recovery carries both unchanged to its replacement slot.
-    pub(super) computation: Option<SealedComputationRetention>,
-    pub(super) computation_assigned: bool,
+    pub(super) computation: PreparedComputationCustody,
+    /// A pre-publication work allowance; a larger current fork set is not scanned.
+    computation_fork_scan_bound: usize,
     pub(super) prior_computation: Option<super::PriorComputationRecord>,
     filled: bool,
 }
@@ -123,12 +128,7 @@ impl PreparedOutputLineageSlot {
         sealed: SealedComputationRetention,
         prior: Option<super::PriorComputationRecord>,
     ) {
-        assert!(
-            !self.computation_assigned,
-            "a prepared slot retains completion once"
-        );
-        self.computation_assigned = true;
-        self.computation = Some(sealed);
+        self.computation.assign(sealed);
         self.prior_computation = prior;
     }
 
@@ -182,15 +182,13 @@ impl PreparedOutputLineageSlot {
             let displaced = self.partition.and_then(|partition| {
                 lineage.displaced_settlement(&self.source, self.coordinate, partition)
             });
-            let sealed = self
-                .computation
-                .take()
-                .expect("unfilled slot owns its total retention result");
+            let sealed = self.computation.take();
             let computation = match sealed {
                 SealedComputationRetention::Produced(sealed) => lineage.retain_computation(
                     sealed,
                     self.prior_computation.as_ref(),
                     displaced.as_ref(),
+                    self.computation_fork_scan_bound,
                 ),
                 SealedComputationRetention::Absent(absence) => {
                     super::retained_computation::RecordedComputation::Absent(absence)

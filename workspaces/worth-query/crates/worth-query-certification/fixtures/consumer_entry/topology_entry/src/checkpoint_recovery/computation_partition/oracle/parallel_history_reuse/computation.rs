@@ -65,7 +65,7 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
         owner::total_region(partition.key().0, partition.gathered(), checkpoint)
     }
     fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {
-        WorthQueryDeterministicReducer::canonical(|| -0.0, |left, right| left + right)
+        WorthQueryDeterministicReducer::canonical(|| -0.0, tree_count::sum)
     }
     fn complete(&self, reduced: f64) -> Result<f64, u32> {
         Ok(reduced)

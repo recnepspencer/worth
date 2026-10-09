@@ -142,3 +142,14 @@ fn strip_undisclosed_node(
     });
     released
 }
+
+impl worth_execution::ChargedBytes for WorthQueryApplicationDisclosedProjectionTree {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self { rows } = self;
+        rows.iter().fold(
+            (rows.capacity() as u64)
+                .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>() as u64),
+            |bytes, row| bytes.saturating_add(row.retained_bytes() as u64),
+        )
+    }
+}

@@ -30,3 +30,22 @@ pub(super) fn checkpoint(
         )),
     }
 }
+
+/// Safe-point authority is injected by the calling read door. A prepared worker
+/// has no Query request scope; both its checkpoints and charges use its map.
+#[derive(Clone, Copy)]
+pub(in crate::domain_computation::primary_graph::application_query) enum ReadInterruption<'a> {
+    Query(&'a WorthQueryRequestScope),
+    Execution(&'a dyn Fn(&str) -> Result<(), WorthQueryApplicationReadExecutionDenial>),
+}
+impl ReadInterruption<'_> {
+    pub(super) fn checkpoint(
+        self,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        match self {
+            Self::Query(request) => checkpoint(request, subject),
+            Self::Execution(check) => check(subject),
+        }
+    }
+}

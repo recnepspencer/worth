@@ -34,8 +34,11 @@ pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
 pub use partitioned_computation::{
     discarded_computation_retention_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
+    partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
+    WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
     Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
@@ -75,6 +78,10 @@ pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers,
     WorthQueryExecutionPlacementForTest,
+};
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use request_execution::{
+    test_authority, test_policy,
 };
 pub use request_execution::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,

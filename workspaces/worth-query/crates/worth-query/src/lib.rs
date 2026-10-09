@@ -103,3 +103,6 @@ mod harness;
 
 #[cfg(test)]
 mod relational_execution_refusal;
+
+#[cfg(test)]
+mod test_execution_authority;

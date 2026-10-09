@@ -12,17 +12,21 @@ type Run = domain::WorthQueryWorkflowRun<
 >;
 
 #[derive(Debug, PartialEq)]
-struct Record {
-    outcome: Option<domain::WorthQueryWorkflowAdvanceDenialKind>,
+pub(super) struct Record {
+    pub(super) outcome: Option<domain::WorthQueryWorkflowAdvanceDenialKind>,
     counters: domain::WorthQueryWorkflowRunCounters,
-    receipts: Vec<(
+    pub(super) receipts: Vec<(
         String,
         Vec<String>,
         domain::WorthQueryWorkflowSemanticValue,
         domain::WorthQueryWorkflowRunCounters,
     )>,
-    effects: Vec<(String, String)>,
+    pub(super) effects: Vec<(String, String)>,
     reads: Vec<(String, String)>,
+    outputs: Vec<domain::WorthQueryWorkflowSemanticValue>,
+    result_states: Vec<Option<domain::WorthQueryOperationResultState>>,
+    warnings: Vec<Vec<domain::WorthQueryWorkflowStageWarning>>,
+    invariants: Vec<Vec<domain::WorthQueryWorkflowInvariantOutcome>>,
 }
 
 fn start(workspace: &mut runtime::WorthQueryWorkspace) -> Run {
@@ -87,7 +91,7 @@ fn run(
     }
 }
 
-fn record(
+pub(super) fn record(
     outcome: Option<domain::WorthQueryWorkflowAdvanceDenialKind>,
     counters: domain::WorthQueryWorkflowRunCounters,
     receipts: &[domain::WorthQueryWorkflowStageReceipt],
@@ -103,7 +107,23 @@ fn record(
     };
     Record {
         outcome,
-        counters,
+        outputs: receipts
+            .iter()
+            .map(|receipt| receipt.output_semantics().clone())
+            .collect(),
+        result_states: receipts
+            .iter()
+            .map(|receipt| receipt.result_state())
+            .collect(),
+        warnings: receipts
+            .iter()
+            .map(|receipt| receipt.warnings().to_vec())
+            .collect(),
+        invariants: receipts
+            .iter()
+            .map(|receipt| receipt.invariant_outcomes().to_vec())
+            .collect(),
+        counters: super::owner_counters(counters),
         receipts: receipts
             .iter()
             .map(|receipt| {
@@ -111,7 +131,7 @@ fn record(
                     receipt.stage_identity().into(),
                     receipt.predecessor_stage_identities().to_vec(),
                     receipt.input().clone(),
-                    receipt.counters(),
+                    super::owner_counters(receipt.counters()),
                 )
             })
             .collect(),
@@ -141,6 +161,22 @@ fn record(
             })
             .collect(),
     }
+}
+
+// Width comparisons keep all billing; only the historical owner oracle omits
+// the new authority measurement that did not exist in part two.
+pub(super) fn record_billed(
+    outcome: Option<domain::WorthQueryWorkflowAdvanceDenialKind>,
+    counters: domain::WorthQueryWorkflowRunCounters,
+    receipts: &[domain::WorthQueryWorkflowStageReceipt],
+    stopped_effects: &[domain::WorthQueryWorkflowEffectEvidence],
+) -> Record {
+    let mut record = record(outcome, counters, receipts, stopped_effects);
+    record.counters = counters;
+    for (observed, receipt) in record.receipts.iter_mut().zip(receipts) {
+        observed.3 = receipt.counters();
+    }
+    record
 }
 
 #[test]
@@ -173,7 +209,7 @@ fn phased_frontiers_match_member_by_member_at_every_failure_position() {
             let mut reference_workspace =
                 phased_workflow::reference_workspace("phase-differential");
             let mut phased = phased_workflow::phased_workspace("phase-differential");
-            phased_workflow::fold_executor::take_computes();
+            _probe.take_computes();
             let expected = run(&mut reference_workspace, seed, failure, true);
             let actual = run(&mut phased, seed, failure, false);
             assert_eq!(actual, expected, "seed={seed} failure={failure:?}");
@@ -183,7 +219,7 @@ fn phased_frontiers_match_member_by_member_at_every_failure_position() {
                 .filter(|(_, mode)| *mode == 1)
                 .map_or(3, |(position, _)| position);
             assert_eq!(
-                phased_workflow::fold_executor::take_computes(),
+                _probe.take_computes(),
                 phased_workflow::MEMBERS[..prepared]
                     .iter()
                     .map(|stage| (stage.to_string(), 17))
@@ -232,4 +268,32 @@ fn idempotent_retry_preserves_reference_failure_and_counters() {
     let mut reference_workspace = phased_workflow::reference_workspace("phase-retry");
     let mut phased = phased_workflow::phased_workspace("phase-retry");
     assert_eq!(attempts(&mut phased), attempts(&mut reference_workspace));
+}
+
+impl Record {
+    pub(super) fn assert_owner_prefix_of(&self, serial: &Self) {
+        let count = self.receipts.len();
+        for (actual, expected) in self.receipts.iter().zip(&serial.receipts) {
+            assert_eq!(
+                (
+                    &actual.0,
+                    &actual.1,
+                    &actual.2,
+                    super::owner_counters(actual.3)
+                ),
+                (
+                    &expected.0,
+                    &expected.1,
+                    &expected.2,
+                    super::owner_counters(expected.3)
+                )
+            );
+        }
+        assert_eq!(self.outputs, serial.outputs[..count]);
+        assert_eq!(self.result_states, serial.result_states[..count]);
+        assert_eq!(self.warnings, serial.warnings[..count]);
+        assert_eq!(self.invariants, serial.invariants[..count]);
+        assert_eq!(self.reads, serial.reads[..self.reads.len()]);
+        assert_eq!(self.effects, serial.effects[..self.effects.len()]);
+    }
 }

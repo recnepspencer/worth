@@ -136,43 +136,61 @@ pub fn replay_installed_workflow_historical<
 where
     O: WorthQueryExecutableDomainOperation<D, F, Execution = WorthQueryWorkflowOperation> + 'static,
 {
-    let original_bound = original.bound();
-    if admission.original_operation_identity != original_bound.definition().canonical_identity()
-        || admission.replay_operation_identity != bound.definition().canonical_identity()
-        || admission.original_basis_identity != original_bound.basis().capability_digest()
-        || admission.execution_basis_identity != bound.basis().capability_digest()
-    {
-        return TransitionOutcome::Denied(
-            super::certification_replay::WorthQueryCertificationReplayStop::Admission(
-                WorthQueryCertificationReplayAdmissionDenial::HistoricalAdmissionMismatch,
-            ),
-        );
-    }
-    if admission.historical_workspace_name != workspace.name()
-        || !admission
-            .historical_snapshot_identity
-            .is_same_current_identity_as(&workspace.snapshot_identity())
-    {
-        return TransitionOutcome::Denied(
-            super::certification_replay::WorthQueryCertificationReplayStop::Admission(
-                WorthQueryCertificationReplayAdmissionDenial::HistoricalExecutionBasisDrift,
-            ),
-        );
-    }
-    execute_admitted_replay(
-        original,
-        bound,
-        intent,
-        resources,
-        workspace,
-        WorthQueryReplayBasisRelationship::AdmittedHistoricalBasis {
-            correspondence: admission.correspondence,
-        },
-        WorthQueryCertificationReplayCounters {
-            authority_checks: 1,
-            operation_checks: 1,
-            basis_checks: 1,
-            ..Default::default()
-        },
-    )
+    let owner = workspace.advancement_owner();
+    owner
+        .with_advancement(|phase| {
+            let original_bound = original.bound();
+            if admission.original_operation_identity
+                != original_bound.definition().canonical_identity()
+                || admission.replay_operation_identity != bound.definition().canonical_identity()
+                || admission.original_basis_identity != original_bound.basis().capability_digest()
+                || admission.execution_basis_identity != bound.basis().capability_digest()
+            {
+                return TransitionOutcome::Denied(
+                    super::certification_replay::WorthQueryCertificationReplayStop::Admission(
+                        WorthQueryCertificationReplayAdmissionDenial::HistoricalAdmissionMismatch,
+                    ),
+                );
+            }
+            if admission.historical_workspace_name != workspace.name()
+                || !admission
+                    .historical_snapshot_identity
+                    .is_same_current_identity_as(&workspace.snapshot_identity())
+            {
+                return TransitionOutcome::Denied(
+                    super::certification_replay::WorthQueryCertificationReplayStop::Admission(
+                        WorthQueryCertificationReplayAdmissionDenial::HistoricalExecutionBasisDrift,
+                    ),
+                );
+            }
+            execute_admitted_replay(
+                original,
+                bound,
+                intent,
+                resources,
+                workspace,
+                WorthQueryReplayBasisRelationship::AdmittedHistoricalBasis {
+                    correspondence: admission.correspondence,
+                },
+                WorthQueryCertificationReplayCounters {
+                    authority_checks: 1,
+                    operation_checks: 1,
+                    basis_checks: 1,
+                    ..Default::default()
+                },
+                &phase,
+            )
+        })
+        .unwrap_or_else(|cause| {
+            TransitionOutcome::Denied(
+                super::certification_replay::WorthQueryCertificationReplayStop::Execution(
+                    super::WorthQueryWorkflowReexecutionStop::Start(
+                        super::WorthQueryWorkflowStartDenial::new(
+                            super::WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
+                            Default::default(),
+                        ),
+                    ),
+                ),
+            )
+        })
 }

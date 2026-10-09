@@ -25,6 +25,8 @@ use crate::domain_computation::primary_graph::application_query::projection::{
 use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation;
 
 mod bounded_ordering;
+mod collection_selection;
+pub(super) use collection_selection::*;
 mod relation_attachment;
 mod relation_distribution;
 mod relation_target_filter;
@@ -50,32 +52,6 @@ pub(super) struct MaterializedApplicationResultTree {
     pub(super) continuation: Option<OrderedCollectionProgress>,
 }
 
-pub(super) struct OrderedCollectionWindow {
-    pub(super) snapshot: worth_relational::facade::snapshots::SnapshotHandle,
-    pub(super) collection_path: String,
-    pub(super) index_id: DerivedIndexId,
-    pub(super) expected_generation: Option<DerivedIndexGenerationId>,
-    pub(super) after: Option<RelatedEntityOrderingBoundary>,
-    pub(super) page_width: usize,
-}
-
-pub(super) struct TargetedCollectionChild {
-    pub(super) collection_path: String,
-    pub(super) child_entity_id: EntityId,
-}
-
-pub(super) enum ResultTreeCollectionSelection {
-    Complete,
-    Ordered(OrderedCollectionWindow),
-    Targeted(TargetedCollectionChild),
-}
-
-pub(super) struct OrderedCollectionProgress {
-    pub(super) generation_id: DerivedIndexGenerationId,
-    pub(super) next_boundary: Option<RelatedEntityOrderingBoundary>,
-    pub(super) has_more: bool,
-}
-
 pub(super) fn materialize_result_tree(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -88,15 +64,15 @@ pub(super) fn materialize_result_tree(
     root_path_source: Option<&BTreeMap<EntityId, Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
     maximum_work: usize,
     collection_selection: ResultTreeCollectionSelection,
-    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    interruption: super::ReadInterruption<'_>,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
-    spent: Option<&OneShotReadWorkObservation>,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
         .project_snapshot(snapshot)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
-    let mut work = ResultTreeWork::new(maximum_work, request, spent);
+    let mut work = ResultTreeWork::new(maximum_work, interruption, spent);
     work.checkpoint("root")?;
     let mut collection_selection = ActiveResultTreeCollectionSelection::new(collection_selection);
     let mut rows = project_nodes(
@@ -144,49 +120,6 @@ pub(super) fn materialize_result_tree(
         work_units: work.work_units,
         continuation: collection_selection.into_progress(),
     })
-}
-
-pub(super) enum ActiveResultTreeCollectionSelection {
-    Complete,
-    Ordered(ActiveOrderedCollectionWindow),
-    Targeted(TargetedCollectionChild),
-}
-
-impl ActiveResultTreeCollectionSelection {
-    fn new(selection: ResultTreeCollectionSelection) -> Self {
-        match selection {
-            ResultTreeCollectionSelection::Complete => Self::Complete,
-            ResultTreeCollectionSelection::Ordered(window) => {
-                Self::Ordered(ActiveOrderedCollectionWindow::new(window))
-            }
-            ResultTreeCollectionSelection::Targeted(target) => Self::Targeted(target),
-        }
-    }
-
-    fn into_progress(self) -> Option<OrderedCollectionProgress> {
-        match self {
-            Self::Ordered(window) => window.into_progress(),
-            Self::Complete | Self::Targeted(_) => None,
-        }
-    }
-}
-
-pub(super) struct ActiveOrderedCollectionWindow {
-    request: Option<OrderedCollectionWindow>,
-    progress: Option<OrderedCollectionProgress>,
-}
-
-impl ActiveOrderedCollectionWindow {
-    fn new(request: OrderedCollectionWindow) -> Self {
-        Self {
-            request: Some(request),
-            progress: None,
-        }
-    }
-
-    fn into_progress(self) -> Option<OrderedCollectionProgress> {
-        self.progress
-    }
 }
 
 #[allow(clippy::too_many_arguments)]

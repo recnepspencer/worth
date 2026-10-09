@@ -32,6 +32,34 @@ pub enum WorthQueryWorkflowAdvanceDenialKind {
     OutputContract,
     TerminalContract,
     DomainEvidence(super::WorthQueryDomainEvidenceAdmissionDenialKind),
+    /// The caller's computation request or declared storage was refused.
+    ComputationAdmission(worth_execution::LeaseDenial),
+    /// A canonical member exhausted its checkpoint work or counter.
+    ComputationWorkExhausted {
+        stage_identity: Option<String>,
+        cause: worth_execution::MapKernelStop,
+    },
+    /// Cancellation stopped computation at this canonical member (or entry).
+    ComputationCancelled {
+        stage_identity: Option<String>,
+    },
+    /// The request deadline stopped computation at this member (or entry).
+    ComputationDeadline {
+        stage_identity: Option<String>,
+    },
+    /// A compute panic was contained at the canonical boundary.
+    ComputationPanic {
+        stage_identity: Option<String>,
+    },
+    /// Nested execution stopped inside an inert task, violating its contract.
+    /// This is a computation failure, not an inferred lease admission cause.
+    ComputationNestedStopped {
+        stage_identity: Option<String>,
+    },
+    /// A compute result exceeded its declared retained capacity.
+    ComputationResultCapacity {
+        stage_identity: Option<String>,
+    },
     ParallelFrontierShape,
     NonDeterministicLowering,
     ParallelProvider(String),

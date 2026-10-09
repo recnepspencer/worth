@@ -73,7 +73,9 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
         self.retained.readiness_delivery()
     }
 
-    /// Producer executions initiated by this demand, not by an earlier output.
+    /// Executions of this handle's own producer over the handle's lifetime,
+    /// including executions canceled after they started. Upstream executions
+    /// initiated while another handle advances are excluded.
     pub fn producer_contacts_in_this_demand(&self) -> usize {
         self.retained.producer_contacts_in_this_demand()
     }

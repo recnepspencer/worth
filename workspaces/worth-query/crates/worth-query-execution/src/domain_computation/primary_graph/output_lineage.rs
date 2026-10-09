@@ -29,12 +29,17 @@ pub(in crate::domain_computation::primary_graph) use required_settlement::{
     AcceptedCurrentCandidate, BoundCurrentAcceptedOutput, CurrentAcceptedResult,
     CurrentAcceptedStop, RequiredSettlementStop,
 };
+mod custodied_computation;
 mod resolution;
 mod resources;
 mod restoration;
 mod retained_capacity;
 mod retained_computation;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use custodied_computation::custodied_state_for_test;
+pub(in crate::domain_computation::primary_graph) use custodied_computation::CustodiedComputation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
+mod fork_origin;
 mod retention;
 mod settlement_identity;
 pub(in crate::domain_computation) use invalidation::InvalidationEditAdmission;
@@ -195,24 +200,6 @@ impl WorthQueryApplicationOutputLineage {
     ) {
         self.retention
             .install(maximum_bytes as u64, history_positions);
-    }
-
-    pub(crate) fn register_fork(
-        &mut self,
-        source: &worth_runtime_world::facade::ProductBranchObservation,
-        destination: &worth_runtime_world::facade::ProductBranchObservation,
-    ) {
-        let source = ProductCoordinate {
-            occurrence: source.lifecycle_incarnation(),
-            generation: source.reference_generation().get(),
-        };
-        let destination = destination.lifecycle_incarnation();
-        self.live_occurrences.insert(source.occurrence);
-        self.live_occurrences.insert(destination);
-        assert!(
-            self.origins.insert(destination, source).is_none(),
-            "one product occurrence may be registered as a fork once"
-        );
     }
 
     fn record_prepared(

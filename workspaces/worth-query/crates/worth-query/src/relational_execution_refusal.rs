@@ -1,8 +1,6 @@
 //! A real preparation refusal shared by the workspace and effect boundary proofs.
-use std::{num::NonZeroUsize, sync::OnceLock};
-use worth_execution::{
-    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, LeaseRequest,
-};
+use std::num::NonZeroUsize;
+use worth_execution::{CancellationToken, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -22,14 +20,7 @@ use worth_relational::facade::{
 };
 
 pub(crate) fn work_exhausted() -> TransactionCommitError {
-    static OWNER: OnceLock<ExecutionAuthority> = OnceLock::new();
-    let owner = OWNER.get_or_init(|| {
-        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-            max_workers: NonZeroUsize::MIN,
-            charged_memory_bytes: 64 * 1024 * 1024,
-        })
-        .unwrap()
-    });
+    let owner = crate::test_execution_authority::authority();
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),

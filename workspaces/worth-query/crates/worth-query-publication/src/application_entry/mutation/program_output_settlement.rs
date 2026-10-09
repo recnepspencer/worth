@@ -66,6 +66,9 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         self.root.readiness_delivery()
     }
 
+    /// Executions of this root handle's own producer over its lifetime,
+    /// including executions canceled after they started. Upstream executions
+    /// initiated while another handle advances are excluded.
     pub fn root_producer_contacts_in_this_demand(&self) -> usize {
         self.root.producer_contacts_in_this_demand()
     }

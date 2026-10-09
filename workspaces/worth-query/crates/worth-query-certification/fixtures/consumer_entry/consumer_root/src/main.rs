@@ -18,8 +18,9 @@ use worth_query_decl::facade::application_schema::{
 use worth_query_decl::facade::worth_query_application;
 use worth_query_host::facade::domain::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-    WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledPackageIndex,
-    WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
+    WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledApplicationSchema,
+    WorthQueryInstalledPackageIndex, WorthQueryPortableDomainIdentity,
+    WorthQueryPortableDomainPackage,
 };
 use worth_query_parameter_entry::{
     ParameterContribution, ParameterCountBinding, ParameterSchemaBinding,
@@ -50,7 +51,7 @@ fn main() {
         .expect("the public consumer journey completes");
 }
 
-fn run() {
+fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
     let declaration = ConsumerSchema::declaration()
         .expect("the root-owned contributions form one closed schema declaration");
 
@@ -88,9 +89,13 @@ fn run() {
         [admitted],
     )
     .expect("the public installation path installs the root package");
-    let installed = installed_index
+    installed_index
         .bind_application_schema(declaration)
-        .expect("the installed authority binds the exact root declaration");
+        .expect("the installed authority binds the exact root declaration")
+}
+
+fn run() {
+    let installed = installed_schema();
     assert_eq!(installed.contributions().len(), 2);
     assert!(installed
         .contributions()

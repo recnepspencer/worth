@@ -13,74 +13,51 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         mut self,
         mut denial: WorthQueryWorkflowAdvanceDenial,
     ) -> WorthQueryWorkflowAdvanceOutcome<D, O, F, L> {
-        let stale = match denial.kind() {
-            WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(
-                crate::domain_installation::WorthQueryDomainHandleDenialKind::StaleInstallationGeneration,
-            ) => true,
-            WorthQueryWorkflowAdvanceDenialKind::ArtifactCarriage(artifact) => {
-                artifact.kind()
-                    == crate::domain_installation::WorthQueryArtifactDenialKind::StaleInstallationGeneration
-            }
-            WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(_)
-            | WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(_)
-            | WorthQueryWorkflowAdvanceDenialKind::UnknownStage
-            | WorthQueryWorkflowAdvanceDenialKind::StageAlreadyCompleted
-            | WorthQueryWorkflowAdvanceDenialKind::PredecessorIncomplete(_)
-            | WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(_)
-            | WorthQueryWorkflowAdvanceDenialKind::RequiredCapability(_)
-            | WorthQueryWorkflowAdvanceDenialKind::RequiredDomain(_)
-            | WorthQueryWorkflowAdvanceDenialKind::InputContract
-            | WorthQueryWorkflowAdvanceDenialKind::ResourceAdmissionMissing
-            | WorthQueryWorkflowAdvanceDenialKind::GraphProvider(_)
-            | WorthQueryWorkflowAdvanceDenialKind::StageExecutor { .. }
-            | WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(_)
-            | WorthQueryWorkflowAdvanceDenialKind::PrimaryReadEvidence
-            | WorthQueryWorkflowAdvanceDenialKind::EffectEvidence
-            | WorthQueryWorkflowAdvanceDenialKind::InvariantEvidence
-            | WorthQueryWorkflowAdvanceDenialKind::LineageEvidence
-            | WorthQueryWorkflowAdvanceDenialKind::CostContract
-            | WorthQueryWorkflowAdvanceDenialKind::OutputContract
-            | WorthQueryWorkflowAdvanceDenialKind::TerminalContract
-            | WorthQueryWorkflowAdvanceDenialKind::DomainEvidence(_)
-            | WorthQueryWorkflowAdvanceDenialKind::ParallelFrontierShape
-            | WorthQueryWorkflowAdvanceDenialKind::NonDeterministicLowering
-            | WorthQueryWorkflowAdvanceDenialKind::ParallelProvider(_)
-            | WorthQueryWorkflowAdvanceDenialKind::ParallelNotAdmitted(_)
-            | WorthQueryWorkflowAdvanceDenialKind::ConditionalExecution(_)
-            | WorthQueryWorkflowAdvanceDenialKind::ConditionalReentry(_) => false,
-        };
-        let (rebind, failed) = match denial.kind() {
-            WorthQueryWorkflowAdvanceDenialKind::RuntimeAuthority(kind) => (
-                *kind == crate::domain_installation::WorthQueryDomainHandleDenialKind::PackageIdentityChanged,
+        use WorthQueryWorkflowAdvanceDenialKind as Kind;
+        let (stale, rebind, failed) = match denial.kind() {
+            Kind::RuntimeAuthority(cause) => (
+                *cause == crate::domain_installation::WorthQueryDomainHandleDenialKind::StaleInstallationGeneration,
+                *cause == crate::domain_installation::WorthQueryDomainHandleDenialKind::PackageIdentityChanged,
                 false,
             ),
-            WorthQueryWorkflowAdvanceDenialKind::StageExecutor { .. }
-            | WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(_)
-            | WorthQueryWorkflowAdvanceDenialKind::PredecessorAuthorityMissing(_)
-            | WorthQueryWorkflowAdvanceDenialKind::ResourceAdmissionMissing
-            | WorthQueryWorkflowAdvanceDenialKind::ConditionalExecution(_) => (false, true),
-                WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(_)
-                | WorthQueryWorkflowAdvanceDenialKind::UnknownStage
-                | WorthQueryWorkflowAdvanceDenialKind::StageAlreadyCompleted
-                | WorthQueryWorkflowAdvanceDenialKind::PredecessorIncomplete(_)
-                | WorthQueryWorkflowAdvanceDenialKind::RequiredCapability(_)
-                | WorthQueryWorkflowAdvanceDenialKind::RequiredDomain(_)
-                | WorthQueryWorkflowAdvanceDenialKind::InputContract
-                | WorthQueryWorkflowAdvanceDenialKind::GraphProvider(_)
-                | WorthQueryWorkflowAdvanceDenialKind::PrimaryReadEvidence
-                | WorthQueryWorkflowAdvanceDenialKind::EffectEvidence
-                | WorthQueryWorkflowAdvanceDenialKind::InvariantEvidence
-                | WorthQueryWorkflowAdvanceDenialKind::LineageEvidence
-                | WorthQueryWorkflowAdvanceDenialKind::CostContract
-                | WorthQueryWorkflowAdvanceDenialKind::OutputContract
-                | WorthQueryWorkflowAdvanceDenialKind::TerminalContract
-                | WorthQueryWorkflowAdvanceDenialKind::DomainEvidence(_)
-                | WorthQueryWorkflowAdvanceDenialKind::ParallelFrontierShape
-                | WorthQueryWorkflowAdvanceDenialKind::NonDeterministicLowering
-                | WorthQueryWorkflowAdvanceDenialKind::ParallelProvider(_)
-                | WorthQueryWorkflowAdvanceDenialKind::ParallelNotAdmitted(_)
-                | WorthQueryWorkflowAdvanceDenialKind::ConditionalReentry(_)
-            | WorthQueryWorkflowAdvanceDenialKind::ArtifactCarriage(_) => (false, false),
+            Kind::ArtifactCarriage(artifact) => (
+                artifact.kind() == crate::domain_installation::WorthQueryArtifactDenialKind::StaleInstallationGeneration,
+                false,
+                false,
+            ),
+            Kind::StageExecutor { .. }
+            | Kind::UndeclaredFailureClass(_)
+            | Kind::PredecessorAuthorityMissing(_)
+            | Kind::ResourceAdmissionMissing
+            | Kind::ConditionalExecution(_)
+            | Kind::ComputationPanic { .. }
+            | Kind::ComputationResultCapacity { .. }
+            | Kind::ComputationNestedStopped { .. } => (false, false, true),
+            Kind::ExecutionRequest(_)
+            | Kind::UnknownStage
+            | Kind::StageAlreadyCompleted
+            | Kind::PredecessorIncomplete(_)
+            | Kind::RequiredCapability(_)
+            | Kind::RequiredDomain(_)
+            | Kind::InputContract
+            | Kind::GraphProvider(_)
+            | Kind::PrimaryReadEvidence
+            | Kind::EffectEvidence
+            | Kind::InvariantEvidence
+            | Kind::LineageEvidence
+            | Kind::CostContract
+            | Kind::OutputContract
+            | Kind::TerminalContract
+            | Kind::DomainEvidence(_)
+            | Kind::ComputationAdmission(_)
+            | Kind::ComputationWorkExhausted { .. }
+            | Kind::ComputationCancelled { .. }
+            | Kind::ComputationDeadline { .. }
+            | Kind::ParallelFrontierShape
+            | Kind::NonDeterministicLowering
+            | Kind::ParallelProvider(_)
+            | Kind::ParallelNotAdmitted(_)
+            | Kind::ConditionalReentry(_) => (false, false, false),
         };
         for receipt in self.receipts.iter_mut().rev() {
             receipt.cancel_artifact_output();

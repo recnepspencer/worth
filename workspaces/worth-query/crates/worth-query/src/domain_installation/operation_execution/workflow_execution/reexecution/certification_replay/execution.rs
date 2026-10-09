@@ -32,6 +32,7 @@ pub(in crate::domain_installation::operation_execution) fn execute_admitted_repl
     workspace: &mut WorthQueryWorkspace,
     basis_relationship: WorthQueryReplayBasisRelationship,
     mut counters: WorthQueryCertificationReplayCounters,
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
 ) -> WorthQueryCertificationReplayOutcome<D, O, F, LR>
 where
     O: WorthQueryExecutableDomainOperation<D, F, Execution = WorthQueryWorkflowOperation> + 'static,
@@ -78,7 +79,7 @@ where
             ))
         }
     };
-    let replay_trace = match admitted.reexecute(intent.clone(), workspace) {
+    let replay_trace = match admitted.reexecute_in_advancement(phase, intent.clone(), workspace) {
         TransitionOutcome::Success(trace) => trace,
         TransitionOutcome::Denied(stop) => return TransitionOutcome::Denied(execution(stop)),
         TransitionOutcome::Deferred(WorthQueryWorkflowReexecutionStop::ConditionalDeferred {

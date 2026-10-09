@@ -1,5 +1,7 @@
 //! Deterministic schedules over the real owner boundaries.
 
+#[path = "operation_control/callback_rollback.rs"]
+mod callback_rollback;
 #[path = "operation_control/cancellation.rs"]
 mod cancellation;
 #[path = "operation_control/cancellation_progress.rs"]

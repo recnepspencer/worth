@@ -1,13 +1,11 @@
 //! Selected successor lineage address preparation before World publication.
 
+use super::PreparedComputationCustody;
 use super::{
     arc_bytes, denial, tree_insert_bytes, tree_work, CancelledLineageSlot,
     PreparedOutputLineageSlot,
 };
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
-use crate::domain_computation::primary_graph::application_contribution::{
-    PriorAbsence, SealedComputationRetention,
-};
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::InvalidationEditAdmission, ProductCoordinate, RecordedGeneration, RecordedOutput,
     RecordedSettlementIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
@@ -51,6 +49,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     lineage.drain_cancelled_slots(admission)?;
+    let computation_fork_scan_bound = lineage.prepay_computation_fork_scan(admission)?;
     // History no retained reader selects is freed before this address extends it.
     lineage.retire_unselected_generations(&source, coordinate.occurrence, admission)?;
     // Charge each selected lookup before performing it. No accumulated
@@ -238,10 +237,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         prepared_input_reuse_key: None,
         native_output_witness: None,
         actual_resources: None,
-        computation: Some(SealedComputationRetention::Absent(
-            PriorAbsence::NotProduced,
-        )),
-        computation_assigned: false,
+        computation: PreparedComputationCustody::Unassigned,
+        computation_fork_scan_bound,
         prior_computation: None,
         filled: false,
     })

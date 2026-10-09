@@ -16,6 +16,7 @@ use super::{
 };
 
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
+    /// Opens the installed runtime request once for the entire frontier.
     pub fn advance_admitted_frontier(
         mut self,
         stages: impl IntoIterator<Item = (String, WorthQueryWorkflowValue)>,
@@ -184,6 +185,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         let provider = match &self.parallel_posture {
             crate::domain_installation::operating_world::WorthQueryBoundWorkflowParallelPosture::Parallel(provider) => provider,
             crate::domain_installation::operating_world::WorthQueryBoundWorkflowParallelPosture::Sequential => {
+                // Installation seals a provider whenever the DAG has a parallel frontier.
                 unreachable!("an admitted parallel frontier carries its installed provider")
             }
         };
@@ -213,7 +215,17 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
         let prepared = self.prepare_frontier_computation(stages);
-        let step = prepared.compute().apply(execution, self, workspace, None)?;
+        let step = prepared
+            .compute(
+                execution
+                    .execution_request_for(&workspace.advancement_owner())
+                    .map_err(|cause| {
+                        self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(
+                            cause.into(),
+                        ))
+                    })?,
+            )
+            .apply(execution, self, workspace, None)?;
         self.active_parallel_admission = None;
         Ok(step)
     }
@@ -253,7 +265,10 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         Ok(())
     }
 
-    fn denial(&self, kind: WorthQueryWorkflowAdvanceDenialKind) -> WorthQueryWorkflowAdvanceDenial {
+    pub(super) fn denial(
+        &self,
+        kind: WorthQueryWorkflowAdvanceDenialKind,
+    ) -> WorthQueryWorkflowAdvanceDenial {
         WorthQueryWorkflowAdvanceDenial::new(kind, self.counters)
     }
 }

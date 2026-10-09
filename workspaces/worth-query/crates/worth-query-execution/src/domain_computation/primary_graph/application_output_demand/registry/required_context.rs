@@ -39,7 +39,33 @@ pub(in crate::domain_computation) struct RequiredOutputDemandContext {
     computation_prior: Option<ComputationPrior>,
     /// The run sealed with the handler's facts, for the record publication
     /// writes.
-    sealed_computation: Option<SealedComputationRetention>,
+    sealed_computation: HandlerComputationCustody,
+}
+
+enum HandlerComputationCustody {
+    AwaitingHandler,
+    Sealed(SealedComputationRetention),
+    Transferred,
+}
+
+impl HandlerComputationCustody {
+    fn seal(&mut self, computation: SealedComputationRetention) {
+        assert!(
+            matches!(self, Self::AwaitingHandler),
+            "one completed handler retention result"
+        );
+        *self = Self::Sealed(computation);
+    }
+    fn take(&mut self) -> SealedComputationRetention {
+        assert!(
+            matches!(self, Self::Sealed(_)),
+            "handler completion precedes the single publication transfer"
+        );
+        let Self::Sealed(computation) = std::mem::replace(self, Self::Transferred) else {
+            unreachable!()
+        };
+        computation
+    }
 }
 
 /// Both parts are issued together before an installed producer can execute.
@@ -148,10 +174,7 @@ impl RequiredOutputDemandContext {
         SealedComputationRetention,
         Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
     ) {
-        let sealed = self
-            .sealed_computation
-            .take()
-            .expect("completed handler facts are recorded before publication takes the single-assignment retention result");
+        let sealed = self.sealed_computation.take();
         (
             sealed,
             self.computation_prior
@@ -169,7 +192,7 @@ impl RequiredOutputDemandContext {
             self.completed_handler_facts.is_none(),
             "one completed handler read"
         );
-        self.sealed_computation = Some(computation);
+        self.sealed_computation.seal(computation);
         self.completed_decision_reuse = self.prepared_decision_reuse.take().and_then(|prepared| {
             boundary.seal_decision_reuse(prepared, self.decision_context_use.take()?)
         });
@@ -302,7 +325,7 @@ impl WorthQueryOutputDemandInterest {
             actual_resources: None,
             reuses_live_output_only: false,
             computation_prior: None,
-            sealed_computation: None,
+            sealed_computation: HandlerComputationCustody::AwaitingHandler,
         })
     }
 }

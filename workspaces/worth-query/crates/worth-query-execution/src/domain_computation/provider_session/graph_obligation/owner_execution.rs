@@ -28,6 +28,21 @@ impl WorthQueryGraphReadOwnerPort {
         }
     }
 
+    pub(super) fn execute_prepared<T>(
+        &self,
+        binding: &ApplicationSchemaBindingIdentity,
+        read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
+    ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
+        if &self.binding != binding {
+            return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
+        }
+        // Release graph custody before resuming a worker panic, so the read-only
+        // operation cannot poison the runtime for another root or request.
+        Ok(self
+            .source
+            .with_runtime_unwind_isolated(|runtime| read(runtime, &self.layout)))
+    }
+
     pub(super) fn execute<T>(
         &self,
         binding: &ApplicationSchemaBindingIdentity,

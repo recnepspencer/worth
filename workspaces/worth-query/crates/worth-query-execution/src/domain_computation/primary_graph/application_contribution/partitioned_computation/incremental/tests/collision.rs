@@ -143,7 +143,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
-    let prior = ComputationPrior::new(edition(), Ok(Arc::new(sealed.state)), None);
+    let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(sealed.state)), None);
     let next = attempt(&world, &installed, Some(prior));
     let full = attempt(&world, &installed, fresh());
     assert_eq!(next.outcome, full.outcome, "B must not carry A's result");

@@ -13,7 +13,6 @@ categories = ["data-structures", "science"]
 test-query-execution-observer = ["worth-query-execution/test-query-execution-observer"]
 
 [dependencies]
-worth-execution = { path = "../../../../crates/worth-execution" }
 arc-swap = "1"
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-installation = { path = "../worth-query-installation" }
@@ -22,6 +21,7 @@ worth-query-execution = { path = "../worth-query-execution" }
 worth-query-publication = { path = "../worth-query-publication" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
+worth-execution = { path = "../../../../crates/worth-execution" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
 worth-signal = { path = "../../../../crates/worth-signal" }

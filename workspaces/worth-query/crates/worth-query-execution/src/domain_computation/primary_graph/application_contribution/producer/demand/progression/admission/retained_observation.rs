@@ -240,6 +240,7 @@ where
             at,
             &selected.identity,
             Family::IDENTITY,
+            0, // This retained-read admission starts a new handle with no executions.
         );
         let mut admission = self.demand_request_admission();
         let observed_source = self

@@ -3,6 +3,7 @@
 //! and keeps the run seal retains; a moved fact is the retained fact standing
 //! in for an older one.
 
+use crate::domain_computation::primary_graph::output_lineage::custodied_state_for_test;
 use std::sync::{Arc, Mutex};
 
 use worth_execution::PartitionItemId;
@@ -19,7 +20,10 @@ use super::super::{
     WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationDenial,
     WorthQueryPartitionedComputationOwner,
 };
-use super::observed::partitioned_computation_runs_on_this_thread_for_test as runs;
+use super::observed::{
+    partitioned_computation_runs_on_this_thread_for_test as runs,
+    partitioned_computation_tree_work_on_this_thread_for_test as tree_runs,
+};
 use super::{
     ComputationPrior, SealedComputationRun, WorthQueryPartitionedComputationFullCause as Cause,
     WorthQueryPartitionedComputationRun as Run,
@@ -169,6 +173,7 @@ struct Attempt {
     /// The work the projection's reader charged.
     work: crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork,
     runs: Vec<(Run, Option<ExecutionReport>)>,
+    tree_runs: Vec<super::tree_report::WorthQueryPartitionedTreeRun>,
     gathered: Vec<u64>,
     sealed: Result<Option<SealedComputationRun>, ()>,
 }
@@ -265,6 +270,7 @@ where
         .unwrap();
     installed.owner.gathered().lock().unwrap().clear();
     runs();
+    tree_runs();
     ComputationPrior::hand_in_test(prior);
     SealedComputationRun::keep_in_test(None);
     let (outcome, projection, work) = world
@@ -298,6 +304,7 @@ where
         outcome,
         work,
         runs: runs(),
+        tree_runs: tree_runs(),
         gathered,
         sealed,
     }
@@ -331,7 +338,7 @@ fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
             WorthQueryApplicationObservedFact::SourceEntity { entity_id },
         );
     }
-    ComputationPrior::new(edition(), Ok(Arc::new(state)), None)
+    ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None)
 }
 
 fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
@@ -356,6 +363,7 @@ mod interruption;
 mod request_memory;
 mod reroute;
 mod tree_memory;
+mod tree_work;
 mod unobservable;
 mod wide;
 

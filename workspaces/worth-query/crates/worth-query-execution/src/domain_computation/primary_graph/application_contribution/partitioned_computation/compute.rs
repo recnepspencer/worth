@@ -187,6 +187,7 @@ where
                         (reducer.identity)(),
                         reducer.combine,
                         declared_bytes,
+                        cause,
                     )
                     .map_err(|denial| {
                         // The reduce pattern contains its kernels' panics:

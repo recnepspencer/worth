@@ -3,6 +3,10 @@ mod decision_read_set;
 mod direct_attempt;
 mod execution_attempt_identity;
 mod graph_obligation;
+pub(in crate::domain_computation) use graph_obligation::{
+    WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
+    WorthQueryPreparedSessionRead,
+};
 pub(crate) mod graph_provider;
 mod protocol;
 mod provisional_attempt;

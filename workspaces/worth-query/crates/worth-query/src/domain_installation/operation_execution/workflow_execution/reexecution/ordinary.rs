@@ -77,7 +77,7 @@ where
             })
     }
 
-    fn reexecute_in_advancement(
+    pub(in crate::domain_installation::operation_execution) fn reexecute_in_advancement(
         self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
             '_,

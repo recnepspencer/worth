@@ -81,7 +81,8 @@ where
     {
         let resource = WorthQueryPartitionedComputationDenial::Resource;
         let start = reader.run_start(&COMPARATOR);
-        let retained = Arc::clone(&self.prior.typed);
+        let retained_prior = self.prior.clone();
+        let retained = retained_prior.typed();
         let carried_membership =
             !self.membership_moved && reader.carry(&COMPARATOR, &retained.membership.charge);
         let (items, digests, membership) = if carried_membership {

@@ -245,41 +245,64 @@ pub fn replay_installed_workflow<
 where
     O: WorthQueryExecutableDomainOperation<D, F, Execution = WorthQueryWorkflowOperation> + 'static,
 {
-    let counters = WorthQueryCertificationReplayCounters {
-        authority_checks: 1,
-        operation_checks: 1,
-        basis_checks: 1,
-        ..Default::default()
-    };
-    let original_bound = &original.run.bound;
-    if original_bound.definition().canonical_identity() != bound.definition().canonical_identity() {
-        return denied(WorthQueryCertificationReplayAdmissionDenial::ForeignOperation);
-    }
-    if original_bound
-        .operation()
-        .domain_authority()
-        .runtime_authority()
-        != bound.operation().domain_authority().runtime_authority()
-    {
-        return denied(WorthQueryCertificationReplayAdmissionDenial::ForeignRuntime);
-    }
-    if original_bound.operation().installation_generation()
-        != bound.operation().installation_generation()
-    {
-        return denied(WorthQueryCertificationReplayAdmissionDenial::StaleInstallationGeneration);
-    }
-    if original_bound.basis().capability_digest() != bound.basis().capability_digest() {
-        return denied(WorthQueryCertificationReplayAdmissionDenial::UnsupportedBasisRelationship);
-    }
-    execute_admitted_replay(
-        original,
-        bound,
-        intent,
-        resources,
-        workspace,
-        WorthQueryReplayBasisRelationship::ExactAdmittedBasis,
-        counters,
-    )
+    let owner = workspace.advancement_owner();
+    owner
+        .with_advancement(|phase| {
+            let counters = WorthQueryCertificationReplayCounters {
+                authority_checks: 1,
+                operation_checks: 1,
+                basis_checks: 1,
+                ..Default::default()
+            };
+            let original_bound = &original.run.bound;
+            if original_bound.definition().canonical_identity()
+                != bound.definition().canonical_identity()
+            {
+                return denied(WorthQueryCertificationReplayAdmissionDenial::ForeignOperation);
+            }
+            if original_bound
+                .operation()
+                .domain_authority()
+                .runtime_authority()
+                != bound.operation().domain_authority().runtime_authority()
+            {
+                return denied(WorthQueryCertificationReplayAdmissionDenial::ForeignRuntime);
+            }
+            if original_bound.operation().installation_generation()
+                != bound.operation().installation_generation()
+            {
+                return denied(
+                    WorthQueryCertificationReplayAdmissionDenial::StaleInstallationGeneration,
+                );
+            }
+            if original_bound.basis().capability_digest() != bound.basis().capability_digest() {
+                return denied(
+                    WorthQueryCertificationReplayAdmissionDenial::UnsupportedBasisRelationship,
+                );
+            }
+            execute_admitted_replay(
+                original,
+                bound,
+                intent,
+                resources,
+                workspace,
+                WorthQueryReplayBasisRelationship::ExactAdmittedBasis,
+                counters,
+                &phase,
+            )
+        })
+        .unwrap_or_else(|cause| {
+            TransitionOutcome::Denied(
+                super::certification_replay::WorthQueryCertificationReplayStop::Execution(
+                    super::WorthQueryWorkflowReexecutionStop::Start(
+                        super::WorthQueryWorkflowStartDenial::new(
+                            super::WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
+                            Default::default(),
+                        ),
+                    ),
+                ),
+            )
+        })
 }
 
 fn enforce_query_replay_comparison(

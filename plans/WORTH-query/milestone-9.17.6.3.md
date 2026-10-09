@@ -1142,13 +1142,20 @@ read must be the fact seal observed, or the attempt fails.
 Retention belongs to Query. `worth-execution`'s persistent `ReductionTree` is
 the retained store: its nodes are shared, so a clone costs the same at any
 partition count. Query owns the retained tree value, its retained-byte charge
-and its eviction. A branch fork clones the tree, so the two branches share every
-node neither has replaced. No node store keyed by child identities is built.
-The lineage retention ledger alone bounds the retained state: one reservation
-per record, and a refusal evicts to full recomputation. Publication moves the
-prior record's reservation only when that record still holds exactly the state
-the run built from. `maximum_retained_bytes` bounds one partition's result and
-nothing else.
+and its eviction. A fork stores its parent's captured coordinate without
+copying state. A first child run selects the latest local record, including a
+named absence, or follows exact captured origins recursively. Basis and snapshot
+checks govern reuse before the inherited tree is cloned for an edit. No node
+store keyed by child identities is built.
+The retained state and its charge share one lifetime behind one handle. A shared
+state is charged once, including its handle allocation; diverged states are each
+charged in full, so shared nodes
+can be charged once per state. Retained bytes charged are at most the sum over
+distinct live states. A sole, unpinned, exact displaced prior can transfer its
+reservation only after consuming its final holder. Shared or fork-pinned priors
+keep their custody and the successor reserves afresh. A refusal evicts only the
+incoming state. `maximum_retained_bytes` bounds one partition's result and nothing
+else.
 
 A partition whose recomputed encoding equals its previous encoding stops
 propagation, so nothing above it recombines.
@@ -1310,7 +1317,7 @@ executor and no second pool survives.
 | Process authority | Active workers across all layers never exceed the authority's width |
 | Lease | Nested work draws from its parent's cap and never exceeds it |
 | Threads | No worker thread is created after authority construction; none without a lease |
-| One inserted, deleted or changed partition | Expected O(log P) reduction nodes; the actual count is charged and reported |
+| One inserted, deleted or changed partition | Expected O(log P) nodes recombined, reported; charged work equals a full build's |
 | Unchanged recomputed encoding | Zero reduction nodes recombined above it |
 | Island merge or split | Only the islands involved recompute |
 | Unchanged coupling relation | Zero re-partitioning work |
@@ -2576,9 +2583,11 @@ The next phase may trust that the touched graph alone decides what recomputes.
     World recovery carries the original result, including a nondefault
     absence. Republication continues exact performed records with opaque
     readers or request-context use without inventing input-cutoff proofs.
-  - A born-stale demand refreshes and reports the lasting result of that
-    refresh. Its contact count includes every producer execution it initiated,
-    including executions before a rejoin or required-wave successor.
+  - An ordinary born-stale demand refreshes and reports its lasting result.
+    Recovery names one exact publication and refuses a refresh. A handle's
+    contact count includes its own producer executions over its lifetime,
+    including canceled executions and executions before a rejoin or successor.
+    Upstream work run by another caller is counted by no demand handle.
   - Managed computation access prevents whole-input cutoff. An edit, an
     input-preserving source change and a second edit keep the performed
     record's prior and run incrementally; no alias transfers its custody.
@@ -2590,17 +2599,41 @@ The next phase may trust that the touched graph alone decides what recomputes.
     Restore and republication run after seeded edit prefixes; full lifecycle
     interleaving belongs to 6.12. Empty produced seals are unrepresentable;
     recording and retained-byte measurement have their own absence proofs.
-- **6.10** Report the tree work that ran, apart from the charge.
-  - Charged work stays the full-build count. Every exit of a tree update
-    (completed, denied, interrupted, rebuilt) yields one report holding
-    every attempt's metrics; an exit that omits them does not compile.
-  - Partition execution and tree execution are separate dimensions of the
-    report.
-  - The test's reducer counts its own combines, and reported work must
-    reconcile with that count. An update recombines at most its root path
-    and stops at an unchanged aggregate; insert and delete recombine their
-    root path with no cutoff.
-- **6.11** A fork reuses its parent's retained state.
+- **6.10** Report canonical tree work apart from the charge. *Completed.*
+  - Charged work stays the full-build count. Every edit and rebuild path
+    returns its outcome and work together. Owned attempt composition
+    preserves successful and failed native attempts; terminal construction
+    consumes the returned path once. Omitting an advancing attempt's
+    handover prevents continuing its consumed edit state.
+  - Partition execution and tree execution are separate observer dimensions.
+    Full partition execution has Full(cause, metrics); incremental execution
+    has Edited(metrics) or Rebuilt(cause, metrics). FullBuild is not an
+    incremental rebuild cause. Wide report sums never substitute for the
+    contractual full-build charge.
+  - Reports describe canonical serial-prefix work, excluding discarded
+    speculative parallel work. Independent reducer entries and completed
+    combine pairs reconcile completed runs exactly on every worker count,
+    and stopped serial runs exactly. Stopped parallel reports equal the
+    serial report at the same stop and do not exceed independent counts.
+    Every captured oracle run is reconciled, including faults and
+    differential histories.
+  - An edit refusal or arithmetic overflow falls back to a rebuild, which
+    decides the outcome; request interruption stays terminal. Rebuild causes
+    use Query's own denial classes, normalize equivalent native spellings,
+    and reserve WorkCounterOverflow for a native attempt counter. An
+    unrepresentable full-build estimate exceeds every u64 work ceiling.
+  - An update recombines at most its root path and stops at an unchanged
+    aggregate; insert and delete recombine their root path with no cutoff.
+    Per-edit bounds derive from the preceding Cartesian shape: update search
+    depth, deletion depth, and exact insertion search depth plus rotations
+    plus one. Recomputed identical bits perform zero combines.
+  - Uniform sampled identity sets at 1,024, 2,048 and 4,096 partitions use
+    128 independent sets per size. Random-treap depth moments determine the
+    mean ceiling of 2 ln P before execution, with a three-size Chebyshev
+    bound below 0.0037; fixtures never fit a measured ceiling. Carrying
+    workloads derive encoding declarations, kernel costs and Cartesian shape
+    work before execution.
+- **6.11** A fork reuses its parent's retained state. *Completed.*
   - In place already: the tree is retained under the lineage ledger with
     eviction, and a recomputed partition with the same canonical bits
     replaces nothing.
@@ -2611,8 +2644,19 @@ The next phase may trust that the touched graph alone decides what recomputes.
     share are charged once per state: retained bytes charged are at most the
     sum over distinct live states. This can refuse retention earlier than
     exact accounting and can never leave data uncharged.
-  - A child's first run takes the parent's state as its prior through the
-    same comparator and basis checks as any other reuse.
+  - A child's first run uses its local record first, including a named
+    absence. With none, it follows captured fork origins recursively through
+    the same comparator and basis checks as any other reuse. Existing fork
+    horizons pin the captured record; registration copies no state. Every
+    preparation, for any branch or slot, prepays a scan of 2 * forks + 1; a
+    denial fails publication. Publication reserves a distinct full state
+    when pinned. If forks exceed the prepared allowance, it reserves afresh
+    without scanning. Deletion and history retirement preserve reachable
+    ancestors.
+  - A stable alias co-holds its state, so the successor after an alias
+    always reserves afresh. A superseded pinned parent state stays charged
+    after its last descendant is deleted, until it leaves the history
+    window.
   - Two concurrent first writers of one branch cell both keep their
     publication's marks, and a poisoned registration lock recovers the same
     way at every acquisition.
@@ -2644,7 +2688,9 @@ The next phase may trust that partition-granular reuse is exact.
 - **7.4** Derived-view reconstruction runs as a leased map over unique roots in
   canonical order, and its worker pool is deleted. A worker receives a
   sealed prepared read; projection stays on the owner in entity order.
-  Empty the ratchet list.
+  Empty the ratchet list. Every safe point and charge in a worker is the
+  caller's request. Reads still serialize at each installed source until
+  7.6 adds Relational's pinned read. *Completed.*
 - **7.5** The workflow frontier runs on the authority.
   - The execution map takes owned `Send` inputs through the one backend the
     borrowed map uses, under every law of the borrowed map. *Completed.*
@@ -2655,7 +2701,9 @@ The next phase may trust that partition-granular reuse is exact.
     Purity of prepare and compute is a stated contract. *Completed.*
   - The compute steps of a frontier dispatch through the owned map under the
     request lease, charged by the map's law, with each stop cause distinct.
-    The serial loop is deleted.
+    The serial loop is deleted. Results are equal at every worker count
+    for an interruption present at dispatch; one that arrives while
+    members compute keeps prefix safety instead. *Completed.*
 - **7.6** Query passes the request lease from `advance` into Bridge, Relational
   and Signal. No Query seam runs without a lease; serial posture is a lease
   with a serial backing.
@@ -2663,7 +2711,9 @@ The next phase may trust that partition-granular reuse is exact.
     its final delivery. One carrier holds it for that whole scope, and a
     seam cannot be entered without it.
   - Relational's seams take it: query plan execution, index build and
-    commit.
+    commit. Relational offers one sealed pinned read capability, taken
+    under the source's lock and read without it; 7.4's workers hold it
+    in place of the owner's port, so their reads run concurrently.
   - Bridge's, Signal's and World's seams take it.
 - **7.7** Run the `compute` steps of each dependency-ready wave concurrently
   under the request lease, with nested partition work.

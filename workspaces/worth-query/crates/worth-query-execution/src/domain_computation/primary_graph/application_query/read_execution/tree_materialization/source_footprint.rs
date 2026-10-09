@@ -85,13 +85,7 @@ pub(super) fn collect_source_footprints(
                 Some(_) => {}
                 None => {
                     result_buffer
-                        .claim(
-                            source
-                                .entity_name
-                                .len()
-                                .saturating_add(source.aspect.as_str().len())
-                                .saturating_add(source.field.as_str().len()),
-                        )
+                        .claim(source.owned_capacity_bytes())
                         .map_err(|()| super::result_buffer_denial(root.result_path()))?;
                     footprint.aspects.push(source.clone());
                     work.charge_source_observation(1, root.result_path())?;
@@ -198,20 +192,22 @@ fn collect_node(
             .aspect_contract(field.entity(), field.aspect_key())
             .ok_or_else(|| projection_denial(field.result_path()))?
             .revision();
+        let entity_name = field.entity().to_owned();
+        let aspect = field.aspect_key().clone();
+        let field_key = field.field_key().clone();
         result_buffer
             .claim(
-                field
-                    .entity()
-                    .len()
-                    .saturating_add(field.aspect().len())
-                    .saturating_add(field.field().len()),
+                entity_name
+                    .capacity()
+                    .saturating_add(aspect.owned_allocation_capacity_bytes())
+                    .saturating_add(field_key.owned_allocation_capacity_bytes()),
             )
             .map_err(|()| super::result_buffer_denial(field.result_path()))?;
         footprint.aspects.push(WorthQueryObservedFieldRevision {
             entity: node.entity_id(),
-            entity_name: field.entity().to_owned(),
-            aspect: field.aspect_key().clone(),
-            field: field.field_key().clone(),
+            entity_name,
+            aspect,
+            field: field_key,
             contract_revision,
             native_revision: projection.entity_field_revision(
                 node.entity_id(),
@@ -263,27 +259,30 @@ fn collect_node(
                     projection_denial(relation.result_path())
                 }
             })?;
+        work.charge_source_observation(revision.work_units(), relation.result_path())?;
         if let Some(predicate) = relation.predicate() {
             let contract_revision = graph
                 .aspect_contract(relation.child_entity(), predicate.aspect_key())
                 .ok_or_else(|| projection_denial(relation.result_path()))?
                 .revision();
             for entity_id in projected.predicate_sources() {
+                let entity_name = relation.child_entity().to_owned();
+                let aspect = predicate.aspect_key().clone();
+                let field = predicate.field_key().clone();
                 result_buffer
                     .claim(
-                        relation
-                            .child_entity()
-                            .len()
-                            .saturating_add(predicate.aspect_key().as_str().len())
-                            .saturating_add(predicate.field_key().as_str().len()),
+                        entity_name
+                            .capacity()
+                            .saturating_add(aspect.owned_allocation_capacity_bytes())
+                            .saturating_add(field.owned_allocation_capacity_bytes()),
                     )
                     .map_err(|()| super::result_buffer_denial(relation.result_path()))?;
                 footprint.entities.push(*entity_id);
                 footprint.aspects.push(WorthQueryObservedFieldRevision {
                     entity: *entity_id,
-                    entity_name: relation.child_entity().to_owned(),
-                    aspect: predicate.aspect_key().clone(),
-                    field: predicate.field_key().clone(),
+                    entity_name,
+                    aspect,
+                    field,
                     contract_revision,
                     native_revision: projection.entity_field_revision(
                         *entity_id,
@@ -299,7 +298,6 @@ fn collect_node(
                 work.charge_source_observation(1, relation.result_path())?;
             }
         }
-        work.charge_source_observation(revision.work_units(), relation.result_path())?;
         let filtered_relation = relation.predicate().is_some();
         let mut endpoints = allocate_claimed_result_vector(
             result_buffer,

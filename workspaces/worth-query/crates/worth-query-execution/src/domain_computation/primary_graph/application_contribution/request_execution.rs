@@ -43,7 +43,9 @@ pub(in crate::domain_computation::primary_graph) use advancement::{
     with_serial_host_advancement, with_world_advancement,
 };
 
-pub use advancement::{WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase};
+pub use advancement::{
+    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
+};
 
 /// One request's execution, borrowed from the World owner the request entry
 /// holds for the request's duration.
@@ -273,6 +275,7 @@ impl QueryDispatch<'_> {
         identity: R,
         combine: Combine,
         max_value_bytes: u64,
+        cause: super::partitioned_computation::WorthQueryPartitionedComputationFullCause,
     ) -> Result<Reduced<R, Combine, E>, WorkCeilingDenial>
     where
         T: Sync + ChargedBytes,
@@ -287,17 +290,20 @@ impl QueryDispatch<'_> {
             .map(|seed| (seed, kernel.clone(), identity.clone(), combine.clone()));
         let ceiling = ExecutionWorkCeiling::new(ceiling);
         let held = tree.held.as_mut();
+        let mapped = super::partitioned_computation::FullTreeMapWork::default();
         let run = |lease: Option<&ExecutionResourceLease<'_>>| {
-            map.run_reduce_holding(
+            let outcome = map.run_reduce_holding(
                 lease,
                 inputs.held,
                 held,
-                kernel,
+                |input, context| mapped.kernel(input, context, &kernel),
                 identity,
                 combine,
                 max_value_bytes,
                 0,
-            )
+            );
+            super::partitioned_computation::observe_full_tree(cause, &outcome, &mapped);
+            outcome
         };
         let reduced = match &self.form {
             DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),
@@ -334,15 +340,13 @@ impl QueryDispatch<'_> {
 
 #[cfg(feature = "test-query-execution-observer")]
 pub use advancement::{
-    advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test,
+    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
 };
 
 #[cfg(test)]
 pub(crate) use advancement::with_test_advancement;
 
 pub use advancement::with_bootstrap_advancement;
-
 
 pub use advancement::WorthQueryBootstrapAdvancementPhase;
 

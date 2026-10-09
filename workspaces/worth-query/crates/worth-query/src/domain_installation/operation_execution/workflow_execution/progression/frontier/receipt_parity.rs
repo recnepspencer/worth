@@ -32,7 +32,10 @@ fn full_receipt_evidence_matches_reference_on_success_and_failure() {
                 (
                     worth_proof::TransitionOutcome::Success(reference_outcome),
                     worth_proof::TransitionOutcome::Success(phased),
-                ) => assert_eq!(phased.counters(), reference_outcome.counters()),
+                ) => assert_eq!(
+                    super::owner_counters(phased.counters()),
+                    super::owner_counters(reference_outcome.counters())
+                ),
                 (
                     worth_proof::TransitionOutcome::Failed(reference_outcome),
                     worth_proof::TransitionOutcome::Failed(phased),
@@ -42,7 +45,10 @@ fn full_receipt_evidence_matches_reference_on_success_and_failure() {
                     worth_proof::TransitionOutcome::Denied(phased),
                 ) => {
                     assert_eq!(phased.kind(), reference_outcome.kind());
-                    assert_eq!(phased.counters(), reference_outcome.counters());
+                    assert_eq!(
+                        super::owner_counters(phased.counters()),
+                        super::owner_counters(reference_outcome.counters())
+                    );
                     assert_eq!(
                         phased.executed_effects().len(),
                         reference_outcome.executed_effects().len()
@@ -65,7 +71,10 @@ fn full_receipt_evidence_matches_reference_on_success_and_failure() {
                 assert_eq!(actual.output_semantics(), expected.output_semantics());
                 assert_eq!(actual.result_state(), expected.result_state());
                 assert_eq!(actual.warnings(), expected.warnings());
-                assert_eq!(actual.counters(), expected.counters());
+                assert_eq!(
+                    super::owner_counters(actual.counters()),
+                    super::owner_counters(expected.counters())
+                );
                 assert_eq!(
                     actual.predecessor_stage_identities(),
                     expected.predecessor_stage_identities()

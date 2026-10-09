@@ -28,11 +28,35 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     runs: ComputationRuns,
     /// What the producer that runs the projection retained, for the first
     /// partitioned computation to take.
-    prior: Option<ComputationPrior>,
-    prior_handed: bool,
+    prior: ComputationPriorCustody,
     /// Where that computation leaves its completed run, when a producer runs
     /// the projection.
     deposit: Option<ComputationDeposit>,
+}
+
+/// A reader either has no producer, owns the handed prior, or has consumed it.
+#[derive(Default)]
+enum ComputationPriorCustody {
+    #[default]
+    NoProducer,
+    Handed(ComputationPrior),
+    Taken,
+}
+
+pub(in crate::domain_computation::primary_graph) enum ComputationPriorUnavailable {
+    NoProducerPrior,
+    PriorAlreadyTaken,
+}
+impl ComputationPriorUnavailable {
+    pub(in crate::domain_computation::primary_graph) fn suppression(&self) -> Suppression {
+        match self {
+            Self::NoProducerPrior => Suppression::NoProducerPrior,
+            Self::PriorAlreadyTaken => Suppression::PriorAlreadyTaken,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn full_cause(&self) -> crate::domain_computation::primary_graph::application_contribution::WorthQueryPartitionedComputationFullCause{
+        PriorAbsence::Suppressed(self.suppression()).full_cause()
+    }
 }
 
 /// What became of one decision read. A field, entity or relation read
@@ -59,9 +83,8 @@ impl DecisionReads {
         prior: ComputationPrior,
     ) -> Self {
         Self {
-            prior: Some(prior),
+            prior: ComputationPriorCustody::Handed(prior),
             deposit: Some(ComputationDeposit::new()),
-            prior_handed: true,
             ..Self::default()
         }
     }
@@ -166,16 +189,21 @@ impl<Schema, Operation>
     /// later invocations get NoPriorHanded.
     pub(in crate::domain_computation::primary_graph) fn take_computation_prior(
         &mut self,
-    ) -> Result<ComputationPrior, crate::domain_computation::primary_graph::application_contribution::WorthQueryPartitionedComputationFullCause>{
-        use crate::domain_computation::primary_graph::application_contribution::WorthQueryPartitionedComputationFullCause as Cause;
-        self.decision_facts
-            .prior
-            .take()
-            .ok_or(if self.decision_facts.prior_handed {
-                Cause::NoPriorHanded
-            } else {
-                Cause::NoProducerPrior
-            })
+    ) -> Result<ComputationPrior, ComputationPriorUnavailable> {
+        match &mut self.decision_facts.prior {
+            ComputationPriorCustody::NoProducer => {
+                Err(ComputationPriorUnavailable::NoProducerPrior)
+            }
+            ComputationPriorCustody::Taken => Err(ComputationPriorUnavailable::PriorAlreadyTaken),
+            handed @ ComputationPriorCustody::Handed(_) => {
+                let ComputationPriorCustody::Handed(prior) =
+                    std::mem::replace(handed, ComputationPriorCustody::Taken)
+                else {
+                    unreachable!()
+                };
+                Ok(prior)
+            }
+        }
     }
 
     /// Where a completed run is left for seal, when a producer runs the

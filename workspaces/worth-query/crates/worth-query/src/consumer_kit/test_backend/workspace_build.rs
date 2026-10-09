@@ -60,14 +60,16 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
             !self.collection_entity_lookup_disabled,
             self.remask_projection,
         );
-        let mut runtime =
-            WorthQueryRuntimeBuilder::new(super::in_memory_test_product_world_resources())
-                .backend(backend)
-                .installed_product_bridge(
-                    product_bridge,
-                    crate::runtime::WorthQueryConditionalExecutionResources::development(),
-                )
-                .with_precompiled_domain_installations(installations);
+        let mut runtime = WorthQueryRuntimeBuilder::new(
+            self.product_world_resources
+                .unwrap_or_else(super::in_memory_test_product_world_resources),
+        )
+        .backend(backend)
+        .installed_product_bridge(
+            product_bridge,
+            crate::runtime::WorthQueryConditionalExecutionResources::development(),
+        )
+        .with_precompiled_domain_installations(installations);
         for install in self.runtime_installers {
             runtime = install.install(runtime, &source, &seed)?;
         }

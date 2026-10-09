@@ -161,3 +161,23 @@ mod tests {
         assert_eq!(denial.subject(), "root/relation[0]/field[0]");
     }
 }
+
+impl worth_execution::ChargedBytes for WorthQueryApplicationOneShotDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self {
+            kind: _kind,
+            authorization_denial,
+            query,
+            subject,
+        } = self;
+        (query.capacity() as u64)
+            .saturating_add(subject.capacity() as u64)
+            .saturating_add(authorization_denial.as_ref().map_or(0, |denial| {
+                // Box<T>'s implementation counts its allocation and T's payload.
+                denial.additional_charged_bytes()
+            }))
+    }
+}
+
+#[cfg(test)]
+mod capacity_tests;

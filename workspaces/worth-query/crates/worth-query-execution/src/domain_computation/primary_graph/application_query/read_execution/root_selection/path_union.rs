@@ -7,49 +7,33 @@ use worth_relational::facade::identity::EntityId;
 
 use super::{evidence::RootPathSourceBuilder, BoundedRootSelection, RootSelectionWork};
 use crate::domain_computation::primary_graph::application_query::{
+    read_execution::read_plan::ReadPlan,
     read_execution::{
         read_execution_denial, OneShotReadWorkObservation,
         WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
     },
-    WorthQueryAdmittedApplicationQueryPlan,
 };
 
-pub(super) fn select_root_path_union<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
+pub(super) fn select_root_path_union(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
+    plan: &ReadPlan<'_>,
     paths: &[WorthQueryInstalledRootPath],
     result_buffer: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
-    spent: Option<&OneShotReadWorkObservation>,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
     maximum_work: usize,
+    interruption: super::super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
-        .project_snapshot(plan.basis.snapshot_handle())
-        .ok_or_else(|| traversal_denial(plan.query.name()))?;
+        .project_snapshot(plan.snapshot)
+        .ok_or_else(|| traversal_denial(plan.name))?;
     let mut roots = BTreeMap::new();
-    let mut work = RootSelectionWork::new(maximum_work, plan.controls.request_scope(), spent);
+    let mut work = RootSelectionWork::new(maximum_work, interruption, spent);
     let mut set_source = capture_result_set.then(RootPathSourceBuilder::default);
     if let Some(source) = &mut set_source {
-        source.observe_entity(plan.scope.entity_id());
+        source.observe_entity(plan.root);
     }
     for path in paths {
         let terminal = traverse_path(
@@ -69,7 +53,7 @@ pub(super) fn select_root_path_union<
         for source in roots.values() {
             for entity in source.entities() {
                 if set_source.observe_entity(entity) {
-                    work.charge_source_copy(1, plan.query.name())?;
+                    work.charge_source_copy(1, plan.name)?;
                 }
             }
         }
@@ -100,27 +84,18 @@ pub(super) fn select_root_path_union<
     })
 }
 
-fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>(
+fn traverse_path(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
+    plan: &ReadPlan<'_>,
     path: &WorthQueryInstalledRootPath,
     work: &mut RootSelectionWork,
     set_source: &mut Option<RootPathSourceBuilder>,
 ) -> Result<BTreeMap<EntityId, RootPathSourceBuilder>, WorthQueryApplicationReadExecutionDenial> {
     let mut seed = RootPathSourceBuilder::default();
-    seed.observe_entity(plan.scope.entity_id());
-    let mut frontier = BTreeMap::from([(plan.scope.entity_id(), seed)]);
+    seed.observe_entity(plan.root);
+    let mut frontier = BTreeMap::from([(plan.root, seed)]);
     apply_guards(
         runtime,
         projection,
@@ -174,7 +149,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
                 .bounded_outgoing_relations_for_frontier_at_version(
                     &anchors,
                     layout.kind,
-                    plan.basis.version_id(),
+                    plan.snapshot.version_id(),
                     work.remaining(),
                 ),
             ApplicationQueryRootPathDirection::Reverse => runtime
@@ -182,7 +157,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
                 .bounded_incoming_relations_for_frontier_at_version(
                     &anchors,
                     layout.kind,
-                    plan.basis.version_id(),
+                    plan.snapshot.version_id(),
                     work.remaining(),
                 ),
         }
@@ -227,20 +202,11 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
     Ok(frontier)
 }
 
-fn apply_guards<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>(
+fn apply_guards(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    plan: &WorthQueryAdmittedApplicationQueryPlan<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >,
+    plan: &ReadPlan<'_>,
     path: &WorthQueryInstalledRootPath,
     after_step: usize,
     frontier: &mut BTreeMap<EntityId, RootPathSourceBuilder>,
@@ -302,7 +268,7 @@ fn apply_guards<Schema, Query, Parameters, QueryResult, Principal, PrincipalIden
             layout.entity_kind,
             &layout.locator,
             guard.expected(),
-            plan.basis.version_id(),
+            plan.snapshot.version_id(),
             work.remaining(),
         )
         .map_err(|_| work_limit_denial(guard.field().as_str()))?;

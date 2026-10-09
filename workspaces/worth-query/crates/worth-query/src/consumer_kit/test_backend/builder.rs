@@ -12,6 +12,8 @@ use super::runtime_installation::TestRuntimeInstaller;
 #[derive(Default)]
 pub struct WorthQueryInMemoryTestRuntimeBuilder {
     pub(super) schema: Option<WorthQueryTestBackendSchema>,
+    pub(super) product_world_resources:
+        Option<worth_query_execution::facade::integration::WorthQueryProductWorldResources>,
     pub(super) invariant_catalog: InvariantCatalog,
     pub(super) custom_invariants: Vec<CustomInvariantRegistration>,
     pub(super) domain_installers: Vec<TestDomainInstaller>,
@@ -28,6 +30,15 @@ pub fn in_memory_test_runtime() -> WorthQueryInMemoryTestRuntimeBuilder {
 }
 
 impl WorthQueryInMemoryTestRuntimeBuilder {
+    /// Installs the declared request policy and execution owner of this fixture.
+    pub fn product_world_resources(
+        mut self,
+        resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+    ) -> Self {
+        self.product_world_resources = Some(resources);
+        self
+    }
+
     /// Removes exact collection entity lookup to exercise honest reset paths.
     pub fn without_collection_entity_lookup(mut self) -> Self {
         self.collection_entity_lookup_disabled = true;

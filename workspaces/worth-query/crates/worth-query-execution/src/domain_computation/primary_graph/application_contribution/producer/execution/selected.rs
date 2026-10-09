@@ -38,6 +38,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         installed: &super::super::registry::InstalledProducerProvider<Schema>,
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
+        refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
     where
@@ -135,6 +136,7 @@ where
         installed: &super::super::registry::InstalledProducerProvider<Schema>,
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
+        refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
     {
@@ -181,6 +183,7 @@ where
             producer_contacts_in_this_demand,
             request_admission,
             |permission, matched_predecessors, admission| {
+                refresh_permission.map_err(ProducerExecutionStop::ExecutionStopped)?;
                 admission
                     .charge_external_work(
                         std::mem::size_of::<super::super::InstalledProducerEdition>() as u64,

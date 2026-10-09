@@ -2,12 +2,13 @@ use crate::basis_lifecycle::BasisOperationLane;
 use crate::runtime::WorthQueryWorkspace;
 
 use super::super::super::workflow_progression_state::WorthQueryWorkflowAdvanceStep;
+use super::super::super::WorthQueryWorkflowAdvanceDenialKind as Denial;
 use super::super::super::{
     WorthQueryAdmittedWorkflowStage, WorthQueryWorkflowAdvanceDenial, WorthQueryWorkflowRun,
     WorthQueryWorkflowStageComputePayload, WorthQueryWorkflowStageExecutorFailure,
     WorthQueryWorkflowValue,
 };
-use super::{ComputedWorkflowFrontier, WorkflowStageComputation, WorkflowStageComputationIdentity};
+use super::{ComputedWorkflowFrontier, WorkflowFrontierFailure, WorkflowStageComputationIdentity};
 
 /// Only consuming the complete sealed batch issues these canonical slots.
 pub(in crate::domain_installation::operation_execution) struct CanonicalWorkflowStageResult {
@@ -48,40 +49,39 @@ impl ComputedWorkflowFrontier {
         workspace: &mut WorthQueryWorkspace,
         mut admitted: Option<WorthQueryAdmittedWorkflowStage>,
     ) -> Result<WorthQueryWorkflowAdvanceStep, WorthQueryWorkflowAdvanceDenial> {
-        assert_eq!(
-            self.owner,
-            run.identity(),
-            "a sealed frontier belongs to one workflow run"
-        );
-        assert_eq!(
-            self.order.as_slice().len(),
-            self.members.len(),
-            "a sealed frontier has complete membership"
-        );
-        // The order proof travels intact from membership to application. Neither
-        // computation completion order nor host callbacks can select this order.
-        let mut members = self.members;
-        for stage in self.order.into_keys() {
-            let member = members
-                .remove(&stage)
-                .expect("sealed membership owns every canonical key");
+        if self.owner != run.identity() {
+            return Err(run.denial(Denial::ParallelFrontierShape));
+        }
+        let Some(charged_work) = run
+            .counters
+            .computation_charged_work
+            .checked_add(self.charged_work)
+        else {
+            return Err(run.denial(Denial::ComputationWorkExhausted {
+                stage_identity: None,
+                cause: worth_execution::MapKernelStop::WorkCounterOverflow,
+            }));
+        };
+        run.counters.computation_charged_work = charged_work;
+        let mut prefix_len = 0;
+        for member in self.prefix {
+            if member.rank != prefix_len {
+                return Err(run.denial(Denial::ParallelFrontierShape));
+            }
+            let Some(stage) = self.order.as_slice().get(member.rank) else {
+                return Err(run.denial(Denial::ParallelFrontierShape));
+            };
             let expected = WorkflowStageComputationIdentity {
                 frontier: self.identity.clone(),
                 stage: stage.clone(),
             };
-            let result = match member.computation {
-                WorkflowStageComputation::Ready(computed) => computed.into_result(&expected),
-                WorkflowStageComputation::Failed(failure) => Err(failure),
-                WorkflowStageComputation::Denied(kind) => return Err(run.denial(kind)),
-                WorkflowStageComputation::Unstarted => {
-                    unreachable!("application stops at the preparation failure")
-                }
-            }
-            .map_err(|failure| failure.into_executor_failure());
             let slot = CanonicalWorkflowStageResult {
-                stage,
+                stage: stage.clone(),
                 input: member.input,
-                result,
+                result: member
+                    .computed
+                    .into_result(&expected)
+                    .map_err(|failure| failure.into_executor_failure()),
             };
             let step = if let Some(admitted) = admitted.take() {
                 run.advance_once_with_admitted_computation(execution, admitted, slot, workspace)?
@@ -91,9 +91,58 @@ impl ComputedWorkflowFrontier {
             if matches!(step, WorthQueryWorkflowAdvanceStep::Deferred(_)) {
                 return Ok(step);
             }
+            prefix_len += 1;
         }
-        // A failed application returns above; dropping the iterator drops the
-        // whole suffix. No suffix material, receipt or charge reaches the run.
+        if let Some(stop) = self.stop {
+            let Some(rank) = stop.rank else {
+                return match stop.failure {
+                    WorkflowFrontierFailure::Denied(kind) => Err(run.denial(kind)),
+                    WorkflowFrontierFailure::Domain(_)
+                    | WorkflowFrontierFailure::Preparation(_) => {
+                        Err(run.denial(Denial::ParallelFrontierShape))
+                    }
+                };
+            };
+            if rank != prefix_len {
+                return Err(run.denial(Denial::ParallelFrontierShape));
+            }
+            let (Some(stage), Some(input)) = (self.order.as_slice().get(rank), stop.input) else {
+                return Err(run.denial(Denial::ParallelFrontierShape));
+            };
+            let result = match stop.failure {
+                WorkflowFrontierFailure::Domain(computed) => {
+                    let expected = WorkflowStageComputationIdentity {
+                        frontier: self.identity,
+                        stage: stage.clone(),
+                    };
+                    computed.into_result(&expected)
+                }
+                WorkflowFrontierFailure::Preparation(failure) => Err(failure),
+                WorkflowFrontierFailure::Denied(kind) => {
+                    // Even a preparation refusal crosses ordinary runtime and
+                    // stage admission, preserving the ordinary denial counters.
+                    if admitted.take().is_none() {
+                        let runtime = run.admit_stage_runtime_authority(workspace)?;
+                        run.admit_stage(stage, &input, runtime)?;
+                    }
+                    return Err(run.denial(kind));
+                }
+            }
+            .map_err(|failure| failure.into_executor_failure());
+            let slot = CanonicalWorkflowStageResult {
+                stage: stage.clone(),
+                input,
+                result,
+            };
+            return if let Some(admitted) = admitted.take() {
+                run.advance_once_with_admitted_computation(execution, admitted, slot, workspace)
+            } else {
+                run.advance_once_with_computation(execution, slot, workspace)
+            };
+        }
+        if prefix_len != self.order.as_slice().len() {
+            return Err(run.denial(Denial::ParallelFrontierShape));
+        }
         Ok(WorthQueryWorkflowAdvanceStep::Advanced)
     }
 }

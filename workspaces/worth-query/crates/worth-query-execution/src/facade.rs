@@ -290,3 +290,6 @@ pub mod integration {
         crate::domain_computation::primary_graph::classify_bridge_signal(evidence)
     }
 }
+
+pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
+pub use worth_execution::ExecutionRequest;
