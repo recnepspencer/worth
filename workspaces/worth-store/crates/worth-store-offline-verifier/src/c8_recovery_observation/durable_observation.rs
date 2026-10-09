@@ -31,7 +31,7 @@ pub(super) fn observe(bytes: &[u8]) -> RecoveryObserverArtifactEvidence {
         FREE_SPACE_MANIFEST_KIND => free_space_manifest_evidence(&frame),
         ROOT_ROUTING_KIND => routing_block_evidence(&frame, 88, 72),
         SEGMENT_MEMBERSHIP_KIND => routing_block_evidence(&frame, 40, 56),
-        FREE_SPACE_MEMBERSHIP_KIND => routing_block_evidence(&frame, 40, 56),
+        FREE_SPACE_MEMBERSHIP_KIND => routing_block_evidence(&frame, 40, 72),
         _ => None,
     };
     if let Some((generation_links, selector, membership)) = semantic {
@@ -114,7 +114,7 @@ fn root_manifest_evidence(
     Option<RecoveryObserverSelectorObservation>,
     RecoveryObserverManifestMembershipObservation,
 )> {
-    if frame.payload.len() != 320
+    if frame.payload.len() != 336
         || frame.identity == 0
         || physical_format::read_u64(frame.payload, 0)? != frame.identity
         || frame.payload[18..24] != [0; 6]
@@ -123,11 +123,11 @@ fn root_manifest_evidence(
         || frame.payload[156..160] != [0; 4]
         || frame.payload[161..168] != [0; 7]
         || frame.payload[233..240] != [0; 7]
-        || frame.payload[297..304] != [0; 7]
+        || frame.payload[313..320] != [0; 7]
     {
         return None;
     }
-    let flag_offsets = [40, 120, 160, 232, 296];
+    let flag_offsets = [40, 120, 160, 232, 312];
     if flag_offsets.iter().any(|offset| frame.payload[*offset] > 1) {
         return None;
     }
@@ -195,7 +195,10 @@ fn extent_manifest_evidence(
     Option<RecoveryObserverSelectorObservation>,
     RecoveryObserverManifestMembershipObservation,
 )> {
-    if frame.payload.len() != 56 || frame.payload[48..] != [0; 8] || frame.identity == 0 {
+    if frame.payload.len() != 56
+        || !physical_format::read_u64(frame.payload, 48)?.is_power_of_two()
+        || frame.identity == 0
+    {
         return None;
     }
     let mut generation =
@@ -219,12 +222,18 @@ fn free_space_manifest_evidence(
     Option<RecoveryObserverSelectorObservation>,
     RecoveryObserverManifestMembershipObservation,
 )> {
-    if frame.payload.len() != 128
+    if frame.payload.len() != 168
         || frame.identity == 0
         || physical_format::read_u64(frame.payload, 0)? != frame.identity
         || frame.payload[22..24] != [0; 2]
         || frame.payload[65..72] != [0; 7]
         || frame.payload[64] > 1
+        || physical_format::read_u64(frame.payload, 144)? == 0
+        || physical_format::read_u64(frame.payload, 152)? == 0
+        || !physical_format::read_u64(frame.payload, 160)?.is_power_of_two()
+        || physical_format::read_u64(frame.payload, 152)?
+            % physical_format::read_u64(frame.payload, 160)?
+            != 0
     {
         return None;
     }
@@ -235,7 +244,7 @@ fn free_space_manifest_evidence(
         EvidenceDigestBuilder::new(b"worth.store.recovery-observer.manifest-membership.v1");
     membership.record(frame.payload);
     let member_count =
-        physical_format::read_u64(frame.payload, 24)?.saturating_add(u64::from(frame.payload[64]));
+        physical_format::read_u64(frame.payload, 24)?.checked_add(u64::from(frame.payload[64]))?;
     Some((
         generation.finish(),
         None,
@@ -307,8 +316,32 @@ fn reference_end(flag_offset: usize) -> usize {
         40 => 120,
         120 => 152,
         160 => 224,
-        232 => 296,
-        296 => 320,
+        232 => 312,
+        312 => 336,
         _ => flag_offset,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{free_space_manifest_evidence, DurableFrame, FREE_SPACE_MANIFEST_KIND};
+
+    #[test]
+    fn free_space_member_count_overflow_is_residue_not_semantic_evidence() {
+        let mut payload = [0_u8; 168];
+        payload[..8].copy_from_slice(&1_u64.to_le_bytes());
+        payload[24..32].copy_from_slice(&u64::MAX.to_le_bytes());
+        payload[64] = 1;
+        payload[144..152].copy_from_slice(&1_u64.to_le_bytes());
+        payload[152..160].copy_from_slice(&4096_u64.to_le_bytes());
+        payload[160..168].copy_from_slice(&4096_u64.to_le_bytes());
+        let frame = DurableFrame {
+            kind: FREE_SPACE_MANIFEST_KIND,
+            format: [2, 0, 0, 64, 0, 0, 1, 1, 1, 24],
+            identity: 1,
+            page_lsn: 1,
+            payload: &payload,
+        };
+        assert!(free_space_manifest_evidence(&frame).is_none());
     }
 }

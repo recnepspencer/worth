@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_execution::ExecutionArray;
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
@@ -22,6 +23,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+mod admitted_arrays;
 mod binding_proof;
 mod completion;
 mod computation_routing;
@@ -30,6 +32,9 @@ pub(in crate::domain_computation::primary_graph) use computation_routing::Comput
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
     ComputationFactAttribution, ComputationRead, SealedComputationFacts,
 };
+pub(in crate::domain_computation::primary_graph) mod request_liveness;
+mod retained_facts;
+pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
 mod decision_reuse;
 mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
@@ -46,7 +51,7 @@ mod source_facts;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
-use source_facts::{merge_source_facts, validate_source_facts};
+use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
 
 /// An in-progress decision read for one admitted operation, begun on a leased
 /// snapshot of the branch.
@@ -78,7 +83,7 @@ pub struct WorthQueryApplicationReadAttempt<
     installed_read_scopes:
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
-    source_facts: Vec<WorthQueryApplicationObservedFact>,
+    source_facts: SourceFacts,
     consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     _phase: PhantomData<fn() -> Phase>,
 }
@@ -86,7 +91,7 @@ pub struct WorthQueryApplicationReadAttempt<
 /// The sealed decision read set of one admitted operation: exactly the facts its
 /// installed reads cover, observed on one snapshot.
 ///
-/// Sealing checked the fact budget, that the facts cover the declared reads, and
+/// Sealing checked that the facts cover the declared reads and
 /// the operation's mutation preconditions. In the projected-mutation phase it
 /// begins the effect program that authors the candidate; an ordinary read-phase
 /// set cannot author effects.
@@ -99,8 +104,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
 > {
     pub(super) admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     pub(super) lease: WorthQueryApplicationSnapshotLease,
-    pub(super) installed_read_scopes: Vec<WorthQueryOperationGraphReadScope>,
-    pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
+    pub(super) installed_read_scopes: ExecutionArray<WorthQueryOperationGraphReadScope>,
+    pub(super) facts: ExecutionArray<WorthQueryApplicationObservedFact>,
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
@@ -157,7 +162,7 @@ where
                     admission.operation(),
                 )
             })?;
-        let source_facts = validate_source_facts(&mut admission, &lease)?;
+        let source_facts = SourceFacts::Admitted(validate_source_facts(&mut admission, &lease)?);
         Ok(WorthQueryApplicationReadAttempt {
             admission,
             lease,
@@ -200,13 +205,14 @@ where
     ///         Schema, SecondOperation,
     ///     >,
     /// ) {
-    ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection);
+    ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     /// }
     /// ```
     pub fn begin_projected_application_read_attempt<Operation, Input, Scope>(
         &self,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
             Schema,
@@ -258,10 +264,15 @@ where
                 )
             })?;
         let mut admission = admission;
+        let admitted_source_facts = validate_source_facts(&mut admission, &lease)?;
         let source_facts = merge_source_facts(
-            validate_source_facts(&mut admission, &lease)?,
+            admitted_source_facts,
             dependent_source_facts,
             admission.operation(),
+            super::retained_decision_facts::StorageControl::new(
+                allocation_policy,
+                Some(admission.publication_request()),
+            ),
         )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {

@@ -1,198 +1,132 @@
-//! Placing one staged intent into the overlay's indexes and the footprint.
-//!
-//! The overlay answers questions about records by looking them up, so every
-//! staged intent must first be filed under the record it concerns, and the
-//! transaction's footprint must learn the locus that intent claims. Those two
-//! acts belong together: an intent filed under a record without a matching
-//! locus would be invisible to admission, and a locus without a filing would
-//! bound work the overlay cannot find. Whether an entity intent authors its
-//! record or only observes it is not decided here: that answer belongs to
-//! `intent_locus`, which staging admission reads as well, so the overlay and
-//! the ceiling that bounds it cannot disagree about one staged intent.
-
-use std::collections::BTreeMap;
-
-use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, CreatedRelationRef, MutationIntent, RelationMutationIntent,
-};
-
-use super::intent_locus::{entity_intent_locus, EntityIntentLocus};
-use super::overlay::IntentLocation;
+//! Native typed indexing; key construction retains existing ClientKey/endpoint
+//! semantics. Newly cloned nested keys remain explicitly outside backing admission.
 use super::{
-    RelationalTransactionFootprint, RelationalTransactionReadLocus, RelationalTransactionWriteLocus,
+    index_row::{IndexKey, IndexRow, IntentLocation},
+    intent_locus::{entity_intent_locus, EntityIntentLocus},
+    RelationalTransactionStagingDenial as Denial,
+};
+use crate::transactions::data::{
+    CreateIntent, CreatedEntityRef, CreatedRelationRef, MutationIntent, RecordRef,
+    RelationMutationIntent, WorkerIntentBatch,
 };
 
-pub(super) fn index_intent(
+pub(super) fn index_batch(
+    batch: &WorkerIntentBatch,
+    batch_index: usize,
+    mut emit: impl FnMut(IndexRow) -> Result<(), Denial>,
+) -> Result<(), Denial> {
+    let mut ordinal = 0usize;
+    for (intent_index, intent) in batch.intents.iter().enumerate() {
+        let location = IntentLocation {
+            batch_index,
+            intent_index,
+        };
+        index_intent(intent, &mut |key, observes| {
+            let next = ordinal.checked_add(1).ok_or(Denial::CardinalityOverflow)?;
+            emit(IndexRow {
+                key,
+                location,
+                ordinal,
+                observes,
+            })?;
+            ordinal = next;
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+fn index_intent(
     intent: &MutationIntent,
-    location: IntentLocation,
-    entity_mutations: &mut BTreeMap<EntityId, Vec<IntentLocation>>,
-    relation_mutations: &mut BTreeMap<RelationId, Vec<IntentLocation>>,
-    created_entities: &mut BTreeMap<CreatedEntityRef, Vec<IntentLocation>>,
-    created_relations: &mut BTreeMap<CreatedRelationRef, Vec<IntentLocation>>,
-    footprint: &mut RelationalTransactionFootprint,
-) {
+    emit: &mut impl FnMut(IndexKey, bool) -> Result<(), Denial>,
+) -> Result<(), Denial> {
     match intent {
         MutationIntent::Entity(entity) => match entity_intent_locus(entity) {
-            EntityIntentLocus::Write(id) => {
-                entity_mutations.entry(id).or_default().push(location);
-                footprint.record_write(RelationalTransactionWriteLocus::Existing(
-                    crate::transactions::data::RecordRef::Entity(id),
-                ));
-            }
-            EntityIntentLocus::Read(id) => {
-                entity_mutations.entry(id).or_default().push(location);
-                footprint.record_read(RelationalTransactionReadLocus::Existing(
-                    crate::transactions::data::RecordRef::Entity(id),
-                ));
-            }
+            EntityIntentLocus::Write(id) => emit(IndexKey::Entity(id), false)?,
+            EntityIntentLocus::Read(id) => emit(IndexKey::Entity(id), true)?,
         },
         MutationIntent::Relation(relation) => {
-            let id = relation_id(relation);
-            relation_mutations.entry(id).or_default().push(location);
-            footprint.record_write(RelationalTransactionWriteLocus::Existing(
-                crate::transactions::data::RecordRef::Relation(id),
-            ));
+            let id = match relation {
+                RelationMutationIntent::UpdateEndpoints(intent) => intent.relation_id,
+                RelationMutationIntent::ApplyAspectPatch(intent) => intent.relation_id,
+                RelationMutationIntent::Delete(intent) => intent.relation_id,
+            };
+            emit(IndexKey::Relation(id), false)?;
         }
-        MutationIntent::Create(create) => index_create(
-            create,
-            location,
-            created_entities,
-            created_relations,
-            footprint,
-        ),
         MutationIntent::Materialization(intent) => match intent.record() {
-            crate::transactions::data::RecordRef::Entity(id) => {
-                entity_mutations.entry(id).or_default().push(location);
-                footprint.record_write(RelationalTransactionWriteLocus::Existing(
-                    crate::transactions::data::RecordRef::Entity(id),
-                ));
-            }
-            crate::transactions::data::RecordRef::Relation(id) => {
-                relation_mutations.entry(id).or_default().push(location);
-                footprint.record_write(RelationalTransactionWriteLocus::Existing(
-                    crate::transactions::data::RecordRef::Relation(id),
-                ));
-            }
+            RecordRef::Entity(id) => emit(IndexKey::Entity(id), false)?,
+            RecordRef::Relation(id) => emit(IndexKey::Relation(id), false)?,
         },
+        MutationIntent::Create(create) => index_create(create, emit)?,
     }
+    Ok(())
 }
-
 fn index_create(
     create: &CreateIntent,
-    location: IntentLocation,
-    created_entities: &mut BTreeMap<CreatedEntityRef, Vec<IntentLocation>>,
-    created_relations: &mut BTreeMap<CreatedRelationRef, Vec<IntentLocation>>,
-    footprint: &mut RelationalTransactionFootprint,
-) {
+    emit: &mut impl FnMut(IndexKey, bool) -> Result<(), Denial>,
+) -> Result<(), Denial> {
     match create {
-        CreateIntent::Entity(spec) => record_created_entity(
-            CreatedEntityRef {
+        CreateIntent::Entity(spec) => emit(
+            IndexKey::CreatedEntity(CreatedEntityRef {
                 partition_id: spec.partition_id,
                 kind_id: spec.kind_id,
                 client_key: spec.client_key.clone(),
-            },
-            location,
-            created_entities,
-            footprint,
-        ),
-        CreateIntent::EntityAspects(spec) => record_created_entity(
-            CreatedEntityRef {
+            }),
+            false,
+        )?,
+        CreateIntent::EntityAspects(spec) => emit(
+            IndexKey::CreatedEntity(CreatedEntityRef {
                 partition_id: spec.partition_id,
                 kind_id: spec.kind_id,
                 client_key: spec.client_key.clone(),
-            },
-            location,
-            created_entities,
-            footprint,
-        ),
+            }),
+            false,
+        )?,
         CreateIntent::BulkEntities(spec) => {
             for client_key in &spec.client_keys {
-                record_created_entity(
-                    CreatedEntityRef {
+                emit(
+                    IndexKey::CreatedEntity(CreatedEntityRef {
                         partition_id: spec.partition_id,
                         kind_id: spec.kind_id,
                         client_key: client_key.clone(),
-                    },
-                    location,
-                    created_entities,
-                    footprint,
-                );
+                    }),
+                    false,
+                )?;
             }
         }
-        CreateIntent::Relation(spec) => record_created_relation(
-            CreatedRelationRef {
+        CreateIntent::Relation(spec) => emit(
+            IndexKey::CreatedRelation(CreatedRelationRef {
                 partition_id: spec.partition_id,
                 kind_id: spec.kind_id,
                 client_key: spec.client_key.clone(),
                 source: spec.source.clone(),
                 target: spec.target.clone(),
-            },
-            location,
-            created_relations,
-            footprint,
-        ),
-        CreateIntent::RelationAspects(spec) => record_created_relation(
-            CreatedRelationRef {
+            }),
+            false,
+        )?,
+        CreateIntent::RelationAspects(spec) => emit(
+            IndexKey::CreatedRelation(CreatedRelationRef {
                 partition_id: spec.partition_id,
                 kind_id: spec.kind_id,
                 client_key: spec.client_key.clone(),
                 source: spec.source.clone(),
                 target: spec.target.clone(),
-            },
-            location,
-            created_relations,
-            footprint,
-        ),
+            }),
+            false,
+        )?,
         CreateIntent::BulkRelations(spec) => {
             for (client_key, (source, target)) in spec.client_keys.iter().zip(&spec.endpoints) {
-                record_created_relation(
-                    CreatedRelationRef {
+                emit(
+                    IndexKey::CreatedRelation(CreatedRelationRef {
                         partition_id: spec.partition_id,
                         kind_id: spec.kind_id,
                         client_key: client_key.clone(),
                         source: source.clone(),
                         target: target.clone(),
-                    },
-                    location,
-                    created_relations,
-                    footprint,
-                );
+                    }),
+                    false,
+                )?;
             }
         }
     }
-}
-
-fn record_created_entity(
-    key: CreatedEntityRef,
-    location: IntentLocation,
-    created_entities: &mut BTreeMap<CreatedEntityRef, Vec<IntentLocation>>,
-    footprint: &mut RelationalTransactionFootprint,
-) {
-    created_entities
-        .entry(key.clone())
-        .or_default()
-        .push(location);
-    footprint.record_write(RelationalTransactionWriteLocus::CreatedEntity(key));
-}
-
-fn record_created_relation(
-    key: CreatedRelationRef,
-    location: IntentLocation,
-    created_relations: &mut BTreeMap<CreatedRelationRef, Vec<IntentLocation>>,
-    footprint: &mut RelationalTransactionFootprint,
-) {
-    created_relations
-        .entry(key.clone())
-        .or_default()
-        .push(location);
-    footprint.record_write(RelationalTransactionWriteLocus::CreatedRelation(key));
-}
-
-fn relation_id(intent: &RelationMutationIntent) -> RelationId {
-    match intent {
-        RelationMutationIntent::UpdateEndpoints(intent) => intent.relation_id,
-        RelationMutationIntent::ApplyAspectPatch(intent) => intent.relation_id,
-        RelationMutationIntent::Delete(intent) => intent.relation_id,
-    }
+    Ok(())
 }

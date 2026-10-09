@@ -35,9 +35,14 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
                     ),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).expect("main update")
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("main update")
     };
     let feature_update = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -55,9 +60,14 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
                     ),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).expect("feature update")
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("feature update")
     };
 
     assert!(runtime
@@ -153,9 +163,14 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
                     ),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).expect("main update")
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("main update")
     };
     let feature_update = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -173,9 +188,14 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
                     ),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).expect("feature update")
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("feature update")
     };
 
     let feature_head = runtime

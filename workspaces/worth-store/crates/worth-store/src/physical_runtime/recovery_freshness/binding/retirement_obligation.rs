@@ -1,21 +1,40 @@
-use crate::physical_runtime::durability::{unresolved_retirements, RetiredArtifact};
+use crate::physical_runtime::durability::{RetiredArtifact, RetirementRecord};
 
-/// An unresolved `store.physical.retirement.v1` intent reconstructed from WAL.
+use super::StoreRecoveryBindingSampleDenial;
+
+/// An unresolved `store.physical.retirement.v2` intent reconstructed from WAL.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StoreRecoveryRetirementObligation {
     source_root: u64,
     artifact: StoreRecoveryRetiredArtifact,
     bytes: u64,
+    release: Option<crate::physical_runtime::durability::RetirementReleaseProjection>,
 }
 
 /// The exact displaced generation a retirement intent claimed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StoreRecoveryRetiredArtifact {
-    Segment { segment: u64, generation: u64 },
-    Extent { extent: u64, generation: u64 },
+    Segment {
+        segment: u64,
+        generation: u64,
+    },
+    Extent {
+        extent: u64,
+        generation: u64,
+        range: worth_store_physical_format::ExtentArenaRange,
+    },
+    Arena {
+        arena: u64,
+        generation: u64,
+    },
 }
 
 impl StoreRecoveryRetirementObligation {
+    pub const fn release(
+        &self,
+    ) -> Option<crate::physical_runtime::durability::RetirementReleaseProjection> {
+        self.release
+    }
     pub const fn source_root(&self) -> u64 {
         self.source_root
     }
@@ -32,92 +51,96 @@ impl StoreRecoveryRetiredArtifact {
     pub const fn segment(&self) -> Option<u64> {
         match *self {
             Self::Segment { segment, .. } => Some(segment),
-            Self::Extent { .. } => None,
+            Self::Extent { .. } | Self::Arena { .. } => None,
         }
     }
     /// The extent id when the retired generation is an extent.
     pub const fn extent(&self) -> Option<u64> {
         match *self {
             Self::Extent { extent, .. } => Some(extent),
-            Self::Segment { .. } => None,
+            Self::Segment { .. } | Self::Arena { .. } => None,
         }
     }
     pub const fn generation(&self) -> u64 {
         match *self {
-            Self::Segment { generation, .. } | Self::Extent { generation, .. } => generation,
+            Self::Segment { generation, .. }
+            | Self::Extent { generation, .. }
+            | Self::Arena { generation, .. } => generation,
         }
     }
 }
 
-pub(super) fn retirement_obligations(
-    records: Vec<crate::physical_runtime::durability::RetirementRecord>,
-) -> Box<[StoreRecoveryRetirementObligation]> {
-    unresolved_retirements(records)
-        .into_iter()
-        .map(|record| StoreRecoveryRetirementObligation {
-            source_root: record.source_root,
-            artifact: match record.artifact {
-                RetiredArtifact::Segment {
-                    segment,
-                    generation,
-                } => StoreRecoveryRetiredArtifact::Segment {
-                    segment,
-                    generation,
-                },
-                RetiredArtifact::Extent { extent, generation } => {
-                    StoreRecoveryRetiredArtifact::Extent { extent, generation }
+/// Arrival order remains authoritative within each retired artifact. The caller
+/// funds both prepared buffers; this fold neither grows nor boxes either one.
+pub(super) fn fold_retirement_records(
+    mut records: Vec<(usize, RetirementRecord)>,
+    mut output: Vec<StoreRecoveryRetirementObligation>,
+) -> Result<Vec<StoreRecoveryRetirementObligation>, StoreRecoveryBindingSampleDenial> {
+    if !output.is_empty() {
+        return Err(StoreRecoveryBindingSampleDenial::InvalidWalMember);
+    }
+    if output.capacity() < records.len() {
+        return Err(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit);
+    }
+    records.sort_unstable_by_key(|(ordinal, record)| (record.artifact, *ordinal));
+    let mut position = 0;
+    while position < records.len() {
+        let artifact = records[position].1.artifact;
+        let mut intent: Option<RetirementRecord> = None;
+        while position < records.len() && records[position].1.artifact == artifact {
+            let record = records[position].1;
+            if !record.completion {
+                if intent.is_none() {
+                    intent = Some(record);
                 }
+            } else if intent.is_some_and(|intent| {
+                intent.source_root == record.source_root
+                    && intent.bytes == record.bytes
+                    && intent.release == record.release
+            }) {
+                intent = None;
+            }
+            position += 1;
+        }
+        if let Some(record) = intent {
+            if output.len() == output.capacity() {
+                return Err(StoreRecoveryBindingSampleDenial::RecoveryMemoryLimit);
+            }
+            output.push(project_retirement(record));
+        }
+    }
+    drop(records);
+    Ok(output)
+}
+
+fn project_retirement(record: RetirementRecord) -> StoreRecoveryRetirementObligation {
+    StoreRecoveryRetirementObligation {
+        source_root: record.source_root,
+        artifact: match record.artifact {
+            RetiredArtifact::Segment {
+                segment,
+                generation,
+            } => StoreRecoveryRetiredArtifact::Segment {
+                segment,
+                generation,
             },
-            bytes: record.bytes,
-        })
-        .collect::<Vec<_>>()
-        .into_boxed_slice()
+            RetiredArtifact::Extent {
+                extent,
+                generation,
+                range,
+            } => StoreRecoveryRetiredArtifact::Extent {
+                extent,
+                generation,
+                range,
+            },
+            RetiredArtifact::Arena { arena, generation } => {
+                StoreRecoveryRetiredArtifact::Arena { arena, generation }
+            }
+        },
+        bytes: record.bytes,
+        release: record.release,
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::physical_runtime::durability::{RetiredArtifact, RetirementRecord};
-
-    use super::{retirement_obligations, StoreRecoveryRetiredArtifact};
-
-    #[test]
-    fn completion_removes_the_reconstructed_obligation() {
-        let intent = RetirementRecord {
-            artifact: RetiredArtifact::Segment {
-                segment: 1,
-                generation: 7,
-            },
-            completion: false,
-            source_root: 3,
-            bytes: 32,
-        };
-        let completion = RetirementRecord {
-            completion: true,
-            ..intent
-        };
-        assert_eq!(retirement_obligations(vec![intent]).len(), 1);
-        assert!(retirement_obligations(vec![intent, completion]).is_empty());
-    }
-
-    #[test]
-    fn an_extent_obligation_keeps_its_artifact_kind() {
-        let intent = RetirementRecord {
-            artifact: RetiredArtifact::Extent {
-                extent: 1,
-                generation: 7,
-            },
-            completion: false,
-            source_root: 3,
-            bytes: 32,
-        };
-        let obligations = retirement_obligations(vec![intent]);
-        assert_eq!(
-            obligations[0].artifact(),
-            StoreRecoveryRetiredArtifact::Extent {
-                extent: 1,
-                generation: 7
-            }
-        );
-        assert_eq!(obligations[0].artifact().segment(), None);
-    }
-}
+mod tests;

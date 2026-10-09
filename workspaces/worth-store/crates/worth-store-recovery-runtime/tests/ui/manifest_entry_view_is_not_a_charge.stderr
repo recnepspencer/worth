@@ -1,0 +1,26 @@
+error[E0308]: mismatched types
+  --> tests/ui/manifest_entry_view_is_not_a_charge.rs:12:35
+   |
+12 |     let _ = walk_entry::read_root(view, 7);
+   |             --------------------- ^^^^ expected `Performed<EntriesCharged, ..., ...>`, found `ViewEntryCap`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `Performed<EntriesCharged, ManifestEntryAuthority, ChargeTarget>`
+              found struct `ViewEntryCap`
+note: function defined here
+  --> tests/ui/manifest_entry/walk_entry.rs
+   |
+   | pub fn read_root(charge: ChargeToken, generation: u64) {
+   |        ^^^^^^^^^ -------------------
+
+error[E0599]: no method named `charge` found for struct `ViewEntryCap` in the current scope
+  --> tests/ui/manifest_entry_view_is_not_a_charge.rs:13:18
+   |
+13 |     let _ = view.charge(ROOT_ENTRY, ChargeTarget::root(7));
+   |                  ^^^^^^ method not found in `ViewEntryCap`
+   |
+  ::: tests/ui/manifest_entry/../../../src/orchestration/planning/page_observation/walk_entry/manifest_entry_budget.rs
+   |
+   | pub struct ViewEntryCap {
+   | ----------------------- method `charge` not found for this struct

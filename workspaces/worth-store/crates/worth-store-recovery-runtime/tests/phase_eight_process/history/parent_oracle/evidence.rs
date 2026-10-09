@@ -1,4 +1,6 @@
-use worth_store_offline_verifier::RecoveryObserverReport;
+#[path = "evidence/report_comparison.rs"]
+mod report_comparison;
+pub(crate) use report_comparison::ParentSemanticMismatch;
 
 use super::{
     checkpoint_evidence::CheckpointEvidence, evidence_digest::DigestBuilder,
@@ -112,43 +114,6 @@ impl ParentPhysicalEvidence {
 
     pub(crate) const fn current_root_generation(&self) -> Option<u64> {
         self.current_root_generation
-    }
-
-    pub(crate) fn matches(&self, report: &RecoveryObserverReport) -> bool {
-        self.artifact_identity_count == report.artifact_identity_count()
-            && self.artifact_identity_digest == report.artifact_identity_digest()
-            && self.generation_link_count == report.generation_link_count()
-            && self.generation_link_digest == report.generation_link_digest()
-            && self.selector_count == report.durable_selector_count()
-            && self.linked_selector_count == report.linked_selector_count()
-            && self.unpaired_selector_link_count == report.unpaired_selector_link_count()
-            && self.durable_selector_digest == report.durable_selector_digest()
-            && self.selector_store_identity == report.selector_store_identity()
-            && self.current_root_generation == report.current_root_generation()
-            && self.checkpoint_count == report.checkpoint_count()
-            && self.checkpoint_page_count == report.checkpoint_page_count()
-            && self.checkpoint_covered_lsn_start == report.checkpoint_covered_lsn_start()
-            && self.checkpoint_covered_lsn_end == report.checkpoint_covered_lsn_end()
-            && self.checkpoint_redo_lsn == report.checkpoint_redo_lsn()
-            && self.durable_checkpoint_lsn == report.durable_checkpoint_lsn()
-            && self.checkpoint_coverage_digest == report.checkpoint_coverage_digest()
-            && self.wal_segment_count == report.wal_segment_count()
-            && self.valid_wal_prefix_bytes == report.valid_wal_prefix_bytes()
-            && self.observed_wal_bytes == report.observed_wal_bytes()
-            && self.wal_frame_count == report.wal_frame_count()
-            && self.wal_first_lsn == report.wal_first_lsn()
-            && self.wal_last_lsn == report.wal_last_lsn()
-            && self.wal_digest == report.valid_wal_prefix_digest()
-            && self.page_lsn_count == report.page_lsn_count()
-            && self.page_lsn_minimum == report.page_lsn_minimum()
-            && self.page_lsn_maximum == report.page_lsn_maximum()
-            && self.page_lsn_digest == report.page_lsn_digest()
-            && self.manifest_count == report.manifest_count()
-            && self.manifest_member_count == report.manifest_member_count()
-            && self.manifest_digest == report.manifest_membership_digest()
-            && self.residue_artifact_count == report.residue_artifact_count()
-            && self.residue_bytes == report.residue_bytes()
-            && self.residue_digest == report.residue_digest()
     }
 
     pub(crate) fn publication_digest(&self, unresolved_payload: bool) -> [u8; 32] {

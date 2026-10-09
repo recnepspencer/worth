@@ -186,6 +186,7 @@ impl WorthQueryApplicationOutputLineage {
             |output| output.facts(),
         );
         let mut recorded = RecordedOutput {
+            native_prior_checkpoint: None,
             computation_source,
             performed_origin: None,
             _retained_capacity: None,
@@ -316,6 +317,7 @@ impl WorthQueryApplicationOutputLineage {
             .or_default();
         let slot = records.len();
         let recorded = RecordedOutput {
+            native_prior_checkpoint: None,
             computation_source: super::ComputationSourceEvidence::unavailable(),
             performed_origin: None,
             _retained_capacity: None,

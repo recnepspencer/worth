@@ -10,7 +10,7 @@ use std::sync::Arc;
 use worth_relational::facade::mvcc::{CompanionBranchCell, CompanionPreflightStop};
 
 use super::super::RecordedSettlementIdentity;
-use super::admission::IndexAdmission;
+use super::admission::{IndexAdmission, RetainedIndexAdmission};
 use super::derived::PreparedSettlementRegistration;
 use super::index_capacity::arc_bytes;
 use super::mark_state::{EqualOutputLink, MarkState, SettlementMarks};
@@ -133,7 +133,7 @@ impl SourceInvalidationOwner {
     ) -> Result<(Arc<MarkState>, Option<PreparedSettlementRegistration>), SettlementRegistrationStop>
     {
         let image = cell.read_image();
-        let before = admission.charged_bytes();
+        let before = admission.index_checkpoint();
         admission.bytes(
             arc_bytes::<MarkState>()
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
@@ -160,7 +160,7 @@ impl SourceInvalidationOwner {
                 }
                 Retirable::Chain(members) => {
                     for member in &members {
-                        admission.ordered_remove::<Identity, Arc<EqualOutputLink>>(
+                        admission.index_remove::<Identity, Arc<EqualOutputLink>>(
                             state.equal_links.len(),
                         )?;
                         state.equal_links.remove(member);
@@ -207,7 +207,7 @@ impl SourceInvalidationOwner {
 fn mark_superseded(
     state: &mut MarkState,
     identity: &Identity,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<bool, CompanionPreflightStop> {
     admission.ordered_read(state.settlements.len())?;
     let Some(row) = state
@@ -217,13 +217,13 @@ fn mark_superseded(
     else {
         return Ok(false);
     };
-    admission.bytes(
+    admission.index_bytes(
         arc_bytes::<SettlementMarks>()
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
     )?;
     let mut row = (**row).clone();
     row.superseded = true;
-    admission.ordered_edit::<Identity, Arc<SettlementMarks>>(state.settlements.len())?;
+    admission.index_edit::<Identity, Arc<SettlementMarks>>(state.settlements.len())?;
     state
         .settlements
         .insert(Arc::clone(identity), Arc::new(row));
@@ -245,7 +245,7 @@ enum Retirable {
 fn retirable(
     state: &MarkState,
     identity: &Identity,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<Retirable, CompanionPreflightStop> {
     if !unread(state, identity, admission)? {
         return Ok(Retirable::No);
@@ -302,7 +302,7 @@ fn retirable(
 fn unread(
     state: &MarkState,
     identity: &Identity,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<bool, CompanionPreflightStop> {
     admission.ordered_read(state.settlements.len())?;
     if !state
@@ -324,7 +324,7 @@ fn unread(
 fn splice_equality(
     state: &mut MarkState,
     identity: &Identity,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     admission.ordered_read(state.equal_links.len())?;
     let Some(link) = state.equal_links.get(identity).cloned() else {
@@ -338,7 +338,7 @@ fn splice_equality(
         let prior = link.prior.clone();
         relink(state, next, |link| link.prior = prior, admission)?;
     }
-    admission.ordered_remove::<Identity, Arc<EqualOutputLink>>(state.equal_links.len())?;
+    admission.index_remove::<Identity, Arc<EqualOutputLink>>(state.equal_links.len())?;
     state.equal_links.remove(identity);
     Ok(())
 }
@@ -348,7 +348,7 @@ fn relink(
     state: &mut MarkState,
     identity: &Identity,
     edit: impl FnOnce(&mut EqualOutputLink),
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     admission.ordered_read(state.equal_links.len())?;
     let Some(link) = state.equal_links.get(identity) else {
@@ -357,15 +357,15 @@ fn relink(
     let mut link = (**link).clone();
     edit(&mut link);
     if link.prior.is_none() && link.next.is_none() {
-        admission.ordered_remove::<Identity, Arc<EqualOutputLink>>(state.equal_links.len())?;
+        admission.index_remove::<Identity, Arc<EqualOutputLink>>(state.equal_links.len())?;
         state.equal_links.remove(identity);
         return Ok(());
     }
-    admission.bytes(
+    admission.index_bytes(
         arc_bytes::<EqualOutputLink>()
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
     )?;
-    admission.ordered_edit::<Identity, Arc<EqualOutputLink>>(state.equal_links.len())?;
+    admission.index_edit::<Identity, Arc<EqualOutputLink>>(state.equal_links.len())?;
     state
         .equal_links
         .insert(Arc::clone(identity), Arc::new(link));

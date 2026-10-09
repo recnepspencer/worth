@@ -7,8 +7,14 @@ use worth_store::physical_runtime::{
     PhysicalCheckpointRequest, PhysicalCheckpointStartDenial, PhysicalMutationIdempotencyMaterial,
     PhysicalWalGroupAppendOutcome, PhysicalWalGroupBarrierOutcome,
 };
+use worth_store_physical_format::{
+    decode_checkpoint_certificate, CheckpointCertificateKind, ReleaseCheckpointCertificateV1,
+};
 
 use super::super::{configuration, serving_from_initialization};
+
+#[path = "checkpoint_capture/residency_denial.rs"]
+mod residency_denial;
 
 #[test]
 fn checkpoint_without_durable_wal_is_rejected_before_candidate_creation() {
@@ -93,8 +99,21 @@ fn durable_wal_captures_through_the_ordinary_facade_into_verified_checkpoint_byt
     assert_eq!(published.dirty_records() as usize, compaction_index - 1);
     assert_eq!(
         published.binding_compaction().binding_count() as usize,
-        records.len() - compaction_index - 2
+        records.iter().filter(|record| record[9] == 4).count()
     );
+    let certificates: Vec<_> = records.iter().filter(|record| record[9] == 7).collect();
+    let [certificate] = certificates.as_slice() else {
+        panic!("fresh-genesis checkpoint must attest exactly one NoRelease marker");
+    };
+    let (kind, payload) = decode_checkpoint_certificate(certificate).unwrap();
+    assert_eq!(kind, CheckpointCertificateKind::ReleasedDrop);
+    let ReleaseCheckpointCertificateV1::NoRelease(marker) =
+        ReleaseCheckpointCertificateV1::decode(payload).unwrap()
+    else {
+        panic!("a world without released drops must carry positive NoRelease custody");
+    };
+    assert_eq!(marker.checkpoint(), basis.identity());
+    assert_eq!(marker.root_generation(), basis.source().root().generation());
     assert_eq!(published.binding_compaction().generation().get(), 1);
     assert_eq!(published.binding_compaction().unresolved_binding_count(), 1);
     assert_eq!(published.binding_compaction().terminal_binding_count(), 0);

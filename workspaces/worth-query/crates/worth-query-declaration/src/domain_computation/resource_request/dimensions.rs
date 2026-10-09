@@ -130,6 +130,13 @@ pub struct WorthQuerySemanticScaleRequest {
 }
 
 impl WorthQuerySemanticScaleRequest {
+    /// States only the explicitly inserted dimensions.
+    pub fn selective() -> Self {
+        Self {
+            values: BTreeMap::new(),
+        }
+    }
+
     pub fn bounded(value: u64) -> Self {
         Self {
             values: WorthQuerySemanticScaleAxis::ALL
@@ -141,6 +148,12 @@ impl WorthQuerySemanticScaleRequest {
 
     pub fn with(mut self, axis: WorthQuerySemanticScaleAxis, value: u64) -> Self {
         self.values.insert(axis, value);
+        self
+    }
+
+    /// Omits an aggregate execution-work budget; other scale axes stay explicit.
+    pub fn without_work_budget(mut self) -> Self {
+        self.values.remove(&WorthQuerySemanticScaleAxis::WorkItems);
         self
     }
 
@@ -159,6 +172,13 @@ pub struct WorthQueryResourceLimitRequest {
 }
 
 impl WorthQueryResourceLimitRequest {
+    /// States only the explicitly inserted dimensions.
+    pub fn selective() -> Self {
+        Self {
+            values: BTreeMap::new(),
+        }
+    }
+
     pub fn bounded(value: u64) -> Self {
         Self {
             values: WorthQueryResourceDimension::ALL

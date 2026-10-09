@@ -32,10 +32,16 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
     );
     let mut blocked = test_owner_begin_transaction_for_main(&runtime);
     blocked
-        .push_batch(batch_create("blocked-after-abandonment"))
+        .push_batch(
+            batch_create("blocked-after-abandonment"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(runtime
-        .prepare_branch_transaction(blocked)
+        .prepare_branch_transaction(
+            blocked,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap_err()
         .detail()
         .contains("requires explicit owner settlement"));
@@ -172,9 +178,17 @@ fn interruption_after_movement_retains_its_pending_settlement() {
             )
             .unwrap();
         transaction
-            .push_batch(batch_create("interrupted-after-linearization"))
+            .push_batch(
+                batch_create("interrupted-after-linearization"),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
-        let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+        let candidate = runtime
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let reference_before = runtime
             .branch_reference_state(&BranchId("main".to_owned()))
             .unwrap();
@@ -293,10 +307,16 @@ fn perform_main_write(
 ) -> crate::mvcc::PerformedRelationalCommit {
     let mut transaction = test_owner_begin_transaction_for_main(runtime);
     transaction
-        .push_batch(batch_create(name))
+        .push_batch(
+            batch_create(name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares");
     match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

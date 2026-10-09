@@ -71,12 +71,9 @@ impl super::BranchBoundRelationalTransaction {
         entity_id: EntityId,
     ) -> Result<RelationalTransactionEntityRead, CommitConflict> {
         self.footprint
-            .admit_read(
-                super::RelationalTransactionReadLocus::Existing(
-                    crate::transactions::data::RecordRef::Entity(entity_id),
-                ),
-                self.maximum_footprint_loci,
-            )
+            .admit_read(super::RelationalTransactionReadLocus::Existing(
+                crate::transactions::data::RecordRef::Entity(entity_id),
+            ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
         let base = root.partition_state(entity_id.partition_id).and_then(|partition| {
@@ -109,12 +106,9 @@ impl super::BranchBoundRelationalTransaction {
         relation_id: RelationId,
     ) -> Result<RelationalTransactionRelationRead, CommitConflict> {
         self.footprint
-            .admit_read(
-                super::RelationalTransactionReadLocus::Existing(
-                    crate::transactions::data::RecordRef::Relation(relation_id),
-                ),
-                self.maximum_footprint_loci,
-            )
+            .admit_read(super::RelationalTransactionReadLocus::Existing(
+                crate::transactions::data::RecordRef::Relation(relation_id),
+            ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
         let base = root.partition_state(relation_id.partition_id).and_then(|partition| {
@@ -149,10 +143,10 @@ impl super::BranchBoundRelationalTransaction {
         super::RelationalTransactionStagingDenial,
     > {
         let entity = self.overlay.canonical_created_entity_ref(entity);
-        self.footprint.admit_read(
-            super::RelationalTransactionReadLocus::CreatedEntity(entity.clone()),
-            self.maximum_footprint_loci,
-        )?;
+        self.footprint
+            .admit_read(super::RelationalTransactionReadLocus::CreatedEntity(
+                entity.clone(),
+            ))?;
         Ok(self.overlay.created_entity(&entity))
     }
 
@@ -164,10 +158,10 @@ impl super::BranchBoundRelationalTransaction {
         super::RelationalTransactionStagingDenial,
     > {
         let relation = self.overlay.canonical_created_relation_ref(relation);
-        self.footprint.admit_read(
-            super::RelationalTransactionReadLocus::CreatedRelation(relation.clone()),
-            self.maximum_footprint_loci,
-        )?;
+        self.footprint
+            .admit_read(super::RelationalTransactionReadLocus::CreatedRelation(
+                relation.clone(),
+            ))?;
         Ok(self.overlay.created_relation(&relation))
     }
 }

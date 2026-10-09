@@ -38,6 +38,8 @@ mod integrity_validation;
 mod operation_accounting;
 mod pin_lifecycle;
 mod public_api;
+mod range_invalidation;
+mod recovery_admission;
 mod writeback_claim;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -174,12 +176,13 @@ pub(crate) struct PoolInner {
 struct PoolState {
     frames: frame_table::FrameTable,
     accounting: PhysicalResidencyAccounting,
-    evictable_head: Option<RecordFrameCoordinate>,
-    evictable_tail: Option<RecordFrameCoordinate>,
+    evictable_head: Option<frame_table::FrameSlotId>,
+    evictable_tail: Option<frame_table::FrameSlotId>,
     loading_frames: u32,
     next_loading_ordinal: u64,
     next_resident_generation: PhysicalResidentFrameGeneration,
     active_candidate_publications: u32,
+    recovery_operation_bytes_ceiling: u64,
     dirty_generation: PhysicalDirtyGeneration,
     accepting: bool,
     closed: bool,
@@ -195,8 +198,8 @@ struct FrameEntry {
     dirty_generation: Option<PhysicalDirtyGeneration>,
     writeback_claimed: bool,
     bytes: u64,
-    older_evictable: Option<RecordFrameCoordinate>,
-    newer_evictable: Option<RecordFrameCoordinate>,
+    older_evictable: Option<frame_table::FrameSlotId>,
+    newer_evictable: Option<frame_table::FrameSlotId>,
     loading_identity: Option<PhysicalFrameLoadingIdentity>,
     loading_waiters: u32,
     artifact_posture: FrameArtifactPosture,

@@ -15,6 +15,7 @@ pub struct PhysicalIntegrityValidationRecord {
     exact_scope_digest: PhysicalIntegrityValidationDigest,
     byte_range_digest: PhysicalIntegrityValidationDigest,
     mechanism: PhysicalIntegrityValidationMechanism,
+    extent_layout: Option<worth_store_physical_format::ExtentArenaFrameLayout>,
 }
 
 impl PhysicalIntegrityValidationRecord {
@@ -41,11 +42,24 @@ impl PhysicalIntegrityValidationRecord {
             exact_scope_digest,
             byte_range_digest,
             mechanism,
+            extent_layout: None,
         })
     }
 
     pub const fn artifact_family(self) -> PhysicalIntegrityArtifactFamily {
         self.scope.artifact_family()
+    }
+    pub(crate) fn with_extent_layout(
+        mut self,
+        layout: worth_store_physical_format::ExtentArenaFrameLayout,
+    ) -> Self {
+        self.extent_layout = Some(layout);
+        self
+    }
+    pub(crate) const fn extent_layout(
+        self,
+    ) -> Option<worth_store_physical_format::ExtentArenaFrameLayout> {
+        self.extent_layout
     }
 
     pub const fn declaration(self) -> PhysicalIntegrityFormatDeclaration {

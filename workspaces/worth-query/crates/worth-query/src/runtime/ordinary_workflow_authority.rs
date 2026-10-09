@@ -38,6 +38,7 @@ pub(crate) enum WorthQueryMergeAuthorityValidationError {
     ExecutionControlStopped(
         worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
     ),
+    TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind),
     RetentionBackpressure,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,

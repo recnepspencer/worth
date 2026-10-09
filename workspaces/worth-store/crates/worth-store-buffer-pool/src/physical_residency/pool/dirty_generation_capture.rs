@@ -6,6 +6,44 @@ struct DirtyGenerationSliceBuffer {
 }
 
 impl PhysicalResidencyPool {
+    /// Reserves only a useful capture window within the current native pool
+    /// envelope. The session and reservation remain bound to this exact pool.
+    pub fn begin_dirty_generation_capture_allocation(
+        &self,
+        session: &PhysicalDirtyGenerationCaptureSession,
+        maximum: std::num::NonZeroU64,
+    ) -> Result<MaintenanceAllocationGrant, PhysicalResidencyDenial> {
+        require_session_authority(&self.inner, session)?;
+        let basis_bytes = super::super::dirty_generation::dirty_frame_basis_bytes() as u64;
+        if maximum.get() < basis_bytes {
+            return Err(self.inner.record_denial(
+                PhysicalResidencyDenial::DirtyGenerationCaptureBudgetExceeded {
+                    required: basis_bytes,
+                    admitted: maximum.get(),
+                },
+            ));
+        }
+        let useful_bytes = u64::try_from(
+            session
+                .slot_limit()
+                .saturating_sub(session.next_slot())
+                .max(1),
+        )
+        .ok()
+        .and_then(|slots| slots.checked_mul(basis_bytes))
+        .ok_or_else(|| {
+            self.inner
+                .record_denial(PhysicalResidencyDenial::AllocationFailed)
+        })?;
+        let bytes = self
+            .inner
+            .reserve_dirty_capture_window(maximum.get().min(useful_bytes), basis_bytes)?;
+        Ok(MaintenanceAllocationGrant::from_reserved(
+            Arc::clone(&self.inner),
+            bytes,
+        ))
+    }
+
     /// Fixes a dirty-generation frontier without materializing its frame set.
     pub fn begin_dirty_generation_capture(
         &self,

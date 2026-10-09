@@ -297,7 +297,10 @@ pub(super) fn with_totals<Binding: RegionTotalsBinding>(
             })
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency(&demands)
-            .execute_in_program::<RegionTotalsProgram<Binding>>(&application);
+            .execute_in_program::<RegionTotalsProgram<Binding>>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         assert!(
             matches!(
                 &outcome,

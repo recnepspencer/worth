@@ -1,5 +1,12 @@
 //! Primary Graph application contracts.
 
+pub use crate::domain_computation::primary_graph::WorthQueryExecutionLeaseDenial;
+
+pub use crate::domain_computation::{
+    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
+    WorthQueryInvariantExecutionFailurePosture,
+};
+
 #[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::inexact_native_deliveries_on_this_thread_for_test;
 #[cfg(feature = "test-query-execution-observer")]
@@ -68,7 +75,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAuthorizationExplanationCause,
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseOutcome,
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationCommitAuthorityBinding,
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationBatchReadDenial,
+    WorthQueryApplicationBatchResult, WorthQueryApplicationCommitAuthorityBinding,
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
@@ -111,7 +119,10 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAccessReceipt,
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryBasisPosture, WorthQueryApplicationQueryConsistency,
+    WorthQueryApplicationQueryBasisPosture, WorthQueryApplicationQueryBatchAdmission,
+    WorthQueryApplicationQueryBatchLimits, WorthQueryApplicationQueryBatchMemory,
+    WorthQueryApplicationQueryBatchReadPlan, WorthQueryApplicationQueryBatchResourceDenial,
+    WorthQueryApplicationQueryBatchWork, WorthQueryApplicationQueryConsistency,
     WorthQueryApplicationQueryContinuation, WorthQueryApplicationQueryFreshness,
     WorthQueryApplicationQueryOmissionPosture, WorthQueryApplicationQueryResumeControls,
     WorthQueryApplicationQueryWorkEvidence, WorthQueryApplicationReadAttempt,
@@ -191,12 +202,15 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
     WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,
     WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
-    WorthQueryManagedApplicationRecoveryPerformed, WorthQueryManagedDerivedMemberToken,
-    WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
-    WorthQueryManagedDerivedViewDenial, WorthQueryManagedDerivedViewKey,
-    WorthQueryManagedDerivedViewReconciliation, WorthQueryManagedDerivedViewSnapshot,
-    WorthQueryMandatoryReview, WorthQueryMandatoryReviewAuthorizationDenial,
-    WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
+    WorthQueryManagedApplicationRecoveryPerformed,
+    WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
+    WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
+    WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
+    WorthQueryManagedDerivedViewSnapshot, WorthQueryMandatoryReview,
+    WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryMandatoryReviewOutcome,
+    WorthQueryMandatoryReviewProgram, WorthQueryMutationHandlerExecutionReport,
+    WorthQueryMutationHandlerProjectionWork, WorthQueryMutationHandlerWork,
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
@@ -208,8 +222,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandNotifications,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputDemandSettlement,
     WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
-    WorthQueryPerformedBranchAdoption, WorthQueryPerformedConditionalDefinitionPublication,
-    WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
+    WorthQueryPendingSourceExpectation, WorthQueryPerformedBranchAdoption,
+    WorthQueryPerformedConditionalDefinitionPublication, WorthQueryPreparedBranchAdoption,
+    WorthQueryPreparedBranchSetAdoption, WorthQueryPreparedEntitySelection,
     WorthQueryPreparedProgramMigration, WorthQueryPreparedRequiredOutputSource,
     WorthQueryPrimaryGraph, WorthQueryPrimaryGraphApplicationReadinessSnapshot,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
@@ -228,8 +243,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryPublicTemporalOperationAuthorization, WorthQueryPublicTemporalQueryAuthorization,
     WorthQueryReconstructedOutputEntity, WorthQueryRequestedElevation,
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
-    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQueryReviewedElevation, WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
+    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedBatchQueryAdmissionDenial,
+    WorthQueryRetainedGeneratedOutputEntity, WorthQueryReviewedElevation,
+    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
     WorthQuerySelectedApplicationProducer, WorthQuerySelectedProductOperation,
     WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
@@ -273,4 +289,5 @@ pub use crate::domain_computation::{
 };
 
 pub use crate::domain_computation::primary_graph::ExecutionRequest;
+pub use crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
 pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;

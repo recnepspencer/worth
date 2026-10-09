@@ -137,3 +137,29 @@ fn denied_custody_preparation_preserves_spent_local_counters_and_refunds_retenti
     assert_eq!(request.charged_work(), 5);
     assert_eq!(owner.resources.retained_capacity_bytes(), 0);
 }
+
+#[test]
+fn retained_index_subtotal_is_shared_but_scratch_and_separate_tickets_are_not_index() {
+    let owner = owner();
+    let mut request = owner.edit_admission();
+    request.index_bytes(13).unwrap();
+    request.admit_read_scratch(17).unwrap();
+    let checkpoint = request.index_checkpoint();
+    let mut publication = request
+        .carry_for_publication(&owner)
+        .unwrap()
+        .into_admission();
+    assert_eq!(publication.charged_index_bytes(), 13);
+    publication.index_bytes(23).unwrap();
+    assert_eq!(request.charged_index_bytes(), 36);
+    assert!(request.charged_bytes() > request.charged_index_bytes());
+    let before = request.charged_bytes();
+    assert!(matches!(
+        publication.record_index_bytes(u64::MAX),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow)
+    ));
+    assert_eq!(publication.charged_index_bytes(), 36);
+    assert_eq!(request.charged_index_bytes(), 36);
+    assert_eq!(request.charged_bytes(), before);
+    assert_eq!(request.index_bytes_since(checkpoint).unwrap(), 23);
+}

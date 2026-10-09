@@ -42,8 +42,6 @@ fn update_field(digest: &mut Sha256, value: &str) {
 enum LayoutMaterializationSourceAuthority {
     BootstrapCatalog(std::sync::Arc<worth_store_physical_format::PhysicalBootstrapCatalogIdentity>),
     BTreePublication(worth_store_physical_format::RootPublicationValidationWitness),
-    BTreeLookup(std::sync::Arc<crate::strategy::btree::execution::BaselineBTreeReadSourceReceipt>),
-    BTreeReplay(std::sync::Arc<crate::AdmittedBTreeReplayPhysicalSource>),
     LsmPublication(std::sync::Arc<worth_store_lsm_authority::PublishedLsmMembershipReplacement>),
     LsmReplay(std::sync::Arc<worth_store_lsm_authority::AdmittedLsmReplaySource>),
     ImportedBlob(std::sync::Arc<worth_store_blob_chunks::ImportedBlobWitness>),
@@ -79,34 +77,6 @@ impl LayoutMaterializationSourceIdentity {
             format_version: catalog.physical_format_version(),
             kind: LayoutMaterializationSourceKind::BTreeRoot(root),
             authority: LayoutMaterializationSourceAuthority::BTreePublication(publication),
-        }
-    }
-
-    pub(super) fn from_btree_lookup_source(
-        catalog: &BootstrapCatalogReadAdmission,
-        source: &crate::BaselineBTreeReadSource,
-    ) -> Self {
-        Self {
-            root_owner: source.root_reference().generation_owner(),
-            format_version: catalog.physical_format_version(),
-            kind: LayoutMaterializationSourceKind::BTreeRoot(source.root_reference()),
-            authority: LayoutMaterializationSourceAuthority::BTreeLookup(std::sync::Arc::new(
-                source.receipt().clone(),
-            )),
-        }
-    }
-
-    pub(super) fn from_btree_replay_source(
-        catalog: &BootstrapCatalogReadAdmission,
-        source: &crate::AdmittedBTreeReplayPhysicalSource,
-    ) -> Self {
-        Self {
-            root_owner: source.root_reference().generation_owner(),
-            format_version: catalog.physical_format_version(),
-            kind: LayoutMaterializationSourceKind::BTreeRoot(source.root_reference()),
-            authority: LayoutMaterializationSourceAuthority::BTreeReplay(std::sync::Arc::new(
-                source.clone(),
-            )),
         }
     }
 
@@ -182,27 +152,5 @@ impl LayoutMaterializationSourceIdentity {
 
     pub const fn kind(&self) -> LayoutMaterializationSourceKind {
         self.kind
-    }
-
-    pub fn btree_lookup_store_authority_identity(
-        &self,
-    ) -> Option<worth_store_authority::StoreCurrentAuthorityIdentity> {
-        match &self.authority {
-            LayoutMaterializationSourceAuthority::BTreeLookup(receipt) => {
-                Some(receipt.store_authority_identity())
-            }
-            _ => None,
-        }
-    }
-
-    pub(super) fn matches_btree_replay_source(
-        &self,
-        source: &crate::AdmittedBTreeReplayPhysicalSource,
-    ) -> bool {
-        matches!(
-            &self.authority,
-            LayoutMaterializationSourceAuthority::BTreeReplay(retained)
-                if retained.as_ref() == source
-        )
     }
 }

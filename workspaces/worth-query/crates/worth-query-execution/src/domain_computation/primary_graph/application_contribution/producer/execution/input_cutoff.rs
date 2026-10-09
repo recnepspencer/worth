@@ -33,9 +33,11 @@ fn fresh(
     key: Option<PreparedInputReuseKey>,
     context: Option<PreparedDecisionReuseContext>,
     prior: Option<ComputationPrior>,
+    producer: &'static str,
+    reason: &'static str,
 ) -> Result<ProducerInputProgression, ProducerExecutionStop> {
     if required_output.reuses_live_output_only() {
-        return Err(ProducerExecutionStop::LiveOutputNotReused);
+        return Err(ProducerExecutionStop::LiveOutputNotReused { producer, reason });
     }
     if let Some(prior) = prior {
         required_output.retain_computation_prior(prior);
@@ -99,7 +101,17 @@ where
     };
     let (key, context) = match (key, context) {
         (Some(key), Some(context)) => (key, context),
-        (key, context) => return fresh(required_output, source, key, context, prior),
+        (key, context) => {
+            return fresh(
+                required_output,
+                source,
+                key,
+                context,
+                prior,
+                Binding::IDENTITY,
+                "prepared input key or decision context unavailable",
+            )
+        }
     };
     admission
         .charge_external_work(4)
@@ -116,7 +128,15 @@ where
         )
         .map_err(cutoff_admission_denial)?;
     let Some(candidate) = candidate else {
-        return fresh(required_output, source, Some(key), Some(context), prior);
+        return fresh(
+            required_output,
+            source,
+            Some(key),
+            Some(context),
+            prior,
+            Binding::IDENTITY,
+            "prior input cutoff candidate unavailable",
+        );
     };
     // Eviction degrades to Fresh. Only a row holds the claims on what its
     // record consumed and answers its pending edges. A candidate of this
@@ -139,7 +159,15 @@ where
             None => false,
         };
         if !handed_off {
-            return fresh(required_output, source, Some(key), Some(context), prior);
+            return fresh(
+                required_output,
+                source,
+                Some(key),
+                Some(context),
+                prior,
+                Binding::IDENTITY,
+                "consumed-output settlement lost registry custody",
+            );
         }
     }
     // The Native owner authenticates and funds the exact issued handle once.
@@ -169,7 +197,15 @@ where
         .map_err(cutoff_denial)?;
     let verified = match decision {
         InputCutoffDecision::Fresh { key, context } => {
-            return fresh(required_output, source, Some(key), Some(context), prior);
+            return fresh(
+                required_output,
+                source,
+                Some(key),
+                Some(context),
+                prior,
+                Binding::IDENTITY,
+                "prior input cutoff verification requires fresh execution",
+            );
         }
         InputCutoffDecision::Reuse(verified) => verified,
     };
@@ -201,10 +237,8 @@ where
     let publication = address.prepare_record(fresh, operation, resources, admission)?;
     // Registry preparation is outside both lineage and Product guards.
     let mut prerequisites = required_output.prepare_prerequisites(
-        publication
-            .consumed_outputs()
-            .iter()
-            .map(|consumed| consumed.identity()),
+        publication.consumed_outputs().iter(),
+        source_owner,
         admission,
     )?;
     prerequisites.reserve_identity(publication.identity(), admission)?;

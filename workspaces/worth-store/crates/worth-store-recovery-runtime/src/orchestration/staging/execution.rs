@@ -12,6 +12,7 @@ use crate::progression::ClosedRecoveryStagingGeneration;
 use super::RecoveryStagingInput;
 
 mod counters;
+mod source_copy;
 
 pub(super) struct StagingExecution {
     pub(super) counters: PhysicalRecoveryStagingCounters,
@@ -34,7 +35,7 @@ impl ExecutionProgress {
                 planned_scheduler_commands: input.quiescence.staging_commands(),
                 ..PhysicalRecoveryStagingCounters::default()
             },
-            settlements: Vec::with_capacity(input.staging.commands().len()),
+            settlements: Vec::with_capacity(input.staging.materialization_count() as usize),
             content: Sha256::new(),
             media_handle_baseline: {
                 let observed = input.authority.media.handle_observation();
@@ -47,7 +48,7 @@ impl ExecutionProgress {
     }
 }
 
-pub(super) fn run(input: &RecoveryStagingInput) -> Result<StagingExecution, StagingExecution> {
+pub(super) fn run(input: &mut RecoveryStagingInput) -> Result<StagingExecution, StagingExecution> {
     if !super::command::exact_plan_commands(input)
         || input.cancellation == super::RecoveryStagingCancellation::Invalid
     {
@@ -58,6 +59,14 @@ pub(super) fn run(input: &RecoveryStagingInput) -> Result<StagingExecution, Stag
     }
     let mut progress = ExecutionProgress::new(input);
     if let Err(mut execution) = execute_commands(input, &mut progress) {
+        record_quiescence(
+            input,
+            &mut execution.counters,
+            progress.media_handle_baseline,
+        );
+        return Err(execution);
+    }
+    if let Err(mut execution) = source_copy::execute(input, &mut progress) {
         record_quiescence(
             input,
             &mut execution.counters,
@@ -78,6 +87,7 @@ fn execute_commands(
             input.publication.plan_identity(),
             input.staging.staging_generation(),
             command.artifact(),
+            command.offset(),
             command.bytes(),
             command.payload_digest(),
         ) else {

@@ -1,3 +1,4 @@
+use super::super::arena::{ArenaEvacuationThreshold, ExtentArenaCapacity};
 use super::super::{
     AdmittedPhysicalRecordFormat, ManifestEntryCapacity, PageFillPercent,
     PhysicalRecordFormatDeclaration, RecordByteLimit, SegmentPageCount,
@@ -9,6 +10,9 @@ pub struct PhysicalRecordPlacementPolicy {
     extent_threshold: RecordByteLimit,
     page_fill: PageFillPercent,
     manifest_capacity: ManifestEntryCapacity,
+    arena_capacity: ExtentArenaCapacity,
+    arena_evacuation: ArenaEvacuationThreshold,
+    arena_index_bytes: RecordByteLimit,
 }
 
 #[derive(Debug, Default)]
@@ -17,6 +21,9 @@ pub struct PhysicalRecordPlacementPolicyBuilder {
     extent_threshold: Option<RecordByteLimit>,
     page_fill: Option<PageFillPercent>,
     manifest_capacity: Option<ManifestEntryCapacity>,
+    arena_capacity: Option<ExtentArenaCapacity>,
+    arena_evacuation: Option<ArenaEvacuationThreshold>,
+    arena_index_bytes: Option<RecordByteLimit>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +47,21 @@ impl PhysicalRecordPlacementPolicy {
 }
 
 impl PhysicalRecordPlacementPolicyBuilder {
+    /// Reserved resident capacity for free-range indexes and in-flight claims.
+    pub fn arena_index_bytes(mut self, bytes: RecordByteLimit) -> Self {
+        self.arena_index_bytes = Some(bytes);
+        self
+    }
+    pub fn arena_capacity(mut self, capacity: ExtentArenaCapacity) -> Self {
+        self.arena_capacity = Some(capacity);
+        self
+    }
+
+    pub fn arena_evacuation(mut self, threshold: ArenaEvacuationThreshold) -> Self {
+        self.arena_evacuation = Some(threshold);
+        self
+    }
+
     pub fn segment_pages(mut self, pages: SegmentPageCount) -> Self {
         self.segment_pages = Some(pages);
         self
@@ -66,6 +88,11 @@ impl PhysicalRecordPlacementPolicyBuilder {
     ) -> Result<AdmittedRecordPlacementPolicy, PhysicalRecordPlacementPolicyDenial> {
         let page_bytes = format.declaration().page_size().bytes();
         let policy = PhysicalRecordPlacementPolicy {
+            arena_index_bytes: self.arena_index_bytes.unwrap_or(RecordByteLimit(64 * 1024)),
+            arena_capacity: self.arena_capacity.unwrap_or(ExtentArenaCapacity::DEFAULT),
+            arena_evacuation: self
+                .arena_evacuation
+                .unwrap_or(ArenaEvacuationThreshold::DEFAULT),
             segment_pages: self.segment_pages.unwrap_or(SegmentPageCount(
                 worth_store_physical_format::maximum_segment_manifest_pages(format.declaration()),
             )),
@@ -101,6 +128,17 @@ impl PhysicalRecordPlacementPolicyBuilder {
 }
 
 impl AdmittedRecordPlacementPolicy {
+    pub const fn arena_index_bytes(self) -> RecordByteLimit {
+        self.policy.arena_index_bytes
+    }
+    pub const fn arena_capacity(self) -> ExtentArenaCapacity {
+        self.policy.arena_capacity
+    }
+
+    pub const fn arena_evacuation(self) -> ArenaEvacuationThreshold {
+        self.policy.arena_evacuation
+    }
+
     pub const fn segment_pages(self) -> SegmentPageCount {
         self.policy.segment_pages
     }

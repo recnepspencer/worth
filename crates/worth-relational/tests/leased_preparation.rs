@@ -1,3 +1,4 @@
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 #[path = "leased_preparation/declared_index_ceiling.rs"]
 mod leased_preparation_declared_index_ceiling;
 #[path = "leased_preparation/denial_causes.rs"]
@@ -43,7 +44,7 @@ fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: 64 * 1024 * 1024,
+            charged_memory_bytes: Some(64 * 1024 * 1024),
         })
         .expect("one authority for this integration binary")
     })
@@ -100,6 +101,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
                         fields: AspectFieldPatch::default(),
                     }),
                 )),
+                AllocationPolicy::SystemAllocation,
             )
             .expect("entity intent stages");
         if validation_only {
@@ -259,6 +261,7 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
                     fields: AspectFieldPatch::default(),
                 }),
             )),
+            AllocationPolicy::SystemAllocation,
         )
         .expect("entity intent stages");
     let error = runtime
@@ -283,56 +286,5 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     );
 }
 
-#[test]
-fn leased_bulk_creation_matches_serial_canonical_patch() {
-    let _serial = TEST_SERIAL.lock().unwrap();
-    fn commit_bulk(
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    ) -> worth_relational::facade::transactions::CommitResult {
-        let runtime = RelationalRuntimeApi::builder()
-            .schema_registry(support::demo_schema_registry())
-            .build();
-        let identity = runtime.main_branch_identity();
-        let (_, basis) = runtime.observe_branch(&identity).expect("main basis");
-        let mut transaction = runtime
-            .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-            .expect("admitted basis");
-        let keys = (0..64)
-            .map(|index| ClientKey::raw(format!("bulk-{index}")))
-            .collect();
-        let fields = (0..64)
-            .map(|index| {
-                AspectFieldPatch::from_locator(
-                    support::aspect_field_locator("name"),
-                    AspectValue::String(format!("bulk-{index}").into()),
-                )
-            })
-            .collect();
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("leased-bulk").push(MutationIntent::Create(
-                    CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                        partition_id: PartitionId::main(),
-                        kind_id: KindId(1),
-                        client_keys: keys,
-                        field_patches: fields,
-                    }),
-                )),
-            )
-            .expect("bulk transaction stages");
-        match lease {
-            Some(lease) => runtime.commit_branch_transaction_with_lease(transaction, lease),
-            None => runtime.commit_branch_transaction(transaction),
-        }
-        .expect("bulk commit succeeds")
-    }
-
-    let serial = commit_bulk(None);
-    let lease = authority()
-        .request_lease(lease_request(32 * 1024 * 1024, CancellationToken::new()))
-        .expect("bulk lease admitted");
-    let leased = commit_bulk(Some(&lease));
-    assert_eq!(serial.changed_records.len(), 64);
-    assert_eq!(serial.changed_records, leased.changed_records);
-    assert_eq!(serial.patch(), leased.patch());
-}
+#[path = "leased_preparation/bulk_creation.rs"]
+mod bulk_creation;

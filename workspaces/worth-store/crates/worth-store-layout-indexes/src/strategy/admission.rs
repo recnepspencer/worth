@@ -20,8 +20,8 @@ fn declare_strategy_from_basis(
     require_supported_key_domain(family, key_domain.domain())?;
     let key_laws = admit_strategy_key_laws(family, key_domain)?;
     let declaration = match family {
-        LayoutStrategyFamily::BaselineBTreeRange => {
-            StrategyDeclaration::baseline_btree_range(authority_basis, key_laws)
+        LayoutStrategyFamily::BTreeRange => {
+            StrategyDeclaration::btree_range(authority_basis, key_laws)
         }
         LayoutStrategyFamily::BaselineLsmWriteOptimized => {
             StrategyDeclaration::baseline_lsm_write_optimized(authority_basis, key_laws)
@@ -56,7 +56,7 @@ fn require_supported_key_domain(
     domain: PhysicalKeyDomain,
 ) -> Result<(), StrategyDenial> {
     let supported = match family {
-        LayoutStrategyFamily::BaselineBTreeRange => matches!(
+        LayoutStrategyFamily::BTreeRange => matches!(
             domain,
             PhysicalKeyDomain::PageAddressKey
                 | PhysicalKeyDomain::SegmentAddressKey
@@ -73,8 +73,8 @@ fn require_supported_key_domain(
         Ok(())
     } else {
         Err(match family {
-            LayoutStrategyFamily::BaselineBTreeRange => {
-                StrategyDenial::PhysicalKeyDomainDoesNotSupportBaselineBTree
+            LayoutStrategyFamily::BTreeRange => {
+                StrategyDenial::PhysicalKeyDomainDoesNotSupportBTree
             }
             LayoutStrategyFamily::BaselineLsmWriteOptimized => {
                 StrategyDenial::PhysicalKeyDomainDoesNotSupportBaselineLsm

@@ -1,4 +1,7 @@
 use std::sync::Arc;
+mod native_denial;
+use native_denial::NativeDenial;
+use worth_execution::ExecutionAllocationDenial;
 
 /// Why an installed custom invariant refused a candidate.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,6 +33,8 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// Validation was stopped by cancellation or its deadline.
     ExecutionControlStopped(crate::domain_computation::WorthQueryProviderSessionControlStopKind),
+    /// Physical backing refusal; the original owner cause is retained separately.
+    AllocationDenied,
     /// No installed invariant requirement exists for the requested slot.
     InvariantNotInstalled,
     /// The requirement's executor role is not the role of the provider running
@@ -43,18 +48,13 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// Loading and executing the invariant used more work units than its
     /// budget allows.
     ExecutionBudgetExceeded,
-    /// Validating the candidate would take more work than the validator bound.
-    CandidateValidatorWorkExceeded {
-        /// The validator's work bound.
-        maximum_work: usize,
-        /// The work this candidate needed.
-        required_work: usize,
-    },
     /// The provider has no port for this kind of invariant execution.
     ProviderUnsupported,
     /// The provider, or Relational behind it, refused the load, the touches, or
     /// the verdict. The failure's detail says which.
     ProviderRejected,
+    /// The admitted request interrupted actual Relational validation.
+    RequestInterrupted(worth_relational::facade::mvcc::RelationalOperationInterruption),
     /// Relational deferred publication until its required derived companion can proceed.
     RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
     /// A custom invariant refused the candidate; see
@@ -68,31 +68,10 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     RetentionIdentityExhausted,
     /// Relational has no snapshot identities left.
     SnapshotIdentityExhausted,
-    /// The transaction overlay would exceed its byte bound.
-    TransactionOverlayCapacityExhausted {
-        /// The byte bound.
-        maximum_bytes: u64,
-        /// The bytes this attempt needed.
-        required_bytes: u64,
-    },
-    /// The transaction footprint would exceed its locus bound.
-    TransactionFootprintCapacityExhausted {
-        /// The locus bound.
-        maximum_loci: usize,
-        /// The loci this attempt needed.
-        required_loci: usize,
-    },
     /// The transaction already holds the maximum number of savepoints.
     SavepointCapacityExhausted {
         /// The savepoint bound.
         maximum_savepoints: usize,
-    },
-    /// A savepoint's footprint would exceed its locus bound.
-    SavepointFootprintCapacityExhausted {
-        /// The locus bound.
-        maximum_loci: usize,
-        /// The loci this attempt needed.
-        required_loci: usize,
     },
     /// Relational has no savepoint identities left.
     SavepointIdentityExhausted,
@@ -153,6 +132,7 @@ pub struct WorthQueryInvariantExecutionFailure {
     posture: WorthQueryInvariantExecutionFailurePosture,
     detail: Arc<str>,
     custom_invariant: Option<WorthQueryCustomInvariantDenial>,
+    native: Option<NativeDenial>,
 }
 
 impl WorthQueryInvariantExecutionFailure {
@@ -163,6 +143,7 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Denied,
             detail: detail.into(),
             custom_invariant: None,
+            native: None,
         }
     }
 
@@ -175,6 +156,7 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Exhausted,
             detail: detail.into(),
             custom_invariant: None,
+            native: None,
         }
     }
 
@@ -187,9 +169,45 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Denied,
             detail: detail.into(),
             custom_invariant: Some(custom_invariant),
+            native: None,
         }
     }
 
+    pub(crate) fn native_staging(
+        denial: worth_relational::facade::mvcc::RelationalTransactionStagingDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Staging(denial), detail)
+    }
+    pub(crate) fn physical_allocation(
+        denial: ExecutionAllocationDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Allocation(denial), detail)
+    }
+    fn native_denied(native: NativeDenial, detail: impl Into<Arc<str>>) -> Self {
+        let (kind, posture) = native.classification();
+        Self {
+            kind,
+            posture,
+            detail: detail.into(),
+            custom_invariant: None,
+            native: Some(native),
+        }
+    }
+    /// Exact physical owner cause, including its original checked quote.
+    pub fn allocation_denial(&self) -> Option<&ExecutionAllocationDenial> {
+        self.native.as_ref().and_then(NativeDenial::allocation)
+    }
+    /// Original native staging refusal, including input-directory/count failures.
+    pub fn relational_staging_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalTransactionStagingDenial> {
+        match self.native.as_ref() {
+            Some(NativeDenial::Staging(denial)) => Some(denial),
+            _ => None,
+        }
+    }
     /// Why execution stopped.
     pub fn kind(&self) -> WorthQueryInvariantExecutionDenialKind {
         self.kind

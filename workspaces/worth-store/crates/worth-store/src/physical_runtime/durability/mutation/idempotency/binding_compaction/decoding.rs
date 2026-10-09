@@ -5,6 +5,7 @@ use crate::physical_runtime::{
     PhysicalWalMemberIdentity,
 };
 
+use super::super::canonical_encoding::CanonicalBindingComparison;
 use super::super::fate::PersistedPhysicalMutationFate;
 use super::super::persisted_binding::{
     decode_binding_basis, CanonicalBindingCursor, PersistedPhysicalMutationAttemptBinding,
@@ -12,7 +13,7 @@ use super::super::persisted_binding::{
 };
 use super::super::registry::PhysicalMutationBindingBasis;
 use super::encoding::{
-    encode_group_sealed, encode_terminal, encode_unsealed, encode_wal_bound,
+    encode_group_sealed_into, encode_terminal_into, encode_unsealed_into, encode_wal_bound_into,
     COMPACTION_RECORD_DOMAIN, STATE_GROUP_SEALED, STATE_TERMINAL, STATE_UNSEALED, STATE_WAL_BOUND,
 };
 
@@ -32,7 +33,7 @@ pub(in crate::physical_runtime) enum DecodedPhysicalMutationBindingRecord {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum PhysicalBindingCompactionRecordDecodeDenial {
     Persisted(PhysicalPersistedBindingDecodeDenial),
     UnknownState,
@@ -60,7 +61,7 @@ impl DecodedPhysicalMutationBindingRecord {
                 cursor
                     .require_end()
                     .map_err(PhysicalBindingCompactionRecordDecodeDenial::Persisted)?;
-                require_canonical(bytes, encode_unsealed(&basis))?;
+                require_canonical(bytes, |target| encode_unsealed_into(&basis, target))?;
                 Self::RebuiltUnsealed(basis)
             }
             STATE_GROUP_SEALED => {
@@ -105,7 +106,9 @@ impl DecodedPhysicalMutationBindingRecord {
                     membership,
                 )
                 .ok_or(PhysicalBindingCompactionRecordDecodeDenial::InvalidGroupBinding)?;
-                require_canonical(bytes, encode_group_sealed(&basis, group))?;
+                require_canonical(bytes, |target| {
+                    encode_group_sealed_into(&basis, group, target)
+                })?;
                 Self::RebuiltGroupSealed { basis, group }
             }
             STATE_TERMINAL => {
@@ -116,7 +119,7 @@ impl DecodedPhysicalMutationBindingRecord {
                 cursor
                     .require_end()
                     .map_err(PhysicalBindingCompactionRecordDecodeDenial::Persisted)?;
-                require_canonical(bytes, encode_terminal(&basis, &fate))?;
+                require_canonical(bytes, |target| encode_terminal_into(&basis, &fate, target))?;
                 Self::Terminal { basis, fate }
             }
             STATE_WAL_BOUND => {
@@ -136,7 +139,7 @@ impl DecodedPhysicalMutationBindingRecord {
                     persisted.fingerprint(),
                     persisted.mutation(),
                 );
-                require_canonical(bytes, encode_wal_bound(&persisted))?;
+                require_canonical(bytes, |target| encode_wal_bound_into(&persisted, target))?;
                 Self::WalBound { basis, persisted }
             }
             _ => return Err(PhysicalBindingCompactionRecordDecodeDenial::UnknownState),
@@ -160,9 +163,11 @@ fn decode_basis(
 
 fn require_canonical(
     actual: &[u8],
-    canonical: Vec<u8>,
+    encode: impl FnOnce(&mut CanonicalBindingComparison<'_>),
 ) -> Result<(), PhysicalBindingCompactionRecordDecodeDenial> {
-    if actual == canonical {
+    let mut canonical = CanonicalBindingComparison::new(actual);
+    encode(&mut canonical);
+    if canonical.matches() {
         Ok(())
     } else {
         Err(PhysicalBindingCompactionRecordDecodeDenial::NonCanonicalEncoding)

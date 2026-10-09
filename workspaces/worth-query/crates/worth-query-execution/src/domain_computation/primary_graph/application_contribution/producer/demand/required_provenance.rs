@@ -83,7 +83,9 @@ impl RequiredSuccessorProvenance {
                 }
                 _ => capacity_denial(),
             })?;
-        if expected != actual {
+        if expected != actual
+            || claim.selected().key().family_type() != installed.declaration.output_family_type
+        {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 SUBJECT,
@@ -97,6 +99,12 @@ impl RequiredSuccessorProvenance {
 
     pub(super) fn commit_authority(&self) -> &WorthQueryProducerCommitAuthority {
         &self.commit_authority
+    }
+
+    /// After typed family selection, execution follows the actual immutable
+    /// successor entry. The exact predecessor claim still owns its mode.
+    pub(super) fn bind_successor(&mut self, edition: InstalledProducerEdition) {
+        self.installed_edition = edition;
     }
 }
 

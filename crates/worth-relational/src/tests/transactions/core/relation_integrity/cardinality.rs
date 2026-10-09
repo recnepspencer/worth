@@ -24,10 +24,16 @@ fn relation_integrity_commit_boundary_rejects_source_cardinality_overflow() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationCardinalityViolation);
@@ -49,10 +55,14 @@ fn commit_minimum_rejects_new_entity_without_required_edge() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage orphan");
     let error = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("source minimum must block orphan");
     assert!(matches!(
         error,
@@ -99,11 +109,15 @@ fn commit_minimum_uses_local_scope_and_rejects_removed_last_edge() {
                     fields: crate::transactions::data::AspectFieldPatch::default(),
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage valid node and edge");
     runtime.performance_access().reset_counters();
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("local minimum accepts required edge");
     let relation_id = outcome
         .created_relation(&relation)
@@ -127,10 +141,14 @@ fn commit_minimum_uses_local_scope_and_rejects_removed_last_edge() {
                     crate::transactions::data::DeleteRelationIntent { relation_id },
                 ),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("stage edge removal");
     let error = delete
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("last edge underflows source minimum");
     assert!(matches!(
         error,
@@ -172,10 +190,16 @@ fn new_target_pair_limit_does_not_scan_existing_source_history() {
                     fields: crate::transactions::data::AspectFieldPatch::default(),
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("stage fresh pair");
     runtime.performance_access().reset_counters();
-    let outcome = txn.commit(&runtime).expect("fresh pair remains unique");
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("fresh pair remains unique");
     assert_eq!(
         runtime
             .performance_access()
@@ -214,10 +238,14 @@ fn new_target_pair_limit_does_not_scan_existing_source_history() {
                         fields: crate::transactions::data::AspectFieldPatch::default(),
                     },
                 ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("stage second owner");
     let error = duplicate_target
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("existing target cardinality must still be counted");
     assert!(
         matches!(
@@ -281,9 +309,15 @@ fn deleting_endpoint_cannot_hide_survivor_minimum_underflow() {
                     removed.clone(),
                     removed.clone(),
                 )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("stage valid initial cardinality");
-    let outcome = create.commit(&runtime).expect("both sources have one edge");
+    let outcome = create
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("both sources have one edge");
     let removed_id = outcome
         .created_entity(&removed)
         .expect("removed entity binding");
@@ -299,10 +333,14 @@ fn deleting_endpoint_cannot_hide_survivor_minimum_underflow() {
                     },
                 ),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("stage endpoint deletion");
     let error = delete
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("survivor loses its last edge");
     assert!(
         matches!(

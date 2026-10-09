@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{
@@ -31,7 +33,7 @@ pub(super) fn observe(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     resource: EntityId,
     related: Option<EntityId>,
-    remaining_decision_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<ObservedAssessmentApplicability, WorthQueryApplicationAttemptDenial> {
     let CompiledWorkflowNodeKind::Assessment {
         subject,
@@ -74,12 +76,7 @@ pub(super) fn observe(
                     "applicability relation must have source maximum one",
                 ));
             }
-            if remaining_decision_facts < 3 {
-                return Err(WorthQueryApplicationAttemptDenial::new(
-                    WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                    "applicability relation requires three decision facts",
-                ));
-            }
+            check_request_live(observation_request, "workflow retained evidence")?;
             let view = runtime
                 .read_truth()
                 .project_snapshot(snapshot)
@@ -152,7 +149,7 @@ pub(super) fn observe(
                         direction: RelationalAdjacencyDirection::Outgoing,
                         native_revision,
                         comparison_work_limit: 1,
-                        endpoints: Vec::new(),
+                        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
                     },
                 ],
             })

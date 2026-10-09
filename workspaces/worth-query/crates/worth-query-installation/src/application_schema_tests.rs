@@ -209,7 +209,7 @@ where
             [ApplicationAuthorizationPathBuilder::from_principal(entity).allow(entity)],
         )
         .operation(operation_definition)
-        .operation_decision_fact_budget(operation, 1)
+
         .operation_projection_work_budget(operation, 32)
         .operation_requires_ability(operation, ability)
         .operation_read_field(

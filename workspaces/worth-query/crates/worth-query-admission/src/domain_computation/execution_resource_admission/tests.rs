@@ -361,3 +361,5 @@ pub(super) fn support_with_capacity(
         None,
     )
 }
+
+mod atomic;

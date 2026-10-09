@@ -7,18 +7,24 @@ pub(crate) struct RelationalTransactionSavepoint {
     id: SavepointId,
     retained_batch_count: usize,
     footprint: super::RelationalTransactionFootprint,
+    index: super::staging_storage::OrderedStore<super::index_row::IndexRow>,
+    normalization_generation: u64,
 }
 
 impl RelationalTransactionSavepoint {
-    pub(crate) fn new(
+    pub(super) fn new(
         id: SavepointId,
         retained_batch_count: usize,
         footprint: super::RelationalTransactionFootprint,
+        index: super::staging_storage::OrderedStore<super::index_row::IndexRow>,
+        normalization_generation: u64,
     ) -> Self {
         Self {
             id,
             retained_batch_count,
             footprint,
+            index,
+            normalization_generation,
         }
     }
 
@@ -32,10 +38,6 @@ impl RelationalTransactionSavepoint {
 
     pub(crate) fn footprint(&self) -> &super::RelationalTransactionFootprint {
         &self.footprint
-    }
-
-    pub(crate) fn footprint_loci(&self) -> usize {
-        self.footprint.total_locus_count()
     }
 }
 
@@ -59,30 +61,13 @@ impl super::BranchBoundRelationalTransaction {
             .next_savepoint_ordinal
             .checked_add(1)
             .ok_or(super::RelationalTransactionStagingDenial::SavepointIdentityExhausted)?;
-        let footprint_loci = self.footprint.total_locus_count();
-        let required_loci = self
-            .savepoint_footprint_loci
-            .checked_add(footprint_loci)
-            .ok_or(
-                super::RelationalTransactionStagingDenial::SavepointFootprintCapacityExhausted {
-                    maximum_loci: self.maximum_footprint_loci,
-                    required_loci: usize::MAX,
-                },
-            )?;
-        if required_loci > self.maximum_footprint_loci {
-            return Err(
-                super::RelationalTransactionStagingDenial::SavepointFootprintCapacityExhausted {
-                    maximum_loci: self.maximum_footprint_loci,
-                    required_loci,
-                },
-            );
-        }
         self.savepoints.push(RelationalTransactionSavepoint::new(
             savepoint_id,
             self.batches().len(),
             self.footprint.clone(),
+            self.overlay.index.clone(),
+            self.overlay.normalization_generation,
         ));
-        self.savepoint_footprint_loci = required_loci;
         self.next_savepoint_ordinal = next_savepoint_ordinal;
         Ok(savepoint_id)
     }
@@ -102,24 +87,22 @@ impl super::BranchBoundRelationalTransaction {
         };
         let batch_len = self.savepoints[index].retained_batch_count();
         let restored_footprint = self.savepoints[index].footprint().clone();
-        let released_savepoint_loci = self.savepoints[index..]
-            .iter()
-            .map(RelationalTransactionSavepoint::footprint_loci)
-            .sum::<usize>();
-        let drained = self
-            .overlay
-            .truncate_batches(batch_len, &mut self.footprint, &self.basis);
-        let released_bytes = drained
-            .iter()
-            .map(crate::transactions::data::WorkerIntentBatch::resident_capacity_bytes)
-            .sum::<u64>();
-        self.overlay_bytes = self.overlay_bytes.saturating_sub(released_bytes);
+        // Normalization can rekey retained input batches after a savepoint.
+        // Rebuild from the current retained prefix before changing any live state;
+        // unchanged generations restore the exact shared physical index instead.
+        let restored_index = if self.savepoints[index].normalization_generation
+            == self.overlay.normalization_generation
+        {
+            self.savepoints[index].index.clone()
+        } else {
+            self.overlay
+                .prefix_index(batch_len)
+                .map_err(super::RelationalTransactionStagingDenial::into_conflict)?
+        };
+        let drained = self.overlay.truncate_batches(batch_len, restored_index);
         self.footprint = restored_footprint;
         self.last_merged_plan = None;
         self.savepoints.truncate(index);
-        self.savepoint_footprint_loci = self
-            .savepoint_footprint_loci
-            .saturating_sub(released_savepoint_loci);
         let effects = drained
             .into_iter()
             .flat_map(|batch| batch.intents.into_iter())

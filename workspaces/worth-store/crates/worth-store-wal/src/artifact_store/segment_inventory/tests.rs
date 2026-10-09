@@ -86,6 +86,45 @@ fn canonical_name_and_complete_segment_reconstruct_exact_identity_and_range() {
 }
 
 #[test]
+fn segment_name_parser_accepts_only_exact_positive_ascii_decimal() {
+    for (name, segment, generation) in [
+        ("segment-1-generation-1.wal", 1, 1),
+        ("segment-7-generation-3.wal", 7, 3),
+        (
+            "segment-18446744073709551615-generation-18446744073709551615.wal",
+            u64::MAX,
+            u64::MAX,
+        ),
+    ] {
+        let parsed = WalSegmentArtifactIdentity::parse(name).expect("canonical name");
+        assert_eq!(
+            (parsed.segment().get(), parsed.generation().get()),
+            (segment, generation)
+        );
+        assert_eq!(parsed.file_name(), name);
+    }
+    for name in [
+        "segment-0-generation-1.wal",
+        "segment-1-generation-0.wal",
+        "segment-01-generation-1.wal",
+        "segment-1-generation-01.wal",
+        "segment-+1-generation-1.wal",
+        "segment-1-generation-+1.wal",
+        "segment--1-generation-1.wal",
+        "segment-1-generation--1.wal",
+        "segment-1-generation-1.0.wal",
+        "segment-1-generation-1.WAL",
+        "segment-18446744073709551616-generation-1.wal",
+        "segment-1-generation-18446744073709551616.wal",
+        "segment-１-generation-1.wal",
+        "segment-1-generation-١.wal",
+        "segment-1-generation-1-generation-2.wal",
+    ] {
+        assert!(WalSegmentArtifactIdentity::parse(name).is_none(), "{name}");
+    }
+}
+
+#[test]
 fn incomplete_or_identity_substituted_segment_is_rejected() {
     let bytes = two_frames();
     assert!(inspect_complete_wal_segment(identity(), &bytes[..bytes.len() - 1]).is_err());

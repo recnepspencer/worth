@@ -1,5 +1,7 @@
 use super::*;
 
+pub(super) struct RegistryOutputFamily;
+
 pub(super) fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
     static OCCURRENCE: std::sync::OnceLock<worth_runtime_world::facade::ProductBranchIncarnation> =
         std::sync::OnceLock::new();
@@ -48,7 +50,9 @@ pub(super) fn key_with_query_identity(
     let query = [query_identity; 32];
     let root = root(root_slot);
     WorthQueryOutputDemandKey::new(
+        std::any::TypeId::of::<RegistryOutputFamily>(),
         producer.to_owned(),
+        crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
         crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch::new(
             query,
             [query_identity.wrapping_add(1); 32],
@@ -82,6 +86,7 @@ pub(super) fn record(
         performed_obligations: Vec::new(),
         framework_required_count: 0,
         prerequisites: Vec::new(),
+        checkpoint_prerequisites: None,
         prepared_prerequisite_claims: 0,
         pending_cleanup_next: None,
         pending_cleanup_queued: false,

@@ -109,7 +109,7 @@ pub(crate) fn admit_btree_page_strategy() -> AdmittedLayoutStrategy {
         .admit(LayoutAdmissionRequest::from_admitted(
             lifecycle,
             key_domain,
-            LayoutStrategyFamily::BaselineBTreeRange,
+            LayoutStrategyFamily::BTreeRange,
             LayoutRequestedCapability::point_lookup(),
             ArtifactFamilyAccessLane::HotPath,
         ))

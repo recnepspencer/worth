@@ -45,6 +45,7 @@ mod operation_context;
 mod operation_contract;
 mod operation_counters;
 mod operation_role_metric;
+mod os_synchronization;
 mod outcome;
 mod owner_admission_effect;
 mod owner_local_identity;
@@ -75,13 +76,23 @@ pub use allocation::{
     AllocationRequest, MediaAllocationMode, MediaAllocationObservation, MediaAllocationOutcome,
     MediaAllocationResult, MediaPhysicalAllocationPosture,
 };
+#[cfg(feature = "recovery-runtime-owner")]
+pub(crate) use artifact_tree::ArtifactTreeAllocatedListingFailure;
+#[cfg(feature = "recovery-runtime-owner")]
+pub(crate) use artifact_tree::ArtifactTreeAllocatedReadFailure;
+#[cfg(feature = "recovery-runtime-owner")]
+pub(crate) use artifact_tree::{backed_directory, backed_file, ArtifactTreeBackedPath};
 pub use artifact_tree::{
     ArtifactAppendOutcome, ArtifactAppendRange, ArtifactNewWriteOutcome, ArtifactNewWriteRange,
     ArtifactRangeReadOutcome, ArtifactRangeWriteDurability,
     ArtifactRangeWriteDurabilityRequirement, ArtifactRangeWriteOutcome, ArtifactTreeAccessLimit,
-    ArtifactTreeDirectory, ArtifactTreeFailure, ArtifactTreeFailureKind, ArtifactTreeFile,
-    ArtifactTreeMedia, ArtifactTreeNewFile, ArtifactTreePathDenial, ArtifactTreePublicationEffect,
-    ArtifactTreePublicationEffectOutcome, ArtifactTreeReplacement, CompletedArtifactAppend,
+    ArtifactTreeDirectory, ArtifactTreeDirectoryEntry, ArtifactTreeFailure,
+    ArtifactTreeFailureKind, ArtifactTreeFile, ArtifactTreeListingAllocationBoundary,
+    ArtifactTreeListingAllocator, ArtifactTreeListingStorageChange,
+    ArtifactTreeListingStorageRequirement, ArtifactTreeMedia, ArtifactTreeNewFile,
+    ArtifactTreePathAllocationBoundary, ArtifactTreePathAllocator, ArtifactTreePathDenial,
+    ArtifactTreePublicationEffect, ArtifactTreePublicationEffectOutcome, ArtifactTreeReadAllocator,
+    ArtifactTreeReplacement, ArtifactTreeStorageAllocator, CompletedArtifactAppend,
     CompletedArtifactMetadataRead, CompletedArtifactNewWrite, CompletedArtifactRangeRead,
     CompletedArtifactRangeWrite, CompletedArtifactTreePublicationEffect,
     CompletedScheduledArtifactAppend, CompletedScheduledArtifactMetadataRead,

@@ -46,7 +46,10 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         })
         .expect_source(initial)
         .idempotency(&10_049)
-        .execute_performed::<ConsumerProgram, ConsumerRequiredSharedRoot>(&world.application)
+        .execute_performed::<ConsumerProgram, ConsumerRequiredSharedRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the first source publication succeeds");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(first) = first else {
         panic!("the first source publication is fresh")
@@ -86,7 +89,10 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         })
         .expect_source(current)
         .idempotency(&10_050)
-        .execute_performed::<ConsumerProgram, ConsumerRequiredSharedRoot>(&world.application)
+        .execute_performed::<ConsumerProgram, ConsumerRequiredSharedRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the later source publication succeeds");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(second) = second else {
         panic!("the later source publication is fresh")
@@ -148,7 +154,10 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         })
         .expect_source(latest)
         .idempotency(&10_051)
-        .execute_performed::<ConsumerProgram, ConsumerRequiredSharedRoot>(&world.application)
+        .execute_performed::<ConsumerProgram, ConsumerRequiredSharedRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the recovery source publication succeeds");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(third) = third else {
         panic!("the recovery source publication is fresh")

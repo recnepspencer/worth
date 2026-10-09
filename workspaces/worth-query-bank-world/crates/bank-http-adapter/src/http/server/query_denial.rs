@@ -207,6 +207,7 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         Settlement::RequestAuthorization(kind) => authorization_denial(kind),
         Settlement::Cancelled => cancelled(),
         Settlement::TimedOut => deadline(),
+        Settlement::ProducerDomainDenied => malformed(),
         Settlement::Superseded
         | Settlement::PublicationStale
         | Settlement::ForeignSource

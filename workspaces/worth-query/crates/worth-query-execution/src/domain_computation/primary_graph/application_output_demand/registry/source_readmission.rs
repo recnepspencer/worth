@@ -41,6 +41,10 @@ impl<Query> RetainedOutputReadmissionSource<Query> {
 /// It does not authorize a read, a branch selection, or producer execution.
 pub(in crate::domain_computation::primary_graph) struct RequiredOutputReadmission {
     pub(in crate::domain_computation::primary_graph) source: Arc<dyn Any + Send + Sync>,
+    /// Transport the immutable installed entry selected for this exact row.
+    /// The typed demand validates its family and identity after downcasting.
+    pub(in crate::domain_computation::primary_graph) producer:
+        std::sync::OnceLock<Arc<dyn Any + Send + Sync>>,
     pub(in crate::domain_computation::primary_graph) limits: WorthQueryOutputDemandLimits,
     pub(in crate::domain_computation::primary_graph) retained_program_basis:
         Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>,
@@ -89,6 +93,7 @@ impl WorthQueryOutputDemandRegistry {
             source,
             readmission: Arc::new(RequiredOutputReadmission {
                 source: erased,
+                producer: std::sync::OnceLock::new(),
                 limits,
                 retained_program_basis,
             }),
@@ -108,6 +113,7 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
     pub(in crate::domain_computation::primary_graph) fn install(
         self,
         interest: &WorthQueryOutputDemandInterest,
+        producer: Arc<dyn Any + Send + Sync>,
     ) -> Result<Arc<RetainedOutputReadmissionSource<Query>>, WorthQueryOutputDemandDenial> {
         if !Arc::ptr_eq(&self.owner.state, &interest.owner.state) {
             return Err(source_denial());
@@ -140,6 +146,10 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
         // Readmission retains frozen source meaning. Each read selects the
         // current Product; a semantic join does not need to replace this Arc.
         if record.readmission_source.is_none() {
+            self.readmission
+                .producer
+                .set(producer)
+                .unwrap_or_else(|_| unreachable!("prepared readmission is installed once"));
             record.readmission_source = Some(self.readmission);
         }
         drop(state);

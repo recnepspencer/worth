@@ -21,6 +21,7 @@ pub(crate) struct ExtentManifestProjection {
     pub logical_bytes: u64,
     pub maximum_frame_bytes: u32,
     pub chunk_count: u32,
+    pub alignment: u64,
 }
 
 pub(crate) struct AdmittedRecoveryExtentManifest {
@@ -85,6 +86,7 @@ impl<'media> IntegrityAdmittedExtentManifest<'media> {
             logical_bytes: self.validated.logical_bytes(),
             maximum_frame_bytes: self.validated.maximum_frame_bytes(),
             chunk_count: self.validated.chunk_count(),
+            alignment: self.validated.alignment(),
         }
     }
 }

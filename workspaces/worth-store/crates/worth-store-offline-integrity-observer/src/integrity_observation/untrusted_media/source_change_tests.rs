@@ -168,15 +168,22 @@ fn live_observer_handle_denies_same_length_replacement() {
         OfflineIntegrityObservationLimits::new(8, 4096, 5, 4, 0, 10_000, 4096).expect("limits");
     let canonical_root = fs::canonicalize(&root).expect("canonical root");
     let path = canonical_root.join("artifact");
+    let displaced = canonical_root.join("displaced");
     let mut walk = BoundedMediaWalk::new(limits, canonical_root, Instant::now());
-    let mut replacement_denied = false;
+    let mut rename_denied = false;
+    let mut write_denied = false;
     let acquired = walk
         .acquire_with_after_read(&path, 1, || {
-            replacement_denied = fs::write(&path, b"after!!!").is_err();
+            rename_denied = fs::rename(&path, &displaced).is_err();
+            write_denied = fs::write(&path, b"after!!!").is_err();
         })
         .expect("locked source remains stable");
-    assert!(replacement_denied, "live handle must deny replacement");
+    assert!(rename_denied, "live handle must deny pathname replacement");
+    assert!(write_denied, "live handle must deny in-place write");
     assert_eq!(&*acquired.bytes, b"before!!");
+    fs::rename(&path, &displaced).expect("rename succeeds after acquisition");
+    fs::write(&displaced, b"after!!!").expect("write succeeds after acquisition");
+    assert_eq!(fs::read(&displaced).unwrap(), b"after!!!");
     fs::remove_dir_all(&root).expect("remove temporary root");
 }
 

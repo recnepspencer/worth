@@ -3,6 +3,8 @@
 
 #[path = "application_graph/adoption.rs"]
 mod adoption;
+#[path = "application_graph/allocation_custody.rs"]
+mod allocation_custody;
 #[path = "application_graph/canonical_identity.rs"]
 mod canonical_identity;
 #[path = "application_graph/document_retention_model.rs"]
@@ -69,3 +71,9 @@ mod workflow_receipt_lifecycle;
 mod workflow_retirement;
 #[path = "application_graph/workflow_retry.rs"]
 mod workflow_retry;
+
+#[path = "application_graph/source_bound_replay.rs"]
+mod source_bound_replay;
+
+#[path = "application_graph/native_staging_allocation.rs"]
+mod native_staging_allocation;

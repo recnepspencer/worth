@@ -3,6 +3,9 @@ use std::sync::Weak;
 use worth_proof::NonEmpty;
 use worth_proof::TransitionOutcome;
 
+mod blob_append;
+mod blob_reclaim;
+
 use super::RecordPublicationDirector;
 use crate::physical_runtime::{
     record_serving::{
@@ -18,7 +21,7 @@ use crate::physical_runtime::{
 
 #[derive(Clone)]
 pub struct PhysicalRecordSubmission {
-    director: Weak<RecordPublicationDirector>,
+    pub(super) director: Weak<RecordPublicationDirector>,
 }
 
 #[cfg_attr(not(feature = "certification-test-authority"), allow(dead_code))]

@@ -2,6 +2,10 @@ use super::projection_admission::{admit_projection, IntegrityAdmittedRecoveryPro
 use super::projection_materialization::{projected_record_bytes, validate_extent_closure};
 use super::*;
 use worth_store_physical_format::RecordArtifactFile;
+mod blob_semantic;
+mod head_effect;
+use blob_semantic::validate_blob_semantic;
+use head_effect::validate_release_head_effect;
 
 pub(super) fn validate_projection_semantics(
     records: &[PhysicalRedoRecord],
@@ -26,8 +30,19 @@ pub(super) fn validate_projection_semantics(
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
+        if worth_store_physical_format::decode_blob_record(record.bytes()).is_ok()
+            && !matches!(*placements[0], CurrentPhysicalRecordPlacement::Extent(_))
+        {
+            return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+        }
+        validate_blob_semantic(record.bytes(), *identity, store.bytes(), projection)?;
     }
-    for (frame_index, frame) in projection.frames().iter().enumerate() {
+    for (frame_index, frame) in projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")
+        .iter()
+        .enumerate()
+    {
         match frame.subject() {
             PersistedPhysicalDataFrameSubject::InlinePage(page) => {
                 let descriptors = admitted
@@ -80,6 +95,7 @@ pub(super) fn validate_projection_semantics(
     }
     validate_bidirectional_closure(projection, &admitted)?;
     validate_resulting_lsns(records, projection, &admitted)?;
+    validate_release_head_effect(records, projection, store, format)?;
     Ok(admitted.into_inline_frames())
 }
 
@@ -93,6 +109,7 @@ fn validate_bidirectional_closure(
             CurrentPhysicalRecordPlacement::Inline(value) => {
                 let matching = projection
                     .frames()
+                    .expect("frame-only recovery projection admitted before planning")
                     .iter()
                     .filter(|frame| {
                         frame.subject()
@@ -101,6 +118,7 @@ fn validate_bidirectional_closure(
                     .filter_map(|frame| {
                         projection
                             .frames()
+                            .expect("frame-only recovery projection admitted before planning")
                             .iter()
                             .position(|candidate| core::ptr::eq(candidate, frame))
                     })
@@ -125,6 +143,7 @@ fn validate_bidirectional_closure(
     for update in projection.segment_updates() {
         let matching = projection
             .frames()
+            .expect("frame-only recovery projection admitted before planning")
             .iter()
             .filter(|frame| {
                 frame.subject() == PersistedPhysicalDataFrameSubject::InlinePage(update.page_cell())
@@ -152,7 +171,10 @@ fn validate_segment_frame_cardinality(
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
     let mut exact_counts = BTreeMap::<(u64, u64), u32>::new();
-    for frame in projection.frames() {
+    for frame in projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")
+    {
         let PersistedPhysicalDataFrameSubject::InlinePage(_) = frame.subject() else {
             continue;
         };
@@ -224,7 +246,12 @@ fn validate_resulting_lsns(
     projection: &PersistedPhysicalRecoveryProjection,
     admitted: &IntegrityAdmittedRecoveryProjection<'_>,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    for (index, frame) in projection.frames().iter().enumerate() {
+    for (index, frame) in projection
+        .frames()
+        .expect("frame-only recovery projection admitted before planning")
+        .iter()
+        .enumerate()
+    {
         let matching = records
             .iter()
             .filter(|record| {

@@ -1,7 +1,5 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutedLayoutOperation {
-    BTreeLookup(Box<crate::BaselineBTreeLookupExecution>),
-    BTreeReplay(Box<crate::BaselineBTreeReplayRecoveryExecution>),
     LsmLookup(Box<crate::BaselineLsmLookupExecution>),
     LsmRunPublication(Box<crate::BaselineLsmManifestPublicationExecution>),
     LsmReplay(Box<crate::BaselineLsmReplayExecution>),
@@ -19,8 +17,6 @@ macro_rules! observe_owner_execution {
     };
 }
 
-observe_owner_execution!(crate::BaselineBTreeLookupExecution, BTreeLookup);
-observe_owner_execution!(crate::BaselineBTreeReplayRecoveryExecution, BTreeReplay);
 observe_owner_execution!(crate::BaselineLsmLookupExecution, LsmLookup);
 observe_owner_execution!(
     crate::BaselineLsmManifestPublicationExecution,

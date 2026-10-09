@@ -89,15 +89,21 @@ fn idempotent_recovery_reuses_the_original_world_terminal() {
     let first = program();
     let retry = program();
     let binding = idempotency(194, 195);
-    let WorthQueryApplicationCommitOutcome::Committed(committed) = world
-        .application
-        .compare_and_commit_application(first, binding)
+    let WorthQueryApplicationCommitOutcome::Committed(committed) =
+        world.application.compare_and_commit_application(
+            first,
+            binding,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("first application must commit")
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, binding)
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            binding,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("retry must recover the committed terminal")
     };

@@ -251,7 +251,10 @@ fn commit_vessel(
         )
         .expect("owner-admitted transaction context");
     push_vessel(&mut transaction, client_key);
-    transaction.commit(runtime)
+    transaction.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }
 
 fn commit_two_vessels(
@@ -272,7 +275,10 @@ fn commit_two_vessels(
         .expect("owner-admitted transaction context");
     push_vessel(&mut transaction, "same-transaction-vessel-a");
     push_vessel(&mut transaction, "same-transaction-vessel-b");
-    transaction.commit(runtime)
+    transaction.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }
 
 fn push_vessel(
@@ -289,6 +295,7 @@ fn push_vessel(
                     fields: vessel_fields(DIVERGENT_CALL_SIGN),
                 },
             ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
 }

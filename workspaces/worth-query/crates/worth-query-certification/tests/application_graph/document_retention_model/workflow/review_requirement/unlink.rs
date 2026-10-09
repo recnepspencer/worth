@@ -44,7 +44,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for UnlinkReviewRequire
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 1, 0, 0),
-            ApplicationCandidateResourceCeiling::bounded(1024, 1024),
+            ApplicationCandidateResourceCeiling::representation_bytes(1024),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -176,7 +176,6 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 32)
         .operation_read_field(operation, DocumentIdentityField::reference())
         .operation_read_relation(operation, ReviewRequired::reference())
@@ -221,5 +220,8 @@ pub fn unlink_review_requirement_on(
         })
         .without_source()
         .idempotency(&idempotency)
-        .execute_in_program(application.program_runtime())
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
 }

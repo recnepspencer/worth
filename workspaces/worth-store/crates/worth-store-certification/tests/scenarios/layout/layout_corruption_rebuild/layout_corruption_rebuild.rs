@@ -90,7 +90,7 @@ fn btree_strategy() -> LayoutStrategyRegistrySnapshot {
             LayoutAdmissionRequest::from_admitted(
                 family,
                 domain,
-                LayoutStrategyFamily::BaselineBTreeRange,
+                LayoutStrategyFamily::BTreeRange,
                 LayoutRequestedCapability::point_lookup(),
                 ArtifactFamilyAccessLane::HotPath,
             )

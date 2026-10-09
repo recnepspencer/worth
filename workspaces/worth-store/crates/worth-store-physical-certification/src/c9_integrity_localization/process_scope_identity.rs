@@ -55,11 +55,28 @@ pub(crate) enum ProcessScopeIdentity {
         generation: u64,
         operation: u64,
     },
+    BTreeNode {
+        allocation_epoch: [u8; 16],
+        ordinal: u64,
+        family_code: u16,
+    },
 }
 
 pub(super) fn project(scope: PhysicalArtifactScope) -> ProcessScopeIdentity {
     match scope.artifact_family() {
         Family::NamespaceIdentity => unreachable!("C.4 owns namespace admission"),
+        Family::ExtentArenaFrame => {
+            unreachable!("typed manifest/chunk scopes identify frames inside the arena")
+        }
+        Family::BlobResumeSession
+        | Family::BlobChunkFrame
+        | Family::BlobTreeNode
+        | Family::BlobGenerationPublication => {
+            unreachable!("payload-only blob validation has no artifact scope")
+        }
+        Family::BlobDropSetManifest | Family::BlobReclaimDescriptor => {
+            unreachable!("payload-only blob validation has no artifact scope")
+        }
         Family::BootstrapCatalog => ProcessScopeIdentity::Bootstrap,
         Family::CurrentRootSelector => ProcessScopeIdentity::CurrentSelector,
         Family::PreviousRootSelector => ProcessScopeIdentity::PreviousSelector,
@@ -144,5 +161,46 @@ pub(super) fn project(scope: PhysicalArtifactScope) -> ProcessScopeIdentity {
                 operation: identity.operation().get(),
             }
         }
+        Family::BTreeNode => {
+            let (record, family_code) = scope.btree_node_identity().unwrap();
+            ProcessScopeIdentity::BTreeNode {
+                allocation_epoch: record.allocation_epoch(),
+                ordinal: record.ordinal(),
+                family_code,
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use worth_store_physical_format::store_namespace::{
+        ProposedStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+    };
+    use worth_store_physical_format::PersistedRecordIdentity;
+    use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
+
+    use super::{project, ProcessScopeIdentity};
+
+    #[test]
+    fn btree_node_scope_projects_its_record_and_family_code() {
+        let store = StoreNamespaceIdentityRecord::new(
+            StoreNamespaceVersion::CURRENT,
+            ProposedStoreIdentity::from_nonzero_bytes([3; 16]).unwrap(),
+        )
+        .published_identity();
+        let record = PersistedRecordIdentity::new([9; 16], 7).unwrap();
+        let range = PhysicalByteRange::new(4096, 512).unwrap();
+
+        let identity = project(PhysicalArtifactScope::btree_node(store, record, 4, range));
+
+        assert_eq!(
+            identity,
+            ProcessScopeIdentity::BTreeNode {
+                allocation_epoch: [9; 16],
+                ordinal: 7,
+                family_code: 4,
+            }
+        );
     }
 }

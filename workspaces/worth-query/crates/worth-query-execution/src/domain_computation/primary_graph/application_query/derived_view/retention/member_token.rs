@@ -20,22 +20,33 @@ impl WorthQueryManagedDerivedMemberToken for String {
 pub(in crate::domain_computation::primary_graph::application_query::derived_view) struct RetainedMemberToken
 {
     value: Box<dyn Any + Send + Sync>,
-    charged_bytes: usize,
+    pub(super) charged_bytes: usize,
 }
 
 impl RetainedMemberToken {
-    pub(in crate::domain_computation::primary_graph::application_query::derived_view) fn new<
+    pub(in crate::domain_computation::primary_graph::application_query::derived_view) fn clone_admitted<
         Member: WorthQueryManagedDerivedMemberToken,
     >(
-        value: Member,
-    ) -> Self {
-        let charged_bytes = std::mem::size_of::<Member>()
-            .saturating_add(value.retained_bytes())
-            .saturating_add(std::mem::size_of::<EntityId>() + 4 * std::mem::size_of::<usize>());
-        Self {
-            value: Box::new(value),
+        value: &Member,
+    ) -> Result<Self, super::WorthQueryManagedDerivedViewDenial> {
+        let charged_bytes = Self::clone_quote(value)?;
+        Ok(Self {
+            value: Box::new(value.clone()),
             charged_bytes,
-        }
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query::derived_view) fn clone_quote<
+        Member: WorthQueryManagedDerivedMemberToken,
+    >(
+        value: &Member,
+    ) -> Result<usize, super::WorthQueryManagedDerivedViewDenial> {
+        std::mem::size_of::<Member>()
+            .checked_add(value.retained_bytes())
+            .and_then(|n| {
+                n.checked_add(std::mem::size_of::<EntityId>() + 4 * std::mem::size_of::<usize>())
+            })
+            .ok_or(super::WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded)
     }
 
     pub(super) fn matches<Member: WorthQueryManagedDerivedMemberToken>(

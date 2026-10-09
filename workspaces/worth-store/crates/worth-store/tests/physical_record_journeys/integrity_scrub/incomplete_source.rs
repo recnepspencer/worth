@@ -6,7 +6,7 @@ fn short_actual_read_counts_only_prefix_without_validating_zero_padding() {
     let serving = super::super::serving_from_initialization(parent.path());
     let target = target(&serving, parent.path());
     let path = parent.path().join("families/records/root-current.selector");
-    let prefix_length = u64::from(target.range().length()) / 2;
+    let prefix_length = u64::from(target.declared_bytes()) / 2;
     std::fs::OpenOptions::new()
         .write(true)
         .open(&path)

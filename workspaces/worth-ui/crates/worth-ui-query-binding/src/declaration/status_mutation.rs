@@ -84,7 +84,7 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusUpdat
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 1),
-            ApplicationCandidateResourceCeiling::bounded(65_544, 256),
+            ApplicationCandidateResourceCeiling::representation_bytes(65_544),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -230,7 +230,6 @@ pub(crate) fn declare_status_mutation(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 16)
         .operation_read_entity(operation, WorthUiRecord::reference())
         .operation_read_field(operation, IdentityIdField::reference())

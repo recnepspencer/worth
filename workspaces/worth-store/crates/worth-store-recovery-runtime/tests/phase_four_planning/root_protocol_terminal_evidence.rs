@@ -7,7 +7,7 @@ use worth_store_recovery_runtime::{
 
 #[test]
 fn damaged_previous_evidence_survives_every_post_selection_outcome() {
-    let selected = selected_with_damaged_previous("root-protocol-progression");
+    let (_world, selected) = selected_with_damaged_previous("root-protocol-progression");
     assert!(has_damaged_previous(selected.root_protocol_denials()));
     let planned = selected.plan().unwrap();
     assert!(has_damaged_previous(planned.root_protocol_denials()));
@@ -26,13 +26,8 @@ fn damaged_previous_evidence_survives_every_post_selection_outcome() {
 #[cfg(feature = "certification-test-authority")]
 #[test]
 fn damaged_previous_evidence_survives_reopen_indeterminate() {
-    let published = selected_with_damaged_previous("root-protocol-reopen-indeterminate")
-        .plan()
-        .unwrap()
-        .stage()
-        .unwrap()
-        .publish()
-        .unwrap();
+    let (_world, selected) = selected_with_damaged_previous("root-protocol-reopen-indeterminate");
+    let published = selected.plan().unwrap().stage().unwrap().publish().unwrap();
     published.certification_fail_reopen_scheduler_settlement_at(
         worth_store::physical_runtime::PhysicalRecoveryFreshReopenStage::CurrentSelector,
     );
@@ -42,21 +37,25 @@ fn damaged_previous_evidence_survives_reopen_indeterminate() {
     assert!(has_damaged_previous(outcome.root_protocol_denials()));
 }
 
-fn selected_with_damaged_previous(label: &str) -> SelectedPhysicalRecovery {
+/// The selection, and the directory that holds its store until the test
+/// drops it.
+fn selected_with_damaged_previous(label: &str) -> (tempfile::TempDir, SelectedPhysicalRecovery) {
     let parent = tempfile::tempdir().unwrap();
-    let root = parent.keep().join(label);
+    let root = parent.path().join(label);
     let store = initialize_store(&root);
     publish_synthetic_genesis(&root, store);
     publish_secured_synthetic_checkpoint(&root, store);
+    publish_synthetic_covered_wal(&root);
     let records = root.join("families").join("records");
     let mut previous = std::fs::read(records.join("root-current.selector")).unwrap();
     previous[65] ^= 0x5a;
     std::fs::write(records.join("root-previous.selector"), previous).unwrap();
-    admitted_recovery(&root)
+    let selected = admitted_recovery(&root)
         .discover()
         .unwrap()
         .select()
-        .unwrap()
+        .unwrap();
+    (parent, selected)
 }
 
 fn has_damaged_previous(denials: &[PhysicalRecoverySourceDenial]) -> bool {

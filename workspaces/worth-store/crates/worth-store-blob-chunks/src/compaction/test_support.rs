@@ -1,4 +1,4 @@
-use worth_store_test_support::harness::physical_isolation::compaction as physical_compaction;
+pub(crate) mod physical_compaction;
 
 use crate::lifecycle::generation_registry_test_support::{
     current_authority, lifecycle_receipt_for_publication_with_bytes, root_publication_with_bytes,
@@ -223,7 +223,7 @@ pub(crate) fn verified_read_for_rewritten(
     plan: &crate::BlobCompactionRewritePlan,
     rewritten: &BlobChunkRootPublication,
 ) -> BlobStreamingVerifiedRead {
-    BlobStreamingVerifiedRead::for_movement_certification_test(
+    BlobStreamingVerifiedRead::for_content_comparison_test(
         plan.basis().object_id().clone(),
         plan.basis().generation(),
         rewritten.chunk_tree_root().clone(),

@@ -50,9 +50,9 @@ impl ApplicationInvariantMarkerIdentity<DocumentRetentionSchema> for DocumentRet
 }
 
 /// Bounded Relational work for this shared host's largest bootstrap and
-/// workflow-publication candidates. Query derives the ordinary retention
-/// mutation's validator allowance from both installed contracts; the binding
-/// and handler do not reproduce their sum.
+/// workflow-publication candidates. Each installed rule retains its own
+/// algorithm control; candidate admission does not predict an aggregate
+/// allowance from their sum.
 const FIRST_RULE_WORK_UNITS: u64 = 256;
 const SECOND_RULE_WORK_UNITS: u64 = 256;
 

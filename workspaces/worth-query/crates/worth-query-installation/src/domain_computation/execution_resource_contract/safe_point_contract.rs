@@ -21,18 +21,24 @@ impl WorthQueryInstalledBoundedStepContract {
     pub(super) fn derive(
         envelope: &WorthQueryExecutionResourceEnvelope,
     ) -> Result<Self, &'static str> {
-        let max_work_units_per_step =
-            envelope.resource_ceiling(WorthQueryResourceDimension::CancellationPollingInterval);
+        if envelope.boundary() != worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary::BoundedStep {
+            return Err("atomic-execution-is-not-bounded-step");
+        }
+        let max_work_units_per_step = envelope
+            .optional_resource_ceiling(WorthQueryResourceDimension::CancellationPollingInterval)
+            .ok_or("incomplete-bounded-step-envelope")?;
         if max_work_units_per_step == 0 {
             return Err("zero-cancellation-polling-interval");
         }
-        let queue_depth_ceiling =
-            envelope.resource_ceiling(WorthQueryResourceDimension::QueueDepth);
+        let queue_depth_ceiling = envelope
+            .optional_resource_ceiling(WorthQueryResourceDimension::QueueDepth)
+            .ok_or("incomplete-bounded-step-envelope")?;
         if queue_depth_ceiling == 0 {
             return Err("zero-bounded-step-queue-depth");
         }
-        let chunk_width_ceiling =
-            envelope.resource_ceiling(WorthQueryResourceDimension::ChunkWidth);
+        let chunk_width_ceiling = envelope
+            .optional_resource_ceiling(WorthQueryResourceDimension::ChunkWidth)
+            .ok_or("incomplete-bounded-step-envelope")?;
         if chunk_width_ceiling == 0 {
             return Err("zero-bounded-step-chunk-width");
         }
@@ -45,10 +51,14 @@ impl WorthQueryInstalledBoundedStepContract {
             queue_depth_ceiling,
             chunk_width_ceiling,
             scratch_bytes_ceiling: envelope
-                .resource_ceiling(WorthQueryResourceDimension::ScratchBytes),
+                .optional_resource_ceiling(WorthQueryResourceDimension::ScratchBytes)
+                .ok_or("incomplete-bounded-step-envelope")?,
             retained_bytes_ceiling: envelope
-                .resource_ceiling(WorthQueryResourceDimension::RetainedBytes),
-            deadline_nanos: envelope.resource_ceiling(WorthQueryResourceDimension::DeadlineNanos),
+                .optional_resource_ceiling(WorthQueryResourceDimension::RetainedBytes)
+                .ok_or("incomplete-bounded-step-envelope")?,
+            deadline_nanos: envelope
+                .optional_resource_ceiling(WorthQueryResourceDimension::DeadlineNanos)
+                .ok_or("incomplete-bounded-step-envelope")?,
             partial_effect_posture: envelope.partial_effect_posture(),
         })
     }

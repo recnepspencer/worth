@@ -36,10 +36,16 @@ pub(super) fn certify_dense_fanout_compile_wave(suite: &'static str) {
                     },
                 )));
             }
-            txn.push_batch(batch)
-                .expect("test staging stays within configured resource budgets");
-            txn.commit(&runtime)
-                .expect("chip fanout relation burst commit")
+            txn.push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("test staging stays within configured resource budgets");
+            txn.commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("chip fanout relation burst commit")
         };
         let commit_micros = commit_started_at.elapsed().as_micros();
         let commit = runtime

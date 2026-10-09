@@ -103,9 +103,15 @@ fn assert_commit_affinity_substitutions(
                     )
                     .unwrap(),
                 ),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
+        let committed = transaction
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         retain_commit_basis(provider, runtime, &committed);
         release_commit_snapshot(runtime, &committed);
     });
@@ -178,9 +184,15 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
                             },
                         )),
                     ),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-            let committed = transaction.commit(runtime).unwrap();
+            let committed = transaction
+                .commit(
+                    runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
             retain_commit_basis(provider, runtime, &committed);
             release_commit_snapshot(runtime, &committed);
         });
@@ -218,13 +230,21 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
                 .expect("owner-admitted transaction context")
         };
         transaction
-            .push_batch(WorkerIntentBatch::new("later-outbox-deletion").push(
-                MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent {
-                    entity_id: *entity_id,
-                })),
-            ))
+            .push_batch(
+                WorkerIntentBatch::new("later-outbox-deletion").push(MutationIntent::Entity(
+                    EntityMutationIntent::Delete(DeleteEntityIntent {
+                        entity_id: *entity_id,
+                    }),
+                )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime).unwrap();
+        let committed = transaction
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         retain_commit_basis(provider, runtime, &committed);
         release_commit_snapshot(runtime, &committed);
     });

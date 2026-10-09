@@ -29,6 +29,10 @@ impl WorthQuerySessionBinding {
         &self.identity
     }
 
+    pub(crate) fn retain_canonical_identity(&self) -> Arc<str> {
+        Arc::clone(&self.identity)
+    }
+
     pub(crate) fn token_identity(&self) -> &str {
         &self.token_identity
     }

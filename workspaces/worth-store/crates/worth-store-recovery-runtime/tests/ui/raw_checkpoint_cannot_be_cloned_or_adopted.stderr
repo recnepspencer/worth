@@ -1,0 +1,19 @@
+error[E0599]: no method named `clone` found for struct `VerifiedCheckpointStream` in the current scope
+ --> tests/ui/raw_checkpoint_cannot_be_cloned_or_adopted.rs:5:20
+  |
+5 |     let _ = stream.clone();
+  |                    ^^^^^ method not found in `VerifiedCheckpointStream`
+
+error[E0308]: mismatched types
+  --> tests/ui/raw_checkpoint_cannot_be_cloned_or_adopted.rs:12:50
+   |
+12 |     let _ = coordination.admit_shared_checkpoint(stream);
+   |                          ----------------------- ^^^^^^ expected `ValidatedCheckpointStreamAssembly<'_, '_>`, found `VerifiedCheckpointStream`
+   |                          |
+   |                          arguments to this method are incorrect
+   |
+note: method defined here
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_coordination/shared_checkpoint.rs
+   |
+   |     pub fn admit_shared_checkpoint(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^

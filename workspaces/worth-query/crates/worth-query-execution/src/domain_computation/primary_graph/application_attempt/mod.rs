@@ -30,6 +30,7 @@ mod mandatory_review_program;
 mod mandatory_review_replay;
 mod migration;
 mod observation;
+pub(in crate::domain_computation::primary_graph) use observation::observe_field_value_borrowed;
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
@@ -40,6 +41,7 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
@@ -48,6 +50,7 @@ pub(in crate::domain_computation::primary_graph) use read_set::{
     PreparedDecisionReuseContext, SealedComputationFacts,
 };
 mod retained_commit;
+pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
 pub(super) mod snapshot_lease;
 mod workflow_deadline;
 mod workflow_definition_program;
@@ -91,7 +94,7 @@ pub(in crate::domain_computation::primary_graph) use effect_program::{
     OutputRoleUse, WorthQueryAdmittedApplicationEmissionBatch,
     WorthQueryApplicationCreationPartition, WorthQueryApplicationEmission,
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationRealizedEffect,
-    WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
+    WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
@@ -120,10 +123,9 @@ pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
     observe_adjacency, observe_indexed_candidates, observe_indexed_entity_selection,
-    reobserve_indexed_entity_selection, FactMovement, IndexedReobservation, Movement,
+    reobserve_indexed_entity_selection, FactMovement, IndexedSelectionReobserveDenial, Movement,
     ObservedRetained, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    WorthQueryApplicationFactStorageKey, WorthQueryIndexedSelectionRefusal,
-    WorthQuerySourceCurrentnessFailure,
+    WorthQueryIndexedSelectionRefusal, WorthQuerySourceCurrentnessFailure,
 };
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryRecordedIntentMatch;
 pub use idempotency::{
@@ -189,3 +191,5 @@ pub use workflow_transition_program::{
     WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
     WorthQueryWorkflowAdvanceAdapter,
 };
+
+pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;

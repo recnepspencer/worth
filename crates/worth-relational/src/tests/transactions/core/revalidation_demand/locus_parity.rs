@@ -55,7 +55,10 @@ fn every_entity_intent_records_exactly_its_authoritative_locus() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("all five loci fit the default footprint ceiling");
 
     let write_entities = transaction

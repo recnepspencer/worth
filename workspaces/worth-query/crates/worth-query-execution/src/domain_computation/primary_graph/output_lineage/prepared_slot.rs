@@ -4,6 +4,7 @@ mod cancellation;
 #[cfg(test)]
 mod cancellation_custody;
 mod capacity;
+mod checkpoint_locator;
 mod computation;
 use computation::PreparedComputationCustody;
 mod preparation;
@@ -47,6 +48,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     /// A pre-publication work allowance; a larger current fork set is not scanned.
     computation_fork_scan_bound: usize,
     pub(super) prior_computation: Option<super::PriorComputationRecord>,
+    pub(super) native_prior_checkpoint: Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     filled: bool,
 }
 
@@ -170,6 +172,7 @@ impl PreparedOutputLineageSlot {
         let completed_handler_facts = self.completed_handler_facts.take();
         let completed_decision_reuse = self.completed_decision_reuse.take();
         let prepared_input_reuse_key = self.prepared_input_reuse_key.take();
+        let native_prior_checkpoint = self.native_prior_checkpoint.take();
         let retained_capacity = self
             .retained_capacity
             .take()
@@ -201,6 +204,7 @@ impl PreparedOutputLineageSlot {
                 completed_handler_facts,
                 completed_decision_reuse,
                 prepared_input_reuse_key,
+                native_prior_checkpoint,
                 retained_capacity,
                 computation,
             );
@@ -233,5 +237,35 @@ impl Drop for PreparedOutputLineageSlot {
         cancellation.retained_capacity = self.retained_capacity.take();
         cancellation.next = lineage.cancelled_slots.take();
         lineage.cancelled_slots = Some(cancellation);
+    }
+}
+
+impl WorthQueryApplicationOutputLineage {
+    pub(super) fn record_prepared(
+        &mut self,
+        application: &WorthQueryPrimaryGraphCommittedApplication,
+        consumed_outputs: Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
+        prepared: &PreparedOutputLineageSlot,
+        completed_handler_facts: Option<crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary>,
+        completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
+        prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
+        native_prior_checkpoint: Option<
+            super::native_prior_checkpoint::NativePriorCheckpointLocator,
+        >,
+        retained_capacity: super::retained_capacity::RetainedLineageCapacity,
+        computation: super::retained_computation::RecordedComputation,
+    ) -> Arc<RecordedSettlementIdentity> {
+        self.record_inner(
+            computation,
+            application,
+            consumed_outputs,
+            Some(prepared),
+            completed_handler_facts,
+            completed_decision_reuse,
+            prepared_input_reuse_key,
+            native_prior_checkpoint,
+            Some(retained_capacity),
+        )
+        .expect("a prepared output slot has a sealed output binding")
     }
 }

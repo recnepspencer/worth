@@ -10,7 +10,6 @@ mod catalog;
 pub mod compaction_projection;
 pub mod customization;
 pub mod declarations;
-pub mod evolution;
 mod facade;
 pub mod integrity;
 mod keyspace;
@@ -18,19 +17,15 @@ mod maintenance;
 pub mod materialization;
 pub mod observation;
 mod planning;
-mod read;
-mod recovery;
 mod strategy;
 pub mod strategy_declarations;
 
 pub use access::execution::{
-    btree_lookup_readiness_cases, degraded_scan_readiness_cases, AccessPathCounterSnapshot,
-    BTreeLookupReadinessCaseId, BTreeLookupReadinessOutcome, BTreeLookupReadinessView,
-    BTreeLookupReady, CounterEnvelopeViolation, DegradedScanAdmissionDenied,
-    DegradedScanCounterReceipt, DegradedScanExecution, DegradedScanLoweringBasis,
-    DegradedScanReadinessCaseId, DegradedScanReadinessOutcome, DegradedScanReadinessView,
-    DegradedScanReady, DegradedScanRebindAdmission, DegradedScanRebindTrace,
-    ExecutedLayoutOperation, LoweredBTreeLookup, LoweredDegradedExactScan,
+    degraded_scan_readiness_cases, AccessPathCounterSnapshot, CounterEnvelopeViolation,
+    DegradedScanAdmissionDenied, DegradedScanCounterReceipt, DegradedScanExecution,
+    DegradedScanLoweringBasis, DegradedScanReadinessCaseId, DegradedScanReadinessOutcome,
+    DegradedScanReadinessView, DegradedScanReady, DegradedScanRebindAdmission,
+    DegradedScanRebindTrace, ExecutedLayoutOperation, LoweredDegradedExactScan,
     PhysicalDegradedExecutionDenial, PlannedCounterObservation, StaleDegradedExactScan,
 };
 pub use access::execution::{
@@ -74,6 +69,7 @@ pub use keyspace::{
     PhysicalKeyDomainAdmissionCaseId, PhysicalKeyDomainAdmissionOutcome,
     PhysicalKeyDomainAdmissionView,
 };
+pub use keyspace::{BlobCatalogPointKey, BlobCatalogPointKeyDenial};
 pub use maintenance::{
     derived_index_parity_cases, derived_index_rebuild_admission_cases,
     derived_index_rebuild_execution_cases, layout_lsm_maintenance, layout_mutation_admission,
@@ -90,19 +86,18 @@ pub use maintenance::{
     DerivedIndexRebuildAdmissionView, DerivedIndexRebuildCounterSnapshot,
     DerivedIndexRebuildDenied, DerivedIndexRebuildExecutionCaseId, DerivedIndexRebuildOutcome,
     DerivedIndexRebuildPlan, DerivedIndexRebuildReceipt, DerivedIndexRebuildRequest,
-    DerivedIndexRebuildScope, DerivedIndexRebuildSourceInput, DerivedIndexRepairExecutionDenial,
-    DerivedIndexRepairPlan, DerivedIndexRepairReceipt, DerivedIndexRepairRequest,
-    DerivedIndexResultIdentity, IndexLagWitness, IndexMaintenanceFailureOutcome,
-    IndexMaintenanceMode, IndexPublicationProtocol, LayoutLsmMaintenance, LayoutMutationAdmission,
+    DerivedIndexRebuildScope, DerivedIndexRebuildSourceInput, DerivedIndexResultIdentity,
+    IndexLagWitness, IndexMaintenanceFailureOutcome, IndexMaintenanceMode,
+    IndexPublicationProtocol, LayoutLsmMaintenance, LayoutMutationAdmission,
     LayoutMutationAdmissionCaseId, LayoutMutationAdmissionOutcome, LayoutMutationAdmissionView,
-    LayoutMutationPlan, LayoutOperationalRepairOwner, LayoutParityVerification,
-    LayoutRebuildAdmission, LayoutRebuildCandidateReadmission, LayoutRebuildExecution,
-    LazyMaintenanceCapability, LiveMaintenancePosture, LiveMaintenancePostureAdmission,
-    LiveMaintenancePostureCaseId, LiveMaintenancePostureOutcome, LiveMaintenancePostureView,
-    LiveMaintenanceRequest, LsmCompactionAdmissionRequest,
-    LsmCompactionMaintenanceAdmissionOutcome, LsmCompactionMaintenanceAdmissionView,
-    LsmMaintenanceAdmissionDenialKind, LsmMaintenanceAdmissionDenied, LsmMaintenanceDisposition,
-    LsmMaintenanceOperation, LsmMaintenanceOwnerCaseDeclaration, LsmMaintenanceOwnerCaseId,
+    LayoutMutationPlan, LayoutParityVerification, LayoutRebuildAdmission,
+    LayoutRebuildCandidateReadmission, LayoutRebuildExecution, LazyMaintenanceCapability,
+    LiveMaintenancePosture, LiveMaintenancePostureAdmission, LiveMaintenancePostureCaseId,
+    LiveMaintenancePostureOutcome, LiveMaintenancePostureView, LiveMaintenanceRequest,
+    LsmCompactionAdmissionRequest, LsmCompactionMaintenanceAdmissionOutcome,
+    LsmCompactionMaintenanceAdmissionView, LsmMaintenanceAdmissionDenialKind,
+    LsmMaintenanceAdmissionDenied, LsmMaintenanceDisposition, LsmMaintenanceOperation,
+    LsmMaintenanceOwnerCaseDeclaration, LsmMaintenanceOwnerCaseId,
     LsmMaintenanceOwnerCaseObservation, LsmReplayAdmissionRequest,
     LsmReplayMaintenanceAdmissionOutcome, LsmReplayMaintenanceAdmissionView,
     LsmRunPublicationAdmissionOutcome, LsmRunPublicationAdmissionRequest,
@@ -111,9 +106,7 @@ pub use maintenance::{
 };
 pub use materialization::{
     AdmittedCoverageBasis, AdmittedLayoutMaterialization,
-    BTreeLookupMaterializationAdmissionOutcome, BTreeLookupMaterializationAdmissionView,
     BTreePublicationMaterializationAdmissionOutcome, BTreePublicationMaterializationAdmissionView,
-    BTreeReplayMaterializationAdmissionOutcome, BTreeReplayMaterializationAdmissionView,
     CatalogRootMaterializationAdmissionOutcome, CatalogRootMaterializationAdmissionView,
     CurrentLayoutMaterialization, CurrentMaterializationFrontier,
     ImportedBlobMaterializationAdmissionOutcome, ImportedBlobMaterializationAdmissionView,
@@ -124,44 +117,18 @@ pub use materialization::{
     LsmReplayMaterializationAdmissionView, MaterializationDenial, MaterializationFreshness,
     StaleLayoutMaterialization,
 };
-pub use observation::{LayoutAccessPerformanceReceipt, ObserveOwnerCase, OwnerCaseObservation};
+pub use observation::{ObserveOwnerCase, OwnerCaseObservation};
 pub use planning::{
     access_plan_selection_cases, imported_blob_read_admission_cases, AccessPlanCostClass,
     AccessPlanCostDenial, AccessPlanCostEstimate, AccessPlanIdentity, AccessPlanSelectionCaseId,
     AccessPlanSelectionDenied, AccessPlanSelectionOutcome, AccessPlanSelectionView,
     AccessPlanSelector, AdmittedPhysicalMutationRequest, AdmittedPhysicalReadRequest,
-    AdmittedPhysicalRecoveryRequest, BTreeLookupOperation, ImportedBlobReadAdmissionCaseId,
+    AdmittedPhysicalRecoveryRequest, ImportedBlobReadAdmissionCaseId,
     ImportedBlobReadAdmissionOutcome, ImportedBlobReadAdmissionView,
-    PhysicalAccessRequestAdmissionDenied, SelectedBTreeLookup, SelectedBTreeReplayRecovery,
-    SelectedDegradedExactScan, SelectedLsmCompaction, SelectedLsmLookup, SelectedLsmReplayRecovery,
-    SelectedLsmRunPublication, SelectionCandidateAudit, SelectionCandidateOutcome,
-    SelectionCandidateRejection, SelectionCandidateRejectionCase,
-};
-pub use read::{
-    layout_read_runtime, LayoutReadAdmissionDenied, LayoutReadRuntime, PageLookupRequest,
-    WalLookupRequest,
-};
-pub use recovery::{
-    btree_replay_cases, layout_btree_recovery, AdmittedBTreeReplayPhysicalSource,
-    AdmittedBTreeReplaySource, BTreeReplayCaseId, BTreeReplayDenialKind, BTreeReplayDenied,
-    BTreeReplayLocation, BTreeReplayOutcome, BTreeReplayPhysicalSource,
-    BTreeReplayPhysicalSourceIdentity, BTreeReplayRequest, BTreeReplayRootAgreement,
-    BTreeReplaySourceDenial, BTreeReplayView, LayoutBTreeRecovery,
-};
-pub use strategy::btree::execution::{
-    btree_lookup_execution_cases, btree_replay_runtime,
-    decode_leaf_record as decode_baseline_btree_leaf_record,
-    decode_root_record as decode_baseline_btree_root_record,
-    encode_leaf_record as encode_baseline_btree_leaf_record,
-    encode_root_record as encode_baseline_btree_root_record, BTreeLookupExecutionCaseId,
-    BTreeLookupExecutionOutcome, BTreeLookupExecutionView, BTreeReplayReady, BTreeReplayRuntime,
-    BTreeSeparatorPartitionDenial, BaselineBTreeCorruptionMarker, BaselineBTreeExactCounterWitness,
-    BaselineBTreeExecutionDenial, BaselineBTreeExecutionDenialKind, BaselineBTreeExecutionWitness,
-    BaselineBTreeLeafRecord, BaselineBTreeLookupAbsence, BaselineBTreeLookupAdmission,
-    BaselineBTreeLookupBranch, BaselineBTreeLookupCounterReceipt, BaselineBTreeLookupExecution,
-    BaselineBTreeReadPreflight, BaselineBTreeReadShape, BaselineBTreeReadSource,
-    BaselineBTreeReplayAdmission, BaselineBTreeReplayRecoveryExecution, BaselineBTreeRootNode,
-    StableBTreeLookupExecution,
+    PhysicalAccessRequestAdmissionDenied, SelectedDegradedExactScan, SelectedLsmCompaction,
+    SelectedLsmLookup, SelectedLsmReplayRecovery, SelectedLsmRunPublication,
+    SelectionCandidateAudit, SelectionCandidateOutcome, SelectionCandidateRejection,
+    SelectionCandidateRejectionCase,
 };
 
 #[cfg(test)]
@@ -171,10 +138,9 @@ pub use access::shape::{
     AccessShapeUnsupportedDenial, FullDeclaredScanBasis, FullDeclaredScanCaseId,
     FullDeclaredScanOutcome, FullDeclaredScanView,
 };
-pub(crate) use catalog::{
-    ArtifactFamilyAuthorityWitness, ArtifactFamilyDenial, ArtifactFamilyLifecycleAdmission,
-    PhysicalArtifactFamily, PhysicalArtifactFamilyDeclaration,
-};
+#[cfg(test)]
+pub(crate) use catalog::PhysicalArtifactFamilyDeclaration;
+pub(crate) use catalog::{ArtifactFamilyDenial, PhysicalArtifactFamily};
 #[cfg(test)]
 pub(crate) use integrity::LayoutCorruptionView;
 pub(crate) use keyspace::{CanonicalKeyBytes, PhysicalKeyDomain, PhysicalKeyDomainWitness};
@@ -185,7 +151,6 @@ pub(crate) use materialization::LayoutCoverageWitness;
 pub(crate) use materialization::LayoutMaterializationState;
 #[cfg(test)]
 pub(crate) use materialization::MaterializationStateClass;
-pub(crate) use strategy::btree::execution::btree_lookup_runtime;
 
 // Unit tests live beside their owners but compile as one crate. Keep this
 // convenience vocabulary crate-private and absent from production builds.
@@ -200,12 +165,6 @@ pub(crate) use access::shape::{
 pub(crate) use catalog::ArtifactFamilyAccessLane;
 #[cfg(test)]
 pub(crate) use catalog::ArtifactScopePartitionWitness;
-#[cfg(test)]
-pub(crate) use evolution::{
-    LayoutBindingWitness, LayoutCompatibilityWindow, LayoutEvolutionDeclaration,
-    LayoutInterruptionPolicy, LayoutReadCompatibilityPosture, LayoutVersion,
-    LayoutWriteCompatibilityPosture,
-};
 #[cfg(test)]
 pub(crate) use keyspace::{CompositeKeyField, HashCollisionBehavior};
 pub use strategy::{
@@ -241,8 +200,6 @@ pub(crate) use strategy::{
 };
 
 pub(crate) use declarations::layout_declarations;
-mod operational_repair;
-pub use operational_repair::{
-    LayoutRepairConsequence, LayoutRepairConsequenceDenial, LayoutRepairConsequenceOwner,
-    LayoutRepairConsequencePlan, LayoutRepairConsequenceReceipt, LayoutRepairRegionObservation,
-};
+/// The S.10 layout repair consequence owner that operations schedules in its
+/// owner-plan DAG. Consumers import it through this named module only.
+pub mod operational_repair;

@@ -235,3 +235,22 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
         },
     );
 }
+
+#[test]
+fn nonallocation_session_evidence_preserves_the_mapped_detail_and_read_set_stage() {
+    let failure = WorthQueryProviderSessionFailure::new(
+        Session::ProviderRejected,
+        WorthQueryProviderSessionProtocolStage::Commit,
+        "native session detail",
+        Default::default(),
+    );
+    let application = Denial::provider_rejected_with_detail(Stage::ProviderCommit, "mapped detail")
+        .with_provider_session_failure(failure);
+    assert_eq!(application.detail(), Some("mapped detail"));
+    assert!(application.allocation_denial().is_none());
+    let read = denied(Compare::DecisionReadSet(
+        WorthQueryDecisionReadSetFailure::new(Read::SnapshotIdentityExhausted, "read owner"),
+    ));
+    assert_eq!(read.stage(), Stage::ProviderCommit);
+    assert_eq!(read.kind(), Application::SnapshotIdentityExhausted);
+}

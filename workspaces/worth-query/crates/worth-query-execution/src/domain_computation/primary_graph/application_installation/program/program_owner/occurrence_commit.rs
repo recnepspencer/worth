@@ -33,6 +33,7 @@ pub(super) fn commit_program_action<Schema, Binding, Owner>(
     program: ActionProgram<Schema, Binding>,
     causality: ApplicationCommitCausality<'_>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryApplicationCommitOutcome
 where
     Schema: ApplicationSchema,
@@ -62,6 +63,7 @@ where
         program,
         idempotency,
         causality,
+        allocation_policy,
     )
 }
 
@@ -69,6 +71,7 @@ pub(super) fn commit_program_action_retained<Schema, Binding, Owner>(
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
     idempotency: WorthQueryApplicationIdempotencyBinding,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryApplicationRetainedCommitOutcome
 where
     Schema: ApplicationSchema,
@@ -81,6 +84,7 @@ where
         program.with_client_observation(),
         ApplicationCommitCausality::Ordinary,
         idempotency,
+        allocation_policy,
     );
     owner.owned_runtime().retained_commit_outcome(outcome)
 }

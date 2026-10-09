@@ -1,6 +1,9 @@
 #[path = "../examples/product_workflow_support/mod.rs"]
 pub mod product_workflow_support;
 
+mod execution_memory;
+mod mutation_attempt_report;
+
 use product_workflow_support::adapters::ClockSource;
 use product_workflow_support::application::{example_limits, seed_graph};
 use product_workflow_support::application_entry::AmendTemporalBinding;
@@ -25,7 +28,8 @@ use worth_query_host::facade::{
     },
     primary_graph::{
         HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
-        WorthQueryApplicationIdempotencyBinding, WorthQueryPrincipalResolutionMode,
+        WorthQueryApplicationIdempotencyBinding, WorthQueryInvariantExecutionFailure,
+        WorthQueryPrincipalResolutionMode,
     },
     product::WorthQueryAdmittedChange,
 };
@@ -126,7 +130,7 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
         .mutate(intent.clone())
         .without_source()
         .idempotency(&idempotency_key)
-        .execute()
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
         .expect_err("the plain entry must deny a program-owned action");
     assert!(matches!(
         denial,
@@ -189,6 +193,7 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
             &identities,
             resolved_principal.principal_identity(),
             admission,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the admitted mutation handler must complete")
     else {
@@ -213,6 +218,11 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
         denial.kind(),
         WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
     );
+    // External hosts can name and match the complete invariant cause. This
+    // earlier program refusal must carry no invariant-owner evidence.
+    let invariant_failure: Option<&WorthQueryInvariantExecutionFailure> =
+        denial.invariant_execution_failure();
+    assert!(invariant_failure.is_none());
     assert_eq!(
         read_input(&application, branch, &principal, &scope),
         predecessor,
@@ -236,7 +246,7 @@ fn installed_conditional_requires_its_declared_program_action() {
         program,
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
         (TemporalContributionConfiguration { clock_source },),
-        example_limits(),
+        example_limits(None),
         |graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
@@ -266,7 +276,7 @@ fn installed_conditional_rejects_a_client_action_for_its_operation() {
         program,
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
         (TemporalContributionConfiguration { clock_source },),
-        example_limits(),
+        example_limits(None),
         |graph, installed| {
             let principal = installed
                 .principal_binding(TemporalPrincipalBinding::reference())
@@ -297,7 +307,10 @@ fn program_action_from_another_runtime_cannot_commit_this_product() {
         .mutate(amendment("must-not-publish", 2))
         .without_source()
         .idempotency(&0x72_u64)
-        .execute_in_program(&second.runtime);
+        .execute_in_program(
+            &second.runtime,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(matches!(
         result,
         Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch)

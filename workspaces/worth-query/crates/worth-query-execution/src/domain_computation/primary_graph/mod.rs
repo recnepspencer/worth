@@ -50,6 +50,7 @@ pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;
 pub(crate) mod output_lineage;
+mod request_allocation_control;
 pub(in crate::domain_computation) use output_lineage::{
     InvalidationEditAdmission, SourceInvalidationOwner,
 };

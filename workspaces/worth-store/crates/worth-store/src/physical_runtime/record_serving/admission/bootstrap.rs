@@ -23,7 +23,8 @@ pub(in crate::physical_runtime) struct RecordServingState {
     /// Rewrite sources that still occupy growth until retirement removes them.
     pub(in crate::physical_runtime) displaced_artifacts:
         Vec<crate::physical_runtime::durability::DisplacedArtifact>,
-    pub(in crate::physical_runtime) publication_overheads: Vec<u64>,
+    pub(in crate::physical_runtime) publication_overheads:
+        Vec<super::ReconstructedPublicationMetadata>,
     pub(in crate::physical_runtime) publication_residue: RecordPublicationResidueObservation,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime) root_protocol_counters:
@@ -68,11 +69,15 @@ impl BootstrapCatalogReadLimits {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecordBootstrapDenial {
     ReadProtectionUnavailable(crate::physical_runtime::PhysicalReadProtectionDenial),
     IdentityEntropyUnavailable,
     ConfigurationMismatch,
+    ResidencyPolicyFormatMismatch {
+        configured: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+        admitted: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    },
     RecordFamilyAlreadyExists,
     RecordFamilyAbsent,
     AmbiguousRecordFamilyResidue,
@@ -81,6 +86,36 @@ pub enum RecordBootstrapDenial {
     UnsupportedPhysicalRecordFormat(UnsupportedPhysicalRecordFormat),
     PhysicalRecordFormatMismatch(PhysicalRecordFormatMismatch),
     CurrentRootDamaged,
+    RecoveredCheckpointCustodyMismatch,
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadWitnessOwnerMismatch,
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadWitnessPostureMismatch,
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredWalRead(crate::physical_runtime::FundedRecoveryWalReadFailure),
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredCheckpointRead(
+        worth_store_physical_backend::RecoveryDiscoveryAllocationFailure<
+            crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,
+        >,
+    ),
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredCheckpointObservationUnavailable(
+        worth_store_physical_backend::RecoveryFilesystemQualificationError,
+    ),
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadRead(
+        worth_store_physical_backend::RecoveryDiscoveryAllocationFailure<
+            crate::physical_runtime::PhysicalRecoveryObservationAllocationDenial,
+        >,
+    ),
+    #[cfg(feature = "recovery-runtime-owner")]
+    RecoveredHeadObservationUnavailable(
+        worth_store_physical_backend::RecoveryFilesystemQualificationError,
+    ),
+    RecoveredCustodyResident(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
+    RecoveredResidencyStoreMismatch,
+    RecoveredResidencyPolicyMismatch,
     FreeSpaceManifestDamaged,
     BackendUnavailable(ArtifactTreeFailure),
     ResidencyUnavailable(super::super::PhysicalRecordResidencyFailure),
@@ -134,7 +169,7 @@ impl PhysicalRecordFormatMismatch {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RecordBootstrapFailure {
     Backend(ArtifactTreeFailure),
     FormatEncoding,

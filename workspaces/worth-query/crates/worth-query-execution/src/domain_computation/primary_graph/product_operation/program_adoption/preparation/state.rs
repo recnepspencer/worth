@@ -174,14 +174,23 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionAdmission)?;
         if let Some(migration_batch) = migration_batch {
             transaction
-                .push_batch(migration_batch)
+                .push_batch(
+                    migration_batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionStaging)?;
         }
         transaction
-            .push_batch(batch)
+            .push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionStaging)?;
         runtime
-            .prepare_branch_transaction(transaction)
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(map_relational_preparation_denial)
     })?;
     let successor_observation_requested = false;

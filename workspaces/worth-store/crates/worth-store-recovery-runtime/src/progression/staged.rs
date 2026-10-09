@@ -7,7 +7,7 @@ use crate::entry::{
     PhysicalRecoveryStagingCounters, PhysicalRecoveryStagingSettlementLedger,
 };
 use crate::handoff::RecoveryOperationFateSet;
-use crate::orchestration::RecoveryCoordination;
+use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 
 use super::{
     PhysicalRecoveryDiscoveryCounters, RecoveryBaseImagePlan, RecoveryIntegrityEvidence,
@@ -25,7 +25,10 @@ pub struct ClosedRecoveryStagingGeneration {
 pub struct StagedPhysicalRecovery {
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
-    pub(crate) selection: PhysicalSourceSelection,
+    pub(crate) selection: ResidentSourceSelection,
+    pub(crate) custody: crate::progression::PlanningCustody,
+    pub(crate) verified_selected_tier_custody:
+        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
     pub(crate) discovery_counters: PhysicalRecoveryDiscoveryCounters,
     pub(crate) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     pub(crate) integrity: RecoveryIntegrityEvidence,
@@ -47,7 +50,11 @@ impl StagedPhysicalRecovery {
     pub(crate) const fn new(
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
-        selection: PhysicalSourceSelection,
+        selection: ResidentSourceSelection,
+        custody: crate::progression::PlanningCustody,
+        verified_selected_tier_custody: Option<
+            worth_store_recovery_physics::VerifiedSelectedTierEpochCustody,
+        >,
         discovery_counters: PhysicalRecoveryDiscoveryCounters,
         root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
         integrity: RecoveryIntegrityEvidence,
@@ -67,6 +74,8 @@ impl StagedPhysicalRecovery {
             authority,
             coordination,
             selection,
+            custody,
+            verified_selected_tier_custody,
             discovery_counters,
             root_protocol_denials,
             integrity,
@@ -106,7 +115,7 @@ impl StagedPhysicalRecovery {
         &self.base
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.selection
+        self.selection.facts()
     }
     pub const fn discovery_counters(&self) -> PhysicalRecoveryDiscoveryCounters {
         self.discovery_counters
@@ -188,7 +197,9 @@ impl StagedPhysicalRecovery {
         drop(media);
         session.block();
         PhysicalRecoveryOutcome::Blocked(crate::entry::PhysicalRecoveryBlock::new(
-            crate::entry::PhysicalRecoveryBlockKind::Staging,
+            crate::entry::PhysicalRecoveryBlockCause::Damage(
+                crate::entry::PhysicalRecoveryBlockKind::Staging,
+            ),
             store,
             session_identity,
             crate::entry::PhysicalRecoveryBlockEvidence {

@@ -250,7 +250,14 @@ fn create_entity_with_summary_title(
                 ])),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(&txn.commit(runtime).unwrap())[0]
+    changed_entities(
+        &txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap(),
+    )[0]
 }

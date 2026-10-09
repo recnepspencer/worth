@@ -150,7 +150,7 @@ pub(in crate::physical_runtime::record_serving) fn plan_inline_segments(
         load_reusable_segment(
             ReusableSegmentContext {
                 allocation,
-                residency,
+                residency: residency.clone(),
                 format,
                 access,
                 current_root,
@@ -180,7 +180,22 @@ pub(in crate::physical_runtime::record_serving) fn plan_inline_segments(
     let mut inline = VecDeque::from(materialized.records);
     let mut plans = Vec::new();
     if let (Some(loaded), Some(segment)) = (loaded_tail, active.as_mut()) {
-        append_to_last_page(format, placement, segment, loaded, &mut inline, placements)?;
+        let selected_routes = super::super::access::manifest_routing::ManifestReader::serving(
+            residency.clone(),
+            format,
+            access,
+            current_root.clone(),
+        );
+        append_to_last_page(
+            format,
+            placement,
+            segment,
+            loaded,
+            &selected_routes,
+            allocation,
+            &mut inline,
+            placements,
+        )?;
     }
     while !inline.is_empty() {
         if active

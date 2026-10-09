@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     collections::HashMap,
     num::NonZeroUsize,
     sync::{Arc, Mutex, OnceLock},
@@ -12,28 +11,36 @@ use worth_foundational::{
 };
 
 use super::{
-    equivalence::EquivalenceRegistry, CancellationToken, EquivalencePredicate, MemoryLimitDenial,
+    equivalence::EquivalenceRegistry, CancellationToken, EquivalencePredicate,
+    ExecutionMemoryReservation, MemoryLimitDenial,
 };
 
 static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
+mod array_backing;
+mod byte_backing;
+mod fixed_backing;
 mod limits;
 mod memory;
 mod reservation;
 mod retained;
 mod room;
 mod worker_context;
+pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
+pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
+pub use fixed_backing::{
+    ExecutionAllocationDenial, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+};
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
 use reservation::{ClaimSlot, RunInline};
-thread_local! {
-    static ACTIVE_WORKER: RefCell<Vec<(usize, u64)>> = const { RefCell::new(Vec::new()) };
-}
+use worker_context::ACTIVE_WORKER;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExecutionAuthorityConfig {
     pub max_workers: NonZeroUsize,
-    pub charged_memory_bytes: u64,
+    /// Optional process-wide payload-backing ceiling; request/ancestor bounds remain finite.
+    pub charged_memory_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -195,7 +202,12 @@ impl ExecutionAuthority {
         if budget.max_workers().get() > self.inner.config.max_workers.get() {
             return Err(ExecutionPolicyDenial::WorkersExceedAuthority);
         }
-        if budget.charged_memory_bytes() > self.inner.config.charged_memory_bytes {
+        if self
+            .inner
+            .config
+            .charged_memory_bytes
+            .is_some_and(|cap| budget.charged_memory_bytes() > cap)
+        {
             return Err(ExecutionPolicyDenial::MemoryExceedsAuthority);
         }
         Ok(())
@@ -303,6 +315,16 @@ impl<'a> ExecutionResourceLease<'a> {
         memory_bytes: u64,
     ) -> Result<ResourceReservation, LeaseDenial> {
         self.reserve::<RunInline>(0, Vec::new(), 0, memory_bytes)
+    }
+
+    /// Transfer the same live backing charge atomically to this lease.
+    /// A refusal keeps the original lineage and admitted bytes.
+    pub fn transfer_memory(
+        &self,
+        ticket: &mut ExecutionMemoryReservation,
+    ) -> Result<(), LeaseDenial> {
+        let bytes = ticket.bytes();
+        ticket.take_over(Some(self), None, bytes)
     }
 
     pub(crate) fn pool(&self) -> &ThreadPool {

@@ -60,7 +60,10 @@ fn a_cancel_before_the_effect_refuses_the_admitted_step_as_cancelled() {
         .idempotency(&88_014)
         .for_workflow_operation(&application, &operation)
         .expect("the request still matches the requirement it was issued")
-        .execute_in_program(application.program_runtime());
+        .execute_in_program(
+            application.program_runtime(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     match effect {
         Err(WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness(denial)) => {
             assert_eq!(

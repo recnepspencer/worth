@@ -56,8 +56,8 @@ impl WorthQueryProductWorldResources {
         }
     }
 
-    /// Installs the host's process authority, from which every request
-    /// leases the installed policy's budget.
+    /// Supplies the host's process authority. Cloned resources share it, and
+    /// every request leases the installed policy's budget.
     pub fn with_execution_authority(mut self, authority: Arc<ExecutionAuthority>) -> Self {
         self.execution.authority = Some(authority);
         self

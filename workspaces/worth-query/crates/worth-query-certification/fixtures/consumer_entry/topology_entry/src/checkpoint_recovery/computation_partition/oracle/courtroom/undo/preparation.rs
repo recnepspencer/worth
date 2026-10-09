@@ -89,7 +89,12 @@ pub(super) fn prepare<const REUSE: bool, const MODE: u8, const WORKFLOW: bool>(
     });
     let HandlerResult::Completed(candidate) = application
         .runtime()
-        .execute_mutation_handler(identities, resolved.principal_identity(), admission)
+        .execute_mutation_handler(
+            identities,
+            resolved.principal_identity(),
+            admission,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
     else {
         panic!("the correction handler completes");

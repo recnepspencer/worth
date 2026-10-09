@@ -11,18 +11,21 @@ use super::{
 };
 
 mod execution;
+mod resident_storage;
 
 pub struct PhysicalRecoveryStagingCommand<'bytes> {
     ordinal: u64,
     plan: [u8; 32],
     staging_generation: u64,
     artifact: RecordArtifactFile,
+    offset: u64,
     bytes: &'bytes [u8],
     payload_digest: [u8; 32],
 }
 
 pub enum PhysicalRecoveryStagingMaterialization {
     Created(PerformedRecoveryPhysicalEffect<RecoveryStagingWriteAction>),
+    RangeWritten(PerformedRecoveryPhysicalEffect<RecoveryStagingWriteAction>),
     AlreadyMaterialized(CompletedRecoveryStagingWrite),
     CompletedFromExactPrefix(PerformedRecoveryPhysicalEffect<RecoveryStagingWriteAction>),
 }
@@ -101,17 +104,20 @@ impl<'bytes> PhysicalRecoveryStagingCommand<'bytes> {
         plan: [u8; 32],
         staging_generation: u64,
         artifact: RecordArtifactFile,
+        offset: u64,
         bytes: &'bytes [u8],
         payload_digest: [u8; 32],
     ) -> Option<Self> {
         (!bytes.is_empty()
             && staging_generation != 0
+            && (offset == 0 || matches!(artifact, RecordArtifactFile::ExtentArena { .. }))
             && sha2::Sha256::digest(bytes).as_slice() == payload_digest)
             .then_some(Self {
                 ordinal,
                 plan,
                 staging_generation,
                 artifact,
+                offset,
                 bytes,
                 payload_digest,
             })
@@ -197,14 +203,14 @@ impl PhysicalRecoveryStagingCommandIndeterminate {
 impl PhysicalRecoveryStagingMaterialization {
     pub fn physical(&self) -> &CompletedRecoveryStagingWrite {
         match self {
-            Self::Created(performed) | Self::CompletedFromExactPrefix(performed) => {
-                match performed.occurrence() {
-                    super::RecoveryPhysicalEffectOccurrence::StagingWrite(occurrence) => {
-                        occurrence.physical()
-                    }
-                    _ => unreachable!("staging-write evidence has its exact action"),
+            Self::Created(performed)
+            | Self::RangeWritten(performed)
+            | Self::CompletedFromExactPrefix(performed) => match performed.occurrence() {
+                super::RecoveryPhysicalEffectOccurrence::StagingWrite(occurrence) => {
+                    occurrence.physical()
                 }
-            }
+                _ => unreachable!("staging-write evidence has its exact action"),
+            },
             Self::AlreadyMaterialized(physical) => physical,
         }
     }

@@ -57,7 +57,7 @@ fn prepare_checkpoint_state(
     let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
     let history = prepare_history(restored, checkpoint, branch_root_images, &symbols, work)?;
     let lineage = prepare_lineage(restored, checkpoint);
-    let indexes = prepare_indexes(checkpoint, work)?;
+    let indexes = prepare_indexes(checkpoint, &history, work)?;
     Ok(PreparedCheckpointState {
         symbols,
         record_identity,
@@ -202,6 +202,7 @@ fn prepare_lineage(
 
 fn prepare_indexes(
     checkpoint: &DurableCheckpoint,
+    history: &HistorySubsystem,
     work: &mut CheckpointRestoreWork,
 ) -> Result<IndexingState, DurabilityError> {
     if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(
@@ -220,6 +221,7 @@ fn prepare_indexes(
     }
     restore_checkpoint_derived_index_artifacts(
         &mut indexes,
+        history,
         &checkpoint.derived_index_artifacts,
         checkpoint.derived_index_checkpoint.as_ref(),
         &checkpoint.envelopes,

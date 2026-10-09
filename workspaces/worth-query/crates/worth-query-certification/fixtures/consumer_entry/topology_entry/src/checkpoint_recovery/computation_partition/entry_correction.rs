@@ -80,7 +80,7 @@ impl<Schema: TopologySchemaBinding, const WORKFLOW: bool> ApplicationMutationBin
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-            ApplicationCandidateResourceCeiling::bounded(1024, 4096),
+            ApplicationCandidateResourceCeiling::representation_bytes(1024),
         );
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -195,7 +195,6 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
                     .aftermath(aftermath)
                     .finish(),
             )
-            .operation_decision_fact_budget(operation, 32)
             .operation_projection_work_budget(operation, 4096)
             .operation_read_entity(operation, Body::reference())
             .operation_read_field(operation, BodyKey::reference())

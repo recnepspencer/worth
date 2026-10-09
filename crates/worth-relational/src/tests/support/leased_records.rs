@@ -17,6 +17,7 @@ pub(crate) fn create_entity_outcome_with_lease(
                     fields,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("leased entity stages");
     runtime

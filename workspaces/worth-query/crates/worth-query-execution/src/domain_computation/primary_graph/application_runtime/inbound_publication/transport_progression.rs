@@ -149,6 +149,10 @@ pub(in crate::domain_computation::primary_graph) fn completion_candidate(
             | Preparation::ExecutionControlStopped { .. }
             | Preparation::OriginalOutboxNotAnEntity
             | Preparation::ForeignOrStaleBasis
+            | Preparation::AllocationDenied { .. }
+            | Preparation::StagingAllocationDenied { .. }
+            | Preparation::StagingCardinalityOverflow
+            | Preparation::StagingInputDirectoryAllocationDenied { .. }
             | Preparation::StagingUnavailable
             | Preparation::ValidationUnavailable
             | Preparation::PreparationUnavailable

@@ -18,7 +18,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .expect("the prospective account owner must be discoverable");
     assert!(discovery.rows().is_empty());
 
-    assert_program_committed::<CreatePersonalAccount>(
+    assert_program_committed(
         execute!(
             fixture,
             teller,
@@ -40,7 +40,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .execute()
         .expect("the created account must be query-visible");
     let created_personal = created_accounts.rows()[0].id();
-    assert_program_committed::<CreateBusinessAccount>(
+    assert_program_committed(
         execute!(
             fixture,
             teller,
@@ -53,7 +53,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         ),
         false,
     );
-    assert_program_committed::<ApplyOpeningFunding>(
+    assert_program_committed(
         execute!(
             fixture,
             teller,
@@ -66,7 +66,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         ),
         true,
     );
-    assert_program_committed::<Deposit>(
+    assert_program_committed(
         execute!(
             fixture,
             teller,
@@ -79,7 +79,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         ),
         true,
     );
-    assert_program_committed::<Withdraw>(
+    assert_program_committed(
         execute!(
             fixture,
             teller,
@@ -97,7 +97,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         recipient: principal_id(RECIPIENT),
         amount: Money::from_minor(250).unwrap(),
     };
-    assert_program_committed::<SendMoney>(
+    assert_program_committed(
         execute!(fixture, owner, mutations::send_money(send.clone()), "send",),
         true,
     );
@@ -123,7 +123,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         "initiate",
     );
     assert!(initiation.continuation().is_some());
-    assert_program_committed::<InitiateBusinessPayment>(initiation.into_execution(), false);
+    assert_program_committed(initiation.into_execution(), false);
     let available = account_activity(&fixture, &approver, fixture.business_account)
         .into_iter()
         .map(|item| item.amount().minor_units())
@@ -141,7 +141,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
             approver: principal_id(APPROVER),
         })
         .idempotency(&key("approve"))
-        .execute();
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
     assert!(matches!(
         approval,
         Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)
@@ -154,7 +154,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .iter()
         .find(|payment| payment.id() != fixture.payment)
         .expect("the newly initiated payment remains pending");
-    assert_program_committed::<RejectPayment>(
+    assert_program_committed(
         execute!(
             fixture,
             approver,
@@ -167,7 +167,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         false,
     );
 
-    assert_program_committed::<GrantAccountAuthorization>(
+    assert_program_committed(
         execute!(
             fixture,
             owner,
@@ -185,7 +185,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .find(|user| user.principal() == principal_id(STRANGER))
         .expect("granted authorization must be query-visible")
         .authorization();
-    assert_program_committed::<RevokeAccountAuthorization>(
+    assert_program_committed(
         execute!(
             fixture,
             owner,
@@ -203,7 +203,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         .find(|item| item.purpose() == PostingPurpose::Deposit)
         .expect("deposit journal must be query-visible")
         .journal();
-    assert_program_committed::<ReverseJournal>(
+    assert_program_committed(
         execute!(
             fixture,
             teller,

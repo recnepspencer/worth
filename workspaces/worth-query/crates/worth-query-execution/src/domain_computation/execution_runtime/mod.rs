@@ -1,7 +1,6 @@
 mod application_candidate_resources;
 mod application_query_resources;
 mod branch_coordination_resources;
-mod completed_evidence_resources;
 mod installation_authority;
 mod output_demand_resources;
 pub(crate) mod product_world;
@@ -20,7 +19,6 @@ pub use application_query_resources::{
     WorthQueryApplicationQueryResourceProfile, WorthQueryApplicationQueryResourceProfileDenial,
 };
 pub use branch_coordination_resources::WorthQueryBranchCoordinationResourceProfile;
-pub use completed_evidence_resources::WorthQueryCompletedEvidenceResourceProfile;
 pub use installation_authority::{
     WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntimeInstallation,
 };

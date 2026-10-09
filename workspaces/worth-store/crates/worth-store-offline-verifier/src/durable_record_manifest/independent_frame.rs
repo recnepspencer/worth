@@ -10,6 +10,7 @@ const FRAME_MAGIC: &[u8; 8] = b"WRC5FRM\0";
 pub(super) struct IndependentFrame<'bytes> {
     pub(super) identity: u64,
     pub(super) payload: &'bytes [u8],
+    pub(super) schema: u8,
 }
 
 pub(super) fn decode_frame(
@@ -22,7 +23,7 @@ pub(super) fn decode_frame(
     }
     if &bytes[..8] != FRAME_MAGIC
         || bytes[8] != expected_kind
-        || bytes[9] != 2
+        || !(bytes[9] == 2 || ((expected_kind == 2 || expected_kind == 8) && bytes[9] == 3))
         || bytes[10..20] != expected_format.canonical_identity_bytes()
         || bytes[22..24] != [0; 2]
         || (expected_kind != 3
@@ -48,8 +49,13 @@ pub(super) fn decode_frame(
     Ok(IndependentFrame {
         identity: u64::from_le_bytes(bytes[28..36].try_into().unwrap()),
         payload: &bytes[FRAME_HEADER_BYTES..],
+        schema: bytes[9],
     })
 }
+
+#[cfg(test)]
+#[path = "independent_frame/tests.rs"]
+mod tests;
 
 pub(super) fn artifact_checksum(bytes: &[u8]) -> u32 {
     checksum_parts(&[bytes])

@@ -71,6 +71,23 @@ fn installed_mutation_binding_resolves_exact_callback_free_contracts() {
         .execution_strategy()
         .expect("the installed mutation operation has one execution strategy")
         .envelope();
+    assert_eq!(
+        envelope.boundary(),
+        worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary::Atomic
+    );
+    assert_eq!(
+        envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::ModelSize),
+        None
+    );
+    assert_eq!(
+        envelope.optional_resource_ceiling(WorthQueryResourceDimension::QueueDepth),
+        None
+    );
+    assert_eq!(envelope.resource_ceilings().iter().count(), 2);
+    assert_eq!(
+        envelope.optional_resource_ceiling(WorthQueryResourceDimension::RetainedBytes),
+        Some(262_144)
+    );
     assert!(
         envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems) >= 1,
         "the operation envelope must admit the binding's exact candidate cardinality"
@@ -81,9 +98,9 @@ fn installed_mutation_binding_resolves_exact_callback_free_contracts() {
         128,
         "candidate bytes must derive from the installed binding"
     );
-    assert!(
-        envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems) >= 4,
-        "validator work must admit the installed binding"
+    assert_eq!(
+        envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
+        None,
     );
     assert_eq!(
         binding.handler_identity(),

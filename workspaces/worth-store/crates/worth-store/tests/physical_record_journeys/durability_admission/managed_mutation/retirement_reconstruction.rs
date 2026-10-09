@@ -16,6 +16,7 @@ use super::super::independent_wal_oracle::{
 use super::published_segments::segment_names;
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
+use crate::retirement_charge_oracle::{assert_one_page_released_net_of_wal, wal_bytes};
 
 #[test]
 fn reopened_store_keeps_cleanup_until_retirement_completion() {
@@ -39,13 +40,10 @@ fn reopened_store_keeps_cleanup_until_retirement_completion() {
     let serving = crate::serving_from_open(&root);
     assert!(serving.records().is_ok());
     let held = serving.certification_charged_growth_bytes();
+    let wal_before = wal_bytes(&root);
     serving.retire_displaced_segment().unwrap();
     let released = serving.certification_charged_growth_bytes();
-    assert_eq!(
-        held - released,
-        page_bytes,
-        "completion releases the page kept after delete"
-    );
+    assert_one_page_released_net_of_wal(&root, wal_before, held, released, page_bytes);
     serving.close();
     let serving = crate::serving_from_open(&root);
     assert_eq!(
@@ -133,10 +131,14 @@ fn retirement_namespace_sync_follows_unlink_before_completion() {
     let serving = crate::serving_from_open(&root);
     assert!(serving.records().is_ok());
     let held = serving.certification_charged_growth_bytes();
+    let wal_before = wal_bytes(&root);
     serving.retire_displaced_segment().unwrap();
-    assert_eq!(
-        held - serving.certification_charged_growth_bytes(),
-        page_bytes
+    assert_one_page_released_net_of_wal(
+        &root,
+        wal_before,
+        held,
+        serving.certification_charged_growth_bytes(),
+        page_bytes,
     );
     serving.close();
     let serving = crate::serving_from_open(&root);

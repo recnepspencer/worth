@@ -16,17 +16,22 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     /// An exact selection whose producer declares no Preserve posture could
     /// not reuse its live output. Nothing ran and the shared row is not
     /// failed: the stop is this caller's.
-    LiveOutputNotReused,
+    LiveOutputNotReused {
+        producer: &'static str,
+        reason: &'static str,
+    },
 }
 
 impl ProducerExecutionStop {
     /// The typed refusal of a caller whose exact producer is not applicable
     /// to the live output it was selected for.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn live_output_not_reused(
+        producer: &'static str,
+        reason: &'static str,
     ) -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::MissingApplicableProducer,
-            "the exact producer declares no Preserve posture and cannot reuse its live output",
+            format!("{producer}: the exact producer declares no Preserve posture and cannot reuse its live output: {reason}"),
         )
     }
 }
@@ -105,10 +110,33 @@ pub(super) fn execution_failed(
     subject: &str,
     error: MutationHandlerExecutionDenial,
 ) -> ProducerExecutionStop {
+    let error = match error {
+        MutationHandlerExecutionDenial::Handler(error) => {
+            return handler_execution_failed(subject, error).into()
+        }
+        error => error,
+    };
     if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
         if let Some(authority) = attempt.request_authority() {
             return request_authority_denied(subject, authority.clone());
         }
+    }
+    let interruption = match &error {
+        MutationHandlerExecutionDenial::Projection(projection) => projection
+            .invariant_denial()
+            .and_then(|denial| denial.source_retention_interruption()),
+        MutationHandlerExecutionDenial::Attempt(attempt) => attempt.source_retention_interruption(),
+        _ => None,
+    };
+    if let Some(interruption) = interruption {
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+        let kind = match interruption {
+            WorthQueryRequestInterruption::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+            WorthQueryRequestInterruption::DeadlineExceeded => {
+                WorthQueryOutputDemandDenialKind::TimedOut
+            }
+        };
+        return request_admission_rejected(denial(kind, format!("{subject}: {error:?}")));
     }
     if let MutationHandlerExecutionDenial::Projection(projection) = &error {
         if let Some(kind) = projection_budget(projection.kind()) {
@@ -151,6 +179,27 @@ fn projection_budget(
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }
         _ => None,
+    }
+}
+
+/// Preserve an exact native output read through a producer suspension.
+pub(super) fn handler_execution_failed(
+    subject: &str,
+    error: crate::domain_computation::primary_graph::HandlerExecutionDenial,
+) -> WorthQueryOutputDemandDenial {
+    match error
+        .downcast::<crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial>()
+    {
+        Ok(mut read) => {
+            let requested = read.requested_output.take();
+            let mut denial = failed(subject, &read);
+            if let Some(requested) = requested {
+                denial = denial.with_requested_output(requested);
+                denial.recovery_posture = crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable;
+            }
+            denial
+        }
+        Err(error) => failed(subject, error),
     }
 }
 

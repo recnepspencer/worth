@@ -1,8 +1,7 @@
 use std::ops::Range;
 use worth_store_physical_format::{
-    DurableExtentManifest, ExtentChunkCoordinate, PhysicalRecordFormatDeclaration,
-    RecordArtifactFile, RecordFrameCoordinate, DURABLE_EXTENT_FRAME_HEADER_BYTES,
-    EXTENT_CHUNK_METADATA_BYTES,
+    DurableExtentManifest, ExtentArenaFrameLayout, ExtentChunkFrame,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile, RecordFrameCoordinate,
 };
 use worth_store_physical_integrity::IntegrityValidatedExtentMembership;
 
@@ -22,24 +21,48 @@ pub(in crate::physical_runtime::record_serving) struct ExtentReadChunk<'session>
     pub(in crate::physical_runtime::record_serving) logical_range: Range<u64>,
 }
 
+/// Only an already selected extent data frame's damaged C.5 chunk can be
+/// contained to one record. Routing, manifest, membership and work failures
+/// still require the existing Store-wide health policy.
+pub(in crate::physical_runtime::record_serving) enum ExtentReadFailure {
+    IsolatedRecordDamage(RecordStreamFailure),
+    Global(RecordStreamFailure),
+}
+
+impl ExtentReadFailure {
+    pub(in crate::physical_runtime::record_serving) const fn global_kind(
+        &self,
+    ) -> Option<RecordStreamFailureKind> {
+        match self {
+            Self::IsolatedRecordDamage(_) => None,
+            Self::Global(failure) => Some(failure.kind()),
+        }
+    }
+
+    pub(super) fn into_stream_failure(self) -> RecordStreamFailure {
+        match self {
+            Self::IsolatedRecordDamage(failure) | Self::Global(failure) => failure,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 struct ExtentChunkReadPlan {
     completed: u64,
-    payload_bytes: usize,
-    frame_bytes: usize,
+    chunk: ExtentChunkFrame,
 }
 
 pub(in crate::physical_runtime::record_serving) struct ExtentReadState {
     artifacts: super::super::residency::record_frame_reader::RecordFrameReader<'static>,
     artifact: RecordArtifactFile,
     manifest: DurableExtentManifest,
-    artifact_bytes: std::num::NonZeroU64,
+    arena_range: worth_store_physical_format::ExtentArenaRange,
     integrity_membership: IntegrityValidatedExtentMembership,
     store: worth_store_physical_format::store_namespace::StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
+    layout: ExtentArenaFrameLayout,
     next_ordinal: u32,
     logical_offset: u64,
-    artifact_offset: u64,
     frame: Option<super::super::residency::frame_loading::LoadedPhysicalFrame>,
     payload: Range<usize>,
     payload_offset: usize,
@@ -50,7 +73,7 @@ impl ExtentReadState {
         artifacts: super::super::residency::record_frame_reader::RecordFrameReader<'static>,
         artifact: RecordArtifactFile,
         manifest: DurableExtentManifest,
-        artifact_bytes: std::num::NonZeroU64,
+        arena_range: worth_store_physical_format::ExtentArenaRange,
         integrity_membership: IntegrityValidatedExtentMembership,
         store: worth_store_physical_format::store_namespace::StableStoreIdentity,
         format: PhysicalRecordFormatDeclaration,
@@ -59,13 +82,14 @@ impl ExtentReadState {
             artifacts,
             artifact,
             manifest,
-            artifact_bytes,
+            arena_range,
             integrity_membership,
             store,
             format,
+            layout: ExtentArenaFrameLayout::new(format, manifest.alignment())
+                .expect("admitted extent arena geometry"),
             next_ordinal: 1,
             logical_offset: 0,
-            artifact_offset: 0,
             frame: None,
             payload: 0..0,
             payload_offset: 0,
@@ -78,7 +102,7 @@ impl ExtentReadState {
         target: &mut [u8],
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
-    ) -> Result<usize, RecordStreamFailure> {
+    ) -> Result<usize, ExtentReadFailure> {
         if self.payload_offset == self.payload.len() {
             if self.logical_offset == self.manifest.logical_bytes() {
                 return Ok(0);
@@ -98,7 +122,7 @@ impl ExtentReadState {
         allocation: &worth_store_buffer_pool::OperationAllocationGrant,
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
-    ) -> Result<Option<ExtentReadChunk<'_>>, RecordStreamFailure> {
+    ) -> Result<Option<ExtentReadChunk<'_>>, ExtentReadFailure> {
         if self.payload_offset == self.payload.len() {
             if self.logical_offset == self.manifest.logical_bytes() {
                 return Ok(None);
@@ -124,25 +148,29 @@ impl ExtentReadState {
         allocation: &worth_store_buffer_pool::OperationAllocationGrant,
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
-    ) -> Result<(), RecordStreamFailure> {
-        let plan = self.plan_chunk_read();
+    ) -> Result<(), ExtentReadFailure> {
+        let plan = self.plan_chunk_read().map_err(ExtentReadFailure::Global)?;
         self.frame = None;
-        let frame = self.load_planned_chunk(allocation, plan, observation, identity)?;
+        let frame = self
+            .load_planned_chunk(allocation, plan, observation, identity)
+            .map_err(ExtentReadFailure::Global)?;
         let (frame, payload) = self.admit_loaded_chunk(frame, plan, observation)?;
         self.install_chunk(frame, payload, plan)
+            .map_err(ExtentReadFailure::Global)
     }
 
-    fn plan_chunk_read(&self) -> ExtentChunkReadPlan {
-        let payload_bytes = (self.manifest.logical_bytes() - self.logical_offset)
-            .min(u64::from(self.manifest.chunk_payload_capacity()))
-            as usize;
-        let frame_bytes =
-            DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES + payload_bytes;
-        ExtentChunkReadPlan {
-            completed: self.delivered_bytes(),
-            payload_bytes,
-            frame_bytes,
-        }
+    /// The next chunk's frame, as the manifest and its layout place it.
+    fn plan_chunk_read(&self) -> Result<ExtentChunkReadPlan, RecordStreamFailure> {
+        let completed = self.delivered_bytes();
+        let chunk = ExtentChunkFrame::of(self.manifest, self.layout, self.next_ordinal)
+            .filter(|chunk| chunk.coordinate().logical_offset() == self.logical_offset)
+            .ok_or_else(|| {
+                RecordStreamFailure::during_read(
+                    RecordStreamFailureKind::ArtifactDamaged,
+                    completed,
+                )
+            })?;
+        Ok(ExtentChunkReadPlan { completed, chunk })
     }
 
     fn load_planned_chunk(
@@ -152,26 +180,29 @@ impl ExtentReadState {
         observation: &mut RecordReadObservation,
         identity: RecordReadIdentity,
     ) -> Result<LoadedPhysicalFrame, RecordStreamFailure> {
-        let coordinate = RecordFrameCoordinate::new(
-            self.artifact,
-            self.artifact_offset,
-            plan.frame_bytes as u32,
-        )
-        .ok_or_else(|| {
+        let damaged = || {
             RecordStreamFailure::during_read(
                 RecordStreamFailureKind::ArtifactDamaged,
                 plan.completed,
             )
-        })?;
+        };
+        let artifact_offset = self
+            .arena_range
+            .offset()
+            .checked_add(plan.chunk.offset())
+            .ok_or_else(damaged)?;
+        let coordinate =
+            RecordFrameCoordinate::new(self.artifact, artifact_offset, plan.chunk.length())
+                .ok_or_else(damaged)?;
         let frame = self
             .artifacts
             .load_exact(
                 allocation,
                 self.artifact,
-                self.artifact_offset,
-                plan.frame_bytes as u32,
-                super::super::residency::frame_loading::ExactFrameSourceExtent::CompleteArtifact(
-                    self.artifact_bytes,
+                artifact_offset,
+                plan.chunk.length(),
+                super::super::residency::frame_loading::ExactFrameSourceExtent::ArenaRange(
+                    self.arena_range,
                 ),
             )
             .map_err(|failure| {
@@ -188,28 +219,13 @@ impl ExtentReadState {
         frame: LoadedPhysicalFrame,
         plan: ExtentChunkReadPlan,
         observation: &mut RecordReadObservation,
-    ) -> Result<(LoadedPhysicalFrame, Range<usize>), RecordStreamFailure> {
-        let coordinate = match ExtentChunkCoordinate::new(
-            self.manifest.record(),
-            self.manifest.extent_cell(),
-            self.manifest.logical_bytes(),
-            self.logical_offset,
-            self.next_ordinal,
-        ) {
-            Some(coordinate) => coordinate,
-            None => {
-                frame.reject_projection_failure();
-                return Err(RecordStreamFailure::during_read(
-                    RecordStreamFailureKind::ArtifactDamaged,
-                    plan.completed,
-                ));
-            }
-        };
+    ) -> Result<(LoadedPhysicalFrame, Range<usize>), ExtentReadFailure> {
+        let coordinate = plan.chunk.coordinate();
         let context = self.artifacts.resident_admission_context().ok_or_else(|| {
-            RecordStreamFailure::during_read(
+            ExtentReadFailure::Global(RecordStreamFailure::during_read(
                 RecordStreamFailureKind::ArtifactDamaged,
                 plan.completed,
-            )
+            ))
         })?;
         let admitted = admit_extent_chunk(
             &frame,
@@ -226,22 +242,34 @@ impl ExtentReadState {
                 if stale {
                     observation.check_generation(false);
                 }
+                if denial == CleanExtentAdmissionDenial::FrameChecksumDamaged {
+                    // C.5 data-frame validation failed after exact selected
+                    // manifest admission. No routing authority was damaged;
+                    // retain the failure locally so disjoint records remain
+                    // readable and diagnostic scrub can still run.
+                    drop(frame);
+                    return Err(ExtentReadFailure::IsolatedRecordDamage(
+                        RecordStreamFailure::during_read(
+                            RecordStreamFailureKind::SelectedDataFrameChecksumDamaged,
+                            plan.completed,
+                        ),
+                    ));
+                }
+                let failure =
+                    RecordStreamFailure::during_read(denial.stream_failure_kind(), plan.completed);
                 if !denial.preserves_resident_bytes() {
                     frame.reject_projection_failure();
                 }
-                return Err(RecordStreamFailure::during_read(
-                    denial.stream_failure_kind(),
-                    plan.completed,
-                ));
+                return Err(ExtentReadFailure::Global(failure));
             }
         };
         observation.check_generation(true);
-        if admitted.payload.len() != plan.payload_bytes {
+        if admitted.payload.len() != plan.chunk.payload_bytes() as usize {
             frame.reject_projection_failure();
-            return Err(RecordStreamFailure::during_read(
+            return Err(ExtentReadFailure::Global(RecordStreamFailure::during_read(
                 RecordStreamFailureKind::FormatMismatch,
                 plan.completed,
-            ));
+            )));
         }
         Ok((frame, admitted.payload))
     }
@@ -252,7 +280,7 @@ impl ExtentReadState {
         payload: Range<usize>,
         plan: ExtentChunkReadPlan,
     ) -> Result<(), RecordStreamFailure> {
-        let next_logical_offset = self.logical_offset + plan.payload_bytes as u64;
+        let next_logical_offset = self.logical_offset + u64::from(plan.chunk.payload_bytes());
         let next_ordinal = if next_logical_offset < self.manifest.logical_bytes() {
             let Some(next_ordinal) = self.next_ordinal.checked_add(1) else {
                 frame.reject_projection_failure();
@@ -268,7 +296,6 @@ impl ExtentReadState {
         self.payload = payload;
         self.payload_offset = 0;
         self.frame = Some(frame);
-        self.artifact_offset += plan.frame_bytes as u64;
         self.logical_offset = next_logical_offset;
         self.next_ordinal = next_ordinal;
         Ok(())
@@ -305,6 +332,10 @@ fn frame_load_stream_failure(
         super::super::RecordReadDenial::PhysicalWork(
             super::super::RecordReadWorkDenial::RuntimeReleased,
         ) => RecordStreamFailureKind::RuntimeReleased,
+        super::super::RecordReadDenial::PhysicalWork(
+            super::super::RecordReadWorkDenial::SchedulerReservationRejected
+            | super::super::RecordReadWorkDenial::SchedulerRejected,
+        ) => RecordStreamFailureKind::SchedulerUnavailable,
         super::super::RecordReadDenial::ResidencyUnavailable(residency) => {
             RecordStreamFailureKind::ResidencyUnavailable(residency)
         }

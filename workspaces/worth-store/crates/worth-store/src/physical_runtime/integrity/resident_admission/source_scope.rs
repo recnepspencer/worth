@@ -58,16 +58,14 @@ pub(in crate::physical_runtime) fn artifact_matches_scope(
         }),
         Family::ExtentManifest => scope.extent_manifest_placement().is_some_and(|placement| {
             artifact
-                == (RecordArtifactFile::ExtentManifest {
-                    extent: placement.extent().get(),
-                    generation: placement.extent_generation(),
+                == (RecordArtifactFile::ExtentArena {
+                    arena: placement.arena_range().arena().get(),
                 })
         }),
-        Family::ExtentChunk => scope.extent_chunk_coordinate().is_some_and(|coordinate| {
+        Family::ExtentChunk => scope.extent_arena_range().is_some_and(|range| {
             artifact
-                == (RecordArtifactFile::Extent {
-                    extent: coordinate.extent_cell().extent_id().get(),
-                    generation: coordinate.extent_cell().generation().get(),
+                == (RecordArtifactFile::ExtentArena {
+                    arena: range.arena().get(),
                 })
         }),
         Family::FreeSpaceHeader => scope.free_space_header_identity().is_some_and(|identity| {
@@ -86,6 +84,14 @@ pub(in crate::physical_runtime) fn artifact_matches_scope(
                     })
             }),
         Family::NamespaceIdentity
+        | Family::BTreeNode
+        | Family::ExtentArenaFrame
+        | Family::BlobResumeSession
+        | Family::BlobChunkFrame
+        | Family::BlobTreeNode
+        | Family::BlobGenerationPublication
+        | Family::BlobDropSetManifest
+        | Family::BlobReclaimDescriptor
         | Family::PhysicalWorkObligation
         | Family::WalFrame
         | Family::CheckpointStreamHeader
@@ -134,12 +140,12 @@ mod tests {
         ProposedStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
     };
     use worth_store_physical_format::{
-        DurableArtifactCrc32c, DurableExtentRecordPlacement, ExtentChunkCoordinate,
-        FreeSpaceBlockReference, FreeSpaceHeaderScopeIdentity, FreeSpaceKey,
+        DurableArtifactCrc32c, DurableExtentRecordPlacement, ExtentArenaId, ExtentArenaRange,
+        ExtentChunkCoordinate, FreeSpaceBlockReference, FreeSpaceHeaderScopeIdentity, FreeSpaceKey,
         FreeSpaceMembershipBlockScopeIdentity, ManifestBlockReference, PageGenerationCell,
         PersistedRecordIdentity, PhysicalExtentId, PhysicalGeneration, PhysicalGenerationAuthority,
         PhysicalPageId, PhysicalRecordFormatDeclaration, PhysicalSegmentId, PhysicalTreeIdentity,
-        RecordAllocationClass, RootRoutingBlockScopeIdentity, SegmentManifestBlockReference,
+        RootRoutingBlockScopeIdentity, SegmentManifestBlockReference,
         SegmentMembershipBlockScopeIdentity, SegmentPageKey,
     };
     use worth_store_physical_integrity::PhysicalByteRange;
@@ -155,6 +161,7 @@ mod tests {
         let segment = segment_reference();
         let free = free_reference();
         let extent = extent_cell();
+        let arena = ExtentArenaRange::new(ExtentArenaId::new(17).unwrap(), 4096, 8192).unwrap();
         let scopes = [
             (
                 RecordArtifactFile::BootstrapCatalog,
@@ -197,27 +204,23 @@ mod tests {
                 ),
             ),
             (
-                RecordArtifactFile::ExtentManifest {
-                    extent: extent.extent_id().get(),
-                    generation: extent.generation().get(),
-                },
+                RecordArtifactFile::ExtentArena { arena: 17 },
                 PhysicalArtifactScope::extent_manifest(
                     store,
                     format,
-                    DurableExtentRecordPlacement::new(record(7), extent, 1024).unwrap(),
+                    DurableExtentRecordPlacement::legacy_unknown(record(7), extent, 1024, arena)
+                        .unwrap(),
                     range,
                 ),
             ),
             (
-                RecordArtifactFile::Extent {
-                    extent: extent.extent_id().get(),
-                    generation: extent.generation().get(),
-                },
+                RecordArtifactFile::ExtentArena { arena: 17 },
                 PhysicalArtifactScope::extent_chunk(
                     store,
                     format,
                     ExtentChunkCoordinate::new(record(7), extent, 1024, 0, 1).unwrap(),
                     range,
+                    arena,
                 ),
             ),
             (
@@ -353,8 +356,8 @@ mod tests {
             18,
             0,
             19,
-            FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap(),
-            FreeSpaceKey::new(RecordAllocationClass::Extent, 2).unwrap(),
+            FreeSpaceKey::inline(1).unwrap(),
+            FreeSpaceKey::arena(ExtentArenaId::new(2).unwrap(), 0),
         )
         .unwrap()
     }

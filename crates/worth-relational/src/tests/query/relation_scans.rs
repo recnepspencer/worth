@@ -55,9 +55,14 @@ fn relation_kind_scans_return_only_visible_relations_of_that_kind() {
             WorkerIntentBatch::new("delete-r1").push(MutationIntent::Relation(
                 RelationMutationIntent::Delete(DeleteRelationIntent { relation_id: r1 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(&runtime).unwrap()
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
     };
     let visible = runtime
         .read_truth()

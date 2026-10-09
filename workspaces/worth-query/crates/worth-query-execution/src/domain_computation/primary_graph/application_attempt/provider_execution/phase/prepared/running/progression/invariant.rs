@@ -1,9 +1,5 @@
 use crate::domain_computation::primary_graph as graph;
-use crate::domain_computation::WorthQueryInvariantExecutionDenialKind as InvariantDenial;
 use crate::domain_computation::WorthQueryInvariantStateLocator;
-use graph::application_attempt::provider_compare_denial::{
-    provider_session_control_denied, provider_session_kind_denied,
-};
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,
 };
@@ -13,8 +9,12 @@ use graph::WorthQueryApplicationCommitDenial as Denial;
 pub(super) fn progress_invariant_candidate<'run>(
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     fresh: crate::domain_computation::WorthQueryFreshDecisionReadSet,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
-    provider: &std::sync::Arc<graph::provider::WorthQueryPrimaryGraphProvider>,
+    provider: &std::sync::Arc<
+        crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    >,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
     WorthQueryProviderProgressionOutcome,
@@ -43,118 +43,65 @@ pub(super) fn progress_invariant_candidate<'run>(
         .facts()
         .iter()
         .map(|fact| {
+            crate::domain_computation::provider_session::check_invariant_request_live(Some(
+                request,
+            ))?;
             WorthQueryInvariantStateLocator::new("application-proposed-state", fact.identity())
         })
         .collect::<Result<Vec<_>, _>>();
-    let _candidate_admission = match provider
-        .admit_primary_candidate(inspection.provider_session_view())
-    {
-        Ok(admission) => admission,
+    let candidate = locators
+        .as_ref()
+        .map(|_| ())
+        .map_err(Clone::clone)
+        .and_then(|()| {
+            crate::domain_computation::provider_session::check_invariant_request_live(Some(request))
+        })
+        .and_then(|()| {
+            provider.admit_primary_candidate(inspection.provider_session_view(), allocation_policy)
+        });
+    match candidate {
+        Ok(()) => (),
         Err(failure) => {
             inspection.discard();
-            if let Some(custom_invariant) = failure.custom_invariant_denial().cloned() {
-                return Err(WorthQueryProviderProgressionOutcome::Denied(
-                    Denial::custom_invariant_denied(
-                        DenialStage::InvariantExecution,
-                        custom_invariant,
-                        failure.detail().to_owned(),
-                    ),
-                ));
-            }
-            return Err(match failure.kind() {
-                InvariantDenial::ExecutionDenied(kind) => {
-                    WorthQueryProviderProgressionOutcome::Denied(provider_session_kind_denied(
-                        kind,
-                        DenialStage::InvariantExecution,
-                        failure.detail(),
-                    ))
-                }
-                InvariantDenial::ExecutionControlStopped(kind) => {
-                    WorthQueryProviderProgressionOutcome::Denied(provider_session_control_denied(
-                        kind,
-                        DenialStage::InvariantExecution,
-                        failure.detail(),
-                    ))
-                }
-                InvariantDenial::RetentionCapacityExhausted => {
-                    WorthQueryProviderProgressionOutcome::Denied(
-                        Denial::retention_capacity_exhausted(DenialStage::InvariantExecution),
-                    )
-                }
-                InvariantDenial::RetentionIdentityExhausted => {
-                    WorthQueryProviderProgressionOutcome::Denied(
-                        Denial::retention_identity_exhausted(DenialStage::InvariantExecution),
-                    )
-                }
-                InvariantDenial::ProductBasisStale => WorthQueryProviderProgressionOutcome::Denied(
-                    Denial::product_basis_stale(DenialStage::InvariantExecution),
+            return Err(WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                    DenialStage::InvariantExecution,
+                    failure,
                 ),
-                InvariantDenial::CandidateValidatorWorkExceeded {
-                    maximum_work,
-                    required_work,
-                } => WorthQueryProviderProgressionOutcome::Denied(
-                    Denial::candidate_validator_work_exceeded(
-                        DenialStage::InvariantExecution,
-                        maximum_work,
-                        required_work,
-                    ),
-                ),
-                InvariantDenial::InvariantNotInstalled
-                | InvariantDenial::ExecutorRoleMismatch
-                | InvariantDenial::UndeclaredStateLoadFamily
-                | InvariantDenial::StateLoadBudgetExceeded
-                | InvariantDenial::ExecutionBudgetExceeded
-                | InvariantDenial::ProviderUnsupported
-                | InvariantDenial::ProviderRejected
-                | InvariantDenial::RelationalDeferred(_)
-                | InvariantDenial::CustomInvariantDenied
-                | InvariantDenial::SnapshotIdentityExhausted
-                | InvariantDenial::TransactionOverlayCapacityExhausted { .. }
-                | InvariantDenial::TransactionFootprintCapacityExhausted { .. }
-                | InvariantDenial::SavepointCapacityExhausted { .. }
-                | InvariantDenial::SavepointFootprintCapacityExhausted { .. }
-                | InvariantDenial::SavepointIdentityExhausted
-                | InvariantDenial::CandidateCapacityExhausted { .. }
-                | InvariantDenial::PublishedSnapshotCapacityExhausted { .. }
-                | InvariantDenial::CandidateIdentityExhausted
-                | InvariantDenial::PreparedRootBudgetExhausted { .. }
-                | InvariantDenial::PatchPositionReservationContended
-                | InvariantDenial::ProposalIdentityExhausted
-                | InvariantDenial::ProviderPanicked
-                | InvariantDenial::EvidenceSubstitution
-                | InvariantDenial::EmptyStateLoad
-                | InvariantDenial::StateLoadClosureMismatch
-                | InvariantDenial::VerdictPostureMismatch => {
-                    WorthQueryProviderProgressionOutcome::Denied(
-                        Denial::provider_rejected_with_detail(
-                            DenialStage::InvariantExecution,
-                            failure.detail().to_owned(),
-                        ),
-                    )
-                }
-            });
+            ));
         }
     };
     let receipts = match locators.and_then(|locators| {
-        let slots = inspection
-            .installed_invariant_requirements()
-            .iter()
-            .map(|requirement| requirement.slot().to_owned())
-            .collect::<Vec<_>>();
+        let slots =
+                inspection
+                    .installed_invariant_requirements()
+                    .iter()
+                    .map(|requirement| {
+                        crate::domain_computation::provider_session::check_invariant_request_live(
+                            Some(request),
+                        )?;
+                        Ok(requirement.slot().to_owned())
+                    })
+                    .collect::<Result<
+                        Vec<_>,
+                        crate::domain_computation::WorthQueryInvariantExecutionFailure,
+                    >>()?;
         slots
             .into_iter()
             .map(|slot| {
                 inspection
                     .select_installed_invariant(&slot)?
-                    .admit_state_load_plan(locators.clone())?
+                    .admit_state_load_plan(locators.clone(), Some(request))?
                     .execute()
             })
             .collect::<Result<Vec<_>, _>>()
     }) {
         Ok(receipts) => receipts,
-        Err(_) => {
+        Err(failure) => {
             inspection.discard();
-            return Err(progression_denied(DenialStage::InvariantExecution));
+            return Err(WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                    DenialStage::InvariantExecution, failure)));
         }
     };
     let progression = match inspection.admit_invariant_progression(receipts) {

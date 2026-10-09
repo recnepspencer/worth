@@ -53,6 +53,7 @@ pub(super) trait WorthQueryErasedProviderSessionLifecycle: Send + Sync {
     fn commit(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -117,11 +118,12 @@ impl<P: WorthQueryProviderSessionLifecycle> WorthQueryErasedProviderSessionLifec
     fn commit(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
-        self.commit_prepared_session(session)
+        self.commit_prepared_session(session, allocation_policy)
     }
 
     fn abort(
@@ -306,6 +308,7 @@ impl WorthQueryGraphProviderAnchor {
     pub(crate) fn commit_session(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -315,7 +318,7 @@ impl WorthQueryGraphProviderAnchor {
             .as_ref()
             .ok_or_else(WorthQueryProviderSessionFailure::unsupported)
             .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-        lifecycle.commit(session)
+        lifecycle.commit(session, allocation_policy)
     }
 
     pub(crate) fn abort_session(

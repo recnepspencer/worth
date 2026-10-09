@@ -113,13 +113,13 @@ fn apply_operator(fixture: &crate::support::StoreFixture, target: Target, operat
                     bytes.pop();
                 }
                 Operator::USchema => {
-                    bytes[9] = 3;
+                    bytes[9] = if target == Target::Root { 8 } else { 3 };
                     refresh_crc32c(&mut bytes);
                 }
                 Operator::UFormat => {
-                    bytes[10..12].copy_from_slice(&2_u16.to_le_bytes());
+                    bytes[10..12].copy_from_slice(&3_u16.to_le_bytes());
                     if target != Target::Root {
-                        bytes[89..91].copy_from_slice(&2_u16.to_le_bytes());
+                        bytes[89..91].copy_from_slice(&3_u16.to_le_bytes());
                     }
                     refresh_crc32c(&mut bytes);
                 }
@@ -175,7 +175,7 @@ fn assert_localization(artifact: &OfflineArtifactObservation, target: Target, op
             "a substituted payload must not replace the parent-addressed artifact identity"
         );
     }
-    let artifact_bytes = if target == Target::Root { 368 } else { 107 };
+    let artifact_bytes = if target == Target::Root { 384 } else { 107 };
     assert_eq!(
         artifact
             .range()
@@ -188,13 +188,13 @@ fn assert_localization(artifact: &OfflineArtifactObservation, target: Target, op
         Operator::USchema => assert_unsupported(
             artifact,
             OfflineUnsupportedVersionAxis::EnvelopeSchema,
-            3,
+            if target == Target::Root { 8 } else { 3 },
             (9, 1),
         ),
         Operator::UFormat => assert_unsupported(
             artifact,
             OfflineUnsupportedVersionAxis::PhysicalRecordFormat,
-            2,
+            3,
             (10, 2),
         ),
         _ => {

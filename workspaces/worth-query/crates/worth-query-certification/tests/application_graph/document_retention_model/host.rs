@@ -27,6 +27,7 @@ mod world_resources;
 use world_resources::world_resources;
 
 use super::assessment_output::{
+    OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,
     RetentionAssessmentBinding, RetentionAssessmentHandler, RetentionAssessmentProducer,
     RetentionAssessmentProvider,
 };
@@ -111,6 +112,11 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
                 setup.handler::<RetentionAssessmentBinding, _>(RetentionAssessmentHandler)
             })
             .and_then(|()| {
+                setup.handler::<OrdinaryRetentionAssessmentBinding, _>(
+                    OrdinaryRetentionAssessmentHandler,
+                )
+            })
+            .and_then(|()| {
                 setup.producer::<RetentionAssessmentProducer>(RetentionAssessmentProvider)
             })
             .and_then(|()| setup.conditional::<RetentionAssessmentReadiness>(()))
@@ -134,10 +140,9 @@ pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
             world_resources(1_024, 256 * 1024 * 1024, 2_048),
-            runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
                 200_000,
                 128 * 1024 * 1024,
-                20_000_000,
             )
             .expect("finite workflow-scale candidate resources")
             .with_maximum_operation_width(200_000)
@@ -329,15 +334,14 @@ fn seed_document(
         .expect("the related document must seed");
 }
 
-fn host_limits() -> WorthQueryInMemoryApplicationLimits {
+pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
     // Installation admits the binding's maximum publication shape even though
     // the ordinary Document handler requests its narrow candidate at execution.
     WorthQueryInMemoryApplicationLimits::new(
         world_resources(256, 4 * 1024 * 1024, 256),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
             200_000,
             128 * 1024 * 1024,
-            20_000_000,
         )
         .expect("valid candidate limits"),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)

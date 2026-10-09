@@ -26,9 +26,16 @@ fn subscriber_stream_reports_crossed_schema_boundary_from_in_memory_history() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     let batch = runtime
         .publication()
@@ -83,9 +90,16 @@ fn subscriber_stream_treats_unconsumed_boundary_as_unchanged() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.identity-only.v1".to_string(),

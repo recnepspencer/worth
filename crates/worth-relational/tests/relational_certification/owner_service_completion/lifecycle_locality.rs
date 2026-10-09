@@ -29,11 +29,17 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
         )
         .expect("the exact parked basis opens a controlled transaction");
     transaction
-        .push_batch(WorkerIntentBatch::new("park-lifecycle-coordination"))
+        .push_batch(
+            WorkerIntentBatch::new("park-lifecycle-coordination"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the locality batch remains within its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the controlled transaction prepares canonically");
 
     let publication_port = services.publication_port();

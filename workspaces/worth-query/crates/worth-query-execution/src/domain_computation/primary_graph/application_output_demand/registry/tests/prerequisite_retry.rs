@@ -78,13 +78,35 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
     // The upstream row this execution read is no longer indexed: a newer
     // settlement of its demand retired it.
     let (_lineage, retired) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let selected = graph.integration_handle().with_runtime(|runtime| {
+        let basis = runtime
+            .admit_branch_basis(&runtime.main_branch_identity())
+            .unwrap();
+        let snapshot = runtime
+            .snapshots()
+            .snapshot_for_observation(&basis.observation())
+            .unwrap();
+        Arc::new(runtime.read_truth().positioned_snapshot(&snapshot).unwrap())
+    });
+    let consumed = crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::retained_for_test(
+        &source_owner, retired, Arc::from([]), Vec::new(), None, selected,
+    );
     let stop = context
-        .prepare_prerequisites(std::iter::once(&retired), &mut admission)
+        .prepare_prerequisites(std::iter::once(&consumed), &source_owner, &mut admission)
         .err()
         .expect("a retired upstream cannot be claimed");
     assert_eq!(
         stop.kind(),
         WorthQueryOutputDemandDenialKind::PublicationStale
+    );
+    assert!(
+        stop.clone().take_requested_output().is_none(),
+        "a retired exact settlement cannot authorize managed readiness recovery"
     );
     assert_eq!(
         stop.recovery_posture(),

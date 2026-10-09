@@ -1,4 +1,6 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use crate::domain_computation::primary_graph::application_attempt::{
     observe_adjacency, observe_field_value, WorthQueryApplicationAdjacencyDirection,
@@ -13,7 +15,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     transition: WorkflowTransitionLocator,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<
     (
         worth_relational::facade::identity::EntityId,
@@ -67,17 +69,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         locator: layout.proposal.identity.clone(),
         value,
     });
-    if facts.len() > maximum_facts {
-        return Err(budget_denial());
-    }
+    check_request_live(observation_request, "workflow retained evidence")?;
     Ok((proposal, identity, facts))
-}
-
-fn budget_denial() -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(
-        WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-        "workflow proposal binding fact budget",
-    )
 }
 
 fn decode_identity(text: &str) -> Option<[u8; 32]> {

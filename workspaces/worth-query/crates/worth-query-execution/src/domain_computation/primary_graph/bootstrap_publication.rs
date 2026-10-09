@@ -45,17 +45,18 @@ pub(super) fn commit_bootstrap_rows(
         for (ordinal, row) in rows.into_iter().enumerate() {
             batch = append_principal_row(batch, first_principal_ordinal + ordinal, row);
         }
-        for row in entity_rows {
-            batch = append_typed_entity(batch, row);
-        }
-        for row in relation_rows {
-            batch = append_typed_relation(batch, row);
-        }
+        batch = append_typed_rows(batch, entity_rows, relation_rows);
         transaction
-            .push_batch(batch)
+            .push_batch(
+                batch,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(map_bootstrap_staging_denial)?;
         let committed = transaction
-            .commit(runtime)
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .map_err(map_bootstrap_commit_denial)?;
         let commit_id = committed.commit.commit_id;
         crate::relational_snapshot_release::release_query_snapshot(runtime, &committed.snapshot);
@@ -108,32 +109,16 @@ pub(super) fn map_bootstrap_staging_denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
-        Denial::OverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        } => WorthQueryPrimaryGraphInstallationDenialKind::TransactionOverlayCapacityExhausted {
-            maximum_bytes,
-            required_bytes,
-        },
-        Denial::FootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryPrimaryGraphInstallationDenialKind::TransactionFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
+        Denial::AllocationDenied(_)
+        | Denial::CardinalityOverflow
+        | Denial::InputDirectoryAllocationDenied { .. } => {
+            WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
+        }
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {
             WorthQueryPrimaryGraphInstallationDenialKind::SavepointCapacityExhausted {
                 maximum_savepoints,
             }
         }
-        Denial::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        } => WorthQueryPrimaryGraphInstallationDenialKind::SavepointFootprintCapacityExhausted {
-            maximum_loci,
-            required_loci,
-        },
         Denial::SavepointIdentityExhausted => {
             WorthQueryPrimaryGraphInstallationDenialKind::SavepointIdentityExhausted
         }
@@ -149,6 +134,20 @@ pub(super) fn map_bootstrap_staging_denial(
 
 mod commit_denial;
 pub(super) use commit_denial::map_bootstrap_commit_denial;
+
+pub(super) fn append_typed_rows(
+    mut batch: WorkerIntentBatch,
+    entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
+    relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
+) -> WorkerIntentBatch {
+    for row in entity_rows {
+        batch = append_typed_entity(batch, row);
+    }
+    for row in relation_rows {
+        batch = append_typed_relation(batch, row);
+    }
+    batch
+}
 
 fn append_typed_entity(
     batch: WorkerIntentBatch,

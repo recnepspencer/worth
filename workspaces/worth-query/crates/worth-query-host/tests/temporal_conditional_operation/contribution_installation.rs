@@ -254,8 +254,10 @@ pub(super) fn publishes_delivers_and_executes() {
         (configuration,),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
-            runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
-                .unwrap(),
+            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
+                5_120, 2_048,
+            )
+            .unwrap(),
             runtime::WorthQueryApplicationQueryResourceProfile::bounded(
                 5_120,
                 2_048,
@@ -353,8 +355,10 @@ pub(super) fn zero_route_installation_is_denied() {
         },),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
-            runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
-                .unwrap(),
+            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
+                5_120, 2_048,
+            )
+            .unwrap(),
             runtime::WorthQueryApplicationQueryResourceProfile::bounded(
                 5_120,
                 2_048,
@@ -383,6 +387,8 @@ mod source_change;
 use source_change::change_input;
 #[path = "contribution_installation/checkpoint.rs"]
 mod checkpoint;
+#[path = "contribution_installation/checkpoint_transition.rs"]
+mod checkpoint_transition;
 #[path = "contribution_installation/publication_limit.rs"]
 mod publication_limit;
 pub(super) use checkpoint::{

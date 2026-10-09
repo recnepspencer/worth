@@ -3,7 +3,7 @@ use worth_store_recovery_runtime::{
     RecoveryReportDenialCause, RecoveryReportEnvelope, RecoveryReportOutcome,
 };
 
-use super::history::ParentPhysicalHistory;
+use super::history::{ParentHistoryMismatch, ParentPhysicalHistory};
 
 #[path = "comparison/evidence.rs"]
 mod evidence;
@@ -12,7 +12,7 @@ const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 512 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RecoveryObserverDisagreement {
     RecoveredWithoutArtifacts,
-    ParentHistoryMismatch,
+    ParentHistoryMismatch(ParentHistoryMismatch),
     StoreIdentityMismatch,
     RootGenerationMismatch,
     RuntimeCounterMismatch,
@@ -41,7 +41,7 @@ pub(super) fn compare_runtime_and_observer_with_budget(
 ) -> Result<(), RecoveryObserverDisagreement> {
     expected_history
         .compare_report(observer)
-        .map_err(|_| RecoveryObserverDisagreement::ParentHistoryMismatch)?;
+        .map_err(RecoveryObserverDisagreement::ParentHistoryMismatch)?;
     if runtime.outcome() == RecoveryReportOutcome::Recovered
         && observer.selector_store_identity() != runtime.store_identity()
     {

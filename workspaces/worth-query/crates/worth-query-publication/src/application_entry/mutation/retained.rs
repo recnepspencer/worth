@@ -12,6 +12,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationReadObservation as RetainedRead,
     WorthQueryApplicationRetainedCommitOutcome, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -71,6 +72,7 @@ where
 {
     pub fn execute_retained(
         self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -88,8 +90,13 @@ where
         self.execute_retained_with_commit(
             super::authorization::prepare,
             |application, program, binding| {
-                application.compare_and_commit_application_retained(program, binding.idempotency())
+                application.compare_and_commit_application_retained(
+                    program,
+                    binding.idempotency(),
+                    allocation_policy,
+                )
             },
+            allocation_policy,
         )
     }
 
@@ -100,6 +107,7 @@ where
     pub fn execute_retained_in_program<Program>(
         self,
         application: &'application worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -136,15 +144,18 @@ where
                         program,
                         binding.identities(),
                         |idempotency| binding.extension().apply(idempotency),
+                        allocation_policy,
                     )
                 } else {
                     application.compare_and_commit_program_action_retained(
                         program,
                         binding.identities(),
                         |idempotency| binding.extension().apply(idempotency),
+                        allocation_policy,
                     )
                 }
             },
+            allocation_policy,
         )
     }
 
@@ -168,6 +179,7 @@ where
             >,
             &WorthQueryMutationCommitBinding<'_, '_, Schema, Intent::Binding>,
         ) -> WorthQueryApplicationRetainedCommitOutcome,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -176,19 +188,20 @@ where
         WorthQueryApplicationRequestMutationDenial,
     > {
         let retained: RefCell<Option<Arc<RetainedRead>>> = RefCell::new(None);
-        let outcome: Outcome<Schema, Intent> =
-            self.execute_with_preparation_and_commit(prepare, |application, program, binding| {
-                match commit(application, program, binding) {
-                    WorthQueryApplicationRetainedCommitOutcome::Committed {
-                        receipt,
-                        retained: observation,
-                    } => {
-                        retained.replace(Some(observation));
-                        WorthQueryApplicationCommitOutcome::Committed(receipt)
-                    }
-                    WorthQueryApplicationRetainedCommitOutcome::Other(outcome) => outcome,
+        let outcome: Outcome<Schema, Intent> = self.execute_with_preparation_and_commit(
+            prepare,
+            |application, program, binding| match commit(application, program, binding) {
+                WorthQueryApplicationRetainedCommitOutcome::Committed {
+                    receipt,
+                    retained: observation,
+                } => {
+                    retained.replace(Some(observation));
+                    WorthQueryApplicationCommitOutcome::Committed(receipt)
                 }
-            })?;
+                WorthQueryApplicationRetainedCommitOutcome::Other(outcome) => outcome,
+            },
+            allocation_policy,
+        )?;
         Ok(match outcome {
             WorthQueryApplicationMutationOutcome::Committed { receipt, result } => {
                 let observation = retained

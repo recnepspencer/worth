@@ -1,12 +1,12 @@
 //! Local Blob/physical-plan correlation, not an executed Store rewrite.
+use super::test_support::physical_compaction::{
+    admitted_compaction_plan, published_compaction_at_manifest,
+};
 use super::test_support::{
     authority, compacted_rewritten_publication, intent, verified_read_for_rewritten,
 };
 use crate::{BlobCompactionDenial, BlobCompactionEquivalence};
 use worth_store_physical_isolation::{CompactionReadInterlockPlan, CompactionReadPlanCompletion};
-use worth_store_test_support::harness::physical_isolation::compaction::{
-    admitted_compaction_plan, published_compaction_at_manifest,
-};
 
 #[test]
 fn rewrite_consumes_matching_local_plan_completion_without_recovery_evidence() {

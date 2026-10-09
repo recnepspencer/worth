@@ -1,4 +1,6 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use std::marker::PhantomData;
+use worth_execution::ExecutionAllocationPolicy;
 
 use super::{
     denial, observation_admission, CompletedHandlerFactBoundary, SealedComputationFacts,
@@ -11,21 +13,15 @@ impl<Schema, Operation, Input, Scope, Phase>
 {
     pub fn complete(
         mut self,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.facts.len().saturating_add(self.source_facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
         if self
             .expected_facts
             .as_ref()
@@ -33,7 +29,10 @@ impl<Schema, Operation, Input, Scope, Phase>
         {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                self.admission.operation(),
+                format!(
+                    "{}: projected decision fact keys differ",
+                    self.admission.operation()
+                ),
             ));
         }
         let installed_scopes_close_over_facts = self
@@ -57,7 +56,10 @@ impl<Schema, Operation, Input, Scope, Phase>
         {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                self.admission.operation(),
+                format!(
+                    "{}: decision facts do not close over installed read scopes",
+                    self.admission.operation()
+                ),
             ));
         }
         if self.expected_facts.is_none()
@@ -99,11 +101,41 @@ impl<Schema, Operation, Input, Scope, Phase>
             CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
             retained,
         );
+        let operation = self.admission.operation();
+        let fact_count = self
+            .facts
+            .len()
+            .checked_add(self.source_facts.len())
+            .ok_or_else(|| {
+                super::super::retained_decision_facts::StoreDenial::Representability
+                    .into_attempt_denial(operation)
+            })?;
+        let check_authority = || {
+            self.admission
+                .validate_current_authority()
+                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
+        };
+        let installed_read_scopes = super::admit_array(
+            self.installed_read_scopes.len(),
+            self.installed_read_scopes.into_values(),
+            allocation_policy,
+            operation,
+            check_authority,
+        )?;
+        let facts = super::admit_array(
+            fact_count,
+            self.facts
+                .into_values()
+                .chain(self.source_facts.into_values()),
+            allocation_policy,
+            operation,
+            check_authority,
+        )?;
         Ok(WorthQueryCompleteApplicationReadSet {
             admission: self.admission,
             lease: self.lease,
-            installed_read_scopes: self.installed_read_scopes.into_values().collect(),
-            facts: self.facts.into_values().chain(self.source_facts).collect(),
+            installed_read_scopes,
+            facts,
             consumed_outputs: self.consumed_outputs,
             #[cfg(test)]
             computation_facts,

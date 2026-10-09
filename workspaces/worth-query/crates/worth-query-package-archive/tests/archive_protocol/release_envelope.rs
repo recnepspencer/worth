@@ -12,6 +12,8 @@ const CHECKSUM_BYTES: usize = 32;
 
 #[test]
 fn version_one_release_envelope_is_deterministic_frozen_and_decodable() {
+    // worth-query-installation/src/package/identity.rs:81 fixes identity v4;
+    // encode the fixture archive and descriptor, then checksum the v1 envelope.
     let records = fixture::minimal_package().export_typed_records().unwrap();
     let first = signed_envelope_bytes(&records, fixture_descriptor());
     assert_eq!(signed_envelope_bytes(&records, fixture_descriptor()), first);

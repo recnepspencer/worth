@@ -83,12 +83,18 @@ impl<'run> WorthQueryAdmittedProviderSession<'run> {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryRegisteredProviderSession<'run>,
         WorthQueryProviderSessionRegistrationFailure,
     > {
-        match authorization.register_provider_attempt(prepared, self.staged, attempt_basis, context)
-        {
+        match authorization.register_provider_attempt(
+            prepared,
+            self.staged,
+            attempt_basis,
+            context,
+            allocation_policy,
+        ) {
             Ok(registered) => Ok(WorthQueryRegisteredProviderSession {
                 registered,
                 mutation_run: self.mutation_run,
@@ -149,13 +155,14 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
             Input,
             Scope,
         >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> super::WorthQueryProviderProgressionCompletion
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
     {
         super::WorthQueryProviderProgressionCompletion {
-            outcome: self.registered.progress(authority),
+            outcome: self.registered.progress(authority, allocation_policy),
             cleanup: super::WorthQueryApplicationMutationCleanupOwner::ProviderBound(
                 self.mutation_run,
             ),
@@ -166,3 +173,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
 #[cfg(test)]
 #[path = "session_admission/overlay_conflict_tests.rs"]
 mod overlay_conflict_tests;
+
+#[cfg(test)]
+#[path = "session_admission/comparison_scope_tests.rs"]
+mod comparison_scope_tests;

@@ -8,7 +8,8 @@ use worth_runtime_bridge::facade::{
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitOutcome,
 };
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::provider_denial::denied;
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::provider_denial::{denied, denied_with_detail};
+use worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary;
 use super::{LocalWorkflowSettlementPublication, WorthQueryPreparedApplicationCommit};
 use crate::domain_computation::operation_binding::WorthQueryApplicationOperationBindingInput;
 use crate::domain_computation::primary_graph::{
@@ -107,12 +108,24 @@ where
         SnapshotReadPacket::new(Vec::new()),
     );
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
-    let running = application
+    let boundary = attempt.resources().envelope().boundary();
+    let run_admission = application
         .runtime
-        .managed_run_admission(&request_bridge, &application.product_runtime.source)
-        .admit_direct(&operation, attempt, read_request)
-        .map_err(|_| denied(DenialStage::ManagedRunAdmission))?
-        .start();
+        .managed_run_admission(&request_bridge, &application.product_runtime.source);
+    let running = match boundary {
+        WorthQueryExecutionBoundary::Atomic => {
+            run_admission.admit_atomic_direct(&operation, attempt, read_request)
+        }
+        WorthQueryExecutionBoundary::BoundedStep => {
+            run_admission.admit_direct(&operation, attempt, read_request)
+        }
+    }
+    .map_err(|failure| {
+        let detail = format!("{:?}: {}", failure.kind(), failure.detail());
+        failure.release();
+        denied_with_detail(DenialStage::ManagedRunAdmission, detail)
+    })?
+    .start();
     let Some(mutation_run) = admission.graph_work().bind_mutation_run(&running) else {
         let _ = running
             .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)

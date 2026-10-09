@@ -1,4 +1,4 @@
-use worth_store_physical_format::PersistedRecordIdentity;
+use worth_store_physical_format::{PersistedRecordIdentity, RecordFrameCoordinate};
 
 use crate::physical_runtime::durability::SettledPhysicalMutationBasis;
 use crate::physical_runtime::{
@@ -15,12 +15,20 @@ pub struct RootPublicationPhysicalMutationMember {
     identity: PhysicalRootPublicationMemberIdentity,
     settled: SettledPhysicalMutationBasis,
     completion: PreparedRecordCompletionProjection,
+    release_head_effect: Option<worth_store_physical_format::PersistedReleaseHeadClaim>,
 }
 
 impl RootPublicationPhysicalMutationMember {
+    pub(in crate::physical_runtime) fn encoded_frame_header_witness(
+        &self,
+    ) -> Option<(u64, u64, [u8; 32], [u8; 32])> {
+        self.settled.encoded_frame_header_witness()
+    }
+
     pub(in crate::physical_runtime) fn new(
         settled: SettledPhysicalMutationBasis,
         completion: PreparedRecordCompletionProjection,
+        release_head_effect: Option<worth_store_physical_format::PersistedReleaseHeadClaim>,
     ) -> Self {
         let binding = settled.group_binding();
         let identity = PhysicalRootPublicationMemberIdentity::new(
@@ -33,7 +41,14 @@ impl RootPublicationPhysicalMutationMember {
             identity,
             settled,
             completion,
+            release_head_effect,
         }
+    }
+
+    pub(in crate::physical_runtime) fn selected_head_claim(
+        &self,
+    ) -> Option<&worth_store_physical_format::PersistedReleaseHeadClaim> {
+        self.release_head_effect.as_ref()
     }
 
     pub const fn identity(&self) -> PhysicalRootPublicationMemberIdentity {
@@ -46,6 +61,16 @@ impl RootPublicationPhysicalMutationMember {
 
     pub fn persisted_records(&self) -> &[PersistedRecordIdentity] {
         self.completion.records()
+    }
+
+    pub(in crate::physical_runtime) fn completed_data_frame_coordinates(
+        &self,
+    ) -> Box<[RecordFrameCoordinate]> {
+        self.settled
+            .data_effects()
+            .iter()
+            .map(|effect| effect.coordinate())
+            .collect()
     }
 
     /// Projects one completed physical record into the serving read identity.
@@ -64,7 +89,16 @@ impl RootPublicationPhysicalMutationMember {
     }
 
     pub fn data_effect_count(&self) -> usize {
-        self.settled.data_effects().len()
+        self.source_copy_evidence().map_or_else(
+            || self.settled.data_effects().len(),
+            |copy| copy.frame_writes() as usize,
+        )
+    }
+
+    pub fn source_copy_evidence(
+        &self,
+    ) -> Option<crate::physical_runtime::PhysicalExtentCopySettlementObservation> {
+        self.settled.source_copy_evidence()
     }
 
     pub const fn wal_append_settlement(

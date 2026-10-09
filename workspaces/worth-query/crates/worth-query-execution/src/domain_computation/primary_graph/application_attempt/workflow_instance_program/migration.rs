@@ -5,6 +5,7 @@
 //! A fork continuation is the same succession for a fork's copy of an
 //! instance started on another branch. It ends only that copy, on the fork;
 //! the instance on its own branch is untouched.
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 mod lineage;
 
@@ -280,25 +281,21 @@ where
                 )?
             }
         };
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(facts);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         self.workflow_deadline = source_deadline;
         let mut demand = PlatformEffectDemand::default();
         for effect in &effects {
             demand.observe(effect)?;
         }
         let reservation = admit_platform_effects(&self, demand)?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         Ok(PreparedWorkflowInstanceStart {
             program_revision: *resumed.program_revision(),
             definition: resumed.definition(),
@@ -315,7 +312,6 @@ where
                 emission_retained_bytes_ceiling: 0,
                 conditional_definition: None,
                 effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-                validator_work_admission,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
                 retain_client_observation: false,

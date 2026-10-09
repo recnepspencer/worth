@@ -71,9 +71,15 @@ fn index_result_capacity_reaches_application_caller() {
                                 .collect(),
                         }),
                     )),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let committed = transaction.commit(&runtime).unwrap();
+            let committed = transaction
+                .commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "large.index.name".to_owned(),

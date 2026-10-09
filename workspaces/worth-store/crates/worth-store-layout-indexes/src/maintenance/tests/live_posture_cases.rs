@@ -57,7 +57,7 @@ fn live_posture_declares_exactly_the_cases_ordinary_registry_admission_observes(
         let request = LayoutAdmissionRequest::from_admitted(
             family,
             key_domain,
-            LayoutStrategyFamily::BaselineBTreeRange,
+            LayoutStrategyFamily::BTreeRange,
             LayoutRequestedCapability::point_lookup(),
             lane,
         )
@@ -82,7 +82,7 @@ fn live_posture_declares_exactly_the_cases_ordinary_registry_admission_observes(
         .admit(LayoutAdmissionRequest::from_admitted(
             family,
             key_domain,
-            LayoutStrategyFamily::BaselineBTreeRange,
+            LayoutStrategyFamily::BTreeRange,
             LayoutRequestedCapability::point_lookup(),
             ArtifactFamilyAccessLane::HotPath,
         ))

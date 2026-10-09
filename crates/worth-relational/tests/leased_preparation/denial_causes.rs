@@ -47,6 +47,7 @@ fn assert_request_cause(request: LeaseRequest, expected: fn(Cause) -> bool) {
                     fields: AspectFieldPatch::default(),
                 }),
             )),
+            AllocationPolicy::SystemAllocation,
         )
         .expect("intent stages");
     let error = runtime

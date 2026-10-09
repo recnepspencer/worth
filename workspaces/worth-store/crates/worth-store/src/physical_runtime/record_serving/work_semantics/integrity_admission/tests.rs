@@ -90,7 +90,7 @@ fn validated_damage_and_unsupported_format_remain_distinct() {
     );
     assert_eq!(
         classify_extent_integrity(damaged),
-        CleanExtentAdmissionDenial::Damaged
+        CleanExtentAdmissionDenial::FrameChecksumDamaged
     );
     assert_eq!(
         classify_inline_integrity(unsupported),
@@ -108,6 +108,42 @@ fn validated_damage_and_unsupported_format_remain_distinct() {
         classify_extent_integrity(unsupported).stream_failure_kind(),
         crate::physical_runtime::record_serving::RecordStreamFailureKind::FormatMismatch
     );
+}
+
+#[test]
+fn selected_chunk_identity_and_projection_mismatches_are_not_local_crc_damage() {
+    use worth_store_physical_integrity::{
+        ExtentChunkProjectionDenial, PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause,
+        PhysicalDamageLocalization, PhysicalFormatField, PhysicalIntegrityRejection,
+    };
+
+    let scope = fixture_scope();
+    let identity = ResidentIntegrityAdmissionDenial::Validation(
+        PhysicalIntegrityRejection::Damaged(PhysicalDamageLocalization::new(
+            scope,
+            PhysicalDamageCause::ArtifactIdentityMismatch,
+            PhysicalByteRange::new(48, 24).unwrap(),
+            Some(PhysicalFormatField::RecordIdentity),
+            PhysicalBlastRadius::CompleteArtifact,
+        )),
+    );
+    assert_eq!(
+        classify_extent_integrity(identity),
+        CleanExtentAdmissionDenial::Damaged
+    );
+    for denial in [
+        ExtentChunkProjectionDenial::InputIncarnationMismatch,
+        ExtentChunkProjectionDenial::RecordIdentityMismatch,
+        ExtentChunkProjectionDenial::ExtentIdentityMismatch,
+        ExtentChunkProjectionDenial::LogicalLengthMismatch,
+        ExtentChunkProjectionDenial::LogicalOffsetMismatch,
+        ExtentChunkProjectionDenial::ChunkOrdinalMismatch,
+    ] {
+        assert_eq!(
+            classify_extent_projection(denial),
+            CleanExtentAdmissionDenial::Damaged,
+        );
+    }
 }
 
 #[test]

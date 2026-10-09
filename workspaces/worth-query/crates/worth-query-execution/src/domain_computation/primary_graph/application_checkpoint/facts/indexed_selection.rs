@@ -5,7 +5,7 @@ use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, 
 
 use super::{
     next_locator, put_entity, put_locator, put_text, put_u32, put_u64, CheckpointCursor, Fact,
-    KindId, MAXIMUM_FACTS, MAXIMUM_TEXT,
+    KindId, MAXIMUM_SET_ENTITIES, MAXIMUM_TEXT,
 };
 
 const MAXIMUM_VALUE_BYTES: usize = 65_536;
@@ -28,7 +28,7 @@ pub(super) fn encode(bytes: &mut Vec<u8>, fact: &Fact) -> Option<()> {
         || *candidate_limit == 0
         || *candidate_limit == usize::MAX
         || candidates.len() > *candidate_limit
-        || candidates.len() > MAXIMUM_FACTS
+        || candidates.len() > MAXIMUM_SET_ENTITIES
         || !candidates.windows(2).all(|pair| pair[0] < pair[1])
     {
         return None;
@@ -74,7 +74,7 @@ pub(super) fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> 
     if candidate_limit == 0
         || candidate_limit == usize::MAX
         || count > candidate_limit
-        || count > MAXIMUM_FACTS
+        || count > MAXIMUM_SET_ENTITIES
         || count > cursor.remaining.len() / 16
     {
         return Err("checkpoint predicate candidate count is invalid".to_owned());
@@ -163,9 +163,24 @@ mod tests {
         for candidates in [vec![], vec![EntityId::new(PartitionId(0), 2, 1)]] {
             let fact = selection(candidates);
             let bytes = super::super::encode(std::slice::from_ref(&fact)).unwrap();
-            assert_eq!(super::super::decode(&bytes).unwrap().as_ref(), &[fact]);
+            assert_eq!(
+                super::super::decode(
+                    &bytes,
+                    None,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation
+                )
+                .unwrap()
+                .as_ref(),
+                &[fact]
+            );
             assert!(
-                super::super::decode_for_wire_version(&bytes, 6).is_err(),
+                super::super::decode_for_wire_version(
+                    &bytes,
+                    6,
+                    None,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation
+                )
+                .is_err(),
                 "older checkpoint versions cannot reinterpret the new fact tag"
             );
         }
@@ -181,9 +196,15 @@ mod tests {
         let length = bytes.len();
         let first = bytes[length - 32..length - 16].to_vec();
         bytes[length - 16..].copy_from_slice(&first);
-        assert!(super::super::decode(&bytes)
-            .unwrap_err()
-            .contains("unique ordered set"));
+        assert!(matches!(
+            super::super::decode(
+                &bytes,
+                None,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            ).unwrap_err(),
+            super::super::fact_decode_denial::FactDecodeDenial::Format(message)
+                if message.contains("unique ordered set")
+        ));
     }
 
     #[test]
@@ -191,5 +212,22 @@ mod tests {
         let mut writer = ValueWriter(Vec::new());
         assert!(serde_json::to_writer(&mut writer, &"x".repeat(MAXIMUM_VALUE_BYTES + 1)).is_err());
         assert!(writer.0.len() <= MAXIMUM_VALUE_BYTES);
+    }
+
+    #[test]
+    fn total_fact_capacity_does_not_widen_indexed_membership() {
+        let mut fact = selection(
+            (1..=MAXIMUM_SET_ENTITIES + 1)
+                .map(|slot| EntityId::new(PartitionId(0), slot as u64, 1))
+                .collect(),
+        );
+        let Fact::IndexedEntitySelection {
+            candidate_limit, ..
+        } = &mut fact
+        else {
+            unreachable!();
+        };
+        *candidate_limit = MAXIMUM_SET_ENTITIES + 1;
+        assert!(super::super::encode(&[fact]).is_none());
     }
 }

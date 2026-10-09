@@ -85,7 +85,10 @@ fn secondary_root_settles_independently(
         })
         .expect_source(primary_source)
         .idempotency(&10_006)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the explicitly selected primary root reaches publication");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(primary_performed) =
         primary_outcome
@@ -119,6 +122,7 @@ fn secondary_root_settles_independently(
         .idempotency(&10_009)
         .execute_performed::<crate::ConsumerProgram, crate::ConsumerSecondaryProgramRoot>(
             &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the explicitly selected secondary root reaches publication");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(secondary_performed) =
@@ -253,7 +257,7 @@ pub(super) fn ordinary_source_publication_cannot_bypass_program(
         })
         .expect_source(source)
         .idempotency(&10_005)
-        .execute();
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
     let Err(denial) = outcome else {
         panic!("the migrated source operation must require its installed program")
     };

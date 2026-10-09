@@ -47,7 +47,9 @@ fn cancellation_at(
         base: &reopened.state.base,
         publication: &reopened.expectation,
         fates: &reopened.state.fates,
-        unresolved_retirement: !reopened.state.freshness.retirements().is_empty(),
+        unresolved_retirement: !reopened.state.freshness.retirements().is_empty()
+            || reopened.state.freshness.extent_copy_frames().len() != 0,
+        release_intents: reopened.state.freshness.release_intents(),
         limits: reopened.state.authority.limits.declaration(),
     });
     (settled_actions < plan.candidates().len() as u64).then_some(

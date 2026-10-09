@@ -88,6 +88,41 @@ fn package_byte_budget_denial_reports_attempted_and_maximum_work() {
 }
 
 #[test]
+fn complete_package_admission_crosses_former_byte_ceiling_and_preserves_explicit_limit() {
+    const FORMER_CEILING: usize = 16 * 1_024 * 1_024;
+    const DEFINITIONS: usize = 90_000;
+    let mut package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+        "worth.geometry.catalog-capacity",
+        1,
+        0,
+    ));
+    // Exercise ordinary distinct declarations, each with short graph-read meaning.
+    // This is package admission evidence, without an installed graph or authority.
+    for index in 0..DEFINITIONS {
+        package = package.definition(WorthQueryPortableDefinition::graph_read_operation(
+            format!("geometry.read.member-property-{index:05}"),
+            format!("direct-edge:member-property-{index:05}"),
+        ));
+    }
+    let narrow = package
+        .clone()
+        .validate_with_canonical_work_limit(FORMER_CEILING as u64)
+        .unwrap_err();
+    assert_eq!(
+        narrow.kind(),
+        WorthQueryPortablePackageValidationDenialKind::CanonicalEncodedByteBudgetExceeded
+    );
+    assert_eq!(narrow.maximum_canonical_bytes(), Some(FORMER_CEILING));
+    assert!(narrow.attempted_canonical_bytes().unwrap() > FORMER_CEILING);
+
+    let admitted = package.validate().unwrap();
+    assert_eq!(admitted.definitions().len(), DEFINITIONS);
+    let bytes = admitted.canonical_work().canonical_encoded_bytes();
+    assert!(bytes > FORMER_CEILING);
+    assert!(bytes <= 64 * 1_024 * 1_024);
+}
+
+#[test]
 fn duplicate_contribution_policy_is_denied_instead_of_silently_rewritten() {
     let denial = package_with_order(false)
         .permits_contribution("query-index")

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement;
 
@@ -68,16 +69,26 @@ impl<'inspection, 'run> WorthQuerySelectedInstalledInvariant<'inspection, 'run> 
     pub fn admit_state_load_plan(
         self,
         locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,
+        request: Option<&WorthQueryRequestScope>,
     ) -> Result<
         WorthQueryBoundInvariantExecution<'inspection, 'run>,
         WorthQueryInvariantExecutionFailure,
     > {
+        super::request_control::check_live(request)?;
+        let max_state_facts = self.requirement.max_state_facts();
+        let max_work_units = self.requirement.max_work_units();
+        let mut controlled_locators = Vec::new();
+        for locator in locators {
+            super::request_control::check_live(request)?;
+            controlled_locators.push(locator);
+        }
         let plan = WorthQueryAdmittedInvariantStateLoadPlan::admit(
             self.inspection.proposed.identity(),
-            locators,
+            controlled_locators,
             self.requirement.state_load_families(),
+            request,
         )?;
-        if plan.locators().len() > self.requirement.max_state_facts() {
+        if max_state_facts.is_some_and(|maximum| plan.locators().len() > maximum) {
             return Err(WorthQueryInvariantExecutionFailure::exhausted(
                 WorthQueryInvariantExecutionDenialKind::StateLoadBudgetExceeded,
                 "admitted invariant state-load width exhausts the installed budget",
@@ -94,8 +105,9 @@ impl<'inspection, 'run> WorthQuerySelectedInstalledInvariant<'inspection, 'run> 
         let admission = WorthQueryInvariantStateLoadAdmission::new(
             binding.clone(),
             &plan,
-            self.requirement.max_state_facts(),
-            self.requirement.max_work_units(),
+            max_state_facts,
+            max_work_units,
+            request.cloned(),
         );
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             attempt.staged.provisional_provider().load_invariant_state(
@@ -104,6 +116,7 @@ impl<'inspection, 'run> WorthQuerySelectedInstalledInvariant<'inspection, 'run> 
                 admission,
             )
         }));
+        super::request_control::check_live(request)?;
         let evidence = match invocation {
             Ok(result) => result?,
             Err(_) => {
@@ -121,6 +134,8 @@ impl<'inspection, 'run> WorthQuerySelectedInstalledInvariant<'inspection, 'run> 
             selected: self,
             plan,
             evidence,
+            request: request.cloned(),
+            max_work_units,
         })
     }
 }
@@ -129,6 +144,8 @@ pub struct WorthQueryBoundInvariantExecution<'inspection, 'run> {
     selected: WorthQuerySelectedInstalledInvariant<'inspection, 'run>,
     plan: WorthQueryAdmittedInvariantStateLoadPlan,
     evidence: WorthQueryInvariantStateLoadEvidence,
+    request: Option<WorthQueryRequestScope>,
+    max_work_units: Option<u64>,
 }
 
 #[derive(Clone, Copy)]
@@ -166,6 +183,7 @@ impl WorthQueryBoundInvariantExecution<'_, '_> {
     pub fn execute(
         self,
     ) -> Result<WorthQueryInvariantReceipt, WorthQueryInvariantExecutionFailure> {
+        super::request_control::check_live(self.request.as_ref())?;
         let attempt = &self.selected.inspection.proposed.attempt;
         let view = WorthQueryBoundInvariantExecutionView {
             requirement: self.selected.requirement,
@@ -188,6 +206,8 @@ impl WorthQueryBoundInvariantExecution<'_, '_> {
                 state_load_evidence_identity: self.evidence.identity().into(),
             },
             load_counters: self.evidence.counters(),
+            request: self.request.clone(),
+            max_work_units: self.max_work_units,
         };
         let expected_binding = admission.binding().clone();
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -197,6 +217,7 @@ impl WorthQueryBoundInvariantExecution<'_, '_> {
                 admission,
             )
         }));
+        super::request_control::check_live(self.request.as_ref())?;
         let verdict = match invocation {
             Ok(result) => result?,
             Err(_) => {

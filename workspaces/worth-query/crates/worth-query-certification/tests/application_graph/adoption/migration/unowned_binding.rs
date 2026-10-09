@@ -63,7 +63,7 @@ impl
     const CANDIDATES: worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements =
         worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements::fixed_shape(
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::bounded(0, 0),
+            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(0),
         );
 
     fn scope_field(
@@ -138,7 +138,10 @@ fn target_program_must_own_the_exact_migration_binding() {
         })
         .without_source()
         .idempotency(&0x9175_2100)
-        .prepare_program_migration(&target)
+        .prepare_program_migration(
+            &target,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("operation identity cannot substitute for exact binding ownership");
     assert!(matches!(

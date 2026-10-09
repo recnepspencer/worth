@@ -17,7 +17,6 @@ fn install_request(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = RequestEstateEmergencyAccessOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 1)
         .operation_projection_work_budget(operation, 32)
         .operation_read_field(operation, EstateCaseIdentityField::reference())
         .operation_create(operation, EmergencyAccess::reference())
@@ -100,7 +99,6 @@ where
     ReviewPrincipal: worth_query_decl::facade::application_schema::OperationReads<Operation>,
 {
     schema
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 128)
         .operation_read_field(operation, EmergencyAccessIdentityField::reference())
         .operation_read_field(operation, EmergencyAccessReasonField::reference())

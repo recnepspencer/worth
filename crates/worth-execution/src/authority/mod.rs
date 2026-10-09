@@ -11,8 +11,10 @@ pub(crate) use lease::ResourceReservation;
 #[cfg(test)]
 pub(crate) use lease::SlotRefusal;
 pub use lease::{
-    ConstructionDenial, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionLeaseStatus,
-    ExecutionPolicyDenial, ExecutionResourceLease, LeaseDenial, LeaseRequest,
+    ConstructionDenial, ExecutionAllocationDenial, ExecutionAllocationDenialKind,
+    ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter,
+    ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
+    ExecutionLeaseStatus, ExecutionPolicyDenial, ExecutionResourceLease, LeaseDenial, LeaseRequest,
 };
 pub use memory::{
     ExecutionMemoryReservation, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,

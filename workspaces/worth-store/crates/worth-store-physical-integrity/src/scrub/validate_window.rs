@@ -44,6 +44,10 @@ pub fn inspect_physical_integrity_window(
             SegmentMembershipBlockIntegrityValidation
         ),
         Family::PageFrame => inspect!(validate_inline_page, InlinePageIntegrityValidation),
+        Family::BTreeNode => inspect!(validate_btree_node, BTreeNodeIntegrityValidation),
+        Family::BlobChunkFrame | Family::BlobTreeNode | Family::BlobGenerationPublication => {
+            inspect!(validate_blob_record, BlobRecordIntegrityValidation)
+        }
         Family::ExtentManifest => {
             inspect!(validate_extent_manifest, ExtentManifestIntegrityValidation)
         }
@@ -77,7 +81,13 @@ pub fn inspect_physical_integrity_window(
             CheckpointBindingIntegrityValidation
         ),
         // A footer envelope alone cannot establish its stream's selective aggregates.
-        Family::ExtentChunk | Family::CheckpointFooter | Family::NamespaceIdentity => {
+        Family::ExtentArenaFrame
+        | Family::ExtentChunk
+        | Family::BlobResumeSession
+        | Family::BlobDropSetManifest
+        | Family::BlobReclaimDescriptor
+        | Family::CheckpointFooter
+        | Family::NamespaceIdentity => {
             let rejection =
                 PhysicalIntegrityRejection::Unknown(UnknownPhysicalIntegrityPosture::new(
                     scope,

@@ -104,19 +104,20 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
     let mut plans = WorthQueryDerivedPairReadPlans::new(first, second);
     ExecutionRequest::serial(&serial)
         .in_scope(|lease| {
-            owner_stage::run(lease, 8192, |context| {
+            owner_stage::run(lease, |context| {
                 plans.admit(&world.application, root.entity_id(), context)
             })
         })
         .unwrap()
         .unwrap();
+    let capacity = plans.result_capacity().unwrap();
     let input = plans.worker(&world.application, root.entity_id()).unwrap();
     let map = ExecutionMap::<_, ()>::from_keyless_partitions(BTreeMap::from([(
         PartitionIdentity::new(1),
         KeylessPartition {
             value: input,
             kernel_scratch_bytes: 0,
-            max_result_bytes: plans.result_capacity().unwrap(),
+            max_result_bytes: capacity,
         },
     )]))
     .unwrap();

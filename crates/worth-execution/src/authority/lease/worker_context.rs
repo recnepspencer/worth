@@ -1,6 +1,10 @@
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 
-use super::{ActiveWorkerGuard, ExecutionResourceLease, ACTIVE_WORKER};
+use super::{ActiveWorkerGuard, ExecutionResourceLease};
+
+thread_local! {
+    pub(super) static ACTIVE_WORKER: RefCell<Vec<(usize, u64)>> = const { RefCell::new(Vec::new()) };
+}
 
 impl ExecutionResourceLease<'_> {
     pub(crate) fn enter_worker_context(&self) -> ActiveWorkerGuard {

@@ -83,7 +83,10 @@ pub(super) fn edit<const REUSE: bool, const WORK: usize, const RUNS: usize, cons
         .mutate(edit.commanded(command))
         .without_source()
         .idempotency(&command)
-        .execute_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>>(application);
+        .execute_in_program::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(
         matches!(
             &outcome,
@@ -113,7 +116,10 @@ pub(super) fn adjust<const REUSE: bool, const WORK: usize, const RUNS: usize, co
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&command)
-        .execute_performed::<OracleProgram<REUSE, WORK, RUNS, MODE>, OracleRoot>(application)
+        .execute_performed::<OracleProgram<REUSE, WORK, RUNS, MODE>, OracleRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the scope's ordinate moves");
 }
 

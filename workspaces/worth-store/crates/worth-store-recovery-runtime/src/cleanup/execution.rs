@@ -14,13 +14,25 @@ pub(crate) fn execute(
     mut reopened: ReopenedPhysicalRecovery,
     cancellation: Option<PhysicalRecoveryCleanupCancellation>,
 ) -> crate::entry::PhysicalRecoveryOutcome {
+    let residue = super::checkpoint_residue::prepare(&reopened);
+    if matches!(
+        residue,
+        worth_store::physical_runtime::RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(_)
+            | worth_store::physical_runtime::RecoveryCheckpointResidueOutcome::Indeterminate
+    ) {
+        return super::checkpoint_residue::failure(reopened, residue);
+    }
+    #[cfg(feature = "certification-test-authority")]
+    crate::certification::before_cleanup_revalidation();
     let limits = reopened.state.authority.limits.declaration();
     let mut plan = build_plan(RecoveryCleanupPlanBasis {
         selection: &reopened.state.selection,
         base: &reopened.state.base,
         publication: &reopened.expectation,
         fates: &reopened.state.fates,
-        unresolved_retirement: !reopened.state.freshness.retirements().is_empty(),
+        unresolved_retirement: !reopened.state.freshness.retirements().is_empty()
+            || reopened.state.freshness.extent_copy_frames().len() != 0,
+        release_intents: reopened.state.freshness.release_intents(),
         limits,
     });
     let command_basis = RecoveryCleanupCommandBasis::from_reopened(

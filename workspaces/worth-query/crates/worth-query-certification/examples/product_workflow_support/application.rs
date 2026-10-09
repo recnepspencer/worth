@@ -28,7 +28,7 @@ impl ExampleApplication {
             program::validated_program(),
             declaration,
             (TemporalContributionConfiguration { clock_source },),
-            example_limits(),
+            example_limits(None),
             |graph, installed| {
                 let principal_binding = installed
                     .principal_binding(TemporalPrincipalBinding::reference())
@@ -49,10 +49,17 @@ impl ExampleApplication {
     }
 }
 
-pub(crate) fn example_limits() -> application_installation::WorthQueryInMemoryApplicationLimits {
+pub(crate) fn example_limits(
+    execution_policy: Option<worth_foundational::ExecutionRequestPolicy>,
+) -> application_installation::WorthQueryInMemoryApplicationLimits {
+    let world = product_world_resources();
+    let world = match execution_policy {
+        Some(policy) => world.with_execution_policy(policy),
+        None => world,
+    };
     application_installation::WorthQueryInMemoryApplicationLimits::new(
-        product_world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
+        world,
+        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(5_120, 2_048)
             .expect("valid candidate limits"),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
             .expect("valid query limits"),

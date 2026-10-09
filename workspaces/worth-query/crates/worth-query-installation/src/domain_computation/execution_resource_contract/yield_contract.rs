@@ -14,14 +14,21 @@ pub struct WorthQueryInstalledYieldContract {
 
 impl WorthQueryInstalledYieldContract {
     pub(super) fn derive(envelope: &WorthQueryExecutionResourceEnvelope) -> Option<Self> {
-        (envelope.yielded_state_posture() == WorthQueryYieldedStatePosture::ProviderCheckpoint)
-            .then(|| Self {
-                retained_bytes_ceiling: envelope.resource_ceiling(
-                    worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension::RetainedBytes,
-                ),
-                partial_effect_posture: envelope.partial_effect_posture(),
-                retained_progress_posture: envelope.retained_progress_posture(),
-            })
+        use worth_query_declaration::facade::domain_computation::{
+            WorthQueryExecutionBoundary, WorthQueryResourceDimension,
+        };
+        if envelope.boundary() != WorthQueryExecutionBoundary::BoundedStep
+            || envelope.yielded_state_posture() != WorthQueryYieldedStatePosture::ProviderCheckpoint
+        {
+            return None;
+        }
+        let retained_bytes_ceiling =
+            envelope.optional_resource_ceiling(WorthQueryResourceDimension::RetainedBytes)?;
+        Some(Self {
+            retained_bytes_ceiling,
+            partial_effect_posture: envelope.partial_effect_posture(),
+            retained_progress_posture: envelope.retained_progress_posture(),
+        })
     }
 
     pub const fn retained_bytes_ceiling(&self) -> u64 {
@@ -98,6 +105,52 @@ mod tests {
             WorthQueryRetainedProgressPosture::RetainAttemptCapacity
         );
         assert!(!contract.partial_effects_may_remain());
+    }
+
+    #[test]
+    fn dirty_yield_getter_distinguishes_missing_capacity_from_present_zero() {
+        use worth_query_declaration::facade::domain_computation::{
+            WorthQueryResourceDimension, WorthQueryResourceLimitRequest,
+            WorthQuerySemanticScaleRequest,
+        };
+        for (resources, expected) in [
+            (WorthQueryResourceLimitRequest::selective(), None),
+            (
+                WorthQueryResourceLimitRequest::selective()
+                    .with(WorthQueryResourceDimension::RetainedBytes, 0),
+                Some(0),
+            ),
+        ] {
+            let envelope = WorthQueryExecutionResourceEnvelope::new(
+                WorthQuerySemanticScaleRequest::bounded(8),
+                resources,
+                WorthQueryExecutionMode::Asynchronous,
+                None,
+                WorthQueryCancellationSafePointFamily::new("yield-step").unwrap(),
+            )
+            .with_yielded_state_posture(WorthQueryYieldedStatePosture::ProviderCheckpoint)
+            .with_retained_progress_posture(
+                WorthQueryRetainedProgressPosture::RetainAttemptCapacity,
+            );
+            assert_eq!(
+                envelope
+                    .yield_contract()
+                    .map(|contract| contract.retained_bytes_ceiling()),
+                expected
+            );
+            assert_eq!(
+                WorthQueryExecutionResourceContract::declared([strategy(envelope)]),
+                Err("incomplete-bounded-step-envelope")
+            );
+        }
+        let atomic = WorthQueryExecutionResourceEnvelope::atomic(
+            WorthQuerySemanticScaleRequest::selective(),
+            WorthQueryResourceLimitRequest::selective()
+                .with(WorthQueryResourceDimension::RetainedBytes, 0),
+            WorthQueryCancellationSafePointFamily::new("atomic").unwrap(),
+        )
+        .with_yielded_state_posture(WorthQueryYieldedStatePosture::ProviderCheckpoint);
+        assert!(atomic.yield_contract().is_none());
     }
 
     fn strategy(

@@ -6,7 +6,7 @@ use worth_store_offline_verifier::{
 };
 use worth_store_physical_format::{
     BackupBundleArtifactFamily, BackupBundleArtifactManifestRow, BackupBundleFormatAuthority,
-    BackupBundleManifest, BackupBundleManifestDeclaration, PhysicalRecordSlot,
+    BackupBundleManifest, BackupBundleManifestDeclaration,
 };
 use worth_store_physical_isolation::BackupReachabilityLeaseRegistry;
 
@@ -109,15 +109,19 @@ fn apply_self_consistent_multi_fault_attack(
     std::fs::write(&wal_path, &wal_bytes).expect("controlled torn WAL tail");
 
     let index_path = root.join(index.output_name());
-    let index_bytes = worth_store_layout_indexes::encode_baseline_btree_leaf_record(
-        [
-            PhysicalRecordSlot::from_raw(220).expect("substitute slot"),
-            PhysicalRecordSlot::from_raw(221).expect("substitute slot"),
-        ],
-        true,
-        false,
-    );
-    std::fs::write(&index_path, index_bytes).expect("checksum-valid index substitution");
+    let index_bytes = worth_store_physical_format::BTreeNodeV1::leaf(
+        1,
+        vec![worth_store_physical_format::BTreeNodeCellV1::leaf(
+            b"catalog-key".to_vec(),
+            vec![220],
+        )],
+        None,
+        None,
+    )
+    .expect("substitute node")
+    .encode(4096)
+    .expect("substitute node bytes");
+    std::fs::write(&index_path, &index_bytes).expect("checksum-valid index substitution");
 
     let rows = manifest
         .artifacts()

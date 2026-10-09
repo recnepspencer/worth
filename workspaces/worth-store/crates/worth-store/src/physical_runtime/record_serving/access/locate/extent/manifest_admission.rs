@@ -9,13 +9,12 @@ use crate::physical_runtime::record_serving::{
 };
 use worth_store_physical_format::{
     DurableExtentManifest, DurableExtentRecordPlacement, RecordArtifactFile,
-    DURABLE_EXTENT_FRAME_HEADER_BYTES, EXTENT_CHUNK_METADATA_BYTES,
 };
 
 pub(super) struct AdmittedExtentManifest {
     pub(super) artifact: RecordArtifactFile,
     pub(super) manifest: DurableExtentManifest,
-    pub(super) artifact_bytes: std::num::NonZeroU64,
+    pub(super) range: worth_store_physical_format::ExtentArenaRange,
     pub(super) integrity_membership:
         worth_store_physical_integrity::IntegrityValidatedExtentMembership,
 }
@@ -33,15 +32,22 @@ pub(super) fn admit_extent_manifest(
     mut admission: ExtentManifestAdmission<'_, '_>,
 ) -> Result<AdmittedExtentManifest, RecordReadDenial> {
     let (manifest, integrity_membership) = admission.load_manifest()?;
-    let artifact = RecordArtifactFile::Extent {
-        extent: admission.placement.extent().get(),
-        generation: admission.placement.extent_generation(),
+    let range = admission.placement.arena_range();
+    let artifact = RecordArtifactFile::ExtentArena {
+        arena: range.arena().get(),
     };
-    let artifact_bytes = complete_extent_bytes(&manifest);
+    let layout = worth_store_physical_format::ExtentArenaFrameLayout::new(
+        admission.reader.format.declaration(),
+        manifest.alignment(),
+    )
+    .ok_or(RecordReadDenial::FormatMismatch)?;
+    if layout.allocated_bytes(manifest.chunk_count()) != Some(range.length()) {
+        return Err(RecordReadDenial::FormatMismatch);
+    }
     Ok(AdmittedExtentManifest {
         artifact,
         manifest,
-        artifact_bytes,
+        range,
         integrity_membership,
     })
 }
@@ -58,17 +64,14 @@ impl ExtentManifestAdmission<'_, '_> {
     > {
         let bytes = self
             .artifacts
-            .load_bounded(
+            .load_exact(
                 self.allocation,
-                RecordArtifactFile::ExtentManifest {
-                    extent: self.placement.extent().get(),
-                    generation: self.placement.extent_generation(),
+                RecordArtifactFile::ExtentArena {
+                    arena: self.placement.arena_range().arena().get(),
                 },
-                self.reader
-                    .access
-                    .transfer_limit()
-                    .get()
-                    .min(self.reader.format.declaration().page_size().bytes()),
+                self.placement.arena_range().offset(),
+                104,
+                crate::physical_runtime::record_serving::residency::frame_loading::ExactFrameSourceExtent::ArenaRange(self.placement.arena_range()),
             )
             .map_err(|failure| {
                 self.observation.observe_physical_work(failure.work_trace());
@@ -146,11 +149,4 @@ mod tests {
             CleanExtentAdmissionDenial::Damaged.read_denial()
         ));
     }
-}
-
-fn complete_extent_bytes(manifest: &DurableExtentManifest) -> std::num::NonZeroU64 {
-    let bytes = manifest.logical_bytes()
-        + u64::from(manifest.chunk_count())
-            * (DURABLE_EXTENT_FRAME_HEADER_BYTES + EXTENT_CHUNK_METADATA_BYTES) as u64;
-    std::num::NonZeroU64::new(bytes).expect("an admitted extent has nonzero artifact bytes")
 }

@@ -1,4 +1,6 @@
-use std::num::NonZeroU64;
+use std::num::{NonZeroU64, NonZeroUsize};
+
+use worth_store_buffer_pool::PhysicalResidencyPool;
 
 use self::failure_outcome::{
     pressure_basis, project_candidate_admission_failure, project_residency_failure,
@@ -18,7 +20,6 @@ use crate::physical_runtime::{
     WalDurablePhysicalMutation,
 };
 
-mod candidate_cleanup;
 mod candidate_verification;
 mod effect_progression;
 mod failure_outcome;
@@ -37,6 +38,19 @@ impl RecordPublicationDirector {
         if let Some(cause) = self.dispatch_admission_failure(&durable) {
             return PhysicalDataDispatchOutcome::NotStarted { durable, cause };
         }
+        // This lane adopts already-executed, synchronized copy receipts. The
+        // typed plan owns the nonclone capability; no frame write is invented.
+        if durable.source_copy().is_some() {
+            return PhysicalDataDispatchOutcome::Dispatched(
+                crate::physical_runtime::DataDispatchedPhysicalMutation::from_source_copy(durable),
+            );
+        }
+        // A terminal head retired member has no data frame to dispatch.
+        if durable.terminal_head_retirement().is_some() {
+            return PhysicalDataDispatchOutcome::Dispatched(
+                crate::physical_runtime::DataDispatchedPhysicalMutation::from_terminal_head_retirement(durable),
+            );
+        }
         let declaration = match candidate_declaration(&durable, self.current_root().generation()) {
             Some(declaration) => declaration,
             None => {
@@ -48,8 +62,25 @@ impl RecordPublicationDirector {
                 };
             }
         };
-        let bytes = NonZeroU64::new(declaration.total_frame_bytes())
+        let count = NonZeroUsize::new(declaration.declarations().len())
             .expect("a WAL-bound data plan has nonempty frames");
+        let candidate_metadata = PhysicalResidencyPool::candidate_batch_operation_bytes(count)
+            .expect("bounded WAL data plan has bounded candidate metadata");
+        let bytes = match declaration
+            .total_frame_bytes()
+            .checked_add(candidate_metadata.get())
+            .and_then(NonZeroU64::new)
+        {
+            Some(bytes) => bytes,
+            None => {
+                return PhysicalDataDispatchOutcome::NotStarted {
+                    durable,
+                    cause: PhysicalDataDispatchFailureCause::CandidateAdmission(
+                        crate::physical_runtime::RecordAppendDenial::BatchByteLimitExceeded,
+                    ),
+                };
+            }
+        };
         let store_basis = PhysicalRecordPressureBasis::for_store(self.durability.store_identity());
         let allocation = match self.residency.begin_foreground_write_operation(bytes) {
             Ok(allocation) => allocation,
@@ -119,8 +150,9 @@ fn candidate_declaration(
     root_generation: u64,
 ) -> Option<CandidateFrameSet> {
     let frames = durable
-        .data_frames()
+        .data_frames()?
         .iter()
+        .skip(durable.completed_data_frames())
         .map(|frame| {
             let target = frame.basis().target();
             let coordinate = target.coordinate();

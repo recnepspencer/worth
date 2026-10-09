@@ -1,0 +1,8 @@
+error[E0624]: associated function `refuse` is private
+  --> tests/ui/budget_limits/sibling_cannot_use_owner_refuse_door.rs:22:39
+   |
+ 6 |     worth_foundational::limit_authority!(pub OwnerAuthority);
+   |     -------------------------------------------------------- private associated function defined here
+...
+22 |         super::owner::OwnerAuthority::refuse(
+   |                                       ^^^^^^ private associated function

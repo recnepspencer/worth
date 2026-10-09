@@ -1,7 +1,7 @@
 use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
 use worth_store_physical_format::{
     FreeSpaceBlockReference, FreeSpaceKey, FreeSpaceMembershipBlockScopeIdentity,
-    PhysicalFreeSpaceMembershipBlock, PhysicalTreeIdentity, RecordAllocationClass,
+    PhysicalFreeSpaceMembershipBlock, PhysicalTreeIdentity,
 };
 use worth_store_physical_integrity::{
     validate_free_space_membership_block, FreeSpaceMembershipBlockIntegrityValidation,
@@ -58,7 +58,7 @@ fn branch_child_level_generation_order_and_shape_localize_the_offending_child() 
             single_scope,
             PhysicalDamageCause::ChildReferenceMismatch,
             88,
-            56,
+            72,
             PhysicalFormatField::ChildReference,
             PhysicalBlastRadius::ReachableSubtree,
         );
@@ -66,27 +66,27 @@ fn branch_child_level_generation_order_and_shape_localize_the_offending_child() 
 
     let (clean, scope, _) = branch_fixture();
     let mut reordered = clean.clone();
-    reordered[176..184].copy_from_slice(&2_u64.to_le_bytes());
+    reordered[192..200].copy_from_slice(&2_u64.to_le_bytes());
     reseal(&mut reordered);
     assert_membership_localization(
         &reordered,
         scope,
         PhysicalDamageCause::SequenceMismatch,
-        144,
-        56,
+        160,
+        72,
         PhysicalFormatField::MembershipRange,
         PhysicalBlastRadius::ReachableSubtree,
     );
 
     let mut invalid_second = clean;
-    invalid_second[162] = 1;
+    invalid_second[178] = 1;
     reseal(&mut invalid_second);
     assert_membership_localization(
         &invalid_second,
         scope,
         PhysicalDamageCause::ChildReferenceMismatch,
-        144,
-        56,
+        160,
+        72,
         PhysicalFormatField::ChildReference,
         PhysicalBlastRadius::ReachableSubtree,
     );
@@ -306,8 +306,8 @@ fn child_reference(generation: u64, block: u64, first: u64, last: u64) -> FreeSp
         block,
         0,
         block as u32,
-        FreeSpaceKey::new(RecordAllocationClass::InlinePage, first).unwrap(),
-        FreeSpaceKey::new(RecordAllocationClass::InlinePage, last).unwrap(),
+        FreeSpaceKey::inline(first).unwrap(),
+        FreeSpaceKey::inline(last).unwrap(),
     )
     .unwrap()
 }

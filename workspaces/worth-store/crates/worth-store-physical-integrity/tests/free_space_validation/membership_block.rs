@@ -1,5 +1,7 @@
 use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
-use worth_store_physical_format::{FreeSpaceBlockReference, FreeSpaceKey, RecordAllocationClass};
+use worth_store_physical_format::{
+    ExtentArenaId, FreeSpaceBlockReference, FreeSpaceKey, RecordAllocationClass,
+};
 use worth_store_physical_integrity::{
     validate_free_space_membership_block, FreeSpaceMembershipBlockIntegrityValidation,
     PhysicalArtifactScope, PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause,
@@ -8,7 +10,7 @@ use worth_store_physical_integrity::{
 };
 
 use super::support::{
-    assert_damage, assert_intact_counters, assert_rejected_counters, first_key, format,
+    assert_intact_counters, assert_membership_damage, assert_rejected_counters, first_key, format,
     independent_crc32c, last_key, membership_reference, membership_scope, membership_scope_at,
     range, reseal, store, MEMBERSHIP_COMPLETE_CRC32C, MEMBERSHIP_LITERAL, MEMBERSHIP_OFFSET,
 };
@@ -44,8 +46,12 @@ fn independent_literal_membership_seals_parent_crc_range_and_leaf_projection() {
     assert_eq!(entries.len(), 2);
     assert_eq!(entries[0].class(), RecordAllocationClass::InlinePage);
     assert_eq!(entries[0].owner(), 7);
-    assert_eq!(entries[1].class(), RecordAllocationClass::Extent);
+    assert_eq!(entries[1].class(), RecordAllocationClass::ExtentArena);
     assert_eq!(entries[1].owner(), 5);
+    let arena = entries[1].arena_free_range().unwrap();
+    assert_eq!(arena.offset(), 100);
+    assert_eq!(arena.length(), 1);
+    assert_eq!(entries[1].generation(), 1);
     assert!(validated.children().is_none());
     assert!(validated.matches_input(artifact));
     let identical_copy = MEMBERSHIP_LITERAL.to_vec();
@@ -133,13 +139,13 @@ fn membership_framing_checksum_version_kind_length_and_truncation_fail_closed() 
     );
 
     let mut unsupported_format = MEMBERSHIP_LITERAL.to_vec();
-    unsupported_format[10..12].copy_from_slice(&2_u16.to_le_bytes());
+    unsupported_format[10..12].copy_from_slice(&3_u16.to_le_bytes());
     reseal(&mut unsupported_format);
     assert_membership_unsupported(
         &unsupported_format,
         scope,
         PhysicalIntegrityVersionAxis::PhysicalFormat,
-        2,
+        3,
     );
 }
 
@@ -226,7 +232,7 @@ fn membership_tree_generation_block_reference_range_and_parent_crc_are_not_subst
         PhysicalBlastRadius::ReachableSubtree,
     );
 
-    let foreign_last = FreeSpaceKey::new(RecordAllocationClass::Extent, 6).unwrap();
+    let foreign_last = FreeSpaceKey::arena(ExtentArenaId::new(6).unwrap(), 100);
     let foreign_range = FreeSpaceBlockReference::new(
         6,
         1,
@@ -242,6 +248,25 @@ fn membership_tree_generation_block_reference_range_and_parent_crc_are_not_subst
         range_scope,
         PhysicalDamageCause::ChildReferenceMismatch,
         range(range_scope, 88, 80),
+        Some(PhysicalFormatField::MembershipRange),
+        PhysicalBlastRadius::ReachableSubtree,
+    );
+
+    let wrong_offset = FreeSpaceBlockReference::new(
+        6,
+        1,
+        0,
+        MEMBERSHIP_COMPLETE_CRC32C,
+        first_key(),
+        FreeSpaceKey::arena(ExtentArenaId::new(5).unwrap(), 101),
+    )
+    .unwrap();
+    let offset_scope = membership_scope(store(7), wrong_offset);
+    assert_membership_damage(
+        MEMBERSHIP_LITERAL,
+        offset_scope,
+        PhysicalDamageCause::ChildReferenceMismatch,
+        range(offset_scope, 88, 80),
         Some(PhysicalFormatField::MembershipRange),
         PhysicalBlastRadius::ReachableSubtree,
     );
@@ -349,30 +374,5 @@ fn membership_validation_record_binds_store_without_reclassifying_allocator_trut
         changed_validated
             .into_validation_record()
             .byte_range_digest()
-    );
-}
-
-fn assert_membership_damage(
-    bytes: &[u8],
-    scope: PhysicalArtifactScope,
-    cause: PhysicalDamageCause,
-    damaged_range: PhysicalByteRange,
-    field: Option<PhysicalFormatField>,
-    blast_radius: PhysicalBlastRadius,
-) {
-    let (FreeSpaceMembershipBlockIntegrityValidation::Rejected(rejection), counters) =
-        validate_free_space_membership_block(
-            UntrustedPhysicalArtifact::from_bounded_bytes(bytes),
-            scope,
-        )
-    else {
-        panic!("damaged free-space membership block validated");
-    };
-    assert_damage(rejection, scope, cause, damaged_range, field, blast_radius);
-    assert_rejected_counters(
-        counters,
-        PhysicalIntegrityArtifactFamily::FreeSpaceMembershipBlock,
-        bytes.len() as u64,
-        PhysicalIntegrityRejectionClass::Damaged(cause),
     );
 }

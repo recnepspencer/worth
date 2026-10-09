@@ -149,10 +149,16 @@ fn transition_checkpoint_and_recover(
             .expect("owner-admitted transaction context")
     };
     transaction
-        .push_batch(batch_create("v2-current"))
+        .push_batch(
+            batch_create("v2-current"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let v2_commit = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("v2 schema transition commits");
     let v2_build = runtime
         .index_authority()

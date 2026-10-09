@@ -3,6 +3,7 @@ use worth_runtime_bridge::facade::BridgeManagedExecutionStepContract;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedStepContractDenialKind {
+    AtomicExecutionUnsupported,
     SafePointFamilyMismatch,
     WorkLimitExceeded,
     QueueDepthExceeded,
@@ -45,8 +46,12 @@ impl WorthQueryAdmittedManagedStepContract {
 
 pub(super) fn admit_managed_step_contract(
     installed: WorthQueryInstalledBoundedStepContract,
-    bridge: &BridgeManagedExecutionStepContract,
+    bridge: Option<&BridgeManagedExecutionStepContract>,
 ) -> Result<WorthQueryAdmittedManagedStepContract, WorthQueryManagedStepContractDenial> {
+    let bridge = bridge.ok_or(WorthQueryManagedStepContractDenial {
+        kind: WorthQueryManagedStepContractDenialKind::AtomicExecutionUnsupported,
+        detail: "Atomic execution does not admit a managed provider step",
+    })?;
     validate_step_contract(&installed, bridge)?;
     Ok(WorthQueryAdmittedManagedStepContract { installed })
 }
@@ -154,6 +159,12 @@ mod tests {
     #[test]
     fn full_contract_lattice_denies_each_broader_axis_and_admits_a_stricter_provider() {
         let ordinary = Limits::uniform(4);
+        let atomic_denial =
+            match admit_managed_step_contract(installed("step", ordinary, false), None) {
+                Err(denial) => denial,
+                Ok(_) => panic!("Atomic admitted a managed provider step"),
+            };
+        assert_eq!(atomic_denial.kind(), DenialKind::AtomicExecutionUnsupported);
         assert_admitted(
             installed("step", Limits::uniform(2), false),
             bridge("step", ordinary, false),
@@ -213,7 +224,7 @@ mod tests {
         installed: worth_query_installation::facade::WorthQueryInstalledBoundedStepContract,
         bridge: BridgeManagedExecutionStepContract,
     ) {
-        assert!(admit_managed_step_contract(installed, &bridge).is_ok());
+        assert!(admit_managed_step_contract(installed, Some(&bridge)).is_ok());
     }
 
     fn assert_denied(
@@ -221,7 +232,7 @@ mod tests {
         bridge: BridgeManagedExecutionStepContract,
         expected: DenialKind,
     ) {
-        let denial = match admit_managed_step_contract(installed, &bridge) {
+        let denial = match admit_managed_step_contract(installed, Some(&bridge)) {
             Ok(_) => panic!("broader provider contract was admitted"),
             Err(denial) => denial,
         };

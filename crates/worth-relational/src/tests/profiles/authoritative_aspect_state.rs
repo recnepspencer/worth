@@ -16,9 +16,15 @@ fn fieldless_entity_create_commits_with_absent_authoritative_aspect_state() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).unwrap();
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot)
@@ -80,9 +86,15 @@ fn authoritative_field_patches_are_order_independent_in_patch_output() {
                     ]),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    left_txn.commit(&left_runtime).unwrap();
+    left_txn
+        .commit(
+            &left_runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let mut right_txn =
         crate::tests::support::test_owner_begin_transaction_for_main(&right_runtime);
@@ -107,9 +119,15 @@ fn authoritative_field_patches_are_order_independent_in_patch_output() {
                     ]),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    right_txn.commit(&right_runtime).unwrap();
+    right_txn
+        .commit(
+            &right_runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     assert_eq!(
         left_runtime.publication().artifacts().latest_patch(),

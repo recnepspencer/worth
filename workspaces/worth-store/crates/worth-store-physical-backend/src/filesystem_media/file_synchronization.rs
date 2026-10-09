@@ -39,7 +39,7 @@ impl NamespaceFileHandle<'_, super::MutableFileAccess> {
             ));
         };
         let _file_sequence = self.mutation_guard();
-        match self.file().sync_data() {
+        match super::os_synchronization::synchronize_data(self.file()) {
             Ok(()) if attempt.effect_observation_is_indeterminate() => {
                 attempt.indeterminate(0);
                 FileDataSynchronizationOutcome::Failed(unobserved(
@@ -106,7 +106,7 @@ impl NamespaceFileHandle<'_, super::MutableFileAccess> {
             ));
         };
         let _file_sequence = self.mutation_guard();
-        match self.file().sync_all() {
+        match super::os_synchronization::synchronize_state(self.file()) {
             Ok(()) if attempt.effect_observation_is_indeterminate() => {
                 attempt.indeterminate(0);
                 FileStateSynchronizationOutcome::Failed(unobserved(

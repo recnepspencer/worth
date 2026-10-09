@@ -35,6 +35,7 @@ pub(crate) fn read_tree_frame<'a>(
     let width = match (expected.family, *level) {
         (PhysicalArtifactFamily::RootRoutingBlock, 0) => 88,
         (PhysicalArtifactFamily::RootRoutingBlock, _) => 72,
+        (PhysicalArtifactFamily::FreeSpaceMembershipBlock, level) if level != 0 => 72,
         (_, 0) => 40,
         _ => 56,
     };

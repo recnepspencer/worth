@@ -92,7 +92,6 @@ macro_rules! bind_principal_op {
                     .aftermath($aftermath)
                     .finish(),
             )
-            .operation_decision_fact_budget(operation, 1)
             .operation_projection_work_budget(operation, 16)
             .operation_requires_ability(operation, $ability)
             .operation_read_field(operation, read)
@@ -114,7 +113,6 @@ macro_rules! bind_escaping_principal_op {
                     .aftermath($aftermath)
                     .finish(),
             )
-            .operation_decision_fact_budget(operation, 1)
             .operation_projection_work_budget(operation, 16)
             .operation_requires_ability(operation, $ability)
             .operation_read_field(operation, read)
@@ -224,7 +222,6 @@ fn bind_inverse_ops(
                 ))
                 .finish(),
         )
-        .operation_decision_fact_budget(freeze, 1)
         .operation_projection_work_budget(freeze, 16)
         .operation_requires_ability(freeze, ability)
         .operation_read_field(freeze, reads.frozen);
@@ -241,7 +238,6 @@ fn bind_inverse_ops(
                 ))
                 .finish(),
         )
-        .operation_decision_fact_budget(note_op, 1)
         .operation_projection_work_budget(note_op, 16)
         .operation_requires_ability(note_op, ability)
         .operation_read_field(note_op, reads.note);
@@ -258,7 +254,6 @@ fn bind_inverse_ops(
                 ))
                 .finish(),
         )
-        .operation_decision_fact_budget(balance_op, 1)
         .operation_projection_work_budget(balance_op, 16)
         .operation_requires_ability(balance_op, ability)
         .operation_read_field(balance_op, reads.balance);
@@ -278,7 +273,6 @@ fn bind_inverse_ops(
                 ))
                 .finish(),
         )
-        .operation_decision_fact_budget(fields_op, 2)
         .operation_projection_work_budget(fields_op, 24)
         .operation_requires_ability(fields_op, ability)
         .operation_read_field(fields_op, reads.frozen)

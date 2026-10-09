@@ -213,14 +213,17 @@ mod tests {
     fn naming_admission_rejects_tampered_normalized_key_plan() {
         let runtime = runtime_with_test_schema();
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
-            CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_keys: vec![ClientKey::raw("raw-key")],
-                field_patches: vec![crate::tests::support::name_field_patch("raw")],
-            }),
-        )))
+        txn.push_batch(
+            WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
+                CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_keys: vec![ClientKey::raw("raw-key")],
+                    field_patches: vec![crate::tests::support::name_field_patch("raw")],
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
 
         let mut planned = txn
@@ -264,6 +267,7 @@ mod tests {
                     },
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
 
@@ -305,6 +309,7 @@ mod tests {
                     field_patches: vec![crate::tests::support::relation_label_field_patch("edge")],
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
 
@@ -334,14 +339,17 @@ mod tests {
         let runtime = runtime_with_test_schema();
         runtime.performance_access().reset_counters();
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
-            CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_keys: vec![ClientKey::raw("raw-key")],
-                field_patches: vec![crate::tests::support::name_field_patch("raw")],
-            }),
-        )))
+        txn.push_batch(
+            WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
+                CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_keys: vec![ClientKey::raw("raw-key")],
+                    field_patches: vec![crate::tests::support::name_field_patch("raw")],
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
 
         let admitted = txn

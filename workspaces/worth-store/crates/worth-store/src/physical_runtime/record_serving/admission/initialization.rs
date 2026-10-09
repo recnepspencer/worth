@@ -2,8 +2,7 @@ use worth_store_physical_backend::{ArtifactTreeFailureKind, QualifiedFilesystemM
 use worth_store_physical_format::{
     durable_artifact_checksum, BootstrapCatalog, CurrentRootCatalogEntry,
     CurrentRootCatalogGeneration, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    DurableRootSelector, PhysicalFreeSpaceMembershipBlock, RecordAllocationClass,
-    RecordArtifactFile, RecordFreeSpaceManifestEntry, RootSelectorIdentity, RootSelectorRole,
+    DurableRootSelector, RecordArtifactFile, RootSelectorIdentity, RootSelectorRole,
 };
 
 use super::super::residency::initialization_artifacts::InitializationRecordArtifacts;
@@ -43,32 +42,24 @@ pub(in crate::physical_runtime::record_serving) fn initialize(
         }
     }
     let declaration = format.declaration();
-    let free_entry =
-        RecordFreeSpaceManifestEntry::new(RecordAllocationClass::Extent, 1, 1, u64::MAX - 1, 1)
-            .expect("initial allocatable extent range is nonempty");
+    let arena_alignment = super::super::arena::qualified_arena_alignment(media).ok_or(
+        BootstrapTransitionFailure::Denied(RecordBootstrapDenial::ConfigurationMismatch),
+    )?;
     let tree_identity = new_tree_identity()?;
-    let free_block = PhysicalFreeSpaceMembershipBlock::leaf(
-        tree_identity,
-        1,
-        1,
-        vec![free_entry],
-        placement.manifest_capacity().get(),
-    )
-    .ok_or(BootstrapTransitionFailure::Failed(
-        RecordBootstrapFailure::FormatEncoding,
-    ))?;
-    let free_block_bytes = free_block.encode(declaration);
     let free_space = DurableFreeSpaceManifestHeader::new(
         1,
         tree_identity,
         placement.manifest_capacity().get(),
         placement.segment_pages().get(),
+        0,
         1,
         1,
         1,
         1,
-        2,
-        Some(free_block.reference(durable_artifact_checksum(&free_block_bytes))),
+        placement.arena_capacity().get(),
+        arena_alignment,
+        1,
+        None,
     )
     .ok_or(BootstrapTransitionFailure::Failed(
         RecordBootstrapFailure::FormatEncoding,
@@ -124,19 +115,6 @@ pub(in crate::physical_runtime::record_serving) fn initialize(
             RecordFamilyCreationFailure::BeforeEffect(failure)
             | RecordFamilyCreationFailure::AfterEffect(failure) => backend_after_effect(failure),
         })?;
-    let free_block_artifact = RecordArtifactFile::FreeSpaceMembershipBlock {
-        generation: 1,
-        block: 1,
-    };
-    artifacts
-        .write_new(free_block_artifact, &free_block_bytes)
-        .map_err(backend_after_effect)?;
-    artifacts
-        .synchronize_artifact(free_block_artifact)
-        .map_err(backend_after_effect)?;
-    artifacts
-        .synchronize_artifact_parent(free_block_artifact)
-        .map_err(backend_after_effect)?;
     let root_artifact = RecordArtifactFile::RootManifest { generation: 1 };
     artifacts
         .write_new(root_artifact, &current_root.encode(declaration))

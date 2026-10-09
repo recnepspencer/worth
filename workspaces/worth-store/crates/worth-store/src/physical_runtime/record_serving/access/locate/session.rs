@@ -35,8 +35,8 @@ impl RecordReadSession {
                 match state.read_next(&self._allocation, target, &mut self.observation, identity) {
                     Ok(count) => count,
                     Err(failure) => {
-                        runtime.health.observe_stream_failure(failure.kind());
-                        return Err(failure);
+                        runtime.health.observe_extent_stream_failure(&failure);
+                        return Err(failure.into_stream_failure());
                     }
                 }
             }
@@ -86,8 +86,8 @@ impl RecordReadSession {
                     Ok(Some(chunk)) => Some((chunk.bytes, chunk.frame, chunk.logical_range)),
                     Ok(None) => None,
                     Err(failure) => {
-                        runtime.health.observe_stream_failure(failure.kind());
-                        return Err(failure);
+                        runtime.health.observe_extent_stream_failure(&failure);
+                        return Err(failure.into_stream_failure());
                     }
                 }
             }

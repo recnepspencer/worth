@@ -160,10 +160,14 @@ fn stale_native_contract_basis_denies_without_mutating_truth() {
                     aspect_patch: stale,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("stale basis must deny");
     assert!(matches!(
         error,
@@ -238,9 +242,15 @@ fn commit_entity_create(
                     aspect_patch,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(runtime).unwrap()
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
 }
 
 fn commit_entity_patch(
@@ -257,9 +267,15 @@ fn commit_entity_patch(
                     aspect_patch,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(runtime).unwrap()
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
 }
 
 fn commit_relation_create(
@@ -281,9 +297,15 @@ fn commit_relation_create(
                     aspect_patch,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(runtime).unwrap()
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
 }
 
 fn commit_relation_patch(
@@ -300,9 +322,15 @@ fn commit_relation_patch(
                     aspect_patch,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(runtime).unwrap()
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
 }
 
 fn whole_set(

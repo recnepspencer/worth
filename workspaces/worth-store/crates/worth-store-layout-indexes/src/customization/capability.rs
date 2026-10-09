@@ -84,7 +84,7 @@ impl FutureLayoutCapabilityRequest {
                 | crate::PhysicalKeyDomain::SegmentAddressKey
                 | crate::PhysicalKeyDomain::ExtentAddressKey
                 | crate::PhysicalKeyDomain::PhysicalReferenceKey => {
-                    Some(LayoutStrategyFamily::BaselineBTreeRange)
+                    Some(LayoutStrategyFamily::BTreeRange)
                 }
                 crate::PhysicalKeyDomain::WalRecordKey
                 | crate::PhysicalKeyDomain::BlobIdentityKey => {

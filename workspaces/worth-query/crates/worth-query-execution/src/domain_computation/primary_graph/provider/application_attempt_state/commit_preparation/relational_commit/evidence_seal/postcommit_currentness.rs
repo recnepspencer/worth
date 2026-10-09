@@ -76,6 +76,9 @@ pub(in crate::domain_computation::primary_graph) struct FailedRebase {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
     NativeRevisionUnavailable,
+    NativeFactRevisionUnavailable(usize),
+    IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
+    IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     UnsupportedDecisionFact,
     AdmissionDenied(CompanionPreflightStop),
 }
@@ -83,21 +86,42 @@ pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
 /// Capacity for the selected-snapshot fact transition is acquired while the
 /// candidate is still pre-effect custody. The postcommit path only fills the
 /// already allocated action and result buffers.
-pub(in crate::domain_computation::primary_graph::provider) struct PreparedSourceFactRebase {
+pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase {
     facts: Vec<WorthQueryApplicationObservedFact>,
     /// The ordinals, ascending, of the facts an owner call read that the
     /// commit's own effect replaced.
     moved_by_own_effect: Arc<[usize]>,
+    endpoints: worth_execution::ExecutionArray<(
+        usize,
+        crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+    )>,
     actions: Vec<resolution::PreparedFactRebase>,
     rebased: Vec<WorthQueryApplicationObservedFact>,
     superseded: Vec<usize>,
 }
 
 impl PreparedSourceFactRebase {
-    pub(in crate::domain_computation::primary_graph::provider) fn admit(
+    pub(in crate::domain_computation::primary_graph) fn admit(
         facts: Vec<WorthQueryApplicationObservedFact>,
         moved_by_own_effect: Arc<[usize]>,
-    ) -> Result<Self, std::collections::TryReserveError> {
+        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<Self, PreparedRebaseDenial> {
+        control.check_live()?;
+        let endpoint_count = facts.iter().try_fold(0usize, |count, fact| {
+            control.check_live()?;
+            if matches!(fact, WorthQueryApplicationObservedFact::Relation { .. } | WorthQueryApplicationObservedFact::Adjacency { .. }) {
+                count.checked_add(1).ok_or(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability)
+            } else { Ok(count) }
+        })?;
+        let mut endpoints =
+            worth_execution::ExecutionArrayBuilder::allocate(endpoint_count, control.policy())?;
+        for (ordinal, fact) in facts.iter().enumerate() {
+            control.check_live()?;
+            if let Some(payload) = adjacency::prepare_endpoints(fact, control)? {
+                endpoints.push((ordinal, payload))?;
+            }
+        }
+        let endpoints = endpoints.seal()?;
         let mut actions = Vec::new();
         actions.try_reserve_exact(facts.len())?;
         let mut rebased = Vec::new();
@@ -107,6 +131,7 @@ impl PreparedSourceFactRebase {
         Ok(Self {
             facts,
             moved_by_own_effect,
+            endpoints,
             actions,
             rebased,
             superseded,
@@ -228,10 +253,12 @@ fn rebase(
     let PreparedSourceFactRebase {
         facts,
         moved_by_own_effect,
+        endpoints,
         mut actions,
         mut rebased,
         mut superseded,
     } = prepared;
+    let mut endpoints = endpoints.into_iter().peekable();
     // The width the decision declared for its indexed selections, metered
     // across the walk.
     let mut indexed_width = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
@@ -260,6 +287,9 @@ fn rebase(
             producer_output,
             admission,
             &mut indexed_width,
+            endpoints
+                .next_if(|(prepared_ordinal, _)| *prepared_ordinal == ordinal)
+                .map(|(_, payload)| payload),
         ) {
             Ok(prepared) => prepared,
             Err(stop) => return stopped(failure, stop, own_effect, unasked, producer_output),
@@ -274,6 +304,15 @@ fn rebase(
                 }
             }
             Err(reason) => {
+                let reason = match reason {
+                    RebaseVerificationReason::NativeRevisionUnavailable => {
+                        RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal)
+                    }
+                    RebaseVerificationReason::IndexedSelectionDenied(denial) => {
+                        RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial)
+                    }
+                    reason => reason,
+                };
                 own_effect = own_effect.with_unanswered(
                     std::slice::from_ref(fact),
                     producer_output,
@@ -326,3 +365,23 @@ fn stopped(
 mod tests;
 #[cfg(test)]
 mod undecided_tests;
+
+/// Exact physical source refusal stays distinct from legacy temporary Vec refusal.
+#[derive(Debug)]
+pub(in crate::domain_computation::primary_graph) enum PreparedRebaseDenial {
+    Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial),
+    Temporary(std::collections::TryReserveError),
+}
+impl From<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial> for PreparedRebaseDenial {
+    fn from(denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial) -> Self { Self::Retention(denial) }
+}
+impl From<worth_execution::ExecutionAllocationDenial> for PreparedRebaseDenial {
+    fn from(denial: worth_execution::ExecutionAllocationDenial) -> Self {
+        Self::Retention(denial.into())
+    }
+}
+impl From<std::collections::TryReserveError> for PreparedRebaseDenial {
+    fn from(denial: std::collections::TryReserveError) -> Self {
+        Self::Temporary(denial)
+    }
+}

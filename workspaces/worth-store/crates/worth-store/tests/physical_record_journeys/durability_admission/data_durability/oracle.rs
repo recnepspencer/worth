@@ -120,7 +120,7 @@ pub(super) fn frame_page_lsn_matches_basis(
 pub(super) fn artifact_path(store_root: &Path, artifact: RecordArtifactFile) -> PathBuf {
     let family = match artifact {
         RecordArtifactFile::Segment { .. } => "segments",
-        RecordArtifactFile::Extent { .. } => "extents",
+        RecordArtifactFile::ExtentArena { .. } => "arenas",
         _ => panic!("Phase 4 data effects target only page or extent artifacts"),
     };
     store_root

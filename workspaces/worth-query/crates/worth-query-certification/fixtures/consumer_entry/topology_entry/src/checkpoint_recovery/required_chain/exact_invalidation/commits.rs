@@ -32,7 +32,10 @@ impl Court<'_, '_, '_, '_> {
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_performed::<program::ChainProgram, program::ChainRoot>(self.application);
+            .execute_performed::<program::ChainProgram, program::ChainRoot>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         let answer = match outcome {
             Ok(Performed::Performed(performed)) => {
                 if start {
@@ -75,11 +78,13 @@ impl Court<'_, '_, '_, '_> {
                     body_key: body.to_owned(),
                     value: length(value),
                 }),
-                validator_work: 4_096,
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_in_program::<program::ChainProgram>(self.application);
+            .execute_in_program::<program::ChainProgram>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         assert!(
             matches!(
                 &outcome,
@@ -115,7 +120,10 @@ impl Court<'_, '_, '_, '_> {
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_in_program::<program::ChainProgram>(self.application);
+            .execute_in_program::<program::ChainProgram>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         assert!(
             matches!(
                 &outcome,
@@ -144,11 +152,13 @@ impl Court<'_, '_, '_, '_> {
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: anchor,
                 operation: PlanarOperation::CreateCycle(ring_world::vertices(index)),
-                validator_work: 4_096,
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&self.next_idempotency())
-            .execute_in_program::<program::ChainProgram>(self.application);
+            .execute_in_program::<program::ChainProgram>(
+                self.application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
         assert!(
             matches!(
                 &outcome,

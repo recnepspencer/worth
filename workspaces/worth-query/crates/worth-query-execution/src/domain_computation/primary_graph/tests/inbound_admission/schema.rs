@@ -158,7 +158,7 @@ worth_query_application_schema! {
                         .no_aftermath()
                         .finish(),
                 )
-                .operation_decision_fact_budget(NotifyOperation::reference(), 1)
+
                 .operation_projection_work_budget(NotifyOperation::reference(), 8)
                 .operation_emit(NotifyOperation::reference(), NoticeEffect::reference())
                 .operation(
@@ -179,7 +179,7 @@ worth_query_application_schema! {
                         .no_aftermath()
                         .finish(),
                 )
-                .operation_decision_fact_budget(OtherNotifyOperation::reference(), 1)
+
                 .operation_projection_work_budget(OtherNotifyOperation::reference(), 8)
                 .operation_emit(OtherNotifyOperation::reference(), NoticeEffect::reference());
             schema.operation(
@@ -200,7 +200,7 @@ worth_query_application_schema! {
                         .no_aftermath()
                         .finish(),
                 )
-                .operation_decision_fact_budget(WideNotifyOperation::reference(), 1)
+
                 .operation_projection_work_budget(WideNotifyOperation::reference(), 8)
                 .operation_emit(WideNotifyOperation::reference(), NoticeEffect::reference())
         }

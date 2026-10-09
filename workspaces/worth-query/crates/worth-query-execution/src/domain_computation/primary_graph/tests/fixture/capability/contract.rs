@@ -171,7 +171,6 @@ fn install_capability_operations(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(CapabilityTouchOperation::reference(), 1)
         .operation_projection_work_budget(CapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             CapabilityTouchOperation::reference(),
@@ -188,7 +187,6 @@ fn install_capability_operations(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(ComposedCapabilityTouchOperation::reference(), 1)
         .operation_projection_work_budget(ComposedCapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),

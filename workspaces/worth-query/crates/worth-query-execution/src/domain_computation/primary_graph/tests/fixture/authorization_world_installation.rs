@@ -77,26 +77,7 @@ pub(super) fn install_authorization_world_with_product_resources(
     spec: AuthorizationWorldSpec<'_>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
 ) -> AuthorizationWorld {
-    let mut prepared = prepare_authorization_world(
-        spec.resources,
-        None,
-        product_resources,
-        crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile::default(),
-    );
-    populate_authorization_world(&mut prepared, &spec);
-    publish_authorization_world(prepared)
-}
-
-pub(super) fn install_authorization_world_with_completed_evidence_resources(
-    spec: AuthorizationWorldSpec<'_>,
-    completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
-) -> AuthorizationWorld {
-    let mut prepared = prepare_authorization_world(
-        spec.resources,
-        None,
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
-        completed_evidence,
-    );
+    let mut prepared = prepare_authorization_world(spec.resources, None, product_resources);
     populate_authorization_world(&mut prepared, &spec);
     publish_authorization_world(prepared)
 }
@@ -123,7 +104,6 @@ fn prepare_authorization_world(
     resources: WorthQueryApplicationQueryResourceProfile,
     relational: Option<worth_relational::facade::runtime::RelationalRuntime>,
     product_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-    completed_evidence: crate::domain_computation::execution_runtime::WorthQueryCompletedEvidenceResourceProfile,
 ) -> PreparedAuthorizationWorld {
     let declaration = IdentityExecutionSchema::declaration().unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
@@ -131,7 +111,6 @@ fn prepare_authorization_world(
         .unwrap();
     let installation = WorthQueryExecutionRuntimeInstaller::new()
         .application_query_resources(resources)
-        .completed_evidence_resources(completed_evidence)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .unwrap();
     let (runtime, authority) = installation.into_parts();

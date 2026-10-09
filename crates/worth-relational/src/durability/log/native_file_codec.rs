@@ -7,8 +7,11 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 
 use super::local_store::{DurableCheckpointFile, DurableSegmentFile, DurableStoreManifestFile};
 use super::persisted_checkpoint::{
-    CaptureSectionRecorder, PersistedDurableCheckpointFile, PersistedDurableCheckpointFileRef,
+    PersistedDurableCheckpointFile, PersistedDurableCheckpointFileRef,
 };
+
+mod checkpoint_encoding;
+pub(crate) use checkpoint_encoding::encode_checkpoint;
 
 pub(crate) fn read_store_manifest_file(
     path: &Path,
@@ -43,37 +46,6 @@ pub(crate) fn write_checkpoint_file(
     checkpoint: &crate::durability::data::DurableCheckpoint,
 ) -> Result<(), DurabilityError> {
     write_native_file(path, &PersistedDurableCheckpointFileRef::new(checkpoint))
-}
-
-pub(crate) fn encode_checkpoint(
-    checkpoint: crate::durability::data::DurableCheckpoint,
-) -> Result<
-    (
-        Vec<u8>,
-        crate::durability::data::NativeCheckpointSectionBytes,
-    ),
-    DurabilityError,
-> {
-    let recorder = CaptureSectionRecorder::default();
-    let mut bytes = Vec::new();
-    let mut writer = recorder.writer(&mut bytes);
-    rmp_serde::encode::write_named(
-        &mut writer,
-        &PersistedDurableCheckpointFileRef::measured(&checkpoint, &recorder),
-    )
-    .map_err(|error| {
-        DurabilityError::new(
-            RecoveryFailureClass::DurableIoFailure,
-            format!("failed to encode native checkpoint: {error}"),
-        )
-    })?;
-    let sections = recorder.finish(bytes.len()).ok_or_else(|| {
-        DurabilityError::new(
-            RecoveryFailureClass::DurableIoFailure,
-            "native checkpoint section accounting did not cover encoded bytes",
-        )
-    })?;
-    Ok((bytes, sections))
 }
 
 pub(crate) fn decode_checkpoint(bytes: &[u8]) -> Result<DurableCheckpointFile, DurabilityError> {

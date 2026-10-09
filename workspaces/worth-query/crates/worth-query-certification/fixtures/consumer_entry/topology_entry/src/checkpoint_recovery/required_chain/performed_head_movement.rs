@@ -70,7 +70,10 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         })
         .expect_source(selected.observed_sources()[0].clone())
         .idempotency(&0x9176_3002_u64)
-        .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+        .execute_performed::<program::ChainProgram, program::ChainRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     drop(selected);
     let c_root = initial_c

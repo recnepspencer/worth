@@ -13,6 +13,10 @@ pub enum PhysicalIntegrityComparisonDenial {
     SameObserver,
     DuplicateScope,
     InvalidObservation,
+    SelectedRootUnavailable,
+    SelectedRootMismatch,
+    IncompleteObservation,
+    InvalidRecordIdentity,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalIntegrityComparisonCounters {

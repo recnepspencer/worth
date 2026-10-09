@@ -3,9 +3,6 @@ use super::integrity_classification::{
 };
 use sha2::{Digest, Sha256};
 use worth_store_authority::{StoreCurrentAuthorityIdentity, StoreCurrentAuthorityWitness};
-use worth_store_layout_indexes::{
-    DerivedIndexRepairExecutionDenial, DerivedIndexRepairReceipt, LayoutOperationalRepairOwner,
-};
 
 use crate::authorization::{consume_authorization_through, recover_authorization_consumption};
 use crate::{
@@ -24,6 +21,7 @@ use super::{
 #[derive(Debug)]
 pub enum RepairReadinessDenial {
     StaleAuthority,
+    StoreDerivedIndexRebuildRequired,
     Authorization(AuthorizationConsumptionDenial),
     Journal(RepairJournalDenial),
 }
@@ -33,16 +31,11 @@ pub struct ExecutionReadyRepair<'a> {
     authorization: AuthorizationConsumptionReceipt,
     integrity_node: OwnerPlanNodeIdentity,
     integrity: super::integrity_classification::IntegrityRepairClassificationPlan,
-    layout: Vec<(
-        OwnerPlanNodeIdentity,
-        worth_store_layout_indexes::DerivedIndexRepairPlan,
-    )>,
     journal: RepairExecutionJournal<'a>,
 }
 
 #[derive(Debug)]
 pub enum RepairExecutionDenial {
-    Layout(DerivedIndexRepairExecutionDenial),
     Journal(RepairJournalDenial),
     RecoveredReceiptMismatch { node: OwnerPlanNodeIdentity },
     Interrupted(RepairExecutionInterrupted),
@@ -51,7 +44,6 @@ pub enum RepairExecutionDenial {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExecutedRepairOwnerReceipt {
     Integrity(IntegrityRepairClassificationReceipt),
-    Layout(DerivedIndexRepairReceipt),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,6 +111,9 @@ impl AuthorizedRepairPlan {
         if self.authorization.binding().authority_identity() != current.authority_identity() {
             return Err(RepairReadinessDenial::StaleAuthority);
         }
+        if !self.layout.is_empty() {
+            return Err(RepairReadinessDenial::StoreDerivedIndexRebuildRequired);
+        }
         let operation_id = self.operation_id;
         let consumed = consume_authorization_through(
             control,
@@ -132,7 +127,7 @@ impl AuthorizedRepairPlan {
         )
         .map_err(RepairReadinessDenial::Authorization)?;
         let plan_fingerprint = consumed.authorized().binding().fingerprint();
-        let owner_nodes = self.layout.len() as u64 + 1;
+        let owner_nodes = 1;
         let journal = RepairExecutionJournal::open_through(
             control,
             append,
@@ -149,7 +144,6 @@ impl AuthorizedRepairPlan {
             authorization: consumed.receipt(),
             integrity_node: self.integrity_node,
             integrity: self.integrity,
-            layout: self.layout,
             journal,
         })
     }
@@ -179,19 +173,16 @@ impl LoweredRepairOwnerPlanDag {
         {
             return Err(RepairReadinessDenial::StaleAuthority);
         }
+        if !self.layout.is_empty() {
+            return Err(RepairReadinessDenial::StoreDerivedIndexRebuildRequired);
+        }
         let recovered_receipts_are_owned = handle.durable_owner_receipts().iter().all(|receipt| {
-            (receipt.node_fingerprint() == self.integrity_node.fingerprint()
-                && receipt.owner_tag() == 2)
-                || self.layout.iter().any(|(node, _)| {
-                    receipt.node_fingerprint() == node.fingerprint() && receipt.owner_tag() == 5
-                })
+            receipt.node_fingerprint() == self.integrity_node.fingerprint()
+                && receipt.owner_tag() == 2
         });
         let recovered_starts_are_owned = handle.started_owner_nodes().iter().all(|started| {
-            (started.node_fingerprint() == self.integrity_node.fingerprint()
-                && started.owner_tag() == 2)
-                || self.layout.iter().any(|(node, _)| {
-                    started.node_fingerprint() == node.fingerprint() && started.owner_tag() == 5
-                })
+            started.node_fingerprint() == self.integrity_node.fingerprint()
+                && started.owner_tag() == 2
         });
         if !recovered_receipts_are_owned || !recovered_starts_are_owned {
             return Err(RepairReadinessDenial::Journal(
@@ -217,7 +208,6 @@ impl LoweredRepairOwnerPlanDag {
             authorization,
             integrity_node: self.integrity_node,
             integrity: self.integrity,
-            layout: self.layout,
             journal,
         })
     }
@@ -234,7 +224,7 @@ impl ExecutionReadyRepair<'_> {
     ) -> Result<ExecutedRepair, RepairExecutionDenial> {
         let mut receipts = Vec::new();
         receipts
-            .try_reserve_exact(self.layout.len() + 1)
+            .try_reserve_exact(1)
             .map_err(|_| RepairExecutionDenial::Journal(RepairJournalDenial::InvalidHistory))?;
         self.journal
             .begin_owner_effect(self.integrity_node, 2)
@@ -265,46 +255,6 @@ impl ExecutionReadyRepair<'_> {
             self.integrity_node,
             ExecutedRepairOwnerReceipt::Integrity(integrity),
         ));
-        for (node, plan) in self.layout {
-            self.journal
-                .begin_owner_effect(node, 5)
-                .map_err(RepairExecutionDenial::Journal)?;
-            let receipt = if let Some(expected) = self.journal.completed(node) {
-                let recovered = LayoutOperationalRepairOwner::recover_applied(&plan)
-                    .map_err(RepairExecutionDenial::Layout)?;
-                let observed = receipt_fingerprint(ExecutedRepairOwnerReceipt::Layout(recovered));
-                if observed != expected {
-                    return Err(RepairExecutionDenial::RecoveredReceiptMismatch { node });
-                }
-                recovered
-            } else {
-                observe(
-                    control,
-                    node,
-                    RepairExecutionBoundaryMoment::BeforeOwnerEffect,
-                )?;
-                let executed = LayoutOperationalRepairOwner::execute(plan)
-                    .map_err(RepairExecutionDenial::Layout)?;
-                observe(
-                    control,
-                    node,
-                    RepairExecutionBoundaryMoment::AfterOwnerEffectBeforeReceipt,
-                )?;
-                record_receipt(
-                    &mut self.journal,
-                    node,
-                    ExecutedRepairOwnerReceipt::Layout(executed),
-                    5,
-                )?;
-                observe(
-                    control,
-                    node,
-                    RepairExecutionBoundaryMoment::AfterReceiptPersistence,
-                )?;
-                executed
-            };
-            receipts.push((node, ExecutedRepairOwnerReceipt::Layout(receipt)));
-        }
         let completion_basis = self
             .journal
             .completion_basis()
@@ -359,12 +309,6 @@ fn receipt_fingerprint(receipt: ExecutedRepairOwnerReceipt) -> [u8; 32] {
             digest.update(value.plan_fingerprint());
             digest.update(value.classified_regions().to_be_bytes());
             digest.update(value.quarantined_regions().to_be_bytes());
-        }
-        ExecutedRepairOwnerReceipt::Layout(value) => {
-            digest.update([5]);
-            digest.update(value.plan_fingerprint());
-            digest.update(value.published_generation().to_be_bytes());
-            digest.update(value.content_digest());
         }
     }
     digest.finalize().into()

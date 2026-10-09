@@ -1,3 +1,4 @@
+use std::num::NonZeroU64;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
@@ -42,6 +43,32 @@ pub struct OperationAllocationObservation {
 }
 
 impl OperationAllocationGrant {
+    /// Resize only this pool-issued reservation; a failed growth changes no charge.
+    pub fn try_resize(&mut self, target_bytes: u64) -> Result<(), super::PhysicalResidencyDenial> {
+        if target_bytes == self.bytes {
+            return Ok(());
+        }
+        let active = self.active_use_bytes.load(Ordering::Acquire);
+        if target_bytes < active {
+            return Err(
+                super::PhysicalResidencyDenial::AllocationGrantResizeBelowActiveUse {
+                    requested: target_bytes,
+                    active,
+                },
+            );
+        }
+        if target_bytes < self.bytes {
+            self.owner
+                .release_operation(self.scope, self.bytes - target_bytes);
+        } else {
+            let additional = NonZeroU64::new(target_bytes - self.bytes)
+                .expect("strict growth has a positive delta");
+            self.owner.reserve_operation(self.scope, additional)?;
+        }
+        self.bytes = target_bytes;
+        Ok(())
+    }
+
     pub(crate) fn scope_for(
         &self,
         owner: &Arc<PoolInner>,

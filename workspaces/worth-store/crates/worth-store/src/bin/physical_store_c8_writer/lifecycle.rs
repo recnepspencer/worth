@@ -6,6 +6,7 @@ pub(super) enum CheckpointStage {
     CandidateAppend,
     CandidateBindingCompactionHeader,
     CandidateBindingRecord,
+    CandidateCertificate,
     CandidateFooter,
     CandidateSynchronization,
     CandidatePublication,
@@ -35,6 +36,7 @@ impl CheckpointStage {
             "candidate-append" => Self::CandidateAppend,
             "candidate-binding-header" => Self::CandidateBindingCompactionHeader,
             "candidate-binding-record" => Self::CandidateBindingRecord,
+            "candidate-certificate" => Self::CandidateCertificate,
             "candidate-footer" => Self::CandidateFooter,
             "candidate-synchronization" => Self::CandidateSynchronization,
             "candidate-publication" => Self::CandidatePublication,
@@ -53,6 +55,7 @@ impl CheckpointStage {
                 PhysicalCheckpointStep::CandidateBindingCompactionHeader
             }
             Self::CandidateBindingRecord => PhysicalCheckpointStep::CandidateBindingRecord,
+            Self::CandidateCertificate => PhysicalCheckpointStep::CandidateCertificate,
             Self::CandidateFooter => PhysicalCheckpointStep::CandidateFooter,
             Self::CandidateSynchronization => PhysicalCheckpointStep::CandidateSynchronization,
             Self::CandidatePublication => PhysicalCheckpointStep::CandidatePublication,
@@ -69,6 +72,7 @@ pub(super) fn checkpoint_stage_label(stage: CheckpointStage) -> &'static str {
         CheckpointStage::CandidateAppend => "candidate-append",
         CheckpointStage::CandidateBindingCompactionHeader => "candidate-binding-header",
         CheckpointStage::CandidateBindingRecord => "candidate-binding-record",
+        CheckpointStage::CandidateCertificate => "candidate-certificate",
         CheckpointStage::CandidateFooter => "candidate-footer",
         CheckpointStage::CandidateSynchronization => "candidate-synchronization",
         CheckpointStage::CandidatePublication => "candidate-publication",

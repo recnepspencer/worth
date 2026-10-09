@@ -10,10 +10,16 @@ fn publication_port_denies_candidate_after_owner_drop() {
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .expect("transaction binds while its owner is live");
     transaction
-        .push_batch(batch_create("owner-drop-write"))
+        .push_batch(
+            batch_create("owner-drop-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares while its owner is live");
     let publication_cell = candidate.publication_cell_for_test();
     let expected_root = candidate.expected_root_for_test();
@@ -58,10 +64,16 @@ fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .expect("transaction binds while its owner is live");
     transaction
-        .push_batch(batch_create("in-flight-drop-write"))
+        .push_batch(
+            batch_create("in-flight-drop-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares while its owner is live");
     let publication_cell = candidate.publication_cell_for_test();
     let branch_gate = std::sync::Arc::clone(publication_cell.coordination());

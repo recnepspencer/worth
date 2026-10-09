@@ -1,6 +1,57 @@
 use super::*;
 
 impl StoreRecoveryBindingFreshnessSample {
+    /// Owned recovery-data backing, excluding this inline value and past scratch.
+    /// Canonical redo and copy frames are distinct retained allocations.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        let mut bytes = self.roster_heap_bytes()?;
+        for member in &self.wal_members {
+            bytes = bytes.checked_add(u64::try_from(member.canonical_redo.capacity()).ok()?)?;
+        }
+        for (_, frame) in &self.extent_copy_frames {
+            bytes = bytes.checked_add(u64::try_from(frame.capacity()).ok()?)?;
+        }
+        Some(bytes)
+    }
+
+    pub(in crate::physical_runtime) fn roster_heap_bytes(&self) -> Option<u64> {
+        fn bytes<T>(vector: &Vec<T>) -> Option<u64> {
+            u64::try_from(vector.capacity())
+                .ok()?
+                .checked_mul(std::mem::size_of::<T>() as u64)
+        }
+        bytes(&self.operations)?
+            .checked_add(bytes(&self.wal_members)?)?
+            .checked_add(bytes(&self.retirements)?)?
+            .checked_add(bytes(&self.release_intents)?)?
+            .checked_add(bytes(&self.extent_copy_frames)?)?
+            .checked_add(bytes(&self.blob_manifest_residue_cleanups)?)
+    }
+
+    pub fn charged_bytes(&self) -> u64 {
+        self.backing.bytes()
+    }
+
+    pub const fn tier_epoch_activation(&self) -> Option<StoreTierEpochActivationObservation> {
+        self.tier_epoch_activation
+    }
+    pub fn extent_copy_frames(&self) -> impl ExactSizeIterator<Item = (WalLsnRange, &[u8])> {
+        self.extent_copy_frames
+            .iter()
+            .map(|(range, bytes)| (*range, bytes.as_slice()))
+    }
+    pub fn blob_manifest_residue_cleanups(
+        &self,
+    ) -> &[(
+        WalLsnRange,
+        worth_store_physical_format::BlobManifestResidueCleanup,
+        bool,
+    )] {
+        &self.blob_manifest_residue_cleanups
+    }
+    pub const fn manifest_cleanup_sampling_peak_bytes(&self) -> u64 {
+        self.manifest_cleanup_sampling_peak_bytes
+    }
     pub const fn store_identity(&self) -> StableStoreIdentity {
         self.store
     }
@@ -21,6 +72,11 @@ impl StoreRecoveryBindingFreshnessSample {
     }
     pub fn retirements(&self) -> &[StoreRecoveryRetirementObligation] {
         &self.retirements
+    }
+    /// Every sampled retirement-release intent, including resolved ones and
+    /// those below the checkpoint cutoff; data for the ordered root history.
+    pub fn release_intents(&self) -> &[worth_store_recovery_physics::RetirementReleaseIntent] {
+        &self.release_intents
     }
 }
 

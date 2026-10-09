@@ -120,11 +120,10 @@ pub(super) fn install_after_authority_issuances(
     let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
     let host = support::candidates();
     let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
             host.maximum_items().max(width),
             host.maximum_retained_representation_bytes()
                 .max((1024 * LARGEST_SET + 320 * 256) as u64),
-            host.maximum_validator_work().max(width),
         )
         .and_then(|candidates| candidates.with_maximum_operation_width(width))
         .unwrap();
@@ -190,7 +189,10 @@ pub(super) fn edit(
         .mutate(edit.commanded(command))
         .without_source()
         .idempotency(&command)
-        .execute_in_program::<HistoryProgram>(application);
+        .execute_in_program::<HistoryProgram>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     assert!(
         matches!(
             &outcome,
@@ -220,7 +222,10 @@ pub(super) fn adjust(
         })
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency(&command)
-        .execute_performed::<HistoryProgram, OracleRoot>(application)
+        .execute_performed::<HistoryProgram, OracleRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the scope's ordinate moves");
 }
 

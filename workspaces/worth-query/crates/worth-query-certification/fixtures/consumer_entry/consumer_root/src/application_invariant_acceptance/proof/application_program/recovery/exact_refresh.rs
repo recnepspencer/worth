@@ -62,11 +62,13 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
                 body_key: "anchor-c".to_owned(),
                 value: length(99),
             }),
-            validator_work: 4096,
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x69_3101_u64)
-        .execute_in_program(&world.application)
+        .execute_in_program(
+            &world.application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("an independent writer changes only the accepted output");
     assert!(
         changed.receipt().is_some(),

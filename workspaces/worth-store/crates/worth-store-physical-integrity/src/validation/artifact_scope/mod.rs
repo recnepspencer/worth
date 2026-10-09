@@ -1,4 +1,6 @@
+mod blob_record;
 mod bootstrap;
+mod btree_node;
 mod checkpoint;
 mod extent;
 mod free_space;

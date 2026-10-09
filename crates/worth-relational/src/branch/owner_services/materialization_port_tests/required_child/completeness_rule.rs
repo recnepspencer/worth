@@ -133,19 +133,23 @@ pub(super) fn deny_invalid_child_value(
 ) {
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("invalidate-required-child").push(
-            MutationIntent::Entity(
+        .push_batch(
+            WorkerIntentBatch::new("invalidate-required-child").push(MutationIntent::Entity(
                 crate::transactions::data::EntityMutationIntent::UpdateFields(
                     crate::transactions::data::UpdateEntityFieldsIntent {
                         entity_id: child,
                         fields: valid_field_patch(false),
                     },
                 ),
-            ),
-        ))
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let denial = transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("ordinary invalid child value is rejected");
     assert_custom_violation(&denial);
 }

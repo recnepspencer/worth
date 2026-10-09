@@ -149,6 +149,7 @@ where
             prepared.disclosure,
         )?;
         Ok(WorthQueryAdmittedApplicationQueryPlan {
+            planned_batch_item: None,
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
                 .primary_graph_authority

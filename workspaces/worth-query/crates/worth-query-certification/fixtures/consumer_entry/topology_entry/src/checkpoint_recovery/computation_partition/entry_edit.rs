@@ -217,7 +217,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(160, 160, 320, 320, 800, 0),
-            ApplicationCandidateResourceCeiling::bounded(1024 * 160 + 320 * 256, 4096),
+            ApplicationCandidateResourceCeiling::representation_bytes(1024 * 160 + 320 * 256),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -300,7 +300,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
         if input.count == 1 && unlinks <= 2 && input.sets.len() <= 2 {
             return ApplicationCandidateRequirements::fixed_shape(
                 ApplicationCandidateCardinalityCeiling::fixed(1, 1, 2, 2, 5, 0),
-                ApplicationCandidateResourceCeiling::bounded(1024, 4096),
+                ApplicationCandidateResourceCeiling::representation_bytes(1024),
             );
         }
         ApplicationCandidateRequirements::fixed_shape(
@@ -312,9 +312,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
                 input.count * 5,
                 0,
             ),
-            ApplicationCandidateResourceCeiling::bounded(
+            ApplicationCandidateResourceCeiling::representation_bytes(
                 1024 * input.count + (unlinks + input.count * input.sets.len()) * 256,
-                4096,
             ),
         )
     }

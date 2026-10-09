@@ -1,7 +1,6 @@
 use crate::domain_computation::execution_runtime::{
     product_world::WorthQueryProductWorldResources, WorthQueryApplicationCandidateResourceProfile,
-    WorthQueryApplicationQueryResourceProfile, WorthQueryCompletedEvidenceResourceProfile,
-    WorthQueryOutputDemandResourceProfile,
+    WorthQueryApplicationQueryResourceProfile, WorthQueryOutputDemandResourceProfile,
 };
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
@@ -13,7 +12,6 @@ pub struct WorthQueryInMemoryApplicationLimits {
     pub(super) world: WorthQueryProductWorldResources,
     pub(super) candidates: WorthQueryApplicationCandidateResourceProfile,
     pub(super) output_demands: WorthQueryOutputDemandResourceProfile,
-    pub(super) completed_evidence: WorthQueryCompletedEvidenceResourceProfile,
     pub(super) queries: WorthQueryApplicationQueryResourceProfile,
     pub(super) conditionals: SignalConditionalEvaluationBudget,
     pub(super) profile: WorthQueryInMemoryApplicationProfile,
@@ -21,6 +19,16 @@ pub struct WorthQueryInMemoryApplicationLimits {
 }
 
 impl WorthQueryInMemoryApplicationLimits {
+    /// Installs the caller's process execution authority in the application's
+    /// World on fresh installation or checkpoint reopen, without changing policy.
+    pub fn with_execution_authority(
+        mut self,
+        authority: std::sync::Arc<worth_execution::ExecutionAuthority>,
+    ) -> Self {
+        self.world = self.world.with_execution_authority(authority);
+        self
+    }
+
     pub const fn new(
         world: WorthQueryProductWorldResources,
         candidates: WorthQueryApplicationCandidateResourceProfile,
@@ -32,7 +40,6 @@ impl WorthQueryInMemoryApplicationLimits {
             candidates,
             queries,
             output_demands: WorthQueryOutputDemandResourceProfile::standard(),
-            completed_evidence: WorthQueryCompletedEvidenceResourceProfile::standard(),
             conditionals,
             profile: WorthQueryInMemoryApplicationProfile::GeneralPurpose,
             maximum_publication_records: None,
@@ -44,17 +51,6 @@ impl WorthQueryInMemoryApplicationLimits {
         profile: WorthQueryOutputDemandResourceProfile,
     ) -> Self {
         self.output_demands = profile;
-        self
-    }
-
-    /// Bounds completed-commit evidence, which is the declared idempotency
-    /// window: once full, the oldest evidence leaves it and a replay of that
-    /// commit answers that its window expired.
-    pub const fn with_completed_evidence_resources(
-        mut self,
-        profile: WorthQueryCompletedEvidenceResourceProfile,
-    ) -> Self {
-        self.completed_evidence = profile;
         self
     }
 

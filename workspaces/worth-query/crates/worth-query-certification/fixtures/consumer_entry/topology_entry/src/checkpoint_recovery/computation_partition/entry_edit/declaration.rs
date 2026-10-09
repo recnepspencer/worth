@@ -14,7 +14,6 @@ pub(in super::super) fn declare<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, super::super::region_output::LARGEST_SET * 8)
         .operation_projection_work_budget(operation, 4_096)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())

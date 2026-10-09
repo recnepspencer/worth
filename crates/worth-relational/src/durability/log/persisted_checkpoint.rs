@@ -25,8 +25,9 @@ pub(super) struct PersistedDurableCheckpointFile {
     checkpoint: PersistedDurableCheckpoint,
 }
 
-/// Borrowed checkpoint-file encoder. Only the output byte vector is large;
-/// the checkpoint image and its canonical envelopes stay in one owner.
+/// Borrowed checkpoint-file encoder. The checkpoint image and its canonical
+/// envelopes stay in one owner; partition-alias/serializer metadata heaps are
+/// separate from encoded payload backing admission.
 pub(super) struct PersistedDurableCheckpointFileRef<'a> {
     checkpoint: &'a DurableCheckpoint,
     recorder: Option<&'a CaptureSectionRecorder>,

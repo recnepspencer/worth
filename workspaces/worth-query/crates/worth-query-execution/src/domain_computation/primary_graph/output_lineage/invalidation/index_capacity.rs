@@ -30,31 +30,44 @@ fn ordered_node_bytes<K, V>() -> Option<u64> {
     u64::try_from(bytes).ok()
 }
 
-/// Conservative retained capacity: every nonempty node owns at least one
-/// entry. The allocation that owns the nodes holds the bound, so whatever
-/// shares them shares it.
+/// A completed im 15.1 tree owns one root, even when empty. Splitting leaves
+/// 32 keys in each child; deletion can leave 31, and rebalances before a
+/// further descent. Every nonroot therefore owns at least 31 keys. Roots
+/// sharing physical nodes share the allocation owner's reservation.
 pub(super) fn retained_map_bytes<K, V>(entries: usize) -> Option<u64> {
-    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(entries.checked_add(1)?).ok()?)
+    let nodes = 1usize.checked_add(entries.saturating_sub(1) / 31)?;
+    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
 }
 
-/// One selected edit copies a search path. Minimum branching two bounds its
-/// height by bit length; splitting can add two nodes per level and a new root.
-/// Old and new roots coexist during preparation and visibility cutover.
+/// Nested maps and sets each own a root, including empty and singleton trees.
+/// Summing their nonroot bounds is no greater than total entries / 31. A
+/// forest must never be priced as one tree just because its keys are counted
+/// together. `roots` and `entries` may conservatively overestimate the forest.
+pub(super) fn retained_forest_bytes<K, V>(entries: usize, roots: usize) -> Option<u64> {
+    if roots == 0 && entries != 0 {
+        return None;
+    }
+    let nodes = roots.checked_add(entries / 31)?;
+    ordered_node_bytes::<K, V>()?.checked_mul(u64::try_from(nodes).ok()?)
+}
+
+/// All newly allocated Arc nodes beside a retained predecessor. Insertion
+/// copies one path and can allocate two split children at each level, then
+/// one root. Deletion can copy a child and donor and materialize a replacement
+/// at each level; merge/collapse returns its Node by value. Both fit 3H + 1.
+/// This bounds transient allocation as well as the copied nodes retained by
+/// the successor; old tickets remain charged until their final owner drops.
 pub(super) fn ordered_edit_bytes<K, V>(entries: usize) -> Option<u64> {
     let prospective = entries.checked_add(1)?;
-    let levels = usize::BITS as usize - prospective.leading_zeros() as usize + 1;
+    let levels = ordered_height(prospective)?;
     ordered_node_bytes::<K, V>()?
-        .checked_mul(u64::try_from(levels.checked_mul(2)?.checked_add(1)?).ok()?)
+        .checked_mul(u64::try_from(levels.checked_mul(3)?.checked_add(1)?).ok()?)
 }
 
-/// Binary search within at most 64 initialized entries plus navigation at
-/// each level. Key comparison payload work is admitted by the key owner.
-pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
-    // Pinned im 15.1 splits into 32-key children; removal can leave 31.
-    // A nonroot node therefore has at least 31 keys and 32 children. With
-    // a one-key root, a height h needs at least 2 * 32^(h - 1) - 1 keys.
-    // Counting bit length as height priced a one-node index as many levels.
+fn ordered_height(entries: usize) -> Option<usize> {
     let mut levels = 1usize;
+    // A nonroot has 31 keys and 32 children. With a one-key root, height H
+    // requires at least 2 * 32^(H - 1) - 1 keys: 63, 2047, 65535, ...
     let mut next_minimum = 63usize;
     while entries >= next_minimum {
         levels = levels.checked_add(1)?;
@@ -67,6 +80,17 @@ pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
         };
         next_minimum = next;
     }
+    Some(levels)
+}
+
+/// Binary search within at most 64 initialized entries plus navigation at
+/// each level. Key comparison payload work is admitted by the key owner.
+pub(super) fn ordered_navigation_work(entries: usize) -> Option<u64> {
+    // Pinned im 15.1 splits into 32-key children; removal can leave 31.
+    // A nonroot node therefore has at least 31 keys and 32 children. With
+    // a one-key root, a height h needs at least 2 * 32^(h - 1) - 1 keys.
+    // Counting bit length as height priced a one-node index as many levels.
+    let levels = ordered_height(entries)?;
     let slots = entries.min(64);
     let comparisons = usize::BITS as usize - slots.leading_zeros() as usize + 1;
     u64::try_from(
@@ -94,5 +118,13 @@ pub(super) fn ordered_removal_work(entries: usize) -> Option<u64> {
     .ok()
 }
 
+#[cfg(all(test, feature = "allocation-probes"))]
+mod allocation_tests;
 #[cfg(test)]
 mod navigation_tests;
+
+#[cfg(test)]
+mod retention_tests;
+
+#[cfg(test)]
+mod insertion_tests;

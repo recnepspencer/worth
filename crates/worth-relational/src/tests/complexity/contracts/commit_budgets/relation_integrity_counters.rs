@@ -36,20 +36,26 @@ fn complexity_budget_relation_integrity_uniqueness_uses_adjacency_local_candidat
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(WorkerIntentBatch::new("duplicate-unique-relation").push(
-        MutationIntent::Create(CreateIntent::Relation(
-            crate::transactions::data::RelationSpec {
+    txn.push_batch(
+        WorkerIntentBatch::new("duplicate-unique-relation").push(MutationIntent::Create(
+            CreateIntent::Relation(crate::transactions::data::RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: crate::symbols::data::ClientKey::raw("duplicate"),
                 source: crate::transactions::data::EntityReference::Existing(target),
                 target: crate::transactions::data::EntityReference::Existing(source),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -81,9 +87,15 @@ fn complexity_budget_relation_integrity_symmetry_checks_only_touched_pairs() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -107,9 +119,15 @@ fn complexity_budget_relation_integrity_endpoint_deletion_checks_only_deleted_en
         WorkerIntentBatch::new("delete-source").push(MutationIntent::Entity(
             EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: source }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -131,20 +149,26 @@ fn complexity_budget_relation_integrity_reuses_touched_scope_across_multiple_con
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(WorkerIntentBatch::new("duplicate-and-missing-twin").push(
-        MutationIntent::Create(CreateIntent::Relation(
-            crate::transactions::data::RelationSpec {
+    txn.push_batch(
+        WorkerIntentBatch::new("duplicate-and-missing-twin").push(MutationIntent::Create(
+            CreateIntent::Relation(crate::transactions::data::RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: crate::symbols::data::ClientKey::raw("duplicate"),
                 source: crate::transactions::data::EntityReference::Existing(target),
                 target: crate::transactions::data::EntityReference::Existing(source),
                 fields: crate::transactions::data::AspectFieldPatch::default(),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    let _error = txn.commit(&runtime).unwrap_err();
+    let _error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.relation_integrity_contracts_evaluated, 3);

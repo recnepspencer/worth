@@ -54,11 +54,14 @@ impl WorthQueryProviderSessionLease {
 
     pub(super) fn commit(
         &mut self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         super::WorthQueryProviderTerminalDescription,
         super::WorthQueryProviderSessionCommitStop,
     > {
-        let result = self.provider.commit_session(&self.token.view());
+        let result = self
+            .provider
+            .commit_session(&self.token.view(), allocation_policy);
         if result.is_ok()
             || matches!(
                 &result,

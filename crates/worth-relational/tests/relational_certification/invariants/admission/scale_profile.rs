@@ -304,9 +304,13 @@ fn commit_vessel(
                     fields: vessel_fields(call_sign),
                 },
             ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction.commit(runtime)
+    transaction.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }
 
 fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantExecutionResult {
@@ -334,6 +338,7 @@ fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantE
                     fields: vessel_fields("GRAPH-PLAN"),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     transaction

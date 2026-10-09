@@ -1,5 +1,6 @@
 [package]
 name = "worth-ui-host-headless"
+workspace = "../.."
 edition.workspace = true
 version.workspace = true
 license.workspace = true

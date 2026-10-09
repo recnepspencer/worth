@@ -40,7 +40,6 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
         let input = PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::CreateCycle(vertices.clone()),
-            validator_work: 4096,
         };
         let outcome = mutate(request, application, input, 100 + ordinal as u64);
         let WorthQueryApplicationMutationOutcome::Committed {
@@ -99,7 +98,6 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
             PlanarMutation {
                 scope_key: "anchor-a".to_owned(),
                 operation: PlanarOperation::CreateCycle(malformed.clone()),
-                validator_work: 4096,
             },
             200 + ordinal as u64,
         ));

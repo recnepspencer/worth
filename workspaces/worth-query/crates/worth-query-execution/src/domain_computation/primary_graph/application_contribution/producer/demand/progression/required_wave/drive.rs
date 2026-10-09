@@ -9,12 +9,14 @@ use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
 use super::queued::RequiredQueueFrames;
+#[macro_use]
+mod held_resume;
+mod requested_refusal;
+use super::selection::committed_ready;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::{
-    registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
-/// The caller's own chain runs first; its errors end the call as before.
+/// The caller's own chain runs first; its errors end the call.
 /// Dirty required records popped from the shared queue then run as frames
 /// with the rest of the request. A queue chain never promotes or settles the
 /// caller: its item is acknowledged when the item itself is Current on this
@@ -26,7 +28,6 @@ pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     commit_authority: &WorthQueryProducerCommitAuthority,
-    installed_edition: &InstalledProducerEdition,
     mut wave: RequiredWaveSelection<'runtime, Schema>,
     queue: &mut RequiredQueueFrames,
     frame_custody: &mut RequiredContinuations<Schema>,
@@ -72,6 +73,9 @@ where
     // The caller's outcome is decided; queue frames take the rest.
     macro_rules! finish_caller {
         ($label:lifetime, $outcome:expr) => {{
+            if wave.target == RequiredWaveTarget::Requested {
+                return Ok(Some($outcome));
+            }
             queue.finish_caller($outcome);
             stack.frames.clear();
             current = None;
@@ -94,8 +98,8 @@ where
         admission
             .charge_external_work(6)
             .map_err(|_| work_denial())?;
-        let selected = current.as_ref().unwrap_or(&wave.caller_ready);
-        if !queue.active() {
+        let selected = current.as_ref().unwrap_or(&wave.anchor_ready);
+        if wave.target == RequiredWaveTarget::Caller && !queue.active() {
             // A restored output the caller's own chain consumed takes the
             // caller's mode when no demand of it has advanced.
             selected.completion().advanced_in(commit_authority);
@@ -103,14 +107,16 @@ where
         admission
             .charge_external_work(3)
             .map_err(|_| work_denial())?;
-        let producer_contacts_in_this_demand =
-            if current.is_none() || current_role == FrameRole::CallerSuccessor {
-                // Every certification reports the caller handle's lifetime count.
-                // Queue and upstream executions are not this caller's producer.
-                demand.producer_contacts_in_this_demand
-            } else {
-                current_contacts
-            };
+        let producer_contacts_in_this_demand = if wave.target == RequiredWaveTarget::Caller
+            && !queue.active()
+            && (current.is_none() || current_role == FrameRole::CallerSuccessor)
+        {
+            // Every certification reports the caller handle's lifetime count.
+            // Queue and upstream executions are not this caller's producer.
+            demand.producer_contacts_in_this_demand
+        } else {
+            current_contacts
+        };
         // The typed executor may admit and execute Fresh inside this call.
         // Reserve its custody before dispatch, even if it returns Current.
         let custody = if queue.active() {
@@ -124,7 +130,8 @@ where
             .reserve_external_work(installation_work)
             .map_err(admission_denial)?;
         let resolved = resolved_on_wave.view(slot.entries());
-        let caller_execution = !queue.active()
+        let caller_execution = wave.target == RequiredWaveTarget::Caller
+            && !queue.active()
             && stack.frames.is_empty()
             && (current.is_none() || current_role == FrameRole::CallerSuccessor);
         let refresh_permission = super::super::refresh::permit_refresh(
@@ -141,7 +148,8 @@ where
             request_scope,
             &wave,
             selected,
-            current.is_none().then_some(demand.installed_entry.as_ref()),
+            (current.is_none() && wave.target == RequiredWaveTarget::Caller)
+                .then_some(demand.installed_entry.as_ref()),
             resolved.as_ref(),
             producer_contacts_in_this_demand,
             refresh_permission,
@@ -169,18 +177,23 @@ where
             RequiredWaveStep::Current(settlement) => {
                 drop(slot);
                 runtime.output_demands.clear_required_stop(selected.key());
-                if stack.frames.is_empty()
+                if wave.target == RequiredWaveTarget::Requested
+                    && stack.frames.is_empty()
+                    && (current.is_none() || current_role == FrameRole::CallerSuccessor)
+                {
+                    return Ok(Some(WorthQueryOutputDemandAdvance::Settled(settlement)));
+                }
+                if wave.target == RequiredWaveTarget::Caller
+                    && stack.frames.is_empty()
                     && !queue.active()
-                    && super::caller_settlement::settle_selected_caller(
+                    && super::caller::finish_current_caller(
                         runtime,
                         demand,
-                        &wave,
+                        &wave.anchor_ready,
                         selected,
                         current_role == FrameRole::CallerSuccessor,
                         current.is_none(),
                         producer_contacts_in_this_demand,
-                        commit_authority,
-                        installed_edition,
                         admission,
                     )?
                 {
@@ -221,29 +234,28 @@ where
             }
             RequiredWaveStep::Upstream(upstream) => {
                 drop(slot);
-                if upstream.same_record(selected, admission)?
-                    || upstream.same_record(&wave.caller_ready, admission)?
-                    || resolved_on_wave.contains(&upstream)
-                {
+                if super::cycles::upstream_cycles(
+                    &upstream,
+                    selected,
+                    &wave.anchor_ready,
+                    &resolved_on_wave,
+                    admission,
+                )? {
                     if queue.active() {
                         hold_queue_frame!('required, None)
                     }
                     finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
                 }
-                if let Some(downstream) = current.take() {
-                    if !stack.push(
-                        RequiredWaveFrame {
-                            ready: downstream,
-                            role: current_role,
-                            contacts: current_contacts,
-                        },
-                        admission,
-                    )? {
-                        if queue.active() {
-                            hold_queue_frame!('required, None)
-                        }
-                        finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                if !stack.suspend_current(
+                    &mut current,
+                    current_role,
+                    current_contacts,
+                    admission,
+                )? {
+                    if queue.active() {
+                        hold_queue_frame!('required, None)
                     }
+                    finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
                 }
                 current = Some(upstream);
                 current_contacts = 0;
@@ -260,7 +272,48 @@ where
                 };
                 match slot.install(progress) {
                     RequiredFreshOutcome::Advanced => {}
-                    RequiredFreshOutcome::Refused(stop) => {
+                    RequiredFreshOutcome::Refused(mut stop) => {
+                        match requested_refusal::resolve(
+                            runtime,
+                            custody,
+                            &mut stop,
+                            selected,
+                            &wave,
+                            &resolved_on_wave,
+                            admission,
+                        )? {
+                            requested_refusal::RequestedRefusal::Ready(upstream) => {
+                                if !stack.suspend_current(
+                                    &mut current,
+                                    current_role,
+                                    current_contacts,
+                                    admission,
+                                )? {
+                                    if queue.active() {
+                                        hold_queue_frame!('required, None)
+                                    }
+                                    finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                                }
+                                current = Some(upstream);
+                                current_contacts = 0;
+                                current_role = FrameRole::Reached;
+                                continue 'required;
+                            }
+                            requested_refusal::RequestedRefusal::Cycle => {
+                                if queue.active() {
+                                    hold_queue_frame!('required, None)
+                                }
+                                finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                            }
+                            requested_refusal::RequestedRefusal::Held(head) => {
+                                resume_held!('required, head;
+                                    runtime, principal, request_scope;
+                                    wave, resolved_on_wave, queue, frame_custody;
+                                    demand, admission;
+                                    hold_queue_frame, finish_caller, stopped)
+                            }
+                            requested_refusal::RequestedRefusal::Unavailable => {}
+                        }
                         stopped!('required, selected.key(), stop)
                     }
                 }
@@ -287,7 +340,9 @@ where
                         runtime
                             .output_demands
                             .clear_required_stop(successor.interest().key());
-                        current_contacts = if successor_role == FrameRole::CallerSuccessor {
+                        current_contacts = if wave.target == RequiredWaveTarget::Caller
+                            && successor_role == FrameRole::CallerSuccessor
+                        {
                             demand.producer_contacts_in_this_demand
                         } else {
                             successor.producer_contacts()
@@ -322,43 +377,11 @@ where
             }
             RequiredWaveStep::Held(head) => {
                 drop(slot);
-                let custody = if queue.active() {
-                    ContinuationCustody::Queue(&mut *frame_custody)
-                } else {
-                    ContinuationCustody::Caller(
-                        &mut demand.required_continuations,
-                        &mut demand.producer_contacts_in_this_demand,
-                    )
-                };
-                match resume_held_upstream(
-                    runtime,
-                    principal,
-                    request_scope,
-                    wave.branch,
-                    custody,
-                    &head,
-                    admission,
-                ) {
-                    Ok(HeldUpstream::Ready(ready)) => {
-                        runtime.output_demands.clear_required_stop(&head);
-                        if committed_ready(&ready, admission)? {
-                            wave = reselect_required_wave(runtime, wave, admission)?;
-                            resolved_on_wave.clear();
-                            queue.wave_moved();
-                        }
-                        // Certify the same row again against the finished upstream.
-                        continue 'required;
-                    }
-                    Ok(HeldUpstream::Unfinished) => {
-                        if queue.active() {
-                            hold_queue_frame!('required, None)
-                        }
-                        finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
-                    }
-                    // The Ready the superseded successor replaced answers again.
-                    Ok(HeldUpstream::GaveBack) => continue 'required,
-                    Err(stop) => stopped!('required, &head, stop),
-                }
+                resume_held!('required, head;
+                                    runtime, principal, request_scope;
+                                    wave, resolved_on_wave, queue, frame_custody;
+                                    demand, admission;
+                                    hold_queue_frame, finish_caller, stopped)
             }
             RequiredWaveStep::Pending => {
                 if queue.active() {
@@ -368,18 +391,4 @@ where
             }
         }
     }
-}
-
-/// A committed Ready moved the wave past its selected position.
-fn committed_ready(
-    ready: &SelectedReadyReadmission,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(2)
-        .map_err(|_| work_denial())?;
-    Ok(matches!(
-        &ready.completion().authority,
-        crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
-    ))
 }

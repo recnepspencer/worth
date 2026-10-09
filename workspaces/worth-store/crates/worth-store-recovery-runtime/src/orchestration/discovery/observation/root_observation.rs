@@ -1,7 +1,9 @@
-use worth_store::physical_runtime::{BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact};
+use worth_store::physical_runtime::{
+    BoundedRecoveryFilesystemDiscovery, ObservedRecoveryArtifact, PhysicalRecoveryReadAllocation,
+};
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, DurableRootSelector, PhysicalRecordFormatDeclaration,
-    RootSelectorRole, ROOT_SELECTOR_BYTES,
+    RootSelectorRole,
 };
 use worth_store_physical_integrity::{PhysicalDamageCause, PhysicalIntegrityRejection};
 use worth_store_recovery_physics::{
@@ -10,8 +12,8 @@ use worth_store_recovery_physics::{
 };
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind as PhysicalRecoveryBlock, PhysicalRecoveryLimitDimension,
-    PhysicalRecoveryLimits, PhysicalRecoveryRootProtocolArtifact, PhysicalRecoverySourceDenial,
+    PhysicalRecoveryLimitDimension as Dimension, PhysicalRecoveryLimits,
+    PhysicalRecoveryRootProtocolArtifact, PhysicalRecoverySourceDenial,
 };
 use crate::integrity_ingress::{
     admit_addressed_root, admit_current_selector, admit_previous_selector,
@@ -20,13 +22,18 @@ use crate::integrity_ingress::{
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 use super::counters::record_root_counters;
-use super::map_selector_discovery_failure;
-use crate::orchestration::discovery::{map_cumulative_discovery_failure, DiscoveryFailure};
+use crate::orchestration::discovery::DiscoveryFailure;
+use crate::orchestration::discovery::OversizedArtifact;
+use crate::orchestration::recovery_budget::RecoveryReadBudget;
+
+mod funded_read;
+pub(super) use funded_read::window_admission_failure;
+use funded_read::FundedRootReads;
 
 pub(super) struct RootObservations {
     pub(super) current: PhysicalRootSlotObservation,
     pub(super) previous: PhysicalRootSlotObservation,
-    pub(super) remaining_manifest_bytes: u64,
+    pub(super) manifest_bytes: RecoveryReadBudget,
     pub(super) denials: Vec<PhysicalRecoverySourceDenial>,
 }
 
@@ -37,21 +44,18 @@ struct RootObservationScope {
     format: PhysicalRecordFormatDeclaration,
 }
 
-struct ManifestByteBudget<'a> {
-    remaining: &'a mut u64,
-    admitted: u64,
-}
-
 pub(super) fn observe_root_slots(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     limits: PhysicalRecoveryLimits,
     expected_format: PhysicalRecordFormatDeclaration,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
+    allocation: &mut PhysicalRecoveryReadAllocation<'_>,
 ) -> Result<RootObservations, DiscoveryFailure> {
     let declaration = limits.declaration();
-    let current_source = read_current_selector(discovery)?;
+    let mut reads = FundedRootReads::new(allocation, declaration);
+    let current_source = reads.read_selector(discovery, RootSelectorRole::Current)?;
     let store = discovery.store_identity();
-    let mut remaining_manifest_bytes = declaration.manifest_bytes;
+    let mut manifest_bytes = RecoveryReadBudget::declared(&declaration, Dimension::ManifestBytes);
     let (current, current_denial) = observe_root_slot(
         discovery,
         RootObservationScope {
@@ -60,14 +64,14 @@ pub(super) fn observe_root_slots(
             format: expected_format,
         },
         current_source,
-        ManifestByteBudget {
-            remaining: &mut remaining_manifest_bytes,
-            admitted: declaration.manifest_bytes,
-        },
+        &mut manifest_bytes,
         counters,
+        &mut reads,
     )?;
+    reads.finish_slot();
     let mut denials = current_denial.into_iter().collect::<Vec<_>>();
-    let previous_source = read_previous_selector(discovery)
+    let previous_source = reads
+        .read_selector(discovery, RootSelectorRole::Previous)
         .map_err(|failure| failure.with_root_protocol_denials(&denials))?;
     counters.selector_slots = discovery.counters().fixed_slots_read;
     let (previous, previous_denial) = observe_root_slot(
@@ -78,45 +82,29 @@ pub(super) fn observe_root_slots(
             format: expected_format,
         },
         previous_source,
-        ManifestByteBudget {
-            remaining: &mut remaining_manifest_bytes,
-            admitted: declaration.manifest_bytes,
-        },
+        &mut manifest_bytes,
         counters,
+        &mut reads,
     )
     .map_err(|failure| failure.with_root_protocol_denials(&denials))?;
+    reads.finish_slot();
     record_root_counters(counters, &current, &previous);
     denials.extend(previous_denial);
     Ok(RootObservations {
         current,
         previous,
-        remaining_manifest_bytes,
+        manifest_bytes,
         denials,
     })
-}
-
-fn read_current_selector(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-) -> Result<ObservedRecoveryArtifact, DiscoveryFailure> {
-    discovery
-        .read_current_selector(ROOT_SELECTOR_BYTES as u64)
-        .map_err(map_selector_discovery_failure)
-}
-
-fn read_previous_selector(
-    discovery: &mut BoundedRecoveryFilesystemDiscovery,
-) -> Result<ObservedRecoveryArtifact, DiscoveryFailure> {
-    discovery
-        .read_previous_selector(ROOT_SELECTOR_BYTES as u64)
-        .map_err(map_selector_discovery_failure)
 }
 
 fn observe_root_slot(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     scope: RootObservationScope,
-    selector_source: ObservedRecoveryArtifact,
-    budget: ManifestByteBudget<'_>,
+    selector_source: Result<ObservedRecoveryArtifact, OversizedArtifact>,
+    budget: &mut RecoveryReadBudget,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
+    reads: &mut FundedRootReads<'_, '_>,
 ) -> Result<
     (
         PhysicalRootSlotObservation,
@@ -124,14 +112,15 @@ fn observe_root_slot(
     ),
     DiscoveryFailure,
 > {
-    let selector = match admit_selector_source(scope, &selector_source, counters) {
+    let selector = match admit_selector_source(scope, selector_source.as_ref(), counters) {
         Ok(selector) => selector,
         Err(rejected) => return Ok(rejected),
     };
-    let root = match read_and_admit_addressed_root(discovery, scope, selector, budget, counters)? {
-        Ok(root) => root,
-        Err(rejected) => return Ok(rejected),
-    };
+    let root =
+        match read_and_admit_addressed_root(discovery, scope, selector, budget, counters, reads)? {
+            Ok(root) => root,
+            Err(rejected) => return Ok(rejected),
+        };
     match scope.role {
         RootSelectorRole::Current => counters.current_root_candidate_interpretations += 1,
         RootSelectorRole::Previous => counters.previous_root_candidate_interpretations += 1,
@@ -144,7 +133,7 @@ fn observe_root_slot(
 
 fn admit_selector_source(
     scope: RootObservationScope,
-    selector_source: &ObservedRecoveryArtifact,
+    selector_source: Result<&ObservedRecoveryArtifact, &OversizedArtifact>,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
 ) -> Result<
     DurableRootSelector,
@@ -154,8 +143,10 @@ fn admit_selector_source(
     ),
 > {
     let selector_artifact = selector_artifact(scope.role);
-    let selector = match scope.role {
-        RootSelectorRole::Current => admit_current_selector(
+    let selector = match (selector_source, scope.role) {
+        // A selector is its fixed frame and nothing more.
+        (Err(OversizedArtifact), _) => Err(RecoveryIntegrityIngressRejection::NonCanonicalEncoding),
+        (Ok(selector_source), RootSelectorRole::Current) => admit_current_selector(
             RecoveryArtifactNamespaceJoin::from_canonical(selector_source),
             scope.store,
             scope.format,
@@ -166,7 +157,7 @@ fn admit_selector_source(
             counters.current_selector_interpretations += 1;
             selector
         }),
-        RootSelectorRole::Previous => admit_previous_selector(
+        (Ok(selector_source), RootSelectorRole::Previous) => admit_previous_selector(
             RecoveryArtifactNamespaceJoin::from_canonical(selector_source),
             scope.store,
             scope.format,
@@ -204,8 +195,9 @@ fn read_and_admit_addressed_root(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     scope: RootObservationScope,
     selector: DurableRootSelector,
-    budget: ManifestByteBudget<'_>,
+    budget: &mut RecoveryReadBudget,
     counters: &mut PhysicalRecoveryDiscoveryCounters,
+    reads: &mut FundedRootReads<'_, '_>,
 ) -> Result<
     Result<
         (DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration),
@@ -218,22 +210,27 @@ fn read_and_admit_addressed_root(
 > {
     let generation = selector.root_generation();
     let root_artifact = root_artifact(scope.role, generation);
-    let root_source = discovery
-        .read_root_manifest(generation, *budget.remaining)
-        .map_err(|failure| {
-            map_cumulative_discovery_failure(
-                failure,
-                PhysicalRecoveryLimitDimension::ManifestEntries,
-                PhysicalRecoveryLimitDimension::ManifestBytes,
-                budget.admitted,
-                *budget.remaining,
-            )
-        })?;
-    let observed_bytes = root_source.bytes().map_or(0, |bytes| bytes.len() as u64);
-    *budget.remaining = budget
-        .remaining
-        .checked_sub(observed_bytes)
-        .ok_or(PhysicalRecoveryBlock::DiscoveryLimit)?;
+    let rejected = |rejection| {
+        (
+            PhysicalRootSlotObservation::RootRejected {
+                denial: root_denial(rejection),
+                selector,
+            },
+            Some(root_protocol_denial(root_artifact, rejection)),
+        )
+    };
+    let root_source =
+        match reads.read_root(discovery, scope.role, selector.format(), generation, budget)? {
+            Ok(root_source) => root_source,
+            Err(OversizedArtifact) => {
+                return Ok(Err(rejected(
+                    RecoveryIntegrityIngressRejection::NonCanonicalEncoding,
+                )));
+            }
+        };
+    if root_source.bytes().is_some() {
+        reads.reserve_canonical_scratch(root_artifact)?;
+    }
     let (root, root_format) = match admit_addressed_root(
         RecoveryArtifactNamespaceJoin::from_canonical(&root_source),
         scope.store,
@@ -247,15 +244,7 @@ fn read_and_admit_addressed_root(
             }
             admitted.project()
         }
-        Err(rejection) => {
-            return Ok(Err((
-                PhysicalRootSlotObservation::RootRejected {
-                    denial: root_denial(rejection),
-                    selector,
-                },
-                Some(root_protocol_denial(root_artifact, rejection)),
-            )));
-        }
+        Err(rejection) => return Ok(Err(rejected(rejection))),
     };
     Ok(Ok((root, root_format)))
 }

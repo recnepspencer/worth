@@ -33,7 +33,7 @@ pub(super) fn verify() {
     assert_declaration(
         PAGE_FRAME_INTEGRITY_DECLARATION,
         PhysicalIntegrityArtifactFamily::PageFrame,
-        1,
+        2,
         Some(2),
         &[DeclarationChecksumExpectation {
             algorithm: PhysicalIntegrityAlgorithm::Crc32c,
@@ -64,20 +64,20 @@ fn cases() -> [PageCase; 3] {
         PageCase {
             name: "16 KiB inline page",
             byte_count: 16 * 1024,
-            format_bytes: [1, 0, 0, 64, 0, 0, 1, 1, 1, 24],
-            checksum: 0xecf1_54f9,
+            format_bytes: [2, 0, 0, 64, 0, 0, 1, 1, 1, 24],
+            checksum: 0x63631ebf,
         },
         PageCase {
             name: "32 KiB inline page",
             byte_count: 32 * 1024,
-            format_bytes: [1, 0, 0, 128, 0, 0, 1, 1, 1, 24],
-            checksum: 0xae22_45ae,
+            format_bytes: [2, 0, 0, 128, 0, 0, 1, 1, 1, 24],
+            checksum: 0x8018e3f4,
         },
         PageCase {
             name: "64 KiB inline page",
             byte_count: 64 * 1024,
-            format_bytes: [1, 0, 0, 0, 1, 0, 1, 1, 1, 24],
-            checksum: 0x7d1b_576a,
+            format_bytes: [2, 0, 0, 0, 1, 0, 1, 1, 1, 24],
+            checksum: 0x290f03a0,
         },
     ]
 }

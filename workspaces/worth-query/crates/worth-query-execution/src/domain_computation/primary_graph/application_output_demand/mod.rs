@@ -11,8 +11,10 @@ pub(in crate::domain_computation::primary_graph) use registry::HeldRequiredSucce
 pub(in crate::domain_computation::primary_graph) use registry::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation::primary_graph) use registry::ReplacedRequiredWorkHint;
+pub(in crate::domain_computation::primary_graph) use registry::RequestedOutputReadClaims;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
+pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWork;

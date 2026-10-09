@@ -12,7 +12,7 @@ use crate::handoff::RecoveryOperationFateSet;
 use super::{NamespaceDurableState, RecoveryPublicationExpectation};
 
 pub struct ReopenedPhysicalRecovery {
-    pub(crate) state: NamespaceDurableState,
+    pub(crate) state: NamespaceDurableState<super::CustodyState>,
     pub(crate) expectation: RecoveryPublicationExpectation,
     pub(crate) publication_counters: PhysicalRecoveryPublicationCounters,
     pub(crate) publication_settlement: PhysicalRecoveryPublicationSettlementLedger,
@@ -22,7 +22,7 @@ pub struct ReopenedPhysicalRecovery {
 
 impl ReopenedPhysicalRecovery {
     pub(crate) const fn new(
-        state: NamespaceDurableState,
+        state: NamespaceDurableState<super::CustodyState>,
         expectation: RecoveryPublicationExpectation,
         publication_counters: PhysicalRecoveryPublicationCounters,
         publication_settlement: PhysicalRecoveryPublicationSettlementLedger,
@@ -71,7 +71,7 @@ impl ReopenedPhysicalRecovery {
         &self.state.fates
     }
     pub const fn selected_sources(&self) -> &PhysicalSourceSelection {
-        &self.state.selection
+        self.state.selection.facts()
     }
     pub fn root_protocol_denials(&self) -> &[PhysicalRecoverySourceDenial] {
         &self.state.root_protocol_denials
@@ -140,6 +140,18 @@ impl ReopenedPhysicalRecovery {
         cancellation: crate::cleanup::PhysicalRecoveryCleanupCancellation,
     ) -> crate::entry::PhysicalRecoveryOutcome {
         crate::cleanup::execute(self, Some(cancellation))
+    }
+
+    /// Applies `change` after Store's checkpoint residue gate and before
+    /// cleanup's first byte-exact revalidation, then finishes with the
+    /// change left in place.
+    #[cfg(feature = "certification-test-authority")]
+    pub fn certification_finish_with_change_before_cleanup_revalidation(
+        self,
+        change: impl FnOnce() + 'static,
+    ) -> crate::entry::PhysicalRecoveryOutcome {
+        let _hook = crate::certification::CleanupRevalidationHook::install(change);
+        self.finish()
     }
 
     #[cfg(feature = "certification-test-authority")]

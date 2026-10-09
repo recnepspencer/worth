@@ -74,10 +74,14 @@ fn create_empty_entity(runtime: &mut RelationalRuntime, branch: &str, key: &str)
                     fields: BTreeMap::new().into(),
                 }),
             )),
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     let committed = transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("public merge seed should commit");
     runtime
         .snapshots()

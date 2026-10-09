@@ -5,7 +5,7 @@ use worth_store_io_scheduler::{
 use worth_store_physical_backend::BlobBackendChunkWriteSession;
 use worth_store_security::StoreTenantScope;
 
-use crate::test_support::{blob_scope, physical_payload_for_bytes, with_blob_allocation};
+use crate::test_support::{blob_scope, physical_payload_for_bytes};
 use crate::{
     BlobChunkOrdinal, BlobChunkSize, BlobChunkingRuleAdmission, BlobStreamingChunkWriter,
     BlobStreamingIngest, BlobStreamingIngestDenial, BlobStreamingIngestRequest,
@@ -14,27 +14,16 @@ use crate::{
 };
 
 #[test]
-fn semantic_result_and_bounded_residency_are_stable_across_source_window_sizes() {
-    let small = run_ingest(source_frames(3, 4), 4, 8).unwrap();
-    let large = run_ingest(source_frames(5, 8), 8, 8).unwrap();
+fn semantic_result_and_bounded_window_are_stable_across_source_window_sizes() {
+    let small = run_ingest(source_frames(3, 4), 4).unwrap();
+    let large = run_ingest(source_frames(5, 8), 8).unwrap();
 
     assert_eq!(
         small.sequence().chunk_identity_summary(),
         large.sequence().chunk_identity_summary()
     );
-    assert_eq!(
-        small.residency().allocation_bytes(),
-        large.residency().allocation_bytes()
-    );
-    assert_eq!(
-        small.residency().peak_resident_bytes(),
-        large.residency().peak_resident_bytes()
-    );
-    assert_ne!(
-        small.residency().allocation().runtime_identity(),
-        large.residency().allocation().runtime_identity(),
-        "independent streaming sessions must retain distinct runtime provenance"
-    );
+    assert_eq!(small.counters().peak_resident_bytes(), 4);
+    assert_eq!(large.counters().peak_resident_bytes(), 4);
     assert_eq!(
         small.frontier().chunk_tree_root(),
         large.frontier().chunk_tree_root()
@@ -60,21 +49,15 @@ fn semantic_result_and_bounded_residency_are_stable_across_source_window_sizes()
 fn run_ingest(
     frames: Vec<BlobStreamingSourceFrame>,
     window_bytes: u64,
-    allocation_bytes: u64,
 ) -> Result<BlobStreamingIngest, BlobStreamingIngestDenial> {
-    with_blob_allocation(allocation_bytes, |_, allocation| {
-        BlobStreamingIngest::run_bounded(
-            request(),
-            crate::BlobStreamingIngestExecution::new(
-                BlobStreamingWindow::bounded(window_bytes)?,
-                allocation,
-                pressure_admission(),
-                CounterEvidenceStrength::Exact,
-            ),
-            frames,
-            &mut TestChunkWriter,
-        )
-    })
+    BlobStreamingIngest::verify_bounded_content(
+        request(),
+        BlobStreamingWindow::bounded(window_bytes)?,
+        pressure_admission(),
+        CounterEvidenceStrength::Exact,
+        frames,
+        &mut TestChunkWriter,
+    )
 }
 
 fn request() -> BlobStreamingIngestRequest {

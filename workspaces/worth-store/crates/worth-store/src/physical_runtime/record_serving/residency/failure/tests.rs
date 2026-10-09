@@ -119,6 +119,23 @@ fn cleaning_authority_mismatches_remain_exact_and_non_retryable() {
 
 #[test]
 fn exact_store_reasons_retain_actionable_parameters() {
+    let resize = PhysicalRecordResidencyFailure::from(
+        PhysicalResidencyDenial::AllocationGrantResizeBelowActiveUse {
+            requested: 40,
+            active: 41,
+        },
+    );
+    assert_eq!(
+        resize.kind(),
+        PhysicalRecordResidencyFailureKind::AllocationUseConflict
+    );
+    assert_eq!(
+        resize.reason(),
+        PhysicalRecordResidencyFailureReason::AllocationGrantResizeBelowActiveUse {
+            requested: 40,
+            active: 41,
+        }
+    );
     let allocation = PhysicalRecordResidencyFailure::from(
         PhysicalResidencyDenial::AllocatorExceededReservation {
             requested: 8,

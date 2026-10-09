@@ -202,6 +202,36 @@ impl RetainedInputCutoffCandidate {
             SourceSettlementCurrentness::Clean => {}
             SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
             SourceSettlementCurrentness::PendingUpstream(edges) => {
+                // Source input equality does not prove handler facts equal.
+                // A changed own decision may remove the old consumed edges.
+                match ConsumedOutputEvidence::own_evidence_is_current(
+                    &facts,
+                    self.consumed_outputs(),
+                    witness,
+                    runtime,
+                    snapshot,
+                    currentness,
+                ) {
+                    Ok(false) => return Ok(None),
+                    Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => {}
+                    Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
+                        return Err(InputCutoffVerificationStop::CapacityExhausted);
+                    }
+                    Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
+                        return Err(InputCutoffVerificationStop::Admission(
+                            CompanionPreflightStop::Interrupted(event),
+                        ));
+                    }
+                    Err(ConsumedOutputVerificationStop::WorkExhausted) => {
+                        return Err(InputCutoffVerificationStop::WorkExhausted)
+                    }
+                    Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
+                        return Err(InputCutoffVerificationStop::CurrentnessRaced)
+                    }
+                    Err(ConsumedOutputVerificationStop::PendingUpstream) => {
+                        return Err(InputCutoffVerificationStop::PendingUpstream)
+                    }
+                }
                 if let Some(matched) = &matched_predecessors {
                     if matched_roots::names_every_edge(&edges, matched, admission)? {
                         // The new consumed evidence is current, but an upstream

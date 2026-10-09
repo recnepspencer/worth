@@ -7,8 +7,8 @@ use worth_relational::facade::identity::EntityId;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::{
-    token_charge, DependencyIndex, ManagedDerivedViewState, RetainedEntry, RetainedMemberToken,
-    ViewDependency, WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    token_charge, ManagedDerivedViewState, RetainedEntry, RetainedMemberToken, ViewDependency,
+    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedViewDenial as Denial,
 };
 use crate::domain_computation::primary_graph::application_query::derived_view::WorthQueryManagedDerivedViewKey;
@@ -78,7 +78,7 @@ where
         if !retained.membership_dirty {
             return Err(Denial::MembershipReconciliationRequired);
         }
-        if members.len() > self.limits.maximum_entries() {
+        if self.limits.rejects_entries(members.len()) {
             return Err(Denial::EntryCapacityExceeded);
         }
         let old_tokens = retained
@@ -110,9 +110,9 @@ where
             .collect();
         let tokens = members
             .iter()
-            .map(|(root, token)| (*root, RetainedMemberToken::new(token.clone())))
-            .collect::<BTreeMap<_, _>>();
-        if token_charge(&tokens) > self.limits.maximum_retained_bytes() {
+            .map(|(root, token)| Ok((*root, RetainedMemberToken::clone_admitted(token)?)))
+            .collect::<Result<BTreeMap<_, _>, Denial>>()?;
+        if self.limits.rejects_bytes(token_charge(&tokens)) {
             return Err(Denial::RetainedBytesExceeded);
         }
         Ok(MembershipReconciliationPlan {
@@ -164,16 +164,14 @@ where
             return Err(Denial::IncompleteDependencies);
         }
         let mut supplied = BTreeSet::new();
-        let mut incoming_charge = 0usize;
-        for (key, value, dependencies) in &entries {
+
+        for (key, _, dependencies) in &entries {
             if !plan.required.contains(&key.root())
                 || !supplied.insert(key.root())
                 || dependencies.is_empty()
             {
                 return Err(Denial::IncompleteDependencies);
             }
-            incoming_charge =
-                incoming_charge.saturating_add(entry_charge::<Value>(value, dependencies));
         }
         if supplied != plan.required {
             return Err(Denial::IncompleteDependencies);
@@ -184,40 +182,35 @@ where
             .filter(|(key, _)| {
                 !plan.members.contains(&key.root()) || plan.required.contains(&key.root())
             })
-            .map(|(key, entry)| (key.clone(), retained_entry_charge(entry)))
+            .map(|(key, _)| key.clone())
             .collect::<Vec<_>>();
         let removed_members = retained
             .entries
             .keys()
             .filter(|key| !plan.members.contains(&key.root()))
             .count();
-        let outgoing_charge = removed
+        let remaining = retained
+            .entries
             .iter()
-            .fold(0usize, |bytes, (_, charge)| bytes.saturating_add(*charge));
-        let old_dirty_reserve = dirty_reserve(retained.entries.len());
-        let new_dirty_reserve = dirty_reserve(plan.members.len());
-        let old_token_charge = retained.member_tokens.as_ref().map_or(0, token_charge);
-        let required_bytes = retained
-            .charged_bytes
-            .checked_sub(membership_charge::<WorthQueryManagedDerivedViewKey>(
-                &retained.membership,
-            ))
-            .and_then(|bytes| bytes.checked_sub(outgoing_charge))
-            .and_then(|bytes| bytes.checked_sub(old_dirty_reserve))
-            .and_then(|bytes| bytes.checked_sub(old_token_charge))
-            .ok_or(Denial::IncompleteDependencies)?
-            .saturating_add(membership_charge::<WorthQueryManagedDerivedViewKey>(
-                &membership,
-            ))
-            .saturating_add(incoming_charge)
-            .saturating_add(new_dirty_reserve)
-            .saturating_add(token_charge(&plan.tokens));
-        if required_bytes > self.limits.maximum_retained_bytes() {
+            .filter(|(key, _)| {
+                plan.members.contains(&key.root()) && !plan.required.contains(&key.root())
+            })
+            .map(|(_, entry)| (entry.value.as_ref(), &entry.dependencies));
+        let incoming = entries
+            .iter()
+            .map(|(_, value, dependencies)| (value, dependencies));
+        let required_bytes = super::image_quote::<WorthQueryManagedDerivedViewKey, Value>(
+            remaining.chain(incoming),
+            plan.members.len(),
+            &membership,
+            Some(&plan.tokens),
+        )?;
+        if self.limits.rejects_bytes(required_bytes) {
             return Err(Denial::RetainedBytesExceeded);
         }
         let old_membership = std::mem::take(&mut retained.membership);
         retained.index.remove_membership(&old_membership);
-        for (key, _) in removed {
+        for key in removed {
             let old = retained
                 .entries
                 .remove(&key)
@@ -247,40 +240,4 @@ where
         retained.advance_revision();
         Ok((retained.entries.keys().cloned().collect(), removed_members))
     }
-}
-
-fn membership_charge<Key: Clone + Ord>(dependencies: &BTreeSet<ViewDependency>) -> usize {
-    dependencies.iter().fold(0usize, |bytes, dependency| {
-        bytes
-            .saturating_add(dependency.retained_bytes())
-            .saturating_add(DependencyIndex::<Key>::entry_insertion_bound(dependency))
-    })
-}
-
-fn entry_charge<Value: WorthQueryManagedDerivedValue>(
-    value: &Value,
-    dependencies: &BTreeSet<ViewDependency>,
-) -> usize {
-    value
-        .retained_bytes()
-        .saturating_add(std::mem::size_of::<(
-            WorthQueryManagedDerivedViewKey,
-            RetainedEntry<Value>,
-        )>())
-        .saturating_add(4 * std::mem::size_of::<usize>())
-        .saturating_add(membership_charge::<WorthQueryManagedDerivedViewKey>(
-            dependencies,
-        ))
-}
-
-fn retained_entry_charge<Value: WorthQueryManagedDerivedValue>(
-    entry: &RetainedEntry<Value>,
-) -> usize {
-    entry_charge(entry.value.as_ref(), &entry.dependencies)
-}
-
-fn dirty_reserve(entries: usize) -> usize {
-    entries.saturating_mul(
-        std::mem::size_of::<WorthQueryManagedDerivedViewKey>() + 4 * std::mem::size_of::<usize>(),
-    )
 }

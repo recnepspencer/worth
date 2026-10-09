@@ -10,22 +10,33 @@ description = "Public Worth Store facade and owner of the physical runtime lifec
 default = []
 recovery-runtime-owner = ["worth-store-physical-backend/recovery-runtime-owner"]
 certification-test-authority = [
+    "worth-proof/certification-test-authority",
     "worth-store-physical-isolation/certification-authority",
     "worth-store-buffer-pool/certification-test-authority",
     "worth-store-physical-backend/certification-test-authority",
     "worth-store-io-scheduler/certification-test-authority",
 ]
+# Test-only pass-through so recovery-runtime tests reach the backend flag
+# without depending on the backend directly; release builds ignore it.
+volatile-sync-for-tests = ["worth-store-physical-backend/volatile-sync-for-tests"]
+# Test-only pass-through so recovery-runtime tests mint the backend's limits
+# without depending on the backend directly; no production build enables it.
+test-support = ["worth-store-physical-backend/test-support"]
 
 [dependencies]
 worth-store-aspect-native.workspace = true
 worth-store-authority.workspace = true
 worth-store-buffer-pool.workspace = true
+worth-store-blob-chunks.workspace = true
 worth-store-contracts.workspace = true
 worth-store-io-scheduler.workspace = true
+worth-store-layout-indexes.workspace = true
+worth-store-lsm-authority.workspace = true
 worth-store-physical-backend = { workspace = true, features = ["store-runtime-owner"] }
 worth-store-physical-format.workspace = true
 worth-store-physical-integrity.workspace = true
 worth-store-physical-isolation.workspace = true
+worth-store-recovery-physics.workspace = true
 worth-store-security.workspace = true
 worth-store-wal.workspace = true
 worth-proof = { path = "../../../../crates/worth-proof" }
@@ -38,12 +49,15 @@ tracking-allocator = { version = "0.4", default-features = false }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
+worth-store-physical-backend = { workspace = true, features = ["volatile-sync-for-tests"] }
 stats_alloc = "0.1"
 tempfile = "3"
 trybuild = "1.0"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-store-offline-verifier.workspace = true
+worth-store-offline-integrity-observer.workspace = true
 worth-store-physical-format = { workspace = true, features = ["certification-test-authority"] }
+worth-store-recovery-physics = { workspace = true, features = ["test-support"] }
 
 [lints]
 workspace = true
@@ -87,4 +101,9 @@ path = "tests/physical_adapter_authority_ui.rs"
 [[test]]
 name = "physical_record_journeys"
 path = "tests/physical_record_journeys.rs"
+required-features = ["certification-test-authority"]
+
+[[test]]
+name = "physical_blob_journeys"
+path = "tests/physical_blob_journeys.rs"
 required-features = ["certification-test-authority"]

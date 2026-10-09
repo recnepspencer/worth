@@ -145,9 +145,15 @@ fn prepare_update(
                     )])),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    runtime.prepare_branch_transaction(transaction).unwrap()
+    runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
 }
 
 #[test]

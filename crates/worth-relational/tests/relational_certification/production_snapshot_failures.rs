@@ -44,10 +44,14 @@ fn pinned_snapshot_observation_does_not_select_a_later_head() {
                     fields: worth_relational::facade::transactions::AspectFieldPatch::new(fields),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     transaction
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("later head update commits through the public facade");
 
     let observed = super::world::supply_chain::observe_supply_chain(&world)

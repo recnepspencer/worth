@@ -52,7 +52,7 @@ impl ArtifactTreeMedia<'_> {
                 &error,
             ));
         }
-        let entries = match directory.entries() {
+        let entries = match super::listing_provider::open(directory) {
             Ok(entries) => entries,
             Err(error) => {
                 attempt.denied();

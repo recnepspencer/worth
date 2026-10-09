@@ -41,7 +41,10 @@ pub(super) fn typed_reconstruction_preserves_query_authority(
         })
         .expect_source(observed_source(request, "anchor-b"))
         .idempotency(&980)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the source adjustment reaches publication");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the reconstruction source adjustment must publish")

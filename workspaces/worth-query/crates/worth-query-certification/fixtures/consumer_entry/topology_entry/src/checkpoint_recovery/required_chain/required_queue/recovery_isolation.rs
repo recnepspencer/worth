@@ -92,7 +92,10 @@ fn scenario(direct: bool) {
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x69_c100_u64)
-        .execute_performed::<program::ChainProgram, program::ChainRoot>(&application)
+        .execute_performed::<program::ChainProgram, program::ChainRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = changed else {
         panic!("source write commits")
@@ -149,11 +152,13 @@ fn scenario(direct: bool) {
                 body_key: "anchor-a".into(),
                 value: length(99),
             }),
-            validator_work: 4096,
         }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&0x69_c101_u64)
-        .execute_in_program(&application)
+        .execute_in_program(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(changed.receipt().is_some());
     if direct {

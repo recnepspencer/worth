@@ -30,6 +30,16 @@ impl WorthQueryBranchMergeRequest {
             Err(WorthQueryMergeAuthorityValidationError::ExecutionControlStopped(kind)) => {
                 return validation_refusal::control_stopped(kind, counters);
             }
+            Err(WorthQueryMergeAuthorityValidationError::TransactionBackingDenied(kind)) => {
+                return WorthQueryBranchMergeOutcome::Stopped(
+                    WorthQueryBranchMergeStop::from_execution_denial(
+                        crate::runtime::WorthQueryOrdinaryMergeFailureStage::Basis,
+                        Some(kind),
+                        "physical backing refused branch-merge validation".to_owned(),
+                        counters,
+                    ),
+                );
+            }
             Err(WorthQueryMergeAuthorityValidationError::ForeignOwner) => {
                 return WorthQueryBranchMergeOutcome::Stopped(WorthQueryBranchMergeStop::denied(
                     WorthQueryBranchMergeStopSource::ForeignAuthority,

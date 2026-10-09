@@ -38,15 +38,12 @@ pub(super) fn prepare_work_runtime(
     core: &PhysicalRuntimeCore,
     work_profile: PhysicalWorkProfileDeclaration,
     durability: PhysicalDurabilityObservation,
-    publication_residue_requires_inspection: bool,
 ) -> Result<PreparedPhysicalWorkRuntime, PhysicalSignalConstructionFailure> {
     let (record_work, work_profile) = RecordWorkAdmission::install(work_profile, durability)
         .map_err(PhysicalSignalConstructionFailure::ProfileRejected)?;
     let work_capacity = work_profile.capacity();
     let recovery = PhysicalWorkExecutor::inspect_recovery(media, work_capacity.commands());
-    let health = ServingHealth::new(
-        publication_residue_requires_inspection || recovery.requires_inspection(),
-    );
+    let health = ServingHealth::new(recovery.requires_inspection());
     let lifecycle = core.lifecycle_generation();
     let signal = PhysicalWorkSignalOwner::build_foundation(lifecycle, work_profile)?;
     let submission = PhysicalWorkSubmissionOwner::new(PhysicalWorkSubmissionFoundation {
@@ -79,6 +76,17 @@ pub(super) fn prepare_work_runtime(
 }
 
 impl PreparedPhysicalWorkRuntime {
+    pub(super) fn admit_publication_residue(
+        &self,
+        admission: super::retirement_residue::PublicationResidueAdmission,
+    ) {
+        if matches!(
+            admission,
+            super::retirement_residue::PublicationResidueAdmission::InspectionRequired
+        ) {
+            self.health.revoke();
+        }
+    }
     pub(super) fn signal_profile(&self) -> PhysicalSignalProfileIdentity {
         self.signal.profile()
     }

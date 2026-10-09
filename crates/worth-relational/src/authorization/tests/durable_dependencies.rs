@@ -285,16 +285,22 @@ fn retarget(
     let mut transaction =
         crate::tests::support::test_owner_begin_transaction_for_main(&fixture.runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("retarget-approval-path").push(
-            MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
-                UpdateRelationEndpointsIntent {
+        .push_batch(
+            WorkerIntentBatch::new("retarget-approval-path").push(MutationIntent::Relation(
+                RelationMutationIntent::UpdateEndpoints(UpdateRelationEndpointsIntent {
                     relation_id: fixture.role_scope_relation,
                     kind_id: RELATION_KIND,
                     source: EntityReference::Existing(role),
                     target: EntityReference::Existing(target),
-                },
+                }),
             )),
-        ))
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    transaction.commit(&fixture.runtime).unwrap();
+    transaction
+        .commit(
+            &fixture.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 }

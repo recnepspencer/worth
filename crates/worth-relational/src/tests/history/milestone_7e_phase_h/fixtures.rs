@@ -195,18 +195,23 @@ pub(super) fn create_named_entity_on_branch(
         runtime,
         BranchId(branch.to_string()),
     );
-    txn.push_batch(WorkerIntentBatch::new(format!("seed-{client_key}")).push(
-        MutationIntent::Create(CreateIntent::Entity(
-            crate::transactions::data::EntitySpec {
+    txn.push_batch(
+        WorkerIntentBatch::new(format!("seed-{client_key}")).push(MutationIntent::Create(
+            CreateIntent::Entity(crate::transactions::data::EntitySpec {
                 partition_id: crate::facade::identity::PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw(client_key),
                 fields: string_aspect_field_patch(fields),
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(runtime).expect("seed entity");
+    txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("seed entity");
 }
 
 pub(super) fn merge_request() -> MergeExecutionRequest {

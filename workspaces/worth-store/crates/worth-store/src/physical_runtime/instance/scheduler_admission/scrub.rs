@@ -1,4 +1,5 @@
 use super::PhysicalSchedulerAdmissionOwner;
+use std::num::NonZeroU64;
 use worth_store_io_scheduler::foreground_reservation::*;
 use worth_store_io_scheduler::*;
 
@@ -13,7 +14,7 @@ impl PhysicalSchedulerAdmissionOwner {
     pub(in crate::physical_runtime) fn scrub_background(
         &self,
         security: &IoSchedulerSecurityScopeAdmission,
-        bytes: u64,
+        bytes: Option<NonZeroU64>,
     ) -> Result<
         (
             BackgroundIdleCapacityLease,
@@ -23,22 +24,31 @@ impl PhysicalSchedulerAdmissionOwner {
         ),
         PhysicalScrubSchedulerAdmissionDenial,
     > {
-        let lane = ForegroundLaneDeclaration::buffered_file_internal_foreground_read()
-            .expect("Store-owned buffered inspection")
-            .with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
-                "physical-integrity-scrub",
-                1,
-            ))
-            .with_budget(super::read_budget(bytes));
+        let lane = match bytes {
+            Some(_) => ForegroundLaneDeclaration::buffered_file_internal_foreground_read()
+                .expect("Store-owned buffered inspection"),
+            None => ForegroundLaneDeclaration::artifact_metadata_read(),
+        }
+        .with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
+            "physical-integrity-scrub",
+            1,
+        ))
+        .with_budget(match bytes {
+            Some(bytes) => super::read_budget(bytes.get()),
+            None => super::metadata_budget(),
+        });
         let reservation = self
             .foreground
             .reserve_background(lane, &self.buffered_file, security)
             .map_err(PhysicalScrubSchedulerAdmissionDenial::Capacity)?;
         let (receipt, capacity) = reservation.into_parts();
-        let budget = BackgroundResourceBudget::new()
+        let mut budget = BackgroundResourceBudget::new()
             .with_queue_slots(QueueSlot::new(1).expect("one window"))
-            .with_worker_permits(WorkerPermit::new(1).expect("one window"))
-            .with_bandwidth(BandwidthToken::bytes(bytes).expect("nonempty target"));
+            .with_worker_permits(WorkerPermit::new(1).expect("one window"));
+        if let Some(bytes) = bytes {
+            budget =
+                budget.with_bandwidth(BandwidthToken::bytes(bytes.get()).expect("nonempty target"));
+        }
         let policy = crate::physical_runtime::record_serving::admit_scrub_background_policy(budget);
         let admission = admit_background_capacity(
             BackgroundCapacityAdmissionRequest::new(

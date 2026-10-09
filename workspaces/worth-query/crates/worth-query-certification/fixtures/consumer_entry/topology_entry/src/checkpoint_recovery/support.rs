@@ -1,5 +1,8 @@
 mod execution_policy;
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize},
+    Arc,
+};
 
 use worth_query_consumer_values::PositiveLength;
 use worth_query_host::facade::{
@@ -20,6 +23,7 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+mod installation;
 
 pub(super) type Application = application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,
@@ -30,6 +34,18 @@ pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
 ) -> Application {
     install_with_demand_profile(checkpoint, Default::default())
+}
+
+pub(super) fn install_with_domain_denial(domain_denial: Arc<AtomicBool>) -> Application {
+    installation::try_install_program_with_limits_and_domain_denial::<CheckpointProgram>(
+        None,
+        Default::default(),
+        // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
+        limits(32, invalidation(128 * 1_024 * 1_024, 1_000_000, 32)),
+        seed_cycle,
+        domain_denial,
+    )
+    .expect("the checkpoint source installs")
 }
 
 pub(super) fn install_with_demand_profile(
@@ -145,49 +161,18 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    let configuration = (TopologyConfiguration {
-        setup_calls: Arc::new(AtomicUsize::new(0)),
-        invariant_calls: Arc::new(AtomicUsize::new(0)),
-        invariant_probe: Arc::new(AtomicUsize::new(0)),
-        producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
-    },);
-    let program = ApplicationProgramAuthoring::<CheckpointSchema, Program>::begin()
-        .validated_program()
-        .expect("the checkpoint program is complete");
-    let declaration = CheckpointSchema::declaration().expect("the checkpoint schema is valid");
-    match checkpoint {
-        Some(checkpoint) => application_installation::in_memory_program_from_checkpoint(
-            program,
-            declaration,
-            configuration,
-            limits.with_output_demand_resources(profile),
-            checkpoint,
-        ),
-        None => application_installation::in_memory_program(
-            program,
-            declaration,
-            configuration,
-            limits.with_output_demand_resources(profile),
-            |graph, installed| {
-                let principal = installed
-                    .principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>())
-                    .expect("the principal mapping is installed");
-                graph.bind_principal(
-                    &principal,
-                    primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
-                    1_u64,
-                    external_identity(),
-                    WorthQueryPrincipalMappingStatus::Enabled,
-                )?;
-                seed(graph);
-                Ok(())
-            },
-        ),
-    }
-    .map_err(Box::new)
+    installation::try_install_program_with_limits_and_domain_denial::<Program>(
+        checkpoint,
+        profile,
+        limits,
+        seed,
+        Arc::new(AtomicBool::new(false)),
+    )
 }
 
-pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
+pub(super) fn seed_cycle<Schema: TopologySchemaBinding>(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+) {
     for (name, x, y) in [
         ("a", 1, 1),
         ("b", 10, 1),
@@ -199,16 +184,13 @@ pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointS
         let key = format!("anchor-{name}");
         graph
             .bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Body::reference::<CheckpointSchema>(),
-                    entity_key(&key),
-                )
-                .field(BodyKey::reference::<CheckpointSchema>(), key)
-                // The initial performed publication writes an equal derived
-                // value; native revisions still decide whether it can reuse.
-                .field(Length::reference::<CheckpointSchema>(), length(y + 1))
-                .field(PositionX::reference::<CheckpointSchema>(), length(x))
-                .field(PositionY::reference::<CheckpointSchema>(), length(y)),
+                WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
+                    .field(BodyKey::reference::<Schema>(), key)
+                    // The initial performed publication writes an equal derived
+                    // value; native revisions still decide whether it can reuse.
+                    .field(Length::reference::<Schema>(), length(y + 1))
+                    .field(PositionX::reference::<Schema>(), length(x))
+                    .field(PositionY::reference::<Schema>(), length(y)),
             )
             .unwrap();
     }
@@ -222,7 +204,7 @@ pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointS
     ] {
         graph
             .bind_relation(WorthQueryApplicationRelationSeed::new(
-                PlanarSuccessor::reference::<CheckpointSchema>(),
+                PlanarSuccessor::reference::<Schema>(),
                 format!("anchor-{from}-to-{to}"),
                 entity_key(&format!("anchor-{from}")),
                 entity_key(&format!("anchor-{to}")),
@@ -231,7 +213,9 @@ pub(super) fn seed_cycle(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointS
     }
 }
 
-fn entity_key(key: &str) -> WorthQueryApplicationEntityKey<CheckpointSchema, Body> {
+fn entity_key<Schema: TopologySchemaBinding>(
+    key: &str,
+) -> WorthQueryApplicationEntityKey<Schema, Body> {
     WorthQueryApplicationEntityKey::new(key.to_owned()).unwrap()
 }
 
@@ -265,7 +249,7 @@ pub(super) fn limits(
 
 /// The candidate resources of a host whose widest operation is the default.
 pub(super) fn candidates() -> WorthQueryApplicationCandidateResourceProfile {
-    WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 8_192, 4_096).unwrap()
+    WorthQueryApplicationCandidateResourceProfile::physical_resources(4_096, 8_192).unwrap()
 }
 
 /// A world with room for a long history under open demands. Rows settled at
@@ -337,4 +321,4 @@ pub(super) fn limits_with_history_room(
 
 mod authentication_fixture;
 pub(super) use authentication_fixture::authenticate;
-use authentication_fixture::external_identity;
+pub(super) use authentication_fixture::external_identity;

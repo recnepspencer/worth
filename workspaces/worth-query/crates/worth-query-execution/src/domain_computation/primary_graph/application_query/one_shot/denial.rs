@@ -65,13 +65,29 @@ pub enum WorthQueryApplicationOneShotDenialKind {
 /// No rows were returned. [`Self::kind`] says why, [`Self::query`] names the
 /// query, and [`Self::subject`] names the part of it that was refused; for
 /// authorization causes, [`Self::authorization_denial`] carries the full denial.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct WorthQueryApplicationOneShotDenial {
     kind: WorthQueryApplicationOneShotDenialKind,
+    payload: std::sync::Arc<OneShotDenialPayload>,
+}
+
+#[derive(Debug)]
+struct OneShotDenialPayload {
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
     query: String,
     subject: String,
+    custody: std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
 }
+
+impl PartialEq for WorthQueryApplicationOneShotDenial {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+            && self.payload.authorization_denial == other.payload.authorization_denial
+            && self.payload.query == other.payload.query
+            && self.payload.subject == other.payload.subject
+    }
+}
+impl Eq for WorthQueryApplicationOneShotDenial {}
 
 pub(super) fn denial(
     kind: WorthQueryApplicationOneShotDenialKind,
@@ -80,9 +96,12 @@ pub(super) fn denial(
 ) -> WorthQueryApplicationOneShotDenial {
     WorthQueryApplicationOneShotDenial {
         kind,
-        authorization_denial: None,
-        query: query.into(),
-        subject: subject.into(),
+        payload: std::sync::Arc::new(OneShotDenialPayload {
+            authorization_denial: None,
+            query: query.into(),
+            subject: subject.into(),
+            custody: std::sync::OnceLock::new(),
+        }),
     }
 }
 
@@ -109,27 +128,41 @@ pub(super) fn authorization_denial(
     };
     WorthQueryApplicationOneShotDenial {
         kind,
-        query: query.to_owned(),
-        subject: denial.subject().to_string(),
-        authorization_denial: Some(Box::new(denial)),
+        payload: std::sync::Arc::new(OneShotDenialPayload {
+            query: query.to_owned(),
+            subject: denial.subject().to_string(),
+            authorization_denial: Some(Box::new(denial)),
+            custody: std::sync::OnceLock::new(),
+        }),
     }
 }
 
 impl WorthQueryApplicationOneShotDenial {
+    /// The shared payload and its one reservation live until the last denial clone drops.
+    pub(in crate::domain_computation::primary_graph) fn retain_custody(
+        &self,
+        hold: worth_execution::ExecutionMemoryReservation,
+    ) {
+        self.payload
+            .custody
+            .set(hold)
+            .expect("one owner stage retains denial custody");
+    }
+
     pub const fn kind(&self) -> WorthQueryApplicationOneShotDenialKind {
         self.kind
     }
 
     pub fn query(&self) -> &str {
-        &self.query
+        &self.payload.query
     }
 
     pub fn subject(&self) -> &str {
-        &self.subject
+        &self.payload.subject
     }
 
     pub fn authorization_denial(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
-        self.authorization_denial.as_deref()
+        self.payload.authorization_denial.as_deref()
     }
 }
 
@@ -138,7 +171,7 @@ impl std::fmt::Display for WorthQueryApplicationOneShotDenial {
         write!(
             formatter,
             "application-query one-shot denied: {:?} for {} ({})",
-            self.kind, self.query, self.subject
+            self.kind, self.payload.query, self.payload.subject
         )
     }
 }
@@ -164,13 +197,16 @@ mod tests {
 
 impl worth_execution::ChargedBytes for WorthQueryApplicationOneShotDenial {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self {
-            kind: _kind,
+        let OneShotDenialPayload {
             authorization_denial,
             query,
             subject,
-        } = self;
-        (query.capacity() as u64)
+            custody: _,
+        } = &*self.payload;
+        // The Arc allocation contains the payload and its two reference counters.
+        (std::mem::size_of::<OneShotDenialPayload>() as u64)
+            .saturating_add((2 * std::mem::size_of::<usize>()) as u64)
+            .saturating_add(query.capacity() as u64)
             .saturating_add(subject.capacity() as u64)
             .saturating_add(authorization_denial.as_ref().map_or(0, |denial| {
                 // Box<T>'s implementation counts its allocation and T's payload.

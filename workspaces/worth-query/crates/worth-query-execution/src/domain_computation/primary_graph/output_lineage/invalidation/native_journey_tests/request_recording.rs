@@ -36,6 +36,7 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison().unwrap(),
             native_output_witness: Some(account_witness(&world, runtime, snapshot, entity)),
             consumed_nothing: true,
+            verification_requirement: None,
             work: 0,
         };
         let recorded = || {

@@ -192,10 +192,14 @@ fn assert_overlapping_field_reads(leased: bool) {
                     aspect_patch: whole_summary_patch(&contract, "after", "open"),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("stage summary change");
     transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("summary change publication");
     assert_entity_summary(&runtime, entity, "after", "open");
     assert_shared_field_reads(&runtime, false, leased);

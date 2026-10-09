@@ -1,9 +1,6 @@
-use worth_store_physical_backend::{
-    ArtifactTreeDirectory, ArtifactTreeFile, QualifiedFilesystemMedia,
-};
+use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_wal::{
-    WalAppendFrontier, WalSegmentArtifactIdentity, WalSegmentGeneration, WalSegmentId,
-    WalSegmentScanRecord, WalTopologyScan,
+    WalAppendFrontier, WalSegmentArtifactIdentity, WalSegmentScanRecord, WalTopologyScan,
 };
 
 use crate::physical_runtime::PhysicalWalPolicy;
@@ -14,14 +11,28 @@ use super::{
     ReopenedPhysicalWalMember,
 };
 
+mod checkpoint_cutoff;
+mod empty;
 mod interrupted_active_tail;
+mod manifest_residue;
+mod paths;
+mod tier_epoch;
 mod trailing_empty_segment;
+use checkpoint_cutoff::require_checkpoint_cutoff_within_retained_wal;
+use empty::empty_inventory;
+use paths::{artifact, map_listing_failure, wal_directory};
 
 pub(in crate::physical_runtime) fn reopen_wal_inventory(
     media: &QualifiedFilesystemMedia,
     policy: PhysicalWalPolicy,
     cutoff: PhysicalWalBindingReopenCutoff,
+    record_format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
+    binding_context: crate::physical_runtime::durability::PhysicalBindingDecodingContext,
+    reopen_grant: &worth_store_buffer_pool::OperationAllocationGrant,
 ) -> Result<ReopenedPhysicalWalInventory, PhysicalWalOpenFailure> {
+    if reopen_grant.scope() != worth_store_buffer_pool::PhysicalOperationAllocationScope::Recovery {
+        return Err(PhysicalWalOpenFailure::ReopenAllocationRejected);
+    }
     let directory = wal_directory();
     let tree = media.artifact_tree();
     if !tree
@@ -37,7 +48,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         .list_file_names_bounded(&directory, inventory_limit)
         .map_err(map_listing_failure)?;
     if names.is_empty() {
-        return empty_inventory(&directory, cutoff);
+        return empty_inventory(&directory, cutoff, record_format);
     }
 
     let mut segments = names
@@ -59,15 +70,21 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         Vec::with_capacity(segments.len());
     let mut total_frames = 0u64;
     let mut total_bytes = 0u64;
-    let mut publication_frames = 0u64;
+    let mut publication_roster =
+        super::publication_roster::PublicationRoster::new(reopen_grant.bytes());
     let mut peak_buffer_bytes = 0u64;
     let mut active_lsn_end = None;
     let mut members = Vec::new();
     let mut retirement_spans = Vec::new();
+    let mut copy_obligations = Vec::new();
     let mut retirement_records = Vec::new();
+    let mut retained_maintenance = Vec::new();
+    let mut release_metadata = std::collections::BTreeMap::new();
     let mut retirement_locations = Vec::new();
     let mut interrupted_tail = None;
     let mut interrupted_segment = None;
+    let mut semantic_failure = None;
+    let mut retained_released_drop = false;
     for identity in segments.iter().copied() {
         let artifact = artifact(&directory, identity);
         let byte_count = tree
@@ -82,6 +99,9 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
                 observed: byte_count,
             });
         }
+        // The exact on-disk length, not the policy maximum, is the live
+        // segment buffer reserve during this sequential inspection.
+        publication_roster.admitted_frame_view_count(byte_count)?;
         let allocation = usize::try_from(byte_count)
             .map_err(|_| PhysicalWalOpenFailure::SegmentAllocationRejected)?;
         let mut bytes = Vec::new();
@@ -96,6 +116,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
             &artifact,
             &bytes,
             identity == active_identity,
+            publication_roster.admitted_frame_view_count(byte_count)?,
         )?;
         let (verified, repair) = match admitted {
             interrupted_active_tail::ActiveTailInspection::Verified {
@@ -116,33 +137,145 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         if let Some(repair) = repair {
             interrupted_tail = Some(repair);
         }
+        let active_frame_views_bytes =
+            super::publication_roster::PublicationRoster::frame_view_capacity_ceiling(
+                verified.frames().len(),
+            )?;
+        let mut frame_offset = 0_u64;
         for frame in verified.frames().iter().copied() {
-            if super::super::super::retention::payload_is_retirement(frame.payload()) {
-                let Some(record) =
-                    super::super::super::retention::decode_retirement(frame.payload())
-                else {
-                    return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
-                };
-                retirement_records.push(record);
-                retirement_locations.push((
-                    frame.lsn_range().start().get(),
-                    frame.lsn_range().end_exclusive().get(),
-                ));
-                let range = frame.lsn_range();
-                match cutoff.lsn() {
-                    Some(cutoff_lsn) if range.end_exclusive() <= cutoff_lsn => {}
-                    Some(cutoff_lsn) if range.start() < cutoff_lsn => {
-                        return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
-                    }
-                    _ => retirement_spans.push((range.start().get(), range.end_exclusive().get())),
-                }
+            let offset = frame_offset;
+            frame_offset = frame_offset
+                .checked_add(frame.encoded_bytes())
+                .ok_or(PhysicalWalOpenFailure::CounterOverflow)?;
+            if semantic_failure.is_some() {
                 continue;
             }
-            publication_frames = publication_frames.saturating_add(1);
-            if let Some(member) = ReopenedPhysicalWalMember::decode_retained_frame(cutoff, frame)
-                .map_err(|_denial| PhysicalWalOpenFailure::MemberPayloadRejected)?
-            {
-                members.push(member);
+            let semantic_observation = (|| -> Result<(), PhysicalWalOpenFailure> {
+                if worth_store_physical_format::payload_is_extent_copy_any(frame.payload()) {
+                    let record = worth_store_physical_format::PhysicalExtentCopyRecord::decode(
+                        frame.payload(),
+                        record_format,
+                    )
+                    .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
+                    let range = frame.lsn_range();
+                    let start = range.start().get();
+                    let end = range.end_exclusive().get();
+                    let checkpoint = cutoff.lsn().map_or(0, |lsn| lsn.get());
+                    super::super::copy_obligation::observe_copy_record(
+                        &mut copy_obligations,
+                        record,
+                        identity.segment().get(),
+                        identity.generation().get(),
+                        start,
+                        end,
+                        checkpoint,
+                    )
+                    .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
+                    if start >= checkpoint {
+                        retirement_spans.push((start, end));
+                    } else if end > checkpoint {
+                        return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                    }
+                    return Ok(());
+                }
+                if super::super::super::retention::payload_is_retirement(frame.payload()) {
+                    let Some(record) =
+                        super::super::super::retention::decode_retirement(frame.payload())
+                    else {
+                        return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                    };
+                    if let Some(release) = record.release {
+                        let entry = release_metadata
+                            .entry(release.candidate_generation())
+                            .or_insert((release, None));
+                        if entry.0 != release {
+                            return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                        }
+                        if !record.completion && entry.1.is_none() {
+                            entry.1 = Some((identity.segment().get(), identity.generation().get()));
+                        }
+                    }
+                    retirement_records.push(record);
+                    if let Some(intent) = super::RetainedMaintenanceIntent::from_verified(
+                        artifact.clone(),
+                        identity.segment().get(),
+                        identity.generation().get(),
+                        offset,
+                        frame,
+                    ) {
+                        retained_maintenance.push(intent);
+                    }
+                    retirement_locations.push((
+                        frame.lsn_range().start().get(),
+                        frame.lsn_range().end_exclusive().get(),
+                    ));
+                    let range = frame.lsn_range();
+                    match cutoff.lsn() {
+                        Some(cutoff_lsn) if range.end_exclusive() <= cutoff_lsn => {}
+                        Some(cutoff_lsn) if range.start() < cutoff_lsn => {
+                            return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                        }
+                        _ => retirement_spans
+                            .push((range.start().get(), range.end_exclusive().get())),
+                    }
+                    return Ok(());
+                }
+                if worth_store_physical_format::payload_is_blob_manifest_residue_cleanup_any(
+                    frame.payload(),
+                ) {
+                    manifest_residue::observe(
+                        frame.payload(),
+                        frame.lsn_range(),
+                        media.store_identity().bytes(),
+                        cutoff,
+                        &mut retirement_spans,
+                    )?;
+                    return Ok(());
+                }
+                if worth_store_physical_format::payload_is_tier_epoch_activation(frame.payload()) {
+                    tier_epoch::observe(
+                        frame.payload(),
+                        frame.lsn_range(),
+                        media.store_identity().bytes(),
+                        cutoff,
+                        &mut retirement_spans,
+                    )?;
+                    return Ok(());
+                }
+                retained_released_drop |= publication_roster.observe(
+                    frame,
+                    identity.segment().get(),
+                    identity.generation().get(),
+                    record_format,
+                    binding_context,
+                    byte_count,
+                    active_frame_views_bytes,
+                )? && cutoff
+                    .lsn()
+                    .is_none_or(|lsn| frame.lsn_range().start() >= lsn);
+                super::copy_publication::observe(
+                    frame.payload(),
+                    frame.lsn_range(),
+                    record_format,
+                    binding_context,
+                    &mut copy_obligations,
+                    cutoff.lsn().map_or(0, |lsn| lsn.get()),
+                )
+                .map_err(|_| PhysicalWalOpenFailure::MemberPayloadRejected)?;
+                if let Some(member) =
+                    ReopenedPhysicalWalMember::decode_retained_frame(cutoff, frame)
+                        .map_err(|_denial| PhysicalWalOpenFailure::MemberPayloadRejected)?
+                {
+                    members.push(member);
+                }
+                Ok(())
+            })();
+            if let Err(failure) = semantic_observation {
+                if failure == PhysicalWalOpenFailure::MemberPayloadRejected {
+                    semantic_failure = Some(failure);
+                } else {
+                    return Err(failure);
+                }
             }
         }
         let inspection = verified.inspection();
@@ -169,6 +302,9 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     WalTopologyScan::from_segment_scan(scans)
         .admit_replay_cursor(generation)
         .map_err(|denial| PhysicalWalOpenFailure::Topology(denial.kind()))?;
+    if let Some(failure) = semantic_failure {
+        return Err(failure);
+    }
     let active = inspections
         .last()
         .expect("a nonempty inspected WAL inventory has one active segment")
@@ -183,6 +319,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         active_lsn_end.expect("a nonempty inspected WAL inventory has one active LSN frontier");
     let segment_inventory =
         PhysicalWalSegmentInventory::from_reopened(inspections).map_err(map_inventory_failure)?;
+    let publication_groups = publication_roster.finish()?;
     require_checkpoint_cutoff_within_retained_wal(cutoff, &segment_inventory, active_lsn_end)?;
     if let Some(interrupted_tail) = interrupted_tail {
         interrupted_tail.truncate_durably(&tree)?;
@@ -196,6 +333,9 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     let requires_inspection =
         cutoff.lsn().is_none() && !segment_inventory.retains_canonical_wal_origin();
     Ok(ReopenedPhysicalWalInventory {
+        record_format,
+        copy_obligations,
+        checkpoint_cutoff: cutoff.lsn().map_or(0, |lsn| lsn.get()),
         frontier: WalAppendFrontier::observed(
             active.segment(),
             active.generation(),
@@ -205,33 +345,35 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         active_artifact,
         segment_count,
         frame_count: total_frames,
-        publication_frames,
+        publication_groups,
+        release_metadata: release_metadata
+            .into_values()
+            .map(|(release, intent)| {
+                let (bytes, segment, generation) = intent
+                    .map_or((0, 0, 0), |(segment, generation)| {
+                        (release.metadata_bytes(), segment, generation)
+                    });
+                (release.candidate_generation(), bytes, segment, generation)
+            })
+            .collect(),
         byte_count: total_bytes,
         peak_buffer_bytes,
         requires_inspection,
+        release_evidence: super::RetainedWalReleaseEvidence::new(
+            retained_released_drop,
+            if cutoff.lsn().is_none() && !requires_inspection {
+                super::RetainedWalHistory::FromOrigin
+            } else {
+                super::RetainedWalHistory::Suffix
+            },
+        ),
         segments: segment_inventory,
         members,
         retirement_spans,
         retirement_records,
         retirement_locations,
+        retained_maintenance,
     })
-}
-
-fn require_checkpoint_cutoff_within_retained_wal(
-    cutoff: PhysicalWalBindingReopenCutoff,
-    inventory: &PhysicalWalSegmentInventory,
-    active_lsn_end: worth_store_wal::LogSequenceNumber,
-) -> Result<(), PhysicalWalOpenFailure> {
-    let Some(cutoff) = cutoff.lsn() else {
-        return Ok(());
-    };
-    let first = inventory
-        .first_lsn_start()
-        .ok_or(PhysicalWalOpenFailure::CheckpointCutoffOutsideRetainedWal)?;
-    if cutoff < first || cutoff > active_lsn_end {
-        return Err(PhysicalWalOpenFailure::CheckpointCutoffOutsideRetainedWal);
-    }
-    Ok(())
 }
 
 fn map_inventory_failure(
@@ -252,61 +394,4 @@ fn map_inventory_failure(
         }
     };
     PhysicalWalOpenFailure::Topology(kind)
-}
-
-fn empty_inventory(
-    directory: &ArtifactTreeDirectory,
-    cutoff: PhysicalWalBindingReopenCutoff,
-) -> Result<ReopenedPhysicalWalInventory, PhysicalWalOpenFailure> {
-    if cutoff.lsn().is_some() {
-        return Err(PhysicalWalOpenFailure::CheckpointCutoffOutsideRetainedWal);
-    }
-    let segment = WalSegmentId::new(1).expect("the initial WAL segment is nonzero");
-    let generation = WalSegmentGeneration::new(1).expect("the initial WAL generation is nonzero");
-    Ok(ReopenedPhysicalWalInventory {
-        frontier: WalAppendFrontier::empty(segment, generation),
-        active_artifact: artifact(
-            directory,
-            WalSegmentArtifactIdentity::new(segment, generation),
-        ),
-        segment_count: 0,
-        frame_count: 0,
-        publication_frames: 0,
-        byte_count: 0,
-        peak_buffer_bytes: 0,
-        requires_inspection: false,
-        segments: PhysicalWalSegmentInventory::empty(),
-        members: Vec::new(),
-        retirement_spans: Vec::new(),
-        retirement_records: Vec::new(),
-        retirement_locations: Vec::new(),
-    })
-}
-
-fn wal_directory() -> ArtifactTreeDirectory {
-    ArtifactTreeDirectory::families()
-        .child("wal")
-        .expect("the Store-owned WAL directory is portable")
-}
-
-fn artifact(
-    directory: &ArtifactTreeDirectory,
-    identity: WalSegmentArtifactIdentity,
-) -> ArtifactTreeFile {
-    directory
-        .file(&identity.file_name())
-        .expect("canonical WAL artifact names are portable")
-}
-
-fn map_listing_failure(
-    failure: worth_store_physical_backend::ArtifactTreeFailure,
-) -> PhysicalWalOpenFailure {
-    if matches!(
-        failure.kind(),
-        worth_store_physical_backend::ArtifactTreeFailureKind::AccessLimitExceeded
-    ) {
-        PhysicalWalOpenFailure::InventoryLimitExceeded
-    } else {
-        PhysicalWalOpenFailure::Media(failure)
-    }
 }

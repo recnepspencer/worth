@@ -1,6 +1,11 @@
 use std::sync::Arc;
 
 #[cfg(feature = "certification-test-authority")]
+mod observation;
+#[cfg(feature = "certification-test-authority")]
+pub use observation::{FramePortCounterObserver, FramePortCounterSnapshot};
+
+#[cfg(feature = "certification-test-authority")]
 use worth_store_buffer_pool::{
     ForegroundReadAllocationGrant, PrefetchResidencyGrant, ReadAheadResidencyGrant,
 };
@@ -43,7 +48,20 @@ pub(in crate::physical_runtime) struct RecordFramePorts {
 }
 
 impl RecordFramePorts {
-    pub(in crate::physical_runtime::record_serving) fn store_identity(
+    pub(in crate::physical_runtime::record_serving) fn invalidate_released_arena_range(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+    ) -> Result<(), PhysicalResidencyDenial> {
+        self.pool.invalidate_clean_range(
+            worth_store_physical_format::RecordArtifactFile::ExtentArena {
+                arena: range.arena().get(),
+            },
+            range.offset(),
+            range.length(),
+        )
+    }
+
+    pub(in crate::physical_runtime) fn store_identity(
         &self,
     ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
         self.pool.store_identity()
@@ -95,6 +113,14 @@ impl RecordFramePorts {
         self.pool.begin_operation(scope, bytes)
     }
 
+    #[cfg(any(test, feature = "recovery-runtime-owner"))]
+    pub(in crate::physical_runtime) fn restrict_recovery_operation_bytes(
+        &self,
+        ceiling: u64,
+    ) -> Result<(), PhysicalResidencyDenial> {
+        self.pool.restrict_recovery_operation_bytes(ceiling)
+    }
+
     pub(in crate::physical_runtime) fn begin_foreground_write_operation(
         &self,
         bytes: std::num::NonZeroU64,
@@ -108,13 +134,6 @@ impl RecordFramePorts {
         self.pool.begin_dirty_generation_capture()
     }
 
-    pub(in crate::physical_runtime) fn checkpoint_capture_allocation(
-        &self,
-        bytes: std::num::NonZeroU64,
-    ) -> Result<MaintenanceAllocationGrant, PhysicalResidencyDenial> {
-        self.pool.begin_maintenance_operation(bytes)
-    }
-
     pub(in crate::physical_runtime) fn capture_checkpoint_slice(
         &self,
         session: PhysicalDirtyGenerationCaptureSession,
@@ -122,6 +141,15 @@ impl RecordFramePorts {
     ) -> Result<PhysicalDirtyGenerationCaptureStep, PhysicalResidencyDenial> {
         self.pool
             .capture_next_dirty_generation_slice(session, allocation)
+    }
+
+    pub(in crate::physical_runtime) fn checkpoint_capture_window(
+        &self,
+        session: &PhysicalDirtyGenerationCaptureSession,
+        maximum: std::num::NonZeroU64,
+    ) -> Result<MaintenanceAllocationGrant, PhysicalResidencyDenial> {
+        self.pool
+            .begin_dirty_generation_capture_allocation(session, maximum)
     }
 
     #[cfg(feature = "certification-test-authority")]
@@ -216,6 +244,23 @@ impl RecordFramePorts {
         self.pool.drain_unpinned_clean_frames()
     }
 
+    pub(in crate::physical_runtime) fn invalidate_completed_clean_frames(
+        &self,
+        coordinates: &[RecordFrameCoordinate],
+    ) -> u64 {
+        coordinates
+            .iter()
+            .filter(|coordinate| {
+                self.pool
+                    .invalidate_clean(worth_store_buffer_pool::PhysicalFrameKey::new(
+                        self.pool.store_identity(),
+                        **coordinate,
+                    ))
+                    .is_ok()
+            })
+            .count() as u64
+    }
+
     pub(in crate::physical_runtime::record_serving) fn claim_writeback(
         &self,
         coordinate: RecordFrameCoordinate,
@@ -297,79 +342,5 @@ impl RecordFramePorts {
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime::record_serving) fn reject_next_candidate_retention(&self) {
         self.candidate_counters.reject_next_retention();
-    }
-}
-
-#[cfg(feature = "certification-test-authority")]
-pub struct FramePortCounterObserver {
-    pool: PhysicalResidencyPool,
-    candidate_counters: Arc<CandidateFrameCounterCells>,
-}
-
-#[cfg(feature = "certification-test-authority")]
-impl FramePortCounterObserver {
-    pub fn snapshot(&self) -> FramePortCounterSnapshot {
-        FramePortCounterSnapshot {
-            residency: self.pool.counters(),
-            candidate_submissions: self.candidate_counters.submissions(),
-            declared_candidate_frames: self.candidate_counters.declared_frames(),
-            declared_candidate_bytes: self.candidate_counters.declared_bytes(),
-            candidate_frames: self.candidate_counters.retained_frames(),
-            candidate_bytes: self.candidate_counters.retained_bytes(),
-        }
-    }
-}
-
-#[cfg(feature = "certification-test-authority")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FramePortCounterSnapshot {
-    residency: PhysicalResidencyCounters,
-    candidate_submissions: u64,
-    declared_candidate_frames: u64,
-    declared_candidate_bytes: u64,
-    candidate_frames: u64,
-    candidate_bytes: u64,
-}
-
-#[cfg(feature = "certification-test-authority")]
-impl FramePortCounterSnapshot {
-    pub const fn loads(self) -> u64 {
-        self.residency.source_loads()
-    }
-    pub const fn candidate_submissions(self) -> u64 {
-        self.candidate_submissions
-    }
-    pub const fn declared_candidate_frames(self) -> u64 {
-        self.declared_candidate_frames
-    }
-    pub const fn declared_candidate_bytes(self) -> u64 {
-        self.declared_candidate_bytes
-    }
-    pub const fn candidate_frames(self) -> u64 {
-        self.candidate_frames
-    }
-    pub const fn candidate_bytes(self) -> u64 {
-        self.candidate_bytes
-    }
-    pub const fn wrapper_frames(self) -> u64 {
-        0
-    }
-    pub const fn peak_retained_candidate_frames(self) -> u64 {
-        self.residency.peak_candidate_frames() as u64
-    }
-    pub const fn residency_hits(self) -> u64 {
-        self.residency.hits()
-    }
-    pub const fn residency_faults(self) -> u64 {
-        self.residency.faults()
-    }
-    pub const fn writebacks(self) -> u64 {
-        self.residency.writebacks()
-    }
-    pub const fn candidate_publications(self) -> u64 {
-        self.residency.candidate_publications()
-    }
-    pub const fn evictions(self) -> u64 {
-        self.residency.evictions()
     }
 }

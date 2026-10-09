@@ -1,11 +1,12 @@
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::{ArtifactCeiling, PageAddress, ReadGrant, UnchargedRead};
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, FreeSpaceBlockReference, FreeSpaceKey,
-    PhysicalRecordFormatDeclaration, RecordAllocationClass, RecordArtifactFile,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 use worth_store_physical_integrity::{PhysicalDamageCause, PhysicalIntegrityRejection};
 
@@ -32,7 +33,10 @@ fn exact_checkpoint_root_absence_and_corruption_stop_before_owner_projection() {
         let store = media.store_identity();
         media.close();
         let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-        let key = FreeSpaceKey::new(RecordAllocationClass::Extent, 1).unwrap();
+        let key = FreeSpaceKey::arena(
+            worth_store_physical_format::ExtentArenaId::new(1).unwrap(),
+            0,
+        );
         let manifest = DurablePhysicalRootManifest::builder(4, 7, 4, 19)
             .free_space_root(Some(
                 FreeSpaceBlockReference::new(4, 1, 0, 17, key, key).unwrap(),
@@ -58,7 +62,13 @@ fn exact_checkpoint_root_absence_and_corruption_stop_before_owner_projection() {
             .admit_persisted_store()
             .unwrap();
         let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-        let observed = discovery.read_root_manifest(4, 4096).unwrap();
+        let observed = discovery
+            .read(
+                ArtifactCeiling::page(format, PageAddress::RootManifest { generation: 4 }),
+                ReadGrant::ceiling_only(),
+            )
+            .observed()
+            .unwrap();
         let mut counters = RecoveryIntegrityIngressCounters::default();
         assert!(matches!(
             admit_observed_root_manifest(&observed, store, format, 0, &mut counters),

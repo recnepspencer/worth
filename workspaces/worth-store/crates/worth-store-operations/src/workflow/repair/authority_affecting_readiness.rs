@@ -27,7 +27,8 @@ pub struct ExecutionReadyAuthorityAffectingRepair<'a> {
     pub(super) integrity: IntegrityRepairClassificationPlan,
     pub(super) backend: LoweredNonCurrentStagingPlan,
     pub(super) recovery: BackupRestoreReplayPlan,
-    pub(super) layout: Option<worth_store_layout_indexes::LayoutRepairConsequencePlan>,
+    pub(super) layout:
+        Option<worth_store_layout_indexes::operational_repair::LayoutRepairConsequencePlan>,
     pub(super) blob: Option<worth_store_blob_chunks::BlobRepairConsequencePlan>,
     pub(super) nodes: RepairOwnerNodes,
     pub(super) journal: RepairExecutionJournal<'a>,

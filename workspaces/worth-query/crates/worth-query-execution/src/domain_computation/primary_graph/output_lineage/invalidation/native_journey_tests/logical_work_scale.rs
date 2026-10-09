@@ -12,7 +12,7 @@ use worth_relational::facade::{
 #[test]
 fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_oracle() {
     let mut expected_counts = None;
-    for population in [1, 10, 100] {
+    for population in [1, 10, 100, 1000] {
         let counts = run_population(population);
         assert_eq!(counts.marked_fact_ordinals, 1);
         assert_eq!(counts.visited_vertices, 2);
@@ -109,6 +109,9 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
                 field_fact(runtime, &before_handle, *entity, label.clone()),
                 field_fact(runtime, &before_handle, *entity, status.clone()),
             ]), &before, OrdSet::new());
+            assert!(owner.resources.retained_capacity_bytes()
+                <= owner.resources.installation().maximum_retained_bytes,
+                "actual Native registration must stay within the installed capacity");
         }
         let downstream = RecordedSettlementIdentity::retain(
             &source(entities[0], TypeId::of::<DownstreamOutput>()), coordinate, 0,

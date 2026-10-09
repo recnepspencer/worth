@@ -23,6 +23,7 @@ fn phase3_settlement_receivers_take_a_shared_borrow() {
     let _commit: fn(
         &RelationalRuntime,
         crate::mvcc::BranchBoundRelationalTransaction,
+        worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<CommitResult, TransactionCommitError> =
         RelationalRuntime::commit_branch_transaction;
 
@@ -77,10 +78,16 @@ fn phase3_settlement_port_is_a_cloneable_shared_borrow_service() {
 
     let mut transaction = test_owner_begin_transaction_for_main(runtime_shared);
     transaction
-        .push_batch(batch_create("phase3-shared-borrow-commit"))
+        .push_batch(
+            batch_create("phase3-shared-borrow-commit"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let committed = runtime_shared
-        .commit_branch_transaction(transaction)
+        .commit_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the convenience commit path settles through a shared borrow");
     assert!(!cloned.retains_pending_settlement(committed.commit.commit_id));
     release_test_commit_snapshot(&runtime, &committed);
@@ -327,7 +334,10 @@ fn perform_write(
     let mut transaction =
         test_owner_begin_transaction_for_branch(runtime, BranchId(branch.to_owned()));
     transaction
-        .push_batch(batch_create(name))
+        .push_batch(
+            batch_create(name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     perform_prepared(runtime, transaction)
 }
@@ -352,7 +362,10 @@ pub(super) fn perform_write_with_control(
         )
         .expect("controlled branch transaction");
     transaction
-        .push_batch(batch_create(name))
+        .push_batch(
+            batch_create(name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     perform_prepared(runtime, transaction)
 }
@@ -362,7 +375,10 @@ fn perform_prepared(
     transaction: crate::mvcc::BranchBoundRelationalTransaction,
 ) -> crate::mvcc::PerformedRelationalCommit {
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares");
     match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

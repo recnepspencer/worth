@@ -5,6 +5,7 @@ use crate::facade::transactions::{
     WorkerIntentBatch,
 };
 use crate::tests::support::*;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn branch_transactions_are_detached_and_overlays_do_not_cross() {
@@ -20,12 +21,12 @@ fn branch_transactions_are_detached_and_overlays_do_not_cross() {
     let storm_batch = batch_create("storm-write");
     let storm_expected = create_intent(&storm_batch);
     storm
-        .push_batch(storm_batch)
+        .push_batch(storm_batch, AllocationPolicy::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
     let maintenance_batch = batch_create("maintenance-write");
     let maintenance_expected = create_intent(&maintenance_batch);
     maintenance
-        .push_batch(maintenance_batch)
+        .push_batch(maintenance_batch, AllocationPolicy::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
 
     assert_eq!(
@@ -68,9 +69,11 @@ fn branch_transactions_are_detached_and_overlays_do_not_cross() {
     );
 
     create_entity(&runtime, "unrelated-main-work");
-    let storm_commit = storm.commit(&runtime).expect("storm commits independently");
+    let storm_commit = storm
+        .commit(&runtime, AllocationPolicy::SystemAllocation)
+        .expect("storm commits independently");
     let maintenance_commit = maintenance
-        .commit(&runtime)
+        .commit(&runtime, AllocationPolicy::SystemAllocation)
         .expect("maintenance commits independently");
     assert_eq!(storm_commit.commit.branch_id, BranchId("storm".into()));
     assert_eq!(
@@ -89,10 +92,13 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
 
     let (_, mut candidate) = begin_on(&runtime, "candidate");
     candidate
-        .push_batch(batch_create("candidate-only"))
+        .push_batch(
+            batch_create("candidate-only"),
+            AllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let proposal = candidate
-        .validate(&runtime)
+        .validate(&runtime, AllocationPolicy::SystemAllocation)
         .expect("candidate validation succeeds before sibling work");
 
     let counters_before_sibling = runtime.performance_access().counters();
@@ -115,9 +121,18 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
     let candidate = runtime
         .prepare_validated_proposal(proposal)
         .expect("sibling advancement permits candidate revalidation");
+    let exact_records = candidate
+        .with_prepared_changed_records(|records| records.to_vec())
+        .expect("the prepared owner retains its exact records");
+    assert_eq!(
+        candidate.prepared_changed_record_count(),
+        Some(exact_records.len())
+    );
     let committed = runtime
         .publish_prepared_candidate(candidate)
         .expect("prepared candidate publishes through its owner");
+    assert_eq!(committed.changed_records, exact_records);
+
     assert_eq!(
         committed
             .complexity_delta()
@@ -160,7 +175,10 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     );
 
     transaction
-        .push_batch(update_batch(entity, "stale-write"))
+        .push_batch(
+            update_batch(entity, "stale-write"),
+            AllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     assert_eq!(
         transaction
@@ -178,7 +196,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     let reference_cost_before = runtime.phase4_reference_cost_counters();
     let complexity_before = runtime.performance_access().counters();
     let error = transaction
-        .commit(&runtime)
+        .commit(&runtime, AllocationPolicy::SystemAllocation)
         .expect_err("complete-reference movement stales the old basis");
     assert!(matches!(
         error,
@@ -237,10 +255,13 @@ fn stale_transaction_denies_before_interning_new_client_keys() {
     let complexity_before = runtime.performance_access().counters();
 
     transaction
-        .push_batch(batch_create("must-not-be-interned"))
+        .push_batch(
+            batch_create("must-not-be-interned"),
+            AllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime)
+        .commit(&runtime, AllocationPolicy::SystemAllocation)
         .expect_err("stale currentness is checked before normalization");
 
     assert!(matches!(
@@ -265,79 +286,6 @@ fn stale_transaction_denies_before_interning_new_client_keys() {
     assert_eq!(
         runtime.history().commit_envelopes_snapshot(),
         catalog_before
-    );
-}
-
-#[test]
-fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
-    let runtime = runtime_with_test_schema();
-    let retained = create_entity(&runtime, "retained");
-    let rolled_back = create_entity(&runtime, "rolled-back");
-    let (_, mut transaction) = begin_on(&runtime, "main");
-    transaction
-        .read_entity(retained)
-        .expect("retained read projects");
-    let retained_batch = update_batch(retained, "retained-write");
-    let retained_intent = retained_batch.intents[0].clone();
-    let retained_mutation = match &retained_intent {
-        MutationIntent::Entity(intent) => intent.clone(),
-        other => panic!("expected retained entity mutation, got {other:?}"),
-    };
-    transaction
-        .push_batch(retained_batch)
-        .expect("test staging stays within configured resource budgets");
-    let savepoint = transaction.create_savepoint().unwrap();
-    let expected_footprint = transaction.footprint().clone();
-
-    transaction
-        .read_entity(rolled_back)
-        .expect("rolled-back read projects");
-    transaction
-        .push_batch(update_batch(rolled_back, "discarded-write"))
-        .expect("test staging stays within configured resource budgets");
-    let discarded_create = created_entity("discarded-create");
-    transaction
-        .push_batch(batch_create("discarded-create"))
-        .expect("test staging stays within configured resource budgets");
-    assert!(transaction
-        .read_created_entity(&discarded_create)
-        .unwrap()
-        .is_some());
-    assert_eq!(
-        transaction
-            .merged_plan(&runtime)
-            .expect("pre-rollback plan includes staged work")
-            .merged_intents
-            .len(),
-        3
-    );
-
-    transaction
-        .rollback_to_savepoint(savepoint)
-        .expect("savepoint rollback succeeds");
-    assert_eq!(transaction.footprint(), &expected_footprint);
-    assert!(transaction
-        .read_entity(rolled_back)
-        .expect("post-rollback read projects")
-        .staged_mutations()
-        .is_empty());
-    assert!(transaction
-        .read_created_entity(&discarded_create)
-        .unwrap()
-        .is_none());
-    assert_eq!(
-        transaction
-            .read_entity(retained)
-            .expect("retained mutation projects")
-            .staged_mutations(),
-        &[retained_mutation]
-    );
-    assert_eq!(
-        transaction
-            .merged_plan(&runtime)
-            .expect("post-rollback plan is rebuilt from retained batches")
-            .merged_intents,
-        vec![retained_intent]
     );
 }
 
@@ -395,3 +343,5 @@ fn create_intent(batch: &WorkerIntentBatch) -> CreateIntent {
         other => panic!("expected one create intent, got {other:?}"),
     }
 }
+
+mod savepoint_rollback;

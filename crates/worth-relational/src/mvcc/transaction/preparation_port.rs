@@ -44,8 +44,9 @@ impl RelationalPreparationPort {
     pub fn prepare_branch_transaction(
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        self.prepare_branch_transaction_inner(transaction, None)
+        self.prepare_branch_transaction_inner(transaction, None, allocation_policy)
     }
 
     pub fn prepare_branch_transaction_with_lease(
@@ -53,13 +54,18 @@ impl RelationalPreparationPort {
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         lease: &worth_execution::ExecutionResourceLease<'_>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        self.prepare_branch_transaction_inner(transaction, Some(lease))
+        self.prepare_branch_transaction_inner(
+            transaction,
+            Some(lease),
+            worth_execution::ExecutionAllocationPolicy::Execution(lease),
+        )
     }
 
     fn prepare_branch_transaction_inner(
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
@@ -72,7 +78,7 @@ impl RelationalPreparationPort {
         };
         let proposal = match lease {
             Some(lease) => runtime.validate_branch_transaction_with_lease(transaction, lease),
-            None => runtime.validate_branch_transaction(transaction),
+            None => runtime.validate_branch_transaction(transaction, allocation_policy),
         }
         .map_err(attach_validation_rejection)?;
         self.prepare_validated_proposal_inner(&runtime, proposal, lease)

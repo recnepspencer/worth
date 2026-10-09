@@ -59,16 +59,29 @@ pub(in crate::c9_integrity_localization) fn require(
                 Some(page.generation().get()),
             )
         }
-        File::ExtentManifest { extent, generation } => {
-            (format!("extent:{extent:016x}"), Some(generation))
+        File::ExtentArena { .. } if target.family == "extent_manifest" => {
+            let placement = target.scope.extent_manifest_placement().unwrap();
+            (
+                format!(
+                    "arena:{:016x}:extent:{:016x}",
+                    placement.arena_range().arena().get(),
+                    placement.extent().get()
+                ),
+                Some(placement.extent_generation()),
+            )
         }
-        File::Extent { extent, generation } => (
-            format!(
-                "extent:{extent:016x}:chunk:{}",
-                target.scope.extent_chunk_coordinate().unwrap().ordinal()
-            ),
-            Some(generation),
-        ),
+        File::ExtentArena { .. } if target.family == "extent_chunk" => {
+            let coordinate = target.scope.extent_chunk_coordinate().unwrap();
+            (
+                format!(
+                    "arena:{:016x}:extent:{:016x}:chunk:{}",
+                    target.scope.extent_arena_range().unwrap().arena().get(),
+                    coordinate.extent_cell().extent_id().get(),
+                    coordinate.ordinal()
+                ),
+                Some(coordinate.extent_cell().generation().get()),
+            )
+        }
         _ => unreachable!("inventory contains only production-issued artifact shapes"),
     };
     assert_eq!(row["identity"], identity, "{row}");

@@ -3,9 +3,11 @@ pub(crate) mod checkpoint;
 mod current_selector;
 pub(crate) mod durable_frame;
 pub(crate) mod extent;
+pub(crate) mod extent_arena;
 #[cfg(test)]
 mod family_vectors;
 pub(crate) mod free_space;
+pub(crate) mod index;
 mod namespace_identity;
 pub(crate) mod page_frame;
 #[cfg(test)]

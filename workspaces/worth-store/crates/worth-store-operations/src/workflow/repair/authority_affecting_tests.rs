@@ -174,7 +174,7 @@ fn authority_quarantine_repair_preserves_owner_meaning_across_artifact_consequen
             .layout()
             .expect("layout owner receipt")
             .consequence(),
-        worth_store_layout_indexes::LayoutRepairConsequence::ReplaceQuarantinedArtifact
+        worth_store_layout_indexes::operational_repair::LayoutRepairConsequence::ReplaceQuarantinedArtifact
     );
     assert_eq!(
         executed.blob().expect("blob owner receipt").consequence(),

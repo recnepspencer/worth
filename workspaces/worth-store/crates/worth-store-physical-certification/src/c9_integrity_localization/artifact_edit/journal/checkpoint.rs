@@ -39,7 +39,7 @@ pub(super) fn edit(
                 };
                 frame[12..16].copy_from_slice(&payload.to_le_bytes());
             }
-            Op::EnvelopeVersion => frame[8] = 2,
+            Op::EnvelopeVersion => frame[8] = 3,
             Op::ScopeSubstitution if target.family == "checkpoint_footer" => {
                 let sequence = u64::from_le_bytes(frame[32..40].try_into().unwrap());
                 frame[32..40].copy_from_slice(&(sequence + 1).to_le_bytes());

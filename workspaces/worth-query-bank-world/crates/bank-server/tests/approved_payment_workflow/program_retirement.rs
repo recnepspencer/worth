@@ -46,7 +46,7 @@ fn p2_adoption_does_not_reopen_ordinary_payment_approval() {
             approver: principal_id(APPROVER),
         })
         .idempotency(&key("p2:ordinary-payment-approval"))
-        .execute();
+        .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
     assert!(matches!(
         ordinary,
         Err(WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)

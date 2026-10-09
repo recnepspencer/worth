@@ -1,10 +1,10 @@
 //! Application-owned deferred commit evidence.
 
-/// Evidence that a commit attempt stopped at a capacity or lifetime limit, carried
+/// Evidence that a commit attempt stopped at a capacity, lifetime or prerequisite boundary, carried
 /// by the `Deferred` commit outcome.
 ///
-/// Nothing was committed. The [`kind`](Self::kind) names the limit that was
-/// reached; retry later, after the limit has room again.
+/// Nothing was committed. The [`kind`](Self::kind) names the boundary that
+/// deferred publication; retry when that boundary can admit the attempt.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCommitDeferred {
     kind: WorthQueryApplicationCommitDeferredKind,
@@ -12,6 +12,8 @@ pub struct WorthQueryApplicationCommitDeferred {
     detail: String,
     counters:
         crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters,
+    prerequisite_denial:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
 }
 
 /// The limit that deferred a commit attempt.
@@ -74,7 +76,14 @@ impl WorthQueryApplicationCommitDeferred {
             stage: deferred.stage(),
             detail: deferred.detail().to_owned(),
             counters: deferred.counters(),
+            prerequisite_denial: deferred.into_prerequisite_denial(),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn into_prerequisite_denial(
+        self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        self.prerequisite_denial
     }
 
     pub const fn kind(&self) -> WorthQueryApplicationCommitDeferredKind {

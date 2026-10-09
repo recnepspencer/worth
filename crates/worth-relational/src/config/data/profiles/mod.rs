@@ -104,8 +104,6 @@ mod tests {
             RelationalRuntimeProfile::GeometryKernel,
             RelationalConfigOverride::default(),
         );
-
-        assert!(config.publication.policy.max_transaction_footprint_loci >= 85_389);
         assert!(config.publication.policy.max_patch_records_per_commit >= 16_707);
         assert!(
             config

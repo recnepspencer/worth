@@ -1,5 +1,6 @@
 //! Genuine Native computations that change their own source inputs at commit.
 use std::sync::Arc;
+use worth_execution::ExecutionAllocationPolicy;
 #[cfg(test)]
 mod comparison_access;
 mod index_loss;
@@ -72,9 +73,11 @@ fn commit_own_write(
         RetentionMutationBreadth::Narrow,
     );
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(seed, idempotency(231, 231)),
+        world.application.compare_and_commit_application(
+            seed,
+            idempotency(231, 231),
+            ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let principal = authenticated_principal(&world, &request);
@@ -97,31 +100,39 @@ fn commit_own_write(
     admitted.bind_source_partition([7; 32]);
     let (computed, projection, _) = world
         .invariant
-        .project_admitted_operation(&admitted, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountLabel::reference())
-                .unwrap();
-            reader.begin_computation_reads();
-            let x = reader.attributed(
-                ComputationRead::Partition(PartitionIdentity::new(7)),
-                |reader| {
-                    reader
-                        .decision_field(projected, AccountStatus::reference())
-                        .unwrap()
-                        .unwrap()
-                },
-            );
-            assert_eq!(x, "1");
-            format!("computed-from-{x}")
-        })
+        .project_admitted_operation(
+            &admitted,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountLabel::reference())
+                    .unwrap();
+                reader.begin_computation_reads();
+                let x = reader.attributed(
+                    ComputationRead::Partition(PartitionIdentity::new(7)),
+                    |reader| {
+                        reader
+                            .decision_field(projected, AccountStatus::reference())
+                            .unwrap()
+                            .unwrap()
+                    },
+                );
+                assert_eq!(x, "1");
+                format!("computed-from-{x}")
+            },
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admitted, projection)
+        .begin_projected_application_read_attempt(
+            admitted,
+            projection,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
         .begin_effect_program();
     let source = effects.existing_entity(&account).unwrap();
@@ -192,9 +203,11 @@ fn commit_own_write(
         .bind_source(Some(&[11; 32]))
         .bind_source_partition(&[7; 32])
         .bind_producer_dependency(&dependency);
-    let outcome = world
-        .application
-        .compare_and_commit_application(program, identity);
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        identity,
+        ExecutionAllocationPolicy::SystemAllocation,
+    );
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the legal effect commits: {outcome:?}");
     };

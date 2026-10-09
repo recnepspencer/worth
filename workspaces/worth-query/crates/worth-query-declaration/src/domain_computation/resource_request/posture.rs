@@ -1,3 +1,18 @@
+/// Whether an installed request runs as one native attempt or managed bounded steps.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum WorthQueryExecutionBoundary {
+    Atomic,
+    BoundedStep,
+}
+impl WorthQueryExecutionBoundary {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Atomic => "atomic",
+            Self::BoundedStep => "bounded-step",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryExecutionMode {
     Synchronous,

@@ -41,13 +41,13 @@ fn denies_unsupported_or_incomplete_strategy_claims_before_declaration() {
             .admit(LayoutAdmissionRequest::from_admitted(
                 root_lifecycle,
                 root_domain,
-                LayoutStrategyFamily::BaselineBTreeRange,
+                LayoutStrategyFamily::BTreeRange,
                 LayoutRequestedCapability::point_lookup(),
                 ArtifactFamilyAccessLane::MaintenancePath,
             ))
             .unwrap_err(),
         LayoutAdmissionDenial::StrategyVocabularyDenied(
-            StrategyDenial::PhysicalKeyDomainDoesNotSupportBaselineBTree,
+            StrategyDenial::PhysicalKeyDomainDoesNotSupportBTree,
         )
     );
     assert_eq!(
@@ -55,7 +55,7 @@ fn denies_unsupported_or_incomplete_strategy_claims_before_declaration() {
             .admit(LayoutAdmissionRequest::from_admitted(
                 page_lifecycle,
                 root_domain,
-                LayoutStrategyFamily::BaselineBTreeRange,
+                LayoutStrategyFamily::BTreeRange,
                 LayoutRequestedCapability::point_lookup(),
                 ArtifactFamilyAccessLane::HotPath,
             ))
@@ -163,11 +163,9 @@ fn admission_binds_counter_profiles_and_posture_to_strategy_families() {
         lsm.declared_counter_profile()
     );
     assert_eq!(
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::PointLookup)
-            .expect("btree point counters should be available")
-            .aggregate_profile(),
-        crate::strategy::StrategyCounterProfile::new(1, 0, 1, 1, 3)
+        btree.planned_counter_envelope_for(AccessShapeDetail::PointLookup),
+        None,
+        "the mechanism cannot infer executed page touches from a B-tree shape"
     );
     assert_eq!(
         btree.declared_counter_profile(),
@@ -177,59 +175,20 @@ fn admission_binds_counter_profiles_and_posture_to_strategy_families() {
         .planned_counter_envelope_for(AccessShapeDetail::RangeLookup(
             crate::access::shape::RangeBasis::CanonicalRangeBounds
         ))
-        .is_some());
+        .is_none());
     assert!(btree
         .planned_counter_envelope_for(AccessShapeDetail::PrefixLookup(
             crate::access::shape::PrefixBasis::CanonicalPrefixBounds
         ))
-        .is_some());
+        .is_none());
 
     let btree_evidence = btree_suite.counter_evidence();
     let lsm_evidence = lsm_suite.counter_evidence();
 
     assert_eq!(btree_evidence.lookup(), None);
-    assert_eq!(
-        btree_evidence
-            .point_lookup()
-            .expect("btree point declarative envelope should exist"),
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::PointLookup)
-            .expect("btree point counters should be available")
-    );
-    assert_eq!(
-        btree_evidence
-            .range_lookup()
-            .expect("btree range declarative envelope should exist"),
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::RangeLookup(
-                crate::access::shape::RangeBasis::CanonicalRangeBounds
-            ))
-            .expect("btree range counters should be available")
-    );
-    assert_eq!(
-        btree_evidence
-            .prefix_lookup()
-            .expect("btree prefix declarative envelope should exist"),
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::PrefixLookup(
-                crate::access::shape::PrefixBasis::CanonicalPrefixBounds
-            ))
-            .expect("btree prefix counters should be available")
-    );
-    assert_eq!(
-        btree_evidence.publication(),
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::PointLookup)
-            .expect("btree point counters should be available")
-            .publication()
-    );
-    assert_eq!(
-        btree_evidence.recovery(),
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::PointLookup)
-            .expect("btree point counters should be available")
-            .recovery()
-    );
+    assert_eq!(btree_evidence.point_lookup(), None);
+    assert_eq!(btree_evidence.range_lookup(), None);
+    assert_eq!(btree_evidence.prefix_lookup(), None);
     assert_eq!(
         lsm_evidence
             .lookup()
@@ -289,7 +248,7 @@ fn strategy_identity_preserves_family_and_lane_posture() {
         .admit(LayoutAdmissionRequest::from_admitted(
             page_lifecycle,
             page_domain,
-            LayoutStrategyFamily::BaselineBTreeRange,
+            LayoutStrategyFamily::BTreeRange,
             LayoutRequestedCapability::point_lookup(),
             ArtifactFamilyAccessLane::HotPath,
         ))
@@ -299,7 +258,7 @@ fn strategy_identity_preserves_family_and_lane_posture() {
         .admit(LayoutAdmissionRequest::from_admitted(
             segment_lifecycle,
             segment_domain,
-            LayoutStrategyFamily::BaselineBTreeRange,
+            LayoutStrategyFamily::BTreeRange,
             LayoutRequestedCapability::point_lookup(),
             ArtifactFamilyAccessLane::HotPath,
         ))
@@ -315,7 +274,7 @@ fn strategy_identity_preserves_family_and_lane_posture() {
 }
 
 #[test]
-fn btree_strategy_counter_surface_requires_shape_specific_lookup_truth() {
+fn btree_strategy_does_not_claim_unobserved_lookup_work() {
     use super::tests_support::admit_btree_page_strategy;
     use crate::{AccessShapeDetail, PrefixBasis, RangeBasis};
 
@@ -328,28 +287,22 @@ fn btree_strategy_counter_surface_requires_shape_specific_lookup_truth() {
         btree.planned_counter_envelope_for(AccessShapeDetail::PointLookup),
         evidence.point_lookup()
     );
+    assert_eq!(evidence.range_lookup(), None);
+    assert_eq!(evidence.prefix_lookup(), None);
     assert_eq!(
-        evidence
-            .range_lookup()
-            .expect("range declarative counters should exist"),
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::RangeLookup(
-                RangeBasis::CanonicalRangeBounds
-            ))
-            .expect("range counters should be available")
+        btree.planned_counter_envelope_for(AccessShapeDetail::RangeLookup(
+            RangeBasis::CanonicalRangeBounds
+        )),
+        None
     );
     assert_eq!(
-        evidence
-            .prefix_lookup()
-            .expect("prefix declarative counters should exist"),
-        btree
-            .planned_counter_envelope_for(AccessShapeDetail::PrefixLookup(
-                PrefixBasis::CanonicalPrefixBounds
-            ))
-            .expect("prefix counters should be available")
+        btree.planned_counter_envelope_for(AccessShapeDetail::PrefixLookup(
+            PrefixBasis::CanonicalPrefixBounds
+        )),
+        None
     );
     assert_eq!(
         evidence.aggregate_profile(),
-        crate::strategy::StrategyCounterProfile::new(1, 1, 1, 1, 3)
+        crate::strategy::StrategyCounterProfile::new(0, 0, 0, 0, 0)
     );
 }

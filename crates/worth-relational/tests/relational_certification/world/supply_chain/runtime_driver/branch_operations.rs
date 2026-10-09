@@ -108,10 +108,16 @@ pub(crate) fn commit_supply_chain_delta(
             .expect("owner-admitted transaction context")
     };
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("Supply Chain mutation staging fits its configured transaction budget");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("Supply Chain mutation commits through production publication")
 }
 
@@ -131,9 +137,15 @@ fn commit_batch_with_intent(
         .begin_branch_transaction(&basis, intent)
         .expect("owner-admitted transaction context");
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("Supply Chain mutation staging fits its configured transaction budget");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("Supply Chain mutation commits through production publication")
 }

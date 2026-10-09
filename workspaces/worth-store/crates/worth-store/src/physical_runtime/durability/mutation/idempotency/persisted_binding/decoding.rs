@@ -11,6 +11,7 @@ use crate::physical_runtime::{
     PhysicalWalMemberIdentity, PhysicalWorkGeneration, PhysicalWorkIdentity, RuntimeIdentity,
 };
 
+use super::super::canonical_encoding::CanonicalBindingComparison;
 use super::super::{
     PhysicalMutationIdempotencyKey, PhysicalMutationIdempotencyLease,
     PhysicalMutationIdempotencyMaterial,
@@ -26,7 +27,7 @@ pub(in crate::physical_runtime) struct PhysicalBindingDecodingContext {
     idempotency: PhysicalIdempotencyPolicy,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum PhysicalPersistedBindingDecodeDenial {
     Truncated,
     FieldLengthOverflow,
@@ -44,6 +45,14 @@ pub(in crate::physical_runtime) enum PhysicalPersistedBindingDecodeDenial {
     RedoDigestMismatch,
     TrailingBytes,
     NonCanonicalEncoding,
+    Allocation {
+        requested: u64,
+        cause: std::collections::TryReserveError,
+    },
+    AllocatorExceededReservation {
+        requested: u64,
+        actual: u64,
+    },
 }
 
 pub(in crate::physical_runtime) struct CanonicalBindingCursor<'bytes> {
@@ -57,6 +66,11 @@ pub(in crate::physical_runtime) struct DecodedPhysicalMutationBindingBasis {
 }
 
 impl PhysicalBindingDecodingContext {
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub(in crate::physical_runtime) const fn store_identity(self) -> StableStoreIdentity {
+        self.store
+    }
+
     pub(in crate::physical_runtime) const fn new(
         store: StableStoreIdentity,
         policy: PhysicalDurabilityPolicyIdentity,
@@ -138,11 +152,28 @@ impl PersistedPhysicalMutationAttemptBinding {
             redo_digest,
             bytes: Box::default(),
         };
-        let canonical = persisted.encode();
-        if canonical != bytes {
+        let mut canonical = CanonicalBindingComparison::new(bytes);
+        persisted.encode_into(&mut canonical);
+        if !canonical.matches() {
             return Err(PhysicalPersistedBindingDecodeDenial::NonCanonicalEncoding);
         }
-        persisted.bytes = canonical.into_boxed_slice();
+        let mut retained = Vec::new();
+        retained.try_reserve_exact(bytes.len()).map_err(|cause| {
+            PhysicalPersistedBindingDecodeDenial::Allocation {
+                requested: bytes.len() as u64,
+                cause,
+            }
+        })?;
+        if retained.capacity() > bytes.len() {
+            return Err(
+                PhysicalPersistedBindingDecodeDenial::AllocatorExceededReservation {
+                    requested: bytes.len() as u64,
+                    actual: retained.capacity() as u64,
+                },
+            );
+        }
+        retained.extend_from_slice(bytes);
+        persisted.bytes = retained.into_boxed_slice();
         Ok(persisted)
     }
 }
@@ -200,6 +231,10 @@ fn nonzero(value: u64) -> Result<NonZeroU64, PhysicalPersistedBindingDecodeDenia
 }
 
 impl<'bytes> CanonicalBindingCursor<'bytes> {
+    pub(in crate::physical_runtime) fn remaining_bytes(&self) -> usize {
+        self.remaining.len()
+    }
+
     pub(in crate::physical_runtime) const fn new(bytes: &'bytes [u8]) -> Self {
         Self { remaining: bytes }
     }

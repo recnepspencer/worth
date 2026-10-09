@@ -246,22 +246,12 @@ pub(super) fn verify_owner_artifact(
                 })
                 .map_err(classify_wal_denial)
         }
-        BackupBundleArtifactFormat::LayoutBTreeLeafV1
-        | BackupBundleArtifactFormat::LayoutBTreeRootV1 => {
-            let format = match row.format() {
-                BackupBundleArtifactFormat::LayoutBTreeLeafV1 => {
-                    LayoutIndexBackupFormat::BaselineBTreeLeafV1
-                }
-                BackupBundleArtifactFormat::LayoutBTreeRootV1 => {
-                    LayoutIndexBackupFormat::BaselineBTreeRootV1
-                }
-                _ => unreachable!("matched layout formats"),
-            };
+        BackupBundleArtifactFormat::BTreeNodeV1 => {
             verify_bounded_layout_index_artifact_from_reader(
                 reader,
                 actual_bytes,
                 BoundedLayoutIndexVerificationRequest::new(
-                    format,
+                    LayoutIndexBackupFormat::BTreeNodeV1,
                     row.identity(),
                     row.bytes(),
                     row.content_digest(),

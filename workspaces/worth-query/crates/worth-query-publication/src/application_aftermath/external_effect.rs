@@ -45,6 +45,13 @@ pub enum WorthQueryPublishedExternalEffectFailure {
         stage: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
         kind: worth_query_execution::facade::installed::provider_session::WorthQueryProviderSessionControlStopKind,
     },
+    CompletionAllocationDenied {
+        stage: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    CompletionStagingCardinalityOverflow,
+    CompletionInputDirectoryAllocationDenied { requested_batches: usize },
     InitialDispatchTerminalIndexUnavailable,
     InitialDispatchCanonicalDerivationDenied,
     InitialDispatchTimeObservationDenied,
@@ -141,6 +148,23 @@ const fn publish_preparation_failure(
             WorthQueryPublishedExternalEffectFailure::CompletionExecutionControlStopped {
                 stage,
                 kind,
+            }
+        }
+        Execution::CompletionAllocationDenied {
+            stage,
+            kind,
+            requested_payload_bytes,
+        } => WorthQueryPublishedExternalEffectFailure::CompletionAllocationDenied {
+            stage,
+            kind,
+            requested_payload_bytes,
+        },
+        Execution::CompletionStagingCardinalityOverflow => {
+            WorthQueryPublishedExternalEffectFailure::CompletionStagingCardinalityOverflow
+        }
+        Execution::CompletionInputDirectoryAllocationDenied { requested_batches } => {
+            WorthQueryPublishedExternalEffectFailure::CompletionInputDirectoryAllocationDenied {
+                requested_batches,
             }
         }
         Execution::TerminalIndexUnavailable => {
@@ -275,6 +299,20 @@ mod tests {
         }
 
         let cases = [
+            (
+                WorthQueryExternalDispatchPreparationDenial::CompletionAllocationDenied {
+                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialKind::Allocator,
+                    requested_payload_bytes: Some(17),
+                },
+                WorthQueryPublishedExternalEffectFailure::CompletionAllocationDenied {
+                    stage, kind: worth_query_execution::facade::runtime::ExecutionAllocationDenialKind::Allocator,
+                    requested_payload_bytes: Some(17),
+                },
+            ),
+            (WorthQueryExternalDispatchPreparationDenial::CompletionStagingCardinalityOverflow,
+             WorthQueryPublishedExternalEffectFailure::CompletionStagingCardinalityOverflow),
+            (WorthQueryExternalDispatchPreparationDenial::CompletionInputDirectoryAllocationDenied { requested_batches: 3 },
+             WorthQueryPublishedExternalEffectFailure::CompletionInputDirectoryAllocationDenied { requested_batches: 3 }),
             (
                 WorthQueryExternalDispatchPreparationDenial::OwnerReadDenied(
                     WorthQueryCommittedDispatchOutboxReadDenial::RecordMismatch,

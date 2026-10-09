@@ -65,6 +65,9 @@ pub struct PhysicalResidencyCounters {
 }
 
 impl PhysicalResidencyCounters {
+    /// Accounted frame-table metadata charge: actual retained vector backing,
+    /// fixed pool state, and conservative modeled lookup-index storage.
+    /// This is not an exact allocator census of the entire pool.
     pub const fn metadata_bytes(self) -> u64 {
         self.metadata_bytes
     }

@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use super::super::{
     protocol, RecoveryReportCounters, RecoveryReportDecodeDenial, RECOVERY_REPORT_PROTOCOL,
 };
-use super::model::RecoveryReportDenialCause;
+use super::model::{RecoveryReportBlockCause, RecoveryReportDenialCause};
 use super::{RecoveryReportEnvelope, RecoveryReportOutcome};
 use crate::{PhysicalRecoveryOutcome, PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind};
 use worth_foundational::facade::BoundaryProtocolUnsupportedVersionPosture;
@@ -119,6 +119,21 @@ fn publication_indeterminate_is_a_distinct_terminal_report() {
 }
 
 #[test]
+fn selected_custody_block_cause_round_trips_without_reusing_an_older_code() {
+    let report = RecoveryReportEnvelope {
+        outcome: RecoveryReportOutcome::Blocked,
+        store: Some([0x42; 16]),
+        root_generation: None,
+        counters: RecoveryReportCounters::new(0, 0, 0, 0),
+        denial_cause: Some(RecoveryReportDenialCause::Blocked(
+            RecoveryReportBlockCause::SelectedCustody,
+        )),
+    };
+    let decoded = RecoveryReportEnvelope::decode(&report.encode()).unwrap();
+    assert_eq!(decoded.denial_cause(), report.denial_cause);
+}
+
+#[test]
 fn literal_v1_report_rejects_header_and_field_truncation_and_all_optional_flags() {
     let (encoded, optional_flags) = literal_v1_report();
     RecoveryReportEnvelope::decode(&encoded).expect("literal v1 recovery report");
@@ -174,4 +189,40 @@ fn rehashed_prefix(encoded: &[u8], payload_length: usize) -> Vec<u8> {
     let digest: [u8; 32] = Sha256::digest(&truncated).into();
     truncated.extend_from_slice(&digest);
     truncated
+}
+
+/// A limit is reported as a limit, never as the damage of a phase; each
+/// damaged phase keeps its own cause.
+#[test]
+fn a_block_cause_is_reported_as_a_limit_or_as_its_own_damage() {
+    use super::model::block_cause;
+    use crate::entry::{PhysicalRecoveryBlockCause as Cause, PhysicalRecoveryBlockKind as Kind};
+    use crate::orchestration::recovery_limit_for_test;
+    use RecoveryReportBlockCause as Report;
+    let limit = recovery_limit_for_test(crate::PhysicalRecoveryLimitDimension::WalBytes, 9, 8);
+    let limit = Cause::Limit {
+        phase: Kind::WalInventory,
+        limit: limit.into(),
+    };
+    assert_eq!(block_cause(limit), Report::Limit);
+    for (kind, report) in [
+        (Kind::MediaObservation, Report::MediaObservation),
+        (Kind::SourceAllocation, Report::SourceAllocation),
+        (Kind::RootProtocol, Report::RootProtocol),
+        (Kind::Checkpoint, Report::Checkpoint),
+        (Kind::WalInventory, Report::WalInventory),
+        (Kind::SourceSelection, Report::SourceSelection),
+        (Kind::BindingFreshness, Report::BindingFreshness),
+        (Kind::PageAdmission, Report::PageAdmission),
+        (
+            Kind::OperationReconciliation,
+            Report::OperationReconciliation,
+        ),
+        (Kind::RedoPlanning, Report::RedoPlanning),
+        (Kind::SelectedCustody, Report::SelectedCustody),
+        (Kind::Staging, Report::Staging),
+        (Kind::Publication, Report::Publication),
+    ] {
+        assert_eq!(block_cause(Cause::Damage(kind)), report, "{kind:?}");
+    }
 }

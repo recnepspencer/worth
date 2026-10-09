@@ -24,7 +24,10 @@ fn foreign_runtime_validation_denials_precede_raw_entity_and_relation_effects() 
     stage_raw_entity_relation_graph(&mut transaction, "validation");
     let validation_target = require_interned_runtime();
     let validation_target_before = TargetRuntimeState::capture(&validation_target);
-    let error = match transaction.validate(&validation_target) {
+    let error = match transaction.validate(
+        &validation_target,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    ) {
         Err(error) => error,
         Ok(_) => panic!("a transaction cannot cross its runtime boundary"),
     };
@@ -45,7 +48,10 @@ fn foreign_runtime_validated_proposal_denial_preserves_exact_target_state() {
     let mut transaction = test_owner_begin_transaction_for_main(&runtime_a);
     stage_raw_entity_relation_graph(&mut transaction, "validated");
     let candidate = transaction
-        .validate(&runtime_a)
+        .validate(
+            &runtime_a,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("source runtime validates its own transaction");
     let runtime_b = require_interned_runtime();
     let target_before = TargetRuntimeState::capture(&runtime_b);
@@ -69,10 +75,16 @@ fn foreign_runtime_discard_denies_without_public_residue_and_disposes_candidate(
     let runtime_a = runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime_a);
     transaction
-        .push_batch(batch_create("prepared-owner-affinity"))
+        .push_batch(
+            batch_create("prepared-owner-affinity"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime_a
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the source owner prepares its own candidate");
     let source_before = TargetRuntimeState::capture(&runtime_a);
 
@@ -110,10 +122,16 @@ fn stage_raw_entity_relation_graph(
     let source = created_entity(&source_key);
     let target = created_entity(&target_key);
     transaction
-        .push_batch(batch_create(&source_key))
+        .push_batch(
+            batch_create(&source_key),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(batch_create(&target_key))
+        .push_batch(
+            batch_create(&target_key),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
         .push_batch(
@@ -129,6 +147,7 @@ fn stage_raw_entity_relation_graph(
                     fields: Default::default(),
                 })),
             ),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
 }

@@ -8,6 +8,7 @@ pub(super) struct CommittedAllocationFrontier {
     pub(super) next_segment: u64,
     pub(super) next_page: u64,
     pub(super) next_extent: u64,
+    pub(super) next_arena: u64,
 }
 
 impl CommittedAllocationFrontier {
@@ -20,6 +21,7 @@ impl CommittedAllocationFrontier {
             next_segment: current.next_segment(),
             next_page: current.next_page(),
             next_extent: current.next_extent(),
+            next_arena: current.next_arena(),
         };
         for allocation in allocations {
             advance(
@@ -34,6 +36,7 @@ impl CommittedAllocationFrontier {
                 }
                 CurrentPhysicalRecordPlacement::Extent(extent) => {
                     advance(&mut next.next_extent, extent.extent().get())?;
+                    advance(&mut next.next_arena, extent.arena_range().arena().get())?;
                 }
             }
         }

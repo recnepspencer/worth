@@ -63,7 +63,10 @@ fn execute_grant(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_program(
+            runtime.application_program(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
 }
 
 fn execute_revoke(
@@ -82,5 +85,8 @@ fn execute_revoke(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_program(
+            runtime.application_program(),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
 }

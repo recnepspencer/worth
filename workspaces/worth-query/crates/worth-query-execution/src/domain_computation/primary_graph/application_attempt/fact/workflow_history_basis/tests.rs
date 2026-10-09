@@ -90,14 +90,24 @@ fn commit(runtime: &mut RelationalRuntime, name: &str) -> SnapshotHandle {
         )
         .unwrap();
     transaction
-        .push_batch(WorkerIntentBatch::new(name).push(MutationIntent::Create(
-            CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId::new(1),
-                client_key: ClientKey::raw(name),
-                fields: AspectFieldPatch::default(),
-            }),
-        )))
+        .push_batch(
+            WorkerIntentBatch::new(name).push(MutationIntent::Create(CreateIntent::Entity(
+                EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId::new(1),
+                    client_key: ClientKey::raw(name),
+                    fields: AspectFieldPatch::default(),
+                },
+            ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    transaction.commit(runtime).unwrap().snapshot.clone()
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+        .snapshot
+        .clone()
 }

@@ -212,7 +212,12 @@ fn update_entity_status_on_branch(
                 ),
             ),
         ),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(runtime).expect("update entity status on branch");
+    txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("update entity status on branch");
 }

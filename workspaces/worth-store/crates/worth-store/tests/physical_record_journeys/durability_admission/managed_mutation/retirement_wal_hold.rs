@@ -13,6 +13,7 @@ use worth_store::physical_runtime::{
 use super::super::independent_wal_oracle::file_retirement_payloads;
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
+use crate::retirement_charge_oracle::{assert_one_page_released_net_of_wal, wal_bytes};
 
 const SEGMENT_BYTES: u64 = 35_268;
 
@@ -55,10 +56,14 @@ fn unresolved_retirement_survives_wal_rotation_and_checkpoint() {
     serving.close();
     let serving = open_existing(&root, wal);
     assert_eq!(serving.certification_charged_growth_bytes(), charged);
+    let wal_before = wal_bytes(&root);
     serving.retire_displaced_segment().unwrap();
-    assert_eq!(
-        charged - serving.certification_charged_growth_bytes(),
-        page_bytes
+    assert_one_page_released_net_of_wal(
+        &root,
+        wal_before,
+        charged,
+        serving.certification_charged_growth_bytes(),
+        page_bytes,
     );
     serving.close();
     let serving = open_existing(&root, wal);

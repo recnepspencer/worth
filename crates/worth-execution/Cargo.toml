@@ -9,6 +9,7 @@ description = "Bounded platform computation authority for WORTH runtimes."
 worth-foundational.workspace = true
 worth-proof.workspace = true
 rayon.workspace = true
+allocator-api2.workspace = true
 
 [dev-dependencies]
 trybuild.workspace = true

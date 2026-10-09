@@ -133,7 +133,7 @@ fn observe(root: &Path) -> Value {
             "--max-bytes",
             "16384",
             "--max-open-files",
-            "5",
+            crate::support::FIXTURE_OPEN_FILE_ARGUMENT,
             "--max-depth",
             "8",
             "--max-symlinks",

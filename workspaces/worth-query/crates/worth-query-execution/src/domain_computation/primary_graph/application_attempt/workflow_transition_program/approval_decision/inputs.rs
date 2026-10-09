@@ -1,4 +1,6 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 pub(super) struct ObservedApprovalEvidence {
     pub(super) node_path: String,
@@ -25,7 +27,7 @@ pub(super) fn observe(
     proposal: Option<&super::super::super::PublishedWorkflowProposalRef>,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    maximum_facts: usize,
+    observation_request: &WorthQueryRequestScope,
 ) -> Result<ValidatedApprovalInputs, WorthQueryApplicationAttemptDenial> {
     let proposal_source = unique(compiled.approval_proposal_sources(approval), "proposal")?;
     if proposal.is_some_and(|proposal| proposal.node_path() != proposal_source.path()) {
@@ -42,7 +44,7 @@ pub(super) fn observe(
             snapshot,
             layout,
             proposal_transition,
-            maximum_facts,
+            observation_request,
         )
     })?;
     if proposal.is_some_and(|proposal| {
@@ -75,7 +77,7 @@ pub(super) fn observe(
     {
         return Err(affinity("approval joined evidence is absent"));
     }
-    enforce_fact_budget(facts.len(), maximum_facts)?;
+    check_request_live(observation_request, "workflow retained evidence")?;
 
     let authored = compiled
         .required_assessments(evidence_source.entity())
@@ -87,7 +89,7 @@ pub(super) fn observe(
     let mut observed_proposals =
         super::super::assessment_coverage::AssessmentProposalObservations::default();
     for node in authored {
-        let remaining = maximum_facts.saturating_sub(facts.len());
+        check_request_live(observation_request, "workflow retained evidence")?;
         let subject = super::super::assessment_coverage::observe_subject_cached(
             compiled,
             layout,
@@ -96,11 +98,10 @@ pub(super) fn observe(
             resource,
             handle,
             snapshot,
-            remaining,
+            observation_request,
             &mut observed_proposals,
         )?;
-        let remaining =
-            maximum_facts.saturating_sub(facts.len().saturating_add(subject.facts.len()));
+        check_request_live(observation_request, "workflow retained evidence")?;
         let observed = handle.with_runtime(|runtime| {
             super::super::assessment_applicability::observe(
                 node,
@@ -109,7 +110,7 @@ pub(super) fn observe(
                 snapshot,
                 subject.resource,
                 subject.related,
-                remaining,
+                observation_request,
             )
         })?;
         facts.extend(subject.facts);
@@ -118,7 +119,7 @@ pub(super) fn observe(
             required.push((node, subject.coverage));
         }
     }
-    enforce_fact_budget(facts.len(), maximum_facts)?;
+    check_request_live(observation_request, "workflow retained evidence")?;
     if required.is_empty() {
         return Err(affinity(
             "approval has no currently applicable authored requirement",
@@ -127,6 +128,7 @@ pub(super) fn observe(
     let mut evidence = Vec::with_capacity(required.len());
     let mut currentness = Vec::new();
     for (node, coverage) in required {
+        check_request_live(observation_request, "workflow retained evidence")?;
         let locator = progress
             .latest_assessment_evidence(node.entity())
             .ok_or_else(|| {
@@ -135,18 +137,18 @@ pub(super) fn observe(
                     "approval required evidence is absent",
                 )
             })?;
-        let remaining = maximum_facts.saturating_sub(facts.len());
+        check_request_live(observation_request, "workflow retained evidence")?;
         let (observed, mut retained_facts) = handle.with_runtime(|runtime| {
             super::super::super::workflow_instance_observation::observe_retained_assessment_evidence(
                 runtime,
                 snapshot,
                 layout,
                 locator,
-                remaining,
+                observation_request,
             )
         })?;
         facts.append(&mut retained_facts);
-        let remaining = maximum_facts.saturating_sub(facts.len());
+        check_request_live(observation_request, "workflow retained evidence")?;
         let coverage_state = super::super::assessment_coverage::observe(
             node,
             compiled.program_revision(),
@@ -155,7 +157,7 @@ pub(super) fn observe(
             layout,
             handle,
             snapshot,
-            remaining,
+            observation_request,
         )?;
         facts.extend(coverage_state.facts);
         if !coverage_state.current {
@@ -178,24 +180,11 @@ pub(super) fn observe(
     {
         return Err(affinity("approval proposal definition changed"));
     }
-    enforce_fact_budget(facts.len(), maximum_facts)?;
+    check_request_live(observation_request, "workflow retained evidence")?;
     Ok(ValidatedApprovalInputs {
         proposal_entity,
         evidence,
         currentness,
         facts,
     })
-}
-
-fn enforce_fact_budget(
-    observed: usize,
-    maximum: usize,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    if observed > maximum {
-        return Err(denial(
-            WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-            "workflow approval input fact budget",
-        ));
-    }
-    Ok(())
 }

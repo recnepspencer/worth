@@ -88,10 +88,14 @@ fn commit_only_other_outbox() -> CommittedOutboxResolutionEvidence {
         transaction
             .push_batch(
                 WorkerIntentBatch::new("outbox-resolution-owner-proof").push(committed_intent),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
         let committed = transaction
-            .commit(runtime)
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("the other outbox commits");
         let expected_record_ref = RecordRef::Entity(
             committed

@@ -6,6 +6,9 @@ pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
     match kind {
         Kind::ExecutionDenied(kind) => Denial::ExecutionDenied(kind),
         Kind::ExecutionControlStopped(kind) => Denial::ExecutionControlStopped(kind),
+        Kind::TransactionAllocationDenied { kind, requested_payload_bytes } => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionAllocationDenied { kind, requested_payload_bytes }),
+        Kind::TransactionStagingCardinalityOverflow => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionStagingCardinalityOverflow),
+        Kind::TransactionInputDirectoryAllocationDenied { requested_batches } => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied { requested_batches }),
         Kind::RetentionCapacityExhausted => Denial::RetentionBackpressure,
         Kind::RetentionIdentityExhausted => Denial::RetentionIdentityExhausted,
         Kind::SnapshotIdentityExhausted => Denial::SnapshotIdentityExhausted,
@@ -14,10 +17,7 @@ pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
         | Kind::UnsupportedWriteFamily
         | Kind::EmptySchema
         | Kind::BatchAtomicityUnsupported
-        | Kind::TransactionOverlayCapacityExhausted { .. }
-        | Kind::TransactionFootprintCapacityExhausted { .. }
         | Kind::SavepointCapacityExhausted { .. }
-        | Kind::SavepointFootprintCapacityExhausted { .. }
         | Kind::SavepointIdentityExhausted
         | Kind::TransactionMaterializationAuthorityRequired
         | Kind::TransactionMaterializationModeMismatch

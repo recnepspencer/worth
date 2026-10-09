@@ -22,6 +22,7 @@ pub use batch::{RecordScanBatch, RecordScanOutcome, ScannedPhysicalRecord};
 pub struct RecordScanRequest {
     cursor: Option<ExternalRecordScanCursor>,
     batch_limit: Option<RecordCountLimit>,
+    payload_limit: Option<RecordByteLimit>,
 }
 
 impl RecordScanRequest {
@@ -29,16 +30,25 @@ impl RecordScanRequest {
         Self {
             cursor: None,
             batch_limit: None,
+            payload_limit: None,
         }
     }
     pub const fn resume(cursor: ExternalRecordScanCursor) -> Self {
         Self {
             cursor: Some(cursor),
             batch_limit: None,
+            payload_limit: None,
         }
     }
     pub const fn with_batch_limit(mut self, limit: RecordCountLimit) -> Self {
         self.batch_limit = Some(limit);
+        self
+    }
+
+    /// Defers payloads above this bound while still advancing over their
+    /// selected record identities. The default preserves the Store policy.
+    pub const fn with_payload_limit(mut self, limit: RecordByteLimit) -> Self {
+        self.payload_limit = Some(limit);
         self
     }
 }
@@ -64,6 +74,7 @@ pub struct PhysicalRecordScanSession {
     cursor: ManifestRangeCursor<'static>,
     pending: Option<CurrentPhysicalRecordPlacement>,
     batch_limit: usize,
+    payload_limit: u64,
     complete: bool,
     total: RecordScanCounterSnapshot,
     _lifecycle: super::super::lifecycle::record_lifecycle::RecordScanSessionLease,
@@ -71,6 +82,21 @@ pub struct PhysicalRecordScanSession {
 }
 
 impl PhysicalRecordReader {
+    /// Selects the already admitted Store rebuild lane without reacquiring a
+    /// root. Only physical-runtime owners can request this read posture.
+    pub(in crate::physical_runtime) fn into_rebuild(mut self) -> Self {
+        self.residency = self.residency.for_rebuild();
+        self
+    }
+
+    pub(in crate::physical_runtime) fn scan_rebuild(
+        mut self,
+        request: RecordScanRequest,
+    ) -> Result<PhysicalRecordScanSession, RecordScanError> {
+        self = self.into_rebuild();
+        self.scan(request)
+    }
+
     pub fn scan(
         mut self,
         request: RecordScanRequest,
@@ -93,6 +119,7 @@ impl PhysicalRecordReader {
             cursor: positioned.cursor,
             pending: None,
             batch_limit: admission.batch_limit,
+            payload_limit: admission.payload_limit,
             complete: positioned.complete,
             total: positioned.observation,
             _lifecycle: lifecycle,
@@ -102,6 +129,33 @@ impl PhysicalRecordReader {
 }
 
 impl PhysicalRecordScanSession {
+    /// Borrow the same protected root and unchanged read lane while this
+    /// selected scan remains open. Deferred payloads can be read without a
+    /// second root capture or a foreground-lane substitution.
+    pub(in crate::physical_runtime) fn protected_reader(&self) -> &PhysicalRecordReader {
+        &self.reader
+    }
+
+    /// Transfers the exact protected reader with its current lane unchanged.
+    /// The caller must be a Store owner that retains the selected-scan proof.
+    pub(in crate::physical_runtime) fn into_protected_reader(self) -> PhysicalRecordReader {
+        self.reader
+    }
+
+    /// Ends reconstructive work without reacquiring a potentially newer root.
+    /// The scan cursor and maintenance allocation are dropped; subsequent
+    /// reads retain root protection but use ordinary read admission.
+    pub(in crate::physical_runtime) fn into_reader(mut self) -> PhysicalRecordReader {
+        self.reader.residency = self.reader.residency.for_ordinary();
+        self.reader
+    }
+
+    pub(in crate::physical_runtime) fn store_identity(
+        &self,
+    ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
+        self.reader.store_identity()
+    }
+
     pub fn read_next_into<'scratch>(
         &mut self,
         scratch: &'scratch mut [u8],

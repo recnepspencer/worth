@@ -16,7 +16,6 @@
 #![forbid(unsafe_code)]
 
 mod artifact_identity;
-mod compatibility_family;
 mod contract_error;
 mod corruption_handoff_damage_case;
 mod durable_artifact_family_classification;
@@ -29,10 +28,6 @@ mod resources;
 mod roadmap_scope;
 
 pub use artifact_identity::{StableArtifactId, StableDigest};
-pub use compatibility_family::{
-    ArtifactFamilyId, CompatibilityAuthorityClassification, CompatibilityFamilyKind,
-    FIRST_SHIP_COMPATIBILITY_FAMILIES, FIRST_SHIP_COMPATIBILITY_FAMILY_COUNT,
-};
 pub use contract_error::{StoreContractError, StoreContractResult};
 pub use corruption_handoff_damage_case::CorruptionHandoffDamageCase;
 pub use durable_artifact_family_classification::{

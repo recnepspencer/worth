@@ -2,18 +2,8 @@ use super::*;
 
 pub(super) fn require_aspect_aba_denial(request: &Request<'_>, application: &ProgramApplication) {
     let source = observed_source(request, "anchor-a");
-    require_adjustment_commit(mutate(
-        request,
-        application,
-        adjust("anchor-a", 3, 4096),
-        407,
-    ));
-    require_adjustment_commit(mutate(
-        request,
-        application,
-        adjust("anchor-a", 2, 4096),
-        408,
-    ));
+    require_adjustment_commit(mutate(request, application, adjust("anchor-a", 3), 407));
+    require_adjustment_commit(mutate(request, application, adjust("anchor-a", 2), 408));
     assert_eq!(read_y(request, "anchor-a"), 2);
     require_source_changed(
         request
@@ -25,7 +15,10 @@ pub(super) fn require_aspect_aba_denial(request: &Request<'_>, application: &Pro
             ))
             .expect_source(source)
             .idempotency(&409_u64)
-            .execute_in_program(application),
+            .execute_in_program(
+                application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
     );
     require_absent(request, "aspect-aba-must-not-publish");
 }
@@ -38,13 +31,13 @@ pub(super) fn require_child_aspect_aba_denial(
     require_adjustment_commit(mutate(
         request,
         application,
-        adjust("replacement-b", 2, 4096),
+        adjust("replacement-b", 2),
         413,
     ));
     require_adjustment_commit(mutate(
         request,
         application,
-        adjust("replacement-b", 1, 4096),
+        adjust("replacement-b", 1),
         414,
     ));
     assert_eq!(read_y(request, "replacement-b"), 1);
@@ -58,7 +51,10 @@ pub(super) fn require_child_aspect_aba_denial(
             ))
             .expect_source(source)
             .idempotency(&415_u64)
-            .execute_in_program(application),
+            .execute_in_program(
+                application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
     );
     require_absent(request, "child-aspect-aba-must-not-publish");
 }
@@ -68,18 +64,8 @@ pub(super) fn require_nested_aspect_aba_denial(
     application: &ProgramApplication,
 ) {
     let source = observed_source(request, "anchor-a");
-    require_adjustment_commit(mutate(
-        request,
-        application,
-        adjust("anchor-c", 11, 4096),
-        416,
-    ));
-    require_adjustment_commit(mutate(
-        request,
-        application,
-        adjust("anchor-c", 10, 4096),
-        417,
-    ));
+    require_adjustment_commit(mutate(request, application, adjust("anchor-c", 11), 416));
+    require_adjustment_commit(mutate(request, application, adjust("anchor-c", 10), 417));
     assert_eq!(read_y(request, "anchor-c"), 10);
     require_source_changed(
         request
@@ -91,7 +77,10 @@ pub(super) fn require_nested_aspect_aba_denial(
             ))
             .expect_source(source)
             .idempotency(&418_u64)
-            .execute_in_program(application),
+            .execute_in_program(
+                application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
     );
     require_absent(request, "nested-aspect-aba-must-not-publish");
 }
@@ -139,7 +128,10 @@ pub(super) fn require_adjacency_aba_denial(
             ))
             .expect_source(source)
             .idempotency(&411_u64)
-            .execute_in_program(application),
+            .execute_in_program(
+                application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ),
     );
     require_absent(request, "adjacency-aba-must-not-publish");
 }
@@ -155,6 +147,5 @@ fn same_membership_retarget(
             previous_target_key: target.to_owned(),
             replacement_target_key: target.to_owned(),
         },
-        validator_work: 4096,
     }
 }

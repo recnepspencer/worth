@@ -46,9 +46,11 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
         "bob-owner",
     );
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(bob_program, idempotency(33, 33)),
+        world.application.compare_and_commit_application(
+            bob_program,
+            idempotency(33, 33),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let current = world
@@ -59,9 +61,11 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     assert_ne!(current.selected_commit(), selected.selected_commit());
     assert_eq!(commit_count(), baseline + 1);
 
-    let outcome = world
-        .application
-        .compare_and_commit_application(alice_program, idempotency(34, 34));
+    let outcome = world.application.compare_and_commit_application(
+        alice_program,
+        idempotency(34, 34),
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
         "unchanged facts must commit on the newly admitted product basis: {outcome:?}"
@@ -84,9 +88,11 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
         "alice-owner",
     );
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(readmitted, idempotency(34, 34)),
+        world.application.compare_and_commit_application(
+            readmitted,
+            idempotency(34, 34),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(commit_count(), baseline + 2);

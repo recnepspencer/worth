@@ -146,9 +146,15 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
                         )])),
                     }),
                 )),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
-        let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+        let candidate = runtime
+            .prepare_branch_transaction(
+                transaction,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let captured = owner
             .capture_full_verification(runtime, &snapshot, &basis, &mut owner.edit_admission())
             .unwrap();

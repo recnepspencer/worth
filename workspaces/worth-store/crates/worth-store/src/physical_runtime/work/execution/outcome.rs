@@ -24,10 +24,17 @@ pub(in crate::physical_runtime) use residency_writeback::PhysicalResidencyWriteb
 pub use wal_reclamation::CompletedPhysicalWalReclamationAction;
 pub(in crate::physical_runtime) use wal_reclamation::IndeterminatePhysicalWalReclamationAction;
 
+/// What an effect's settlement left in the recovery journal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::physical_runtime) enum PhysicalEffectRecoveryObligation {
+pub enum PhysicalEffectRecoveryObligation {
+    /// The effect settled cleanly; no recovery record fences it.
     Cleared,
+    /// The effect's outcome is retained for inspection and its durable
+    /// recovery record fences the next reopen.
     Retained,
+    /// Retained, but the deferred recovery record of the failed flush could
+    /// not be written either: only this runtime fences the effect.
+    RetainedWithoutRecord,
 }
 
 pub(in crate::physical_runtime) struct PhysicalExecutorDispatch {
@@ -143,15 +150,17 @@ pub(in crate::physical_runtime) enum PhysicalExecutorOutcome {
 impl PhysicalEffectRecoveryObligation {
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) const fn join(self, other: Self) -> Self {
-        if matches!(self, Self::Retained) || matches!(other, Self::Retained) {
-            Self::Retained
-        } else {
-            Self::Cleared
+        match (self, other) {
+            (Self::RetainedWithoutRecord, _) | (_, Self::RetainedWithoutRecord) => {
+                Self::RetainedWithoutRecord
+            }
+            (Self::Retained, _) | (_, Self::Retained) => Self::Retained,
+            (Self::Cleared, Self::Cleared) => Self::Cleared,
         }
     }
 
     pub(in crate::physical_runtime) const fn is_retained(self) -> bool {
-        matches!(self, Self::Retained)
+        matches!(self, Self::Retained | Self::RetainedWithoutRecord)
     }
 }
 

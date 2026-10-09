@@ -105,7 +105,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatus
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::bounded(1_024, 1_024),
+            ApplicationCandidateResourceCeiling::representation_bytes(1_024),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -232,7 +232,6 @@ pub(super) fn install_members(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(WorkflowGrantStatusOperation::reference(), 64)
         .operation_projection_work_budget(WorkflowGrantStatusOperation::reference(), 64)
         .operation_read_field(
             WorkflowGrantStatusOperation::reference(),

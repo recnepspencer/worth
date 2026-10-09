@@ -174,10 +174,14 @@ fn create_duplicate_principal(relational: &mut RelationalRuntime, branch: &str) 
                     )])),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the fixture batch stages");
     let committed = transaction
-        .commit(relational)
+        .commit(
+            relational,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the raw duplicate commits");
     relational
         .snapshots()

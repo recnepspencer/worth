@@ -34,11 +34,11 @@ fn customization_admits_supported_foreground_requests_as_registry_snapshots() {
             let snapshot = admitted.registry_snapshot();
             assert_eq!(
                 snapshot.admitted_strategy().family(),
-                LayoutStrategyFamily::BaselineBTreeRange
+                LayoutStrategyFamily::BTreeRange
             );
             assert_eq!(
                 snapshot.request().family(),
-                LayoutStrategyFamily::BaselineBTreeRange
+                LayoutStrategyFamily::BTreeRange
             );
         }
         other => panic!("supported customization request should admit: {other:?}"),

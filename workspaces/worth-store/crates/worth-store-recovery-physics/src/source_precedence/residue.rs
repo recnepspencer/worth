@@ -15,6 +15,10 @@ pub enum PhysicalRecoveryResidueKind {
 }
 
 impl PhysicalRecoveryResidue {
+    pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.name.capacity()).ok()
+    }
+
     pub fn new(name: String, kind: PhysicalRecoveryResidueKind) -> Self {
         Self {
             name,

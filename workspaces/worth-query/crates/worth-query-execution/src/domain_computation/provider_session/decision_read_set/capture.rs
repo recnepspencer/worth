@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use super::{
     WorthQueryDecisionFactAdmission, WorthQueryDecisionFactComparisonAdmission,
@@ -8,6 +9,7 @@ use super::{
     WorthQueryDecisionReadSetDenialKind, WorthQueryDecisionReadSetFailure,
 };
 use crate::domain_computation::provider_session::WorthQuerySessionReadAuthority;
+use worth_execution::{ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder};
 use worth_query_installation::facade::WorthQueryDecisionFactCardinality;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -44,8 +46,9 @@ impl WorthQueryDecisionReadSetCounters {
 pub struct WorthQueryCompleteDecisionReadSetReceipt {
     identity: Arc<str>,
     session_binding_identity: Arc<str>,
-    evidence: Arc<[WorthQueryDecisionFactEvidence]>,
+    evidence: Arc<ExecutionArray<WorthQueryDecisionFactEvidence>>,
     counters: WorthQueryDecisionReadSetCounters,
+    request: Option<WorthQueryRequestScope>,
 }
 
 impl WorthQueryCompleteDecisionReadSetReceipt {
@@ -118,33 +121,49 @@ impl WorthQuerySessionReadAuthority<'_> {
     pub fn capture_decision_read_set(
         &self,
         requests: impl IntoIterator<Item = WorthQueryDecisionFactRequest>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+        request: Option<&WorthQueryRequestScope>,
     ) -> Result<WorthQueryCompleteDecisionReadSetReceipt, WorthQueryDecisionReadSetFailure> {
         let binding = self.binding();
-        let (requests, mut counters) = admit_requests(self, requests)?;
-        let mut evidence = Vec::with_capacity(requests.len());
-        for request in requests {
+        let (requests, mut counters) = admit_requests(self, requests, request)?;
+        let mut evidence = ExecutionArrayBuilder::allocate(requests.len(), allocation_policy)
+            .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?;
+        for requested in requests {
+            check_request(request)?;
+            evidence
+                .check_live()
+                .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?;
             counters.provider_calls += 1;
-            let admission = WorthQueryDecisionFactAdmission::new(request.clone(), binding);
+            let admission = WorthQueryDecisionFactAdmission::new(requested.clone(), binding);
             let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 self.provider().observe_decision_fact(
                     self.session(),
-                    WorthQueryDecisionFactRequestView::new(&request),
+                    WorthQueryDecisionFactRequestView::new(&requested),
                     admission,
                 )
             }));
+            check_request(request)?;
             let fact = provider_result(invocation)?;
-            if !fact.belongs_to(binding, &request) {
+            if !fact.belongs_to(binding, &requested) {
                 return Err(denial(
                     WorthQueryDecisionReadSetDenialKind::EvidenceSubstitution,
                 ));
             }
-            evidence.push(fact);
+            evidence
+                .push(fact)
+                .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?;
         }
+        let evidence = Arc::new(
+            evidence
+                .seal()
+                .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)?,
+        );
         Ok(WorthQueryCompleteDecisionReadSetReceipt {
-            identity: binding.canonical_identity().into(),
-            session_binding_identity: binding.canonical_identity().into(),
-            evidence: evidence.into(),
+            identity: binding.retain_canonical_identity(),
+            session_binding_identity: binding.retain_canonical_identity(),
+            evidence,
             counters,
+            request: request.cloned(),
         })
     }
 
@@ -152,23 +171,37 @@ impl WorthQuerySessionReadAuthority<'_> {
         &self,
         receipt: WorthQueryCompleteDecisionReadSetReceipt,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
-        if receipt.session_binding_identity.as_ref() != self.binding().canonical_identity() {
-            return Err(denial(
-                WorthQueryDecisionReadSetDenialKind::EvidenceSubstitution,
-            ));
-        }
+        self.compare_decision_read_set_with(receipt, |evidence, admission| {
+            self.provider()
+                .compare_decision_fact(self.session(), evidence, admission)
+        })
+    }
+
+    pub(crate) fn compare_decision_read_set_with(
+        &self,
+        receipt: WorthQueryCompleteDecisionReadSetReceipt,
+        mut compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            WorthQueryDecisionFactComparisonEvidence,
+            WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        self.validate_decision_read_set_receipt(&receipt)?;
         let mut counters = receipt.counters;
         let mut stale = Vec::new();
         for evidence in receipt.evidence.iter() {
+            check_request(receipt.request.as_ref())?;
             counters.provider_calls += 1;
             counters.compared_facts += 1;
             let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                self.provider().compare_decision_fact(
-                    self.session(),
+                compare(
                     evidence.view(),
                     WorthQueryDecisionFactComparisonAdmission::new(evidence),
                 )
             }));
+            check_request(receipt.request.as_ref())?;
             let comparison = provider_comparison(invocation)?;
             if !comparison.belongs_to(evidence) {
                 return Err(denial(
@@ -195,6 +228,39 @@ impl WorthQuerySessionReadAuthority<'_> {
         }
     }
 
+    pub(crate) fn validate_decision_read_set_receipt(
+        &self,
+        receipt: &WorthQueryCompleteDecisionReadSetReceipt,
+    ) -> Result<(), WorthQueryDecisionReadSetFailure> {
+        if receipt.session_binding_identity.as_ref() != self.binding().canonical_identity() {
+            return Err(denial(
+                WorthQueryDecisionReadSetDenialKind::EvidenceSubstitution,
+            ));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_fresh_decision_read_set(
+        &self,
+        fresh: &WorthQueryFreshDecisionReadSet,
+    ) -> Result<(), WorthQueryDecisionReadSetFailure> {
+        self.validate_decision_read_set_receipt(&fresh.receipt)
+    }
+
+    pub(crate) fn recompare_fresh_decision_read_set_with(
+        &self,
+        fresh: WorthQueryFreshDecisionReadSet,
+        compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            WorthQueryDecisionFactComparisonEvidence,
+            WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        self.compare_decision_read_set_with(fresh.receipt, compare)
+    }
+
     pub(crate) fn recompare_fresh_decision_read_set(
         &self,
         fresh: WorthQueryFreshDecisionReadSet,
@@ -206,16 +272,23 @@ impl WorthQuerySessionReadAuthority<'_> {
 fn admit_requests(
     authority: &WorthQuerySessionReadAuthority<'_>,
     requests: impl IntoIterator<Item = WorthQueryDecisionFactRequest>,
+    request_scope: Option<&WorthQueryRequestScope>,
 ) -> Result<
     (
-        Vec<WorthQueryDecisionFactRequest>,
+        BTreeSet<WorthQueryDecisionFactRequest>,
         WorthQueryDecisionReadSetCounters,
     ),
     WorthQueryDecisionReadSetFailure,
 > {
-    let requests = requests.into_iter().collect::<BTreeSet<_>>();
+    let mut selected = BTreeSet::new();
+    for request in requests {
+        check_request(request_scope)?;
+        selected.insert(request);
+    }
+    let requests = selected;
     let mut family_counts = BTreeMap::<&str, usize>::new();
     for request in &requests {
+        check_request(request_scope)?;
         let family = authority
             .plan()
             .decision_fact_families()
@@ -227,9 +300,13 @@ fn admit_requests(
                 WorthQueryDecisionReadSetDenialKind::FamilyKindMismatch,
             ));
         }
-        *family_counts.entry(family.identity()).or_default() += 1;
+        let count = family_counts.entry(family.identity()).or_default();
+        *count = count
+            .checked_add(1)
+            .ok_or_else(|| denial(WorthQueryDecisionReadSetDenialKind::FactCountOverflow))?;
     }
     for family in authority.plan().decision_fact_families() {
+        check_request(request_scope)?;
         match family.cardinality() {
             WorthQueryDecisionFactCardinality::Exact(_)
                 if !family_counts.contains_key(family.identity()) =>
@@ -257,10 +334,10 @@ fn admit_requests(
                 ));
             }
             WorthQueryDecisionFactCardinality::Exact(_)
-            | WorthQueryDecisionFactCardinality::Bounded { .. } => {}
+            | WorthQueryDecisionFactCardinality::Bounded { .. }
+            | WorthQueryDecisionFactCardinality::Variable => {}
         }
     }
-    let requests = requests.into_iter().collect::<Vec<_>>();
     let requested_facts = requests.len();
     Ok((
         requests,
@@ -301,4 +378,15 @@ fn provider_comparison(
 
 fn denial(kind: WorthQueryDecisionReadSetDenialKind) -> WorthQueryDecisionReadSetFailure {
     WorthQueryDecisionReadSetFailure::new(kind, "decision read-set authority denied")
+}
+
+fn check_request(
+    request: Option<&WorthQueryRequestScope>,
+) -> Result<(), WorthQueryDecisionReadSetFailure> {
+    match request.and_then(WorthQueryRequestScope::interruption) {
+        Some(stop) => Err(denial(
+            WorthQueryDecisionReadSetDenialKind::RequestInterrupted(stop),
+        )),
+        None => Ok(()),
+    }
 }

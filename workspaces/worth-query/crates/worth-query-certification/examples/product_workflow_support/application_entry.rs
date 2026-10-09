@@ -163,7 +163,7 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 5, 0),
-            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::bounded(1024, 128),
+            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(1024),
         );
 
     fn scope_field() -> ApplicationFieldRef<

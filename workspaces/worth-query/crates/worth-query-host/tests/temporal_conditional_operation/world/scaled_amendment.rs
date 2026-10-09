@@ -50,27 +50,37 @@ impl CourtroomWorld {
             .unwrap();
         let (_, projection, _) = self
             .invariant
-            .project_admitted_operation(&admission, |reader, _| {
-                for ordinal in 1..=touched_records {
-                    let target = reader
-                        .resolve_entity(
-                            IntentIdentityField::reference(),
-                            format!("intent-{ordinal}"),
-                        )
-                        .unwrap();
-                    reader
-                        .decision_field(&target, IntentInputField::reference())
-                        .unwrap();
-                }
-            })
+            .project_admitted_operation(
+                &admission,
+                |reader, _| {
+                    for ordinal in 1..=touched_records {
+                        let target = reader
+                            .resolve_entity(
+                                IntentIdentityField::reference(),
+                                format!("intent-{ordinal}"),
+                            )
+                            .unwrap();
+                        reader
+                            .decision_field(&target, IntentInputField::reference())
+                            .unwrap();
+                    }
+                },
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .into_parts();
         let reads = self
             .application
-            .begin_projected_application_read_attempt(admission, projection)
+            .begin_projected_application_read_attempt(
+                admission,
+                projection,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let mut effects = reads
-            .complete_projected_dependencies()
+            .complete_projected_dependencies(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
             .begin_effect_program();
         for (ordinal, target) in targets.iter().enumerate() {

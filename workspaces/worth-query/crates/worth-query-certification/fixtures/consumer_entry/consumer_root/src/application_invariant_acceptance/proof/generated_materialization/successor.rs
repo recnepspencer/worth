@@ -23,7 +23,6 @@ pub(super) fn publish_unrelated(
                 body_key: "sibling-a".to_owned(),
                 replacement_y: length(22),
             }]),
-            validator_work: 4_096,
         },
         981,
     );

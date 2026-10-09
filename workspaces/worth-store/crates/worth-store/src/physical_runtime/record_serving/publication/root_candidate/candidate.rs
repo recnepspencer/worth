@@ -12,6 +12,10 @@ pub(in crate::physical_runtime) struct PreparedPhysicalRootCandidate {
 }
 
 impl PreparedPhysicalRootCandidate {
+    pub(in crate::physical_runtime) const fn retained_routing_metadata_bytes(&self) -> Option<u64> {
+        self.plan.routing_metadata_bytes
+    }
+
     pub(in crate::physical_runtime::record_serving) fn new(
         source_root: DurablePhysicalRootManifest,
         successor_free_space: DurableFreeSpaceManifestHeader,
@@ -61,5 +65,11 @@ impl PreparedPhysicalRootCandidate {
             self.artifacts,
             observation,
         )
+    }
+
+    pub(in crate::physical_runtime) fn commit_arena_reservations(&mut self) {
+        for reservation in std::mem::take(&mut self.plan.arena_reservations) {
+            reservation.publish();
+        }
     }
 }

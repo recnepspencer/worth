@@ -30,8 +30,11 @@ fn historical_record_inspection_and_transaction_staging_are_read_only() {
         .contains(&crate::facade::transactions::RecordRef::Entity(created)));
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(batch_create("pending"))
-        .expect("test staging stays within configured resource budgets");
+    txn.push_batch(
+        batch_create("pending"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
     let staging = txn.inspect_staging();
     assert_eq!(staging.batch_count, 1);
     assert!(staging.touched_records.is_empty());

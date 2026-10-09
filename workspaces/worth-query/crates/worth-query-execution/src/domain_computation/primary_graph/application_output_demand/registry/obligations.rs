@@ -40,8 +40,12 @@ impl DemandRegistryState {
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Vec<Arc<WorthQueryOutputDemandKey>> {
-        let (prior, settlements, refund) = self.release_record_prerequisites_inner(key, None);
+        let (prior, settlements, checkpoint, refund) =
+            self.release_record_prerequisites_inner(key, None);
         drop(settlements);
+        // Static claim final destruction was prepaid at its admission. It
+        // contains only settlement addresses and an atomic refund ticket.
+        drop(checkpoint);
         self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(refund);
         prior
     }
@@ -64,6 +68,7 @@ impl DemandRegistryState {
     ) -> (
         Vec<Arc<WorthQueryOutputDemandKey>>,
         Vec<(Arc<RecordedSettlementIdentity>, usize)>,
+        Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
         usize,
     ) {
         self.release_record_prerequisites_inner(key, Some(retired_members))
@@ -76,18 +81,20 @@ impl DemandRegistryState {
     ) -> (
         Vec<Arc<WorthQueryOutputDemandKey>>,
         Vec<(Arc<RecordedSettlementIdentity>, usize)>,
+        Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
         usize,
     ) {
         let Some(record) = self.records.get_mut(key) else {
-            return (Vec::new(), Vec::new(), 0);
+            return (Vec::new(), Vec::new(), None, 0);
         };
         if record.prepared_prerequisite_claims != 0
             || record.framework_required_count != 0
             || record.pending_cleanup_queued
         {
-            return (Vec::new(), Vec::new(), 0);
+            return (Vec::new(), Vec::new(), None, 0);
         }
         let prior = std::mem::take(&mut record.prerequisites);
+        let checkpoint = record.checkpoint_prerequisites.take();
         let settlements = std::mem::take(&mut record.settlements);
         let mut refund = settlements
             .capacity()
@@ -127,7 +134,7 @@ impl DemandRegistryState {
         for upstream in &prior {
             self.defer_terminal_cleanup(upstream, 0);
         }
-        (prior, settlements, refund)
+        (prior, settlements, checkpoint, refund)
     }
 
     /// A branch-wide retirement already visits its records. Move the retired
@@ -156,6 +163,7 @@ impl DemandRegistryState {
                 && record.framework_required_count == 0
                 && !record.pending_cleanup_queued
             {
+                record.checkpoint_prerequisites.take();
                 if !record.prerequisites.is_empty() {
                     released.push(std::mem::take(&mut record.prerequisites));
                 }

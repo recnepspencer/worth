@@ -13,7 +13,7 @@ fn dropped_authority_cannot_be_reconstructed() {
 
     let config = ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(1).unwrap(),
-        charged_memory_bytes: 1,
+        charged_memory_bytes: Some(1),
     };
     drop(ExecutionAuthority::try_construct(config).unwrap());
     assert_eq!(

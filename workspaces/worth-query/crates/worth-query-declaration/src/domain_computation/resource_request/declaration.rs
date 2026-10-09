@@ -2,14 +2,15 @@ use std::collections::BTreeSet;
 
 use super::{
     canonical_identity::canonical_resource_request_identity, validation::validate_resource_request,
-    WorthQueryCancellationSafePointFamily, WorthQueryExecutionDegradation, WorthQueryExecutionMode,
-    WorthQueryPartialEffectPosture, WorthQueryResourceLimitRequest,
-    WorthQueryRetainedProgressPosture, WorthQuerySemanticScaleRequest,
-    WorthQueryYieldedStatePosture,
+    WorthQueryCancellationSafePointFamily, WorthQueryExecutionBoundary,
+    WorthQueryExecutionDegradation, WorthQueryExecutionMode, WorthQueryPartialEffectPosture,
+    WorthQueryResourceLimitRequest, WorthQueryRetainedProgressPosture,
+    WorthQuerySemanticScaleRequest, WorthQueryYieldedStatePosture,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryExecutionResourceRequest {
+    boundary: WorthQueryExecutionBoundary,
     scale: WorthQuerySemanticScaleRequest,
     limits: WorthQueryResourceLimitRequest,
     modes: BTreeSet<WorthQueryExecutionMode>,
@@ -27,6 +28,7 @@ impl WorthQueryExecutionResourceRequest {
         cancellation_safe_point: WorthQueryCancellationSafePointFamily,
     ) -> Result<Self, &'static str> {
         let request = Self {
+            boundary: WorthQueryExecutionBoundary::BoundedStep,
             scale,
             limits,
             modes: [WorthQueryExecutionMode::Synchronous].into_iter().collect(),
@@ -44,6 +46,40 @@ impl WorthQueryExecutionResourceRequest {
         };
         validate_resource_request(&request)?;
         Ok(request)
+    }
+
+    /// One native attempt, with only its actual stated demands.
+    pub fn atomic(
+        scale: WorthQuerySemanticScaleRequest,
+        limits: WorthQueryResourceLimitRequest,
+        cancellation_safe_point: WorthQueryCancellationSafePointFamily,
+    ) -> Result<Self, &'static str> {
+        let request = Self {
+            boundary: WorthQueryExecutionBoundary::Atomic,
+            scale,
+            limits,
+            modes: [WorthQueryExecutionMode::Synchronous].into_iter().collect(),
+            degradations: BTreeSet::new(),
+            partial_effect_postures: [WorthQueryPartialEffectPosture::EffectFree]
+                .into_iter()
+                .collect(),
+            yielded_state_postures: [WorthQueryYieldedStatePosture::NotYieldable]
+                .into_iter()
+                .collect(),
+            retained_progress_postures: [WorthQueryRetainedProgressPosture::ReleaseAfterAttempt]
+                .into_iter()
+                .collect(),
+            cancellation_safe_point,
+        };
+        request.validate()?;
+        Ok(request)
+    }
+
+    pub const fn boundary(&self) -> WorthQueryExecutionBoundary {
+        self.boundary
+    }
+    pub fn validate(&self) -> Result<(), &'static str> {
+        validate_resource_request(self)
     }
 
     pub fn bounded(

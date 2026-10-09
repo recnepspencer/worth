@@ -58,7 +58,6 @@ impl ApplicationSchema for ReadTestSchema {
                     .no_aftermath()
                     .finish(),
             )
-            .operation_decision_fact_budget(read, 1)
             .operation_projection_work_budget(read, 16)
             .operation_requires_ability(read, ability)
             .operation_read_field(
@@ -80,7 +79,6 @@ impl ApplicationSchema for ReadTestSchema {
                     .no_aftermath()
                     .finish(),
             )
-            .operation_decision_fact_budget(empty, 1)
             .operation_projection_work_budget(empty, 16)
             .operation_requires_ability(empty, ability)
             .build()

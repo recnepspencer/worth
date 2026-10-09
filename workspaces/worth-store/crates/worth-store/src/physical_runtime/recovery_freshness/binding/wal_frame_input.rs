@@ -1,8 +1,8 @@
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::VerifiedCheckpointFacts;
 use worth_store_wal::WalLsnRange;
 
-use crate::physical_runtime::IntegrityAdmittedRecoveryWalFrame;
+use crate::physical_runtime::{IntegrityAdmittedRecoveryWalFrame, PhysicalRecoveryCoordination};
 
 use super::{StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure};
 
@@ -23,22 +23,22 @@ impl RecoveryWalFrameInput for IntegrityAdmittedRecoveryWalFrame {
 
 pub(in crate::physical_runtime::recovery_freshness) fn sample_binding<'frame>(
     covered: super::CheckpointCoveredMembers,
-    freshness: &super::super::PhysicalRecoveryFreshnessAuthority,
-    checkpoint_basis: Option<&super::StoreRecoveryCheckpointBindingBasis>,
+    coordination: &PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
-    checkpoint: &VerifiedCheckpointStream,
-    wal_frames: impl IntoIterator<Item = &'frame IntegrityAdmittedRecoveryWalFrame>,
+    checkpoint: &VerifiedCheckpointFacts,
+    wal_frames: impl Iterator<Item = &'frame IntegrityAdmittedRecoveryWalFrame> + Clone,
     maximum_operation_bindings: u64,
     maximum_redo_bytes: u64,
+    maximum_manifest_cleanup_sampling_bytes: u64,
 ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
-    super::sample_binding_from_frames(
+    super::sampling::sample_binding_from_frames(
         covered,
-        freshness,
-        checkpoint_basis,
+        coordination,
         media,
         checkpoint,
         wal_frames,
         maximum_operation_bindings,
         maximum_redo_bytes,
+        maximum_manifest_cleanup_sampling_bytes,
     )
 }

@@ -25,14 +25,14 @@ pub(crate) struct CaptureSectionRecorder {
 }
 
 impl CaptureSectionRecorder {
-    pub(crate) fn writer<'a>(&'a self, bytes: &'a mut Vec<u8>) -> CountingWriter<'a> {
+    pub(crate) fn writer<'a, W: Write>(&'a self, bytes: &'a mut W) -> CountingWriter<'a, W> {
         CountingWriter {
             bytes,
             recorder: self,
         }
     }
 
-    fn record(&self, section: NativeSection, bytes: usize) {
+    fn record(&self, section: NativeSection, bytes: usize) -> Option<()> {
         let counter = match section {
             NativeSection::Envelopes => &self.envelopes,
             NativeSection::BranchRoots => &self.branch_roots,
@@ -40,7 +40,8 @@ impl CaptureSectionRecorder {
             NativeSection::PartitionMirror => &self.partition_mirror,
             NativeSection::DerivedIndexes => &self.derived_indexes,
         };
-        counter.set(counter.get() + bytes);
+        counter.set(counter.get().checked_add(bytes)?);
+        Some(())
     }
 
     pub(crate) fn finish(&self, total: usize) -> Option<NativeCheckpointSectionBytes> {
@@ -82,23 +83,37 @@ impl<T: Serialize + ?Sized> Serialize for MeasuredValue<'_, T> {
         let before = self.recorder.map(|recorder| recorder.written.get());
         let result = self.value.serialize(serializer)?;
         if let (Some(recorder), Some(before)) = (self.recorder, before) {
-            recorder.record(self.section, recorder.written.get() - before);
+            let bytes = recorder.written.get().checked_sub(before).ok_or_else(|| {
+                serde::ser::Error::custom("native checkpoint section position decreased")
+            })?;
+            recorder.record(self.section, bytes).ok_or_else(|| {
+                serde::ser::Error::custom("native checkpoint section size overflow")
+            })?;
         }
         Ok(result)
     }
 }
 
-pub(crate) struct CountingWriter<'a> {
-    bytes: &'a mut Vec<u8>,
+pub(crate) struct CountingWriter<'a, W> {
+    bytes: &'a mut W,
     recorder: &'a CaptureSectionRecorder,
 }
 
-impl Write for CountingWriter<'_> {
+impl<W: Write> Write for CountingWriter<'_, W> {
     fn write(&mut self, input: &[u8]) -> io::Result<usize> {
-        let written = self.bytes.write(input)?;
         self.recorder
             .written
-            .set(self.recorder.written.get() + written);
+            .get()
+            .checked_add(input.len())
+            .ok_or_else(|| io::Error::other("native checkpoint encoded size overflow"))?;
+        let written = self.bytes.write(input)?;
+        self.recorder.written.set(
+            self.recorder
+                .written
+                .get()
+                .checked_add(written)
+                .ok_or_else(|| io::Error::other("native checkpoint encoded size overflow"))?,
+        );
         Ok(written)
     }
 

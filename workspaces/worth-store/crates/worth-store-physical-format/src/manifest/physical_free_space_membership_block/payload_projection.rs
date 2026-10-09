@@ -54,28 +54,18 @@ impl PhysicalFreeSpaceMembershipBlock {
         }
         let body = &payload[BLOCK_PREFIX_BYTES..];
         let decoded = if level == 0 {
-            Self::leaf(
-                tree_identity,
-                generation,
-                block,
-                body.chunks_exact(width)
-                    .map(decode_entry)
-                    .collect::<Option<Vec<_>>>()
-                    .ok_or(FreeSpaceRoutingDenial::Malformed)?,
-                capacity,
-            )
+            let mut entries = Vec::with_capacity(usize::from(count));
+            for entry in body.chunks_exact(width) {
+                entries.push(decode_entry(entry).ok_or(FreeSpaceRoutingDenial::Malformed)?);
+            }
+            Self::leaf(tree_identity, generation, block, entries, capacity)
         } else {
-            Self::branch(
-                tree_identity,
-                generation,
-                block,
-                level,
-                body.chunks_exact(width)
-                    .map(decode_reference)
-                    .collect::<Option<Vec<_>>>()
-                    .ok_or(FreeSpaceRoutingDenial::InvalidReference)?,
-                capacity,
-            )
+            let mut children = Vec::with_capacity(usize::from(count));
+            for entry in body.chunks_exact(width) {
+                children
+                    .push(decode_reference(entry).ok_or(FreeSpaceRoutingDenial::InvalidReference)?);
+            }
+            Self::branch(tree_identity, generation, block, level, children, capacity)
         };
         decoded.ok_or(FreeSpaceRoutingDenial::CanonicalOrder.into())
     }

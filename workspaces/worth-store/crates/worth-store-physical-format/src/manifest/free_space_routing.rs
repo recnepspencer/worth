@@ -4,15 +4,30 @@ use crate::{DurableFrameDenial, RecordAllocationClass, RecordFreeSpaceManifestEn
 pub struct FreeSpaceKey {
     class: RecordAllocationClass,
     owner: u64,
+    offset: u64,
 }
 
 impl FreeSpaceKey {
-    pub const fn new(class: RecordAllocationClass, owner: u64) -> Option<Self> {
+    pub const fn inline(owner: u64) -> Option<Self> {
         if owner == 0 {
             None
         } else {
-            Some(Self { class, owner })
+            Some(Self {
+                class: RecordAllocationClass::InlinePage,
+                owner,
+                offset: 0,
+            })
         }
+    }
+    pub const fn arena(arena: crate::ExtentArenaId, offset: u64) -> Self {
+        Self {
+            class: RecordAllocationClass::ExtentArena,
+            owner: arena.get(),
+            offset,
+        }
+    }
+    pub const fn offset(self) -> u64 {
+        self.offset
     }
     pub const fn class(self) -> RecordAllocationClass {
         self.class
@@ -24,7 +39,14 @@ impl FreeSpaceKey {
 
 impl From<RecordFreeSpaceManifestEntry> for FreeSpaceKey {
     fn from(entry: RecordFreeSpaceManifestEntry) -> Self {
-        Self::new(entry.class(), entry.owner()).expect("admitted free-space entry")
+        match entry.region() {
+            crate::RecordFreeSpaceRegion::Inline(value) => {
+                Self::inline(value.owner()).expect("admitted inline frontier")
+            }
+            crate::RecordFreeSpaceRegion::Arena(range) => {
+                Self::arena(range.arena(), range.offset())
+            }
+        }
     }
 }
 
@@ -84,8 +106,8 @@ pub(crate) fn encode_reference(target: &mut [u8], reference: FreeSpaceBlockRefer
     target[8..16].copy_from_slice(&reference.block().to_le_bytes());
     target[16..18].copy_from_slice(&reference.level().to_le_bytes());
     target[20..24].copy_from_slice(&reference.checksum().to_le_bytes());
-    encode_key(&mut target[24..40], reference.first());
-    encode_key(&mut target[40..56], reference.last());
+    encode_key(&mut target[24..48], reference.first());
+    encode_key(&mut target[48..72], reference.last());
 }
 
 pub(crate) fn decode_reference(bytes: &[u8]) -> Option<FreeSpaceBlockReference> {
@@ -97,26 +119,29 @@ pub(crate) fn decode_reference(bytes: &[u8]) -> Option<FreeSpaceBlockReference> 
         read_u64(bytes, 8),
         u16::from_le_bytes(bytes[16..18].try_into().ok()?),
         u32::from_le_bytes(bytes[20..24].try_into().ok()?),
-        decode_key(&bytes[24..40])?,
-        decode_key(&bytes[40..56])?,
+        decode_key(&bytes[24..48])?,
+        decode_key(&bytes[48..72])?,
     )
 }
 
 fn encode_key(target: &mut [u8], key: FreeSpaceKey) {
     target[0] = key.class() as u8;
     target[8..16].copy_from_slice(&key.owner().to_le_bytes());
+    target[16..24].copy_from_slice(&key.offset().to_le_bytes());
 }
 
 fn decode_key(bytes: &[u8]) -> Option<FreeSpaceKey> {
     if bytes[1..8] != [0; 7] {
         return None;
     }
-    let class = match bytes[0] {
-        1 => RecordAllocationClass::InlinePage,
-        2 => RecordAllocationClass::Extent,
-        _ => return None,
-    };
-    FreeSpaceKey::new(class, read_u64(bytes, 8))
+    match bytes[0] {
+        1 if read_u64(bytes, 16) == 0 => FreeSpaceKey::inline(read_u64(bytes, 8)),
+        2 => Some(FreeSpaceKey::arena(
+            crate::ExtentArenaId::new(read_u64(bytes, 8))?,
+            read_u64(bytes, 16),
+        )),
+        _ => None,
+    }
 }
 
 fn read_u64(bytes: &[u8], offset: usize) -> u64 {

@@ -48,7 +48,7 @@ fn mixed_batch_streams_extent_and_a_fresh_process_reads_with_seventeen_widths() 
     assert_eq!(observation.peak_scratch_bytes(), 16_384);
     assert_eq!(observation.explicit_copy_count(), chunks + 2);
     assert_eq!(observation.copied_bytes(), logical_bytes * 2 + 6);
-    assert_extent_writeback_evidence(&serving, writeback_baseline, chunks - 1);
+    assert_extent_writeback_evidence(&serving, writeback_baseline, chunks);
     let locator = ExternalPhysicalRecordLocator::new(
         serving.store_identity(),
         published.settled_members()[0].record_id(1).unwrap(),
@@ -63,13 +63,14 @@ fn assert_extent_artifact_and_fresh_read(
     logical_bytes: u64,
     chunks: u64,
 ) {
-    let extent =
-        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
+    let extent = root.join("families/records/arenas/arena-0000000000000001.data");
+    let arena = std::fs::read(&extent).unwrap();
+    let last_chunk =
+        super::super::durable_frame_oracle::first_arena_chunk_offset(&arena, chunks - 1);
+    let last_payload = logical_bytes - (chunks - 1) * (16_384 - EXTENT_FRAME_OVERHEAD);
     assert_eq!(
         std::fs::metadata(extent).unwrap().len(),
-        logical_bytes
-            + chunks
-                * (super::super::durable_frame_oracle::HEADER_BYTES as u64 + EXTENT_METADATA_BYTES)
+        last_chunk + EXTENT_FRAME_OVERHEAD + last_payload
     );
     let output = super::super::child_process::run_child(
         "extent_reader",
@@ -108,8 +109,11 @@ impl ExtentWritebackBaseline {
 fn assert_extent_writeback_evidence(
     serving: &ServingPhysicalRuntime,
     before: ExtentWritebackBaseline,
-    expected_writebacks: u64,
+    expected_frames: u64,
 ) {
+    // Arena allocation candidates use admitted publication-range effects;
+    // nonzero offsets no longer imply an existing dirty-frame writeback.
+    let expected_writebacks = 0;
     let writebacks_after = serving.residency_observation().writebacks();
     assert_eq!(
         writebacks_after.attempts() - before.writebacks.attempts(),
@@ -128,6 +132,15 @@ fn assert_extent_writeback_evidence(
         0
     );
     let work_after = serving.physical_work_counters();
+    assert!(
+        work_after.count(
+            PhysicalWorkOperationFamily::ArtifactPublication,
+            PhysicalWorkCounterStage::Terminal
+        ) - before.work.count(
+            PhysicalWorkOperationFamily::ArtifactPublication,
+            PhysicalWorkCounterStage::Terminal
+        ) >= expected_frames
+    );
     assert_eq!(
         work_after.count(
             PhysicalWorkOperationFamily::ArtifactRangeWrite,

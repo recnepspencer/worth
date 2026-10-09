@@ -133,10 +133,16 @@ fn prepare_publication(
 ) -> crate::facade::mvcc::PreparedRelationalCommitCandidate {
     let mut transaction = begin_publication_transaction(runtime, branch);
     transaction
-        .push_batch(batch_create(entity))
+        .push_batch(
+            batch_create(entity),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("publication candidate prepares")
 }
 

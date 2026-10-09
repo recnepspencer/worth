@@ -28,13 +28,17 @@ where
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationRetainedCommitOutcome
     where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let outcome =
-            self.compare_and_commit_application(program.with_client_observation(), idempotency);
+        let outcome = self.compare_and_commit_application(
+            program.with_client_observation(),
+            idempotency,
+            allocation_policy,
+        );
         self.retained_commit_outcome(outcome)
     }
 

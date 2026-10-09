@@ -78,7 +78,7 @@ impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(3, 0, 4, 0, 12, 2),
-            ApplicationCandidateResourceCeiling::bounded(32768, 16459),
+            ApplicationCandidateResourceCeiling::representation_bytes(32768),
         );
 
     fn scope_field() -> ApplicationFieldRef<

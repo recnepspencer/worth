@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_execution::ExecutionAllocationDenial;
 
 use worth_query_installation::facade::WorthQueryDecisionFactKind;
 
@@ -150,7 +151,7 @@ impl WorthQueryDecisionFactAdmission {
     ) -> Self {
         Self {
             request,
-            binding_identity: binding.canonical_identity().into(),
+            binding_identity: binding.retain_canonical_identity(),
         }
     }
 
@@ -330,7 +331,14 @@ pub enum WorthQueryDecisionReadSetDenialKind {
     IncompleteRequiredFamilies,
     IncompleteRequiredFacts,
     DecisionFactBudgetExceeded,
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    FactCountOverflow,
+    RequestInterrupted(
+        worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
+    ),
+    AllocationDenied,
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
@@ -342,6 +350,7 @@ pub enum WorthQueryDecisionReadSetDenialKind {
 pub struct WorthQueryDecisionReadSetFailure {
     kind: WorthQueryDecisionReadSetDenialKind,
     detail: Arc<str>,
+    allocation: Option<ExecutionAllocationDenial>,
 }
 
 impl WorthQueryDecisionReadSetFailure {
@@ -349,6 +358,7 @@ impl WorthQueryDecisionReadSetFailure {
         Self {
             kind,
             detail: detail.into(),
+            allocation: None,
         }
     }
 
@@ -358,5 +368,18 @@ impl WorthQueryDecisionReadSetFailure {
 
     pub fn detail(&self) -> &str {
         &self.detail
+    }
+
+    /// Preserve the physical owner's original kind and checked byte quote.
+    pub fn allocation_denied(denial: ExecutionAllocationDenial) -> Self {
+        Self {
+            kind: WorthQueryDecisionReadSetDenialKind::AllocationDenied,
+            detail: denial.to_string().into(),
+            allocation: Some(denial),
+        }
+    }
+
+    pub fn allocation_denial(&self) -> Option<&ExecutionAllocationDenial> {
+        self.allocation.as_ref()
     }
 }

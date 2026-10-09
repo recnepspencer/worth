@@ -57,6 +57,7 @@ fn undo_and_redo_refuse_inactive_unowned_unguarded_and_foreign_admissions() {
                 program,
                 &first,
                 std::convert::identity,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             ));
             let handle = app.runtime().mint_recovery_handle(&receipt).unwrap();
             let undo_key = first_key + 1;

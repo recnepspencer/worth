@@ -1,10 +1,11 @@
 use worth_proof::TransitionOutcome;
 use worth_store_authority::StoreCurrentAuthorityWitness;
 use worth_store_contracts::DurableArtifactFamilyId;
-use worth_store_layout_indexes::declarations::layout_declarations;
-use worth_store_layout_indexes::{
-    access_planning, AdmittedLayoutMaterialization, AdmittedPhysicalArtifactFamily,
+use worth_store_layout_indexes::access_planning;
+use worth_store_layout_indexes::declarations::{
+    layout_declarations, AdmittedPhysicalArtifactFamily,
 };
+use worth_store_layout_indexes::materialization::AdmittedLayoutMaterialization;
 use worth_store_security::{
     admit_store_security_scope, StoreCustodyPosture, StoreKeyVersionPosture,
     StoreSecurityScopeAdmissionRequest,
@@ -28,7 +29,7 @@ impl ImportPublicationScenarioPreparation {
 }
 
 pub fn prepare_import_publication_owner_scenario(
-    catalog: &worth_store_layout_indexes::BootstrapCatalogReadAdmission,
+    catalog: &worth_store_layout_indexes::bootstrap::BootstrapCatalogReadAdmission,
 ) -> ImportPublicationScenarioPreparation {
     let authority = current_authority("store.physical.default_instance");
     let family = admitted_page_family(&authority);

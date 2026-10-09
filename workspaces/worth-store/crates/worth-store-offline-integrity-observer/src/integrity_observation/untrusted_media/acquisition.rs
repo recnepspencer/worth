@@ -179,7 +179,7 @@ impl BoundedMediaWalk {
         }
     }
 
-    fn admit_acquisition_path(
+    pub(super) fn admit_acquisition_path(
         &mut self,
         path: &Path,
         depth: u32,
@@ -199,7 +199,7 @@ impl BoundedMediaWalk {
         Ok(())
     }
 
-    fn open_identity_bound_file(
+    pub(super) fn open_identity_bound_file(
         &mut self,
         path: &Path,
         held_handles: usize,
@@ -222,18 +222,20 @@ impl BoundedMediaWalk {
         Ok(file)
     }
 
-    fn identity_from_open_file(
+    pub(super) fn identity_from_open_file(
         &mut self,
         file: &std::fs::File,
         path: &Path,
     ) -> Result<PhysicalFileIdentity, OfflineIntegrityOutcome> {
+        #[cfg(windows)]
+        self.charge_path_identity_lookup(path)?;
         let maximum_output_bytes = self.limits.maximum_bytes();
         let maximum_elapsed = self.remaining_elapsed_budget();
         identity_from_file(file, path, maximum_output_bytes, maximum_elapsed)
             .map_err(|_| self.identity_unavailable())
     }
 
-    fn cached_alias(
+    pub(super) fn cached_alias(
         &mut self,
         identity: &PhysicalFileIdentity,
         path: &Path,
@@ -251,7 +253,7 @@ impl BoundedMediaWalk {
         )
     }
 
-    fn remaining_byte_budget(&self) -> u64 {
+    pub(super) fn remaining_byte_budget(&self) -> u64 {
         self.limits
             .maximum_bytes()
             .saturating_sub(self.counters.bytes_read)

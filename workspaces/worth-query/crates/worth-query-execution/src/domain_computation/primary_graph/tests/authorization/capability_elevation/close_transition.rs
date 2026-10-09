@@ -145,9 +145,12 @@ fn ordinary_commit_cannot_publish_close_lifecycle_authority() {
         .finish()
         .unwrap();
 
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = world
-        .application
-        .compare_and_commit_application(ordinary, idempotency(176, 176))
+    let WorthQueryApplicationCommitOutcome::Denied(denial) =
+        world.application.compare_and_commit_application(
+            ordinary,
+            idempotency(176, 176),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("ordinary compare-and-commit must reject close lifecycle authority");
     };

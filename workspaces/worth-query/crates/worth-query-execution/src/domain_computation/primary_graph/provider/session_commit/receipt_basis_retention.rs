@@ -67,14 +67,6 @@ impl WorthQueryReceiptBasisRetentionStore {
         self.mandatory.contains_key(&commit)
     }
 
-    /// Commits whose dispatch basis is mandatory; their evidence never leaves
-    /// the idempotency window.
-    pub(in crate::domain_computation::primary_graph::provider) fn mandatory_commits(
-        &self,
-    ) -> std::collections::BTreeSet<CommitId> {
-        self.mandatory.keys().copied().collect()
-    }
-
     pub(in crate::domain_computation::primary_graph::provider) fn release_mandatory(
         &mut self,
         commit: CommitId,

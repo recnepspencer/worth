@@ -2,21 +2,14 @@
 pub use crate::placement::{
     AdmittedBlobPlacement, AdmittedBlobPlacementMovementPlan, BlobPlacementAdmissionAuthority,
     BlobPlacementIntent, BlobPlacementMovementAuthority,
-    BlobPlacementMovementForegroundReservation, BlobPlacementMovementPhysicalExecutionIntent,
+    BlobPlacementMovementForegroundReservation, BlobPlacementMovementReadPlanBasis,
     BlobPlacementMovementRequest, BlobPlacementNonClaim, BlobPlacementProof,
-    BlobReadDuringPlacementMove, StoreOwnedPlacementMovementExecution,
-    StoreOwnedPlacementMovementPublication,
 };
 // --- Outcomes (transition receipts) ---
 pub use crate::placement::{
-    BlobMovementReadPhase, BlobMovementVerifiedReadEvidence,
     BlobPlacementMovementColdCapsuleOutcome, BlobPlacementMovementColdExportOutcome,
     BlobPlacementMovementColdMaterializationOutcome, BlobPlacementMovementColdOutcome,
-    BlobPlacementMovementColdReadOutcome, BlobPlacementMovementCounterBackedPerformanceReceipt,
-    BlobPlacementMovementFreshness, BlobPlacementMovementReadHold, BlobPlacementMovementResidue,
-    BlobPlacementMovementRestartOutcome, BlobReadDuringPlacementMoveReceipt,
-    ExecutedBlobPlacementMovementReceipt, PublishedBlobPlacementObservation,
-    StoreOwnedPlacementMovementExecutionReceipt,
+    BlobPlacementMovementColdReadOutcome, BlobPlacementMovementFreshness,
 };
 // --- Denials (classified failure enums) ---
 pub use crate::placement::{

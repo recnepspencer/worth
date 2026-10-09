@@ -8,6 +8,7 @@ mod reopen;
 mod request;
 mod retained_wal_tail;
 mod runtime_owner;
+mod selected_marker;
 mod work_port;
 mod yieldpoint;
 
@@ -41,8 +42,11 @@ pub use request::{
 };
 pub(super) use retained_wal_tail::RetainedWalTailAdmissionDenial;
 pub use retained_wal_tail::{ContiguousRetainedWalTail, RetainedWalSegment};
-pub(in crate::physical_runtime) use runtime_owner::PhysicalCheckpointRuntimeOwner;
+pub(in crate::physical_runtime) use runtime_owner::{
+    CompletedDurableCheckpointWitness, PhysicalCheckpointRuntimeOwner,
+};
 pub use runtime_owner::{PhysicalCheckpointShutdown, PhysicalCheckpointSubmission};
+pub(in crate::physical_runtime) use selected_marker::select_no_release_marker;
 pub(in crate::physical_runtime) use work_port::{
     PhysicalCheckpointActionFailure, PhysicalCheckpointWorkPort,
 };

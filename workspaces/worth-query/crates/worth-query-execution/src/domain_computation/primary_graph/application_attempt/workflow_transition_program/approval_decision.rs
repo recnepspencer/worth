@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use crate::domain_computation::primary_graph::application_installation::{
     workflow_approval_authentication_intent, WorthQueryWorkflowVocabulary,
 };
@@ -106,16 +107,11 @@ where
             &mut observed.replays,
         ));
         let approval_node = validate_requirement_definition(&compiled, required)?;
-        let maximum_input_facts = self
-            .admission
-            .allowed_graph_contract()
-            .decision_fact_budget()
-            .saturating_sub(
-                self.facts
-                    .len()
-                    .saturating_add(facts.len())
-                    .saturating_add(observed.facts.len()),
-            );
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        let input_request = self.admission.publication_request();
         let inputs = inputs::observe(
             &compiled,
             &layout,
@@ -127,7 +123,7 @@ where
             Some(proposal),
             self.lease.handle(),
             self.lease.snapshot(),
-            maximum_input_facts,
+            input_request,
         )?;
         facts.extend(inputs.facts);
         let meaning = identity::derive(
@@ -218,18 +214,14 @@ where
                 ));
             }
             facts.append(&mut observed.facts);
-            if self.facts.len().saturating_add(facts.len())
-                > self
-                    .admission
-                    .allowed_graph_contract()
-                    .decision_fact_budget()
-            {
-                return Err(denial(
-                    WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                    self.admission.operation(),
-                ));
-            }
-            self.facts.extend(facts);
+            check_request_live(
+                self.admission.publication_request(),
+                self.admission.operation(),
+            )?;
+            self.append_completed_facts(
+                facts,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )?;
             return Ok(PreparedWorkflowAdvance::ReplayOnly {
                 read_set: self,
                 transition_identity_locator: layout.transition.identity.clone(),
@@ -318,18 +310,14 @@ where
         }
         let replay_probe_identity = *selected.identity_bytes();
         facts.append(&mut observed.facts);
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(facts);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         super::assessment::bind_currentness_facts(
             &mut self,
             &inputs.currentness,

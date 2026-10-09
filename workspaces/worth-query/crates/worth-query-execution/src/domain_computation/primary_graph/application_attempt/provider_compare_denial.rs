@@ -9,8 +9,25 @@ pub(in crate::domain_computation::primary_graph) fn provider_compare_denied(
     denial: Compare,
 ) -> Progression {
     let denial = match denial {
-        Compare::ProviderSession(failure) => provider_session_denied(failure),
-        Compare::DecisionReadSet(failure) => decision_read_set_denied(failure),
+        Compare::ProviderSession(failure) => {
+            if let Some(allocation) = failure.allocation_denial() {
+                use worth_execution::ExecutionAllocationDenialKind as Kind;
+                match allocation.kind() {
+                    Kind::Cancelled => return Progression::Cancelled,
+                    Kind::DeadlineElapsed => return Progression::TimedOut,
+                    Kind::Layout
+                    | Kind::Lease(_)
+                    | Kind::Allocator
+                    | Kind::CapacityMismatch
+                    | Kind::WriteBeyondReserved
+                    | Kind::IncompleteSeal => {}
+                }
+            }
+            provider_session_denied(failure)
+        }
+        Compare::DecisionReadSet(failure) => {
+            Denial::decision_read_set_denied_at(failure, Stage::ProviderCommit)
+        }
     };
     Progression::Denied(denial)
 }
@@ -20,9 +37,9 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
 ) -> Denial {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
     let detail = failure.detail();
-    match failure.kind() {
+    let denial = match failure.kind() {
         Kind::IndexMaintenanceBudgetExceeded => {
-            Denial::index_maintenance_budget_exceeded(Stage::ProviderCommit)
+            Denial::index_maintenance_budget_exceeded(Stage::ProviderCommit, detail)
         }
         Kind::IndexGenerationIdentityExhausted => {
             Denial::index_generation_identity_exhausted(Stage::ProviderCommit)
@@ -94,7 +111,7 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         Kind::SessionProtocolUnsupported => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
-        Kind::ProviderRejected => {
+        Kind::AllocationDenied | Kind::ProviderRejected => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
         Kind::ProviderPanicked => {
@@ -109,64 +126,20 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         Kind::SessionIdentityExhausted => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
-    }
-}
-
-fn decision_read_set_denied(
-    failure: crate::domain_computation::WorthQueryDecisionReadSetFailure,
-) -> Denial {
-    use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
-    let detail = failure.detail();
-    match failure.kind() {
-        Kind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => Denial::active_snapshot_capacity_exhausted(
-            Stage::ProviderCommit,
-            maximum_active_snapshots,
-        ),
-        Kind::RetentionCapacityExhausted => {
-            Denial::retention_capacity_exhausted(Stage::ProviderCommit)
-        }
-        Kind::RetentionIdentityExhausted => {
-            Denial::retention_identity_exhausted(Stage::ProviderCommit)
-        }
-        Kind::SnapshotIdentityExhausted => {
-            Denial::snapshot_identity_exhausted(Stage::ProviderCommit)
-        }
-        Kind::InvalidRequest => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::UndeclaredFamily => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::FamilyKindMismatch => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::DecisionFactsUnsupported => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::InvalidProviderEvidence => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::EvidenceSubstitution => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::IncompleteRequiredFamilies => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::IncompleteRequiredFacts => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::DecisionFactBudgetExceeded => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::ProviderRejected => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-        Kind::ProviderPanicked => {
-            Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
-        }
-    }
+    };
+    let denial = if matches!(
+        failure.kind(),
+        Kind::ExecutionResource { .. }
+            | Kind::ExecutionNestedPatternStopped { .. }
+            | Kind::ExecutionWorkerPanicked { .. }
+            | Kind::ExecutionUncheckedCustomKernel { .. }
+            | Kind::ExecutionIdentitiesNotCanonical { .. }
+    ) {
+        denial.with_provider_execution_cause(failure.kind())
+    } else {
+        denial
+    };
+    denial.with_provider_session_failure(failure)
 }
 
 #[cfg(test)]
@@ -179,8 +152,8 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_kind_denied
     stage: Stage,
     detail: impl Into<std::sync::Arc<str>>,
 ) -> Denial {
-    // These owners reported ProviderRejected at their own stage at HEAD.
-    // Distinguishing its evidence must not change that category or retry policy.
+    // The preparation refusal retains its category and retry policy while
+    // carrying the distinct cause and the stage that stopped it.
     Denial::provider_execution_denied(stage, Ok(kind), detail)
 }
 
@@ -188,8 +161,8 @@ pub(in crate::domain_computation::primary_graph) fn control_stopped_outcome(
     stopped: crate::domain_computation::WorthQueryProviderSessionCommitControlStopped,
 ) -> Progression {
     if stopped.is_execution_preparation() {
-        // HEAD recovered every preparation Execution refusal as Aborted.
-        // Preserve its retry policy without requesting post-effect recovery.
+        // A preparation stop is pre-effect and remains retryable without
+        // entering post-effect recovery.
         return Progression::Denied(Denial::provider_execution_denied(
             Stage::ProviderCommit,
             Err(stopped.kind()),
@@ -206,6 +179,7 @@ pub(in crate::domain_computation::primary_graph) fn control_stopped_outcome(
     }
 }
 
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn provider_session_control_denied(
     kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
     stage: Stage,

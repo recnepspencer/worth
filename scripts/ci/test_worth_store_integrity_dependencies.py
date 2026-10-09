@@ -31,6 +31,45 @@ class IntegrityDependencyGuardTests(unittest.TestCase):
         aliased = "use worth_store_physical_format as runtime_format;"
         self.assertEqual(GUARD.forbidden_format_routes(aliased), [1])
 
+    def test_only_tests_enable_a_limit_owners_mint(self) -> None:
+        owners = sorted(GUARD.LIMIT_OWNERS)
+        test_only = {
+            "dev-dependencies": {
+                owner: {"workspace": True, "features": ["test-support"]} for owner in owners
+            },
+            "features": {"test-support": ["worth-store-physical-backend/test-support"]},
+        }
+        self.assertEqual(GUARD.production_test_support(test_only), [])
+        for table in ("dependencies", "build-dependencies"):
+            for owner in owners:
+                edge = {table: {owner: {"workspace": True, "features": ["test-support"]}}}
+                self.assertEqual(GUARD.production_test_support(edge), [owner])
+        renamed = {"dependencies": {"physics": {
+            "package": "worth-store-recovery-physics", "features": ["test-support"],
+        }}}
+        self.assertEqual(GUARD.production_test_support(renamed), ["worth-store-recovery-physics"])
+        targeted = {"target": {"cfg(unix)": {"dependencies": {
+            "worth-store": {"features": ["test-support"]},
+        }}}}
+        self.assertEqual(GUARD.production_test_support(targeted), ["worth-store"])
+        inherited = {"workspace": {"dependencies": {
+            "worth-store-physical-integrity": {"path": "x", "features": ["test-support"]},
+        }}}
+        self.assertEqual(
+            GUARD.production_test_support(inherited), ["worth-store-physical-integrity"]
+        )
+        by_default = {"package": {"name": "worth-store"}, "features": {"default": [
+            "test-support", "worth-store-physical-backend?/test-support", "other/test-support",
+        ]}}
+        self.assertEqual(
+            GUARD.production_test_support(by_default),
+            ["worth-store", "worth-store-physical-backend"],
+        )
+        own_default = {"package": {"name": "other"}, "features": {"default": ["test-support"]}}
+        self.assertEqual(GUARD.production_test_support(own_default), [])
+        unrelated = {"dependencies": {"other": {"features": ["test-support"]}, "plain": "1"}}
+        self.assertEqual(GUARD.production_test_support(unrelated), [])
+
 
 if __name__ == "__main__":
     unittest.main()

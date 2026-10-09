@@ -3,15 +3,24 @@ mod completion;
 mod context;
 mod counters;
 mod denial;
-mod manifest_entry_budget;
 mod operation_join;
 mod page_observation;
+mod redo_limit;
+mod released_directory;
+mod resident_memory;
 mod resolved_basis;
 mod selected_source_inventory;
+#[cfg(test)]
+pub(super) mod selected_world_fixture;
 mod successor_candidate_observation;
+
+/// The walk's entry limit, read in recovery's limit counts.
+pub(crate) use manifest_entry_budget::ExceededManifestEntries;
+use page_observation::manifest_entry_budget;
 
 use crate::entry::PhysicalRecoveryOutcome;
 use crate::progression::{PlannedPhysicalRecovery, SelectedPhysicalRecovery};
+pub(crate) use completion::blob_reclaim::ValidatedManifestResidueCleanup;
 
 pub(crate) fn plan_recovery(
     selected: SelectedPhysicalRecovery,

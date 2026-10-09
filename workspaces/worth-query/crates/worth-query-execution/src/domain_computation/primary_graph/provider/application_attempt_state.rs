@@ -13,7 +13,6 @@ mod commit_completion;
 mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
-pub(in crate::domain_computation::primary_graph) use commit_preparation::RetainedTouchedRecords;
 mod phase;
 mod registration;
 mod retained_basis;
@@ -106,6 +105,29 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             attempt.facts().get(locator)?.clone(),
             attempt.affinity().product_publication().clone(),
         ))
+    }
+
+    pub(super) fn shared_observed_facts(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+    ) -> Option<(
+        Arc<BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>>,
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    )>{
+        let attempt = self.attempt(session)?;
+        Some((
+            attempt.shared_facts(),
+            attempt.affinity().product_publication().clone(),
+        ))
+    }
+
+    pub(super) fn retains_observed_facts(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+        expected: &Arc<BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>>,
+    ) -> bool {
+        self.attempt(session)
+            .is_some_and(|attempt| Arc::ptr_eq(&attempt.shared_facts(), expected))
     }
 
     pub(super) fn idempotency_basis(
@@ -322,3 +344,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
 
 #[cfg(test)]
 mod tests;
+
+pub(in crate::domain_computation::primary_graph) use commit_preparation::{
+    PreparedRebaseDenial, PreparedSourceFactRebase,
+};

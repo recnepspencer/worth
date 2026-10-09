@@ -1,13 +1,13 @@
 use crate::entry::{
-    AdmittedPlatformAuthority, PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence,
-    PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome,
+    AdmittedPlatformAuthority, PhysicalRecoveryBlock, PhysicalRecoveryBlockCause,
+    PhysicalRecoveryBlockEvidence, PhysicalRecoveryOutcome,
 };
 use crate::orchestration::RecoveryCoordination;
 
 pub(crate) fn block_unsupported_scope(
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
-    kind: PhysicalRecoveryBlockKind,
+    cause: PhysicalRecoveryBlockCause,
     evidence: PhysicalRecoveryBlockEvidence,
 ) -> PhysicalRecoveryOutcome {
     assert!(
@@ -21,7 +21,7 @@ pub(crate) fn block_unsupported_scope(
     drop(media);
     session.block();
     PhysicalRecoveryOutcome::Blocked(PhysicalRecoveryBlock::new(
-        kind,
+        cause,
         store,
         session_identity,
         evidence,

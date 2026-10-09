@@ -67,10 +67,16 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
     runtime.durability.arm_append_failure();
     let mut failed = test_owner_begin_transaction_for_main(&runtime);
     failed
-        .push_batch(batch_create("lineage-gap-abandoned"))
+        .push_batch(
+            batch_create("lineage-gap-abandoned"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let durability_deferred = failed
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("performed movement without durable acknowledgement is typed");
     assert!(matches!(
         durability_deferred,
@@ -97,10 +103,16 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
 
     let mut child = test_owner_begin_transaction_for_main(&runtime);
     child
-        .push_batch(batch_create("lineage-gap-tail"))
+        .push_batch(
+            batch_create("lineage-gap-tail"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let child_denial = child
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("an unsettled performed parent denies descendants");
     assert!(child_denial
         .detail()
@@ -146,13 +158,22 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("reservation-exhaustion-first"))
+        .push_batch(
+            batch_create("reservation-exhaustion-first"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(batch_create("reservation-exhaustion-second"))
+        .push_batch(
+            batch_create("reservation-exhaustion-second"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("two-event reservation must deny at the allocator boundary");
 
     assert!(format!("{error:?}").contains("lineage event id allocator exhausted"));

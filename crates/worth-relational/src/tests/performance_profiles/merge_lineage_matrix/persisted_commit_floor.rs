@@ -12,9 +12,9 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static 
                 &merge_runtime,
                 BranchId("feature".to_string()),
             );
-            txn.push_batch(WorkerIntentBatch::new("create-feature-only").push(
-                MutationIntent::Create(CreateIntent::Entity(
-                    crate::transactions::data::EntitySpec {
+            txn.push_batch(
+                WorkerIntentBatch::new("create-feature-only").push(MutationIntent::Create(
+                    CreateIntent::Entity(crate::transactions::data::EntitySpec {
                         partition_id: PartitionId::main(),
                         kind_id: KindId(1),
                         client_key: crate::symbols::data::ClientKey::raw("feature-only"),
@@ -23,12 +23,18 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static 
                             crate::tests::support::field_key("name"),
                             "feature-only",
                         ),
-                    },
+                    }),
                 )),
-            ))
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("test staging stays within configured resource budgets");
-            let _feature_only =
-                changed_entities(&txn.commit(&merge_runtime).expect("feature create"))[0];
+            let _feature_only = changed_entities(
+                &txn.commit(
+                    &merge_runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("feature create"),
+            )[0];
 
             let prepared = merge_runtime
                 .prepare_merge_execution(MergeExecutionRequest {
@@ -52,10 +58,16 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static 
             let control_outcome = {
                 let mut txn =
                     crate::tests::support::test_owner_begin_transaction_for_main(&control_runtime);
-                txn.push_batch(batch_create("control-single"))
-                    .expect("test staging stays within configured resource budgets");
-                txn.commit(&control_runtime)
-                    .expect("control persisted single create")
+                txn.push_batch(
+                    batch_create("control-single"),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
+                txn.commit(
+                    &control_runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("control persisted single create")
             };
             let control_elapsed_micros = control_started_at.elapsed().as_micros();
             let control_counters = control_runtime.performance_access().counters();

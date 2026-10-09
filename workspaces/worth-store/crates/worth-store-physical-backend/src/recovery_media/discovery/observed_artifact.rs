@@ -3,7 +3,7 @@ use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use super::RecoveryDiscoveryArtifact;
 
 /// One bounded C4 read, including the actual owner, locator, and file offset.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ObservedRecoveryArtifact {
     store: StableStoreIdentity,
     artifact: RecoveryDiscoveryArtifact,
@@ -12,7 +12,7 @@ pub struct ObservedRecoveryArtifact {
 }
 
 impl ObservedRecoveryArtifact {
-    pub(super) fn new(
+    pub(in crate::recovery_media) fn new(
         store: StableStoreIdentity,
         artifact: RecoveryDiscoveryArtifact,
         offset: u64,
@@ -40,6 +40,13 @@ impl ObservedRecoveryArtifact {
 
     pub fn bytes(&self) -> Option<&[u8]> {
         self.bytes.as_deref()
+    }
+
+    /// Heap backing retained by this observation, excluding the inline wrapper.
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        self.bytes
+            .as_ref()
+            .map_or(Some(0), |bytes| u64::try_from(bytes.capacity()).ok())
     }
 
     pub fn into_bytes(self) -> Option<Vec<u8>> {

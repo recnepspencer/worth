@@ -3,17 +3,13 @@
 
 use super::WorthQueryProviderAttemptPreparation;
 use crate::domain_computation::primary_graph::application_attempt::{
-    effect_program::{
-        admit_workflow_settlement_effects, PlatformEffectDemand,
-        WorthQueryCandidateValidatorWorkAdmission,
-    },
+    effect_program::{admit_workflow_settlement_effects, PlatformEffectDemand},
     workflow_transition_program::{receipt_identity_from_outcome, transition_entity_in_receipt},
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationRealizedEffect,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationCommitOutcomeIdentity,
+    WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::workflow::instance::visit_workflow_operation_settlement_facts;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
-use worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis;
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct LocalWorkflowSettlementPublication {
     progress_update:
@@ -102,27 +98,7 @@ impl WorthQueryProviderAttemptPreparation {
         for effect in &settlement_effects {
             demand.observe(effect)?;
         }
-        let platform_work = admit_workflow_settlement_effects(admission, demand)?
-            .materialize(&settlement_effects)?
-            .maximum_work()
-            .ok_or_else(work_denial)?;
-        let handler_work = self
-            .validator_work_admission
-            .maximum_work()
-            .ok_or_else(work_denial)?;
-        let envelope = admission
-            .allowed_graph_contract()
-            .execution_strategy()
-            .expect("installed application operation has one execution strategy")
-            .envelope();
-        let combined_work = combined_work_within_ceiling(
-            handler_work,
-            platform_work,
-            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
-        )?;
-        self.validator_work_admission = WorthQueryCandidateValidatorWorkAdmission::Reserved {
-            maximum_work: combined_work,
-        };
+        admit_workflow_settlement_effects(admission, demand)?.materialize(&settlement_effects)?;
         self.effects.extend(settlement_effects);
         self.effect_posture =
             crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
@@ -140,57 +116,5 @@ impl WorthQueryProviderAttemptPreparation {
                 identity_locator: binding.workflow_layout.transition.identity.clone(),
             }),
         ))
-    }
-}
-
-fn work_denial() -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(
-        WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
-        "guarded workflow settlement exceeds its installed work ceiling",
-    )
-}
-
-fn combined_work_within_ceiling(
-    handler_work: usize,
-    platform_work: usize,
-    ceiling: u64,
-) -> Result<usize, WorthQueryApplicationAttemptDenial> {
-    let combined = handler_work
-        .checked_add(platform_work)
-        .ok_or_else(work_denial)?;
-    if !u64::try_from(combined).is_ok_and(|work| work <= ceiling) {
-        return Err(work_denial());
-    }
-    Ok(combined)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain_computation::primary_graph::application_attempt::{
-        WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-        WorthQueryApplicationCommitDenialStage,
-    };
-
-    #[test]
-    fn guarded_work_combines_handler_and_settlement_and_denies_one_over() {
-        assert_eq!(combined_work_within_ceiling(512, 13, 525).unwrap(), 525);
-        let denial = combined_work_within_ceiling(512, 13, 524).unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded
-        );
-        let commit_denial = WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial);
-        assert_eq!(
-            commit_denial.kind(),
-            WorthQueryApplicationCommitDenialKind::WorkflowSettlementDenied {
-                kind: WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
-            }
-        );
-        assert_eq!(
-            commit_denial.stage(),
-            WorthQueryApplicationCommitDenialStage::ResourceAdmission
-        );
-        assert!(combined_work_within_ceiling(usize::MAX, 1, u64::MAX).is_err());
     }
 }

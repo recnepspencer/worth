@@ -1,9 +1,8 @@
-//! Derives the shared state-load and execution budgets for installed invariants.
+//! Derives exact invariant obligations; aggregate restrictions belong to the request.
 
 use std::num::NonZeroU32;
 
 use super::compilation::APPLICATION_INVARIANT_SLOT;
-use crate::application_operation::WorthQueryApplicationCandidateDemand;
 use crate::domain_operation::{
     WorthQueryInstalledInvariantExecutionRequirement, WorthQueryInvariantEnforcement,
     WorthQueryInvariantExecutionContract, WorthQueryOperationEffectContract,
@@ -11,9 +10,7 @@ use crate::domain_operation::{
 };
 
 pub(super) fn mutation_contracts(
-    decision_fact_budget: usize,
     graph_mutation_count: usize,
-    candidate_demand: WorthQueryApplicationCandidateDemand,
     invariant_invocations: &[crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor],
 ) -> Result<
     (
@@ -30,12 +27,7 @@ pub(super) fn mutation_contracts(
             WorthQueryInvariantExecutionContract::NotRequired,
         ));
     }
-    let invariant_execution = application_invariant_execution_contract(
-        decision_fact_budget,
-        graph_mutation_count,
-        candidate_demand.candidate_items(),
-        invariant_invocations,
-    )?;
+    let invariant_execution = application_invariant_execution_contract(invariant_invocations)?;
     let invariant_slots = invariant_execution
         .requirements()
         .iter()
@@ -51,23 +43,17 @@ pub(super) fn mutation_contracts(
 }
 
 fn application_invariant_execution_contract(
-    decision_fact_budget: usize,
-    graph_mutation_count: usize,
-    candidate_items: u64,
     invariant_invocations: &[crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor],
 ) -> Result<WorthQueryInvariantExecutionContract, ()> {
-    let maximum_state_facts =
-        maximum_state_facts(decision_fact_budget, graph_mutation_count, candidate_items)?;
-    let native_execution_work = u64::try_from(maximum_state_facts).map_err(|_| ())?;
-    let native = WorthQueryInstalledInvariantExecutionRequirement::new(
+    let native = WorthQueryInstalledInvariantExecutionRequirement::with_optional_bounds(
         APPLICATION_INVARIANT_SLOT,
         "application-installed-invariants",
         NonZeroU32::new(1).expect("one is nonzero"),
         WorthQueryInvariantEnforcement::Blocking,
         "primary",
         ["application-proposed-state"],
-        maximum_state_facts,
-        load_and_execution_work(maximum_state_facts, native_execution_work)?,
+        None,
+        None,
     )
     .map_err(|_| ())?;
     let custom = invariant_invocations.iter().map(|invariant| {
@@ -77,61 +63,20 @@ fn application_invariant_execution_contract(
             worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint::SnapshotPublication => "snapshot-publication",
         };
         let version = (u32::from(invariant.major()) << 16) | u32::from(invariant.minor());
-        WorthQueryInstalledInvariantExecutionRequirement::new(
+        WorthQueryInstalledInvariantExecutionRequirement::with_optional_bounds(
             format!("relational-custom:{}@{point}", invariant.identifier()),
             "relational-custom-invariant",
             NonZeroU32::new(version).ok_or(())?,
             WorthQueryInvariantEnforcement::Blocking,
             "primary",
             ["application-proposed-state"],
-            maximum_state_facts,
-            load_and_execution_work(maximum_state_facts, invariant.maximum_work_units().get())?,
+            None,
+            None,
         ).map_err(|_| ())
             .map(|requirement| requirement.with_application_invariant(invariant.clone()))
     }).collect::<Result<Vec<_>, ()>>()?;
     WorthQueryInvariantExecutionContract::declared(std::iter::once(native).chain(custom))
         .map_err(|_| ())
-}
-
-fn maximum_state_facts(
-    decision_fact_budget: usize,
-    graph_mutation_count: usize,
-    candidate_items: u64,
-) -> Result<usize, ()> {
-    let declared_state_facts = decision_fact_budget
-        .checked_add(graph_mutation_count)
-        .ok_or(())?;
-    let candidate_state_facts = usize::try_from(candidate_items).map_err(|_| ())?;
-    Ok(declared_state_facts.max(candidate_state_facts).max(1))
-}
-
-/// The semantic candidate validation allowance, not each invariant's separate
-/// state-load-plus-execution budget. Derived once at installation.
-pub(super) fn candidate_validator_work(
-    contract: &WorthQueryInvariantExecutionContract,
-) -> Result<u64, ()> {
-    let native = contract
-        .requirements()
-        .iter()
-        .map(|requirement| requirement.max_state_facts())
-        .max()
-        .unwrap_or(0);
-    contract.requirements().iter().try_fold(
-        u64::try_from(native).map_err(|_| ())?,
-        |work, requirement| match requirement.application_invariant() {
-            Some(invariant) => work
-                .checked_add(invariant.maximum_work_units().get())
-                .ok_or(()),
-            None => Ok(work),
-        },
-    )
-}
-
-fn load_and_execution_work(state_facts: usize, execution_work: u64) -> Result<u64, ()> {
-    u64::try_from(state_facts)
-        .map_err(|_| ())?
-        .checked_add(execution_work)
-        .ok_or(())
 }
 
 #[cfg(test)]
@@ -146,66 +91,21 @@ mod tests {
     };
 
     #[test]
-    fn invariant_budgets_cover_candidate_cardinality_and_both_work_phases() {
-        let custom = custom_invariant(7);
-        for (candidates, expected_state, expected_native, expected_custom) in
-            [(1, 4, 8, 11), (32, 32, 64, 39), (128, 128, 256, 135)]
-        {
-            let contract = application_invariant_execution_contract(
-                3,
-                1,
-                candidates,
-                std::slice::from_ref(&custom),
-            )
-            .unwrap();
-            let native = contract
-                .requirements()
-                .iter()
-                .find(|r| r.application_invariant().is_none())
-                .unwrap();
-            let custom = contract
-                .requirements()
-                .iter()
-                .find(|r| r.application_invariant().is_some())
-                .unwrap();
-            assert_eq!(native.max_state_facts(), expected_state);
-            assert_eq!(native.max_work_units(), expected_native);
-            assert_eq!(custom.max_state_facts(), expected_state);
-            assert_eq!(custom.max_work_units(), expected_custom);
+    fn generated_invariants_keep_algorithm_contract_without_aggregate_proxy() {
+        let descriptor = custom_invariant(7);
+        let contract =
+            application_invariant_execution_contract(std::slice::from_ref(&descriptor)).unwrap();
+        for requirement in contract.requirements() {
+            assert_eq!(requirement.max_state_facts(), None);
+            assert_eq!(requirement.max_work_units(), None);
         }
-    }
-
-    #[test]
-    fn unrepresentable_invariant_budgets_are_denied() {
-        assert!(application_invariant_execution_contract(usize::MAX, 1, 0, &[]).is_err());
-        assert!(application_invariant_execution_contract(1, 1, u64::MAX, &[]).is_err());
-        assert!(
-            application_invariant_execution_contract(1, 1, 0, &[custom_invariant(u64::MAX)])
-                .is_err()
-        );
-    }
-
-    #[test]
-    fn candidate_validator_allowance_follows_installed_closure_not_load_budgets() {
-        for custom_work in [7, 71] {
-            let contract = application_invariant_execution_contract(
-                3,
-                1,
-                32,
-                &[custom_invariant(custom_work)],
-            )
+        let custom = contract
+            .requirements()
+            .iter()
+            .find_map(|r| r.application_invariant())
             .unwrap();
-            assert_eq!(
-                super::candidate_validator_work(&contract),
-                Ok(32 + custom_work)
-            );
-        }
-        assert_eq!(
-            super::candidate_validator_work(
-                &crate::domain_operation::WorthQueryInvariantExecutionContract::NotRequired
-            ),
-            Ok(0)
-        );
+        assert_eq!(custom.maximum_work_units().get(), 7);
+        assert_eq!(custom, &descriptor);
     }
 
     fn custom_invariant(work: u64) -> WorthQueryInstalledApplicationInvariantDescriptor {

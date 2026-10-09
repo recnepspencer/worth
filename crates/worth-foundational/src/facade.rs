@@ -251,6 +251,7 @@ pub use crate::canonicalization::{
     prepare_locator_for_canonical_basis, prepare_owned_canonical_basis_sequence_admitted,
     prepare_struct_aspect_value_identity_basis, projection_mask_locator_canonical_basis_entries,
     readmit_canonical_export_after_boundary, require_canonical_production_test_readiness,
+    write_aspect_value_identity_material, write_struct_aspect_value_identity_material,
     BoundaryBridgedCanonicalExportArtifact, CanonicalAspectValueIdentityBasis,
     CanonicalBasisBundle, CanonicalBasisConstructionDenial, CanonicalBasisDomain,
     CanonicalBasisEntry, CanonicalBasisEntryId, CanonicalBasisEntryKind, CanonicalBasisFrontDoor,
@@ -283,6 +284,7 @@ pub use crate::canonicalization::{
     CanonicalExportReadyArtifact, CanonicalExportShapeStep, CanonicalFixtureManifestEvidence,
     CanonicalFloatWidth, CanonicalGoldenArtifactEvidence, CanonicalHarnessExpansionPoint,
     CanonicalIdentityInput, CanonicalIntegerWidth, CanonicalLocatorInput,
+    CanonicalMaterialByteCount, CanonicalMaterialLengthOverflow, CanonicalMaterialSink,
     CanonicalMilestone2PhaseGate, CanonicalMismatchBasis, CanonicalMismatchKind,
     CanonicalMismatchLociBound, CanonicalPhaseGateEvidence, CanonicalProducerShape,
     CanonicalProductionReadinessAuthority, CanonicalProductionReadinessCertified,
@@ -683,4 +685,5 @@ pub use crate::values::{
     EntityId, Generation, InternedString, LocalSlot, PartitionId, ScalarAspectType, Symbol,
 };
 
+pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};

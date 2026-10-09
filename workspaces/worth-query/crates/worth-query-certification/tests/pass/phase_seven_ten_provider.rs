@@ -100,6 +100,7 @@ impl provider::WorthQueryProviderSessionLifecycle for ConsumerCombinedProvider {
     fn commit_prepared_session(
         &self,
         _session: &provider::WorthQueryProviderSessionView<'_>,
+        _allocation_policy: worth_query_host::facade::runtime::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         provider::WorthQueryProviderTerminalDescription,
         provider::WorthQueryProviderSessionCommitStop,

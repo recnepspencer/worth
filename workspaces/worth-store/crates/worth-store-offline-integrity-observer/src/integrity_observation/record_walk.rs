@@ -1,32 +1,37 @@
 use super::child_expectation::{ChildExpectation, ChildScope};
-use super::families::{
-    bootstrap_catalog::read_bootstrap_catalog,
-    durable_frame::{read_u16, read_u32},
-    extent::{read_extent_chunk, read_extent_manifest},
-    free_space::{read_free_space_header, read_free_space_membership},
-    page_frame::read_page_frame,
-    root_manifest::OfflineRootManifestFacts,
-    root_routing::read_root_routing,
-    segment_membership::read_segment_membership,
-    tree_reference::reference,
-};
+use super::families::{durable_frame::read_u32, root_manifest::OfflineRootManifestFacts};
 use super::{
     BoundedMediaWalk, OfflineArtifactDuplicateEvidence, OfflineArtifactObservation,
     OfflineIntegrityOutcome as Outcome, OfflinePhysicalBlastRadius as Blast,
-    OfflinePhysicalDamageCause as Cause, OfflinePhysicalDamageLocalization,
-    OfflineUnknownPhysicalReason,
+    OfflinePhysicalDamageCause as Cause, OfflineUnknownPhysicalReason,
 };
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
-use worth_foundational::{
-    PhysicalArtifactFamily as Family, PhysicalArtifactGeneration, PhysicalArtifactIdentity,
-    PhysicalByteRange,
-};
+use worth_foundational::{PhysicalArtifactFamily as Family, PhysicalArtifactGeneration};
+
+mod bootstrap;
+mod emission;
+mod historical_blob;
+mod inspection;
+mod origin;
+mod root_children;
+pub(crate) mod route_inventory;
+use bootstrap::observe_bootstrap;
+use emission::EmittedChildScopes;
+use historical_blob::HistoricalBlobCollector;
+pub(crate) use inspection::{damage, inspect_expected, project, shift_outcome};
+pub(crate) use origin::TraversalOrigin;
+pub(crate) use root_children::root_children;
+use route_inventory::{note_route_failure, RouteInventory};
 
 pub(crate) fn observe_records(
     root: &Path,
     store: Option<[u8; 16]>,
     roots: &[OfflineRootManifestFacts],
+    current_generation: Option<u64>,
+    retirements: super::retirement_evidence::RetirementEvidence,
+    checkpoint: super::journal_walk::SelectedCheckpointEvidence,
+    selected_records: &mut BTreeSet<Box<str>>,
     walk: &mut BoundedMediaWalk,
 ) -> Vec<OfflineArtifactObservation> {
     let mut observations = vec![observe_bootstrap(root, store, walk)];
@@ -34,31 +39,95 @@ pub(crate) fn observe_records(
         return observations;
     }
     let mut queue = VecDeque::new();
+    let mut arenas = super::families::extent_arena::ArenaAccounting::default();
+    let mut historical_blobs = HistoricalBlobCollector::new(
+        roots,
+        current_generation,
+        walk.maximum_entries(),
+        checkpoint.clone(),
+    );
+    let mut blobs = super::blob_walk::BlobRecordWalk::new(walk.maximum_entries(), checkpoint)
+        .with_selected_root_generation(current_generation);
+    let mut selected_routes = RouteInventory::new();
+    let mut historical_routes = RouteInventory::new();
+    observations.extend(retirements.admit(
+        root,
+        roots,
+        current_generation,
+        &mut arenas,
+        &mut queue,
+        walk,
+    ));
+    let mut emitted = EmittedChildScopes::seed(&mut observations);
     for manifest in roots {
-        queue.extend(root_children(manifest));
+        queue.extend(
+            root_children(manifest)
+                .into_iter()
+                .map(|child| (manifest.generation, child, TraversalOrigin::RootManifest)),
+        );
     }
-    let mut visited: BTreeMap<(String, u64), ChildExpectation> = BTreeMap::new();
-    while let Some(expected) = queue.pop_front() {
-        let key = (expected.path.clone(), expected.offset);
+    let mut visited: BTreeMap<(u64, String, u64, TraversalOrigin), ChildExpectation> =
+        BTreeMap::new();
+    while let Some((root_generation, expected, origin)) = queue.pop_front() {
+        let key = (
+            root_generation,
+            expected.path.clone(),
+            expected.offset,
+            origin,
+        );
         if let Some(prior) = visited.get(&key) {
             if prior != &expected {
-                observations.push(project(
+                let outcome = damage(Cause::ScopeMismatch, None, Blast::Artifact);
+                if origin.selected_blob(root_generation, current_generation) {
+                    blobs.note_outcome(&expected, &outcome);
+                }
+                historical_blobs.note(origin, root_generation, &expected, &outcome);
+                note_route_failure(
+                    origin,
+                    root_generation,
+                    current_generation,
                     &expected,
-                    0,
-                    damage(Cause::ScopeMismatch, None, Blast::Artifact),
-                ));
+                    &mut selected_routes,
+                    &mut historical_routes,
+                );
+                emitted.push(&mut observations, &expected, project(&expected, 0, outcome));
             }
             continue;
         }
         if visited.len() as u64 >= walk.maximum_entries() {
-            observations.push(project(&expected, 0, walk.entry_bound()));
+            let outcome = walk.entry_bound();
+            if origin.selected_blob(root_generation, current_generation) {
+                blobs.note_outcome(&expected, &outcome);
+            }
+            blobs.note_walk_stopped(&outcome);
+            historical_blobs.note(origin, root_generation, &expected, &outcome);
+            note_route_failure(
+                origin,
+                root_generation,
+                current_generation,
+                &expected,
+                &mut selected_routes,
+                &mut historical_routes,
+            );
+            emitted.push(&mut observations, &expected, project(&expected, 0, outcome));
             break;
         }
         visited.insert(key, expected.clone());
         let path = root.join(&expected.path);
+        let arena_frame = matches!(
+            expected.scope,
+            ChildScope::ExtentManifest { .. } | ChildScope::ExtentChunk { .. }
+        );
         let acquired = if !path.try_exists().unwrap_or(true) {
             walk.counters_mut().missing_artifacts += 1;
             Err(damage(Cause::MissingArtifact, None, Blast::Artifact))
+        } else if arena_frame {
+            walk.acquire_range(
+                &path,
+                4,
+                expected.offset,
+                expected.length.expect("arena frame length"),
+            )
         } else {
             walk.acquire(&path, 4)
         };
@@ -72,15 +141,24 @@ pub(crate) fn observe_records(
                     .as_ref()
                     .map(|path| super::unknown_artifact::relative_path(root, path));
                 if let Some(first_path) = &alias {
-                    observations.push(
-                        project(
-                            &expected,
-                            acquired.byte_length,
-                            Outcome::Unknown(
-                                OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected,
-                            ),
-                        )
-                        .with_duplicate(
+                    let outcome =
+                        Outcome::Unknown(OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected);
+                    if origin.selected_blob(root_generation, current_generation) {
+                        blobs.note_outcome(&expected, &outcome);
+                    }
+                    historical_blobs.note(origin, root_generation, &expected, &outcome);
+                    note_route_failure(
+                        origin,
+                        root_generation,
+                        current_generation,
+                        &expected,
+                        &mut selected_routes,
+                        &mut historical_routes,
+                    );
+                    emitted.push(
+                        &mut observations,
+                        &expected,
+                        project(&expected, acquired.byte_length, outcome).with_duplicate(
                             OfflineArtifactDuplicateEvidence::PhysicalAlias {
                                 first_path: first_path.clone().into(),
                             },
@@ -98,7 +176,7 @@ pub(crate) fn observe_records(
                             Blast::Artifact,
                         );
                         walk.record_outcome(&outcome);
-                        observations.push(project(&expected, 0, outcome));
+                        emitted.push(&mut observations, &expected, project(&expected, 0, outcome));
                         continue;
                     }
                 }
@@ -106,9 +184,15 @@ pub(crate) fn observe_records(
                     .length
                     .and_then(|length| expected.offset.checked_add(length))
                     .unwrap_or(acquired.byte_length as u64);
-                let range = usize::try_from(expected.offset)
+                let start = if arena_frame { 0 } else { expected.offset };
+                let read_end = if arena_frame {
+                    expected.length.unwrap()
+                } else {
+                    end
+                };
+                let range = usize::try_from(start)
                     .ok()
-                    .zip(usize::try_from(end).ok())
+                    .zip(usize::try_from(read_end).ok())
                     .and_then(|(start, end)| acquired.bytes.get(start..end));
                 match range {
                     None => damage(
@@ -125,12 +209,66 @@ pub(crate) fn observe_records(
                         match result {
                             Err(outcome) => shift_outcome(outcome, expected.offset),
                             Ok(children) => {
+                                if origin == TraversalOrigin::RootManifest
+                                    && expected.family == Family::FreeSpaceHeader
+                                {
+                                    if Some(root_generation) == current_generation {
+                                        selected_routes.note_free_space_header(bytes);
+                                    } else if current_generation
+                                        .and_then(|value| value.checked_sub(1))
+                                        == Some(root_generation)
+                                    {
+                                        historical_routes.note_free_space_header(bytes);
+                                    }
+                                }
+                                if origin == TraversalOrigin::RootManifest
+                                    && expected.family == Family::RootRoutingBlock
+                                {
+                                    if Some(root_generation) == current_generation {
+                                        selected_routes.observe(&expected, bytes);
+                                    } else if current_generation
+                                        .and_then(|value| value.checked_sub(1))
+                                        == Some(root_generation)
+                                    {
+                                        historical_routes.observe(&expected, bytes);
+                                    }
+                                    for child in &children {
+                                        arenas.observe_routed_expectation(root_generation, child);
+                                    }
+                                }
+                                if origin == TraversalOrigin::RootManifest {
+                                    arenas.observe(root_generation, &expected, bytes);
+                                }
+                                if expected.family == Family::ExtentChunkFrame
+                                    && origin.selected_blob(root_generation, current_generation)
+                                {
+                                    blobs.observe_valid_extent_chunk(
+                                        &expected,
+                                        bytes,
+                                        store,
+                                        walk.counters_mut(),
+                                    );
+                                }
+                                if expected.family == Family::ExtentChunkFrame {
+                                    historical_blobs.observe(
+                                        origin,
+                                        root_generation,
+                                        &expected,
+                                        bytes,
+                                        store,
+                                        walk.counters_mut(),
+                                    );
+                                }
                                 if queue.len().saturating_add(children.len()) as u64
                                     > walk.maximum_entries()
                                 {
                                     walk.entry_bound()
                                 } else {
-                                    queue.extend(children);
+                                    queue.extend(
+                                        children
+                                            .into_iter()
+                                            .map(|child| (root_generation, child, origin)),
+                                    );
                                     Outcome::Intact
                                 }
                             }
@@ -139,6 +277,20 @@ pub(crate) fn observe_records(
                 }
             }
         };
+        if origin.selected_blob(root_generation, current_generation) {
+            blobs.note_outcome(&expected, &outcome);
+        }
+        historical_blobs.note(origin, root_generation, &expected, &outcome);
+        if outcome != Outcome::Intact {
+            note_route_failure(
+                origin,
+                root_generation,
+                current_generation,
+                &expected,
+                &mut selected_routes,
+                &mut historical_routes,
+            );
+        }
         walk.record_outcome(&outcome);
         let mut observation = project(&expected, length, outcome);
         if let Some(first_path) = alias {
@@ -147,191 +299,76 @@ pub(crate) fn observe_records(
                     first_path: first_path.into(),
                 });
         }
-        observations.push(observation);
+        emitted.push(&mut observations, &expected, observation);
+    }
+    let selected_anchor = current_generation.and_then(|generation| {
+        roots
+            .iter()
+            .find(|root| root.generation == generation)
+            .map(|root| root.tier_epoch_anchor)
+    });
+    let epoch_mismatch = selected_anchor
+        .is_some_and(|anchor| anchor.is_some() != selected_routes.tier_epoch_start().is_some());
+    if selected_routes.tier_mismatch()
+        || epoch_mismatch
+        || selected_routes.tier_epoch_start().is_some()
+        || selected_anchor.flatten().is_some()
+    {
+        let generation = current_generation.and_then(PhysicalArtifactGeneration::encoded);
+        if let Some(observation) = observations.iter_mut().find(|observation| {
+            observation.family().declared() == Some(Family::FreeSpaceHeader)
+                && Some(observation.generation()) == generation
+        }) {
+            let outcome = if selected_routes.tier_mismatch() || epoch_mismatch {
+                damage(Cause::ScopeMismatch, None, Blast::Artifact)
+            } else {
+                // Header bytes alone cannot activate a tier epoch without
+                // an independently selected Intent+Completed WAL pair.
+                Outcome::Unknown(OfflineUnknownPhysicalReason::WalCoverageUnavailable)
+            };
+            *observation = observation.clone().with_outcome(outcome.clone());
+            walk.record_outcome(&outcome);
+        }
+    }
+    let arena_observations = arenas.finish(root, walk);
+    // Historical roots remain independently reported, but their uncertain
+    // post-retirement gaps cannot determine the selected blob graph's fate.
+    let selected_arena_generation =
+        current_generation.and_then(PhysicalArtifactGeneration::encoded);
+    let arena_routes_intact = selected_arena_generation.is_some_and(|generation| {
+        arena_observations
+            .iter()
+            .filter(|observation| observation.generation() == generation)
+            .all(|observation| matches!(observation.outcome(), Outcome::Intact))
+    });
+    if let Some(source) = historical_blobs.finish(&arena_observations) {
+        blobs = blobs.with_historical_source(source.with_routes(historical_routes));
+    }
+    blobs = blobs.with_route_inventory(selected_routes);
+    for observation in arena_observations {
+        emitted.push_untyped(&mut observations, observation);
+    }
+    for observation in blobs.finish(root, walk, arena_routes_intact) {
+        if observation.identity().as_str().starts_with("blob-record:") {
+            selected_records.insert(observation.identity().as_str().into());
+        }
+        walk.record_outcome(observation.outcome());
+        emitted.push_untyped(&mut observations, observation);
+    }
+    for observation in super::selected_index_walk::observe_selected_indexes(
+        root,
+        roots,
+        current_generation,
+        store,
+        walk,
+    ) {
+        if observation.family().declared() == Some(Family::BTreeNode)
+            && observation.identity().as_str().starts_with("index-record:")
+        {
+            selected_records.insert(observation.identity().as_str().into());
+        }
+        walk.record_outcome(observation.outcome());
+        emitted.push_untyped(&mut observations, observation);
     }
     observations
-}
-
-fn root_children(root: &OfflineRootManifestFacts) -> Vec<ChildExpectation> {
-    use super::families::durable_frame::read_u64;
-    let payload = &root.payload;
-    let tree = read_u64(payload, 8);
-    let capacity = read_u16(payload, 16);
-    let mut children = Vec::new();
-    if payload[40] == 1 {
-        children.push(reference(
-            &payload[48..120],
-            Family::RootRoutingBlock,
-            tree,
-            capacity,
-            root.format,
-        ));
-    }
-    if payload[160] == 1 {
-        children.push(reference(
-            &payload[168..224],
-            Family::SegmentMembershipBlock,
-            tree,
-            capacity,
-            root.format,
-        ));
-    }
-    children.push(ChildExpectation {
-        path: format!(
-            "families/records/free-space/free-space-{:016x}.manifest",
-            root.generation
-        ),
-        family: Family::FreeSpaceHeader,
-        generation: root.generation,
-        format: root.format,
-        offset: 0,
-        length: Some(176),
-        checksum: Some(read_u32(payload, 152)),
-        scope: ChildScope::FreeSpace { tree, capacity },
-    });
-    // Root's free-space reference is independently bound as well as the header reference.
-    if payload[232] == 1 {
-        children.push(reference(
-            &payload[240..296],
-            Family::FreeSpaceMembershipBlock,
-            tree,
-            capacity,
-            root.format,
-        ));
-    }
-    children
-}
-
-fn inspect_expected(
-    bytes: &[u8],
-    expected: &ChildExpectation,
-    walk: &mut BoundedMediaWalk,
-) -> Result<Vec<ChildExpectation>, Outcome> {
-    let maximum_children = walk.maximum_entries();
-    let counters = walk.counters_mut();
-    let children = match expected.family {
-        Family::RootRoutingBlock => read_root_routing(bytes, expected, counters),
-        Family::SegmentMembershipBlock => read_segment_membership(bytes, expected, counters),
-        Family::FreeSpaceHeader => read_free_space_header(bytes, expected, counters),
-        Family::FreeSpaceMembershipBlock => read_free_space_membership(bytes, expected, counters),
-        Family::PageFrame => read_page_frame(bytes, expected, counters),
-        Family::ExtentManifest => read_extent_manifest(bytes, expected, maximum_children, counters),
-        Family::ExtentChunkFrame => read_extent_chunk(bytes, expected, counters),
-        _ => unreachable!("record children have closed family dispatch"),
-    }?;
-    if let Some(checksum) = expected.checksum {
-        counters.checksum_calculations += 1;
-        if super::crc32c::crc32c(&[bytes]) != checksum {
-            return Err(damage(
-                Cause::ChecksumMismatch,
-                Some((0, bytes.len() as u64)),
-                Blast::Artifact,
-            ));
-        }
-    }
-    Ok(children)
-}
-
-fn observe_bootstrap(
-    root: &Path,
-    store: Option<[u8; 16]>,
-    walk: &mut BoundedMediaWalk,
-) -> OfflineArtifactObservation {
-    let relative = "families/records/bootstrap.catalog";
-    let path = root.join(relative);
-    let mut alias = None;
-    let outcome = if let Some(reason) = walk.exhausted_reason() {
-        Outcome::Indeterminate(reason)
-    } else if !path.try_exists().unwrap_or(true) {
-        walk.counters_mut().missing_artifacts += 1;
-        damage(Cause::MissingArtifact, None, Blast::Artifact)
-    } else {
-        match walk.acquire(&path, 3) {
-            Err(outcome) => outcome,
-            Ok(acquired) => {
-                alias = acquired
-                    .physical_alias_of
-                    .as_ref()
-                    .map(|path| super::unknown_artifact::relative_path(root, path));
-                if alias.is_some() {
-                    Outcome::Unknown(OfflineUnknownPhysicalReason::PhysicalAliasNotReinspected)
-                } else {
-                    match store {
-                        None => {
-                            Outcome::Unknown(OfflineUnknownPhysicalReason::StoreIdentityUnavailable)
-                        }
-                        Some(store) => {
-                            read_bootstrap_catalog(&acquired.bytes, store, walk.counters_mut())
-                                .map_or_else(|outcome| outcome, |()| Outcome::Intact)
-                        }
-                    }
-                }
-            }
-        }
-    };
-    walk.record_outcome(&outcome);
-    let observation = OfflineArtifactObservation::new(
-        relative,
-        Family::BootstrapCatalog.into(),
-        PhysicalArtifactIdentity::new("bootstrap-catalog").unwrap(),
-        PhysicalArtifactGeneration::NotEncoded,
-        PhysicalByteRange::new(0, 82).ok(),
-        outcome,
-    );
-    match alias {
-        Some(first_path) => {
-            observation.with_duplicate(OfflineArtifactDuplicateEvidence::PhysicalAlias {
-                first_path: first_path.into(),
-            })
-        }
-        None => observation,
-    }
-}
-
-fn project(
-    expected: &ChildExpectation,
-    length: usize,
-    outcome: Outcome,
-) -> OfflineArtifactObservation {
-    OfflineArtifactObservation::new(
-        expected.path.clone(),
-        expected.family.into(),
-        PhysicalArtifactIdentity::new(expected.identity()).unwrap(),
-        PhysicalArtifactGeneration::encoded(expected.generation)
-            .unwrap_or(PhysicalArtifactGeneration::NotEncoded),
-        PhysicalByteRange::new(expected.offset, expected.length.unwrap_or(length as u64)).ok(),
-        outcome,
-    )
-}
-
-pub(crate) fn damage(cause: Cause, range: Option<(u64, u64)>, blast: Blast) -> Outcome {
-    Outcome::Damaged(OfflinePhysicalDamageLocalization::new(
-        cause, range, None, blast,
-    ))
-}
-
-pub(crate) fn shift_outcome(outcome: Outcome, offset: u64) -> Outcome {
-    match outcome {
-        Outcome::Damaged(value) => Outcome::Damaged(OfflinePhysicalDamageLocalization::new(
-            value.cause(),
-            value
-                .damaged_range()
-                .map(|range| (offset.saturating_add(range.offset()), range.length())),
-            value.field(),
-            value.blast_radius(),
-        )),
-        Outcome::Unsupported(value) => {
-            Outcome::Unsupported(super::OfflineUnsupportedPhysicalVersion::new(
-                value.axis(),
-                value.observed(),
-                value.supported(),
-                PhysicalByteRange::new(
-                    offset.saturating_add(value.range().offset()),
-                    value.range().length(),
-                )
-                .unwrap(),
-            ))
-        }
-        other => other,
-    }
 }

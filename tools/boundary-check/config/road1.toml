@@ -1,11 +1,43 @@
 root_manifest = "Cargo.toml"
 forbidden_root_prefixes = ["workspaces/"]
 
+# C.11 Phase 2 records the post-inversion Store mechanism subgraph in the
+# same exact DAG snapshot as the Road 1 and Query package surfaces.
+[[snapshot_dependency_packages]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+packages = [
+  "worth-store",
+  "worth-store-blob-chunks",
+  "worth-store-layout-indexes",
+  "worth-store-lsm-authority",
+]
+required_edges = [
+  { source = "worth-store", target = "worth-store-blob-chunks" },
+  { source = "worth-store", target = "worth-store-layout-indexes" },
+  { source = "worth-store", target = "worth-store-lsm-authority" },
+]
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = [
+  "worth-store-blob-chunks",
+  "worth-store-layout-indexes",
+  "worth-store-lsm-authority",
+]
+forbidden_targets = ["worth-store"]
+guidance = "C.11 mechanism crates depend downward; only Store composes Blob, Layout, and LSM owners"
+
 [[source_dependency_allowlists]]
 workspace_manifest = "Cargo.toml"
 sources = ["worth-execution"]
-allowed_targets = ["rayon", "trybuild", "worth-foundational", "worth-proof"]
-guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, portable vocabulary, proof doors and compile-fail test support"
+allowed_targets = ["allocator-api2", "rayon", "trybuild", "worth-foundational", "worth-proof"]
+guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, the exactly pinned fresh payload allocator, portable vocabulary, proof doors and compile-fail test support. Payload layout and reservation precede allocation; higher runtime or graph owners remain forbidden."
+
+[[source_dependency_allowlists.dependency_contracts]]
+target = "allocator-api2"
+version_requirement = "=0.2.21"
+uses_default_features = true
+features = []
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
@@ -19,9 +51,36 @@ forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBas
 guidance = "C.10 retires report-derived isolation entry authority; root correlation must consume an already-issued physical root"
 
 [[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-layout-indexes/src"
+forbidden_identifiers = [
+  "worth_store_compatibility",
+  "ArtifactCompatibilityWindow",
+  "RollingUpgradePolicy",
+  "CompatibilityFamilyKind",
+  "LayoutEvolutionOwnerCaseObservations",
+]
+guidance = "The Store layout owner must not restore removed historical compatibility imports or planners; keep current format identity, typed refusal and recovery authority in their existing owners"
+
+[[source_identifier_denials]]
 root = "workspaces/worth-store/crates/worth-store-physical-certification/src"
 forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBasis", "admit_physical_isolation_entry"]
 guidance = "C.10 removes synthetic readiness admission rather than relocating a report-to-root authority route into certification"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning"
+exclude_paths = [
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/historical_drop/media_controls.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/selected_source_inventory.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/selected_source_inventory/routes.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/successor_candidate_observation/artifact_read.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/page_observation/ordered_history/head_replay.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/historical_publication.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/historical_rewrite/inline_membership.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/head_v2.rs",
+  "workspaces/worth-store/crates/worth-store-recovery-runtime/src/orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal/head_replay.rs",
+]
+forbidden_identifiers = ["PageAddress", "ArtifactCeiling"]
+guidance = "C.11 K3: a manifest page is read only by a wrapper that takes the walk's charge token, or admits its point lookup, before the read; another planning module calls that wrapper instead of addressing a page"
 
 [[source_dependency_allowlists]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
@@ -53,6 +112,7 @@ exclude_paths = [
   "workspaces/worth-store/crates/worth-store/src/physical_runtime/instance/construction/record_serving.rs",
   "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/publication/director",
   "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/lifecycle/serving_runtime.rs",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/lifecycle/serving_runtime/record_reader.rs",
 ]
 forbidden_identifiers = [
   "RootProtectionRegistry",
@@ -1404,12 +1464,12 @@ category = "stream-reader"
 reason = "A process stream is read concurrently to prevent pipe backpressure."
 
 [[threading_sites]]
-source = "workspaces/worth-store/crates/worth-store-offline-integrity-observer/src/integrity_observation/file_identity.rs"
-item = "bounded_command_output"
-kind = "thread-spawn"
+source = "workspaces/worth-store/crates/worth-store-recovery-runtime/src/bin/physical_store_recover.rs"
+item = "run_on_recovery_worker"
+kind = "thread-builder"
 count = 1
-category = "stream-reader"
-reason = "A process stream is read concurrently to prevent pipe backpressure."
+category = "owner-thread"
+reason = "The recover binary runs recovery on one owner thread with a stack sized for the recovery walk."
 
 [[threading_sites]]
 source = "workspaces/worth-store/crates/worth-store-operations/src/certification_scenario/authorization_race.rs"

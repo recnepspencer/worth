@@ -127,9 +127,10 @@ pub use self::runtime::{
     SignalBranchRetirementReason, SignalBranchRetirementReceipt, SignalObservationAdmissionDenial,
     SignalObservationCompletion, SignalObservationRequest, SignalObservationSession,
     SignalObservationSurface, SignalRuntime, SignalTransaction, TemporalFrontierSnapshot,
-    TemporalPreviousValueAccess, TemporalPreviousValueReference, TemporalWakeId,
-    TemporalWakeReschedule, TemporalWakeRetirementReason, TemporalWakeReuse, TemporalWakeSummary,
-    TransactionOutcome, TransactionResult, TransactionTiming, WakeOrdinal,
+    TemporalPreviousValueAccess, TemporalPreviousValueReference,
+    TemporalRetiredWakeCompactionReport, TemporalWakeId, TemporalWakeReschedule,
+    TemporalWakeRetirementReason, TemporalWakeReuse, TemporalWakeSummary, TransactionOutcome,
+    TransactionResult, TransactionTiming, WakeOrdinal,
 };
 #[cfg(test)]
 #[allow(deprecated)]

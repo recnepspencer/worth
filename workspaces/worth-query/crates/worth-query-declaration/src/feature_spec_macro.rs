@@ -39,6 +39,14 @@ macro_rules! worth_query_feature_spec {
             $($rest)*
         )
     };
+    (@members $builder:expr; mutation_with_external_input(
+        $binding:ty, $provider:ty
+    ); $($rest:tt)*) => {
+        $crate::worth_query_feature_spec!(@members
+            $builder.mutation_with_external_input::<$binding, $provider>();
+            $($rest)*
+        )
+    };
     (@members $builder:expr; mutation_with_requirement_and_external_input(
         $binding:ty, $rule:ty, $provider:ty
     ); $($rest:tt)*) => {

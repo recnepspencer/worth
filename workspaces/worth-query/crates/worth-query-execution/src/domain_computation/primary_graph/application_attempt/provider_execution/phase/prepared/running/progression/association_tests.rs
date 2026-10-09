@@ -18,6 +18,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use crate::facade::runtime::ExecutionAllocationPolicy;
 use std::time::{Duration, Instant};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -29,68 +30,6 @@ type RetainedProgram = WorthQueryApplicationEffectProgram<
     ExactStatusRetentionInput,
     Account,
 >;
-
-#[test]
-fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately() {
-    let world = installed_authorization_world(true);
-    let snapshot_baseline = world.invariant.active_snapshot_count();
-    let (left, right) = equivalent_programs(&world, "racing-equivalent");
-    let binding = idempotency(139, 140);
-    let left = start(&world.application, left, binding);
-    let right = start(&world.application, right, binding);
-    let left = progress_application_commit(&world.application, left);
-    let right = progress_application_commit(&world.application, right);
-    assert_eq!(
-        world.invariant.active_snapshot_count(),
-        snapshot_baseline + 2
-    );
-    let left = finish_application_commit(&world.application, left);
-    assert_eq!(
-        world.invariant.active_snapshot_count(),
-        snapshot_baseline + 1,
-        "finishing one attempt must preserve its interleaved peer's snapshot lease"
-    );
-    let right = finish_application_commit(&world.application, right);
-    assert_eq!(world.invariant.active_snapshot_count(), snapshot_baseline);
-    assert_eq!(world.application.provider_session_resource_count(), 0);
-
-    let (executed, recovered) = match (left, right) {
-        (
-            WorthQueryApplicationCommitOutcome::Committed(executed),
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered),
-        )
-        | (
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered),
-            WorthQueryApplicationCommitOutcome::Committed(executed),
-        ) => (executed, recovered),
-        unexpected => panic!("expected one executed and one recovered commit: {unexpected:?}"),
-    };
-    assert!(executed.is_same_authoritative_commit(&recovered));
-    assert_eq!(executed.retained_preimage(), recovered.retained_preimage());
-    assert_eq!(executed.dispatch_outbox(), recovered.dispatch_outbox());
-    let executed_output = executed
-        .outputs_of::<RetentionOutputs>()
-        .and_then(|outputs| outputs.entity::<RetainedAccount>())
-        .expect("fresh receipt must retain the bound output role");
-    let recovered_output = recovered
-        .outputs_of::<RetentionOutputs>()
-        .and_then(|outputs| outputs.entity::<RetainedAccount>())
-        .expect("idempotent receipt must recover the same output role");
-    assert_eq!(executed_output.entity_id(), recovered_output.entity_id());
-    assert_eq!(executed.terminal().attempt_resources_released(), Some(true));
-    assert_eq!(
-        recovered.terminal().attempt_resources_released(),
-        Some(true)
-    );
-    assert_eq!(
-        executed.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Executed
-    );
-    assert_eq!(
-        recovered.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-}
 
 #[test]
 fn preparation_denial_cleanup_preserves_the_interleaved_peer() {
@@ -183,14 +122,20 @@ fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
     let both_attempts = world.invariant.active_snapshot_count();
     let winner = equivalent_programs(&world, "stale-winner").0;
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(winner, idempotency(151, 152)),
+        world.application.compare_and_commit_application(
+            winner,
+            idempotency(151, 152),
+            ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let victim = finish_application_commit(
         &world.application,
-        progress_application_commit(&world.application, victim),
+        progress_application_commit(
+            &world.application,
+            victim,
+            ExecutionAllocationPolicy::SystemAllocation,
+        ),
     );
     crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
         victim,
@@ -226,7 +171,11 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
     cancellation.cancel();
     let victim = finish_application_commit(
         &world.application,
-        progress_application_commit(&world.application, victim),
+        progress_application_commit(
+            &world.application,
+            victim,
+            ExecutionAllocationPolicy::SystemAllocation,
+        ),
     );
     assert!(
         matches!(victim, WorthQueryApplicationCommitOutcome::Cancelled),
@@ -262,7 +211,11 @@ fn assert_interleaved_terminal(
     inject(&world);
     let victim = finish_application_commit(
         &world.application,
-        progress_application_commit(&world.application, victim),
+        progress_application_commit(
+            &world.application,
+            victim,
+            ExecutionAllocationPolicy::SystemAllocation,
+        ),
     );
     assert_victim(&victim);
     assert_only_peer_remains(&world, baseline, both_attempts);
@@ -306,7 +259,11 @@ fn finish_peer(
 ) {
     let peer = finish_application_commit(
         &world.application,
-        progress_application_commit(&world.application, peer),
+        progress_application_commit(
+            &world.application,
+            peer,
+            ExecutionAllocationPolicy::SystemAllocation,
+        ),
     );
     match (expectation, peer) {
         (PeerExpectation::Committed, WorthQueryApplicationCommitOutcome::Committed(receipt)) => {
@@ -390,3 +347,6 @@ fn equivalent_programs(
         ),
     )
 }
+
+#[path = "association_tests/equivalent_retry.rs"]
+mod equivalent_retry;

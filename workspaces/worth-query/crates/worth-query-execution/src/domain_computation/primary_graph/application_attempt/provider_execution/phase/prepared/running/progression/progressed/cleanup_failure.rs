@@ -1,4 +1,4 @@
-//! A failed managed cleanup retains HEAD's unresolved commit posture.
+//! A failed managed cleanup retains the unresolved commit posture.
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::{
     outcome::WorthQueryProviderProgressionOutcome as Progression,
     recovery_evidence::unknown_commit_recovery_evidence,
@@ -52,7 +52,6 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             }
             Kind::ProviderRejected
             | Kind::CustomInvariantDenied
-            | Kind::CandidateValidatorWorkExceeded { .. }
             | Kind::WorkflowSettlementDenied { .. }
             | Kind::ProductBasisStale
             | Kind::UniqueValueTaken
@@ -66,7 +65,6 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::IndexMaintenanceBudgetExceeded
             | Kind::IndexGenerationIdentityExhausted
             | Kind::IdempotencyIntentDrift
-            | Kind::IdempotencyWindowExpired
             | Kind::IdempotencyReceiptNotRetained { .. }
             | Kind::IdempotencyIntentUnverifiable
             | Kind::MutationBindingMismatch

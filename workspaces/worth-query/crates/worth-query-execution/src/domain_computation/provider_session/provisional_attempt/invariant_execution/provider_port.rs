@@ -56,8 +56,9 @@ impl<'a> WorthQueryInvariantStateLoadRequestView<'a> {
 pub struct WorthQueryInvariantStateLoadAdmission {
     binding: WorthQueryInvariantStateLoadBinding,
     expected_locators: Arc<[super::WorthQueryInvariantStateLocator]>,
-    max_state_facts: usize,
-    max_work_units: u64,
+    max_state_facts: Option<usize>,
+    max_work_units: Option<u64>,
+    request: Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -73,14 +74,18 @@ impl WorthQueryInvariantStateLoadAdmission {
     pub(super) fn new(
         binding: WorthQueryInvariantStateLoadBinding,
         plan: &WorthQueryAdmittedInvariantStateLoadPlan,
-        max_state_facts: usize,
-        max_work_units: u64,
+        max_state_facts: Option<usize>,
+        max_work_units: Option<u64>,
+        request: Option<
+            worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        >,
     ) -> Self {
         Self {
             binding,
             expected_locators: plan.locators().into(),
             max_state_facts,
             max_work_units,
+            request,
         }
     }
 
@@ -90,8 +95,13 @@ impl WorthQueryInvariantStateLoadAdmission {
         loaded_fact_locators: impl IntoIterator<Item = super::WorthQueryInvariantStateLocator>,
         counters: WorthQueryInvariantStructuralCounters,
     ) -> Result<WorthQueryInvariantStateLoadEvidence, WorthQueryInvariantExecutionFailure> {
+        super::request_control::check_live(self.request.as_ref())?;
         let physical_load_evidence = canonical(physical_load_evidence)?;
-        let mut loaded = loaded_fact_locators.into_iter().collect::<Vec<_>>();
+        let mut loaded = Vec::new();
+        for locator in loaded_fact_locators {
+            super::request_control::check_live(self.request.as_ref())?;
+            loaded.push(locator);
+        }
         loaded.sort();
         loaded.dedup();
         // Emit-only / outbox-only commits (R8.55) admit an empty load when the
@@ -113,16 +123,23 @@ impl WorthQueryInvariantStateLoadAdmission {
                 WorthQueryInvariantExecutionDenialKind::StateLoadClosureMismatch,
             ));
         }
-        if loaded.len() > self.max_state_facts {
+        if self
+            .max_state_facts
+            .is_some_and(|maximum| loaded.len() > maximum)
+        {
             return Err(exhausted(
                 WorthQueryInvariantExecutionDenialKind::StateLoadBudgetExceeded,
             ));
         }
-        if counters.load_work_units() > self.max_work_units {
+        if self
+            .max_work_units
+            .is_some_and(|maximum| counters.load_work_units() > maximum)
+        {
             return Err(exhausted(
                 WorthQueryInvariantExecutionDenialKind::ExecutionBudgetExceeded,
             ));
         }
+        super::request_control::check_live(self.request.as_ref())?;
         Ok(WorthQueryInvariantStateLoadEvidence {
             identity: Arc::clone(&physical_load_evidence),
             binding: self.binding,

@@ -7,9 +7,7 @@ use super::super::{
 use super::drive::drive_required_wave;
 use super::queued::RequiredQueueFrames;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::{
-    registry::InstalledProducerEdition, WorthQueryProducerCommitAuthority,
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
@@ -28,7 +26,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     commit_authority: &WorthQueryProducerCommitAuthority,
-    installed_edition: &InstalledProducerEdition,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -46,7 +43,7 @@ where
         return Ok(None);
     };
     // A restored output takes its mode here, before any wave can select it.
-    wave.caller_ready.completion().advanced_in(commit_authority);
+    wave.anchor_ready.completion().advanced_in(commit_authority);
     // An Idle Ready is not itself a dirty required target. Genesis and full
     // verification cases retain the established output verifier once the
     // outputs they consumed are current. An authentic
@@ -62,7 +59,7 @@ where
         .resolve_required_settlement(
             runtime.runtime.authority_identity().as_u64(),
             &runtime.installed_schema.binding_identity(),
-            wave.caller_ready.completion(),
+            wave.anchor_ready.completion(),
             admission,
         );
     // A reason withholds the candidate: the caller's Ready is verified in
@@ -114,7 +111,7 @@ where
         // denied instead.
         let observation = wave.shared.selected().product().observation();
         let superseded_without_facts = matches!(
-            &wave.caller_ready.completion().authority,
+            &wave.anchor_ready.completion().authority,
             Authority::Committed(receipt)
                 if receipt.currentness_without_facts_at(observation)
                     == Some(FactlessCurrentness::Superseded)
@@ -158,7 +155,6 @@ where
         principal,
         request_scope,
         commit_authority,
-        installed_edition,
         wave,
         &mut queue,
         &mut frame_custody,
@@ -166,4 +162,61 @@ where
     );
     frame_custody.hold_unfinished(&runtime.output_demands);
     queue.conclude(result)
+}
+
+use super::super::super::required_provenance::DemandProgressionProvenance;
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn finish_current_caller<Schema, Family>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+    anchor_ready: &SelectedReadyReadmission,
+    selected: &SelectedReadyReadmission,
+    continues_caller: bool,
+    caller_current: bool,
+    current_contacts: usize,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<bool, WorthQueryOutputDemandDenial>
+where
+    Schema: ApplicationSchema + 'static,
+    Family: WorthQueryProducerOutputFamily<Schema>,
+{
+    // A Clean caller retains its lifetime contact count.
+    // Promotion pays the actual demand, continuation and provenance moves.
+    admission
+        .charge_external_work(5)
+        .map_err(|_| work_denial())?;
+    if let Some(mut successor) = demand
+        .required_continuations
+        .promote_caller_successor::<Family>(
+            &runtime.output_demands,
+            anchor_ready,
+            selected,
+            continues_caller,
+            admission,
+        )?
+    {
+        // The successor completed under its own issued mode. This is a
+        // Current custody handoff, so future advances retain the caller's
+        // original authority, as when an open demand rejoins another refresh.
+        let mut provenance = std::mem::take(&mut demand.progression_provenance);
+        if let DemandProgressionProvenance::RequiredSuccessor(required) = &mut provenance {
+            required.bind_successor(successor.installed_entry.edition);
+        }
+        successor.progression_provenance = provenance;
+        successor.required_continuations = demand.required_continuations.take_all();
+        successor.producer_contacts_in_this_demand = current_contacts;
+        *demand = successor;
+    } else if !caller_current {
+        return Ok(false);
+    }
+    let interest = demand
+        .interest
+        .as_ref()
+        .expect("Current caller retains its Interest");
+    runtime
+        .output_demands
+        .finish_settlement_admitted(interest, selected, admission)?;
+    drop(demand.required_continuations.take_all());
+    Ok(true)
 }

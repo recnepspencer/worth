@@ -15,6 +15,9 @@
 use worth_foundational::facade::AspectValue;
 use worth_query_installation::facade::WorthQueryProgramSupportEntry;
 
+#[cfg(test)]
+mod tests;
+
 use super::super::super::program_occurrence::WorthQueryInstalledProgramSupport;
 use super::super::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationEffectProgram,
@@ -69,7 +72,12 @@ pub(super) fn require_occurrence_acts_through<Operation: 'static>(
         .entry()
         .acts_through_operation(std::any::TypeId::of::<Operation>())
     {
-        return Err(WorthQueryApplicationCommitDenial::application_program_required());
+        return Err(
+            WorthQueryApplicationCommitDenial::operation_not_declared_by_active_program::<Operation>(
+                occurrence.entry().identity(),
+                occurrence.entry().revision(),
+            ),
+        );
     }
     Ok(())
 }

@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
+use crate::physical_runtime::SharedRecoveryCheckpoint;
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_wal::WalSegmentArtifactIdentity;
 
 use crate::physical_runtime::{
@@ -16,7 +15,7 @@ use super::StoreRecoveryCleanupPlan;
 
 pub(super) struct PlanMaterializationInput {
     pub(super) reopened: CompletedPhysicalRecoveryFreshReopen,
-    pub(super) checkpoint: Arc<VerifiedCheckpointStream>,
+    pub(super) checkpoint: SharedRecoveryCheckpoint,
     pub(super) descriptive_plan_identity: [u8; 32],
     pub(super) admitted: AdmittedCandidates,
     pub(super) capacity: PhysicalRecoveryCoordinationCapacity,

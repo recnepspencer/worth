@@ -66,10 +66,16 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(suite: &'static str)
                         ));
                     }
                 }
-                txn.push_batch(batch)
-                    .expect("test staging stays within configured resource budgets");
-                txn.commit(&runtime)
-                    .expect("chip flat entity step batch commit")
+                txn.push_batch(
+                    batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
+                txn.commit(
+                    &runtime,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("chip flat entity step batch commit")
             };
             let update_micros = update_started_at.elapsed().as_micros();
             let phase_timing = update.execution().phase_timing.clone();

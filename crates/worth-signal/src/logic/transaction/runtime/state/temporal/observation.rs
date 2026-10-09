@@ -29,7 +29,9 @@ impl TemporalRuntimeState {
         TemporalWakeSummary::new(
             self.scheduled_wakes.len(),
             self.ready_wakes.len(),
-            self.retired_wakes.len(),
+            self.retired_wakes.len().saturating_add(
+                usize::try_from(self.expired_retired_wakes.count()).unwrap_or(usize::MAX),
+            ),
             self.next_wake_id,
             self.next_wake_ordinal,
         )
@@ -71,6 +73,18 @@ where
     pub fn temporal_wake_summary(&self) -> TemporalWakeSummary {
         self.assert_construction_state_access();
         self.temporal.wake_summary()
+    }
+
+    /// Opt-in diagnostic receipt expiry. Active scheduled/ready wakes and their
+    /// owner frontiers are untouched; ordinary callers retain full history.
+    pub fn compact_retired_temporal_wake_tail(
+        &mut self,
+        retained_limit: u32,
+        max_expired: u32,
+    ) -> crate::data::temporal::TemporalRetiredWakeCompactionReport {
+        self.assert_construction_state_access();
+        self.temporal
+            .compact_retired_wake_tail(retained_limit, max_expired)
     }
 
     pub fn temporal_frontier_snapshot(&self) -> TemporalFrontierSnapshot {

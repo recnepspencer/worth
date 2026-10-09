@@ -293,11 +293,17 @@ fn create_generated_group(
         )));
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the generated group fits the configured transaction budget");
     (
         transaction
-            .commit(runtime)
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("the generated group publishes as one complete create commit"),
         entity_fields,
         relation_fields,
@@ -332,10 +338,16 @@ fn create_group_with_external_endpoint(
         )));
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the open generated group fits transaction budgets");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the open generated group is otherwise a valid all-create publication")
 }
 

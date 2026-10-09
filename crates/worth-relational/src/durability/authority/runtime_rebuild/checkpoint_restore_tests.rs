@@ -31,9 +31,15 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
 fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images() {
     let source = persisted_runtime_with_test_schema();
     let entity = create_entity(&source, "work-seed");
-    let small = source.durability_authority().native_checkpoint().unwrap();
+    let small = source
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     create_entity_in_partition(&source, "work-secondary", PartitionId(41));
-    let grown = source.durability_authority().native_checkpoint().unwrap();
+    let grown = source
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     assert!(
         grown.captured_sections().unwrap().partition_mirror
             > small.captured_sections().unwrap().partition_mirror
@@ -44,7 +50,10 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let sibling = create_branch_from_main(&source, "work-sibling");
     let sibling_commit = create_entity_outcome_on_branch(&source, "work-fork", sibling);
     release_test_commit_snapshot(&source, &sibling_commit);
-    let native = source.durability_authority().native_checkpoint().unwrap();
+    let native = source
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     assert!(
         native.captured_sections().unwrap().envelopes
             > grown.captured_sections().unwrap().envelopes
@@ -184,20 +193,28 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
     let main_entity = create_entity(&source, "partial-mirror-main");
     let mut transaction = test_owner_begin_transaction_for_main(&source);
     transaction
-        .push_batch(WorkerIntentBatch::new("partial-mirror-secondary").push(
-            MutationIntent::Create(CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                partition_id: PartitionId(41),
-                kind_id: KindId(1),
-                client_keys: vec![crate::symbols::data::ClientKey::raw("secondary")],
-                field_patches: vec![single_string_aspect_field_patch(
-                    aspect_key("name"),
-                    field_key("name"),
-                    "secondary",
-                )],
-            })),
-        ))
+        .push_batch(
+            WorkerIntentBatch::new("partial-mirror-secondary").push(MutationIntent::Create(
+                CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: PartitionId(41),
+                    kind_id: KindId(1),
+                    client_keys: vec![crate::symbols::data::ClientKey::raw("secondary")],
+                    field_patches: vec![single_string_aspect_field_patch(
+                        aspect_key("name"),
+                        field_key("name"),
+                        "secondary",
+                    )],
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let committed = transaction.commit(&source).unwrap();
+    let committed = transaction
+        .commit(
+            &source,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let secondary = changed_entities(&committed)[0];
     release_test_commit_snapshot(&source, &committed);
     create_relation_in_partition(

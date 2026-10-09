@@ -1,10 +1,10 @@
 use worth_query_declaration::facade::domain_computation::{
-    WorthQueryCancellationSafePointFamily, WorthQueryExecutionMode, WorthQueryResourceDimension,
+    WorthQueryCancellationSafePointFamily, WorthQueryResourceDimension,
     WorthQueryResourceLimitRequest, WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest,
 };
 
 use super::compiled_contract::WorthQueryCompiledApplicationOperationContracts;
-use super::invariant_compilation::{candidate_validator_work, mutation_contracts};
+use super::invariant_compilation::mutation_contracts;
 use crate::application_operation::WorthQueryApplicationCandidateDemand;
 use crate::application_operation::WorthQuerySealedOperationContractCompilation;
 use crate::domain_computation::{
@@ -34,7 +34,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             authorization,
             mut ability_requirements,
             authored_program_width,
-            decision_fact_budget,
             projection_work_budget,
             additional_authorization_fact_count,
             mutation_preconditions,
@@ -52,15 +51,10 @@ impl WorthQueryCompiledApplicationOperationContracts {
         ability_requirements.dedup();
         let authorization_fact_count = authorization
             .exact_fact_count(ability_requirements.len())
-            .saturating_add(additional_authorization_fact_count);
-        let (effects, invariants, invariant_execution) = mutation_contracts(
-            decision_fact_budget,
-            graph_mutation_count,
-            candidate_demand,
-            &invariant_invocations,
-        )?;
-        let candidate_validator_work = candidate_validator_work(&invariant_execution)?;
-        let candidate_demand = candidate_demand.resolve_validator_work(candidate_validator_work)?;
+            .checked_add(additional_authorization_fact_count)
+            .ok_or(())?;
+        let (effects, invariants, invariant_execution) =
+            mutation_contracts(graph_mutation_count, &invariant_invocations)?;
         let overlap_index = WorthQueryOperationReadTouchOverlapIndex::new(
             graph_reads
                 .roles()
@@ -69,13 +63,8 @@ impl WorthQueryCompiledApplicationOperationContracts {
                 .collect(),
             touches.scopes().to_vec(),
         );
-        let decision_facts =
-            application_decision_fact_contract(decision_fact_budget, authorization_fact_count);
-        let resources = application_resource_contract(
-            decision_fact_budget.saturating_add(authorization_fact_count),
-            authored_program_width,
-            candidate_demand,
-        );
+        let decision_facts = application_decision_fact_contract(authorization_fact_count);
+        let resources = application_resource_contract(authored_program_width, candidate_demand)?;
         Ok(Self {
             authorization,
             ability_requirements,
@@ -86,9 +75,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             invariants,
             decision_facts,
             invariant_execution,
-            candidate_validator_work,
             resources,
-            decision_fact_budget,
             projection_work_budget,
             additional_authorization_fact_count,
             mutation_preconditions,
@@ -103,15 +90,14 @@ impl WorthQueryCompiledApplicationOperationContracts {
 }
 
 fn application_decision_fact_contract(
-    maximum: usize,
     authorization_fact_count: usize,
 ) -> WorthQueryOperationDecisionFactContract {
     let application = WorthQueryDecisionFactFamily::new(
         APPLICATION_DECISION_FACT_FAMILY,
         WorthQueryDecisionFactKind::DomainStructuralProof,
     )
-    .and_then(|family| family.with_bounded_fact_count(maximum))
-    .expect("installed application decision-fact budget is nonzero and canonical");
+    .expect("installed application decision-fact family is canonical")
+    .with_variable_fact_count();
     let mut families = vec![application];
     if authorization_fact_count > 0 {
         families.push(
@@ -128,29 +114,25 @@ fn application_decision_fact_contract(
 }
 
 fn application_resource_contract(
-    decision_fact_budget: usize,
     program_width: usize,
     candidate_demand: WorthQueryApplicationCandidateDemand,
-) -> WorthQueryExecutionResourceContract {
-    let semantic_width = decision_fact_budget.saturating_add(program_width).max(1) as u64;
-    let envelope = WorthQueryExecutionResourceEnvelope::new(
-        WorthQuerySemanticScaleRequest::bounded(semantic_width)
-            .with(
-                WorthQuerySemanticScaleAxis::CandidateItems,
-                semantic_width.max(candidate_demand.candidate_items()),
-            )
-            .with(
-                WorthQuerySemanticScaleAxis::WorkItems,
-                semantic_width.max(candidate_demand.validator_work()),
-            ),
-        WorthQueryResourceLimitRequest::bounded(semantic_width)
+) -> Result<WorthQueryExecutionResourceContract, ()> {
+    let program_width = u64::try_from(program_width).map_err(|_| ())?;
+    let scale = WorthQuerySemanticScaleRequest::selective()
+        .with(
+            WorthQuerySemanticScaleAxis::CandidateItems,
+            candidate_demand.candidate_items(),
+        )
+        .with(WorthQuerySemanticScaleAxis::BatchWidth, program_width);
+
+    let envelope = WorthQueryExecutionResourceEnvelope::atomic(
+        scale,
+        WorthQueryResourceLimitRequest::selective()
             .with(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
-                semantic_width.max(candidate_demand.retained_representation_bytes()),
+                candidate_demand.retained_representation_bytes(),
             )
             .with(WorthQueryResourceDimension::RetainedBytes, 262_144),
-        WorthQueryExecutionMode::Synchronous,
-        None,
         WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
             .expect("static application safe-point family is canonical"),
     );
@@ -168,5 +150,8 @@ fn application_resource_contract(
         envelope,
         requirements,
     )])
-    .expect("installed application execution resource contract is valid")
+    .map_err(|_| ())
 }
+
+#[cfg(test)]
+mod atomic_tests;

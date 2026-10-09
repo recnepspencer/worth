@@ -13,6 +13,7 @@ use crate::physical_runtime::record_serving::{
 };
 
 use super::ManifestDiscoveryCounterSnapshot;
+mod selected_inline_route;
 
 pub(in crate::physical_runtime::record_serving) struct ManifestReader<'media> {
     artifacts: RecordFrameReader<'media>,
@@ -125,6 +126,16 @@ impl<'media> ManifestReader<'media> {
         reference: ManifestBlockReference,
         counters: &mut ManifestDiscoveryCounterSnapshot,
     ) -> Result<PhysicalRootRoutingBlock, ManifestLookupFailure> {
+        self.read_block_with_len(allocation, reference, counters)
+            .map(|(block, _)| block)
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn read_block_with_len(
+        &self,
+        allocation: &worth_store_buffer_pool::OperationAllocationGrant,
+        reference: ManifestBlockReference,
+        counters: &mut ManifestDiscoveryCounterSnapshot,
+    ) -> Result<(PhysicalRootRoutingBlock, u64), ManifestLookupFailure> {
         let limit = self
             .access
             .transfer_limit()
@@ -174,7 +185,7 @@ impl<'media> ManifestReader<'media> {
             })
         });
         match decoded {
-            Ok(Ok(block)) => Ok(block),
+            Ok(Ok(block)) => Ok((block, bytes.len() as u64)),
             Ok(Err(_)) => {
                 bytes.reject_projection_failure();
                 Err(ManifestLookupFailure::Damaged)

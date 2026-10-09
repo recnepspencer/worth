@@ -5,10 +5,6 @@ use worth_store_budgets::{PreExecutionBudgetRequest, PreExecutionBudgetScope};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AccessPlanCostClass {
-    BTreePointLookup,
-    BTreeRangeLookup,
-    BTreePrefixLookup,
-    BTreeReplayRecovery,
     LsmLookup,
     LsmRunPublication,
     LsmReplayRecovery,

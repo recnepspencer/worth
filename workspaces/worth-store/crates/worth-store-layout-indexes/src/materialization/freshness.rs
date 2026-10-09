@@ -12,17 +12,6 @@ impl CurrentMaterializationFrontier {
         }
     }
 
-    pub(crate) fn from_btree_source(
-        catalog: &crate::BootstrapCatalogReadAdmission,
-        source: &crate::BaselineBTreeReadSource,
-    ) -> Self {
-        Self {
-            source: super::LayoutMaterializationSourceIdentity::from_btree_lookup_source(
-                catalog, source,
-            ),
-        }
-    }
-
     pub(crate) fn from_lsm_lookup_source(
         catalog: &crate::BootstrapCatalogReadAdmission,
         source: &crate::strategy::BaselineLsmLookupSource,
@@ -95,22 +84,6 @@ pub enum MaterializationFreshness {
 }
 
 impl CurrentLayoutMaterialization {
-    pub(crate) fn from_btree_replay_source(
-        source: &crate::AdmittedBTreeReplaySource<crate::BaselineBTreeReplayAdmission>,
-    ) -> Result<Self, MaterializationDenial> {
-        let materialization = source.intent().materialization().clone();
-        materialization.coverage().require_exact()?;
-        if materialization.source().kind()
-            != super::LayoutMaterializationSourceKind::BTreeRoot(source.root_reference())
-            || !materialization
-                .source()
-                .matches_btree_replay_source(source.physical_source())
-        {
-            return Err(MaterializationDenial::CoverageSourceMismatch);
-        }
-        Ok(Self { materialization })
-    }
-
     pub(super) fn classify_at(
         materialization: AdmittedLayoutMaterialization,
         frontier: CurrentMaterializationFrontier,

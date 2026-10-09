@@ -78,7 +78,7 @@ where
                 if expected.insert(root, member).is_some() {
                     return Err(Denial::IncompleteDependencies);
                 }
-                if expected.len() > view.state.limits.maximum_entries() {
+                if view.state.limits.rejects_entries(expected.len()) {
                     return Err(Denial::EntryCapacityExceeded);
                 }
             }

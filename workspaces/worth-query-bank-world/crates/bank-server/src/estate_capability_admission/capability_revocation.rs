@@ -187,6 +187,7 @@ fn revocation_cannot_substitute_a_target_from_another_estate() {
         denial,
         crate::BankCommitPreparationDenial::Application {
             kind: crate::BankApplicationAttemptDenialKind::CapabilityRevocationProgramMismatch,
+            allocation: None,
         }
     );
 

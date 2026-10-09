@@ -3,7 +3,8 @@ use crate::{decode_physical_redo_records, PhysicalRedoPlanningDenial};
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
     PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState, RecordArtifactFile,
+    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
+    PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 use worth_store_wal::{LogSequenceNumber, WalLsnRange};
 
@@ -131,7 +132,8 @@ fn decoded_target(generation: u64) -> PhysicalRedoTarget {
     .unwrap();
     field(&mut encoded, &projection.encode());
     let range = WalLsnRange::new(LogSequenceNumber::new(10), LogSequenceNumber::new(11)).unwrap();
-    decode_physical_redo_records(&encoded, range, 1).unwrap()[0].targets()[0].clone()
+    let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
+    decode_physical_redo_records(&encoded, range, 1, format).unwrap()[0].targets()[0].clone()
 }
 
 fn field(target: &mut Vec<u8>, bytes: &[u8]) {

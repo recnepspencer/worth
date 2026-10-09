@@ -10,6 +10,8 @@ use worth_store_test_support::harness::physical_residency::PhysicalResidencyStor
 
 use crate::phase_three_support::limit_declaration;
 
+pub mod observation_sweep;
+
 pub fn prepare_rewrite(
     world: &PhysicalResidencyStoreWorld,
     material: [u8; 32],
@@ -36,6 +38,11 @@ pub fn prepare_rewrite(
 }
 
 pub fn ordinary_limits() -> PhysicalRecoveryLimits {
+    ordinary_limits_observing(32 * 1024 * 1024)
+}
+
+/// The ordinary limits, admitted `observation_bytes` to observe with.
+pub fn ordinary_limits_observing(observation_bytes: u64) -> PhysicalRecoveryLimits {
     let mut declaration = limit_declaration(2, 8, 2 * 1024 * 1024);
     declaration.manifest_entries = 4_096;
     declaration.wal_bytes = 2 * 1024 * 1024;
@@ -47,7 +54,7 @@ pub fn ordinary_limits() -> PhysicalRecoveryLimits {
     declaration.recovery_memory_bytes = 32 * 1024 * 1024;
     declaration.dirty_frames = 4_096;
     declaration.publication_effects = 64;
-    declaration.observation_bytes = 32 * 1024 * 1024;
+    declaration.observation_bytes = observation_bytes;
     PhysicalRecoveryLimits::admit(declaration).unwrap()
 }
 

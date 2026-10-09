@@ -8,6 +8,47 @@ use super::{
 };
 
 impl WorthQueryApplicationCommitDenial {
+    /// The attempt reached the direct commit entry for a program-owned operation.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn program_lane_required<
+        Operation,
+    >() -> Self {
+        Self::program_operation_required(format!(
+            "operation {} requires the program commit lane",
+            std::any::type_name::<Operation>(),
+        ))
+    }
+
+    /// A producer presented an operation outside the installed conditional inventory.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn conditional_operation_not_installed<
+        Operation,
+    >() -> Self {
+        Self::program_operation_required(format!(
+            "operation {} is not installed as a conditional operation",
+            std::any::type_name::<Operation>(),
+        ))
+    }
+
+    /// The occurrence was resolved, but its actual program does not declare this route.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn operation_not_declared_by_active_program<
+        Operation,
+    >(
+        identity: &ApplicationProgramIdentity,
+        revision: &ApplicationProgramRevision,
+    ) -> Self {
+        Self::program_operation_required(format!(
+            "operation {} is not declared by active program {} revision {}",
+            std::any::type_name::<Operation>(),
+            identity.as_str(),
+            revision,
+        ))
+    }
+
+    fn program_operation_required(detail: String) -> Self {
+        let mut denial = Self::application_program_required();
+        denial.detail = Some(detail.into());
+        denial
+    }
+
     /// Refuses activation this host cannot attribute to an admitted program.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn program_activation_unresolved(
         unresolved: WorthQueryProgramActivationUnresolved,

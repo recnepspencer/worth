@@ -86,14 +86,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .run(
                 worth_execution::ExecutionWorkCeiling::new(request.work_ceiling()),
                 |lease| {
-                    // Custody covers owner-owned plans and staging, separately from the
-                    // map's transient input/output admission. It outlives all staged data.
-                    let owner_bytes = u64::try_from(view.state.limits.maximum_retained_bytes())
-                        .map_err(|_| Denial::CapacityOverflow)?;
-                    let mut owner_hold =
-                        ExecutionMemoryReservation::reserve_in_scope(lease, owner_bytes)
-                            .map_err(denial::lease)?;
-                    let (expected, membership) = owner_stage::run(lease, owner_bytes, |context| {
+                    // The owner's staged data grows with the actual membership,
+                    // plans and projected image, independently of view limit policy.
+                    let mut owner_hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
+                        .map_err(denial::lease)?;
+                    let (expected, membership) = owner_stage::run(lease, |context| {
                         context
                             .checkpoint(1)
                             .map_err(|stop| denial::kernel(stop, None))?;
@@ -108,6 +105,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             product,
                             membership_result.result_set_observation().source(),
                         )?;
+                        owner_stage::retain_dependencies(&mut owner_hold, &membership)?;
                         let mut expected = BTreeMap::new();
                         for (row, source) in membership_result
                             .rows()
@@ -117,13 +115,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             context
                                 .checkpoint(1)
                                 .map_err(|stop| denial::kernel(stop, None))?;
-                            membership
-                                .extend(self.checked_view_dependencies(view, product, source)?);
+                            let dependencies =
+                                self.checked_view_dependencies(view, product, source)?;
+                            owner_stage::retain_dependencies(&mut owner_hold, &dependencies)?;
+                            membership.extend(dependencies);
                             for (root, member) in members(row) {
+                                owner_stage::retain_member(&mut owner_hold, &member)?;
                                 if expected.insert(root, member).is_some() {
                                     return Err(Denial::DuplicateRoot { root });
                                 }
-                                if expected.len() > view.state.limits.maximum_entries() {
+                                if view.state.limits.rejects_entries(expected.len()) {
                                     return Err(Denial::EntryCapacityExceeded);
                                 }
                             }
@@ -141,7 +142,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .and_then(|bytes| bytes.checked_mul(expected.len()))
                     .and_then(|bytes| u64::try_from(bytes).ok())
                     .ok_or(Denial::ChargedBytesOverflow)?;
-                    let plan_bytes = owner_bytes
+                    let plan_bytes = owner_hold
+                        .bytes()
                         .checked_add(slots)
                         .ok_or(Denial::ChargedBytesOverflow)?;
                     owner_hold.resize(plan_bytes).map_err(|memory| {
@@ -150,7 +152,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let mut tokens = BTreeMap::new();
                     let mut plans = Vec::with_capacity(expected.len());
                     let mut authorization = Vec::with_capacity(expected.len());
-                    owner_stage::run(lease, owner_bytes, |context| {
+                    owner_stage::run(lease, |context| {
                         for (root, member) in expected {
                             context
                                 .checkpoint(1)
@@ -173,13 +175,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 denial::lease(worth_execution::LeaseDenial::MemoryExhausted(memory))
                             })?;
                             authorization.push(pair.admit(self, root, context)?);
-                            tokens.insert(root, RetainedMemberToken::new(member));
+                            owner_stage::retain_member_token(&mut owner_hold, &member)?;
+                            tokens.insert(root, RetainedMemberToken::clone_admitted(&member)?);
                             plans.push(pair);
                         }
                         Ok(())
                     })?;
                     let partitions = plans
-                        .iter()
+                        .iter_mut()
                         .zip(roots.as_slice())
                         .enumerate()
                         .map(|(index, (pair, root))| {
@@ -223,7 +226,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     // Only this private canonical pairing can reach owner application.
                     let mut keys = Vec::with_capacity(outputs.len());
                     let mut entries = Vec::with_capacity(outputs.len());
-                    owner_stage::run(lease, owner_bytes, |context| {
+                    owner_stage::run(lease, |context| {
                         for (((root, output), pair), (first_work, second_work)) in
                             outputs.into_prefix().zip(plans).zip(authorization)
                         {
@@ -234,6 +237,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                         .ok_or(Denial::WorkCounterOverflow)?,
                                 )
                                 .map_err(|stop| denial::kernel(stop, Some(root)))?;
+                            // Keep shared-loan row custody through both finalizations
+                            // and the owner-thread projection of this canonical pair.
+                            let _batch_rows = (output.first.batch_rows, output.second.batch_rows);
+                            let batch = pair.batch;
+                            let read_denied = |denial| match batch
+                                .as_ref()
+                                .and_then(|batch| batch.memory_denial())
+                            {
+                                Some(denial) => Denial::BatchResource { root, denial },
+                                None => Denial::ReadDenied { root, denial },
+                            };
                             let first_proof = pair
                                 .first
                                 .graph_work
@@ -252,7 +266,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 first_proof,
                                 None,
                             )
-                            .map_err(|denial| Denial::ReadDenied { root, denial })?;
+                            .map_err(read_denied)?;
                             let second = finalize_one_shot(
                                 self,
                                 pair.second,
@@ -261,7 +275,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 second_proof,
                                 None,
                             )
-                            .map_err(|denial| Denial::ReadDenied { root, denial })?;
+                            .map_err(read_denied)?;
                             let (key, value, dependencies) = self
                                 .read_managed_entry_pair_from_result(
                                     view,
@@ -275,6 +289,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 )?;
                             #[cfg(test)]
                             DispatchWitness::applied(root, &dependencies);
+                            owner_stage::retain_entry(
+                                &mut owner_hold,
+                                &key,
+                                &value,
+                                &dependencies,
+                            )?;
                             keys.push(key.clone());
                             entries.push((key, value, dependencies));
                         }
@@ -283,11 +303,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     if let Some(stop) = stop {
                         return Err(stop);
                     }
-                    owner_stage::run(lease, owner_bytes, |context| {
+                    owner_stage::run(lease, |context| {
                         context
                             .checkpoint(1)
                             .map_err(|stop| denial::kernel(stop, None))?;
                         self.admit_view_product(view, product)?;
+                        owner_stage::retain_image(&mut owner_hold, &entries, &membership, &tokens)?;
                         view.state.reconstruct(
                             membership_result
                                 .result_set_observation()

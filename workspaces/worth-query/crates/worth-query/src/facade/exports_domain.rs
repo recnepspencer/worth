@@ -3,10 +3,11 @@ pub use crate::domain_installation::{
     WorthQueryExecutionResourceSupport, WorthQueryFixedExecutionCapacity,
 };
 pub use worth_query_declaration::facade::domain_computation::{
-    WorthQueryCancellationSafePointFamily, WorthQueryExecutionDegradation, WorthQueryExecutionMode,
-    WorthQueryExecutionResourceRequest, WorthQueryPartialEffectPosture,
-    WorthQueryResourceDimension, WorthQueryResourceLimitRequest, WorthQueryRetainedProgressPosture,
-    WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest, WorthQueryYieldedStatePosture,
+    WorthQueryCancellationSafePointFamily, WorthQueryExecutionBoundary,
+    WorthQueryExecutionDegradation, WorthQueryExecutionMode, WorthQueryExecutionResourceRequest,
+    WorthQueryPartialEffectPosture, WorthQueryResourceDimension, WorthQueryResourceLimitRequest,
+    WorthQueryRetainedProgressPosture, WorthQuerySemanticScaleAxis, WorthQuerySemanticScaleRequest,
+    WorthQueryYieldedStatePosture,
 };
 pub use worth_query_installation::facade::{
     WorthQueryDecisionFactFamily, WorthQueryDecisionFactKind,

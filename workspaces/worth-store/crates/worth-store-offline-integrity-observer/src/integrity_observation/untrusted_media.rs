@@ -14,6 +14,7 @@ use super::{
 
 mod acquisition;
 mod path_binding;
+mod range_acquisition;
 
 pub(crate) struct BoundedMediaWalk {
     limits: OfflineIntegrityObservationLimits,
@@ -22,6 +23,7 @@ pub(crate) struct BoundedMediaWalk {
     started: Instant,
     completeness: OfflineIntegrityReportCompleteness,
     seen_files: BTreeMap<PhysicalFileIdentity, CachedPhysicalFile>,
+    path_identities: BTreeMap<PathBuf, PhysicalFileIdentity>,
     cached_lengths: BTreeSet<u64>,
     seen_directories: BTreeMap<PathBuf, DirectoryScan>,
     last_exhaustion: Option<OfflineIndeterminatePhysicalReason>,
@@ -80,6 +82,7 @@ impl BoundedMediaWalk {
             started,
             completeness: OfflineIntegrityReportCompleteness::Complete,
             seen_files: BTreeMap::new(),
+            path_identities: BTreeMap::new(),
             cached_lengths: BTreeSet::new(),
             seen_directories: BTreeMap::new(),
             last_exhaustion: None,
@@ -285,6 +288,8 @@ impl BoundedMediaWalk {
 
 #[cfg(test)]
 mod cached_source_tests;
+#[cfg(test)]
+mod range_acquisition_tests;
 #[cfg(test)]
 mod source_change_tests;
 

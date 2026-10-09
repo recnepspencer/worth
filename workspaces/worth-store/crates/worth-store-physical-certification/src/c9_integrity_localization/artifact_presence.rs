@@ -52,8 +52,14 @@ pub(super) fn require(
 ) {
     let path = target.path.to_string_lossy().replace('\\', "/");
     let rows = wire["artifacts"].as_array().unwrap();
+    let family = match target.family {
+        "inline_page" => "page_frame",
+        "extent_chunk" => "extent_chunk_frame",
+        family => family,
+    };
     let canonical = rows.iter().find(|row| {
         row["path"] == path
+            && row["family"] == family
             && (row["range"].is_null() || row["range"]["offset"] == target.offset() as u64)
     });
     if runtime {
@@ -80,6 +86,15 @@ pub(super) fn require(
                 "{row}"
             );
         }
+        return;
+    }
+    if operator == Op::Remove && target.family == "extent_chunk" {
+        // The offline traversal cannot discover chunks after their arena
+        // manifest is missing. An unaddressed chunk must not be invented.
+        assert!(
+            canonical.is_none(),
+            "missing manifest exposed a chunk: {wire}"
+        );
         return;
     }
     if operator == Op::Duplicate {

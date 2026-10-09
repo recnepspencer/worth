@@ -1,6 +1,17 @@
 use super::*;
 
 impl RuntimeBridge {
+    /// Binds an atomic execution intent to one fresh lifecycle-only Signal
+    /// request and materialized truth view, without managed step or queue authority.
+    pub fn admit_atomic_execution_basis(
+        &self,
+        intent: BridgeManagedExecutionIntent,
+        truth_basis: BridgeAsyncRequestTruthViewBasis,
+        planned: PlannedTruthViewPacket,
+    ) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
+        crate::execution_basis::admit_atomic_execution_basis(self, intent, truth_basis, planned)
+    }
+
     /// Binds one lowered bridge async source declaration to one explicit
     /// truth-view basis before any Signal request generation is admitted.
     pub fn bind_async_request_basis(

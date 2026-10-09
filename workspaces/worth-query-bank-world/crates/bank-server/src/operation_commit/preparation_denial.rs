@@ -3,6 +3,7 @@
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
+use worth_query_host::facade::runtime::ExecutionAllocationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationAttemptDenialKind {
@@ -17,6 +18,8 @@ pub enum BankApplicationAttemptDenialKind {
     IncompleteDecisionReadSet,
     DecisionDependencyMismatch,
     DecisionFactBudgetExceeded,
+    AllocationDenied,
+    RetainedSourceStorageDenied,
     MutationPreconditionMismatch,
     SourceRetired,
     SourceChanged,
@@ -94,6 +97,8 @@ pub enum BankApplicationAttemptDenialKind {
 pub enum BankCommitPreparationDenial {
     Application {
         kind: BankApplicationAttemptDenialKind,
+        /// Physical allocation refusal, including its original checked quote.
+        allocation: Option<ExecutionAllocationDenial>,
     },
     InvalidProposalShape,
     AccountingRevisionOverflow,
@@ -103,6 +108,7 @@ impl From<WorthQueryApplicationAttemptDenial> for BankCommitPreparationDenial {
     fn from(denial: WorthQueryApplicationAttemptDenial) -> Self {
         Self::Application {
             kind: application_attempt_kind(denial.kind()),
+            allocation: denial.allocation_denial().cloned(),
         }
     }
 }
@@ -144,6 +150,10 @@ const fn application_attempt_kind(
         }
         Query::DecisionFactBudgetExceeded => {
             BankApplicationAttemptDenialKind::DecisionFactBudgetExceeded
+        }
+        Query::AllocationDenied => BankApplicationAttemptDenialKind::AllocationDenied,
+        Query::RetainedSourceStorageDenied => {
+            BankApplicationAttemptDenialKind::RetainedSourceStorageDenied
         }
         Query::MutationPreconditionMismatch => {
             BankApplicationAttemptDenialKind::MutationPreconditionMismatch

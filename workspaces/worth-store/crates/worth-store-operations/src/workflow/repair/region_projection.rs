@@ -27,7 +27,7 @@ pub(super) fn into_integrity_regions(
 pub(super) fn layout_repair_regions(
     regions: &[IntegrityRepairRegion],
 ) -> Result<
-    Vec<worth_store_layout_indexes::LayoutRepairRegionObservation>,
+    Vec<worth_store_layout_indexes::operational_repair::LayoutRepairRegionObservation>,
     AuthorityAffectingRepairLoweringDenial,
 > {
     let mut projected = Vec::new();
@@ -39,7 +39,7 @@ pub(super) fn layout_repair_regions(
     projected.extend(regions.iter().filter_map(|region| {
         (region.owner_binding().family() == IntegrityRepairArtifactFamily::LayoutIndex)
             .then(|| {
-                worth_store_layout_indexes::LayoutRepairRegionObservation::new(
+                worth_store_layout_indexes::operational_repair::LayoutRepairRegionObservation::new(
                     region.identity(),
                     region.class() == IntegrityRepairRegionClass::QuarantineRequired,
                 )

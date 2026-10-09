@@ -18,9 +18,17 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
 
     let mut storm = begin_on(&runtime, "storm");
     storm
-        .push_batch(batch_create("storm-exclusive"))
+        .push_batch(
+            batch_create("storm-exclusive"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    let storm_commit = storm.commit(&runtime).expect("storm create commits");
+    let storm_commit = storm
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("storm create commits");
     let storm_only = storm_commit
         .changed_records
         .iter()
@@ -32,7 +40,10 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
 
     let mut maintenance = begin_on(&runtime, "maintenance");
     maintenance
-        .push_batch(batch_create("must-not-be-interned"))
+        .push_batch(
+            batch_create("must-not-be-interned"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     maintenance
         .push_batch(
@@ -42,12 +53,16 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
                     fields: name_field_patch("must-not-apply"),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
     let before = RuntimeState::capture(&runtime);
 
     let error = maintenance
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("a sibling-only target is outside the admitted branch root");
 
     assert!(matches!(
@@ -71,21 +86,27 @@ fn unowned_created_endpoint_denial_precedes_normalization_and_leaves_zero_residu
     };
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("unowned-created-endpoint").push(
-            MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(2),
-                client_key: ClientKey::raw("must-not-be-interned-edge"),
-                source: EntityReference::Created(missing.clone()),
-                target: EntityReference::Created(missing),
-                fields: AspectFieldPatch::default(),
-            })),
-        ))
+        .push_batch(
+            WorkerIntentBatch::new("unowned-created-endpoint").push(MutationIntent::Create(
+                CreateIntent::Relation(RelationSpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(2),
+                    client_key: ClientKey::raw("must-not-be-interned-edge"),
+                    source: EntityReference::Created(missing.clone()),
+                    target: EntityReference::Created(missing),
+                    fields: AspectFieldPatch::default(),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let before = RuntimeState::capture(&runtime);
 
     let error = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("created endpoints must belong to the same transaction");
 
     assert!(matches!(

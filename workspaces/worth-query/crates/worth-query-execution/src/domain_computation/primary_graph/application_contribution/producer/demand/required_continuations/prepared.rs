@@ -62,12 +62,13 @@ where
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     ) {
         assert!(demand.progression_provenance.required().is_none());
-        demand.progression_provenance = DemandProgressionProvenance::RequiredSuccessor(
-            self.successor
-                .pending_provenance
-                .take()
-                .expect("prepared required successor carries one authentic mode"),
-        );
+        let mut provenance = self
+            .successor
+            .pending_provenance
+            .take()
+            .expect("prepared required successor carries one authentic mode");
+        provenance.bind_successor(demand.installed_entry.edition);
+        demand.progression_provenance = DemandProgressionProvenance::RequiredSuccessor(provenance);
     }
 
     pub(in crate::domain_computation::primary_graph) fn finish(
@@ -95,6 +96,12 @@ where
 
 #[cfg(feature = "test-query-execution-observer")]
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Funded Vec storage of one required successor result, before dispatch.
+    #[doc(hidden)]
+    pub fn required_continuation_slot_custody_bytes_for_test() -> usize {
+        std::mem::size_of::<RequiredFreshProgress<Schema>>()
+    }
+
     /// Funded storage of one typed required successor, before its admission.
     #[doc(hidden)]
     pub fn required_successor_custody_bytes_for_test<

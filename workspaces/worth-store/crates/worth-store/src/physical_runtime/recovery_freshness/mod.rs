@@ -5,12 +5,18 @@ mod port;
 mod registration;
 
 pub use authority::PhysicalRecoveryFreshnessAuthority;
+#[cfg(test)]
+pub(in crate::physical_runtime) use binding::{
+    checkpoint_binding_decode_peak, decode_checkpoint_evidence,
+};
 pub use binding::{
-    StoreRecoveryBindingFreshness, StoreRecoveryBindingFreshnessSample,
+    IntegrityAdmittedRecoveryWalFrameView, StoreRecoveryBindingFreshness,
+    StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleAllocationDenial,
     StoreRecoveryBindingSampleDenial, StoreRecoveryBindingSampleFailure,
-    StoreRecoveryCheckpointBindingBasis, StoreRecoveryCheckpointBindingRebuilder,
-    StoreRecoveryOperationEvidence, StoreRecoveryOperationFate, StoreRecoveryRetiredArtifact,
-    StoreRecoveryRetirementObligation, StoreRecoveryWalMember,
+    StoreRecoveryCheckpointBindingAllocationDenial, StoreRecoveryCheckpointBindingBasis,
+    StoreRecoveryCheckpointBindingRebuilder, StoreRecoveryOperationEvidence,
+    StoreRecoveryOperationFate, StoreRecoveryRetiredArtifact, StoreRecoveryRetirementObligation,
+    StoreRecoveryWalMember, StoreTierEpochActivationObservation,
 };
 pub(in crate::physical_runtime) use cleanup::admit_plan as admit_cleanup_plan;
 pub(in crate::physical_runtime) use cleanup::StoreRecoveryCleanupRemovalBasis;

@@ -115,6 +115,19 @@ where
         self
     }
 
+    /// Attach an external source contract without inventing an evaluated requirement.
+    pub fn mutation_with_external_input<Binding, Provider>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Provider: ApplicationExternalInputProvider<Schema, Binding::Operation>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_external_input::<Provider>(Provider::IDENTITY);
+        self.actions.push(action);
+        self
+    }
+
     pub fn mutation_with_requirement_and_external_input<Binding, Rule, Provider>(mut self) -> Self
     where
         Binding: ApplicationMutationBinding<Schema>,

@@ -39,9 +39,6 @@ where
         emission_retained_bytes_ceiling: _,
         conditional_definition,
         effect_posture,
-        // Sealing consumes the candidate reservation here; adoption admits and
-        // accounts its complete target-rule validation as transaction work.
-        validator_work_admission: _candidate_validator_work_admission,
         output_correspondence,
         retain_output_demand_observation,
         retain_client_observation,

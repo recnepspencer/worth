@@ -62,7 +62,7 @@ worth_query_application_contribution! {
                         .no_aftermath()
                         .finish(),
                 )
-                .operation_decision_fact_budget(SetRetention::reference(), 512)
+
                 .operation_projection_work_budget(SetRetention::reference(), 8)
                 .operation_read_field(SetRetention::reference(), DocumentIdentityField::reference())
                 .operation_read_field(SetRetention::reference(), DocumentRetentionField::reference())

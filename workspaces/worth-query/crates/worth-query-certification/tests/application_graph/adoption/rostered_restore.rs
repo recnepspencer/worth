@@ -5,6 +5,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryBranchAdoptionPublicationOutcome,
 };
 use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
+use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 use crate::document_retention_model::host::{publish_on_first_program, restore_on_first_program};
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
@@ -39,7 +40,7 @@ fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
     }
     let checkpoint = host
         .runtime()
-        .capture_application_checkpoint()
+        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
         .expect("the adopted world captures");
     drop(host);
 

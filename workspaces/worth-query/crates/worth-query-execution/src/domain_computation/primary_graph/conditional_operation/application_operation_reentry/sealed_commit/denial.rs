@@ -12,6 +12,12 @@ use crate::domain_computation::{
 };
 
 pub(super) fn classify_denial(denial: &Denial) -> Outcome {
+    if denial.stage() == Stage::ProviderCommit {
+        let outcome = classify_kind(denial.kind());
+        if matches!(&outcome, Outcome::RetryableCommitFailure(_)) {
+            return outcome;
+        }
+    }
     if let Some(cause) = denial.execution_denial_cause() {
         return match (denial.stage(), cause) {
             (Stage::ProviderCommit, Err(Control::Cancelled)) => {
@@ -86,6 +92,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                     | Session::ExecutionIdentitiesNotCanonical { .. }
                     | Session::ExecutionUncheckedCustomKernel { .. }
                     | Session::ActiveSnapshotCapacityExhausted { .. }
+                    | Session::AllocationDenied
                     | Session::RetentionCapacityExhausted
                     | Session::RetentionIdentityExhausted
                     | Session::SnapshotIdentityExhausted
@@ -119,7 +126,7 @@ fn classify_kind(kind: Kind) -> Outcome {
             maximum_active_snapshots,
         },
         Kind::RetentionCapacityExhausted => Outcome::RetentionCapacityBackpressured,
-        // All of these could reach HEAD's Execution -> Aborted -> retry route.
+        // Preparation execution failures remain retryable with their exact cause.
         Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionUncheckedCustomKernel { .. }
@@ -137,7 +144,7 @@ fn classify_kind(kind: Kind) -> Outcome {
             | Resource::NestedLeaseMisuse
             | Resource::NoActiveExecutionScope
             | Resource::ScratchCapacityExceeded => Outcome::RetryableCommitFailure(kind),
-            // Unreachable at HEAD: Relational's remaining-work child retains the
+            // Relational's remaining-work child retains the
             // parent's workers, memory and determinism and lowers its work limit.
             Resource::WorkerLimit
             | Resource::PolicyMemoryLimit
@@ -152,7 +159,6 @@ fn classify_kind(kind: Kind) -> Outcome {
         },
         Kind::ProviderRejected
         | Kind::CustomInvariantDenied
-        | Kind::CandidateValidatorWorkExceeded { .. }
         | Kind::WorkflowSettlementDenied { .. }
         | Kind::ProductBasisStale
         | Kind::UniqueValueTaken
@@ -164,7 +170,6 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyIntentDrift
-        | Kind::IdempotencyWindowExpired
         | Kind::IdempotencyReceiptNotRetained { .. }
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch

@@ -21,3 +21,4 @@ serde.workspace = true
 sha2 = "0.10"
 worth-query-host = { workspace = true, features = ["test-output-delivery-faults"] }
 worth-execution = { path = "../../../../../../../crates/worth-execution" }
+worth-relational = { path = "../../../../../../../crates/worth-relational" }

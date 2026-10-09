@@ -90,9 +90,17 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
             )
             .unwrap();
         transaction
-            .push_batch(batch_create("interrupted-before-critical-section"))
+            .push_batch(
+                batch_create("interrupted-before-critical-section"),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
-        let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+        let candidate = runtime
+            .prepare_branch_transaction(
+                transaction,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
         let reference_before = runtime
             .branch_reference_state(&BranchId("main".to_owned()))
             .unwrap();
@@ -135,8 +143,6 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
             max_patch_records_per_commit: 4096,
             max_published_snapshot_handles: 2,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
@@ -152,10 +158,16 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("capacity-third"))
+        .push_batch(
+            batch_create("capacity-third"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(matches!(
-        runtime.prepare_branch_transaction(transaction),
+        runtime.prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         Err(
             crate::transactions::data::TransactionCommitError::PublicationDeferred {
                 deferred:
@@ -209,9 +221,17 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
         )
         .unwrap();
     transaction
-        .push_batch(batch_create("pre-effect-install"))
+        .push_batch(
+            batch_create("pre-effect-install"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let reference_before = runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
@@ -257,9 +277,15 @@ fn prepared_main_write(
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("transaction binds");
     transaction
-        .push_batch(batch_create(name))
+        .push_batch(
+            batch_create(name),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares")
 }

@@ -75,6 +75,8 @@ mod page_packing_oracle;
 mod physical_work;
 #[path = "c5/courtrooms.rs"]
 mod production_courtrooms;
+#[path = "physical_record_journeys/maintenance_interference/publication_charge/oracle.rs"]
+mod publication_metadata_oracle;
 #[path = "physical_record_journeys/publication_reopener.rs"]
 mod publication_reopener;
 #[path = "physical_record_journeys/read_boundaries.rs"]
@@ -87,6 +89,8 @@ mod residency_pressure_processes;
 mod residency_writeback_fresh_reopen;
 #[path = "physical_record_journeys/resident_checksum_cost.rs"]
 mod resident_checksum_cost;
+#[path = "physical_record_journeys/retirement_charge_oracle.rs"]
+mod retirement_charge_oracle;
 #[path = "c5/scale_invalid_worlds.rs"]
 mod scale_invalid_worlds;
 #[path = "c5/scale_policy_evolution.rs"]

@@ -7,6 +7,13 @@ mod progression;
 mod request;
 mod request_fingerprint;
 
+#[cfg(all(
+    test,
+    feature = "recovery-runtime-owner",
+    feature = "certification-test-authority"
+))]
+pub(in crate::physical_runtime) use idempotency::with_conflicting_binding_history;
+
 pub(in crate::physical_runtime) use handle::PhysicalMutationAttempt;
 pub use handle::PhysicalMutationHandle;
 pub use idempotency::{
@@ -35,6 +42,7 @@ pub use request::{PhysicalMutationDeadline, PhysicalMutationRequest};
 pub use request_fingerprint::PhysicalMutationRequestFingerprint;
 
 pub(in crate::physical_runtime) use admission::AdmittedPhysicalMutation;
+pub(in crate::physical_runtime) use idempotency::PhysicalBindingDecodingContext;
 pub(in crate::physical_runtime::durability) use idempotency::PhysicalMutationIdempotencyRegistry;
 pub(in crate::physical_runtime) use idempotency::{
     rebuild_idempotency, AllocatedPhysicalMutationAttemptBinding,
@@ -44,13 +52,17 @@ pub(in crate::physical_runtime) use idempotency::{
     PhysicalMutationIdempotencyRegistryAdmissionError, PhysicalMutationIdempotencyRegistryDenial,
     PhysicalMutationIdempotencyRuntimeAuthority, PhysicalMutationIdempotencyRuntimeOwner,
     PhysicalMutationPreSealCancellationDenial, PhysicalMutationTerminalizationDenial,
-    PhysicalMutationUnresolvedBindingObservation, RebuiltPhysicalMutationIdempotency,
-    UnallocatedPhysicalMutationAttemptBinding,
+    PhysicalMutationUnresolvedBindingObservation, PhysicalOriginalDropCompleted,
+    PhysicalOriginalDropNoEffect, PhysicalRecoveredOriginalDropNoDurableEffect,
+    RebuiltPhysicalMutationIdempotency, UnallocatedPhysicalMutationAttemptBinding,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use idempotency::{
     DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationFate,
-    PhysicalBindingDecodingContext,
+    PhysicalBindingCompactionRecordDecodeDenial, PhysicalPersistedBindingDecodeDenial,
+};
+pub(in crate::physical_runtime) use idempotency::{
+    TerminalHeadNoRetryClaim, TerminalHeadRetryClaimDenial,
 };
 pub(in crate::physical_runtime) use request::PhysicalMutationDurabilityRequest;
 pub(in crate::physical_runtime) use request_fingerprint::{

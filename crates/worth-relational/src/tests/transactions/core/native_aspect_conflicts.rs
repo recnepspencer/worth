@@ -36,12 +36,18 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
         };
         for (label, intent) in batches {
             transaction
-                .push_batch(WorkerIntentBatch::new(label).push(intent))
+                .push_batch(
+                    WorkerIntentBatch::new(label).push(intent),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("test staging stays within configured resource budgets");
         }
 
         let error = transaction
-            .commit(&runtime)
+            .commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect_err("same-record updates must conflict");
         assert!(matches!(
             error,
@@ -103,13 +109,22 @@ fn native_create_merge_is_stable_across_batch_permutations() {
             .expect("owner-admitted transaction context")
     };
     transaction_a
-        .push_batch(native_create_batch("zeta", &contract_a))
+        .push_batch(
+            native_create_batch("zeta", &contract_a),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction_a
-        .push_batch(native_create_batch("alpha", &contract_a))
+        .push_batch(
+            native_create_batch("alpha", &contract_a),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let intents_a = transaction_a
-        .merged_plan(&runtime_a)
+        .merged_plan(
+            &runtime_a,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .merged_intents
         .clone();
@@ -128,13 +143,22 @@ fn native_create_merge_is_stable_across_batch_permutations() {
             .expect("owner-admitted transaction context")
     };
     transaction_b
-        .push_batch(native_create_batch("alpha", &contract_b))
+        .push_batch(
+            native_create_batch("alpha", &contract_b),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction_b
-        .push_batch(native_create_batch("zeta", &contract_b))
+        .push_batch(
+            native_create_batch("zeta", &contract_b),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let intents_b = transaction_b
-        .merged_plan(&runtime_b)
+        .merged_plan(
+            &runtime_b,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .merged_intents
         .clone();
@@ -168,9 +192,15 @@ fn compatibility_and_native_scalar_authoring_publish_identical_patch_meaning() {
                 native_entity,
                 whole_set(&contract, "after"),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let native = transaction.commit(&native_runtime).unwrap();
+    let native = transaction
+        .commit(
+            &native_runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     assert_eq!(
         compatibility.patch()[0].authoritative_patch,
@@ -202,14 +232,23 @@ fn compatibility_and_native_updates_on_one_target_have_one_conflict_law() {
     let native = entity_patch_intent(entity, whole_set(&contract, "native"));
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("compatibility").push(compatibility))
+        .push_batch(
+            WorkerIntentBatch::new("compatibility").push(compatibility),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .push_batch(WorkerIntentBatch::new("native").push(native))
+        .push_batch(
+            WorkerIntentBatch::new("native").push(native),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
 
     assert!(matches!(
-        transaction.commit(&runtime),
+        transaction.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         Err(TransactionCommitError::Conflict {
             error: CommitConflict {
                 class: ConflictClass::ConflictingIntent { .. },
@@ -238,10 +277,13 @@ fn mixed_native_entity_and_relation_updates_share_one_atomic_commit() {
         .unwrap();
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("entity").push(entity_patch_intent(
-            source,
-            whole_set(&entity_contract, "source-after"),
-        )))
+        .push_batch(
+            WorkerIntentBatch::new("entity").push(entity_patch_intent(
+                source,
+                whole_set(&entity_contract, "source-after"),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     transaction
         .push_batch(
@@ -251,10 +293,16 @@ fn mixed_native_entity_and_relation_updates_share_one_atomic_commit() {
                     aspect_patch: whole_set(&relation_contract, "relation-after"),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
 
-    let committed = transaction.commit(&runtime).unwrap();
+    let committed = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     assert_eq!(committed.patch().len(), 2);
     assert!(committed.patch().iter().any(
         |record: &crate::publication::patch::data::PublishedAuthoritativeRecordPatch| {

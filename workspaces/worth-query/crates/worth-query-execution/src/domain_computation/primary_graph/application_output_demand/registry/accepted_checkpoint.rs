@@ -14,6 +14,7 @@ impl WorthQueryOutputDemandRegistry {
     ) -> Vec<(
         WorthQueryAcceptedOutputCheckpointIdentity,
         Option<AcceptedCheckpointFactSource>,
+        Option<std::any::TypeId>,
     )> {
         let state = self
             .state
@@ -51,6 +52,7 @@ impl WorthQueryOutputDemandRegistry {
                                 producer_fact_wire_version: 0,
                             },
                             exact_source.then(|| AcceptedCheckpointFactSource::Committed(receipt.clone())),
+                            receipt.output_correspondence().binding_type(),
                         ))
                     }
                     WorthQueryAcceptedOutputAuthority::Stable(stable) => {
@@ -76,10 +78,15 @@ impl WorthQueryOutputDemandRegistry {
                                 producer_fact_wire_version: 0,
                             },
                             exact_source.then(|| AcceptedCheckpointFactSource::Stable(stable.clone())),
+                            stable.output_correspondence().binding_type(),
                         ))
                     }
                     WorthQueryAcceptedOutputAuthority::Restored(restored) => {
-                        Some((restored.checkpoint.clone(), None))
+                        Some((
+                            restored.checkpoint.clone(),
+                            None,
+                            restored.correspondence.binding_type(),
+                        ))
                     }
                 }
             })
@@ -94,7 +101,7 @@ impl WorthQueryOutputDemandRegistry {
     ) -> Vec<WorthQueryAcceptedOutputCheckpointIdentity> {
         self.accepted_checkpoint_records()
             .into_iter()
-            .map(|(identity, _)| identity)
+            .map(|(identity, _, _)| identity)
             .collect()
     }
 }

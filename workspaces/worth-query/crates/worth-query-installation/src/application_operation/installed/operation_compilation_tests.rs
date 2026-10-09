@@ -167,10 +167,6 @@ fn emit_only_operation_has_external_effect_but_no_graph_touch_or_mutation_effect
             )
             .unwrap(),
         },
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation: "freeze".to_owned(),
-            maximum_fact_count: 1,
-        },
         ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation: "freeze".to_owned(),
             maximum_work_units: 1,
@@ -205,10 +201,6 @@ fn in_process_emission_is_retained_without_forging_external_dispatch_authority()
             target: ApplicationOperationProgramTarget::Emit {
                 effect: "activity".to_owned(),
             },
-        },
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation: "freeze".to_owned(),
-            maximum_fact_count: 1,
         },
         ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation: "freeze".to_owned(),
@@ -300,10 +292,6 @@ fn members(
                 aspect: "State".to_owned(),
                 field: "balance".to_owned(),
             },
-        },
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation: "freeze".to_owned(),
-            maximum_fact_count: 4,
         },
         ApplicationSchemaMember::OperationProjectionWorkBudget {
             operation: "freeze".to_owned(),

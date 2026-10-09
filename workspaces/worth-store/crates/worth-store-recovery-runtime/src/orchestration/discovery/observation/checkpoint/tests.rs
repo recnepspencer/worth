@@ -2,8 +2,9 @@ use std::num::NonZeroU64;
 
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
-    QualifiedRecoveryFilesystemMedia,
+    AdmittedPhysicalRecordFormat, AdmittedPhysicalRecordResidencyPolicy, FilesystemAccessPosture,
+    FilesystemMediaAdmission, PhysicalRecoveryCoordinationCapacity, PhysicalRecoveryFreshnessPort,
+    PhysicalRuntimeAdmission, PhysicalStore, QualifiedRecoveryFilesystemMedia,
 };
 use worth_store_physical_format::{
     CheckpointBindingCompactionHeader, CheckpointRootBasis, CheckpointStreamEncoder,
@@ -12,10 +13,11 @@ use worth_store_physical_format::{
 use worth_store_recovery_physics::PhysicalCheckpointBaseDenial;
 
 use crate::entry::{
-    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimits,
-    PhysicalRecoverySourceDenial,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDeclaration, PhysicalRecoveryLimitDimension,
+    PhysicalRecoveryLimits, PhysicalRecoverySourceDenial,
 };
 use crate::integrity_ingress::RecoveryIntegrityIngressTrace;
+use crate::orchestration::recovery_budget::RecoveryReadBudget;
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 #[test]
@@ -50,34 +52,88 @@ fn resealed_checkpoint_zero_root_is_denied_before_addressed_source_read() {
     let families = root.join("families");
     std::fs::create_dir_all(&families).unwrap();
     std::fs::write(families.join("checkpoint.current"), &bytes).unwrap();
-    let media = QualifiedRecoveryFilesystemMedia::qualify_existing(&root)
+    let qualified = QualifiedRecoveryFilesystemMedia::qualify_existing(&root).unwrap();
+    let freshness = PhysicalRecoveryFreshnessPort::admit(&qualified).unwrap();
+    let media = qualified.admit_persisted_store().unwrap();
+    let format = AdmittedPhysicalRecordFormat::admit(
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
+    );
+    let mut coordination = freshness
+        .register_session()
         .unwrap()
-        .admit_persisted_store()
+        .admit_coordination(
+            &media,
+            PhysicalRecoveryCoordinationCapacity::admit(1, 4096, 1, 4096)
+                .unwrap()
+                .with_recovery_allocation_bytes(4096)
+                .unwrap(),
+            AdmittedPhysicalRecordResidencyPolicy::canonical(format),
+            None,
+        )
         .unwrap();
+    #[cfg(feature = "certification-test-authority")]
+    let observer = coordination.certification_residency_allocations();
+    let mut allocation = coordination.begin_source_read_allocation().unwrap();
     // Only the checkpoint read fits: a source read would consume a second discovery entry.
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-    let mut remaining_manifest_bytes = 4096;
+    let mut remaining_manifest_bytes = RecoveryReadBudget::declared(
+        &limits().declaration(),
+        PhysicalRecoveryLimitDimension::ManifestBytes,
+    );
     let mut counters = PhysicalRecoveryDiscoveryCounters::default();
     let mut trace = RecoveryIntegrityIngressTrace::new();
     let failure = match super::observe_checkpoint(
         &mut discovery,
         limits(),
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
         &mut remaining_manifest_bytes,
         &mut counters,
         &mut trace,
+        &mut allocation,
     ) {
         Err(failure) => failure,
         Ok(_) => panic!("zero source address must not become checkpoint material"),
     };
-    assert_eq!(failure.kind, PhysicalRecoveryBlockKind::Checkpoint);
+    assert_eq!(
+        failure.cause,
+        crate::entry::PhysicalRecoveryBlockCause::Damage(PhysicalRecoveryBlockKind::Checkpoint)
+    );
     assert!(matches!(
         failure.source_denials.as_slice(),
         [PhysicalRecoverySourceDenial::CheckpointBinding(
             PhysicalCheckpointBaseDenial::RootGenerationMismatch
         )]
     ));
-    assert_eq!(remaining_manifest_bytes, 4096);
+    assert_eq!(remaining_manifest_bytes.spent(), 0);
     assert_eq!(discovery.counters().bytes_read, bytes.len() as u64);
+    assert_eq!(
+        allocation.charged_bytes(),
+        0,
+        "this zero-record fixture requires no parser allocation"
+    );
+    #[cfg(feature = "certification-test-authority")]
+    {
+        use worth_store::physical_runtime::{
+            PhysicalOperationAllocationScope, PhysicalResidencyDimension,
+        };
+        let native = observer
+            .snapshot()
+            .for_dimension(PhysicalResidencyDimension::OperationScope(
+                PhysicalOperationAllocationScope::Recovery,
+            ));
+        assert_eq!(
+            native.admissions(),
+            3,
+            "checkpoint file address, capability open and payload; never source or Shared retention"
+        );
+        assert!(native.admitted_units() > bytes.len() as u64);
+        assert_eq!(native.released_units(), native.admitted_units());
+        assert_eq!(native.active_units(), 0);
+    }
     let ingress = failure.integrity_trace.counters();
     assert_eq!(
         ingress.attempted, 5,

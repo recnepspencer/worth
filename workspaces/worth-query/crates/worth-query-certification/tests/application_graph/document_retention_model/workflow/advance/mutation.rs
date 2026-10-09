@@ -86,7 +86,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowAdvanceBind
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(8, 0, 9, 2, 71, 0),
-            ApplicationCandidateResourceCeiling::bounded(256 * 1024, 131_072),
+            ApplicationCandidateResourceCeiling::representation_bytes(256 * 1024),
         );
 
     fn scope_field() -> ApplicationFieldRef<

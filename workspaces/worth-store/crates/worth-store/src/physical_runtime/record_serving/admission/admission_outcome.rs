@@ -33,8 +33,8 @@ impl RecordStoreInitializationDenial {
         Self { runtime, reason }
     }
 
-    pub const fn reason(&self) -> RecordBootstrapDenial {
-        self.reason
+    pub fn reason(&self) -> RecordBootstrapDenial {
+        self.reason.clone()
     }
 
     pub fn into_runtime(self) -> MediaOwnedPhysicalRuntime {
@@ -55,8 +55,8 @@ impl RecordStoreOpenDenial {
         Self { runtime, reason }
     }
 
-    pub const fn reason(&self) -> RecordBootstrapDenial {
-        self.reason
+    pub fn reason(&self) -> RecordBootstrapDenial {
+        self.reason.clone()
     }
 
     pub fn into_runtime(self) -> MediaOwnedPhysicalRuntime {
@@ -132,7 +132,7 @@ impl RecordServingAdmissionInspectionRequired {
         &self.terminal
     }
 
-    pub const fn cause(&self) -> RecordBootstrapFailure {
-        self.cause
+    pub fn cause(&self) -> RecordBootstrapFailure {
+        self.cause.clone()
     }
 }

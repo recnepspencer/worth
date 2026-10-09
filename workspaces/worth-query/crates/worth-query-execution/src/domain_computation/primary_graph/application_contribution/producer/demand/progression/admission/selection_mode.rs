@@ -1,7 +1,7 @@
 //! One selected-source authority for required Fresh admission.
 //!
-//! The selected Product and the exact Ready refresh claim travel together so
-//! a required successor cannot register under another producer's key.
+//! The selected Product and exact Ready claim travel together. A different
+//! producer must be the installed family's declared Preserve successor.
 
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -38,12 +38,15 @@ where
 
     /// This check is reached after the existing selector returns and before
     /// the registry creates a successor interest. A fresh required output is
-    /// always tied to the producer that published its exact predecessor Ready.
-    pub(super) fn admit_selected_producer(
+    /// remains tied to its exact predecessor's compiled output family.
+    pub(super) fn admit_selected_producer<Family>(
         &self,
-        producer: &str,
+        selected: &super::super::super::WorthQuerySelectedApplicationProducer,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    ) -> Result<(), WorthQueryOutputDemandDenial>
+    where
+        Family: super::super::WorthQueryProducerOutputFamily<Schema>,
+    {
         const SUBJECT: &str = "required successor selected another producer";
         let empty_work = || denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "");
         let empty_capacity = || {
@@ -64,6 +67,7 @@ where
             .charge_external_work(2)
             .map_err(|_| empty_work())?;
         let expected = claim.selected().producer_identity();
+        let producer = &selected.identity;
         let comparison_work = producer
             .len()
             .checked_add(expected.len())
@@ -87,7 +91,16 @@ where
                 }
                 _ => empty_capacity(),
             })?;
-        if producer != expected {
+        let same_family = claim.selected().key().family_type() == std::any::TypeId::of::<Family>();
+        let preserve = selected.applicability.lifecycle()
+            == crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve;
+        let same_profile = selected.applicability.profile_kind()
+            == claim.selected().key().applicability().profile_kind();
+        let initial_predecessor = claim.selected().key().applicability().lifecycle()
+            == crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerLifecyclePosture::Initial;
+        if !same_family
+            || (producer != expected && (!preserve || !same_profile || !initial_predecessor))
+        {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 SUBJECT,

@@ -24,6 +24,7 @@ pub struct WorthQueryOperationProjectionDenial {
     kind: WorthQueryOperationProjectionDenialKind,
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
     subject: String,
+    invariant_denial: Option<Box<super::WorthQueryInvariantProjectionDenial>>,
 }
 
 impl WorthQueryOperationProjectionDenial {
@@ -41,11 +42,29 @@ impl WorthQueryOperationProjectionDenial {
             kind,
             authorization_denial: None,
             subject: subject.into(),
+            invariant_denial: Some(Box::new(denial)),
         }
     }
 
+    pub fn invariant_denial(&self) -> Option<&super::WorthQueryInvariantProjectionDenial> {
+        self.invariant_denial.as_deref()
+    }
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        self.invariant_denial
+            .as_deref()
+            .and_then(super::WorthQueryInvariantProjectionDenial::allocation_denial)
+    }
     pub const fn kind(&self) -> WorthQueryOperationProjectionDenialKind {
         self.kind
+    }
+
+    /// Actual reader work before refusal; absent when no reader executed.
+    pub const fn projection_work(&self) -> Option<super::WorthQueryInvariantProjectionWork> {
+        // The boxed invariant cause owns the work evidence; no inline copy is retained.
+        match &self.invariant_denial {
+            Some(denial) => denial.projection_work(),
+            None => None,
+        }
     }
 
     pub fn subject(&self) -> &str {
@@ -67,6 +86,7 @@ impl From<WorthQueryOperationAuthorizationDenial> for WorthQueryOperationProject
             kind: WorthQueryOperationProjectionDenialKind::Authorization(denial.kind()),
             subject: denial.subject().to_string(),
             authorization_denial: Some(Box::new(denial)),
+            invariant_denial: None,
         }
     }
 }

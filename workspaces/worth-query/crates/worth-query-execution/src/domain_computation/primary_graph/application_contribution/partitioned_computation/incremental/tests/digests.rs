@@ -136,7 +136,7 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
         let result = world.invariant.project_admitted_operation(&admitted, |reader, root| {
             let execution = QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Serial(crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 30)), &request);
             installed.prepare_through(reader, &execution, &Value(root.clone()))?.compute(WorthQueryManagedComputationExecution::new(&execution))?.complete()
-        }).unwrap().into_parts().0;
+        }, worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap().into_parts().0;
         ComputationPrior::hand_in_test(None);
         assert_eq!(result.unwrap(), (0..4).sum::<u64>());
         let counts = [

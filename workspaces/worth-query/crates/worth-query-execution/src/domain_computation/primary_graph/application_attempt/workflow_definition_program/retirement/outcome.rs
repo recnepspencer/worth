@@ -114,6 +114,7 @@ where
             program,
             idempotency.bind_workflow_definition(&workflow_intent_identity),
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let (receipt, replayed) = match outcome.landed() {
             Ok(landed) => landed,

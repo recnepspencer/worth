@@ -75,14 +75,15 @@ const fn expected_background_work_class(
     class: crate::BackgroundIoPressureClass,
 ) -> FoundationalPerformanceWorkClass {
     match class {
-        crate::BackgroundIoPressureClass::CheckpointFlush => {
+        crate::BackgroundIoPressureClass::CheckpointFlush
+        | crate::BackgroundIoPressureClass::CompactionRewrite
+        | crate::BackgroundIoPressureClass::IngestPressure
+        | crate::BackgroundIoPressureClass::BlobReclaimPressure
+        | crate::BackgroundIoPressureClass::MigrationPressure => {
             FoundationalPerformanceWorkClass::AuthoritativeMutation
         }
-        crate::BackgroundIoPressureClass::CompactionRewrite
-        | crate::BackgroundIoPressureClass::ScrubScan
+        crate::BackgroundIoPressureClass::ScrubScan
         | crate::BackgroundIoPressureClass::ReplicationPrepRead
-        | crate::BackgroundIoPressureClass::IngestPressure
-        | crate::BackgroundIoPressureClass::MigrationPressure
         | crate::BackgroundIoPressureClass::BackupPrepRead
         | crate::BackgroundIoPressureClass::RepairScan
         | crate::BackgroundIoPressureClass::VerificationPressure => {
@@ -103,8 +104,24 @@ mod tests {
             FoundationalPerformanceWorkClass::AuthoritativeMutation
         );
         assert_eq!(
+            expected_background_work_class(BackgroundIoPressureClass::CompactionRewrite),
+            FoundationalPerformanceWorkClass::AuthoritativeMutation
+        );
+        assert_eq!(
             expected_background_work_class(BackgroundIoPressureClass::VerificationPressure),
             FoundationalPerformanceWorkClass::ValidationPlanning
+        );
+        assert_eq!(
+            expected_background_work_class(BackgroundIoPressureClass::IngestPressure),
+            FoundationalPerformanceWorkClass::AuthoritativeMutation
+        );
+        assert_eq!(
+            expected_background_work_class(BackgroundIoPressureClass::MigrationPressure),
+            FoundationalPerformanceWorkClass::AuthoritativeMutation
+        );
+        assert_eq!(
+            expected_background_work_class(BackgroundIoPressureClass::BlobReclaimPressure),
+            FoundationalPerformanceWorkClass::AuthoritativeMutation
         );
     }
 }

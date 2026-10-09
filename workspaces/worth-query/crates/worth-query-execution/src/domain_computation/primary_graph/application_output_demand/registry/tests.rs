@@ -23,12 +23,14 @@ fn record_admission() -> InvalidationEditAdmission {
 mod caller_chain;
 mod closed_retirement;
 mod consumer_custody;
+mod demand_key;
 mod local_work;
 mod prerequisite_retry;
 mod ready_reuse;
 mod record_capacity;
 mod recovery_posture;
 mod replacement_preparation;
+mod requested_source;
 mod required_lifecycle;
 mod required_stop;
 mod required_work;

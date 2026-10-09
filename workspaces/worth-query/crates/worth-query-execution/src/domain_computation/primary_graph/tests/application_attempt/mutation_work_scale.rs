@@ -212,27 +212,37 @@ fn no_demand_mutation_program(
     let other = wide.then(|| resolved_account(world, "unrelated", &request));
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-            if wide {
-                let other = reader
-                    .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
-                    .unwrap();
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
                 reader
-                    .require_decision_field(&other, AccountLabel::reference())
+                    .require_decision_field(projected, AccountStatus::reference())
                     .unwrap();
-            }
-        })
+                if wide {
+                    let other = reader
+                        .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
+                        .unwrap();
+                    reader
+                        .require_decision_field(&other, AccountLabel::reference())
+                        .unwrap();
+                }
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_effect_program();
     let account = effects.existing_entity(&account).unwrap();
@@ -258,9 +268,12 @@ fn commit_work(
     >,
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
-    let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
-        .application
-        .compare_and_commit_application(program, idempotency(idempotency_key, idempotency_key))
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(idempotency_key, idempotency_key),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("mutation work fixture commits");
     };

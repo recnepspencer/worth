@@ -6,6 +6,8 @@
 //! Query, and the committed correspondence refuses it.
 
 use super::{authenticated_principal, installed_authorization_world, live_scope, resolved_account};
+#[path = "optional_output_role/handler_work.rs"]
+mod handler_work;
 #[path = "optional_output_role/indexed_selection.rs"]
 mod indexed_selection;
 use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
@@ -145,9 +147,12 @@ fn committed_outputs(plan: OptionalOutputPlan) -> WorthQueryApplicationOutputCor
         panic!("the handler completes its candidate");
     };
     let (program, _) = completed.into_parts();
-    let WorthQueryApplicationCommitOutcome::Committed(committed) = world
-        .application
-        .compare_and_commit_application(program, idempotency)
+    let WorthQueryApplicationCommitOutcome::Committed(committed) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the completed candidate commits");
     };
@@ -170,9 +175,51 @@ fn execute_with_key(
     plan: OptionalOutputPlan,
     key: &str,
 ) -> (Execution, WorthQueryApplicationIdempotencyBinding) {
+    let (report, key) = execute_report_with_key(world, plan, key);
+    (report.into_outcome(), key)
+}
+
+fn execute_report_with_key(
+    world: &AuthorizationWorld,
+    plan: OptionalOutputPlan,
+    key: &str,
+) -> (
+    crate::domain_computation::primary_graph::WorthQueryMutationHandlerExecutionReport<
+        WorthQueryCompletedMutationCandidate<
+            IdentityExecutionSchema,
+            OptionalOutputMutationBinding,
+        >,
+        OptionalOutputInput,
+    >,
+    WorthQueryApplicationIdempotencyBinding,
+) {
+    execute_report_for_input(
+        world,
+        OptionalOutputInput {
+            status: "open".to_owned(),
+            plan,
+        },
+        key,
+    )
+}
+
+fn execute_report_for_input(
+    world: &AuthorizationWorld,
+    input: OptionalOutputInput,
+    key: &str,
+) -> (
+    crate::domain_computation::primary_graph::WorthQueryMutationHandlerExecutionReport<
+        WorthQueryCompletedMutationCandidate<
+            IdentityExecutionSchema,
+            OptionalOutputMutationBinding,
+        >,
+        OptionalOutputInput,
+    >,
+    WorthQueryApplicationIdempotencyBinding,
+) {
     let request = live_scope();
     let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    let account = resolved_account(world, &input.status, &request);
     let operation = world
         .application
         .installed_schema()
@@ -189,10 +236,6 @@ fn execute_with_key(
         )
         .unwrap();
     let key = key.to_owned();
-    let input = OptionalOutputInput {
-        status: "open".to_owned(),
-        plan,
-    };
     let identities = ApplicationMutationIdentities::<
         IdentityExecutionSchema,
         OptionalOutputMutationBinding,
@@ -201,10 +244,11 @@ fn execute_with_key(
     let idempotency = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities);
     let execution = world
         .application
-        .execute_mutation_handler::<OptionalOutputMutationBinding>(
+        .execute_mutation_handler_report::<OptionalOutputMutationBinding>(
             &identities,
             principal.principal_identity(),
             admission,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     (execution, idempotency)
 }

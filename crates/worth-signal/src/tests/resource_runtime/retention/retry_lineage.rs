@@ -149,4 +149,21 @@ fn resource_retention_budget_prunes_retry_lineage_with_typed_availability() {
             .resource_retained_retry_lineage_count,
         1
     );
+
+    let expiry = runtime.compact_resource_lifecycle_history_with_budget(
+        0,
+        ResourceRetentionCompactionBudget::unbounded().with_pruned_availability_limits(1, 1, 0),
+    );
+    assert_eq!(expiry.expired_retry_availability_count(), 1);
+    assert_eq!(expiry.total_expired_retry_availability(), 1);
+    assert!(runtime
+        .retained_retry_lineage_availability(first_retry_ordinal)
+        .is_none());
+    assert_eq!(
+        runtime
+            .reconstruct_resource_replay_summary()
+            .retry_lineage_unavailable_count(),
+        1,
+        "replay must count omitted retry evidence without reconstructing it"
+    );
 }

@@ -31,6 +31,7 @@ fn independent_observer_traverses_current_family_graph() {
         "page_frame",
         "extent_manifest",
         "extent_chunk_frame",
+        "extent_arena_frame",
         "free_space_header",
         "free_space_membership_block",
         "wal_frame",
@@ -66,6 +67,7 @@ fn independent_observer_traverses_current_family_graph() {
         }
     }
     assert_eq!(report["completeness"], "complete");
+    assert_root_specific_arena_accounting(artifacts);
     assert_eq!(snapshot(&root), original);
 
     // Selected missing process-boundary family coverage. Every row starts from
@@ -115,6 +117,27 @@ fn independent_observer_traverses_current_family_graph() {
         fs::write(path, clean).unwrap();
     }
     assert_eq!(snapshot(&root), original);
+}
+
+fn assert_root_specific_arena_accounting(artifacts: &[Value]) {
+    let mut roots_by_arena = BTreeMap::<&str, std::collections::BTreeSet<u64>>::new();
+    for row in artifacts
+        .iter()
+        .filter(|row| row["family"] == "extent_arena_frame")
+    {
+        assert!(row["range"].is_null(), "accounting is root-scoped: {row}");
+        let path = row["path"].as_str().unwrap();
+        let generation = row["generation"].as_u64().unwrap();
+        assert_eq!(
+            row["identity"],
+            format!("arena-accounting:{generation}:{path}")
+        );
+        assert!(roots_by_arena.entry(path).or_default().insert(generation));
+    }
+    assert!(
+        roots_by_arena.values().any(|roots| roots.len() >= 2),
+        "the production world must account for one arena through both selected roots"
+    );
 }
 
 fn observe(executable: &Path, root: &Path) -> Value {

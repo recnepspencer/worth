@@ -1,7 +1,11 @@
 mod cancellation;
+mod checkpoint_custody;
+pub(super) use checkpoint_custody::CheckpointPrerequisiteClaims;
+mod consumed_predecessors;
 mod evidence_handoff;
 mod prerequisite_capacity;
 mod prerequisite_denials;
+mod publication;
 use prerequisite_capacity::validate_predecessors;
 use prerequisite_denials::{capacity_denial, closed_denial, coverage_denial, work_denial};
 use std::sync::Arc;
@@ -23,6 +27,7 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClaims {
     context: RequiredOutputDemandContext,
     predecessors: Vec<Arc<WorthQueryOutputDemandKey>>,
+    checkpoint_predecessors: Option<CheckpointPrerequisiteClaims>,
     predecessor_slots_bytes: usize,
     reserved_identity: Option<Arc<RecordedSettlementIdentity>>,
     reserved_posting: Option<super::settlement_index::Posting>,
@@ -33,7 +38,8 @@ pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClai
 impl RequiredOutputDemandContext {
     pub(in crate::domain_computation::primary_graph) fn prepare_prerequisites<'a>(
         self,
-        inputs: impl ExactSizeIterator<Item = &'a Arc<RecordedSettlementIdentity>>,
+        inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
+        source_owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedPrerequisiteClaims, WorthQueryOutputDemandDenial> {
         if self.work_membership().is_some() {
@@ -85,16 +91,14 @@ impl RequiredOutputDemandContext {
                 "output already has a prepared prerequisite publication",
             ));
         }
-        for identity in inputs {
-            let upstream = state
-                .settlement_keys
-                .get_exact_admitted(identity, admission)?
-                .ok_or_else(prerequisite_denials::stale_upstream_denial)?;
-            if upstream.as_ref() == downstream {
-                return Err(coverage_denial());
-            }
-            predecessors.push(upstream);
-        }
+        let checkpoint_predecessors = consumed_predecessors::select(
+            &state,
+            downstream,
+            inputs,
+            source_owner,
+            admission,
+            &mut predecessors,
+        )?;
         let maximum_key_work = predecessors
             .iter()
             .map(|key| key.producer.len())
@@ -156,9 +160,10 @@ impl RequiredOutputDemandContext {
             .charge_external_work(prior_keys.len() as u64)
             .map_err(|_| work_denial())?;
         let prior_key_work = prior_keys.iter().try_fold(0usize, |maximum, key| {
-            1_usize
-                .checked_add(key.producer.len())
-                .map(|bytes| maximum.max(bytes))
+            key.producer
+                .len()
+                .checked_add(1)
+                .map(|work| maximum.max(work))
                 .ok_or_else(work_denial)
         })?;
         let minimum_member_bytes = super::required_members::minimum_member_bytes()
@@ -260,6 +265,7 @@ impl RequiredOutputDemandContext {
         Ok(PreparedPrerequisiteClaims {
             context: self,
             predecessors,
+            checkpoint_predecessors,
             predecessor_slots_bytes,
             reserved_identity: None,
             reserved_posting: None,
@@ -284,113 +290,5 @@ impl PreparedPrerequisiteClaims {
             .is_some_and(|held| Arc::ptr_eq(held, identity))
             && self.reserved_posting.is_some()
             && self.reserved_cleanup.is_some()
-    }
-}
-
-impl PreparedPrerequisiteClaims {
-    /// The lineage owner has already reserved and minted this exact address.
-    /// Insert its invisible registry vacancy before any World owner effect.
-    pub(in crate::domain_computation::primary_graph) fn reserve_identity(
-        &mut self,
-        identity: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        assert!(self.reserved_identity.is_none());
-        let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
-        let mut state = owner
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let (posting, cleanup) = state.reserve_settlement_vacancy(identity, admission)?;
-        self.reserved_identity = Some(Arc::clone(identity));
-        self.reserved_posting = Some(posting);
-        self.reserved_cleanup = Some(cleanup);
-        Ok(())
-    }
-
-    /// Prepare the successor's invisible posting while the prior posting is
-    /// still held. A denial leaves every old token with this ticket; after a
-    /// successful reserve, exchanging and queueing the old cue cannot fail.
-    pub(in crate::domain_computation::primary_graph) fn replace_reserved_identity_for_recovery(
-        &mut self,
-        identity: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
-        let mut state = owner
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let (posting, cleanup) = state.reserve_settlement_vacancy(identity, admission)?;
-        let previous = self.reserved_cleanup.replace(cleanup);
-        self.reserved_posting = Some(posting);
-        self.reserved_identity = Some(Arc::clone(identity));
-        if let Some(previous) = previous {
-            state.defer_cancelled_settlement_vacancy(previous);
-        }
-        Ok(())
-    }
-
-    /// This is called only after the product publication has committed. All
-    /// allocations and index capacity were admitted by `prepare_prerequisites`.
-    pub(in crate::domain_computation::primary_graph) fn publish(
-        mut self,
-        identity: Arc<RecordedSettlementIdentity>,
-    ) -> super::SupersededSettlements {
-        let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
-        let mut state = owner
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let downstream = self.context.key();
-        let expected = self
-            .reserved_identity
-            .take()
-            .expect("managed output reserved its exact settlement before effects");
-        super::settlement_index::SettlementIndex::fill_prepared(
-            self.reserved_posting
-                .as_ref()
-                .expect("prepared settlement posting remains retained"),
-            expected.as_ref(),
-            Arc::clone(&identity),
-            Arc::clone(self.context.key_arc()),
-        );
-        let record = state
-            .records
-            .get_mut(downstream)
-            .expect("prepared demand stays pinned");
-        assert_eq!(record.prepared_prerequisite_claims, 1);
-        record.prepared_prerequisite_claims = 0;
-        assert!(record.settlements.len() < record.settlements.capacity());
-        record
-            .settlements
-            .push((identity, self.context.retained_bytes()));
-        let old = std::mem::replace(
-            &mut record.prerequisites,
-            std::mem::take(&mut self.predecessors),
-        );
-        let released_slots = old.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
-        for upstream in &old {
-            let prior = state
-                .records
-                .get_mut(upstream.as_ref())
-                .expect("settled prerequisite retained");
-            prior.framework_required_count -= 1;
-            state.remove_required_member_if_released(upstream);
-        }
-        for upstream in &old {
-            state.defer_terminal_cleanup(upstream, 0);
-        }
-        state.defer_terminal_cleanup(self.context.key_arc(), 0);
-        state.required_reserved_bytes =
-            state.required_reserved_bytes.saturating_sub(released_slots);
-        // The context's owned key is now held by the exact-settlement index.
-        self.context.transfer_custody_to_registry();
-        self.predecessor_slots_bytes = 0;
-        self.reserved_cleanup.take();
-        self.published = true;
-        drop(state);
-        drop(old);
-        super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()))
     }
 }

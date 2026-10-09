@@ -71,10 +71,6 @@ pub enum BankHttpMutationFailureKind {
     Deferred,
     SettlementDeferred,
     Indeterminate,
-    /// The key's original request already applied and its effect stands, but
-    /// its answer left the idempotency window. Do not resubmit it under a new
-    /// key; refresh to read the current state instead.
-    IdempotencyWindowExpired,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]

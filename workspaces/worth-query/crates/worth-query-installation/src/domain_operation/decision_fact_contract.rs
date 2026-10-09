@@ -38,6 +38,7 @@ pub struct WorthQueryDecisionFactFamily {
 pub enum WorthQueryDecisionFactCardinality {
     Exact(usize),
     Bounded { maximum: usize },
+    Variable,
 }
 
 impl WorthQueryDecisionFactFamily {
@@ -72,6 +73,12 @@ impl WorthQueryDecisionFactFamily {
         Ok(self)
     }
 
+    /// Declares family and kind obligations without a retained count restriction.
+    pub fn with_variable_fact_count(mut self) -> Self {
+        self.cardinality = WorthQueryDecisionFactCardinality::Variable;
+        self
+    }
+
     pub fn identity(&self) -> &str {
         &self.identity
     }
@@ -86,6 +93,7 @@ impl WorthQueryDecisionFactFamily {
 
     pub(crate) fn canonical_token(&self) -> String {
         let cardinality = match self.cardinality {
+            WorthQueryDecisionFactCardinality::Variable => "variable".to_owned(),
             WorthQueryDecisionFactCardinality::Exact(count) => format!("exact:{count}"),
             WorthQueryDecisionFactCardinality::Bounded { maximum } => {
                 format!("bounded:{maximum}")

@@ -115,13 +115,14 @@ pub(super) fn verify(
     let required_prerequisites = if let Some(context) = context {
         let prepared = context
             .prepare_prerequisites(
-                attempt.consumed_outputs().iter().map(|evidence| evidence.identity()),
+                attempt.consumed_outputs().iter(),
+                owner,
                 &mut admission,
             )
             .map_err(|denial| {
                 WorthQueryProviderSessionCommitStop::Deferred(
-                    crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-                        crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RequiredPrerequisitePending(denial.kind()),
+                    crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+                        denial,
                         "required output prerequisites could not be admitted before publication",
                     ),
                 )

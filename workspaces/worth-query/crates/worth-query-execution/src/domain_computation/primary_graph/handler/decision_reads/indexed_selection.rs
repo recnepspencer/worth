@@ -114,7 +114,10 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     }
 }
 
-fn resolution_denial(denial: HandlerExecutionDenial, subject: &str) -> HandlerExecutionDenial {
+pub(super) fn resolution_denial(
+    denial: HandlerExecutionDenial,
+    subject: &str,
+) -> HandlerExecutionDenial {
     match denial.downcast::<WorthQueryEntityResolutionDenial>() {
         Ok(denial)
             if matches!(

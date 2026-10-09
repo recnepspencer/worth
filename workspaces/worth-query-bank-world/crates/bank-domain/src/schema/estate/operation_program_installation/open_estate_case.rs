@@ -10,7 +10,6 @@ pub(super) fn install(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = OpenEstateCaseOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 5)
         .operation_projection_work_budget(operation, 40)
         .operation_read_field(operation, EstateCaseIdentityField::reference())
         .operation_read_field(operation, EstateCaseStatusField::reference())

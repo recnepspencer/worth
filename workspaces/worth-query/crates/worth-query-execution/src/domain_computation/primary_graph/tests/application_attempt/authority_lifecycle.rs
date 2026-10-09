@@ -68,7 +68,11 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
         .unwrap();
     let projected_denial = target_world
         .invariant
-        .project_admitted_operation(&projected_admission, |_, _| ())
+        .project_admitted_operation(
+            &projected_admission,
+            |_, _| (),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .err()
         .expect("foreign admission cannot execute a target projection closure");
     assert_eq!(
@@ -93,9 +97,11 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
 
     cancellation.cancel();
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, idempotency(17, 17)),
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(17, 17),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Cancelled
     ));
     let fresh_request = live_scope();

@@ -27,9 +27,16 @@ fn subscriber_stream_rejects_unsupported_contract_upgrade_boundary() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.geometry.v1".to_string(),
@@ -86,9 +93,16 @@ fn subscriber_stream_applies_contract_upgrade_when_declared_supported() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.geometry.v2".to_string(),
@@ -150,9 +164,16 @@ fn subscriber_stream_rejects_renegotiation_required_boundary() {
             )
             .expect("owner-admitted transaction context")
     };
-    txn.push_batch(batch_create("b"))
-        .expect("test staging stays within configured resource budgets");
-    txn.commit(&runtime).unwrap();
+    txn.push_batch(
+        batch_create("b"),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .expect("test staging stays within configured resource budgets");
+    txn.commit(
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
 
     let error = runtime
         .publication()

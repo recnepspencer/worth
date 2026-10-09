@@ -5,13 +5,15 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
+mod batch;
+pub use batch::{WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult};
 pub(super) mod custody_work;
 mod denial;
 pub(super) mod outcome;
 pub(super) mod plan_admission;
 use plan_admission::{
-    admit_request, reserve_one_shot_result_buffer, validate_authentication_lifetime,
-    validate_basis_lifetime, validate_one_shot_plan,
+    admit_request, reserve_one_shot_result_buffer, reserve_one_shot_result_buffer_in_batch,
+    validate_authentication_lifetime, validate_basis_lifetime, validate_one_shot_plan,
 };
 pub(super) mod pair_plans;
 mod result;
@@ -91,7 +93,7 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        self.execute_application_query_one_shot_core(plan, None)
+        self.execute_application_query_one_shot_core(plan, None, None, None)
     }
 
     fn execute_application_query_one_shot_core<
@@ -114,6 +116,8 @@ where
             Scope,
         >,
         spent: Option<&OneShotReadWorkObservation<'_>>,
+        batch: Option<&super::WorthQueryApplicationQueryBatchAdmission>,
+        maximum_work: Option<usize>,
     ) -> Result<
         WorthQueryApplicationOneShotResult<Query, QueryResult>,
         WorthQueryApplicationOneShotDenial,
@@ -124,7 +128,7 @@ where
         validate_one_shot_plan(self, &plan)?;
         refresh_governed_authorization(self, &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        let result_buffer = reserve_one_shot_result_buffer(self, &plan)?;
+        let result_buffer = reserve_one_shot_result_buffer_in_batch(self, &plan, batch)?;
         let (raw, authorization_work, read_proof) =
             execute_authorized_read(self, &plan, |runtime, graph, plan| {
                 read_bounded_root_rows(
@@ -133,7 +137,7 @@ where
                     plan,
                     result_buffer,
                     spent,
-                    plan.controls.maximum_work().get(),
+                    maximum_work.unwrap_or(plan.controls.maximum_work().get()),
                 )
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;

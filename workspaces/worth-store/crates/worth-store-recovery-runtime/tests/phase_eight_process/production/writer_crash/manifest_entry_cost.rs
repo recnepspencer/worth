@@ -7,6 +7,10 @@ use worth_store_physical_format::{
     RecordArtifactFile,
 };
 
+/// The manifest entries recovery charges before it observes a successor: one
+/// for each of the two selected roots, and what their leaves hold in their
+/// routing, segment and free-space trees. Blocks and branch children charge
+/// nothing.
 pub(super) fn required_before_successor(root: &Path) -> u64 {
     let records = root.join("families/records");
     let current = selector(&records.join("root-current.selector"));
@@ -14,7 +18,9 @@ pub(super) fn required_before_successor(root: &Path) -> u64 {
     let current_root = root_manifest(&records, current.root_generation());
     let previous_root = root_manifest(&records, previous.root_generation());
 
-    root_leaf_entries(&records, &current_root)
+    const SELECTED_ROOTS: u64 = 2;
+    SELECTED_ROOTS
+        + root_leaf_entries(&records, &current_root)
         + root_leaf_entries(&records, &previous_root)
         + topology_entries(&records, &current_root)
         + topology_entries(&records, &previous_root)
@@ -89,10 +95,7 @@ fn topology_entries(records: &Path, root: &DurablePhysicalRootManifest) -> u64 {
         .expect("read free-space block for raw budget oracle");
         let (block, _) = PhysicalFreeSpaceMembershipBlock::decode(&bytes, root.node_capacity())
             .expect("decode free-space block for raw budget oracle");
-        entries += block.entries().map_or_else(
-            || block.children().unwrap_or_default().len(),
-            |found| found.len(),
-        ) as u64;
+        entries += block.entries().map_or(0, <[_]>::len) as u64;
         pending.extend(block.children().unwrap_or_default().iter().copied());
     }
     entries
@@ -114,10 +117,7 @@ fn segment_entries(records: &Path, root: &DurablePhysicalRootManifest) -> u64 {
         .expect("read segment block for raw budget oracle");
         let (block, _) = PhysicalSegmentMembershipBlock::decode(&bytes, root.node_capacity())
             .expect("decode segment block for raw budget oracle");
-        entries += block.entries().map_or_else(
-            || block.children().unwrap_or_default().len(),
-            |found| found.len(),
-        ) as u64;
+        entries += block.entries().map_or(0, <[_]>::len) as u64;
         pending.extend(block.children().unwrap_or_default().iter().copied());
     }
     entries

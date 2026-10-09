@@ -7,9 +7,33 @@ use worth_store_physical_format::{
 use super::{projection::ProjectedSuccessorRoot, RootRebaseContext};
 use crate::physical_runtime::record_serving::publication::PublicationPlan;
 
+pub(super) struct RootAssemblyContext<'a> {
+    pub(super) media: &'a worth_store_physical_backend::QualifiedFilesystemMedia,
+    pub(super) format: crate::physical_runtime::record_serving::AdmittedPhysicalRecordFormat,
+    pub(super) current_root: &'a worth_store_physical_format::DurablePhysicalRootManifest,
+}
+
 pub(super) fn assemble_rebased_publication(
-    mut publication: PublicationPlan,
+    publication: PublicationPlan,
     context: RootRebaseContext<'_>,
+    generation: u64,
+    projected: ProjectedSuccessorRoot,
+) -> (PublicationPlan, DurableFreeSpaceManifestHeader) {
+    assemble_successor(
+        publication,
+        RootAssemblyContext {
+            media: context.media,
+            format: context.format,
+            current_root: context.current_root,
+        },
+        generation,
+        projected,
+    )
+}
+
+pub(super) fn assemble_successor(
+    mut publication: PublicationPlan,
+    context: RootAssemblyContext<'_>,
     generation: u64,
     projected: ProjectedSuccessorRoot,
 ) -> (PublicationPlan, DurableFreeSpaceManifestHeader) {
@@ -56,6 +80,19 @@ pub(super) fn assemble_rebased_publication(
     .expect("previous-linked current selector is valid")
     .encode()
     .to_vec();
-    publication.manifests = projected.manifests;
+    publication.manifests = projected
+        .manifests
+        .into_iter()
+        .map(|(artifact, bytes)| {
+            let coordinate = worth_store_physical_format::RecordFrameCoordinate::new(
+                artifact,
+                0,
+                u32::try_from(bytes.len()).expect("bounded manifest length"),
+            )
+            .expect("manifest coordinate");
+            (coordinate, bytes)
+        })
+        .collect();
+    publication.routing_metadata_bytes = publication.retained_metadata_bytes();
     (publication, projected.free_space)
 }

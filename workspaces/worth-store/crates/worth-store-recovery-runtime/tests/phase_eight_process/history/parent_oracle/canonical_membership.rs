@@ -55,8 +55,9 @@ pub(crate) fn current_root_records(
     let manifest = decode_frame(manifest)
         .ok_or_else(|| "parent oracle cannot decode the selected root manifest".to_owned())?;
     if manifest.kind != ROOT_MANIFEST_KIND
+        || manifest.format != selector.format
         || manifest.identity != generation
-        || manifest.payload.len() != 320
+        || manifest.payload.len() != 336
         || manifest.payload[40] != 1
     {
         return Err("parent oracle selected root manifest has no valid routing root".to_owned());
@@ -71,10 +72,10 @@ pub(crate) fn current_root_records(
     };
     let mut visited = BTreeSet::new();
     let mut placements = Vec::new();
-    visit_root_block(files, root, &mut visited, &mut placements)?;
+    visit_root_block(files, root, manifest.format, &mut visited, &mut placements)?;
     let mut canonical_records = BTreeMap::new();
     for placement in placements {
-        let (record, payload) = read_placement(files, placement)?;
+        let (record, payload) = read_placement(files, placement, manifest.format)?;
         if canonical_records.insert(record, payload).is_some() {
             return Err(
                 "parent oracle current root contains a duplicate record identity".to_owned(),
@@ -190,6 +191,7 @@ fn require_expected_records(
 fn visit_root_block(
     files: &[(String, Vec<u8>)],
     reference: RootReference,
+    expected_format: [u8; 10],
     visited: &mut BTreeSet<(u64, u64)>,
     placements: &mut Vec<Placement>,
 ) -> Result<(), String> {
@@ -208,7 +210,10 @@ fn visit_root_block(
         .ok_or_else(|| format!("parent oracle cannot find selected routing block {path}"))?;
     let frame = decode_frame(bytes)
         .ok_or_else(|| format!("parent oracle cannot decode selected routing block {path}"))?;
-    if frame.kind != ROOT_ROUTING_KIND || frame.identity != reference.block {
+    if frame.kind != ROOT_ROUTING_KIND
+        || frame.identity != reference.block
+        || frame.format != expected_format
+    {
         return Err(format!(
             "parent oracle routing block identity mismatch {path}"
         ));
@@ -244,7 +249,7 @@ fn visit_root_block(
                 ));
             }
             for entry in payload[40..].chunks_exact(LEAF_ENTRY_BYTES) {
-                placements.push(parse_placement(entry)?);
+                placements.push(parse_placement(entry, frame.schema)?);
             }
         }
         (2, level) if level != 0 => {
@@ -273,6 +278,7 @@ fn visit_root_block(
                         block: read_u64(child, 8).ok_or("branch block is truncated")?,
                         level: read_u16(child, 16).ok_or("branch level is truncated")?,
                     },
+                    expected_format,
                     visited,
                     placements,
                 )?;

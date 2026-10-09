@@ -23,6 +23,20 @@ impl PhysicalResidencyPool {
 }
 
 impl MaintenanceAllocationGrant {
+    pub(in crate::physical_residency) fn from_reserved(
+        owner: std::sync::Arc<super::super::pool::PoolInner>,
+        bytes: u64,
+    ) -> Self {
+        Self {
+            operation: OperationAllocationGrant {
+                owner,
+                scope: PhysicalOperationAllocationScope::Maintenance,
+                bytes,
+                active_use_bytes: std::sync::atomic::AtomicU64::new(0),
+            },
+        }
+    }
+
     pub(crate) fn into_operation(self) -> OperationAllocationGrant {
         self.operation
     }

@@ -46,11 +46,10 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
                                     value: length(value),
                                 },
                             ),
-                        validator_work: 4_096,
                     }))
                     .expect_source(source.observed_sources()[0].clone())
                     .idempotency(&(0x612_8900 + number))
-                    .execute_in_program::<ScaleProgram>(&app)
+                    .execute_in_program::<ScaleProgram>(&app, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .unwrap();
                 assert!(matches!(
                     published,
@@ -117,7 +116,10 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             })
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&0x612_8800_u64)
-            .execute_performed::<ScaleProgram, OracleRoot>(&app)
+            .execute_performed::<ScaleProgram, OracleRoot>(
+                &app,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         let worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(changed)=changed
             else { panic!("the performed source commits") };

@@ -117,6 +117,9 @@ mod tests {
             u64::MAX,
             u64::MAX,
             1,
+            65536,
+            4096,
+            1,
             None,
         )
         .unwrap();
@@ -128,7 +131,9 @@ mod tests {
 
     #[test]
     fn disjoint_reservations_never_reuse_abandoned_identity_ranges() {
-        let free = DurableFreeSpaceManifestHeader::new(1, 1, 2, 4, 0, 7, 11, 13, 1, None).unwrap();
+        let free =
+            DurableFreeSpaceManifestHeader::new(1, 1, 2, 4, 0, 7, 11, 13, 1, 65536, 4096, 1, None)
+                .unwrap();
         let mut frontier = RecordAllocationFrontier::new(&free);
         let mut first = frontier.reserve(2, 3, 1).unwrap();
         let mut second = frontier.reserve(1, 1, 2).unwrap();

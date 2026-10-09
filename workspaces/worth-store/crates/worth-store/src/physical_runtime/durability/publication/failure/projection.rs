@@ -32,11 +32,11 @@ pub(super) fn failure_cause(
         PhysicalRootPublicationPreparationFailure::TransitionDenied { cause, .. } => {
             PhysicalRootPublicationPreparationFailureCause::TransitionDenied(*cause)
         }
-        PhysicalRootPublicationPreparationFailure::Planning { .. } => {
-            PhysicalRootPublicationPreparationFailureCause::Planning
+        PhysicalRootPublicationPreparationFailure::Planning { cause, .. } => {
+            PhysicalRootPublicationPreparationFailureCause::Planning(cause.clone())
         }
-        PhysicalRootPublicationPreparationFailure::CandidateAdmission { .. } => {
-            PhysicalRootPublicationPreparationFailureCause::CandidateAdmission
+        PhysicalRootPublicationPreparationFailure::CandidateAdmission { cause, .. } => {
+            PhysicalRootPublicationPreparationFailureCause::CandidateAdmission(cause.clone())
         }
         PhysicalRootPublicationPreparationFailure::CandidateWriteNotStarted {
             candidate,

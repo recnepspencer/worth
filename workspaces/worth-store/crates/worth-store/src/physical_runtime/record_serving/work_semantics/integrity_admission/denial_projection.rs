@@ -53,7 +53,7 @@ impl CleanExtentAdmissionDenial {
                 RecordReadDenial::PhysicalWork(RecordReadWorkDenial::RuntimeReleased)
             }
             Self::Residency(reason) => RecordReadDenial::from_residency(reason),
-            Self::Damaged => RecordReadDenial::ArtifactDamaged,
+            Self::Damaged | Self::FrameChecksumDamaged => RecordReadDenial::ArtifactDamaged,
         }
     }
 
@@ -66,7 +66,7 @@ impl CleanExtentAdmissionDenial {
             Self::Unavailable => RecordStreamFailureKind::ArtifactUnavailable,
             Self::RuntimeReleased => RecordStreamFailureKind::RuntimeReleased,
             Self::Residency(reason) => RecordStreamFailureKind::ResidencyUnavailable(reason.into()),
-            Self::Damaged => RecordStreamFailureKind::ArtifactDamaged,
+            Self::Damaged | Self::FrameChecksumDamaged => RecordStreamFailureKind::ArtifactDamaged,
         }
     }
 }

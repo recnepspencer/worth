@@ -21,7 +21,7 @@ pub struct PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>
     pub(super) performed: Vec<String>,
 }
 
-/// A cancelled instance and the effects it performed before it ended, which
+/// A canceled instance and the effects it performed before it ended, which
 /// cancellation never reverses.
 #[derive(Debug)]
 pub struct PerformedWorkflowInstanceCancellation {
@@ -104,8 +104,9 @@ where
                 &presented,
                 program,
                 idempotency.bind_workflow_instance(&intent_identity),
-            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
-        )
+                crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .landed()
         {
             Ok(landed) => landed,

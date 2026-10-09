@@ -339,20 +339,34 @@ where
                     continue;
                 }
                 if facts_current {
-                    let resources = candidate.resources.ok_or_else(|| {
-                        WorthQueryOutputDemandDenial::new(
-                            WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                            "retained output lacks its producer resource profile",
-                        )
-                    })?;
                     let (mut selected, entry) = self.installed_producers.select_exact::<Family>(
                         candidate.binding,
                         selected_override.map(|_| &mut *admission),
                     )?;
-                    selected.retained_resources = Some(resources);
-                    selected.retained_idempotency_key = Some(candidate.idempotency_key_identity);
-                    selected.retained_output_binding = Some(candidate.binding);
-                    return Ok((selected, entry));
+                    // A runtime record reaches the input cutoff and needs its
+                    // declared decision proof. A current checkpoint record is
+                    // readmitted through its complete recovered facts instead.
+                    let recovered = matches!(candidate.source_identity, Some(
+                        crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_)
+                    ));
+                    if recovered
+                        || entry.declaration.input_reuse.is_some_and(|contract| {
+                            contract.determinism()
+                                == worth_foundational::facade::DeterminismContract::CanonicalBitwise
+                        })
+                    {
+                        let resources = candidate.resources.ok_or_else(|| {
+                            WorthQueryOutputDemandDenial::new(
+                                WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                                "retained output lacks its producer resource profile",
+                            )
+                        })?;
+                        selected.retained_resources = Some(resources);
+                        selected.retained_idempotency_key =
+                            Some(candidate.idempotency_key_identity);
+                        selected.retained_output_binding = Some(candidate.binding);
+                        return Ok((selected, entry));
+                    }
                 }
                 retained_output = true;
             }

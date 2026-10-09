@@ -2,14 +2,17 @@
 
 ## Purpose
 
-This is Part II of the active Worth Store program. It begins after the
-[Worth Store Physical Database Roadmap](physical-database-roadmap.md) closes.
-That Part I closeout includes the mandatory
-[Physical Foundation Reconstruction Roadmap](physical-foundation-reconstruction-roadmap.md),
-which makes the physical runtime, media path, fresh-process recovery, and
-S.1-through-S.9 certification real before S.10 through S.12 finish. Part II
-does not compensate for an incomplete reconstruction with an integration-side
-backend or semantic persistence fallback.
+This is Part II of the active Worth Store program. It begins when the
+[Physical Foundation Reconstruction Roadmap](physical-foundation-reconstruction-roadmap.md)
+closes through C.13. That roadmap makes the physical runtime, media path,
+fresh-process recovery, and S.1-through-S.9 owners real, and its sealed handoff
+names the physical facade this roadmap binds to. The
+[Physical Database Roadmap](physical-database-roadmap.md) sequences S.10
+through S.12 run later, each before the Part II milestone that consumes it
+(see its Runtime Integration Entry Gate). Part II does not compensate for an
+incomplete reconstruction or a not-yet-run sequence with an integration-side
+backend or semantic persistence fallback: a capability the facade reports
+`Absent` stays absent until its owner ships it.
 
 Part II establishes the backend-neutral `worth-application-runtime` lifecycle
 facade and its concrete `worth-application-store` composition. That composition
@@ -30,7 +33,7 @@ the current Query/Relational/Signal architecture.
 ## Roadmap Position
 
 ```text
-Physical Database Roadmap S.12
+Physical Foundation Reconstruction C.13 handoff
   -> Milestone 1: Query integration readiness and backend contract refactor
   -> Milestone 2: semantic-to-physical integration spine
   -> Milestone 3: Store durability beneath canonical commit and publication
@@ -38,17 +41,21 @@ Physical Database Roadmap S.12
   -> Milestone 5: branch-aware concurrent MVCC over Store
   -> Milestone 6: runtime residency, drainage, cleanup, and rehydration
   -> Milestone 7: durable semantic identity and checkpoint basis
+  -> Physical Database Roadmap S.10
   -> Milestone 8: bounded bootstrap, recovery, PITR, and readmission
   -> Milestone 9: Store-backed Query execution and pushdown parity
+  -> Physical Database Roadmap S.11
   -> Milestone 10: durable historical worlds, branches, previews, diff, and merge
   -> Milestone 11: durable Query artifacts, saved queries, and continuations
   -> Milestone 12: blob-backed Query delivery and large-object semantics
   -> Milestone 13: durable live views and subscriptions
+  -> Physical Database Roadmap S.12
   -> Milestone 14: deterministic bulk ingest, transform, and migration
   -> Milestone 15: semantic retention, compaction, maintenance, and tiering
   -> Milestone 16: compatibility, replication, and portable capsules
   -> Milestone 17: extensible durable product artifacts
   -> Milestone 18: global admission, operations, and trust integration
+  -> Physical Foundation Reconstruction C.12 (formal rebinding)
   -> Milestone 19: joined runtime and Store certification
 ```
 
@@ -1802,7 +1809,8 @@ After Milestone 12:
 - Milestone 13 live/subscription work consumes the durable continuation
   substrate from Milestone 11 and may not rebuild it locally.
 - Milestone 14 bulk work may begin earlier after Milestones 3 through 6, but it
-  closes only through the canonical commit, residency, and recovery paths.
+  closes only after S.12 and through the canonical commit, residency, and
+  recovery paths.
 - Milestone 15 consumes the survival and lease declarations of Milestones 10
   through 14 before durable retention or reclaim closes.
 - Milestone 16 begins after every existing artifact family declares retention,

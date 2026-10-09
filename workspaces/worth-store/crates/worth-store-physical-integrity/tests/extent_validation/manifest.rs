@@ -123,13 +123,13 @@ fn manifest_framing_version_kind_checksum_and_truncation_are_localized() {
     );
 
     let mut unsupported_format = fixture.manifest_bytes();
-    unsupported_format[10..12].copy_from_slice(&2_u16.to_le_bytes());
+    unsupported_format[10..12].copy_from_slice(&3_u16.to_le_bytes());
     reseal_durable_frame(&mut unsupported_format);
     assert_unsupported(
         &unsupported_format,
         scope,
         PhysicalIntegrityVersionAxis::PhysicalFormat,
-        2,
+        3,
     );
 }
 
@@ -233,6 +233,7 @@ fn manifest_validation_record_binds_store_format_placement_and_range_scope() {
         fixture.logical_bytes,
         other_format.page_size().bytes(),
         1,
+        u64::from(other_format.page_size().bytes()),
     )
     .unwrap()
     .encode(other_format);
@@ -275,6 +276,7 @@ fn manifest_bytes(
         logical_bytes,
         fixture.format.page_size().bytes(),
         2,
+        u64::from(fixture.format.page_size().bytes()),
     )
     .unwrap()
     .encode(fixture.format)

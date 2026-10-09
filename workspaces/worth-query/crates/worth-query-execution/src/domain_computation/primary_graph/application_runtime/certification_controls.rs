@@ -1,3 +1,5 @@
+#[cfg(feature = "test-primary-graph-faults")]
+use worth_execution::ExecutionAllocationPolicy as NativeAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
 #[cfg(feature = "test-primary-graph-faults")]
@@ -223,9 +225,11 @@ where
                 )
                 .expect("the selected product basis admits the fault transaction");
             transaction
-                .push_batch(batch)
+                .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the membership cycle stays within resource budgets");
-            runtime.prepare_branch_transaction(transaction).map(|_| ())
+            runtime
+                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
+                .map(|_| ())
         });
         drop(application_basis);
         candidate
@@ -276,9 +280,11 @@ where
                 )
                 .expect("the selected product basis admits the fault transaction");
             transaction
-                .push_batch(batch)
+                .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the field update stays within resource budgets");
-            runtime.prepare_branch_transaction(transaction).map(|_| ())
+            runtime
+                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
+                .map(|_| ())
         });
         drop(application_basis);
         candidate
@@ -341,9 +347,11 @@ where
                 )
                 .expect("the selected product basis admits the fault transaction");
             transaction
-                .push_batch(batch)
+                .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the attachment stays within resource budgets");
-            runtime.prepare_branch_transaction(transaction).map(|_| ())
+            runtime
+                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
+                .map(|_| ())
         });
         drop(application_basis);
         candidate

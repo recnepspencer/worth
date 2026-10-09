@@ -13,7 +13,7 @@ use worth_foundational::{
 fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: 200_000,
+        charged_memory_bytes: Some(200_000),
     })
     .unwrap();
     let request = |work_ceiling| LeaseRequest {

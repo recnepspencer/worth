@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
@@ -29,6 +29,7 @@ pub(super) fn validate_payloads(
     format: PhysicalRecordFormatDeclaration,
     placements: &[OfflineRecordPlacement],
     pages: &[OfflineSegmentPageMembership],
+    extent_geometry: &BTreeMap<(u64, u64), (u64, u64)>,
 ) -> Result<OfflinePayloadWalk, OfflineDurableManifestDenial> {
     let page_membership = index_page_membership(pages)?;
     let mut digest = Sha256::new();
@@ -72,6 +73,9 @@ pub(super) fn validate_payloads(
                 extent,
                 generation,
                 payload_bytes,
+                arena,
+                arena_offset,
+                ..
             } => read_extent_payload(
                 root,
                 format,
@@ -80,6 +84,11 @@ pub(super) fn validate_payloads(
                     extent,
                     generation,
                     logical_bytes: payload_bytes,
+                    arena,
+                    arena_offset,
+                    geometry: *extent_geometry
+                        .get(&(arena, arena_offset))
+                        .ok_or(OfflineDurableManifestDenial::ReachabilityMismatch)?,
                 },
                 &mut record_digest,
             )?,
@@ -158,6 +167,9 @@ struct ExtentPayloadExpectation {
     extent: u64,
     generation: u64,
     logical_bytes: u64,
+    arena: u64,
+    arena_offset: u64,
+    geometry: (u64, u64),
 }
 
 fn read_inline_payload(
@@ -229,8 +241,8 @@ fn read_extent_payload(
     digest: &mut PayloadDigesters<'_>,
 ) -> Result<u64, OfflineDurableManifestDenial> {
     let path = root.join(format!(
-        "families/records/extents/extent-{:016x}-{:016x}.data",
-        expected.extent, expected.generation
+        "families/records/arenas/arena-{:016x}.data",
+        expected.arena
     ));
     let mut file = std::fs::File::open(path)
         .map_err(|error| OfflineDurableManifestDenial::Io(error.kind()))?;
@@ -238,6 +250,11 @@ fn read_extent_payload(
     let mut offset = 0_u64;
     let mut ordinal = 1_u32;
     while offset < expected.logical_bytes {
+        let position = expected.arena_offset
+            + expected.geometry.0
+            + u64::from(ordinal - 1) * expected.geometry.1;
+        file.seek(SeekFrom::Start(position))
+            .map_err(|error| OfflineDurableManifestDenial::Io(error.kind()))?;
         let length =
             usize::try_from((expected.logical_bytes - offset).min(capacity as u64)).unwrap();
         let mut bytes = vec![0_u8; FRAME_HEADER_BYTES + EXTENT_METADATA_BYTES + length];
@@ -261,14 +278,6 @@ fn read_extent_payload(
         ordinal = ordinal
             .checked_add(1)
             .ok_or(OfflineDurableManifestDenial::MalformedPayloadFrame)?;
-    }
-    let mut trailing = [0_u8; 1];
-    if file
-        .read(&mut trailing)
-        .map_err(|error| OfflineDurableManifestDenial::Io(error.kind()))?
-        != 0
-    {
-        return Err(OfflineDurableManifestDenial::MalformedPayloadFrame);
     }
     Ok(u64::from(ordinal - 1))
 }

@@ -171,8 +171,6 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
             max_patch_records_per_commit,
             max_published_snapshot_handles: 256,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 268_435_456,
-            max_transaction_footprint_loci: 262_144,
             max_transaction_savepoints: 4_096,
             max_prepared_candidates: 1_024,
             candidate_max_lifetime_millis: 30_000,
@@ -232,9 +230,17 @@ fn commit_definition(
                 .expect("owner-admitted transaction context")
         };
         transaction
-            .push_batch(WorkerIntentBatch::new("supply-chain-empty-baseline"))
+            .push_batch(
+                WorkerIntentBatch::new("supply-chain-empty-baseline"),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("empty baseline staging fits the configured transaction budget");
-        return transaction.commit(runtime).map_err(transaction_error);
+        return transaction
+            .commit(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(transaction_error);
     }
 
     let mut batch = WorkerIntentBatch::new("supply-chain-baseline");
@@ -255,9 +261,17 @@ fn commit_definition(
             .expect("owner-admitted transaction context")
     };
     transaction
-        .push_batch(batch)
+        .push_batch(
+            batch,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("Supply Chain baseline staging fits its configured transaction budget");
-    transaction.commit(runtime).map_err(transaction_error)
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(transaction_error)
 }
 
 fn bulk_entity_intents(program: &CompiledSupplyChainProgram) -> Vec<MutationIntent> {

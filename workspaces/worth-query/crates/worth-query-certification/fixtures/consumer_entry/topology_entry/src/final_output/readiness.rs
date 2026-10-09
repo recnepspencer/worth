@@ -86,7 +86,6 @@ pub(crate) fn declare_final_output<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 16)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())
@@ -105,7 +104,6 @@ pub(crate) fn declare_final_output<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(PreserveFinalPlanarOutput::reference::<Schema>(), 64)
         .operation_projection_work_budget(PreserveFinalPlanarOutput::reference::<Schema>(), 64)
         .operation_read_entity(
             PreserveFinalPlanarOutput::reference::<Schema>(),

@@ -1,4 +1,4 @@
-//! A publication refusal retains accepted custody and HEAD's retry posture.
+//! A publication refusal retains accepted custody for retry.
 use super::receive::WorthQueryInboundAdmissionDenial as Retry;
 use crate::domain_computation::primary_graph::application_runtime::WorthQueryInboundPublicationDenial as Denial;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
@@ -13,6 +13,13 @@ impl Denial {
                 Preparation::ExecutionControlStopped { stage, kind } => {
                     Retry::PublicationExecutionControlStopped { stage, kind }
                 }
+                Preparation::AllocationDenied { stage, kind, requested_payload_bytes } => Retry::PublicationAllocationDenied { stage, kind, requested_payload_bytes },
+                Preparation::StagingAllocationDenied { kind, requested_payload_bytes } => Retry::PublicationAllocationDenied {
+                    stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::EffectLowering,
+                    kind, requested_payload_bytes,
+                },
+                Preparation::StagingCardinalityOverflow => Retry::PublicationStagingCardinalityOverflow,
+                Preparation::StagingInputDirectoryAllocationDenied { requested_batches } => Retry::PublicationInputDirectoryAllocationDenied { requested_batches },
                 Preparation::OriginalOutboxNotAnEntity
                 | Preparation::ForeignOrStaleBasis
                 | Preparation::StagingUnavailable

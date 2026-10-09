@@ -3,9 +3,12 @@ use std::sync::{Arc, Mutex};
 use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
 
 use super::super::super::request_local::{assert_request_local, RequestLocal};
-use super::admission::IndexAdmission;
+use super::admission::{IndexAdmission, RetainedIndexAdmission};
+
+mod retained_checkpoint;
 use super::{index_capacity, retention, SourceInvalidationOwner};
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
+pub(super) use retained_checkpoint::RetainedIndexCheckpoint;
 
 /// A caller retains this meter across its complete derived-edit operation.
 /// It can also be carried by the authenticated required-set coordinator rather
@@ -29,6 +32,7 @@ struct AdmissionTotals {
     bytes: u64,
     navigation: u64,
     ordered_operations: u64,
+    index_bytes: u64,
 }
 
 enum AdmissionCounters {
@@ -123,6 +127,7 @@ impl InvalidationEditAdmission {
                 bytes: 0,
                 navigation: 0,
                 ordered_operations: 0,
+                index_bytes: 0,
             }),
             request_local: PhantomData,
         }
@@ -150,6 +155,10 @@ impl InvalidationEditAdmission {
 
     pub(in crate::domain_computation::primary_graph) fn charged_bytes(&self) -> u64 {
         self.with_totals(|totals| totals.bytes)
+    }
+
+    pub(super) fn charged_index_bytes(&self) -> u64 {
+        self.with_totals(|totals| totals.index_bytes)
     }
 
     pub(in crate::domain_computation::primary_graph) fn remaining_work(&self) -> usize {
@@ -302,3 +311,15 @@ mod meter;
 
 #[cfg(test)]
 mod carried_tests;
+
+impl RetainedIndexAdmission for InvalidationEditAdmission {
+    fn record_index_bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
+        self.with_totals_mut(|totals| {
+            totals.index_bytes = totals
+                .index_bytes
+                .checked_add(bytes)
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+            Ok(())
+        })
+    }
+}

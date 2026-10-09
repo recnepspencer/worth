@@ -76,9 +76,15 @@ fn complexity_budget_bulk_create_reserves_exact_logical_slots() {
                 ],
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _ = txn.commit(&runtime).unwrap();
+    let _ = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.bulk_entity_slots_reserved, 3);

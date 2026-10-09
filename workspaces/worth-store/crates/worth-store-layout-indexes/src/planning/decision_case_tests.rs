@@ -113,20 +113,13 @@ fn declared_selection_cases_equal_cases_emitted_by_ordinary_requests() {
     observed.insert(select_case(
         AccessPlanSelector
             .admit_read_request(
-                page_family,
-                page_key(),
-                page_exact.clone(),
+                wal_family,
+                wal_key(),
+                wal_materialization.clone(),
                 access_planning().point_access(),
             )
-            .expect("budget denial must follow ordinary request admission"),
-        PreExecutionBudgetEnvelope::new(
-            PreExecutionBudgetScope::Foreground,
-            0,
-            u16::MAX,
-            u16::MAX,
-            u16::MAX,
-            u64::MAX,
-        ),
+            .expect("LSM budget denial must follow ordinary request admission"),
+        PreExecutionBudgetEnvelope::new(PreExecutionBudgetScope::Foreground, 0, 0, 0, 0, 0),
     ));
     observed.insert(select_case(
         AccessPlanSelector
@@ -212,25 +205,6 @@ fn select_case<Request: AdmittedPlanningRequest>(
 ) -> AccessPlanSelectionCaseId {
     let outcome = AccessPlanSelector.select_admitted_with_budget(request, budget);
     match outcome.view() {
-        AccessPlanSelectionView::BTreeLookup(plan) => {
-            let class = match plan.operation() {
-                super::BTreeLookupOperation::Point => AccessPlanCostClass::BTreePointLookup,
-                super::BTreeLookupOperation::Range => AccessPlanCostClass::BTreeRangeLookup,
-                super::BTreeLookupOperation::Prefix => AccessPlanCostClass::BTreePrefixLookup,
-            };
-            assert_operation_cost(
-                plan.cost_estimate(),
-                plan.budget_receipt(),
-                class,
-                plan.planned_counter_envelope().lookup(),
-            );
-        }
-        AccessPlanSelectionView::BTreeReplayRecovery(plan) => assert_operation_cost(
-            plan.cost_estimate(),
-            plan.budget_receipt(),
-            AccessPlanCostClass::BTreeReplayRecovery,
-            plan.planned_counter_envelope().recovery(),
-        ),
         AccessPlanSelectionView::LsmLookup(plan) => assert_operation_cost(
             plan.cost_estimate(),
             plan.budget_receipt(),

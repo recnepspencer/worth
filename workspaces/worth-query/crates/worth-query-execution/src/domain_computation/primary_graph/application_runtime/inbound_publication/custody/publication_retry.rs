@@ -13,6 +13,13 @@ impl Denial {
                 Preparation::ExecutionControlStopped { stage, kind } => {
                     Pending::ExecutionControlStopped { stage, kind }
                 }
+                Preparation::AllocationDenied { stage, kind, requested_payload_bytes } => Pending::AllocationDenied { stage, kind, requested_payload_bytes },
+                Preparation::StagingAllocationDenied { kind, requested_payload_bytes } => Pending::AllocationDenied {
+                    stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::EffectLowering,
+                    kind, requested_payload_bytes,
+                },
+                Preparation::StagingCardinalityOverflow => Pending::StagingCardinalityOverflow,
+                Preparation::StagingInputDirectoryAllocationDenied { requested_batches } => Pending::InputDirectoryAllocationDenied { requested_batches },
                 Preparation::OriginalOutboxNotAnEntity
                 | Preparation::ForeignOrStaleBasis
                 | Preparation::StagingUnavailable

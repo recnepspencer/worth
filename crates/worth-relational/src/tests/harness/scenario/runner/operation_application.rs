@@ -175,9 +175,13 @@ fn replace_entity_through_authoritative_patch(
                 },
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    if let Ok(outcome) = txn.commit(runtime) {
+    if let Ok(outcome) = txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    ) {
         if let Some(replacement) = crate::tests::support::changed_entities(&outcome).last() {
             entities[index] = *replacement;
         }
@@ -259,9 +263,15 @@ fn delete_relation(
                 relation_id: relation.relation_id,
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).unwrap();
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     release_test_commit_snapshot(runtime, &outcome);
     refresh_live_world(runtime, entities, relations);
 }
@@ -285,9 +295,13 @@ fn delete_entity(
         WorkerIntentBatch::new("delete-entity").push(MutationIntent::Entity(
             EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: deleted }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    if let Ok(outcome) = txn.commit(runtime) {
+    if let Ok(outcome) = txn.commit(
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    ) {
         release_test_commit_snapshot(runtime, &outcome);
         entities.swap_remove(index);
         relations.retain(|relation| relation.source != deleted && relation.target != deleted);
@@ -338,7 +352,10 @@ fn merge_branch_into_main(
             scenario_branch_main(),
             vec![branch],
         );
-        if let Ok(outcome) = txn.commit(runtime) {
+        if let Ok(outcome) = txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        ) {
             release_test_commit_snapshot(runtime, &outcome);
             refresh_live_world(runtime, entities, relations);
         }

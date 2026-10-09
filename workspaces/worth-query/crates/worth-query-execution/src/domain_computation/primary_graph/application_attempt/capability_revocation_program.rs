@@ -64,8 +64,6 @@ impl<Schema, Operation, Input, Scope>
                 emission_retained_bytes_ceiling,
                 conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
-                validator_work_admission:
-                    super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

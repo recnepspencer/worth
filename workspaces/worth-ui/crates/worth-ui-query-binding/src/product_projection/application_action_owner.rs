@@ -74,7 +74,10 @@ impl WorthUiStatusSourceOwner {
                 .mutate(action)
                 .expect_source(source.clone())
                 .idempotency(&identity)
-                .execute_retained_in_program(&self.application)
+                .execute_retained_in_program(
+                    &self.application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .map_err(|error| WorthUiStatusOwnerError::MutationRequest(format!("{error:?}")))?;
             let retained = match outcome {
                 WorthQueryApplicationRetainedMutationOutcome::Committed { retained, .. } => {

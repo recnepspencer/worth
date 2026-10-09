@@ -272,3 +272,76 @@ fn publication_binding(
         0,
     )
 }
+
+#[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
+#[test]
+fn checkpoint_residue_cleanup_revalidates_current_and_candidate_before_unlink() {
+    use crate::{
+        execute_recovery_cleanup_removal, AdmittedRecoveryFilesystemMedia,
+        BackendRecoveryArtifactExpectation, BackendRecoveryCleanupArtifactRevalidationDenial,
+        BackendRecoveryCleanupRemovalDenialCause, BackendRecoveryCleanupRemovalOutcome,
+        BackendRecoveryCleanupRemovalRequest,
+    };
+
+    for changed_current in [true, false] {
+        let parent = tempfile::tempdir().expect("checkpoint residue test parent");
+        let root = parent.path().join("store");
+        initialize_store(&root);
+        std::fs::create_dir_all(root.join("families")).expect("families directory");
+        std::fs::create_dir_all(root.join("staging")).expect("staging directory");
+        let current_path = root.join("families/checkpoint.current");
+        let candidate_path = root.join("staging/checkpoint-0000000000000008.candidate");
+        std::fs::write(&current_path, [0x31; 32]).expect("selected checkpoint fixture");
+        std::fs::write(&candidate_path, [0x41; 32]).expect("unselected candidate fixture");
+
+        let parts = qualify_existing_recovery(&root)
+            .expect("qualified recovery media")
+            .admit_persisted_store()
+            .expect("admitted persisted Store");
+        let binding = publication_binding(&parts);
+        let media = AdmittedRecoveryFilesystemMedia::from_parts(parts);
+        let current = media
+            .observe_current_checkpoint_for_residue(33)
+            .expect("bounded selected checkpoint observation");
+        let candidate = media
+            .observe_next_checkpoint_candidate(7, 33)
+            .expect("bounded exact next candidate observation")
+            .expect("candidate exists");
+        let request = BackendRecoveryCleanupRemovalRequest::new(
+            media.store_identity(),
+            [0x51; 16],
+            [0x61; 32],
+            BackendRecoveryArtifactExpectation::from_checkpoint_observation(&current),
+            BackendRecoveryArtifactExpectation::from_checkpoint_observation(&candidate),
+            [0x71; 32],
+        )
+        .expect("exact cleanup request");
+        if changed_current {
+            std::fs::write(&current_path, [0x32; 32]).expect("replace current bytes");
+        } else {
+            std::fs::write(&candidate_path, [0x42; 32]).expect("replace candidate bytes");
+        }
+
+        let outcome = execute_recovery_cleanup_removal(&media, request, binding);
+        let BackendRecoveryCleanupRemovalOutcome::DeniedBeforeEffect(denied) = outcome else {
+            panic!("changed checkpoint evidence must deny before unlink: {outcome:?}")
+        };
+        assert!(
+            matches!(
+                denied.cause(),
+                BackendRecoveryCleanupRemovalDenialCause::Revalidation(
+                    BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointDigestMismatch { .. }
+                ) if changed_current
+            ) || matches!(
+                denied.cause(),
+                BackendRecoveryCleanupRemovalDenialCause::Revalidation(
+                    BackendRecoveryCleanupArtifactRevalidationDenial::DigestMismatch { .. }
+                ) if !changed_current
+            )
+        );
+        assert!(
+            candidate_path.exists(),
+            "unselected candidate was not unlinked"
+        );
+    }
+}

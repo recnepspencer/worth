@@ -45,6 +45,15 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     /// The terminal completion index cannot answer for this effect, so no
     /// attempt is admitted and the live handle is returned. It answers again
     /// once a pending completion publication resolves or the index is repaired.
+    CompletionAllocationDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    CompletionStagingCardinalityOverflow,
+    CompletionInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     TerminalIndexUnavailable,
     /// The live handle binding carries no co-committed dispatch outbox.
     DispatchOutboxMissing,

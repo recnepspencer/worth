@@ -10,7 +10,9 @@ pub struct AdmittedPhysicalAccessIdentity {
 }
 
 impl AdmittedPhysicalAccessIdentity {
-    pub(crate) fn admit(key: AdmittedConcretePhysicalKey) -> Self {
+    /// Derives comparison bytes only from a key admitted for its family domain.
+    /// Callers cannot supply unchecked bytes or a comparator with this entry.
+    pub fn admit(key: AdmittedConcretePhysicalKey) -> Self {
         let key_domain = key.domain();
         let canonical = canonical_bytes_for_key(key_domain.comparator(), key.into_raw())
             .expect("an admitted physical key must encode in its admitted key domain");

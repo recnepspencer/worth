@@ -8,7 +8,8 @@
 //! leave the product commit ledger where it was.
 
 use super::super::fixture::{
-    installed_authorization_world, installed_program_support, live_scope, rostered_program_revision,
+    installed_authorization_world, installed_program_support, live_scope,
+    rostered_program_revision, seed_program_activation,
 };
 use super::program_fixture::admitted_program_required_program;
 use super::{authenticated_principal, idempotency, resolved_account};
@@ -19,19 +20,12 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn program_activation_changed_after_preparation_cannot_readmit_the_old_program() {
-    use super::super::fixture::{
-        prepare_relational_mutation_on_application, publish_relational_mutation,
-        unadmitted_program_revision,
-    };
+    use super::super::fixture::{publish_relational_mutation, unadmitted_program_revision};
     use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
     use std::collections::BTreeMap;
-    use worth_relational::facade::{
-        identity::PartitionId,
-        symbols::ClientKey,
-        transactions::{
-            AspectFieldPatch, CreateIntent, CreatedEntityRef, EntityMutationIntent, EntitySpec,
-            MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
-        },
+    use worth_relational::facade::transactions::{
+        AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
+        WorkerIntentBatch,
     };
     let mut world = installed_authorization_world(true);
     world.application.program_support = Some(installed_program_support(
@@ -44,51 +38,10 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         .layout
         .program_activation()
         .clone();
-    let created = CreatedEntityRef {
-        partition_id: PartitionId::main(),
-        kind_id: layout.entity_kind,
-        client_key: ClientKey::raw("readmission-program-activation"),
-    };
-    let batch = WorkerIntentBatch::new("seed-readmission-activation").push(MutationIntent::Create(
-        CreateIntent::Entity(EntitySpec {
-            partition_id: created.partition_id,
-            kind_id: created.kind_id,
-            client_key: created.client_key.clone(),
-            fields: AspectFieldPatch::from(BTreeMap::from([(
-                layout.program_revision_locator.clone(),
-                program_revision_rendering(&rostered_program_revision()),
-            )])),
-        }),
-    ));
+    seed_program_activation(&world, &rostered_program_revision());
     let request = live_scope();
-    let prepared = prepare_relational_mutation_on_application(&world.application, batch, &request);
-    let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) =
-        prepared.execute()
-    else {
-        panic!("activation seed must publish through World");
-    };
-    let activation = performed
-        .component_results()
-        .relational_commit_result()
-        .unwrap()
-        .created_entity(&created)
-        .unwrap();
-    let basis = performed.commit().basis().relational_basis().clone();
-    drop(performed.consume());
-    world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime_mut(|runtime| {
-            world
-                .application
-                .primary_provider
-                .graph
-                .ensure_primary_indexes_for_basis(runtime, &basis)
-                .unwrap();
-        });
     let support = world.application.program_support.as_ref().unwrap();
-    support.activation().publish(activation).unwrap();
+    let activation = support.activation().published().unwrap();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
     let program =
@@ -114,6 +67,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
             program,
             idempotency(73, 73),
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
     assert_unresolved_activation(
         outcome,
@@ -153,6 +107,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
             program,
             idempotency(71, 71),
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
 
     assert_unresolved_activation(outcome, "branch program activation was never published");
@@ -189,6 +144,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
             &presented,
             program,
             idempotency(72, 72),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
 
     assert_unresolved_activation(outcome, "branch program activation was never published");

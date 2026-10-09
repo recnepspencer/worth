@@ -1,6 +1,6 @@
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
-use worth_signal::facade::{Aspect, AspectMask, PartitionSubscription};
+use worth_signal::facade::{Aspect, AspectMask, PartitionSubscription, ScopeCoverage};
 use worth_store_aspect_native::{
     StoreAspectBindingStamp, StoreAspectContractAdmission, StoreAspectIdentity,
 };
@@ -283,25 +283,30 @@ fn binding_digest(
     partition: Option<&PartitionSubscription>,
 ) -> PhysicalSignalAspectBindingDigest {
     let mut digest = Sha256::new();
-    digest.update(b"worth-store.physical-signal-aspect-binding.v4");
+    digest.update(b"worth-store.physical-signal-aspect-binding.v5");
     digest.update(contract.binding_stamp().as_bytes());
     digest.update([role_code(role)]);
     digest.update(families.bits().to_le_bytes());
     if let Some(partition) = partition {
         digest.update([1]);
-        digest.update((partition.partition.0.len() as u64).to_le_bytes());
-        digest.update(partition.partition.0.as_bytes());
-        if let Some(detail) = partition.detail.as_deref() {
-            digest.update((detail.len() as u64).to_le_bytes());
-            digest.update(detail.as_bytes());
-        } else {
-            digest.update(0_u64.to_le_bytes());
+        let segments = partition.path().segments();
+        digest.update((segments.len() as u64).to_le_bytes());
+        for segment in segments {
+            digest.update((segment.len() as u64).to_le_bytes());
+            digest.update(segment.as_bytes());
         }
-        digest.update([partition.match_mode as u8]);
+        digest.update([coverage_code(partition.coverage())]);
     } else {
         digest.update([0]);
     }
     PhysicalSignalAspectBindingDigest(digest.finalize().into())
+}
+
+pub(super) const fn coverage_code(coverage: ScopeCoverage) -> u8 {
+    match coverage {
+        ScopeCoverage::Exact => 1,
+        ScopeCoverage::Subtree => 2,
+    }
 }
 
 const fn role_code(role: PhysicalSignalAspectRole) -> u8 {

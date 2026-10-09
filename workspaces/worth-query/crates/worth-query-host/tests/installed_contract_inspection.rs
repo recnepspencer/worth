@@ -58,7 +58,7 @@ worth_query_application_schema! {
                         .no_aftermath()
                         .finish(),
                 )
-                .operation_decision_fact_budget(UpdateAccount::reference(), 3)
+
                 .operation_projection_work_budget(UpdateAccount::reference(), 32)
                 .operation_read_entity(UpdateAccount::reference(), Account::reference())
                 .operation_read_field(UpdateAccount::reference(), AccountStatus::reference())
@@ -79,7 +79,7 @@ worth_query_application_schema! {
                         .aftermath(external_owner_aftermath())
                         .finish(),
                 )
-                .operation_decision_fact_budget(EmitAccountNotice::reference(), 1)
+
                 .operation_projection_work_budget(EmitAccountNotice::reference(), 1)
                 .operation_emit(
                     EmitAccountNotice::reference(),

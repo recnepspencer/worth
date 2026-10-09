@@ -3,8 +3,8 @@ use worth_store_physical_integrity::{
 };
 
 use crate::physical_runtime::{
-    IntegrityAdmittedRecoveryWalFrame, IntegrityAdmittedRecoveryWalSegment, ObservedWalArtifact,
-    RecoveryWalIntegrityAdmissionDenial,
+    IntegrityAdmittedRecoveryWalFrame, IntegrityAdmittedRecoveryWalSegmentBuilder,
+    ObservedWalArtifact, RecoveryWalIntegrityAdmissionDenial,
 };
 
 impl super::PhysicalRecoveryCoordination {
@@ -21,22 +21,29 @@ impl super::PhysicalRecoveryCoordination {
         if !observed.matches_media_generation(self.media_generation) {
             return Err(RecoveryWalIntegrityAdmissionDenial::SourceIncarnationMismatch);
         }
-        IntegrityAdmittedRecoveryWalFrame::bind(observed, expected_scope, relative_range, validated)
+        IntegrityAdmittedRecoveryWalFrame::bind(
+            self,
+            observed,
+            expected_scope,
+            relative_range,
+            validated,
+        )
     }
 
-    pub fn retain_admitted_recovery_wal_segment(
-        &self,
-        observed: &ObservedWalArtifact,
+    pub fn begin_recovery_wal_segment<'coordination, 'source>(
+        &'coordination self,
+        observed: &'source ObservedWalArtifact,
         identity: worth_store_wal::WalSegmentArtifactIdentity,
-        frames: Vec<IntegrityAdmittedRecoveryWalFrame>,
-    ) -> Option<IntegrityAdmittedRecoveryWalSegment> {
-        (observed.store_identity() == self.store
-            && observed.matches_media_generation(self.media_generation))
-        .then_some(())?;
-        frames
-            .iter()
-            .all(|frame| frame.scope().store_identity() == self.store)
-            .then_some(())?;
-        IntegrityAdmittedRecoveryWalSegment::from_complete_frames(observed, identity, frames)
+    ) -> Result<
+        IntegrityAdmittedRecoveryWalSegmentBuilder<'coordination, 'source>,
+        RecoveryWalIntegrityAdmissionDenial,
+    > {
+        if observed.store_identity() != self.store {
+            return Err(RecoveryWalIntegrityAdmissionDenial::ScopeMismatch);
+        }
+        if !observed.matches_media_generation(self.media_generation) {
+            return Err(RecoveryWalIntegrityAdmissionDenial::SourceIncarnationMismatch);
+        }
+        IntegrityAdmittedRecoveryWalSegmentBuilder::begin(self, observed, identity)
     }
 }

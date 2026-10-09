@@ -40,9 +40,8 @@ impl DemandRegistryState {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let levels = ordered_levels(count)?;
         let comparisons = levels.checked_mul(count.min(11)).ok_or_else(work_denial)?;
-        // The producer text is the sole variable-width Ord member. The epoch
-        // compares six fixed coordinates; each costs one structural visit.
-        let comparison_work = key.producer.len().checked_add(7).ok_or_else(work_denial)?;
+        // The installed ledger bounds payload comparisons independently of occupancy.
+        let comparison_work = key.comparison_work().ok_or_else(work_denial)?;
         let payload_comparisons = ordered_levels(self.record_budget_bytes.max(1))?
             .checked_mul(11)
             .ok_or_else(work_denial)?;

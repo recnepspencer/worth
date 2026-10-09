@@ -1,6 +1,6 @@
 use super::{
     durable_frame::{read_u16, read_u32, read_u64},
-    physical_fields::{record_key, scope},
+    physical_fields::{record_key, route_metadata_valid, scope},
     tree_frame::read_tree_frame,
     tree_reference::{branches, ordered},
 };
@@ -44,7 +44,9 @@ pub(crate) fn read_root_routing(
     for (index, entry) in frame.body.chunks_exact(88).enumerate() {
         let start = 88 + index * 88;
         scope(
-            record_key(entry).is_some() && entry[25..32] == [0; 7] && entry[86..88] == [0; 2],
+            record_key(entry).is_some()
+                && route_class_valid(entry, bytes[9])
+                && entry[86..88] == [0; 2],
             start,
             88,
             Field::ManifestPointer,
@@ -91,13 +93,17 @@ pub(crate) fn read_root_routing(
             2 => {
                 let extent = read_u64(entry, 40);
                 let generation = read_u64(entry, 48);
+                let arena = read_u64(entry, 32);
+                let offset = read_u64(entry, 56);
+                let allocated_bytes = read_u64(entry, 64);
                 let logical_bytes = read_u64(entry, 72);
                 scope(
                     extent != 0
                         && generation != 0
                         && logical_bytes != 0
-                        && entry[32..40] == [0; 8]
-                        && entry[56..72] == [0; 16]
+                        && arena != 0
+                        && allocated_bytes >= 104
+                        && offset.checked_add(allocated_bytes).is_some()
                         && entry[80..86] == [0; 6],
                     start + 32,
                     54,
@@ -109,10 +115,33 @@ pub(crate) fn read_root_routing(
                     8,
                     Field::ManifestPointer,
                 )?;
-                children.push(ChildExpectation { path: format!("families/records/extent-manifests/extent-{extent:016x}-{generation:016x}.manifest"), family: PhysicalArtifactFamily::ExtentManifest, generation, format: expected.format, offset: 0, length: Some(104), checksum: None, scope: ChildScope::ExtentManifest { extent, record: entry[..24].try_into().unwrap(), logical_bytes } });
+                children.push(ChildExpectation {
+                    path: format!("families/records/arenas/arena-{arena:016x}.data"),
+                    family: PhysicalArtifactFamily::ExtentManifest,
+                    generation,
+                    format: expected.format,
+                    offset,
+                    length: Some(104),
+                    checksum: None,
+                    scope: ChildScope::ExtentManifest {
+                        arena,
+                        extent,
+                        record: entry[..24].try_into().unwrap(),
+                        logical_bytes,
+                        allocated_bytes,
+                    },
+                });
             }
             _ => scope(false, start + 24, 1, Field::ManifestPointer)?,
         }
     }
     Ok(children)
+}
+
+fn route_class_valid(entry: &[u8], schema: u8) -> bool {
+    let field = &entry[25..32];
+    if schema == 2 {
+        return field == [0; 7];
+    }
+    schema == 3 && route_metadata_valid(field)
 }

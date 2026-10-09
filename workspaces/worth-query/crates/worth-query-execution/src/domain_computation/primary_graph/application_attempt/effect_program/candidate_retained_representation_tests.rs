@@ -12,23 +12,22 @@ use super::{
     candidate_retained_representation as representation, CandidateItemKind,
     WorthQueryCandidateReservation,
 };
-use crate::domain_computation::primary_graph::tests::application_attempt::{
-    authenticated_principal, resolved_account,
-};
-use crate::domain_computation::primary_graph::tests::fixture::{
-    installed_authorization_world, live_scope, Account, AccountStatus, AuthorizationWorld,
-    IdentityExecutionSchema, MutationFreeEmitInput, MutationFreeEmitOperation,
-    MutationFreeExternalEffect, MutationFreeNotice, Principal, TouchAccountInput,
-    TouchAccountOperation,
-};
+#[path = "candidate_retained_representation_fixture.rs"]
+mod fixture;
+use crate::domain_computation::primary_graph::tests::fixture::{live_scope, MutationFreeNotice};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgramBuilder,
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
 };
+use fixture::{
+    authenticated_principal, installed_world, resolved_account, Account, AccountStatus,
+    MutationFreeEmitInput, MutationFreeEmitOperation, MutationFreeExternalEffect, Principal,
+    ReservationSchema, ReservationWorld, TouchAccountInput, TouchAccountOperation,
+};
 
 #[test]
 fn external_encoded_width_participates_in_candidate_denial() {
-    let world = installed_authorization_world(true);
+    let world = installed_world();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
@@ -61,7 +60,7 @@ fn external_encoded_width_participates_in_candidate_denial() {
 fn multi_unlink_preflight_preserves_effects_and_reservation_on_denial() {
     let requirement = requirements(0, 0, 0, 1, 0, 0, 0);
     let mut reservation =
-        WorthQueryCandidateReservation::admit(requirement, requirement, 1, 1, 0, 1).unwrap();
+        WorthQueryCandidateReservation::admit(requirement, requirement, 1, 0).unwrap();
     let effects: Vec<()> = Vec::new();
 
     let denial = reservation
@@ -79,7 +78,7 @@ fn multi_unlink_preflight_preserves_effects_and_reservation_on_denial() {
 
 #[test]
 fn foreign_delete_denial_preserves_capacity_for_valid_delete() {
-    let world = installed_authorization_world(true);
+    let world = installed_world();
     let request = live_scope();
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
@@ -145,10 +144,8 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
     let mut denied = WorthQueryCandidateReservation::admit(
         insufficient,
         insufficient,
-        1,
         2,
         u64::try_from(exact_capacity - 1).unwrap(),
-        1,
     )
     .unwrap();
     denied
@@ -166,10 +163,8 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
     let mut admitted = WorthQueryCandidateReservation::admit(
         exact,
         exact,
-        1,
         2,
         u64::try_from(exact_capacity).unwrap(),
-        1,
     )
     .unwrap();
     admitted
@@ -181,13 +176,13 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
 }
 
 fn reserved_external_builder(
-    world: &AuthorizationWorld,
-    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
-    account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
+    world: &ReservationWorld,
+    principal: &WorthQueryAuthenticatedPrincipal<ReservationSchema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<ReservationSchema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requirement: ApplicationCandidateRequirements,
 ) -> WorthQueryApplicationEffectProgramBuilder<
-    IdentityExecutionSchema,
+    ReservationSchema,
     MutationFreeEmitOperation,
     MutationFreeEmitInput,
     Account,
@@ -209,27 +204,37 @@ fn reserved_external_builder(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |_, _| {})
+        .project_admitted_operation(
+            &admission,
+            |_, _| {},
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_reserved_effect_program(requirement, requirement)
         .unwrap()
 }
 
 fn reserved_touch_builder(
-    world: &AuthorizationWorld,
-    principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
-    account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
+    world: &ReservationWorld,
+    principal: &WorthQueryAuthenticatedPrincipal<ReservationSchema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<ReservationSchema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requirement: ApplicationCandidateRequirements,
 ) -> WorthQueryApplicationEffectProgramBuilder<
-    IdentityExecutionSchema,
+    ReservationSchema,
     TouchAccountOperation,
     TouchAccountInput,
     Account,
@@ -251,18 +256,28 @@ fn reserved_touch_builder(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, projected| {
-            reader
-                .require_decision_field(projected, AccountStatus::reference())
-                .unwrap();
-        })
+        .project_admitted_operation(
+            &admission,
+            |reader, projected| {
+                reader
+                    .require_decision_field(projected, AccountStatus::reference())
+                    .unwrap();
+            },
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .into_parts();
     world
         .application
-        .begin_projected_application_read_attempt(admission, projection)
+        .begin_projected_application_read_attempt(
+            admission,
+            projection,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
-        .complete_projected_dependencies()
+        .complete_projected_dependencies(
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
         .begin_reserved_effect_program(requirement, requirement)
         .unwrap()
@@ -281,6 +296,6 @@ fn requirements(
         ApplicationCandidateCardinalityCeiling::fixed(
             creates, deletes, links, unlinks, writes, emits,
         ),
-        ApplicationCandidateResourceCeiling::bounded(retained_representation_bytes, 1),
+        ApplicationCandidateResourceCeiling::representation_bytes(retained_representation_bytes),
     )
 }

@@ -1,5 +1,8 @@
 use super::OwnerCheckpointProjection;
-use worth_store::physical_runtime::ObservedRecoveryArtifact;
+use worth_store::physical_runtime::{
+    ObservedRecoveryArtifact, PhysicalRecoveryReadAllocation, PhysicalRecoveryRejoinResidentDenial,
+    SharedCheckpointAdmissionDenial,
+};
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_integrity::{
     PhysicalArtifactScope, PhysicalByteRange, PhysicalIntegrityRejection, UntrustedPhysicalArtifact,
@@ -12,13 +15,43 @@ use super::{
 
 mod body;
 mod envelope;
+mod resident_records;
+pub(in crate::integrity_ingress) use resident_records::RecordEvidenceAllocation;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum CheckpointStreamAdmissionFailure {
     Integrity(RecoveryIntegrityIngressRejection),
-    DirtyRecordLimit { observed: u64, admitted: u64 },
-    BindingRecordLimit { observed: u64, admitted: u64 },
+    DirtyRecordLimit {
+        observed: u64,
+        admitted: u64,
+    },
+    BindingRecordLimit {
+        observed: u64,
+        admitted: u64,
+    },
     AllocationRejected,
+    ParserBacking {
+        requested: u64,
+        cause: PhysicalRecoveryRejoinResidentDenial,
+    },
+    ParserCapacity {
+        requested: u64,
+        actual: u64,
+    },
+    Backing(SharedCheckpointAdmissionDenial),
+    BindingDecodeBacking(
+        worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial,
+    ),
+    BindingBasisBacking(
+        worth_store::physical_runtime::StoreRecoveryCheckpointBindingAllocationDenial,
+    ),
+    Binding(worth_store_recovery_physics::PhysicalCheckpointBaseDenial),
+}
+
+impl From<RecoveryIntegrityIngressRejection> for CheckpointStreamAdmissionFailure {
+    fn from(rejection: RecoveryIntegrityIngressRejection) -> Self {
+        Self::Integrity(rejection)
+    }
 }
 
 pub(crate) fn admit_observed_checkpoint_stream(
@@ -27,6 +60,7 @@ pub(crate) fn admit_observed_checkpoint_stream(
     maximum_dirty_records: u64,
     maximum_binding_records: u64,
     trace: &mut RecoveryIntegrityIngressTrace,
+    window: &mut PhysicalRecoveryReadAllocation<'_>,
 ) -> Result<Option<OwnerCheckpointProjection>, CheckpointStreamAdmissionFailure> {
     let Some(envelope) = envelope::CheckpointEnvelopeAdmission::admit(
         observed,
@@ -38,8 +72,9 @@ pub(crate) fn admit_observed_checkpoint_stream(
     else {
         return Ok(None);
     };
-    let body = body::CheckpointBodyAdmission::admit(envelope, trace)?;
-    body.finish(trace).map(Some)
+    let mut allocation = RecordEvidenceAllocation::new(window);
+    let body = body::CheckpointBodyAdmission::admit(envelope, trace, &mut allocation)?;
+    body.finish(trace, &mut allocation).map(Some)
 }
 
 pub(super) fn physical_range(

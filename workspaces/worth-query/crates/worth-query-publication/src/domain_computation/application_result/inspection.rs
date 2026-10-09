@@ -1,7 +1,7 @@
 use super::receipt::WorthQueryPublishedApplicationQueryOmissionPosture;
 use super::{
     WorthQueryApplicationQueryPublicationReceipt, WorthQueryPublishedApplicationBasis,
-    WorthQueryPublishedApplicationQueryTerminalRelease,
+    WorthQueryPublishedApplicationQueryTerminalRelease, WorthQueryPublishedApplicationReadWork,
 };
 
 /// Borrowed, non-authoritative view of actual application-query terminal work.
@@ -35,6 +35,16 @@ impl<'receipt> WorthQueryApplicationQueryPublicationInspection<'receipt> {
 
     pub const fn ordinary_work_units(&self) -> usize {
         self.receipt.ordinary_work_units()
+    }
+
+    /// Actual lower read counters, separate from authorization and publication.
+    pub const fn read_work(&self) -> WorthQueryPublishedApplicationReadWork {
+        self.receipt.read_work()
+    }
+
+    /// Ordinary authorization observation work. This excludes host preparation.
+    pub const fn authorization_work_units(&self) -> usize {
+        self.receipt.authorization_work_units()
     }
 
     pub const fn omission_posture(&self) -> WorthQueryPublishedApplicationQueryOmissionPosture {

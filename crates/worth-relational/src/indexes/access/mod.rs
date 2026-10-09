@@ -4,8 +4,11 @@ mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
 mod definition_lookup;
+mod entity_field_collection;
 mod execution;
 mod generation_selection;
+mod prepared_entity_field_lookup;
+mod prepared_field_certification;
 mod routing;
 mod scratch;
 
@@ -23,6 +26,7 @@ use self::routing::{admissible_access_path, should_verify_sampled_parity};
 pub(crate) use self::scratch::index_query_scratch_hint_exists;
 pub(crate) use self::scratch::purge_index_query_scratch_hints;
 pub use definition_lookup::DerivedIndexDefinitionLookup;
+pub use prepared_entity_field_lookup::PreparedEntityFieldLookup;
 
 pub struct IndexAccess<'runtime> {
     runtime: &'runtime RelationalRuntime,

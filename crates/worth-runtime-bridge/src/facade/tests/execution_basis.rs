@@ -1,4 +1,5 @@
 use super::*;
+mod atomic;
 mod runtime_custody;
 use crate::facade::{
     BridgeAsyncRequestTruthViewBasis, BridgeExecutionBasisDenialKind,

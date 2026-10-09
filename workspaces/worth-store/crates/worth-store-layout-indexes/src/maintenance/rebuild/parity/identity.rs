@@ -32,7 +32,7 @@ pub(crate) const fn declared_counter_shape_parity(
     family: LayoutStrategyFamily,
 ) -> DerivedIndexCounterShapeParity {
     match family {
-        LayoutStrategyFamily::BaselineBTreeRange => {
+        LayoutStrategyFamily::BTreeRange => {
             DerivedIndexCounterShapeParity::ExactDeterministicPhysicalShape
         }
         _ => DerivedIndexCounterShapeParity::StrategyDoesNotClaimDeterministicPhysicalShape,

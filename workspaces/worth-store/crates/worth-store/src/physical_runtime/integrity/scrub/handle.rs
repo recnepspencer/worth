@@ -1,6 +1,6 @@
 use super::{cancellation::ScrubRegistration, *};
 use crate::physical_runtime::record_serving::{
-    residency::RecordFramePorts, CanonicalRecordReadPort,
+    residency::RecordFramePorts, CanonicalRecordReadPort, PhysicalRecordReader,
 };
 use crate::physical_runtime::{
     lifecycle::{LifecycleState, ObservedLifecyclePhase},
@@ -22,6 +22,7 @@ pub struct PhysicalIntegrityScrubResume {
 pub struct ManagedPhysicalIntegrityScrubHandle {
     request: ManagedPhysicalIntegrityScrubRequest,
     read: CanonicalRecordReadPort,
+    selected_reader: Option<PhysicalRecordReader>,
     frames: RecordFramePorts,
     lifecycle: Arc<LifecycleState>,
     registration: Arc<ScrubRegistration>,
@@ -44,6 +45,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
         request: ManagedPhysicalIntegrityScrubRequest,
         owner: &PhysicalIntegrityScrubOwner,
         read: CanonicalRecordReadPort,
+        selected_reader: Option<PhysicalRecordReader>,
         frames: RecordFramePorts,
         lifecycle: Arc<LifecycleState>,
         runtime: RuntimeIdentity,
@@ -60,6 +62,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
         Ok(Self {
             request,
             read,
+            selected_reader,
             frames,
             lifecycle,
             registration,
@@ -173,7 +176,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
         let target = self.request.targets[self.next_target];
         let allocation = match self.frames.begin_operation(
             worth_store_buffer_pool::PhysicalOperationAllocationScope::Scrub,
-            std::num::NonZeroU64::new(target.range().length() as u64)
+            std::num::NonZeroU64::new(target.declared_bytes() as u64)
                 .expect("bounded nonempty target"),
         ) {
             Ok(allocation) => allocation,
@@ -181,12 +184,55 @@ impl ManagedPhysicalIntegrityScrubHandle {
         };
         self.counters.peak_allocation_bytes =
             self.counters.peak_allocation_bytes.max(allocation.bytes());
-        let destination = vec![0; target.range().length() as usize].into_boxed_slice();
+        let mut destination = vec![0; target.declared_bytes() as usize].into_boxed_slice();
+        if matches!(
+            target.source(),
+            PhysicalIntegrityScrubSource::SelectedRecord(_)
+        ) {
+            if !self.background_ready {
+                self.read.note_ready_background();
+                self.background_ready = true;
+            }
+            let reader = self
+                .selected_reader
+                .as_ref()
+                .expect("selected targets require protected reader");
+            let (scope, outcome, validation_counters, acquired) =
+                match super::selected_record::inspect(
+                    reader,
+                    target,
+                    &mut destination,
+                    self.started.elapsed() >= self.request.deadline,
+                ) {
+                    Ok(window) => window,
+                    Err(cause) => {
+                        drop(allocation);
+                        self.release_background();
+                        return self.defer(cause);
+                    }
+                };
+            self.counters.acquired_bytes += acquired;
+            let observation = super::window_inspection::finish(
+                self.next_target as u64,
+                scope,
+                None,
+                outcome,
+                validation_counters,
+                &mut self.counters,
+            );
+            drop(allocation);
+            self.next_target += 1;
+            self.release_background();
+            return ManagedPhysicalIntegrityScrubProgress::WindowInspected(observation);
+        }
         if !self.background_ready {
             self.read.note_ready_background();
             self.background_ready = true;
         }
-        let evidence = match self.read.inspect(target.range(), destination) {
+        let evidence = match self
+            .read
+            .inspect(target.media_range().expect("raw target"), destination)
+        {
             Ok(evidence) => evidence,
             Err(cause) => {
                 drop(allocation);
@@ -245,6 +291,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
     ) -> ManagedPhysicalIntegrityScrubProgress {
         self.request.targets = Box::new([]);
         self.checkpoint_source = None;
+        self.selected_reader.take();
         self.release_background();
         self.registration.finished.store(true, Ordering::Release);
         self.terminal = Some(terminal);

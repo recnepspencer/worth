@@ -128,7 +128,10 @@ impl ResourceRuntimeState {
                 summary.lifecycle() == ResourceLifecycleClass::RetainedHistoryUnavailable
             })
             .count()
-            .saturating_add(self.pruned_in_flight_history_by_request.len());
+            .saturating_add(self.pruned_in_flight_history_by_request.len())
+            .saturating_add(
+                usize::try_from(self.expired_lifecycle_availability.count()).unwrap_or(usize::MAX),
+            );
         ResourceRuntimeSummary::new(
             self.descriptors.len(),
             self.descriptors_by_node.len(),
@@ -139,8 +142,12 @@ impl ResourceRuntimeState {
             self.denied_completions.len(),
             self.retained_retry_lineage_by_ordinal.len(),
             self.denied_completions.len(),
-            self.pruned_denied_completions_by_id.len(),
-            self.pruned_retry_lineage_by_ordinal.len(),
+            self.pruned_denied_completions_by_id.len().saturating_add(
+                usize::try_from(self.expired_denied_availability.count()).unwrap_or(usize::MAX),
+            ),
+            self.pruned_retry_lineage_by_ordinal.len().saturating_add(
+                usize::try_from(self.expired_retry_availability.count()).unwrap_or(usize::MAX),
+            ),
             self.next_descriptor_id,
         )
     }

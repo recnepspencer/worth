@@ -47,11 +47,13 @@ fn author_population() -> ScaleApplication {
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: SCOPE.to_owned(),
                 operation: PlanarOperation::CreateCycle(vertices),
-                validator_work: 4_096,
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&(0x612_6000 + triangle as u64))
-            .execute_in_program::<ScaleProgram>(&app)
+            .execute_in_program::<ScaleProgram>(
+                &app,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(matches!(
             outcome,
@@ -76,11 +78,13 @@ fn author_population() -> ScaleApplication {
                         value: length(value),
                     },
                 ),
-                validator_work: 4_096,
             }))
             .expect_source(source.observed_sources()[0].clone())
             .idempotency(&(0x612_6800 + number))
-            .execute_in_program::<ScaleProgram>(&app)
+            .execute_in_program::<ScaleProgram>(
+                &app,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(matches!(
             committed,

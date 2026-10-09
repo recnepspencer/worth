@@ -63,13 +63,19 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
         .begin_branch_transaction(&candidate_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     transaction
-        .push_batch(batch_create("candidate-capacity-write"))
+        .push_batch(
+            batch_create("candidate-capacity-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let candidate_reference_before = candidate_runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
     assert!(matches!(
-        candidate_runtime.prepare_branch_transaction(transaction),
+        candidate_runtime.prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        ),
         Err(TransactionCommitError::PublicationDeferred {
             deferred: RelationalPublicationDeferred::RetentionBackpressure,
             ..
@@ -90,7 +96,10 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
         .begin_branch_transaction(&replacement_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     let replacement = candidate_runtime
-        .prepare_branch_transaction(replacement)
+        .prepare_branch_transaction(
+            replacement,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     candidate_runtime
         .discard_prepared_candidate(replacement)
@@ -155,10 +164,16 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     transaction
-        .push_batch(batch_create("publication-capacity-write"))
+        .push_batch(
+            batch_create("publication-capacity-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let candidate = publication_runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(matches!(
         publication_runtime
@@ -187,7 +202,10 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         .begin_branch_transaction(&replacement_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     let replacement = publication_runtime
-        .prepare_branch_transaction(replacement)
+        .prepare_branch_transaction(
+            replacement,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     publication_runtime
         .discard_prepared_candidate(replacement)
@@ -230,9 +248,17 @@ fn capacity_consumed_after_preparation_defers_next_basis_before_movement() {
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     transaction
-        .push_batch(batch_create("post-candidate-capacity-write"))
+        .push_batch(
+            batch_create("post-candidate-capacity-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let external = runtime.retain_component_basis(&basis).unwrap();
 
     assert!(matches!(
@@ -263,8 +289,6 @@ fn prepared_root_byte_budget_denies_before_candidate_admission() {
             max_patch_records_per_commit: 4_096,
             max_published_snapshot_handles: 8,
             max_active_snapshot_handles: 8,
-            max_transaction_overlay_bytes: 1_048_576,
-            max_transaction_footprint_loci: 1_024,
             max_transaction_savepoints: 8,
             max_prepared_candidates: 8,
             candidate_max_lifetime_millis: 30_000,
@@ -276,11 +300,14 @@ fn prepared_root_byte_budget_denies_before_candidate_admission() {
         .begin_branch_transaction(&before, RelationalTransactionIntent::ordinary())
         .unwrap();
     transaction
-        .push_batch(batch_create("prepared-root-budget"))
+        .push_batch(
+            batch_create("prepared-root-budget"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
 
     assert!(matches!(
-        runtime.prepare_branch_transaction(transaction),
+        runtime.prepare_branch_transaction(transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation,),
         Err(TransactionCommitError::PublicationFailed {
             failure,
             ..

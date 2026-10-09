@@ -29,6 +29,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub fn materialize_capability_delegation_program(
         mut self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -38,7 +39,7 @@ impl<Schema, Operation, Input, Scope>
             .delegation_activation_binding()
             .ok_or_else(|| transition_required(self.admission.operation()))?;
         let effects = activation_effects(binding, self.admission.allowed_graph_contract())?;
-        self.observe_created_unique_values(&effects)?;
+        self.observe_created_unique_values(&effects, allocation_policy)?;
         let emission_retained_bytes_ceiling = self
             .admission
             .allowed_graph_contract()
@@ -53,8 +54,6 @@ impl<Schema, Operation, Input, Scope>
             emission_retained_bytes_ceiling,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
-            validator_work_admission:
-                super::effect_program::WorthQueryCandidateValidatorWorkAdmission::unreserved_internal(),
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,

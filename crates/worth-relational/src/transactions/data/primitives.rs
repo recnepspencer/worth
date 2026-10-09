@@ -42,25 +42,6 @@ impl WorkerIntentBatch {
         self.intents.push(intent);
         self
     }
-
-    pub(crate) fn resident_capacity_bytes(&self) -> u64 {
-        (std::mem::size_of::<Self>() as u64)
-            .saturating_add(self.name.capacity() as u64)
-            .saturating_add(
-                self.partition_key
-                    .as_ref()
-                    .map_or(0, |key| key.capacity() as u64),
-            )
-            .saturating_add(
-                (self.intents.capacity() * std::mem::size_of::<MutationIntent>()) as u64,
-            )
-            .saturating_add(
-                self.intents
-                    .iter()
-                    .map(MutationIntent::owned_allocation_capacity_bytes)
-                    .sum(),
-            )
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

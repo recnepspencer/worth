@@ -1,5 +1,10 @@
 use worth_store_physical_format::integrity_declarations::{
     families::{
+        blob::{
+            BLOB_CHUNK_FRAME_INTEGRITY_DECLARATION,
+            BLOB_GENERATION_PUBLICATION_INTEGRITY_DECLARATION,
+            BLOB_TREE_NODE_INTEGRITY_DECLARATION,
+        },
         checkpoint::{
             CHECKPOINT_BINDING_COMPACTION_INTEGRITY_DECLARATION,
             CHECKPOINT_BINDING_INTEGRITY_DECLARATION, CHECKPOINT_DIRTY_BASIS_INTEGRITY_DECLARATION,
@@ -15,9 +20,10 @@ use worth_store_physical_format::integrity_declarations::{
             PREVIOUS_SELECTOR_INTEGRITY_DECLARATION, ROOT_MANIFEST_INTEGRITY_DECLARATION,
             ROOT_ROUTING_BLOCK_INTEGRITY_DECLARATION,
         },
-        EXTENT_CHUNK_INTEGRITY_DECLARATION, EXTENT_MANIFEST_INTEGRITY_DECLARATION,
-        PAGE_FRAME_INTEGRITY_DECLARATION, PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION,
-        SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION, WAL_FRAME_INTEGRITY_DECLARATION,
+        BTREE_NODE_INTEGRITY_DECLARATION, EXTENT_CHUNK_INTEGRITY_DECLARATION,
+        EXTENT_MANIFEST_INTEGRITY_DECLARATION, PAGE_FRAME_INTEGRITY_DECLARATION,
+        PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION, SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION,
+        WAL_FRAME_INTEGRITY_DECLARATION,
     },
     PhysicalIntegrityArtifactFamily, PhysicalIntegrityFormatDeclaration,
     PhysicalIntegrityFormatVersion,
@@ -81,6 +87,19 @@ impl PhysicalArtifactScope {
                 PhysicalIntegrityArtifactFamily::SegmentMembership
             }
             Identity::InlinePage { .. } => PhysicalIntegrityArtifactFamily::PageFrame,
+            Identity::BTreeNode { .. } => PhysicalIntegrityArtifactFamily::BTreeNode,
+            Identity::BlobRecord { kind, .. } => match kind {
+                worth_store_physical_format::BlobRecordKind::Chunk => {
+                    PhysicalIntegrityArtifactFamily::BlobChunkFrame
+                }
+                worth_store_physical_format::BlobRecordKind::TreeNode => {
+                    PhysicalIntegrityArtifactFamily::BlobTreeNode
+                }
+                worth_store_physical_format::BlobRecordKind::GenerationPublished => {
+                    PhysicalIntegrityArtifactFamily::BlobGenerationPublication
+                }
+                _ => unreachable!(),
+            },
             Identity::ExtentManifest { .. } => PhysicalIntegrityArtifactFamily::ExtentManifest,
             Identity::ExtentChunk { .. } => PhysicalIntegrityArtifactFamily::ExtentChunk,
             Identity::WalFrame(_) => PhysicalIntegrityArtifactFamily::WalFrame,
@@ -113,6 +132,19 @@ impl PhysicalArtifactScope {
             Identity::RootRoutingBlock { .. } => ROOT_ROUTING_BLOCK_INTEGRITY_DECLARATION,
             Identity::SegmentMembershipBlock { .. } => SEGMENT_MEMBERSHIP_INTEGRITY_DECLARATION,
             Identity::InlinePage { .. } => PAGE_FRAME_INTEGRITY_DECLARATION,
+            Identity::BTreeNode { .. } => BTREE_NODE_INTEGRITY_DECLARATION,
+            Identity::BlobRecord { kind, .. } => match kind {
+                worth_store_physical_format::BlobRecordKind::Chunk => {
+                    BLOB_CHUNK_FRAME_INTEGRITY_DECLARATION
+                }
+                worth_store_physical_format::BlobRecordKind::TreeNode => {
+                    BLOB_TREE_NODE_INTEGRITY_DECLARATION
+                }
+                worth_store_physical_format::BlobRecordKind::GenerationPublished => {
+                    BLOB_GENERATION_PUBLICATION_INTEGRITY_DECLARATION
+                }
+                _ => unreachable!(),
+            },
             Identity::ExtentManifest { .. } => EXTENT_MANIFEST_INTEGRITY_DECLARATION,
             Identity::ExtentChunk { .. } => EXTENT_CHUNK_INTEGRITY_DECLARATION,
             Identity::WalFrame(_) => WAL_FRAME_INTEGRITY_DECLARATION,
@@ -177,6 +209,8 @@ impl PhysicalArtifactScope {
                 ..
             } => Some(format),
             Identity::PhysicalWorkObligation(_)
+            | Identity::BTreeNode { .. }
+            | Identity::BlobRecord { .. }
             | Identity::WalFrame(_)
             | Identity::CheckpointStreamHeader(_)
             | Identity::CheckpointDirtyBasis(_)

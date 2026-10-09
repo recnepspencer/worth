@@ -9,6 +9,18 @@ pub(in crate::physical_runtime::record_serving) struct ManifestDiscoveryCounterS
 }
 
 impl ManifestDiscoveryCounterSnapshot {
+    pub(in crate::physical_runtime::record_serving) fn merge(&mut self, other: Self) {
+        self.blocks_read = self.blocks_read.saturating_add(other.blocks_read);
+        self.comparisons = self.comparisons.saturating_add(other.comparisons);
+        self.bytes_read = self.bytes_read.saturating_add(other.bytes_read);
+        self.work_count = self.work_count.saturating_add(other.work_count);
+        if self.first_work.is_none() {
+            self.first_work = other.first_work;
+        }
+        if other.last_work.is_some() {
+            self.last_work = other.last_work;
+        }
+    }
     pub(in crate::physical_runtime::record_serving) const fn blocks_read(self) -> u64 {
         self.blocks_read
     }

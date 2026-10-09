@@ -93,12 +93,14 @@ fn plan_with_group_decisions(
         group: first_group,
         fate: RecoveryOperationFate::Indeterminate,
         materialization: materialization.clone(),
+        canonical_redo_sha256: base.projections[0].canonical_redo_sha256,
     };
     let second = PhysicalRedoProjection {
         operation: [2; 32],
         group: second_group,
         fate: RecoveryOperationFate::Indeterminate,
         materialization,
+        canonical_redo_sha256: base.projections[0].canonical_redo_sha256,
     };
     let prior = base.decisions[0].prior;
     let decision = |operation, kind| PhysicalRedoDecision {
@@ -109,6 +111,7 @@ fn plan_with_group_decisions(
         target_index: 0,
     };
     ImmutablePhysicalRedoPlan {
+        source_copies: Box::new([]),
         scratch_bytes: base.supersession_scratch_bytes() * 2,
         records: base.records.clone(),
         decisions: vec![

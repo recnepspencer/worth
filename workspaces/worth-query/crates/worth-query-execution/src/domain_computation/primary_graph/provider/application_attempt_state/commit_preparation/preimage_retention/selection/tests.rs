@@ -202,17 +202,21 @@ fn validated_status_footprint(
                 .expect("owner-admitted transaction context")
         };
         transaction
-            .push_batch(WorkerIntentBatch::new("selection-owner-path").push(
-                MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                    UpdateEntityFieldsIntent {
+            .push_batch(
+                WorkerIntentBatch::new("selection-owner-path").push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                         entity_id: entity,
                         fields,
-                    },
+                    }),
                 )),
-            ))
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("test staging stays within configured resource budgets");
         transaction
-            .validate(runtime)
+            .validate(
+                runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("owner validates mutation")
     });
     validated

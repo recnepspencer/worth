@@ -20,9 +20,15 @@ fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints()
                 target: EntityReference::Existing(new_target),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).expect("relation update should commit");
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("relation update should commit");
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot)
@@ -69,10 +75,14 @@ fn relation_endpoint_update_rejects_duplicate_relation_identity() {
                 target: EntityReference::Existing(right),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let error = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("duplicate relation identity should deny");
 
     match error {
@@ -115,10 +125,14 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
                     target: EntityReference::Created(created_target.clone()),
                 }),
             )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("relation update to same-batch created target should commit");
     let read = runtime
         .read_truth()
@@ -174,10 +188,14 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
                     entity_id: old_target,
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("moved relation should survive retirement of its old endpoint");
     let read = runtime
         .read_truth()
@@ -244,10 +262,14 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
                     entity_id: old_source,
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("moved relation should survive retirement of its old source");
     let read = runtime
         .read_truth()
@@ -305,11 +327,15 @@ fn relation_identity_can_be_replaced_in_one_transaction() {
                     fields: crate::transactions::data::AspectFieldPatch::default(),
                 },
             ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
     let outcome = txn
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("retiring an identity permits its same-transaction replacement");
     let read = runtime
         .read_truth()

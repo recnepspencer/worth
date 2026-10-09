@@ -138,7 +138,7 @@ fn run_cancelled(world: &ProcessWorld, index: usize, stage: PhysicalRecoveryYiel
             .expect("publication cancellation baseline history"),
         &publication_after,
         &publication_observer.report,
-        "cancelled",
+        &format!("cancelled at {stage:?}"),
     );
 }
 
@@ -242,7 +242,7 @@ fn run_deadline(world: &ProcessWorld, index: usize, stage: PhysicalRecoveryYield
             .expect("publication deadline baseline history"),
         &publication_after,
         &publication_observer.report,
-        "deadline",
+        &format!("deadline at {stage:?}"),
     );
 }
 

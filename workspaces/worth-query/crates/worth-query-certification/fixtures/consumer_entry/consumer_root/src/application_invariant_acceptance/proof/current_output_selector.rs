@@ -140,7 +140,10 @@ fn adjust_source(
         })
         .expect_source(source)
         .idempotency(&command)
-        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the independent source adjustment reaches its real mutation owner");
     assert!(matches!(
         outcome,
@@ -163,13 +166,15 @@ fn execute_verification(
     let input = PlanarMutation {
         scope_key: "anchor-a".to_owned(),
         operation: PlanarOperation::VerifyCurrentOutputs(expectations.to_vec()),
-        validator_work: 4096,
     };
     request
         .mutate(PlanarEdit(input))
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&command)
-        .execute_in_program(application)
+        .execute_in_program(
+            application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
 }
 
 fn expectation(key: &str) -> PlanarCurrentOutputExpectation {

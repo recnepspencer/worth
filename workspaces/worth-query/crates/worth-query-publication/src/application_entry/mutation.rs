@@ -1,3 +1,4 @@
+mod attempt;
 pub(in crate::application_entry) mod authorization;
 mod authorization_assessment;
 pub(in crate::application_entry) mod commit_binding;
@@ -17,6 +18,7 @@ mod retained;
 mod selected_program;
 mod staged;
 
+pub use attempt::WorthQueryApplicationMutationAttemptReport;
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub use discovered::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,

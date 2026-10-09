@@ -211,7 +211,10 @@ yieldpoint campaigns use the explicitly named
 their deliberately oversized multi-checkpoint fixture must retain enough
 physical evidence to cross every named boundary. Those campaigns assert their
 own 4 MiB bound; they are additional crash-composition evidence and do not
-substitute for the ordinary 512 KiB budget proof.
+substitute for the ordinary 512 KiB budget proof. The C.10 multi-page extent
+rewrite world uses `c10-extent-rewrite-v1` with the same 4 MiB admission: it
+stages a multi-page source range beside the ordinary working set, and it
+proves the rewrite applies, not the ordinary budget.
 
 ### Hostile sequence
 

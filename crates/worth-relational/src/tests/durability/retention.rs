@@ -19,17 +19,23 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
         create_relation_outcome(&runtime, relation_source, relation_target, "r1");
     let relation_created_snapshot = runtime.visibility_authority().snapshot();
     let relation = changed_relations(&relation_created)[0];
-    let _deleted_relation =
-        {
-            let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-            txn.push_batch(WorkerIntentBatch::new("delete-relation").push(
-                MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
+    let _deleted_relation = {
+        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+        txn.push_batch(
+            WorkerIntentBatch::new("delete-relation").push(MutationIntent::Relation(
+                RelationMutationIntent::Delete(DeleteRelationIntent {
                     relation_id: relation,
-                })),
-            ))
-            .expect("test staging stays within configured resource budgets");
-            txn.commit(&runtime).unwrap()
-        };
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("test staging stays within configured resource budgets");
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+    };
     let deleted_relation_snapshot = runtime.visibility_authority().snapshot();
 
     let plan = runtime.retention().inspect_plan();
@@ -276,17 +282,23 @@ fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_relea
     let target = create_entity(&runtime, "replay-right");
     let created = create_relation_outcome(&runtime, source, target, "replay-r1");
     let relation = changed_relations(&created)[0];
-    let deleted =
-        {
-            let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-            txn.push_batch(WorkerIntentBatch::new("delete-relation").push(
-                MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
+    let deleted = {
+        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+        txn.push_batch(
+            WorkerIntentBatch::new("delete-relation").push(MutationIntent::Relation(
+                RelationMutationIntent::Delete(DeleteRelationIntent {
                     relation_id: relation,
-                })),
-            ))
-            .expect("test staging stays within configured resource budgets");
-            txn.commit(&runtime).unwrap()
-        };
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("test staging stays within configured resource budgets");
+        txn.commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap()
+    };
 
     assert!(runtime
         .visibility_authority()

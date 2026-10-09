@@ -9,6 +9,7 @@ pub(super) struct AdmittedScanRequest {
     pub(super) runtime: std::sync::Arc<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
     pub(super) first: Option<PersistedRecordIdentity>,
     pub(super) batch_limit: usize,
+    pub(super) payload_limit: u64,
     pub(super) allocation: worth_store_buffer_pool::OperationAllocationGrant,
 }
 
@@ -37,12 +38,20 @@ pub(super) fn admit_scan_request(
         return Err(scan_error(RecordScanDenial::BatchLimitExceeded));
     }
     let allocation = begin_scan_allocation(reader, requested)?;
+    let payload_limit = u64::from(
+        request
+            .payload_limit
+            .unwrap_or(reader.access.scratch_limit())
+            .get()
+            .min(reader.access.scratch_limit().get()),
+    );
     reader.residency = reader.residency.clone().for_scan();
     let first = readmit_cursor(reader, request.cursor)?;
     Ok(AdmittedScanRequest {
         runtime,
         first,
         batch_limit: requested as usize,
+        payload_limit,
         allocation,
     })
 }
@@ -59,7 +68,7 @@ fn begin_scan_allocation(
     reader
         .residency
         .begin_operation(
-            worth_store_buffer_pool::PhysicalOperationAllocationScope::ForegroundRead,
+            reader.residency.read_allocation_scope(),
             std::num::NonZeroU64::new(operation_bytes)
                 .expect("an admitted scan requests nonzero operation bytes"),
         )

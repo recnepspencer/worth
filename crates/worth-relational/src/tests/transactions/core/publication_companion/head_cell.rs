@@ -2,6 +2,7 @@
 use super::*;
 use crate::mvcc::PublicationCompanionRegistrationStop;
 use std::sync::mpsc;
+use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[derive(Debug)]
 struct UnindexedCompanion;
@@ -112,9 +113,14 @@ fn contention(independent_port: bool) {
         .unwrap();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("head-cell-held-publication"))
+        .push_batch(
+            batch_create("head-cell-held-publication"),
+            AllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+        .unwrap();
     let port = runtime.publication_port();
     let drops = Arc::new(AtomicUsize::new(0));
     let initial = Arc::new(DropCounter(Arc::clone(&drops)));

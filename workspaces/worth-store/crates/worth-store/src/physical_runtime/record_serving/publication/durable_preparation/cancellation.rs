@@ -7,6 +7,7 @@ pub enum PhysicalPreSealCancellationDenial {
     BindingMismatch,
     GroupAlreadySealed,
     ReopenedUnresolved,
+    CopyIntentRequiresResolution,
 }
 
 pub enum PhysicalPreSealCancellationOutcome {

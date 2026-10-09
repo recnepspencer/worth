@@ -12,7 +12,6 @@ worth-proof = { path = "../../../../crates/worth-proof" }
 worth-store-authority = { path = "../worth-store-authority" }
 worth-store-budgets = { path = "../worth-store-budgets" }
 worth-store-blob-chunks = { path = "../worth-store-blob-chunks" }
-worth-store-compatibility = { path = "../worth-store-compatibility" }
 worth-store-contracts = { path = "../worth-store-contracts" }
 worth-store-io-scheduler = { path = "../worth-store-io-scheduler" }
 worth-store-lsm-authority = { path = "../worth-store-lsm-authority" }
@@ -35,7 +34,7 @@ worth-store-physical-format = { path = "../worth-store-physical-format" }
 worth-store-physical-isolation = { path = "../worth-store-physical-isolation" }
 worth-store-recovery-physics = { path = "../worth-store-recovery-physics" }
 worth-store-security = { path = "../worth-store-security", features = ["certification-test-authority"] }
-worth-store-test-support = { path = "../worth-store-test-support", default-features = false, features = ["physical-isolation-fixtures"] }
+worth-store-test-support = { path = "../worth-store-test-support", default-features = false }
 worth-store-wal = { path = "../worth-store-wal", features = ["certification-authority"] }
 
 [lints]

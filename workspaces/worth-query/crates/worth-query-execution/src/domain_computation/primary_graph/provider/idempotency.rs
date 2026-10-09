@@ -53,8 +53,6 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempote
     RecordedIntentUnverifiable,
     ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     Unavailable,
-    /// The commit's evidence left the declared idempotency window.
-    WindowExpired,
 }
 
 impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {
@@ -244,7 +242,8 @@ fn pending_publication_denial(
         | Kind::ExecutionUncheckedCustomKernel { .. }) => {
             WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(kind)
         }
-        Kind::ForeignOperationAttempt
+        Kind::AllocationDenied
+        | Kind::ForeignOperationAttempt
         | Kind::ForeignExecutionBasis
         | Kind::ForeignGraphAuthority
         | Kind::UndeclaredOperationScope

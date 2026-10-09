@@ -55,7 +55,7 @@ pub(in crate::domain_computation::primary_graph) fn authority() -> &'static Exec
     OWNER.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::MIN,
-            charged_memory_bytes: 64 * 1024 * 1024,
+            charged_memory_bytes: Some(64 * 1024 * 1024),
         })
         .unwrap()
     })
@@ -128,9 +128,15 @@ fn refused_index_build(request: LeaseRequest) -> DerivedIndexBuildOutcome {
                         .collect(),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let committed = transaction.commit(&runtime).unwrap();
+    let committed = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "large.index.name".to_owned(),

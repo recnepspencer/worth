@@ -5,7 +5,11 @@ mod denial;
 mod limits;
 mod profile;
 mod program;
-mod program_admission;
+pub(in crate::domain_computation::primary_graph) mod program_admission;
+pub use super::bootstrap::checkpoint_transition::{
+    WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,
+    WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
+};
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use profile::WorthQueryInMemoryApplicationProfile;
@@ -14,6 +18,7 @@ pub use program::{
     in_memory_program, in_memory_program_from_checkpoint,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
     in_memory_rostered_program_from_checkpoint,
+    in_memory_rostered_program_from_checkpoint_with_transition,
     in_memory_rostered_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
     WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
     WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
@@ -66,6 +71,7 @@ where
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -82,6 +88,9 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
     checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
+    checkpoint_transition: Option<
+        super::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>,
+    >,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -109,7 +118,6 @@ where
         .application_candidate_resources(limits.candidates)
         .application_query_resources(limits.queries)
         .output_demand_resources(limits.output_demands)
-        .completed_evidence_resources(limits.completed_evidence)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .map_err(Denial::Runtime)?
         .into_parts();
@@ -164,6 +172,18 @@ where
                 detail,
             ))
         })?;
+    if checkpoint_transition.is_some()
+        && decoded_checkpoint
+            .as_ref()
+            .is_some_and(|checkpoint| !checkpoint.accepted_outputs.is_empty())
+    {
+        return Err(Denial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::new(
+                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                "checkpoint transition requires accepted-output migration support",
+            ),
+        ));
+    }
     let restoring = decoded_checkpoint.is_some();
     let mut graph = match decoded_checkpoint.as_ref() {
         Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
@@ -186,12 +206,22 @@ where
     graph.mutation_handlers = handlers;
     if restoring {
         if let Some(support) = &admitted_program_support {
-            super::bootstrap::recover_program_activation(
-                &graph.graph,
-                &support.roster,
-                &activation,
-            )
-            .map_err(Denial::Graph)?;
+            if let Some(transition) = checkpoint_transition {
+                super::bootstrap::checkpoint_transition::transition_checkpoint(
+                    &mut graph,
+                    &installed,
+                    support,
+                    &activation,
+                    transition,
+                )?;
+            } else {
+                super::bootstrap::recover_program_activation(
+                    &graph.graph,
+                    &support.roster,
+                    &activation,
+                )
+                .map_err(Denial::Graph)?;
+            }
         }
     }
     if !restoring {

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 mod material;
 mod receipt_closure;
-mod work_admission;
+mod relational_validation;
+mod validation_control;
 use material::{ApplicationInvariantCandidateMaterial, ApplicationInvariantSemanticMaterial};
-use work_admission::admit_candidate_validator_work;
 
 use super::invariant_execution_failure::{
     map_transaction_admission_failure, map_transaction_staging_failure, map_validation_failure,
@@ -20,10 +20,6 @@ use crate::domain_computation::{
 };
 
 pub(super) struct WorthQueryInvariantWorkMint {
-    _private: (),
-}
-
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryCandidateAdmission {
     _private: (),
 }
 
@@ -100,13 +96,13 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn admit_primary_candidate(
         &self,
         session: WorthQueryProviderSessionView<'_>,
-    ) -> Result<WorthQueryPrimaryCandidateAdmission, WorthQueryInvariantExecutionFailure> {
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
         let material = self.invariant_candidate_material(session)?;
-        self.validate_and_retain_candidate(session, material)?;
-        Ok(WorthQueryPrimaryCandidateAdmission { _private: () })
+        self.validate_and_retain_candidate(session, material, allocation_policy)
     }
 
     fn invariant_candidate_material(
@@ -147,78 +143,23 @@ impl WorthQueryPrimaryGraphProvider {
         ApplicationInvariantSemanticMaterial::from_staged(&staged)
     }
 
-    fn validate_relational_candidate(
-        &self,
-        batch: worth_relational::facade::transactions::WorkerIntentBatch,
-        branch: &worth_relational::facade::history::BranchId,
-        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
-        application_touches: &worth_query_installation::facade::WorthQueryOperationTouchContract,
-        aftermath_causality: Option<
-            &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
-        >,
-    ) -> Result<
-        worth_relational::facade::mvcc::ValidatedRelationalProposal,
-        WorthQueryInvariantExecutionFailure,
-    > {
-        #[cfg(not(test))]
-        let _ = application_touches;
-        let batch = if self.take_relational_invariant_violation() {
-            batch.push(invariant_violation_probe())
-        } else {
-            batch
-        };
-        #[cfg(test)]
-        let batch = if self.take_undeclared_application_touch() {
-            batch.push(undeclared_application_touch_probe(
-                &self.graph.layout,
-                application_touches,
-            )?)
-        } else {
-            batch
-        };
-        let basis = product.observation().basis().relational_basis();
-        if basis.identity().branch_id() != branch {
-            return Err(owner_failure());
-        }
-        let candidate = self.graph.with_runtime_mut(|runtime| {
-            if let Some(pending) = aftermath_causality {
-                let observed_parent = basis
-                    .observation()
-                    .commit_receipt()
-                    .cloned()
-                    .ok_or_else(aftermath_failure)?;
-                if pending.parent() != &observed_parent {
-                    return Err(aftermath_failure());
-                }
-            }
-            let mut transaction = runtime
-                .begin_branch_transaction(
-                    basis,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .map_err(map_transaction_admission_failure)?;
-            transaction
-                .push_batch(batch)
-                .map_err(map_transaction_staging_failure)?;
-            Ok::<_, WorthQueryInvariantExecutionFailure>(transaction.validate(runtime))
-        });
-        let candidate = candidate?.map_err(map_validation_failure)?;
-        validate_owner_evidence(candidate.invariant_evidence(), branch)?;
-        Ok(candidate)
-    }
-
     fn validate_and_retain_candidate(
         &self,
         session: WorthQueryProviderSessionView<'_>,
         material: ApplicationInvariantCandidateMaterial,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        let semantic_work = admit_candidate_validator_work(&material)?;
+        let semantic_work = u64::try_from(material.semantic.expected.len()).map_err(|_| {
+            closure_failure("candidate semantic cardinality exceeds work representation")
+        })?;
         let candidate = self.validate_relational_candidate(
             material.batch,
             &material.branch,
             &material.product,
+            &material.request,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
+            allocation_policy,
         )?;
         let owner_work = receipt_closure::validate_receipt_closure(
             candidate.invariant_evidence(),
@@ -255,8 +196,7 @@ impl WorthQueryPrimaryGraphProvider {
             material.expected_step_preparation_work,
             touch_admission,
         );
-        self.retain_validated_candidate(session, candidate, work)?;
-        Ok(())
+        self.retain_validated_candidate(session, candidate, work)
     }
 
     fn retain_validated_candidate(

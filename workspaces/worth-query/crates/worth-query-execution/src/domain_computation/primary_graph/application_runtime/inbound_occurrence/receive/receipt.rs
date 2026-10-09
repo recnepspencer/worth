@@ -33,6 +33,15 @@ pub enum WorthQueryInboundPendingReason {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
     },
+    AllocationDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    StagingCardinalityOverflow,
+    InputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     TerminalCleanupUnavailable,
     RecoveryUnavailable,
     CorrelationConflict,

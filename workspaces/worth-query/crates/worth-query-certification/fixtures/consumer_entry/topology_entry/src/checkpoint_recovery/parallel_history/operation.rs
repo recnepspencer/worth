@@ -60,7 +60,7 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 1, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::bounded(4096, 4096),
+            ApplicationCandidateResourceCeiling::representation_bytes(4096),
         );
     fn scope_field() -> ApplicationFieldRef<
         S,
@@ -188,7 +188,6 @@ pub fn declare<S: SchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 128)
         .operation_projection_work_budget(operation, 4096)
         .operation_read_entity(operation, Node::reference())
         .operation_read_field(operation, NodeKey::reference())

@@ -45,6 +45,7 @@ fn applied<const REUSE: bool, const MODE: u8>(redo: bool) -> OracleRun {
         program,
         &identities,
         std::convert::identity,
+        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     ));
     if redo {
         let handle = application

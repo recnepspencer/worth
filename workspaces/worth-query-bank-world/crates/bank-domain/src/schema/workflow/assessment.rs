@@ -130,7 +130,7 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::bounded(1_024, 512),
+            ApplicationCandidateResourceCeiling::representation_bytes(1_024),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -270,7 +270,6 @@ pub(crate) fn install_approved_payment_assessment(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(PublishApprovedPaymentAssessment::reference(), 256)
         .operation_projection_work_budget(PublishApprovedPaymentAssessment::reference(), 1_024)
         .operation_read_field(
             PublishApprovedPaymentAssessment::reference(),

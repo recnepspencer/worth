@@ -1,3 +1,4 @@
+use super::retention_omission::RetentionOmission;
 use crate::data::temporal::{
     PreviousValueRevision, ReadyTemporalWake, RetiredTemporalWake, RuntimeClockBasis,
     ScheduledTemporalWake, TemporalWakeId, TemporalWakeOwner, WakeOrdinal,
@@ -39,6 +40,7 @@ pub(crate) struct TemporalRuntimeState {
     >,
     pub(super) retired_wakes:
         crate::data::persistent_ord_map::PersistentOrdMap<TemporalWakeId, RetiredTemporalWake>,
+    pub(super) expired_retired_wakes: RetentionOmission,
 }
 
 impl Default for TemporalRuntimeState {
@@ -55,6 +57,7 @@ impl Default for TemporalRuntimeState {
             ready_frontier: Default::default(),
             owner_frontier: Default::default(),
             retired_wakes: Default::default(),
+            expired_retired_wakes: Default::default(),
         }
     }
 }
@@ -73,6 +76,7 @@ impl TemporalRuntimeState {
             ready_frontier: self.ready_frontier.fork_persistent(),
             owner_frontier: self.owner_frontier.fork_persistent(),
             retired_wakes: self.retired_wakes.fork_persistent(),
+            expired_retired_wakes: self.expired_retired_wakes,
         }
     }
 }
@@ -92,6 +96,7 @@ impl TemporalRuntimeState {
             ready_frontier: self.ready_frontier.fork_storage_identity(),
             owner_frontier: self.owner_frontier.fork_storage_identity(),
             retired_wakes: self.retired_wakes.fork_storage_identity(),
+            expired_retired_wakes: self.expired_retired_wakes,
         }
     }
 
@@ -102,5 +107,6 @@ impl TemporalRuntimeState {
             && self.ready_frontier.ptr_eq(&other.ready_frontier)
             && self.owner_frontier.ptr_eq(&other.owner_frontier)
             && self.retired_wakes.ptr_eq(&other.retired_wakes)
+            && self.expired_retired_wakes == other.expired_retired_wakes
     }
 }

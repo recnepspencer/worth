@@ -21,6 +21,9 @@ pub(super) struct FactPosting {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum FullVerificationReason {
     NativeRevisionUnavailable,
+    NativeFactRevisionUnavailable(usize),
+    IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
+    IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
     UnsupportedFact,
     CheckpointRestore,
     DifferentBranch,
@@ -133,6 +136,9 @@ pub(super) struct MarkState {
     pub(super) posting_count: usize,
     pub(super) key_payload_bytes: u64,
     pub(super) settlement_key_payload_bytes: u64,
+    /// Whole-index upper bound for carried basis allocations. Registration's
+    /// initial basis has its own fact ticket; a carried clone is index-owned.
+    pub(super) maximum_basis_allocation_bytes: u64,
     pub(super) downstream_edge_count: usize,
     pub(super) dirty_ordinal_count: usize,
     pub(super) pending_edge_count: usize,
@@ -161,6 +167,7 @@ impl MarkState {
             posting_count: 0,
             key_payload_bytes: 0,
             settlement_key_payload_bytes: 0,
+            maximum_basis_allocation_bytes: 0,
             downstream_edge_count: 0,
             dirty_ordinal_count: 0,
             pending_edge_count: 0,

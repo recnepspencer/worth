@@ -6,7 +6,6 @@ use std::num::NonZeroU64;
 pub struct WorthQueryApplicationCandidateResourceProfile {
     maximum_items: NonZeroU64,
     maximum_retained_representation_bytes: NonZeroU64,
-    maximum_validator_work: NonZeroU64,
     maximum_operation_width: NonZeroU64,
     maximum_producer_dependency_bytes: NonZeroU64,
 }
@@ -15,16 +14,14 @@ pub struct WorthQueryApplicationCandidateResourceProfile {
 pub enum WorthQueryApplicationCandidateResourceProfileDenial {
     ZeroItems,
     ZeroRetainedRepresentationBytes,
-    ZeroValidatorWork,
     ZeroOperationWidth,
     ZeroProducerDependencyBytes,
 }
 
 impl WorthQueryApplicationCandidateResourceProfile {
-    pub fn bounded(
+    pub fn physical_resources(
         maximum_items: u64,
         maximum_retained_representation_bytes: u64,
-        maximum_validator_work: u64,
     ) -> Result<Self, WorthQueryApplicationCandidateResourceProfileDenial> {
         use WorthQueryApplicationCandidateResourceProfileDenial as Denial;
         Ok(Self {
@@ -33,8 +30,6 @@ impl WorthQueryApplicationCandidateResourceProfile {
                 maximum_retained_representation_bytes,
             )
             .ok_or(Denial::ZeroRetainedRepresentationBytes)?,
-            maximum_validator_work: NonZeroU64::new(maximum_validator_work)
-                .ok_or(Denial::ZeroValidatorWork)?,
             maximum_operation_width: NonZeroU64::new(4_096)
                 .expect("the default operation width ceiling is nonzero"),
             maximum_producer_dependency_bytes: NonZeroU64::new(4 * 1_024 * 1_024)
@@ -70,10 +65,6 @@ impl WorthQueryApplicationCandidateResourceProfile {
         self.maximum_retained_representation_bytes.get()
     }
 
-    pub const fn maximum_validator_work(self) -> u64 {
-        self.maximum_validator_work.get()
-    }
-
     pub const fn maximum_operation_width(self) -> u64 {
         self.maximum_operation_width.get()
     }
@@ -85,7 +76,7 @@ impl WorthQueryApplicationCandidateResourceProfile {
 
 impl Default for WorthQueryApplicationCandidateResourceProfile {
     fn default() -> Self {
-        Self::bounded(4096, 4096, 4096).expect("default candidate limits are nonzero")
+        Self::physical_resources(4096, 4096).expect("default candidate capacities are nonzero")
     }
 }
 
@@ -95,13 +86,13 @@ mod tests {
 
     #[test]
     fn operation_width_requires_explicit_nonzero_host_capacity() {
-        let profile = WorthQueryApplicationCandidateResourceProfile::bounded(8, 16, 32)
+        let profile = WorthQueryApplicationCandidateResourceProfile::physical_resources(8, 16)
             .unwrap()
             .with_maximum_operation_width(32_768)
             .unwrap();
         assert_eq!(profile.maximum_operation_width(), 32_768);
         assert_eq!(
-            WorthQueryApplicationCandidateResourceProfile::bounded(8, 16, 32)
+            WorthQueryApplicationCandidateResourceProfile::physical_resources(8, 16)
                 .unwrap()
                 .with_maximum_operation_width(0),
             Err(WorthQueryApplicationCandidateResourceProfileDenial::ZeroOperationWidth)
@@ -110,7 +101,7 @@ mod tests {
 
     #[test]
     fn producer_dependency_bytes_require_explicit_nonzero_host_capacity() {
-        let profile = WorthQueryApplicationCandidateResourceProfile::bounded(8, 16, 32)
+        let profile = WorthQueryApplicationCandidateResourceProfile::physical_resources(8, 16)
             .unwrap()
             .with_maximum_producer_dependency_bytes(16 * 1_024 * 1_024)
             .unwrap();
@@ -119,7 +110,7 @@ mod tests {
             16 * 1_024 * 1_024
         );
         assert_eq!(
-            WorthQueryApplicationCandidateResourceProfile::bounded(8, 16, 32)
+            WorthQueryApplicationCandidateResourceProfile::physical_resources(8, 16)
                 .unwrap()
                 .with_maximum_producer_dependency_bytes(0),
             Err(WorthQueryApplicationCandidateResourceProfileDenial::ZeroProducerDependencyBytes)

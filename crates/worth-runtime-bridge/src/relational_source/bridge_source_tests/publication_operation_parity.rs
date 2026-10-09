@@ -67,9 +67,15 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
                     aspect_patch: initial,
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let created = create.commit(&runtime).unwrap();
+    let created = create
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let entity = changed_entities(&created)[0];
     let created_commit = created.commit.commit_id;
 
@@ -89,16 +95,22 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
             &runtime,
         );
     transaction
-        .push_batch(WorkerIntentBatch::new("publication-clear-parity").push(
-            MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(
-                ApplyEntityAspectPatchIntent {
+        .push_batch(
+            WorkerIntentBatch::new("publication-clear-parity").push(MutationIntent::Entity(
+                EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
                     entity_id: entity,
                     aspect_patch: update,
-                },
+                }),
             )),
-        ))
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    let updated = transaction.commit(&runtime).unwrap();
+    let updated = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let mut publications = bridge_envelopes_at_current_observation(
         runtime,
         [created_commit, updated.commit.commit_id],

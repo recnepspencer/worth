@@ -91,6 +91,11 @@ pub(super) fn mutate_candidate(root: &Path, generation: u64, hostile: &str) {
         )
         .expect("decode selected root");
         assert_eq!(selected_format, format);
+        assert_eq!(
+            candidate.last_inline_record(),
+            selected.last_inline_record(),
+            "the stale candidate world must keep the selected inline tail"
+        );
         let stale = DurablePhysicalRootManifest::builder(
             candidate.generation(),
             candidate.tree_identity(),

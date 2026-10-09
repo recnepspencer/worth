@@ -1,12 +1,11 @@
-use crate::physical_runtime::IntegrityAdmittedRecoveryWalFrame;
 use worth_store_physical_backend::{
     AdmittedRecoveryFilesystemMedia, QualifiedRecoveryFilesystemMedia,
 };
-use worth_store_physical_integrity::VerifiedCheckpointStream;
+use worth_store_physical_integrity::VerifiedCheckpointFacts;
 
 use super::{
-    binding, PhysicalRecoveryFreshnessAuthority, StoreRecoveryBindingFreshnessSample,
-    StoreRecoveryBindingSampleFailure,
+    binding, IntegrityAdmittedRecoveryWalFrameView, PhysicalRecoveryFreshnessAuthority,
+    StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure,
 };
 
 /// The sole Store-owned construction port for recovery freshness authority.
@@ -28,23 +27,28 @@ impl PhysicalRecoveryFreshnessPort {
         PhysicalRecoveryFreshnessAuthority::issue(media.media_generation())
     }
 
+    /// Interprets borrowed C9 frames under Coordination's original native
+    /// Recovery admission, including already-live grants in that pool.
+    /// The result retains its exact backing until disposal; owning clones are
+    /// unavailable. Allocation denial preserves its cause and admits no effects.
     pub fn sample_binding<'frame>(
         coordination: &crate::physical_runtime::PhysicalRecoveryCoordination,
         media: &AdmittedRecoveryFilesystemMedia,
-        checkpoint: &VerifiedCheckpointStream,
-        wal_frames: impl IntoIterator<Item = &'frame IntegrityAdmittedRecoveryWalFrame>,
+        checkpoint: &VerifiedCheckpointFacts,
+        wal_frames: IntegrityAdmittedRecoveryWalFrameView<'frame>,
         maximum_operation_bindings: u64,
         maximum_redo_bytes: u64,
+        maximum_manifest_cleanup_sampling_bytes: u64,
     ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
         binding::sample_binding(
             binding::CheckpointCoveredMembers::Skip,
-            coordination.freshness(),
-            coordination.checkpoint_binding_basis(),
+            coordination,
             media,
             checkpoint,
-            wal_frames,
+            wal_frames.iter(),
             maximum_operation_bindings,
             maximum_redo_bytes,
+            maximum_manifest_cleanup_sampling_bytes,
         )
     }
 }

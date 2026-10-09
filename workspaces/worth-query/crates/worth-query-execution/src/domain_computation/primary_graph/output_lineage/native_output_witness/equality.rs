@@ -17,13 +17,16 @@ impl SealedNativeOutputWitness {
                 .checked_add(right.role.len())
                 .and_then(|n| n.checked_add(left.entity_name.len()))
                 .and_then(|n| n.checked_add(right.entity_name.len()))
-                .and_then(|n| n.checked_add(6))
+                // Posture plus the retirement tag and three lifecycle fields.
+                .and_then(|n| n.checked_add(11))
                 .and_then(|n| u64::try_from(n).ok())
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
             admission.charge_external_work(work)?;
             if left.role != right.role
                 || left.entity_name != right.entity_name
                 || left.kind != right.kind
+                || left.posture != right.posture
+                || left.retirement != right.retirement
                 || left.entity.is_none()
                 || left.entity != right.entity
                 || left.first_aspect != right.first_aspect

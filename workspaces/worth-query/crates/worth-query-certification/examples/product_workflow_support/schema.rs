@@ -66,11 +66,11 @@ worth_query_application_contribution! {
                         .finish(),
                 )
                 .operation(RevokeTemporalPrincipal::reference().definition().no_external_effect().no_aftermath().finish())
-                .operation_decision_fact_budget(RevokeTemporalPrincipal::reference(), 1)
+
                 .operation_projection_work_budget(RevokeTemporalPrincipal::reference(), 3)
                 .operation_read_field(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
                 .operation_write(RevokeTemporalPrincipal::reference(), MappingStatusField::reference())
-                .operation_decision_fact_budget(ExecuteTemporal::reference(), 4)
+
                 .operation_projection_work_budget(ExecuteTemporal::reference(), 16)
                 .operation_read_field(ExecuteTemporal::reference(), IntentIdentityField::reference())
                 .operation_read_field(ExecuteTemporal::reference(), IntentRevisionField::reference())
@@ -80,7 +80,7 @@ worth_query_application_contribution! {
                 .operation_write(ExecuteTemporal::reference(), IntentLifecycleField::reference())
                 .operation_write(ExecuteTemporal::reference(), IntentEffectField::reference())
                 .operation_emit(ExecuteTemporal::reference(), TemporalExecutionEffect::reference())
-                .operation_decision_fact_budget(AmendTemporal::reference(), 7)
+
                 .operation_projection_work_budget(AmendTemporal::reference(), 12)
                 .operation_read_field(AmendTemporal::reference(), IntentIdentityField::reference())
                 .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())

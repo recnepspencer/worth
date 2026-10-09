@@ -1,4 +1,4 @@
-use super::denial::{denial, failed, request_authority_stop};
+use super::denial::{denial, failed, handler_execution_failed, request_authority_stop};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
 use graph::{
@@ -43,17 +43,20 @@ impl PreparedProducerExecutionOutcome {
     }
 }
 
-pub(super) fn completed_handler<Value, DomainDenial: std::fmt::Debug>(
-    identity: &str,
+pub(super) fn completed_handler<Value, DomainDenial>(
+    identity: &'static str,
     result: HandlerResult<Value, DomainDenial>,
+    domain_reason: impl FnOnce(&DomainDenial) -> Option<&'static str>,
 ) -> Result<Value, WorthQueryOutputDemandDenial> {
     match result {
         HandlerResult::Completed(value) => Ok(value),
-        HandlerResult::DomainDenied(domain_denial) => Err(denial(
-            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-            format!("{identity}: producer domain denial: {domain_denial:?}"),
-        )),
-        HandlerResult::ExecutionDenied(error) => Err(failed(identity, error)),
+        HandlerResult::DomainDenied(domain_denial) => {
+            Err(WorthQueryOutputDemandDenial::producer_domain_denied(
+                identity,
+                domain_reason(&domain_denial),
+            ))
+        }
+        HandlerResult::ExecutionDenied(error) => Err(handler_execution_failed(identity, error)),
         HandlerResult::Cancelled => Err(denial(
             WorthQueryOutputDemandDenialKind::Cancelled,
             "producer cancelled",
@@ -91,11 +94,9 @@ pub(super) fn commit_receipt(
                 DeferredKind::RequiredPrerequisitePending(_)
             ) =>
         {
-            let DeferredKind::RequiredPrerequisitePending(kind) = deferred.kind() else {
-                unreachable!("the guarded deferral names required prerequisite custody");
-            };
-            Err(denial(kind, identity.to_owned())
-                .with_recovery_posture(graph::WorthQueryOutputDemandRecoveryPosture::Retryable))
+            Err(deferred
+                .into_prerequisite_denial()
+                .expect("required prerequisite deferral retains its actual denial"))
         }
         WorthQueryApplicationCommitOutcome::Stale(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_) => Err(denial(
@@ -140,7 +141,6 @@ pub(super) fn commit_receipt(
                 | Kind::ExecutionIdentitiesNotCanonical { .. }
                 | Kind::ProviderRejected
                 | Kind::CustomInvariantDenied
-                | Kind::CandidateValidatorWorkExceeded { .. }
                 | Kind::WorkflowSettlementDenied { .. }
                 | Kind::UniqueValueTaken
                 | Kind::UniqueIndexUnavailable
@@ -152,7 +152,6 @@ pub(super) fn commit_receipt(
                 | Kind::PreparedRootBudgetExhausted { .. }
                 | Kind::IndexMaintenanceBudgetExceeded
                 | Kind::IndexGenerationIdentityExhausted
-                | Kind::IdempotencyWindowExpired
                 | Kind::IdempotencyReceiptNotRetained { .. }
                 | Kind::IdempotencyIntentUnverifiable
                 | Kind::MutationBindingMismatch

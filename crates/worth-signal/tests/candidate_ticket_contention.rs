@@ -34,7 +34,7 @@ fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: HOST_MEMORY,
+            charged_memory_bytes: Some(HOST_MEMORY),
         })
         .expect("this test process's one authority")
     })

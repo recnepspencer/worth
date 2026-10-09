@@ -6,11 +6,10 @@ use crate::physical_runtime::{
     PhysicalRecordPressureEvidence, PhysicalRecordResidencyFailure,
     PhysicalRecordWritebackFailureEvidence, RecordAppendDenial, WalDurablePhysicalMutation,
 };
-use worth_store_physical_format::RecordArtifactFile;
 
 pub enum PhysicalDataDispatchOutcome {
     Dispatched(DataDispatchedPhysicalMutation),
-    RetryableAfterCleanup(CleanedPhysicalDataDispatchRetry),
+    Suspended(SuspendedPhysicalDataDispatch),
     NotStarted {
         durable: WalDurablePhysicalMutation,
         cause: PhysicalDataDispatchFailureCause,
@@ -18,11 +17,12 @@ pub enum PhysicalDataDispatchOutcome {
     Indeterminate(IndeterminatePhysicalDataDispatch),
 }
 
-pub struct CleanedPhysicalDataDispatchRetry {
+/// Settled prefix retained under the original WAL-bound mutation and range
+/// claims. Resuming never deletes shared artifacts or reissues completed work.
+pub struct SuspendedPhysicalDataDispatch {
     durable: WalDurablePhysicalMutation,
-    discarded_effects: Box<[PhysicalDataEffectSettlement]>,
-    pressure: PhysicalRecordPressureEvidence,
-    deleted_artifacts: Box<[RecordArtifactFile]>,
+    completed_effects: Vec<PhysicalDataEffectSettlement>,
+    cause: PhysicalDataDispatchFailureCause,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,18 +50,16 @@ pub struct IndeterminatePhysicalDataDispatch {
     cause: PhysicalDataDispatchFailureCause,
 }
 
-impl CleanedPhysicalDataDispatchRetry {
+impl SuspendedPhysicalDataDispatch {
     pub(in crate::physical_runtime) fn new(
         durable: WalDurablePhysicalMutation,
-        discarded_effects: Vec<PhysicalDataEffectSettlement>,
-        pressure: PhysicalRecordPressureEvidence,
-        deleted_artifacts: Vec<RecordArtifactFile>,
+        completed_effects: Vec<PhysicalDataEffectSettlement>,
+        cause: PhysicalDataDispatchFailureCause,
     ) -> Self {
         Self {
             durable,
-            discarded_effects: discarded_effects.into_boxed_slice(),
-            pressure,
-            deleted_artifacts: deleted_artifacts.into_boxed_slice(),
+            completed_effects,
+            cause,
         }
     }
 
@@ -69,19 +67,17 @@ impl CleanedPhysicalDataDispatchRetry {
         &self.durable
     }
 
-    pub fn discarded_effects(&self) -> &[PhysicalDataEffectSettlement] {
-        &self.discarded_effects
+    pub fn completed_effects(&self) -> &[PhysicalDataEffectSettlement] {
+        &self.completed_effects
     }
 
-    pub const fn pressure(&self) -> PhysicalRecordPressureEvidence {
-        self.pressure
+    pub const fn cause(&self) -> &PhysicalDataDispatchFailureCause {
+        &self.cause
     }
 
-    pub fn deleted_artifacts(&self) -> &[RecordArtifactFile] {
-        &self.deleted_artifacts
-    }
-
-    pub fn into_durable(self) -> WalDurablePhysicalMutation {
+    pub fn into_durable(mut self) -> WalDurablePhysicalMutation {
+        self.durable
+            .retain_completed_data_prefix(self.completed_effects);
         self.durable
     }
 }

@@ -1,6 +1,10 @@
 //! Scripted test implementation of the production provider fault port.
 
-use std::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
+use std::sync::{
+    atomic::{AtomicU16, AtomicUsize, Ordering},
+    Mutex,
+};
+use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 
 use super::super::provider::fault_port::{
     WorthQueryPrimaryGraphFault, WorthQueryPrimaryGraphFaultPort,
@@ -9,11 +13,19 @@ use super::super::provider::fault_port::{
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct PrimaryGraphFaultController {
     scheduled: AtomicU16,
+    staged_validation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
     failed_post_commit_snapshot_consumptions: AtomicUsize,
     panicked_pending_publication_consumptions: AtomicUsize,
 }
 
 impl PrimaryGraphFaultController {
+    pub(in crate::domain_computation::primary_graph) fn cancel_next_staged_validation(
+        &self,
+        source: WorthQueryCancellationSource,
+    ) {
+        *self.staged_validation_cancellation.lock().unwrap() = Some(source);
+    }
+
     pub(in crate::domain_computation::primary_graph) fn schedule(
         &self,
         fault: WorthQueryPrimaryGraphFault,
@@ -81,6 +93,12 @@ impl PrimaryGraphFaultController {
 }
 
 impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
+    fn candidate_staged_for_validation(&self) {
+        if let Some(source) = self.staged_validation_cancellation.lock().unwrap().take() {
+            source.cancel();
+        }
+    }
+
     fn take(&self, fault: WorthQueryPrimaryGraphFault) -> bool {
         let mask = mask(fault);
         let mut scheduled = self.scheduled.load(Ordering::Acquire);

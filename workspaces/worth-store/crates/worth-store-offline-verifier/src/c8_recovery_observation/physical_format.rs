@@ -33,7 +33,7 @@ pub(super) fn observe(path: &str, bytes: &[u8]) -> RecoveryObserverArtifactEvide
 
 #[cfg(test)]
 mod tests {
-    use super::observe;
+    use super::{durable_frame, observe};
 
     #[test]
     fn unreferenced_checkpoint_candidate_is_observed_as_residue() {
@@ -41,6 +41,26 @@ mod tests {
         assert_eq!(evidence.residue.bytes, 15);
         assert_ne!(evidence.residue.digest, [0; 32]);
         assert!(evidence.checkpoint.is_none());
+    }
+
+    #[test]
+    fn c8_observer_accepts_current_v2_frame_but_not_legacy_v1() {
+        let mut frame = [0_u8; 48];
+        frame[..8].copy_from_slice(b"WRC5FRM\0");
+        frame[8] = 2;
+        frame[9] = 2;
+        frame[10..20].copy_from_slice(&[2, 0, 0, 64, 0, 0, 1, 1, 1, 24]);
+        frame[20..22].copy_from_slice(&48_u16.to_le_bytes());
+        frame[28..36].copy_from_slice(&1_u64.to_le_bytes());
+        frame[36..44].copy_from_slice(&1_u64.to_le_bytes());
+        let checksum = worth_store_physical_format::durable_artifact_checksum(&frame[..44]);
+        frame[44..48].copy_from_slice(&checksum.to_le_bytes());
+        assert!(durable_frame(&frame).is_some());
+
+        frame[10..12].copy_from_slice(&1_u16.to_le_bytes());
+        let checksum = worth_store_physical_format::durable_artifact_checksum(&frame[..44]);
+        frame[44..48].copy_from_slice(&checksum.to_le_bytes());
+        assert!(durable_frame(&frame).is_none());
     }
 }
 
@@ -104,7 +124,7 @@ pub(super) fn durable_frame(bytes: &[u8]) -> Option<DurableFrame<'_>> {
     }
     let format = bytes.get(10..20)?;
     let page_bytes = read_u32(format, 2)?;
-    if read_u16(format, 0)? != 1
+    if read_u16(format, 0)? != 2
         || !matches!(page_bytes, 16_384 | 32_768 | 65_536)
         || format.get(6..10)? != [1, 1, 1, 24]
     {

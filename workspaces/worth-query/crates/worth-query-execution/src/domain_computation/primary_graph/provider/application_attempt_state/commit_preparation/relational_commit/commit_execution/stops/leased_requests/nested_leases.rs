@@ -12,7 +12,7 @@ fn refusing_ancestor_through_both_public_doors() {
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))
                 .unwrap();
             let _held = lease.reserve_memory(32 * 1024 * 1024).unwrap();
-            check_lease(&lease, |stop| {
+            check_lease(&lease, |stop, ancestor| {
                 let Outcome::Denied(failure) = stop else {
                     panic!("wrong ancestor stop")
                 };
@@ -24,9 +24,9 @@ fn refusing_ancestor_through_both_public_doors() {
                             admitted: 0,
                             level: Level::Policy
                         },
-                        policy_ancestor: Some(1),
+                        policy_ancestor: Some(actual),
                         ..
-                    }
+                    } if actual == ancestor
                 ));
             });
         },

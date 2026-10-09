@@ -15,11 +15,21 @@ pub struct RecordPublicationResidueObservation {
     successor_free_space: bool,
     next_segment_data: bool,
     reusable_segment_data: bool,
-    next_extent_data: bool,
-    next_extent_manifest: bool,
+    next_arena: bool,
 }
 
 impl RecordPublicationResidueObservation {
+    /// These observed names can be explained by a sealed free-map release.
+    /// This is not an exhaustive inventory or an admission of their bytes.
+    pub(in crate::physical_runtime) const fn permits_retirement_candidate_reconstruction(
+        self,
+    ) -> bool {
+        !self.successor_routing_block
+            && !self.successor_segment_membership_block
+            && !self.next_segment_data
+            && !self.reusable_segment_data
+            && !self.next_arena
+    }
     pub const fn is_empty(self) -> bool {
         !(self.staging_catalog_candidate
             || self.successor_root
@@ -29,8 +39,7 @@ impl RecordPublicationResidueObservation {
             || self.successor_free_space
             || self.next_segment_data
             || self.reusable_segment_data
-            || self.next_extent_data
-            || self.next_extent_manifest)
+            || self.next_arena)
     }
 
     pub const fn staging_catalog_candidate(self) -> bool {
@@ -54,8 +63,16 @@ impl RecordPublicationResidueObservation {
     pub const fn reusable_segment_artifacts(self) -> bool {
         self.reusable_segment_data
     }
-    pub const fn next_extent_artifacts(self) -> bool {
-        self.next_extent_data || self.next_extent_manifest
+    pub const fn next_arena_artifact(self) -> bool {
+        self.next_arena
+    }
+
+    /// A new arena name alone may be explained by one WAL-held, unpublished
+    /// copy destination. Other candidate names still require inspection.
+    pub(in crate::physical_runtime) const fn only_next_arena_artifact(self) -> bool {
+        let mut other = self;
+        other.next_arena = false;
+        self.next_arena && other.is_empty()
     }
 }
 
@@ -113,18 +130,10 @@ pub(in crate::physical_runtime::record_serving) fn observe_publication_residue(
                 generation: 1,
             },
         )?,
-        next_extent_data: exists(
+        next_arena: exists(
             artifacts,
-            RecordArtifactFile::Extent {
-                extent: free_space.next_extent(),
-                generation: 1,
-            },
-        )?,
-        next_extent_manifest: exists(
-            artifacts,
-            RecordArtifactFile::ExtentManifest {
-                extent: free_space.next_extent(),
-                generation: 1,
+            RecordArtifactFile::ExtentArena {
+                arena: free_space.next_arena(),
             },
         )?,
         ..RecordPublicationResidueObservation::default()
@@ -148,4 +157,39 @@ fn exists(
     artifact: RecordArtifactFile,
 ) -> Result<bool, ArtifactTreeFailure> {
     artifacts.file_exists(artifact)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RecordPublicationResidueObservation as Residue;
+
+    #[test]
+    fn copy_residue_requires_only_the_next_arena_name() {
+        let exact = Residue {
+            next_arena: true,
+            ..Residue::default()
+        };
+        assert!(exact.only_next_arena_artifact());
+        assert!(!Residue::default().only_next_arena_artifact());
+        assert!(!Residue {
+            successor_root: true,
+            ..exact
+        }
+        .only_next_arena_artifact());
+        assert!(!Residue {
+            staging_catalog_candidate: true,
+            ..exact
+        }
+        .only_next_arena_artifact());
+        assert!(!Residue {
+            successor_free_space: true,
+            ..exact
+        }
+        .only_next_arena_artifact());
+        assert!(!Residue {
+            next_segment_data: true,
+            ..exact
+        }
+        .only_next_arena_artifact());
+    }
 }

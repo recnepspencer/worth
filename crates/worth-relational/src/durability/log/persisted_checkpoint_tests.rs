@@ -108,9 +108,15 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
                     )],
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let second = transaction.commit(&runtime).unwrap();
+    let second = transaction
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     release_test_commit_snapshot(&runtime, &second);
     let main = BranchId("main".into());
     let pinned = snapshot_for_owner_branch(&runtime, &main);
@@ -252,11 +258,14 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
     let runtime = persisted_runtime_with_test_schema();
     let entity = create_entity(&runtime, "section-seed");
     let checkpoint = runtime.durability_authority().checkpoint().unwrap();
-    let (bytes, sections) =
-        super::super::native_file_codec::encode_checkpoint(checkpoint.clone()).unwrap();
+    let (bytes, sections) = super::super::native_file_codec::encode_checkpoint(
+        &checkpoint,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
     let expected =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
-    assert_eq!(bytes, expected);
+    assert_eq!(bytes.bytes(), expected);
     assert_eq!(sections.total, bytes.len());
 
     let aliases = partition_aliases::PartitionAliasPlan::for_checkpoint(&checkpoint).unwrap();
@@ -309,19 +318,29 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
             + sections.framing_and_metadata
     );
 
-    let captured = runtime.durability_authority().native_checkpoint().unwrap();
-    assert_eq!(captured.bytes(), bytes);
+    let captured = runtime
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert_eq!(captured.bytes(), bytes.bytes());
     assert_eq!(captured.captured_sections(), Some(sections));
     assert_eq!(captured.clone().captured_sections(), Some(sections));
     assert!(
-        crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes(bytes)
-            .captured_sections()
-            .is_none()
+        crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes_region(
+            bytes,
+            0..sections.total
+        )
+        .unwrap()
+        .captured_sections()
+        .is_none()
     );
 
     let pinned = snapshot_for_owner_branch(&runtime, &BranchId("main".into()));
     update_entity_and_release_snapshot(&runtime, entity, "section-revision");
-    let later = runtime.durability_authority().native_checkpoint().unwrap();
+    let later = runtime
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
     let later_sections = later.captured_sections().unwrap();
     assert!(later_sections.envelopes > sections.envelopes);
     assert_eq!(

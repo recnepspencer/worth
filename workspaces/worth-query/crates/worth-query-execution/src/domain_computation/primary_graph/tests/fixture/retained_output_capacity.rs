@@ -38,7 +38,6 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 2)
         .operation_projection_work_budget(operation, usize::try_from(work).unwrap())
         .operation_read_entity(operation, Account::reference())
         .operation_requires_ability(operation, ViewAccount::reference())
@@ -80,9 +79,11 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
         .bind_source_partition(&[13; 32])
         .bind_producer_dependency(&[19; 32]);
     assert!(matches!(
-        world
-            .application
-            .compare_and_commit_application(program, identity),
+        world.application.compare_and_commit_application(
+            program,
+            identity,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation
+        ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let graph = world.application.runtime.primary_graph().unwrap();
@@ -122,15 +123,17 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
         .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
         .unwrap();
     let mut seen = None;
-    let projected = world
-        .invariant
-        .project_admitted_operation(&admitted, |reader, root| {
+    let projected = world.invariant.project_admitted_operation(
+        &admitted,
+        |reader, root| {
             let denied = reader
                 .current_output::<RetainedFamily, Account>(root)
                 .err()
                 .expect("the full ledger cannot retain the consumed edge");
             seen = Some(denied.kind());
-        });
+        },
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    );
     assert_eq!(resources.retained_capacity_bytes(), maximum);
     drop(held);
     (

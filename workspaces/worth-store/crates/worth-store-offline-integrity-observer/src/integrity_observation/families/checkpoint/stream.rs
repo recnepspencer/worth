@@ -3,8 +3,9 @@ use super::super::{
     physical_fields::{scope, shape},
 };
 use super::{
+    certificates::{CertificateState, ObservedCheckpointReleaseClaim},
     record::{family, read_record},
-    source::{read_dirty, read_source, Source},
+    source::{read_dirty, read_source, CheckpointSourceFacts},
 };
 use crate::integrity_observation::{
     record_walk::{damage, shift_outcome},
@@ -25,13 +26,24 @@ pub(crate) struct CheckpointRecordObservation {
 }
 
 struct StreamState {
-    source: Option<Source>,
+    schema: u8,
+    source: Option<CheckpointSourceFacts>,
     dirty: Sha256,
     bindings: Sha256,
     dirty_count: u64,
     binding_count: u64,
     binding_bytes: u64,
     compaction: Option<(u64, u64, u64)>,
+    certificates: CertificateState,
+    certificates_started: bool,
+}
+
+pub(crate) struct CheckpointStreamObservation {
+    pub(crate) records: Vec<CheckpointRecordObservation>,
+    /// Present only after the complete stream and its footer aggregates pass.
+    pub(crate) completed_source: Option<CheckpointSourceFacts>,
+    pub(crate) completed_cutoff: Option<u64>,
+    pub(crate) completed_release_claim: Option<ObservedCheckpointReleaseClaim>,
 }
 
 pub(crate) fn read_checkpoint(
@@ -40,8 +52,9 @@ pub(crate) fn read_checkpoint(
     sequence: Option<u64>,
     maximum_records: u64,
     counters: &mut OfflineIntegrityObservationCounters,
-) -> Vec<CheckpointRecordObservation> {
+) -> CheckpointStreamObservation {
     let mut state = StreamState {
+        schema: 0,
         source: None,
         dirty: Sha256::new(),
         bindings: Sha256::new(),
@@ -49,8 +62,13 @@ pub(crate) fn read_checkpoint(
         binding_count: 0,
         binding_bytes: 0,
         compaction: None,
+        certificates: CertificateState::new(),
+        certificates_started: false,
     };
     let mut observations = Vec::new();
+    let mut completed_source = None;
+    let mut completed_cutoff = None;
+    let mut completed_release_claim = None;
     let mut offset = 0;
     let mut stage = 1;
     loop {
@@ -59,6 +77,8 @@ pub(crate) fn read_checkpoint(
             2 if bytes.get(offset + 9) == Some(&3) => 3,
             2 => 2,
             4 if bytes.get(offset + 9) == Some(&5) => 5,
+            4 if state.schema == 3 && bytes.get(offset + 9) == Some(&6) => 6,
+            4 if state.schema == 3 && bytes.get(offset + 9) == Some(&7) => 7,
             _ => 4,
         };
         let remaining = &bytes[offset..];
@@ -74,7 +94,12 @@ pub(crate) fn read_checkpoint(
             ));
             break;
         }
-        let parsed = read_record(remaining, kind, counters);
+        let parsed = read_record(
+            remaining,
+            kind,
+            (stage != 1).then_some(state.schema),
+            counters,
+        );
         let (payload, length) = match parsed {
             Ok(parsed) => parsed,
             Err(outcome) => {
@@ -90,6 +115,7 @@ pub(crate) fn read_checkpoint(
         };
         let result = match kind {
             1 => read_source(payload, store, sequence).map(|source| {
+                state.schema = remaining[8];
                 state.source = Some(source);
                 stage = 2;
             }),
@@ -114,14 +140,40 @@ pub(crate) fn read_checkpoint(
                 })
             }
             4 => {
+                if state.certificates_started {
+                    observations.push(observation(
+                        kind,
+                        state.source.as_ref().map(|s| s.sequence),
+                        offset,
+                        length,
+                        damage(Cause::ScopeMismatch, None, Blast::Artifact),
+                    ));
+                    break;
+                }
                 state.bindings.update(&remaining[..length]);
                 state.binding_count += 1;
                 state.binding_bytes += length as u64;
                 Ok(())
             }
+            6 | 7 => {
+                state.certificates_started = true;
+                state.certificates.include(
+                    kind,
+                    payload,
+                    &remaining[..length],
+                    state.source.expect("header admitted before certificate"),
+                )
+            }
             5 => {
                 let sequence = state.source.as_ref().map(|s| s.sequence);
+                let source = state.source;
+                let cutoff = state.compaction.map(|value| value.2);
                 let result = finish(state, payload, offset + length == bytes.len(), counters);
+                if let Ok(release) = &result {
+                    completed_source = source;
+                    completed_cutoff = cutoff;
+                    completed_release_claim = release.clone();
+                }
                 observations.push(observation(
                     kind,
                     sequence,
@@ -129,7 +181,7 @@ pub(crate) fn read_checkpoint(
                     length,
                     result.map_or_else(
                         |outcome| shift_outcome(outcome, offset as u64),
-                        |()| Outcome::Intact,
+                        |_| Outcome::Intact,
                     ),
                 ));
                 break;
@@ -156,7 +208,12 @@ pub(crate) fn read_checkpoint(
             break;
         }
     }
-    observations
+    CheckpointStreamObservation {
+        records: observations,
+        completed_source,
+        completed_cutoff,
+        completed_release_claim,
+    }
 }
 
 fn finish(
@@ -164,8 +221,12 @@ fn finish(
     payload: &[u8],
     terminal: bool,
     counters: &mut OfflineIntegrityObservationCounters,
-) -> Result<(), Outcome> {
-    shape(terminal, 0, 156)?;
+) -> Result<Option<ObservedCheckpointReleaseClaim>, Outcome> {
+    shape(
+        terminal && payload.len() == if state.schema == 3 { 184 } else { 136 },
+        0,
+        156,
+    )?;
     let source = state.source.expect("header admitted before footer");
     scope(
         payload[..24] == source.identity,
@@ -207,7 +268,11 @@ fn finish(
             Blast::Artifact,
         ));
     }
-    Ok(())
+    if state.schema == 3 {
+        state.certificates.finish(payload, counters)
+    } else {
+        Ok(None)
+    }
 }
 
 fn observation(

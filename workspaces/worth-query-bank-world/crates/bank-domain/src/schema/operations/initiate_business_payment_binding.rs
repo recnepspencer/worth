@@ -124,5 +124,5 @@ worth_query_mutation_binding!(
     field BusinessIdentityField::reference(),
     value business_scope,
     candidates creates 9, deletes 0, links 28, unlinks 0, writes 59, emits 0,
-    resources retained_representation_bytes 32768, validator_work 275
+    resources retained_representation_bytes 32768
 );

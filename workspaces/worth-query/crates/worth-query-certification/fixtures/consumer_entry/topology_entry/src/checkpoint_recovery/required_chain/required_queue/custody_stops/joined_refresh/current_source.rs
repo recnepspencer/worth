@@ -53,11 +53,13 @@ fn a_dependent_reads_a_held_stable_join_at_the_current_head_once() {
                     body_key: "anchor-c".to_owned(),
                     value: length(40),
                 }),
-                validator_work: 4096,
             }))
             .expect_source(selected.observed_sources()[0].clone())
             .idempotency(&0x612_8902_u64)
-            .execute_in_program::<program::ChainProgram>(&application)
+            .execute_in_program::<program::ChainProgram>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         assert!(matches!(outcome,worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed {..}));
     }

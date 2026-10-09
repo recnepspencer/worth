@@ -43,6 +43,7 @@ fn with_unmanaged_publications(
         let outcome = world.application.compare_and_commit_application(
             program,
             idempotency(key, key + 1).bind_source_partition(&partition),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
             panic!("the output publication commits: {outcome:?}");

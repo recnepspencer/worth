@@ -1,8 +1,93 @@
-use super::{
-    checkpoint_covered_disposition, CheckpointCoveredWalDecision, RecoveryCleanupDeferralReason,
-    RecoveryCleanupDispositionKind, RecoveryCleanupPlan,
+use worth_store::physical_runtime::recovery_wal::{LogSequenceNumber, WalLsnRange};
+use worth_store_recovery_physics::RetirementReleaseIntent;
+
+use super::covered_wal::{
+    checkpoint_covered_disposition, classify_covered_wal, holds_retirement_authority,
+    CheckpointCoveredWalDecision, CoveredWalBasis, CoveredWalFacts,
 };
+use super::{RecoveryCleanupDeferralReason, RecoveryCleanupDispositionKind, RecoveryCleanupPlan};
 use crate::entry::PhysicalRecoveryLimitDeclaration;
+
+fn lsn(start: u64, end_exclusive: u64) -> WalLsnRange {
+    WalLsnRange::new(
+        LogSequenceNumber::new(start),
+        LogSequenceNumber::new(end_exclusive),
+    )
+    .unwrap()
+}
+
+/// Four covered artifacts in WAL order; the third holds the intent at 15..16.
+fn covered(cleanup_safe: [bool; 4]) -> [CoveredWalFacts; 4] {
+    let ranges = [lsn(0, 5), lsn(5, 10), lsn(10, 17), lsn(17, 20)];
+    std::array::from_fn(|index| CoveredWalFacts {
+        lsn_range: ranges[index],
+        byte_count: 1,
+        cleanup_safe: cleanup_safe[index],
+    })
+}
+
+fn classify(
+    covered: &[CoveredWalFacts],
+    protected_start: Option<usize>,
+    checkpoint_generation: u64,
+) -> Vec<RecoveryCleanupDispositionKind> {
+    let intents = [RetirementReleaseIntent::new(lsn(15, 16), 14, 15, [7; 32])];
+    classify_covered_wal(
+        covered,
+        CoveredWalBasis {
+            protected_start,
+            checkpoint_generation: Some(checkpoint_generation),
+            release_intents: &intents,
+            unresolved_retirement: false,
+            unresolved: false,
+            limits: cleanup_limits(10, 10),
+        },
+    )
+}
+
+/// A release writes its intent (15..16), a checkpoint at root 14 covers it,
+/// root 15 publishes and the retirement resolves. Until a checkpoint at or
+/// past root 15 is selected, the intent is the only authority for the
+/// checkpoint's retirement edge, so the plan retains its covered WAL.
+#[test]
+fn resolved_release_intent_retains_covered_wal_until_a_checkpoint_passes_it() {
+    use RecoveryCleanupDispositionKind::{Eligible, Retained};
+    let safe = covered([true; 4]);
+    assert_eq!(
+        classify(&safe, None, 14),
+        [Eligible, Eligible, Retained, Retained]
+    );
+    assert_eq!(classify(&safe, None, 15), [Eligible; 4]);
+    assert_eq!(
+        classify(&safe, Some(3), 14),
+        [Eligible, Eligible, Retained, Retained]
+    );
+    assert_eq!(
+        classify(&safe, Some(3), 15),
+        [Eligible, Eligible, Eligible, Retained]
+    );
+    assert_eq!(
+        classify(&safe, Some(1), 14),
+        [Eligible, Retained, Retained, Retained]
+    );
+    // Retained WAL stays retained whatever its cleanup safety.
+    let interrupted = covered([true, true, false, false]);
+    assert_eq!(
+        classify(&interrupted, None, 14),
+        [Eligible, Eligible, Retained, Retained]
+    );
+}
+
+#[test]
+fn retirement_authority_needs_an_intent_past_the_checkpoint_inside_the_artifact() {
+    let intents = [RetirementReleaseIntent::new(lsn(15, 16), 14, 15, [7; 32])];
+    let artifact = lsn(10, 17);
+    assert!(holds_retirement_authority(artifact, 14, &intents));
+    assert!(!holds_retirement_authority(artifact, 15, &intents));
+    assert!(!holds_retirement_authority(lsn(10, 15), 14, &intents));
+    assert!(!holds_retirement_authority(lsn(16, 20), 14, &intents));
+    assert!(holds_retirement_authority(lsn(15, 16), 14, &intents));
+}
 
 #[test]
 fn interrupted_checkpoint_covered_wal_is_quarantined_before_limit_classification() {

@@ -3,7 +3,7 @@ pub enum LayoutStrategyFamily {
     AppendLog,
     HeapFile,
     PageTable,
-    BaselineBTreeRange,
+    BTreeRange,
     BaselineLsmWriteOptimized,
     SparseIndex,
     ChunkTree,
@@ -17,19 +17,12 @@ pub enum LayoutStrategyFamily {
 }
 
 impl LayoutStrategyFamily {
-    pub const fn is_baseline_family(self) -> bool {
-        matches!(
-            self,
-            Self::BaselineBTreeRange | Self::BaselineLsmWriteOptimized
-        )
-    }
-
     pub const fn declaration_name(self) -> &'static str {
         match self {
             Self::AppendLog => "append-log",
             Self::HeapFile => "heap-file",
             Self::PageTable => "page-table",
-            Self::BaselineBTreeRange => "baseline-btree-range",
+            Self::BTreeRange => "btree-range",
             Self::BaselineLsmWriteOptimized => "baseline-lsm-write-optimized",
             Self::SparseIndex => "sparse-index",
             Self::ChunkTree => "chunk-tree",

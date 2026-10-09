@@ -9,6 +9,7 @@ use crate::physical_runtime::{
     PhysicalRecoveryFreshnessPort, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
 };
+use worth_store_physical_backend::{ReadGrant, UnchargedRead};
 
 #[test]
 fn coordination_rejects_same_store_observed_under_another_media_generation() {
@@ -31,7 +32,10 @@ fn coordination_rejects_same_store_observed_under_another_media_generation() {
     std::fs::write(wal.join("segment-1-generation-1.wal"), &bytes).unwrap();
     let (media_b, coordination_b) = recovery_media_and_coordination(&root);
     let mut discovery_b = media_b.bounded_discovery(1, 4096).unwrap();
-    let observed = discovery_b.read_wal_artifacts(1, 4096).unwrap();
+    let observed = discovery_b
+        .read_wal_artifacts(std::num::NonZeroU64::MIN, ReadGrant::ceiling_only())
+        .observed()
+        .unwrap();
     let range = PhysicalByteRange::new(0, bytes.len() as u64).unwrap();
     let scope = PhysicalArtifactScope::wal_frame(store, identity, range);
     let admitted = coordination_b
@@ -53,8 +57,9 @@ fn coordination_rejects_same_store_observed_under_another_media_generation() {
     let artifact =
         worth_store_wal::WalSegmentArtifactIdentity::parse("segment-1-generation-1.wal").unwrap();
     assert!(coordination_a
-        .retain_admitted_recovery_wal_segment(&observed[0], artifact, vec![admitted])
-        .is_none());
+        .begin_recovery_wal_segment(&observed[0], artifact)
+        .is_err());
+    drop(admitted);
 }
 
 fn intact(
@@ -74,7 +79,7 @@ fn intact(
     validation
 }
 
-fn recovery_media_and_coordination(
+pub(super) fn recovery_media_and_coordination(
     root: &std::path::Path,
 ) -> (
     AdmittedRecoveryFilesystemMedia,
@@ -84,12 +89,23 @@ fn recovery_media_and_coordination(
     let freshness = PhysicalRecoveryFreshnessPort::admit(&qualified).unwrap();
     let media = qualified.admit_persisted_store().unwrap();
     let session = freshness.register_session().unwrap();
-    let capacity = PhysicalRecoveryCoordinationCapacity::admit(2, 4096, 2, 4096).unwrap();
-    let coordination = session.admit_coordination(&media, capacity, None).unwrap();
+    let capacity = PhysicalRecoveryCoordinationCapacity::admit(2, 4096, 2, 4096)
+        .unwrap()
+        .with_recovery_allocation_bytes(1 << 20)
+        .unwrap();
+    let format = crate::physical_runtime::AdmittedPhysicalRecordFormat::admit(
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder()
+            .admit()
+            .unwrap(),
+    );
+    let policy = crate::physical_runtime::AdmittedPhysicalRecordResidencyPolicy::canonical(format);
+    let coordination = session
+        .admit_coordination(&media, capacity, policy, None)
+        .unwrap();
     (media, coordination)
 }
 
-fn initialize(
+pub(super) fn initialize(
     root: &std::path::Path,
 ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
     let runtime =

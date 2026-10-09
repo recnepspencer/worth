@@ -243,6 +243,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
         prepared_input_reuse_key: None,
         native_output_witness: None,
         actual_resources: None,
+        native_prior_checkpoint: None,
         computation: PreparedComputationCustody::Unassigned,
         computation_fork_scan_bound,
         prior_computation: None,

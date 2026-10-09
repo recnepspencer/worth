@@ -1,0 +1,11 @@
+error[E0277]: the trait bound `StoreRecoveryBindingFreshnessSample: Clone` is not satisfied
+ --> tests/ui/freshness_sample_and_member_cannot_clone.rs:6:6
+  |
+6 |     <StoreRecoveryBindingFreshnessSample as Clone>::clone(sample)
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `StoreRecoveryBindingFreshnessSample`
+
+error[E0277]: the trait bound `StoreRecoveryWalMember: Clone` is not satisfied
+  --> tests/ui/freshness_sample_and_member_cannot_clone.rs:10:6
+   |
+10 |     <StoreRecoveryWalMember as Clone>::clone(member)
+   |      ^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `StoreRecoveryWalMember`

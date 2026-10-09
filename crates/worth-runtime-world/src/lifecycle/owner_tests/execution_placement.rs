@@ -74,7 +74,7 @@ fn a_world_requires_a_policy_and_runs_serial_with_one() {
 fn an_authority_needs_a_policy_and_a_world_leases_under_both() {
     let config = ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: 4096,
+        charged_memory_bytes: Some(4096),
     };
     let authority = Arc::new(ExecutionAuthority::try_construct(config).unwrap());
     // A policy the authority can never lease is refused here, each cause on

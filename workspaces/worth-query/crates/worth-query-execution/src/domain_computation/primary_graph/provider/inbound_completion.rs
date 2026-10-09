@@ -33,7 +33,20 @@ pub(in crate::domain_computation) enum WorthQueryInboundCompletionPreparationDen
     },
     OriginalOutboxNotAnEntity,
     ForeignOrStaleBasis,
+    AllocationDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
     StagingUnavailable,
+    StagingAllocationDenied {
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    StagingCardinalityOverflow,
+    StagingInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     ValidationUnavailable,
     PreparationUnavailable,
     SnapshotUnavailable,
@@ -160,10 +173,21 @@ impl WorthQueryPrimaryGraphProvider {
                 transaction
                     .push_batch(
                         WorkerIntentBatch::new("inbound-external-effect-completion").push(intent),
-                    )
-                    .map_err(|_| Denial::StagingUnavailable)?;
+                     worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                    .map_err(|denial| match denial {
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::AllocationDenied(allocation) => Denial::StagingAllocationDenied {
+                            kind: allocation.kind(),
+                            requested_payload_bytes: allocation.requested_payload_bytes(),
+                        },
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::CardinalityOverflow => Denial::StagingCardinalityOverflow,
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::InputDirectoryAllocationDenied { requested_batches } => Denial::StagingInputDirectoryAllocationDenied { requested_batches },
+                        worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SavepointCapacityExhausted { .. }
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::SavepointIdentityExhausted
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationAuthorityRequired
+                        | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationModeMismatch => Denial::StagingUnavailable,
+                    })?;
                 let validated = transaction
-                    .validate(runtime)
+                    .validate(runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|error| preparation_denial::validation_denial(&error))?;
                 let mut candidate = runtime
                     .prepare_validated_proposal(validated)

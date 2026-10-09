@@ -8,14 +8,39 @@ const CHECKPOINT_HEADER_PAYLOAD_BYTES: usize = 144;
 const CHECKPOINT_DIRTY_PAYLOAD_BYTES: usize = 48;
 const CHECKPOINT_COMPACTION_PAYLOAD_BYTES: usize = 16;
 const CHECKPOINT_FOOTER_PAYLOAD_BYTES: usize = 136;
+const CHECKPOINT_CERTIFIED_FOOTER_PAYLOAD_BYTES: usize = 184;
 const CHECKPOINT_BINDING_MAX_PAYLOAD: usize = 4 * 1024;
+const CHECKPOINT_CERTIFICATE_MAX_PAYLOAD: usize = 65_536 - 20;
+const CHECKPOINT_CERTIFICATE_MAX_RECORDS: usize = 64;
+const CHECKPOINT_CERTIFICATE_MAX_BYTES: u64 = 65_536;
+
+#[cfg(test)]
+#[path = "checkpoint/tests.rs"]
+mod tests;
 
 pub(super) fn observe_checkpoint(bytes: &[u8]) -> Option<CheckpointFacts> {
+    inspect_checkpoint(bytes).map(|(facts, _)| facts)
+}
+
+pub(super) fn validated_binding_payloads(bytes: &[u8]) -> Option<Vec<&[u8]>> {
+    inspect_checkpoint(bytes).map(|(_, bindings)| bindings)
+}
+
+fn inspect_checkpoint(bytes: &[u8]) -> Option<(CheckpointFacts, Vec<&[u8]>)> {
+    let schema = *bytes.get(8)?;
+    if !matches!(schema, 1..=3) {
+        return None;
+    }
+    let footer_payload_bytes = if schema == 3 {
+        CHECKPOINT_CERTIFIED_FOOTER_PAYLOAD_BYTES
+    } else {
+        CHECKPOINT_FOOTER_PAYLOAD_BYTES
+    };
     let footer_offset = bytes
         .len()
-        .checked_sub(record_bytes(CHECKPOINT_FOOTER_PAYLOAD_BYTES))?;
-    let header = fixed_record(bytes, 0, 1, CHECKPOINT_HEADER_PAYLOAD_BYTES)?;
-    let footer = fixed_record(bytes, footer_offset, 5, CHECKPOINT_FOOTER_PAYLOAD_BYTES)?;
+        .checked_sub(record_bytes(footer_payload_bytes))?;
+    let header = fixed_record(bytes, 0, schema, 1, CHECKPOINT_HEADER_PAYLOAD_BYTES)?;
+    let footer = fixed_record(bytes, footer_offset, schema, 5, footer_payload_bytes)?;
     if header[..16] == [0; 16] || read_u64(header, 16)? == 0 || header[64] != 1 {
         return None;
     }
@@ -35,11 +60,17 @@ pub(super) fn observe_checkpoint(bytes: &[u8]) -> Option<CheckpointFacts> {
     for _ in 0..dirty_count {
         let end = offset.checked_add(record_bytes(CHECKPOINT_DIRTY_PAYLOAD_BYTES))?;
         let record = bytes.get(offset..end)?;
-        fixed_record(bytes, offset, 2, CHECKPOINT_DIRTY_PAYLOAD_BYTES)?;
+        fixed_record(bytes, offset, schema, 2, CHECKPOINT_DIRTY_PAYLOAD_BYTES)?;
         dirty_digest.update(record);
         offset = end;
     }
-    let compaction = fixed_record(bytes, offset, 3, CHECKPOINT_COMPACTION_PAYLOAD_BYTES)?;
+    let compaction = fixed_record(
+        bytes,
+        offset,
+        schema,
+        3,
+        CHECKPOINT_COMPACTION_PAYLOAD_BYTES,
+    )?;
     if read_u64(compaction, 0)? != read_u64(footer, 72)?
         || read_u64(compaction, 8)? != read_u64(footer, 80)?
     {
@@ -48,13 +79,43 @@ pub(super) fn observe_checkpoint(bytes: &[u8]) -> Option<CheckpointFacts> {
     offset += record_bytes(CHECKPOINT_COMPACTION_PAYLOAD_BYTES);
     let mut binding_digest = Sha256::new();
     let mut binding_bytes = 0_u64;
+    let mut bindings = Vec::new();
     for _ in 0..binding_count {
-        let (record_bytes, payload) = binding_record(bytes, offset)?;
-        let record = bytes.get(offset..offset + record_bytes)?;
+        let (record_bytes, payload) = binding_record(bytes, offset, schema)?;
+        let end = offset.checked_add(record_bytes)?;
+        let record = bytes.get(offset..end)?;
         binding_digest.update(record);
         binding_bytes = binding_bytes.checked_add(record_bytes as u64)?;
-        let _ = payload;
-        offset += record_bytes;
+        bindings.push(payload);
+        offset = end;
+    }
+    let mut certificate_digest = Sha256::new();
+    let mut certificate_bytes = 0_u64;
+    if schema == 3 {
+        let certificate_count = usize::try_from(read_u64(footer, 136)?).ok()?;
+        if certificate_count > CHECKPOINT_CERTIFICATE_MAX_RECORDS {
+            return None;
+        }
+        for index in 0..certificate_count {
+            let (length, kind) = certificate_record(bytes, offset)?;
+            // A tier certificate is unique and must precede all releases.
+            if kind == 6 && index != 0 {
+                return None;
+            }
+            let end = offset.checked_add(length)?;
+            let record = bytes.get(offset..end)?;
+            certificate_digest.update(record);
+            certificate_bytes = certificate_bytes.checked_add(length as u64)?;
+            if certificate_bytes > CHECKPOINT_CERTIFICATE_MAX_BYTES {
+                return None;
+            }
+            offset = end;
+        }
+        if certificate_bytes != read_u64(footer, 144)?
+            || certificate_digest.finalize()[..] != footer[152..184]
+        {
+            return None;
+        }
     }
     if offset != footer_offset
         || binding_bytes != read_u64(footer, 96)?
@@ -81,27 +142,31 @@ pub(super) fn observe_checkpoint(bytes: &[u8]) -> Option<CheckpointFacts> {
         DigestBuilder::new(b"worth.store.recovery-observer.checkpoint-coverage.v1");
     checkpoint.record(&coverage);
     checkpoint.record(&digest_bytes(bytes));
-    (durable >= covered.0 && durable <= covered.1).then_some(CheckpointFacts {
-        sequence: read_u64(header, 16)?,
-        page_count: dirty_count as u64,
-        covered,
-        redo: covered.0,
-        durable,
-        generation_links: generation.finish(),
-        digest: checkpoint.finish().digest(),
-    })
+    (durable >= covered.0 && durable <= covered.1).then_some((
+        CheckpointFacts {
+            sequence: read_u64(header, 16)?,
+            page_count: dirty_count as u64,
+            covered,
+            redo: covered.0,
+            durable,
+            generation_links: generation.finish(),
+            digest: checkpoint.finish().digest(),
+        },
+        bindings,
+    ))
 }
 
 fn fixed_record<'bytes>(
     bytes: &'bytes [u8],
     offset: usize,
+    schema: u8,
     kind: u8,
     payload_bytes: usize,
 ) -> Option<&'bytes [u8]> {
     let end = offset.checked_add(record_bytes(payload_bytes))?;
     let record = bytes.get(offset..end)?;
     if record.get(..8) != Some(b"WCP7REC\0")
-        || record.get(8) != Some(&1)
+        || record.get(8) != Some(&schema)
         || record.get(9) != Some(&kind)
         || record.get(10..12) != Some(&[0; 2])
         || read_u32(record, 12)? as usize != payload_bytes
@@ -113,10 +178,10 @@ fn fixed_record<'bytes>(
     Some(&record[CHECKPOINT_PREFIX_BYTES..CHECKPOINT_PREFIX_BYTES + payload_bytes])
 }
 
-fn binding_record<'bytes>(bytes: &'bytes [u8], offset: usize) -> Option<(usize, &'bytes [u8])> {
-    let prefix = bytes.get(offset..offset + CHECKPOINT_PREFIX_BYTES)?;
+fn binding_record(bytes: &[u8], offset: usize, schema: u8) -> Option<(usize, &[u8])> {
+    let prefix = bytes.get(offset..offset.checked_add(CHECKPOINT_PREFIX_BYTES)?)?;
     if prefix.get(..8) != Some(b"WCP7REC\0")
-        || prefix.get(8) != Some(&1)
+        || prefix.get(8) != Some(&schema)
         || prefix.get(9) != Some(&4)
         || prefix.get(10..12) != Some(&[0; 2])
     {
@@ -127,7 +192,7 @@ fn binding_record<'bytes>(bytes: &'bytes [u8], offset: usize) -> Option<(usize, 
         return None;
     }
     let total = record_bytes(payload_bytes);
-    let record = bytes.get(offset..offset + total)?;
+    let record = bytes.get(offset..offset.checked_add(total)?)?;
     if crc32c(&record[..CHECKPOINT_PREFIX_BYTES + payload_bytes])
         != read_u32(record, CHECKPOINT_PREFIX_BYTES + payload_bytes)?
     {
@@ -137,6 +202,31 @@ fn binding_record<'bytes>(bytes: &'bytes [u8], offset: usize) -> Option<(usize, 
         total,
         &record[CHECKPOINT_PREFIX_BYTES..CHECKPOINT_PREFIX_BYTES + payload_bytes],
     ))
+}
+
+fn certificate_record(bytes: &[u8], offset: usize) -> Option<(usize, u8)> {
+    let prefix = bytes.get(offset..offset.checked_add(CHECKPOINT_PREFIX_BYTES)?)?;
+    let kind = *prefix.get(9)?;
+    if prefix.get(..8) != Some(b"WCP7REC\0")
+        || prefix.get(8) != Some(&3)
+        || !matches!(kind, 6 | 7)
+        || prefix.get(10..12) != Some(&[0; 2])
+    {
+        return None;
+    }
+    let payload_bytes = usize::try_from(read_u32(prefix, 12)?).ok()?;
+    if payload_bytes == 0 || payload_bytes > CHECKPOINT_CERTIFICATE_MAX_PAYLOAD {
+        return None;
+    }
+    let total = record_bytes(payload_bytes);
+    let end = offset.checked_add(total)?;
+    let record = bytes.get(offset..end)?;
+    if crc32c(&record[..CHECKPOINT_PREFIX_BYTES + payload_bytes])
+        != read_u32(record, CHECKPOINT_PREFIX_BYTES + payload_bytes)?
+    {
+        return None;
+    }
+    Some((total, kind))
 }
 
 const fn record_bytes(payload_bytes: usize) -> usize {

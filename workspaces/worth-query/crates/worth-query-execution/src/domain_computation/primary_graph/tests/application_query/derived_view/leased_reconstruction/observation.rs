@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     NestedAccountQuery, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };
 use std::num::NonZeroUsize;
-use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
+use worth_execution::{ChargedBytes, ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
 
 pub(super) fn observe(
     workers: Option<usize>,
@@ -328,11 +328,23 @@ pub(super) fn observe_case(
             .map(|key| snapshot.get(key).unwrap().unwrap().0.clone())
             .collect()
     });
-    // Claiming the complete limit succeeds only after every transient hold released.
-    if let Some(lease) = &lease {
-        drop(lease.reserve_memory(serial.memory().limit()).unwrap());
+    // Owner finalization retains its returned denial's payload. Every other hold
+    // must release: the payload plus this probe fills the entire selected limit.
+    let denial_bytes = if case.query_interruption.is_some() {
+        let error = result.as_ref().unwrap_err();
+        assert!(matches!(
+            error,
+            WorthQueryManagedDerivedViewDenial::ReadDenied { .. }
+        ));
+        error.additional_charged_bytes()
     } else {
-        drop(serial.memory().reserve(serial.memory().limit()).unwrap());
+        0
+    };
+    let available = serial.memory().limit().checked_sub(denial_bytes).unwrap();
+    if let Some(lease) = &lease {
+        drop(lease.reserve_memory(available).unwrap());
+    } else {
+        drop(serial.memory().reserve(available).unwrap());
     }
     let retained_values = prior
         .iter()

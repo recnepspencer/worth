@@ -48,10 +48,14 @@ fn run(custom: bool) {
                         fields: Default::default(),
                     },
                 ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     let publication = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("required topology publishes together");
     let root = publication.created_entity(&root_ref).unwrap();
     let child = publication.created_entity(&child_ref).unwrap();
@@ -67,16 +71,22 @@ fn run(custom: bool) {
 
     let mut deletion = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     deletion
-        .push_batch(WorkerIntentBatch::new("delete-required-child-link").push(
-            MutationIntent::Relation(crate::transactions::data::RelationMutationIntent::Delete(
-                crate::transactions::data::DeleteRelationIntent {
-                    relation_id: relation,
-                },
+        .push_batch(
+            WorkerIntentBatch::new("delete-required-child-link").push(MutationIntent::Relation(
+                crate::transactions::data::RelationMutationIntent::Delete(
+                    crate::transactions::data::DeleteRelationIntent {
+                        relation_id: relation,
+                    },
+                ),
             )),
-        ))
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let denied = deletion
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("ordinary deletion violates the root minimum");
     assert!(matches!(denied,
         crate::transactions::data::TransactionCommitError::Conflict { error, .. }

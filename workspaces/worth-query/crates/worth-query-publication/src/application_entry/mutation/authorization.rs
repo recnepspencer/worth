@@ -48,6 +48,11 @@ where
         Binding::Input,
         MutationScope<Schema, Binding>,
     >,
+    pub(in crate::application_entry) pending_source: Option<
+        worth_query_execution::facade::primary_graph::WorthQueryPendingSourceExpectation<
+            <Binding::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+    >,
     pub(in crate::application_entry) extension: WorthQueryCommitExtension,
     pub(in crate::application_entry) idempotency: WorthQueryApplicationIdempotencyBinding,
 }
@@ -232,10 +237,10 @@ where
     let expected_source = <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<
         Schema,
     >>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER;
-    let mut bound_source = None;
+    let mut pending_source = None;
     match (expected_source, source) {
         (Some(_expected), Some(source)) => {
-            bound_source = Some(match source {
+            pending_source = Some(match source {
                 WorthQueryMutationExpectedSource::Row(source) => request
                     .request
                     .application
@@ -264,12 +269,15 @@ where
         (None, Some(_)) => unreachable!("a no-source binding has no constructible source marker"),
     }
     let extension = WorthQueryCommitExtension {
-        source: bound_source,
+        source: pending_source
+            .as_ref()
+            .map(|pending| pending.bound_source()),
         workflow_transition: request.workflow_transition_identity,
     };
     Ok(PreparedMutation {
         principal_identity,
         admission,
+        pending_source,
         extension,
         idempotency: extension
             .apply(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),

@@ -124,11 +124,11 @@ fn weaker_authority_and_lifecycle_paths_are_denied() {
         facade
             .classify_family(
                 facade
-                    .declaration(DurableArtifactFamilyId::CompatibilityCommitEnvelope)
+                    .declaration(DurableArtifactFamilyId::ImportBundle)
                     .unwrap()
             )
             .lifecycle(),
-        super::ArtifactFamilyLifecycleDisposition::TransferBoundaryOnly
+        super::ArtifactFamilyLifecycleDisposition::OfflineImportOnly
     );
     assert_eq!(
         facade
@@ -137,14 +137,14 @@ fn weaker_authority_and_lifecycle_paths_are_denied() {
                     .require_production_authority(
                         facade.classify_family(
                             facade
-                                .declaration(DurableArtifactFamilyId::CompatibilityCommitEnvelope)
+                                .declaration(DurableArtifactFamilyId::ImportBundle)
                                 .unwrap()
                         )
                     )
                     .unwrap()
             )
             .unwrap_err(),
-        ArtifactFamilyDenial::TransferBoundaryFamilyCannotEnterStrategyAdmission
+        ArtifactFamilyDenial::OfflineImportOnlyFamilyCannotEnterStrategyAdmission
     );
 }
 

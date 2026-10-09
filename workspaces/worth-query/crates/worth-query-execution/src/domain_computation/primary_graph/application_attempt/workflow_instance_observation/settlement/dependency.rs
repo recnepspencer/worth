@@ -1,17 +1,19 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, InternedString,
     LocatorAuthority,
 };
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
 
 use super::{denial, observed_text, observed_u64};
+mod traversal;
 use crate::domain_computation::primary_graph::application_attempt::{
     observation::{observe_field, WorthQueryApplicationFieldObservation},
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::evidence_dependency::{
-    decode_direction, evidence_dependency_adjacency_work, maximum_evidence_dependencies,
-    WorkflowEvidenceDependencyKind,
+    decode_direction, WorkflowEvidenceDependencyKind,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
@@ -20,29 +22,20 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     evidence: EntityId,
-    maximum_dependency_facts: usize,
+    observation_request: &WorthQueryRequestScope,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
-    let starting_fact_count = facts.len();
-    let maximum_dependencies = maximum_evidence_dependencies(maximum_dependency_facts);
-    let dependencies = super::adjacency_with_kind(
-        runtime,
-        snapshot,
-        layout.evidence_dependency_relation,
-        evidence,
-        evidence_dependency_adjacency_work(maximum_dependencies),
-        "workflow evidence dependency relation is unavailable",
-        facts,
-    )?;
-    if dependencies.len() > maximum_dependencies {
-        return Err(budget_denial());
-    }
-    let observed = dependencies
-        .into_iter()
-        .map(|dependency| observe_dependency(runtime, snapshot, layout, dependency, facts))
-        .collect::<Result<Vec<_>, _>>()?;
-    if facts.len().saturating_sub(starting_fact_count) > maximum_dependency_facts {
-        return Err(budget_denial());
+    check_request_live(observation_request, "workflow evidence dependency relation")?;
+    let (dependencies, adjacency) =
+        traversal::observe(runtime, snapshot, layout, evidence, observation_request)?;
+    facts.push(adjacency);
+    let mut observed = Vec::new();
+    for dependency in dependencies {
+        check_request_live(observation_request, "workflow evidence dependency")?;
+        observed.push(observe_dependency(
+            runtime, snapshot, layout, dependency, facts,
+        )?);
+        check_request_live(observation_request, "workflow evidence dependency")?;
     }
     Ok(observed)
 }
@@ -236,7 +229,7 @@ fn observe_dependency(
                 direction,
                 native_revision: native_revision.map(VersionId),
                 comparison_work_limit,
-                endpoints: Vec::new(),
+                endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
             })
         }
         _ => Err(denial("workflow evidence dependency shape is invalid")),
@@ -355,11 +348,4 @@ fn optional_value(
 fn narrow_u32(value: u64) -> Result<u32, WorthQueryApplicationAttemptDenial> {
     u32::try_from(value)
         .map_err(|_| denial("workflow evidence dependency entity coordinate is invalid"))
-}
-
-fn budget_denial() -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(
-        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-        "workflow assessment evidence dependency fact budget",
-    )
 }

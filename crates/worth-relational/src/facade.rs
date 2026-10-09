@@ -73,10 +73,14 @@ pub mod durability {
         RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
         RecoveryCursor, RecoveryFailureClass, RecoveryIntegrityReport, RecoveryPlan,
         RecoveryVerificationMode, RecoveryVerificationOutcome, RecoveryVerificationPlan,
-        RelationIntegrityContractFamily, RelationalNativeCheckpoint, SegmentRetentionClass,
+        RelationIntegrityContractFamily, RelationalNativeCheckpoint,
+        RelationalNativeCheckpointCaptureDenial, SegmentRetentionClass,
     };
     pub use crate::durability::{
-        RecoveredRelationalBranchBasis, RecoveredRelationalRuntimeAuthority,
+        DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
+        RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
+        RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
+        RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
     };
 }
 

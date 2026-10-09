@@ -26,11 +26,16 @@ use crate::domain_computation::{
 pub(super) fn commit_prepared_session(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    super::application_attempt_state::commit_prepared_application(provider, session)
+    super::application_attempt_state::commit_prepared_application(
+        provider,
+        session,
+        allocation_policy,
+    )
 }
 
 pub(super) fn provider_failure(

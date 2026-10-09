@@ -1,10 +1,9 @@
-//! Seeds obey the unique law: one installation writes each value of a unique
-//! field at most once. Seeds land only in a fresh graph: Relational refuses
-//! initial schema installation once its runtime has committed, and a
-//! recovered graph never seeds (asserted below). A fresh graph holds only
-//! Query's program activation, which writes no application field, and this
-//! installation's own seeds, which are tracked here, so the values already
-//! admitted are the whole lookup.
+//! Fresh unique-field seeds admit each value at most once. The fresh graph
+//! holds only program activation and this installation's seeds, so the values
+//! already admitted are the whole lookup. Non-unique migration writes do not
+//! use this inventory. The checkpoint_transition/authoring.rs migration writer
+//! calls typed_bootstrap.rs::bind_entity while publication.rs::prepare_transition
+//! still holds recovered authority; its non-unique rows bypass fresh seeding.
 
 use worth_foundational::facade::{
     prepare_aspect_value_identity_basis, AspectFieldLocator, AspectValue,
@@ -38,16 +37,16 @@ where
         &mut self,
         writes: impl IntoIterator<Item = (KindId, &'row AspectFieldLocator, &'row AspectValue)>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        assert!(
-            self.recovered_relational_authority.is_none(),
-            "seeds land only in a fresh graph; a recovered graph never seeds"
-        );
         let unique = self.graph.layout.unique_fields();
         let mut admitted = Vec::new();
         for (kind, locator, value) in writes {
             if unique.index(kind, locator).is_none() {
                 continue;
             }
+            assert!(
+                self.recovered_relational_authority.is_none(),
+                "unique seed values require a fresh graph"
+            );
             let seed = (
                 kind,
                 locator.clone(),

@@ -165,7 +165,7 @@ impl StrategyInvariantSuite {
 
     fn declare_result(declaration: StrategyDeclaration) -> Result<Self, StrategyDenial> {
         match declaration.family() {
-            LayoutStrategyFamily::BaselineBTreeRange => Ok(Self {
+            LayoutStrategyFamily::BTreeRange => Ok(Self {
                 declaration,
                 lookup: StrategyLookupInvariant::SeparatorDirectedLookup,
                 publication: StrategyPublicationInvariant::RootPublication,

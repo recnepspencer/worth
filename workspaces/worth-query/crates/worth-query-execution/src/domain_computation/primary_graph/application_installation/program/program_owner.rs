@@ -103,6 +103,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         extend: impl FnOnce(
             WorthQueryApplicationIdempotencyBinding,
         ) -> WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Self: Sized,
@@ -115,6 +116,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             program,
             ApplicationCommitCausality::Ordinary,
             extend(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),
+            allocation_policy,
         )
     }
 
@@ -144,6 +146,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             program,
             ApplicationCommitCausality::undo(handoff),
             extend(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
@@ -173,6 +176,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             program,
             ApplicationCommitCausality::redo(handoff),
             extend(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
@@ -190,6 +194,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         extend: impl FnOnce(
             WorthQueryApplicationIdempotencyBinding,
         ) -> WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationRetainedCommitOutcome
     where
         Self: Sized,
@@ -201,6 +206,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             self,
             program,
             extend(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities)),
+            allocation_policy,
         )
     }
 }

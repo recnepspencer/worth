@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod allocation;
 #[cfg(any(test, feature = "certification-test-authority"))]
 mod custody;
 #[cfg(test)]
@@ -13,8 +11,6 @@ mod physical;
 #[cfg(test)]
 mod streaming;
 
-#[cfg(test)]
-pub(crate) use allocation::*;
 #[cfg(any(test, feature = "certification-test-authority"))]
 pub(crate) use custody::*;
 #[cfg(test)]

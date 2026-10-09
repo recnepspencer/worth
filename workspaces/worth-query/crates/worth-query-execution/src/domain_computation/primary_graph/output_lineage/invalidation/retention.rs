@@ -2,10 +2,6 @@
 //! of a branch are persistent: each shares with its predecessor every node
 //! its own edits did not copy. A version reserves what its edits copied, and
 //! the root reserves what its oldest version shares with versions that left.
-//!
-//! Reservations are released by custody ending, never by a promised install.
-//! A source publication that cannot retain its replacement evicts the index
-//! through its pre-admitted empty image; source authority keeps progressing.
 
 use std::sync::Arc;
 
@@ -18,15 +14,16 @@ use crate::domain_computation::execution_runtime::source_invalidation::{
 
 use super::super::RecordedSettlementIdentity;
 use super::admission::IndexAdmission;
+use super::edit_admission::RetainedIndexCheckpoint;
 use super::fact_key::FactPostingKey;
-use super::index_capacity::{arc_bytes, retained_map_bytes};
+use super::index_capacity::{arc_bytes, retained_forest_bytes, retained_map_bytes};
 use super::mark_state::{EqualOutputLink, FactPosting, MarkState, SettlementMarks};
 use super::source_alignment::{BranchMarkRoot, HistoricalMarkState};
 use super::InvalidationEditAdmission;
-use worth_relational::facade::publication::PatchStreamPosition;
 
 type Capacity = Option<Arc<RetainedInvalidationCapacity>>;
 
+#[track_caller]
 pub(super) fn reserve(
     resources: &WorthQueryInvalidationResources,
     bytes: u64,
@@ -52,21 +49,35 @@ pub(super) fn reserve(
             },
             _ => unreachable!("installed resources have positive capacities"),
         })?;
-    Ok(Arc::new(capacity))
+    let capacity = Arc::new(capacity);
+    #[cfg(any(test, feature = "test-query-execution-observer"))]
+    capacity.observe_custody(std::panic::Location::caller());
+    Ok(capacity)
 }
 
 /// One version's whole index, as if it shared no node. No inventory
 /// traversal: logical cardinalities are changed with their selected
 /// posting/mark edits.
 pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
+    let rows = state.settlements.len();
+    let postings = state.posting_count;
     arc_bytes::<MarkState>()?
         .checked_add(state.key_payload_bytes)?
         .checked_add(state.settlement_key_payload_bytes)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+        // A whole-index quote includes one live basis allocation per row.
+        // Its actual ticket remains separately owned by that allocation.
+        .checked_add(
             state
-                .downstream_edge_count
-                .checked_add(state.settlements.len())?,
-        )?)?
+                .maximum_basis_allocation_bytes
+                .checked_mul(rows as u64)?,
+        )?
+        // Each row owns a consumed_upstream set, even when empty.
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.downstream_edge_count,
+                rows,
+            )?,
+        )?
         .checked_add(retained_map_bytes::<
             Arc<RecordedSettlementIdentity>,
             Arc<EqualOutputLink>,
@@ -84,19 +95,20 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
             )?,
         )?
         .checked_add(
-            retained_map_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(
-                state.posting_count.checked_add(state.settlements.len())?,
-            )?,
+            // One posting_ordinals map per row; each distinct key has at
+            // least one ordinal, so posting_count bounds their total keys.
+            retained_forest_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(postings, rows)?,
         )?
-        .checked_add(retained_map_bytes::<usize, ()>(
-            state.posting_count.checked_add(state.settlements.len())?,
-        )?)?
+        // Each row/key pair owns its own ordinal set. Their root count is
+        // at most posting_count; combining them into one tree undercounts.
+        .checked_add(retained_forest_bytes::<usize, ()>(postings, postings)?)?
         .checked_add(retained_map_bytes::<
             Arc<FactPostingKey>,
             im::OrdSet<FactPosting>,
         >(state.postings.len())?)?
-        .checked_add(retained_map_bytes::<FactPosting, ()>(
-            state.posting_count.checked_add(state.postings.len())?,
+        .checked_add(retained_forest_bytes::<FactPosting, ()>(
+            postings,
+            state.postings.len(),
         )?)?
         .checked_add(retained_map_bytes::<
             Arc<RecordedSettlementIdentity>,
@@ -106,21 +118,22 @@ pub(super) fn state_bound(state: &MarkState) -> Option<u64> {
             Arc<RecordedSettlementIdentity>,
             im::OrdSet<Arc<RecordedSettlementIdentity>>,
         >(state.downstream.len())?)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .downstream_edge_count
-                .checked_add(state.downstream.len())?,
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.downstream_edge_count,
+                state.downstream.len(),
+            )?,
+        )?
+        .checked_add(retained_forest_bytes::<usize, ()>(
+            state.dirty_ordinal_count,
+            rows,
         )?)?
-        .checked_add(retained_map_bytes::<usize, ()>(
-            state
-                .dirty_ordinal_count
-                .checked_add(state.settlements.len())?,
-        )?)?
-        .checked_add(retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(
-            state
-                .pending_edge_count
-                .checked_add(state.settlements.len())?,
-        )?)?
+        .checked_add(
+            retained_forest_bytes::<Arc<RecordedSettlementIdentity>, ()>(
+                state.pending_edge_count,
+                rows,
+            )?,
+        )?
         .checked_add(arc_bytes::<SettlementMarks>()?.checked_mul(state.settlements.len() as u64)?)
 }
 
@@ -161,11 +174,11 @@ pub(super) fn admit_version(
 
 /// Admits `state` as the live version that replaces the root's at its source
 /// position, and the root that holds it, while predecessor custody remains.
-/// `before` is the admission's byte total when the edit of `state` began.
+/// `before` is the retained-index checkpoint when the edit of `state` began.
 pub(super) fn admit_live_replacement(
     replaced: &BranchMarkRoot,
     mut state: MarkState,
-    before: u64,
+    before: RetainedIndexCheckpoint,
     resources: &WorthQueryInvalidationResources,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<BranchMarkRoot, CompanionPreflightStop> {
@@ -190,15 +203,17 @@ pub(super) fn reserve_live_image(
 }
 
 /// Admits a version that replaces the live one at its source position, so
-/// what the replaced version copied lives on in it.
-fn admit_replacement(
+/// what the replaced version copied lives on in it. `before` is the
+/// admission's retained-index subtotal when the edit began. Preparation scratch
+/// and allocations that have separate tickets are not copied index storage.
+pub(super) fn admit_replacement(
     state: &mut MarkState,
-    before: u64,
+    before: RetainedIndexCheckpoint,
     resources: &WorthQueryInvalidationResources,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     let overflow = CompanionPreflightStop::PreparationMemoryCounterOverflow;
-    let copied = admission.charged_bytes().saturating_sub(before);
+    let copied = admission.index_bytes_since(before)?;
     // The clone still carries the reservation of the version it replaces.
     let own = reserved(&state.retained_capacity)
         .and_then(|replaced| replaced.checked_add(copied))
@@ -215,16 +230,32 @@ fn admit(
 ) -> Result<(), CompanionPreflightStop> {
     let whole =
         state_bound(state).ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    let own = own.min(whole);
-    state.retained_capacity = Some(reserve(resources, own, admission)?);
+    state.retained_capacity = Some(reserve(resources, own.min(whole), admission)?);
     Ok(())
 }
 
-/// A root owns its retained positions, and what its oldest version shares
+/// Reserve a newly edited history map beside every pinned predecessor. Edited
+/// maps keep the conservative whole-map bound; unchanged replacements retain
+/// their existing allocation owner's ticket instead.
+pub(super) fn admit_edited_history(
+    root: &mut BranchMarkRoot,
+    resources: &WorthQueryInvalidationResources,
+    admission: &mut impl IndexAdmission,
+) -> Result<(), CompanionPreflightStop> {
+    use worth_relational::facade::publication::PatchStreamPosition;
+    let bytes =
+        retained_map_bytes::<Option<PatchStreamPosition>, HistoricalMarkState>(root.past.len())
+            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+    root.history_capacity = Some(reserve(resources, bytes, admission)?);
+    Ok(())
+}
+
+/// A root owns its object, and what its oldest version shares
 /// with versions that have left. `left` is the version leaving with this
 /// root: its successor still shares what it had reserved, and with its own
-/// reservation never needs more than its whole index. The edit
-/// retains both reservations until predecessor custody actually ends.
+/// reservation never needs more than its whole index. Its history ticket is
+/// shared with unchanged replacements; the delivery owner separately admits
+/// every insertion/removal before calling this function.
 pub(super) fn admit_root(
     root: &mut BranchMarkRoot,
     left: Option<&MarkState>,
@@ -232,14 +263,11 @@ pub(super) fn admit_root(
     admission: &mut impl IndexAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     let bytes = arc_bytes::<BranchMarkRoot>()
-        .and_then(|n| {
-            n.checked_add(retained_map_bytes::<
-                Option<PatchStreamPosition>,
-                HistoricalMarkState,
-            >(root.past.len())?)
-        })
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     root.retained_capacity = Some(reserve(resources, bytes, admission)?);
+    if root.history_capacity.is_none() {
+        admit_edited_history(root, resources, admission)?;
+    }
     let overflow = CompanionPreflightStop::PreparationMemoryCounterOverflow;
     let oldest = root
         .past
@@ -263,3 +291,6 @@ pub(super) fn admit_root(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod budget_tests;

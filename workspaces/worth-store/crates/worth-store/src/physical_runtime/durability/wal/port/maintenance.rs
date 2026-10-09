@@ -12,8 +12,15 @@ use crate::physical_runtime::{
     PhysicalWorkScheduler, PhysicalWorkSettlementEvidence,
 };
 
+#[path = "maintenance/barrier_command.rs"]
+mod barrier_command;
+use barrier_command::prepare_wal_barrier_command;
+
 pub(in crate::physical_runtime) enum ScheduledMaintenanceDenial {
     NotStarted(PhysicalWalAppendFailureCause),
+    WrittenAwaitingBarrier {
+        interval: (u64, u64, u64, u64, u64, u64),
+    },
     Write,
     Sync,
     Finish,
@@ -29,12 +36,26 @@ impl PhysicalWalAppendPort {
         &self,
         payload: &[u8],
     ) -> Result<(), ScheduledMaintenanceDenial> {
+        self.append_scheduled_maintenance_receipt(payload)
+            .map(|_| ())
+    }
+
+    pub(in crate::physical_runtime) fn append_scheduled_maintenance_receipt(
+        &self,
+        payload: &[u8],
+    ) -> Result<super::DurableMaintenanceReceipt, ScheduledMaintenanceDenial> {
+        let payload_digest = Sha256::digest(payload).into();
         if self.owner.maintenance_awaiting_barrier() {
+            if !self.owner.maintenance_payload_matches(payload_digest) {
+                return Err(ScheduledMaintenanceDenial::NotStarted(
+                    PhysicalWalAppendFailureCause::RuntimeReleased,
+                ));
+            }
             let Some(artifact) = self.owner.planned_maintenance_artifact() else {
                 self.abort_maintenance_frame();
                 return Err(ScheduledMaintenanceDenial::Sync);
             };
-            return self.finish_written_maintenance(&artifact);
+            return self.finish_written_maintenance(&artifact, payload_digest);
         }
         let (artifact, segment, generation, offset, bytes) = self
             .plan_maintenance_frame(payload)
@@ -45,6 +66,17 @@ impl PhysicalWalAppendPort {
             PhysicalWalFrameWriteDisposition::CreateSegment
         } else {
             PhysicalWalFrameWriteDisposition::AppendExistingSegment
+        };
+        let charged_bytes = bytes.len() as u64;
+        let Some(charge) = self
+            .publication
+            .get()
+            .and_then(|owner| owner.reserve_retained_bytes(bytes.len() as u64).ok())
+        else {
+            self.abort_maintenance_frame();
+            return Err(ScheduledMaintenanceDenial::NotStarted(
+                PhysicalWalAppendFailureCause::RuntimeReleased,
+            ));
         };
         let Some(scope) = PhysicalWalAppendScope::new(
             segment,
@@ -68,12 +100,23 @@ impl PhysicalWalAppendPort {
         let settled = match self.execution.execute_physical_work(command) {
             Ok(outcome) => outcome.into_settled(),
             Err(_) => {
+                // A missing settlement cannot prove that no byte escaped.
+                // Keep this exact WAL charge until recovery resolves the tail.
+                charge.seal();
+                self.owner
+                    .note_sealed_publication(segment, generation, charged_bytes);
                 self.abort_maintenance_frame();
                 return Err(ScheduledMaintenanceDenial::Write);
             }
         };
+        let evidence = settled.into_evidence();
+        if evidence.fate() != crate::physical_runtime::PhysicalWorkEffectFate::ProvenNoEffect {
+            charge.seal();
+            self.owner
+                .note_sealed_publication(segment, generation, charged_bytes);
+        }
         let wrote = matches!(
-            settled.into_evidence(),
+            evidence,
             PhysicalWorkSettlementEvidence::WalAppend {
                 scheduler: QueueExecutionOutcome::Executed(_),
                 ..
@@ -87,21 +130,36 @@ impl PhysicalWalAppendPort {
             return Err(ScheduledMaintenanceDenial::Write);
         }
         self.owner.note_maintenance_written();
-        self.finish_written_maintenance(&artifact)
+        self.finish_written_maintenance(&artifact, payload_digest)
     }
 
     fn finish_written_maintenance(
         &self,
         artifact: &ArtifactTreeFile,
-    ) -> Result<(), ScheduledMaintenanceDenial> {
+        payload_digest: [u8; 32],
+    ) -> Result<super::DurableMaintenanceReceipt, ScheduledMaintenanceDenial> {
+        let interval = self
+            .owner
+            .planned_maintenance_interval()
+            .ok_or(ScheduledMaintenanceDenial::Finish)?;
         match synchronize_scheduled_maintenance(self, artifact) {
-            Ok(()) => self
-                .finish_maintenance_frame()
-                .map_err(|()| ScheduledMaintenanceDenial::Finish),
-            Err(MaintenanceBarrierDenial::Waiting(denial)) => {
-                Err(ScheduledMaintenanceDenial::NotStarted(
-                    PhysicalWalAppendFailureCause::Scheduler(denial),
+            Ok(synchronization) => {
+                let frame_digests = self.owner.planned_maintenance_frame_digests(payload_digest);
+                if frame_digests.is_none() {
+                    return Err(ScheduledMaintenanceDenial::Finish);
+                }
+                self.finish_maintenance_frame()
+                    .map_err(|()| ScheduledMaintenanceDenial::Finish)?;
+                Ok(super::DurableMaintenanceReceipt::completed(
+                    payload_digest,
+                    interval,
+                    #[cfg(feature = "certification-test-authority")]
+                    frame_digests,
+                    synchronization,
                 ))
+            }
+            Err(MaintenanceBarrierDenial::Waiting) => {
+                Err(ScheduledMaintenanceDenial::WrittenAwaitingBarrier { interval })
             }
             Err(MaintenanceBarrierDenial::Failed) => {
                 self.abort_maintenance_frame();
@@ -193,19 +251,27 @@ pub(super) fn prepare_wal_frame_command(
         .map_err(PhysicalWalAppendFailureCause::Command)
 }
 
-enum MaintenanceBarrierDenial {
-    Waiting(PhysicalSchedulerDenial),
+pub(super) enum MaintenanceBarrierDenial {
+    Waiting,
     Failed,
 }
 
 fn synchronize_scheduled_maintenance(
     port: &PhysicalWalAppendPort,
     artifact: &ArtifactTreeFile,
-) -> Result<(), MaintenanceBarrierDenial> {
+) -> Result<crate::physical_runtime::CompletedPhysicalWalBarrier, MaintenanceBarrierDenial> {
     let interval = port
         .owner
         .planned_maintenance_interval()
         .ok_or(MaintenanceBarrierDenial::Failed)?;
+    synchronize_maintenance_interval(port, artifact, interval)
+}
+
+pub(super) fn synchronize_maintenance_interval(
+    port: &PhysicalWalAppendPort,
+    artifact: &ArtifactTreeFile,
+    interval: (u64, u64, u64, u64, u64, u64),
+) -> Result<crate::physical_runtime::CompletedPhysicalWalBarrier, MaintenanceBarrierDenial> {
     let scope = PhysicalWalBarrierScope::new(
         maintenance_barrier_identity(b"group", interval),
         maintenance_barrier_identity(b"member", interval),
@@ -224,112 +290,13 @@ fn synchronize_scheduled_maintenance(
         .execute_physical_work(command)
         .map_err(|_| MaintenanceBarrierDenial::Failed)?
         .into_settled();
-    matches!(
-        settled.into_evidence(),
+    match settled.into_evidence() {
         PhysicalWorkSettlementEvidence::WalBarrier {
+            physical,
             scheduler: QueueExecutionOutcome::Executed(_),
-            ..
-        }
-    )
-    .then_some(())
-    .ok_or(MaintenanceBarrierDenial::Failed)
-}
-
-fn prepare_wal_barrier_command(
-    port: &PhysicalWalAppendPort,
-    artifact: ArtifactTreeFile,
-    scope: PhysicalWalBarrierScope,
-) -> Result<PhysicalExecutorCommand, MaintenanceBarrierDenial> {
-    let runtime = port
-        .runtime
-        .upgrade()
-        .ok_or(MaintenanceBarrierDenial::Failed)?;
-    let request = PhysicalMutationWorkRequest::wal_durability_barrier(
-        scope,
-        port.record.wal_barrier_basis(),
-        port.record.security(),
-    )
-    .map_err(|_| MaintenanceBarrierDenial::Failed)?;
-    let receipt = match runtime
-        .submission
-        .mutation_submission()
-        .submit(request)
-        .into_raw()
-    {
-        TransitionOutcome::Success(receipt) => receipt,
-        TransitionOutcome::Denied(_)
-        | TransitionOutcome::Deferred(_)
-        | TransitionOutcome::Stale(_)
-        | TransitionOutcome::Failed(_) => return Err(MaintenanceBarrierDenial::Failed),
-        TransitionOutcome::RebindRequired(rebind) => match rebind {},
-    };
-    let admitted = PhysicalWorkAdmission::admit(
-        &runtime.submission,
-        receipt,
-        &port.physical,
-        &runtime.health,
-    )
-    .map_err(|_| MaintenanceBarrierDenial::Failed)?;
-    let ready = match runtime
-        .signal
-        .request(admitted)
-        .map_err(|_| MaintenanceBarrierDenial::Failed)?
-    {
-        PhysicalWorkReadiness::Ready(ready) => ready,
-        PhysicalWorkReadiness::Blocked(_) => return Err(MaintenanceBarrierDenial::Failed),
-    };
-    #[cfg(feature = "certification-test-authority")]
-    if port
-        .owe_before_maintenance_barrier
-        .swap(false, std::sync::atomic::Ordering::Relaxed)
-    {
-        port.scheduler.certification_owe_background_turn();
+        } => Ok(physical),
+        _ => Err(MaintenanceBarrierDenial::Failed),
     }
-    let (reservation, backend) = port
-        .scheduler
-        .wal_durability_barrier(port.record.scheduler_security())
-        .map_err(|denial| match denial {
-            RecordSchedulerReservationDenial::OwedBackgroundTurn => {
-                MaintenanceBarrierDenial::Waiting(PhysicalSchedulerDenial::OwedBackgroundTurn)
-            }
-            RecordSchedulerReservationDenial::Admission(_) => MaintenanceBarrierDenial::Failed,
-        })?;
-    let demand = PhysicalSchedulerDemand::foreground(ready, reservation, None).map_err(
-        |denial| match denial {
-            PhysicalSchedulerDenial::OwedBackgroundTurn
-            | PhysicalSchedulerDenial::EffectConflict
-            | PhysicalSchedulerDenial::EffectSlotsExhausted => {
-                MaintenanceBarrierDenial::Waiting(denial)
-            }
-            _ => MaintenanceBarrierDenial::Failed,
-        },
-    )?;
-    PhysicalWorkAdmission::require_current(&runtime.submission, demand.intent(), &runtime.health)
-        .map_err(|_| MaintenanceBarrierDenial::Failed)?;
-    let policy =
-        crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-    let work = PhysicalWorkScheduler::admit(port.scheduler.effects(), demand, &backend, policy)
-        .map_err(|denial| match denial {
-            PhysicalSchedulerDenial::OwedBackgroundTurn
-            | PhysicalSchedulerDenial::EffectConflict
-            | PhysicalSchedulerDenial::EffectSlotsExhausted => {
-                MaintenanceBarrierDenial::Waiting(denial)
-            }
-            _ => MaintenanceBarrierDenial::Failed,
-        })?;
-    let binding = maintenance_barrier_identity(
-        b"binding",
-        (
-            scope.segment(),
-            scope.generation(),
-            scope.lsn_start(),
-            scope.lsn_end_exclusive(),
-            scope.append_offset(),
-            scope.append_byte_count(),
-        ),
-    );
-    PhysicalExecutorCommand::wal_barrier(work, artifact, binding)
-        .map_err(|_| MaintenanceBarrierDenial::Failed)
 }
 
 fn maintenance_barrier_identity(

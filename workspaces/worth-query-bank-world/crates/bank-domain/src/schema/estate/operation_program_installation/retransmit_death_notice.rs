@@ -11,7 +11,6 @@ pub(super) fn install(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let operation = RetransmitDeathNoticeEstateOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 7)
         .operation_projection_work_budget(operation, 48)
         .operation_read_field(operation, DeathNoticeIdentityField::reference())
         .operation_read_field(operation, DeathNoticeStatusField::reference())

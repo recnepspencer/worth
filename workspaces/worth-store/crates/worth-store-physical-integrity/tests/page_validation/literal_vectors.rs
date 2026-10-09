@@ -10,18 +10,18 @@ fn independent_literal_page_vectors_cover_each_declared_size() {
     let vectors = [
         (
             PhysicalPageSizeClass::KiB16,
-            [1, 0, 0, 64, 0, 0, 1, 1, 1, 24],
-            0xecf1_54f9_u32,
+            [2, 0, 0, 64, 0, 0, 1, 1, 1, 24],
+            0x6363_1ebf_u32,
         ),
         (
             PhysicalPageSizeClass::KiB32,
-            [1, 0, 0, 128, 0, 0, 1, 1, 1, 24],
-            0xae22_45ae_u32,
+            [2, 0, 0, 128, 0, 0, 1, 1, 1, 24],
+            0x8018_e3f4_u32,
         ),
         (
             PhysicalPageSizeClass::KiB64,
-            [1, 0, 0, 0, 1, 0, 1, 1, 1, 24],
-            0x7d1b_576a_u32,
+            [2, 0, 0, 0, 1, 0, 1, 1, 1, 24],
+            0x290f_03a0_u32,
         ),
     ];
     for (page_size, format_bytes, expected_checksum) in vectors {

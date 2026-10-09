@@ -1,0 +1,15 @@
+error[E0382]: use of moved value: `core`
+ --> tests/recovered_custody_authority/recovered_core_cannot_issue_two_seals.rs:5:19
+  |
+3 | fn duplicate(core: RecoveredPhysicalRuntimeCore) {
+  |              ---- move occurs because `core` has type `RecoveredPhysicalRuntimeCore`, which does not implement the `Copy` trait
+4 |     let _first = core.into_checkpoint_custody();
+  |                       ------------------------- `core` moved due to this method call
+5 |     let _second = core.into_checkpoint_custody();
+  |                   ^^^^ value used here after move
+  |
+note: `RecoveredPhysicalRuntimeCore::into_checkpoint_custody` takes ownership of the receiver `self`, which moves `core`
+ --> src/physical_runtime/recovery_construction/handoff.rs
+  |
+  |         self,
+  |         ^^^^

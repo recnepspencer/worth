@@ -210,9 +210,15 @@ fn commit<const N: usize>(
             intents
                 .into_iter()
                 .fold(WorkerIntentBatch::new(name), WorkerIntentBatch::push),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction.commit(runtime).expect("fixture truth commits")
+    transaction
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("fixture truth commits")
 }
 
 struct ObservedAxes {

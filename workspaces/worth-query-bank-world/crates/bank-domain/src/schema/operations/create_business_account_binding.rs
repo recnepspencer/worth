@@ -85,5 +85,5 @@ worth_query_mutation_binding!(
     field InstitutionIdentityField::reference(),
     value institution_scope,
     candidates creates 1, deletes 0, links 2, unlinks 0, writes 5, emits 0,
-    resources retained_representation_bytes 8192, validator_work 16
+    resources retained_representation_bytes 8192
 );

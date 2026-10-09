@@ -1,3 +1,6 @@
+#[path = "fixture/optional_work_resources.rs"]
+mod optional_work_resources;
+
 use std::num::NonZeroU32;
 
 use worth_foundational::facade::{
@@ -23,8 +26,21 @@ impl WorthQueryOnDemandTriggerFamily for ArchiveTrigger {
     const PORTABLE_IDENTITY: &'static str = "worth.archive.trigger";
 }
 
-pub(super) fn operation_package() -> WorthQueryValidatedPortableDomainPackage {
+pub(in super::super) fn operation_package() -> WorthQueryValidatedPortableDomainPackage {
     package("archive.operation", operation())
+}
+
+pub(in super::super) fn operation_package_without_work_budget(
+) -> WorthQueryValidatedPortableDomainPackage {
+    let resources = optional_work_resources::resources();
+    package(
+        "archive.operation",
+        operation_with_query_collection_resources(
+            canonical_query(),
+            WorthQueryOperationCollectionContract::NotCollection,
+            resources,
+        ),
+    )
 }
 
 pub(super) fn collection_operation_package() -> WorthQueryValidatedPortableDomainPackage {
@@ -55,6 +71,14 @@ fn collection_operation() -> WorthQueryPortableDomainOperationDefinition {
 fn operation_with_query_and_collection(
     canonical_query: worth_query_declaration::facade::canonicalization::CanonicalQueryBundle,
     collection: WorthQueryOperationCollectionContract,
+) -> WorthQueryPortableDomainOperationDefinition {
+    operation_with_query_collection_resources(canonical_query, collection, resource_contract())
+}
+
+fn operation_with_query_collection_resources(
+    canonical_query: worth_query_declaration::facade::canonicalization::CanonicalQueryBundle,
+    collection: WorthQueryOperationCollectionContract,
+    resources: WorthQueryExecutionResourceContract,
 ) -> WorthQueryPortableDomainOperationDefinition {
     let native_projection = native_projection();
     let graph_reads = WorthQueryOperationGraphReadContract::DeclaredDomain {
@@ -142,7 +166,7 @@ fn operation_with_query_and_collection(
             execution: WorthQueryOperationCostClass::DeclaredWidth,
             result_width: WorthQueryOperationCostClass::Constant,
         },
-        resources: resource_contract(),
+        resources,
         support: support(),
         lowering: WorthQueryOperationLoweringContract {
             family: "worth.archive.ledger-balance".into(),

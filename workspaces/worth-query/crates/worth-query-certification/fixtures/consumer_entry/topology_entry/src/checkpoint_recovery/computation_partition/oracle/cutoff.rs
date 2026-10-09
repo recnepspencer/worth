@@ -59,7 +59,10 @@ fn managed_partitioned_execution_prevents_cutoff_and_keeps_incremental_reuse() {
         })
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&9001_u64)
-        .execute_performed::<OracleProgram<true>, OracleRoot>(&application)
+        .execute_performed::<OracleProgram<true>, OracleRoot>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let (posture, runs) = settle(&request, &application);
     assert_eq!(posture, WorthQueryOutputSettlementPosture::Performed);
@@ -83,7 +86,10 @@ fn managed_partitioned_execution_prevents_cutoff_and_keeps_incremental_reuse() {
         .mutate(EntryEdit::new("odd", 0, EntryFact::Value, 2.5_f64.to_bits()).commanded(9002))
         .without_source()
         .idempotency(&9002_u64)
-        .execute_in_program::<OracleProgram<true>>(&application)
+        .execute_in_program::<OracleProgram<true>>(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let (_, runs) = settle(&request, &application);
     assert_eq!(runs.len(), 1);

@@ -16,8 +16,9 @@ impl RelationalPreparationRuntime {
     pub fn validate_branch_transaction(
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.validate_branch_transaction_source(transaction, None, None, None)
+        self.validate_branch_transaction_source(transaction, None, None, None, allocation_policy)
     }
 
     pub fn validate_branch_transaction_with_lease(
@@ -26,7 +27,14 @@ impl RelationalPreparationRuntime {
         lease: &worth_execution::ExecutionResourceLease<'_>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.with_commit_work_budget()
-            .validate_branch_transaction_source(transaction, None, None, Some(lease))
+            .validate_branch_transaction_source(
+                transaction,
+                None,
+                None,
+                Some(lease),
+                worth_execution::ExecutionAllocationPolicy::Execution(lease),
+            )
+            .map_err(crate::execution::allocation_commit_error)
     }
 
     pub(crate) fn validate_lowered_strategy_proposal(
@@ -41,6 +49,7 @@ impl RelationalPreparationRuntime {
             Some((selected_branch_state, merged_plan)),
             Some(strategy),
             None,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
@@ -53,6 +62,7 @@ impl RelationalPreparationRuntime {
         )>,
         strategy: Option<StrategyProposalDecoration>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         require_not_interrupted(
             &transaction.control,
@@ -86,7 +96,7 @@ impl RelationalPreparationRuntime {
                 selected_branch_state,
                 merged_plan,
             ),
-            None => prepare_working_state_scope(self, &mut transaction)?,
+            None => prepare_working_state_scope(self, &mut transaction, allocation_policy)?,
         };
         require_not_interrupted(
             &transaction.control,
@@ -199,9 +209,10 @@ impl RelationalRuntime {
     pub fn validate_branch_transaction(
         &self,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.preparation_runtime_snapshot()
-            .validate_branch_transaction(transaction)
+            .validate_branch_transaction(transaction, allocation_policy)
     }
 
     pub fn validate_branch_transaction_with_lease(

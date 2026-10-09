@@ -81,6 +81,9 @@ pub(in crate::http::server) async fn receive(
                     | WorthQueryInboundAdmissionDenial::PublicationRetryRequired
                     | WorthQueryInboundAdmissionDenial::PublicationExecutionDenied { .. }
                     | WorthQueryInboundAdmissionDenial::PublicationExecutionControlStopped { .. }
+                    | WorthQueryInboundAdmissionDenial::PublicationAllocationDenied { .. }
+                    | WorthQueryInboundAdmissionDenial::PublicationStagingCardinalityOverflow
+                    | WorthQueryInboundAdmissionDenial::PublicationInputDirectoryAllocationDenied { .. }
                     | WorthQueryInboundAdmissionDenial::RecoveryUnavailable
                     | WorthQueryInboundAdmissionDenial::RecoveryStaleProduct
                     | WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)
@@ -112,6 +115,9 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
         | Denial::PublicationRetryRequired
         | Denial::PublicationExecutionDenied { .. }
         | Denial::PublicationExecutionControlStopped { .. }
+        | Denial::PublicationAllocationDenied { .. }
+        | Denial::PublicationStagingCardinalityOverflow
+        | Denial::PublicationInputDirectoryAllocationDenied { .. }
         | Denial::RecoveryStaleProduct
         | Denial::RecoveryUnavailable
         | Denial::SourceRevoked => StatusCode::SERVICE_UNAVAILABLE,

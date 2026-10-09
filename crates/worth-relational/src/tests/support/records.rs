@@ -1,5 +1,6 @@
 use super::*;
 use crate::capabilities::AspectPlanSource;
+use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 pub(crate) fn batch_create(name: &str) -> WorkerIntentBatch {
     WorkerIntentBatch::new(format!("batch-{name}")).push(MutationIntent::Create(
@@ -76,9 +77,10 @@ pub(crate) fn create_entity_in_partition_on_branch(
                 fields,
             }),
         )),
+        Allocation::SystemAllocation,
     )
     .unwrap();
-    let outcome = txn.commit(runtime).unwrap();
+    let outcome = txn.commit(runtime, Allocation::SystemAllocation).unwrap();
     let entity = changed_entities(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     entity
@@ -107,8 +109,8 @@ pub(crate) fn create_entity_outcome_on_branch(
                 fields,
             },
         )));
-    txn.push_batch(batch).unwrap();
-    txn.commit(runtime).unwrap()
+    txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
+    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
 }
 
 pub(super) fn entity_fields_for_runtime(
@@ -149,9 +151,10 @@ pub(crate) fn delete_entity_on_branch(
         WorkerIntentBatch::new("delete").push(MutationIntent::Entity(
             EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
         )),
+        Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(runtime).unwrap()
+    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
 }
 
 pub(crate) fn delete_relation_on_branch(
@@ -165,9 +168,10 @@ pub(crate) fn delete_relation_on_branch(
         WorkerIntentBatch::new("delete-relation").push(MutationIntent::Relation(
             RelationMutationIntent::Delete(DeleteRelationIntent { relation_id }),
         )),
+        Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(runtime).unwrap()
+    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
 }
 
 pub(crate) fn update_entity(
@@ -210,10 +214,11 @@ pub(crate) fn try_update_entity_on_branch(
             WorkerIntentBatch::new("update").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
             )),
+            Allocation::SystemAllocation,
         )
         .unwrap();
     }
-    txn.commit(runtime)
+    txn.commit(runtime, Allocation::SystemAllocation)
 }
 
 pub(crate) fn create_relation(
@@ -291,9 +296,10 @@ pub(crate) fn create_relation_in_partition_on_branch(
                 fields,
             },
         ))),
+        Allocation::SystemAllocation,
     )
     .unwrap();
-    let outcome = txn.commit(runtime).unwrap();
+    let outcome = txn.commit(runtime, Allocation::SystemAllocation).unwrap();
     let relation = changed_relations(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     relation
@@ -318,9 +324,10 @@ pub(crate) fn create_relation_outcome(
                 fields,
             },
         ))),
+        Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(runtime).unwrap()
+    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
 }
 
 fn relation_fields_for_runtime(runtime: &RelationalRuntime, label: &str) -> AspectFieldPatch {
@@ -362,9 +369,9 @@ pub(crate) fn apply_batches(batches: Vec<WorkerIntentBatch>) -> RelationalRuntim
     let runtime = runtime_with_test_schema();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     for batch in batches {
-        txn.push_batch(batch).unwrap();
+        txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
     }
-    txn.commit(&runtime).unwrap();
+    txn.commit(&runtime, Allocation::SystemAllocation).unwrap();
     runtime
 }
 
@@ -385,5 +392,5 @@ pub(crate) fn merge_commit_from_branches(
         target_branch,
         merge_parent_branches,
     );
-    txn.commit(runtime).unwrap()
+    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
 }

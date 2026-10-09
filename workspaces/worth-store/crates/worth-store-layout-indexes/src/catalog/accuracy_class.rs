@@ -72,16 +72,6 @@ pub(crate) fn declare_derived_accuracy_class(
             | DurableArtifactFamilyId::SupportEmbeddedCheckpoint => {
                 DerivedAccuracyClass::Conservative
             }
-            DurableArtifactFamilyId::CompatibilitySnapshotRecord
-            | DurableArtifactFamilyId::CompatibilityDeltaRecord
-            | DurableArtifactFamilyId::CompatibilityLegacyLayoutBlockChunkRecord
-            | DurableArtifactFamilyId::CompatibilityLegacyBasisContinuationDescriptor
-            | DurableArtifactFamilyId::CompatibilityLegacyBulkRecord
-            | DurableArtifactFamilyId::CompatibilityLegacyRetentionRebuildRecord
-            | DurableArtifactFamilyId::CompatibilityLegacyMaintenanceRecord
-            | DurableArtifactFamilyId::CompatibilityLegacyTieringRecord => {
-                DerivedAccuracyClass::Approximate
-            }
             DurableArtifactFamilyId::MaintenanceSnapshot
             | DurableArtifactFamilyId::MaintenanceCompaction
             | DurableArtifactFamilyId::MaintenanceReclaim

@@ -101,6 +101,13 @@ pub enum BankRecoveryDenialKind {
         stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
         kind: worth_query_host::facade::installed::provider_session::WorthQueryProviderSessionControlStopKind,
     },
+    CompletionAllocationDenied {
+        stage: worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_query_host::facade::runtime::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    CompletionStagingCardinalityOverflow,
+    CompletionInputDirectoryAllocationDenied { requested_batches: usize },
     TerminalIndexUnavailable,
     DispatchOutboxMissing,
     TransportNotInstalled,
@@ -156,6 +163,21 @@ impl BankRecoveryDenial {
             }
             Query::CompletionExecutionControlStopped { stage, kind } => {
                 Bank::CompletionExecutionControlStopped { stage, kind }
+            }
+            Query::CompletionAllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            } => Bank::CompletionAllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            },
+            Query::CompletionStagingCardinalityOverflow => {
+                Bank::CompletionStagingCardinalityOverflow
+            }
+            Query::CompletionInputDirectoryAllocationDenied { requested_batches } => {
+                Bank::CompletionInputDirectoryAllocationDenied { requested_batches }
             }
             Query::TerminalIndexUnavailable => Bank::TerminalIndexUnavailable,
             Query::DispatchOutboxMissing => Bank::DispatchOutboxMissing,

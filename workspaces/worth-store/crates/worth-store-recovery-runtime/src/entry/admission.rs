@@ -1,6 +1,10 @@
 use crate::orchestration::RecoveryCoordination;
 use crate::progression::AdmittedPhysicalRecovery;
 
+#[cfg(test)]
+#[path = "admission/native_pool_tests.rs"]
+mod native_pool_tests;
+
 use super::{
     record_binding_comparison, record_binding_denial, AdmittedPlatformAdmission,
     PhysicalRecoveryOpenRequest, PhysicalRecoveryRefusal, PhysicalRecoveryRefusalKind,
@@ -33,20 +37,22 @@ pub(crate) fn admit_request(
     let AdmittedPlatformAdmission {
         authority: admitted,
         registered_session,
+        residency_policy,
     } = admitted;
     let mut admitted = admitted;
     let coordination = match RecoveryCoordination::fresh(
         &mut admitted.media,
         registered_session,
         admitted.limits,
+        residency_policy,
         yieldpoint,
     ) {
         Ok(coordination) => coordination,
-        Err(_) => {
+        Err(reason) => {
             let recovery_effects = admitted.media.recovery_effect_count();
             admitted.refuse();
             return Err(PhysicalRecoveryRefusal::new(
-                PhysicalRecoveryRefusalKind::CoordinationUnavailable,
+                PhysicalRecoveryRefusalKind::CoordinationAdmission(reason),
                 recovery_effects,
             ));
         }
@@ -125,6 +131,7 @@ mod tests {
             PhysicalRecoveryEntryBindingDrift::RootOwnership,
             PhysicalRecoveryEntryBindingDrift::BackendProfile,
             PhysicalRecoveryEntryBindingDrift::RecoveryLimits,
+            PhysicalRecoveryEntryBindingDrift::StaticConfiguration,
         ];
 
         for drift in drifts {
@@ -150,6 +157,13 @@ mod tests {
                 alternate_limits
             } else {
                 limits
+            };
+            let configuration = if drift == PhysicalRecoveryEntryBindingDrift::StaticConfiguration {
+                configuration
+                    .with_residency_policy(policy_with_larger_progress_headroom())
+                    .expect("headroom-only policy preserves the configured format")
+            } else {
+                configuration
             };
             let request = PhysicalRecoveryOpenRequest::declare(
                 request_root,
@@ -277,7 +291,7 @@ mod tests {
         }
     }
 
-    fn initialize_store(
+    pub(super) fn initialize_store(
         root: &Path,
     ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
         let runtime = PhysicalStore::admit(
@@ -296,7 +310,50 @@ mod tests {
         identity
     }
 
-    fn limits(scale: u64) -> PhysicalRecoveryLimits {
+    fn policy_with_larger_progress_headroom(
+    ) -> worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy {
+        use std::num::{NonZeroU32, NonZeroU64};
+        use worth_store::physical_runtime::{
+            AdmittedPhysicalRecordFormat, PhysicalOperationAllocationScope as Scope,
+            PhysicalRecordResidencyPolicy, PhysicalSpeculativeWorkKind as Speculation,
+        };
+        let format = AdmittedPhysicalRecordFormat::admit(
+            PhysicalRecoveryStaticConfiguration::current().record_format(),
+        );
+        let bytes = |value| NonZeroU64::new(value).unwrap();
+        let count = |value| NonZeroU32::new(value).unwrap();
+        let mut policy = PhysicalRecordResidencyPolicy::builder()
+            .total_bytes(bytes(384 << 20))
+            .resident_bytes(bytes(64 << 20))
+            .metadata_bytes(bytes(3 << 20))
+            .frame_entries(count(4096))
+            .pinned_frames(count(256))
+            .pin_leases(count(512))
+            .dirty_frames(count(64))
+            .dirty_replacement_bytes(bytes(64 << 20))
+            .operation_bytes(bytes(256 << 20))
+            .progress_headroom_bytes(128 << 10);
+        for scope in [
+            Scope::ForegroundRead,
+            Scope::ForegroundWrite,
+            Scope::Recovery,
+            Scope::Scrub,
+            Scope::Maintenance,
+            Scope::Verification,
+            Scope::Blob,
+        ] {
+            policy = policy.scope_bytes(scope, bytes(256 << 20));
+        }
+        policy
+            .speculative_frames(Speculation::Prefetch, count(256))
+            .speculative_frames(Speculation::ReadAhead, count(256))
+            .speculative_frames(Speculation::WriteBehind, count(64))
+            .admit(format)
+            .into_result()
+            .expect("headroom-only policy drift admits")
+    }
+
+    pub(super) fn limits(scale: u64) -> PhysicalRecoveryLimits {
         PhysicalRecoveryLimits::admit(PhysicalRecoveryLimitDeclaration {
             selector_candidates: 2,
             checkpoint_candidates: scale,

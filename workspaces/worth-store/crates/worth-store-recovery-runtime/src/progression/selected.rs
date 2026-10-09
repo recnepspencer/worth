@@ -1,25 +1,28 @@
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, PhysicalCheckpointIdentity,
 };
-use worth_store_recovery_physics::{PhysicalSourceSelection, SelectedPhysicalRootRole};
+use worth_store_recovery_physics::SelectedPhysicalRootRole;
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryOutcome, PhysicalRecoveryRefusal,
     PhysicalRecoveryRefusalKind, PhysicalRecoverySourceDenial,
 };
-use crate::orchestration::RecoveryCoordination;
+use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 
 use super::{PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence};
 
 pub struct SelectedPhysicalRecovery {
     authority: AdmittedPlatformAuthority,
     coordination: RecoveryCoordination,
-    selection: PhysicalSourceSelection,
+    selection: ResidentSourceSelection,
     integrity: RecoveryIntegrityEvidence,
     counters: PhysicalRecoveryDiscoveryCounters,
     root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
     integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
+
+#[cfg(all(test, feature = "certification-test-authority"))]
+mod freshness_sampling_tests;
 
 impl SelectedPhysicalRecovery {
     pub fn plan(self) -> Result<super::PlannedPhysicalRecovery, PhysicalRecoveryOutcome> {
@@ -29,7 +32,7 @@ impl SelectedPhysicalRecovery {
     pub(crate) const fn new(
         authority: AdmittedPlatformAuthority,
         coordination: RecoveryCoordination,
-        selection: PhysicalSourceSelection,
+        selection: ResidentSourceSelection,
         integrity: RecoveryIntegrityEvidence,
         counters: PhysicalRecoveryDiscoveryCounters,
         root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
@@ -52,6 +55,7 @@ impl SelectedPhysicalRecovery {
 
     pub const fn root_generation(&self) -> u64 {
         self.selection
+            .facts()
             .root()
             .selected()
             .selector()
@@ -59,7 +63,7 @@ impl SelectedPhysicalRecovery {
     }
 
     pub const fn root_role(&self) -> SelectedPhysicalRootRole {
-        self.selection.root().role()
+        self.selection.facts().root().role()
     }
 
     pub fn checkpoint_identity(&self) -> Option<PhysicalCheckpointIdentity> {
@@ -73,7 +77,10 @@ impl SelectedPhysicalRecovery {
     }
 
     pub const fn distinct_page_and_extent_count(&self) -> u64 {
-        self.selection.page_facts().distinct_pages_and_extents()
+        self.selection
+            .facts()
+            .page_facts()
+            .distinct_pages_and_extents()
     }
 
     pub fn wal_segment_count(&self) -> u64 {
@@ -81,7 +88,7 @@ impl SelectedPhysicalRecovery {
     }
 
     pub const fn wal_frame_count(&self) -> u64 {
-        self.selection.wal_tail().frame_count()
+        self.selection.facts().wal_tail().frame_count()
     }
 
     pub fn residue_count(&self) -> u64 {
@@ -89,7 +96,7 @@ impl SelectedPhysicalRecovery {
     }
 
     pub const fn source_trace(&self) -> worth_store_recovery_physics::PhysicalSourceSelectionTrace {
-        self.selection.trace()
+        self.selection.facts().trace()
     }
 
     pub fn compaction_generation(&self) -> Option<u64> {
@@ -150,7 +157,7 @@ impl SelectedPhysicalRecovery {
     ) -> (
         AdmittedPlatformAuthority,
         RecoveryCoordination,
-        PhysicalSourceSelection,
+        ResidentSourceSelection,
         RecoveryIntegrityEvidence,
         PhysicalRecoveryDiscoveryCounters,
         Vec<PhysicalRecoverySourceDenial>,

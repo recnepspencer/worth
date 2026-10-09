@@ -228,7 +228,7 @@ fn catalog_format_scope_and_version_windows_do_not_collapse_into_damage() {
         if offset == 9 {
             unsupported[offset] = 3;
         } else {
-            unsupported[offset..offset + 2].copy_from_slice(&2_u16.to_le_bytes());
+            unsupported[offset..offset + 2].copy_from_slice(&3_u16.to_le_bytes());
         }
         reseal_durable_frame(&mut unsupported);
         let rejection =
@@ -236,7 +236,7 @@ fn catalog_format_scope_and_version_windows_do_not_collapse_into_damage() {
         match rejection {
             PhysicalIntegrityRejection::Unsupported(posture) => {
                 assert_eq!(posture.axis(), axis);
-                assert_eq!(posture.observed(), if offset == 9 { 3 } else { 2 });
+                assert_eq!(posture.observed(), 3);
             }
             other => panic!("unsupported catalog version collapsed: {other:?}"),
         }

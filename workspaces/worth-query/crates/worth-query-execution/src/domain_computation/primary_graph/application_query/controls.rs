@@ -37,6 +37,7 @@ pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     lane: WorthQueryApplicationQueryLane,
     maximum_result_count: NonZeroUsize,
     maximum_work: NonZeroUsize,
+    maximum_inline_result_bytes: Option<NonZeroUsize>,
     request_scope: &'a WorthQueryRequestScope,
     _schema: PhantomData<fn() -> Schema>,
 }
@@ -99,6 +100,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,
             maximum_work,
+            maximum_inline_result_bytes: None,
             request_scope,
             _schema: PhantomData,
         }
@@ -122,6 +124,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,
             maximum_work,
+            maximum_inline_result_bytes: None,
             request_scope,
             _schema: PhantomData,
         }
@@ -145,6 +148,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: maximum_page_width,
             maximum_work,
+            maximum_inline_result_bytes: None,
             request_scope,
             _schema: PhantomData,
         }
@@ -168,6 +172,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             lane: WorthQueryApplicationQueryLane::Live,
             maximum_result_count: maximum_materialized_record_count,
             maximum_work,
+            maximum_inline_result_bytes: None,
             request_scope,
             _schema: PhantomData,
         }
@@ -195,6 +200,23 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
     pub const fn maximum_work(&self) -> NonZeroUsize {
         self.maximum_work
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn limit_inline_result_bytes(
+        mut self,
+        maximum: NonZeroUsize,
+    ) -> Self {
+        self.maximum_inline_result_bytes = Some(
+            self.maximum_inline_result_bytes
+                .map_or(maximum, |prior| prior.min(maximum)),
+        );
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) const fn maximum_inline_result_bytes(
+        &self,
+    ) -> Option<NonZeroUsize> {
+        self.maximum_inline_result_bytes
     }
 
     pub(in crate::domain_computation::primary_graph) fn limit_maximum_work(
@@ -257,6 +279,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: controls.maximum_page_width,
             maximum_work: controls.maximum_work,
+            maximum_inline_result_bytes: None,
             request_scope: controls.request_scope,
             _schema: PhantomData,
         }

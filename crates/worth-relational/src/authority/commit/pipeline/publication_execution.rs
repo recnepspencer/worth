@@ -284,6 +284,10 @@ impl PreparedCommitPublicationExecution {
         self.publication.changed_record_count()
     }
 
+    pub(crate) fn changed_records(&self) -> &[crate::transactions::data::RecordRef] {
+        &self.publication.changed_records
+    }
+
     pub(crate) fn attach_prepared_indexes(
         &mut self,
         prepared: crate::indexes::PreparedCandidateIndexPublication,

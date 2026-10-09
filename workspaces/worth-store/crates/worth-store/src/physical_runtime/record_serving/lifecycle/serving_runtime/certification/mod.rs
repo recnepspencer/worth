@@ -1,7 +1,11 @@
 use super::ServingPhysicalRuntime;
 
 mod durable_publication;
+mod rebuild;
+mod release_head;
+mod retirement;
 mod root_completion;
+mod tier_epoch;
 mod wal_durable;
 
 impl ServingPhysicalRuntime {
@@ -34,8 +38,38 @@ impl ServingPhysicalRuntime {
             .map_err(|_| crate::physical_runtime::PhysicalWorkRetryFailure::DerivedStateUnavailable)
     }
 
+    /// The checkpoint-capture envelope the next capture holds, in bytes.
+    pub fn certification_checkpoint_capture_envelope_bytes(&self) -> Option<u64> {
+        self.parts.publication.checkpoint_capture_envelope_bytes()
+    }
+
+    /// The standing capture reservation Serving entry funded, in bytes.
+    pub fn certification_checkpoint_capture_custody_bytes(&self) -> Option<u64> {
+        self.parts.publication.checkpoint_capture_custody_bytes()
+    }
+
     pub fn certification_pending_publication_count(&self) -> usize {
         self.parts.publication.pending_publication_count()
+    }
+
+    /// Reports an exact recovered copy hold: either deferred before allocator
+    /// exposure or installed as a private allocator reservation.
+    pub fn certification_holds_recovered_copy_destination(
+        &self,
+        arena: u64,
+        offset: u64,
+        length: u64,
+    ) -> bool {
+        let Some(arena) = worth_store_physical_format::ExtentArenaId::new(arena) else {
+            return false;
+        };
+        let Some(range) = worth_store_physical_format::ExtentArenaRange::new(arena, offset, length)
+        else {
+            return false;
+        };
+        self.parts
+            .publication
+            .certification_holds_recovered_copy_destination(range)
     }
 
     /// Retained-storage bytes currently charged against the growth ceiling.
@@ -62,61 +96,6 @@ impl ServingPhysicalRuntime {
         self.parts
             .scheduler_admission
             .certification_release_owed_background_turn();
-    }
-
-    /// Holds the retirement owner after the claim and before the intent append.
-    pub fn certification_pause_before_retirement_intent(&self) {
-        self.parts.publication.arm_retirement_intent_gate();
-    }
-
-    pub fn certification_retirement_intent_arrived(&self) -> bool {
-        self.parts.publication.retirement_intent_arrived()
-    }
-
-    pub fn certification_release_retirement_intent(&self) {
-        self.parts.publication.release_retirement_intent_gate();
-    }
-
-    /// Parks the retirement that is in flight at `seam` until the process is killed.
-    ///
-    /// Seam 1 is after the durable intent and checkpoint, before unlink.
-    /// Seam 2 is after unlink, before the removal directory sync.
-    pub fn certification_arm_retirement_kill(
-        &self,
-        seam: u8,
-    ) -> std::sync::Arc<std::sync::atomic::AtomicBool> {
-        self.parts.publication.arm_retirement_kill(seam)
-    }
-
-    /// Stops retirement after the intent and checkpoint, before the segment unlink.
-    pub fn certification_stop_before_retirement_delete(&self) {
-        self.parts
-            .publication
-            .certification_stop_before_retirement_delete();
-    }
-
-    /// Fails the next segment-removal directory sync after the unlink has returned.
-    pub fn certification_fail_next_removal_directory_sync(&self) {
-        self.parts
-            .work_runtime
-            .executor
-            .record_serving_media()
-            .certification_fail_next_removal_directory_sync();
-    }
-
-    /// Stops retirement after the segment file is gone and before completion.
-    pub fn certification_stop_after_retirement_delete(&self) {
-        self.parts
-            .publication
-            .certification_stop_after_retirement_delete();
-    }
-
-    /// Ordinary publication work cannot remove a segment. The public command
-    /// constructor refuses before any media effect.
-    pub fn certification_public_segment_removal_rejected(&self) -> bool {
-        self.parts
-            .publication
-            .certification_public_segment_removal_rejected()
     }
 
     /// Limits usable candidate growth so rewrite admission can be denied one-over.
@@ -286,6 +265,43 @@ impl ServingPhysicalRuntime {
                 .scheduler_admission
                 .reserve_record_lane(lane, self.parts.record_work.scheduler_security(),),
             Err(crate::physical_runtime::RecordSchedulerReservationDenial::OwedBackgroundTurn)
+        )
+    }
+
+    /// Exercise the production blob scheduler path with a quantum that cannot
+    /// fit the admitted Store work capacity, before any physical effect.
+    pub fn certification_reject_oversized_blob_ingest_quantum(&self) -> bool {
+        self.parts
+            .scheduler_admission
+            .blob_ingest_background(self.parts.record_work.scheduler_security(), u64::MAX, 0)
+            .is_err()
+    }
+
+    /// A failed synchronous reclaim frame must not retain a fairness head.
+    pub fn certification_reject_oversized_blob_reclaim_quantum(&self) -> bool {
+        self.parts
+            .scheduler_admission
+            .blob_reclaim_background(self.parts.record_work.scheduler_security(), u64::MAX, 0)
+            .is_err()
+    }
+
+    /// Exercise the real bounded reclaim producer under a caller-held
+    /// foreground capacity reservation, without fabricating an executor fact.
+    pub fn certification_blob_reclaim_quantum_denied_by_capacity(&self, bytes: u64) -> bool {
+        matches!(
+            self.parts.scheduler_admission.blob_reclaim_background(
+                self.parts.record_work.scheduler_security(),
+                bytes,
+                0,
+            ),
+            Err(crate::physical_runtime::PhysicalSchedulerDenial::BackgroundCapacity(_))
+                | Err(
+                    crate::physical_runtime::PhysicalSchedulerDenial::BackgroundPacing(
+                        worth_store_io_scheduler::BackgroundPacingDenial::InsufficientIdleCapacity(
+                            _
+                        )
+                    )
+                )
         )
     }
 

@@ -40,23 +40,17 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
     }
 }
 
-pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
+pub(in super::super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner")
         .unwrap()
 }
 
-pub(in super::super) fn authenticate<Program>(
-    application: &application_installation::WorthQueryProgramApplicationRuntime<
-        CheckpointSchema,
-        Program,
-    >,
+pub(in super::super) fn authenticate<Schema: ApplicationSchema + 'static>(
+    application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 ) -> (
     authentication::WorthQueryRequestScope,
-    authentication::WorthQueryAuthenticatedExternalPrincipal<CheckpointSchema>,
-)
-where
-    Program: ApplicationProgramDefinition<CheckpointSchema>,
-{
+    authentication::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+) {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
         Instant::now() + Duration::from_secs(120),

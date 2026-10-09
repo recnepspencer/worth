@@ -23,7 +23,7 @@ pub(super) fn admit_inline_allocations(
         );
     };
     let selected_target = absent[0].3.identity();
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, last.segment_id().get())
+    let key = FreeSpaceKey::inline(last.segment_id().get())
         .expect("selected segment identity is nonzero");
     let reusable_entry = free_entries
         .binary_search_by_key(&(key.class() as u8, key.owner()), |entry| {

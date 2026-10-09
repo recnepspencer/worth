@@ -4,7 +4,7 @@ use super::{
 };
 use sha2::{Digest, Sha256};
 
-const PROFILE_DOMAIN: &[u8] = b"worth-store.physical-signal-profile.v4";
+const PROFILE_DOMAIN: &[u8] = b"worth-store.physical-signal-profile.v5";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PhysicalSignalProfileIdentity(pub(super) [u8; 32]);
@@ -79,16 +79,13 @@ fn update_aspect(digest: &mut Sha256, aspect: &PhysicalSignalAspectDeclaration) 
     match aspect.partition() {
         Some(partition) => {
             digest.update([1]);
-            digest.update((partition.partition.0.len() as u64).to_le_bytes());
-            digest.update(partition.partition.0.as_bytes());
-            if let Some(detail) = partition.detail.as_deref() {
-                digest.update([1]);
-                digest.update((detail.len() as u64).to_le_bytes());
-                digest.update(detail.as_bytes());
-            } else {
-                digest.update([0]);
+            let segments = partition.path().segments();
+            digest.update((segments.len() as u64).to_le_bytes());
+            for segment in segments {
+                digest.update((segment.len() as u64).to_le_bytes());
+                digest.update(segment.as_bytes());
             }
-            digest.update([partition.match_mode as u8]);
+            digest.update([super::aspect_bindings::coverage_code(partition.coverage())]);
         }
         None => digest.update([0]),
     }

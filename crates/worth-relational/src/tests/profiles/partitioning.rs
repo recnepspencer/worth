@@ -7,30 +7,38 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
     let bulk_runtime = runtime_with_test_schema();
     let mut bulk_txn = crate::tests::support::test_owner_begin_transaction_for_main(&bulk_runtime);
     bulk_txn
-        .push_batch(WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
-            CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_keys: vec![
-                    crate::symbols::data::ClientKey::raw("a"),
-                    crate::symbols::data::ClientKey::raw("b"),
-                ],
-                field_patches: vec![
-                    single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "a",
-                    ),
-                    single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "b",
-                    ),
-                ],
-            }),
-        )))
+        .push_batch(
+            WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
+                CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_keys: vec![
+                        crate::symbols::data::ClientKey::raw("a"),
+                        crate::symbols::data::ClientKey::raw("b"),
+                    ],
+                    field_patches: vec![
+                        single_string_aspect_field_patch(
+                            crate::tests::support::aspect_key("name"),
+                            crate::tests::support::field_key("name"),
+                            "a",
+                        ),
+                        single_string_aspect_field_patch(
+                            crate::tests::support::aspect_key("name"),
+                            crate::tests::support::field_key("name"),
+                            "b",
+                        ),
+                    ],
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
-    let bulk_outcome = bulk_txn.commit(&bulk_runtime).unwrap();
+    let bulk_outcome = bulk_txn
+        .commit(
+            &bulk_runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
 
     let singular_runtime = apply_batches(vec![batch_create("a"), batch_create("b")]);
     let bulk_read = bulk_runtime
@@ -74,39 +82,45 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
     ) {
         let runtime = runtime_with_test_schema();
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
-            CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_keys: vec![
-                    crate::symbols::data::ClientKey::raw("a"),
-                    crate::symbols::data::ClientKey::raw("b"),
-                    crate::symbols::data::ClientKey::raw("c"),
-                ],
-                field_patches: vec![
-                    single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "a",
-                    ),
-                    single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "b",
-                    ),
-                    single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "c",
-                    ),
-                ],
-            }),
-        )))
+        txn.push_batch(
+            WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
+                CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_keys: vec![
+                        crate::symbols::data::ClientKey::raw("a"),
+                        crate::symbols::data::ClientKey::raw("b"),
+                        crate::symbols::data::ClientKey::raw("c"),
+                    ],
+                    field_patches: vec![
+                        single_string_aspect_field_patch(
+                            crate::tests::support::aspect_key("name"),
+                            crate::tests::support::field_key("name"),
+                            "a",
+                        ),
+                        single_string_aspect_field_patch(
+                            crate::tests::support::aspect_key("name"),
+                            crate::tests::support::field_key("name"),
+                            "b",
+                        ),
+                        single_string_aspect_field_patch(
+                            crate::tests::support::aspect_key("name"),
+                            crate::tests::support::field_key("name"),
+                            "c",
+                        ),
+                    ],
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
         let outcome = if leased {
             runtime.commit_branch_transaction_with_lease(txn, &test_execution_lease())
         } else {
-            txn.commit(&runtime)
+            txn.commit(
+                &runtime,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
         }
         .unwrap();
         let read = runtime
@@ -190,10 +204,16 @@ fn cross_context_relations_respect_relation_kind_policy() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }),
         )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn.commit(&runtime).unwrap_err();
+    let error = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap_err();
 
     assert!(matches!(
         error,

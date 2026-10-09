@@ -131,7 +131,7 @@ impl RequiredQueueFrames {
                 self.hold(work, admission)?;
                 continue;
             };
-            if ready.same_record(&wave.caller_ready, admission)? {
+            if ready.same_record(&wave.anchor_ready, admission)? {
                 // The caller's proof covers its own cause only while the wave
                 // is still where the caller settled. An unfunded
                 // acknowledgement leaves the cause queued.

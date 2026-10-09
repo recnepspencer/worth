@@ -114,34 +114,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputScheduling
     NoEffect(WorthQueryOutputDemandDenial),
 }
 
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKey {
-    producer: String,
-    source: SourceEpoch,
-}
-
-impl WorthQueryOutputDemandKey {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        producer: String,
-        source: SourceEpoch,
-    ) -> Self {
-        Self { producer, source }
-    }
-
-    fn same_occurrence(&self, other: &Self) -> bool {
-        self.producer == other.producer && self.source.same_occurrence(&other.source)
-    }
-
-    fn same_semantic_source(&self, other: &Self) -> bool {
-        self.producer == other.producer && self.source.same_semantic_source(&other.source)
-    }
-
-    fn replacement_order(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        (self.producer == other.producer)
-            .then(|| self.source.replacement_order(&other.source))
-            .flatten()
-    }
-}
+mod demand_key;
+pub(in crate::domain_computation::primary_graph) use demand_key::WorthQueryOutputDemandKey;
 
 /// Wake-up signal for one output demand's progress.
 ///
@@ -190,9 +164,11 @@ mod required_custody;
 mod required_members;
 mod required_stop;
 mod required_work;
+pub(in crate::domain_computation::primary_graph) use admission::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use held_successor::HeldRequiredSuccessor;
 pub(in crate::domain_computation::primary_graph) use required_work::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use required_work::ReplacedRequiredWorkHint;
+pub(in crate::domain_computation::primary_graph) use required_work::RequestedOutputReadClaims;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedReadyReadmission;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;
@@ -269,6 +245,7 @@ struct DemandRecord {
     performed_obligations: Vec<PerformedOutputObligation>,
     framework_required_count: usize,
     prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+    checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
     prepared_prerequisite_claims: usize,
     pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
     pending_cleanup_queued: bool,

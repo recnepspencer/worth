@@ -24,7 +24,8 @@ fn occurrence_work_is_identical_with_zero_or_many_unrelated_rows() {
         );
         for n in 0..unrelated {
             records.insert(
-                key(&format!("unrelated-{n}"), 1, 1),
+                // Root 1 shares the selected occurrence; root 2 is an unrelated occurrence.
+                key(&format!("unrelated-{n}"), 1, 2),
                 record(occurrence(), DemandState::Admitted, 0),
             );
         }

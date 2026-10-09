@@ -86,7 +86,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowDefinitionA
             // A 10k control graph needs <30k creates, <68k links and <100k
             // writes while keeping the installed aggregate below 200k items.
             ApplicationCandidateCardinalityCeiling::fixed(30_000, 0, 68_000, 2, 100_000, 0),
-            ApplicationCandidateResourceCeiling::bounded(128 * 1024 * 1024, 20_000_000),
+            ApplicationCandidateResourceCeiling::representation_bytes(128 * 1024 * 1024),
         );
 
     fn scope_field() -> ApplicationFieldRef<
@@ -192,7 +192,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowInstanceSta
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
-            ApplicationCandidateResourceCeiling::bounded(2 * 1024 * 1024, 1_048_576),
+            ApplicationCandidateResourceCeiling::representation_bytes(2 * 1024 * 1024),
         );
 
     fn scope_field() -> ApplicationFieldRef<

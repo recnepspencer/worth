@@ -105,6 +105,15 @@ impl ServingHealth {
         }
     }
 
+    pub(in crate::physical_runtime::record_serving) fn observe_extent_stream_failure(
+        &self,
+        failure: &super::super::access::extent_read_session::ExtentReadFailure,
+    ) {
+        if let Some(kind) = failure.global_kind() {
+            self.observe_stream_failure(kind);
+        }
+    }
+
     pub(in crate::physical_runtime::record_serving) fn observe_scan_denial(
         &self,
         denial: RecordScanDenial,
@@ -134,5 +143,31 @@ impl Drop for PhysicalDispatchUnwindGuard<'_> {
         if self.armed {
             self.health.revoke();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::physical_runtime::record_serving::{
+        access::extent_read_session::ExtentReadFailure, RecordStreamFailure,
+    };
+
+    #[test]
+    fn exact_data_frame_crc_damage_is_local_but_identity_damage_revokes() {
+        let local = ServingHealth::new(false);
+        local.observe_extent_stream_failure(&ExtentReadFailure::IsolatedRecordDamage(
+            RecordStreamFailure::during_read(
+                RecordStreamFailureKind::SelectedDataFrameChecksumDamaged,
+                0,
+            ),
+        ));
+        assert!(!local.requires_inspection());
+
+        let structural = ServingHealth::new(false);
+        structural.observe_extent_stream_failure(&ExtentReadFailure::Global(
+            RecordStreamFailure::during_read(RecordStreamFailureKind::ArtifactDamaged, 0),
+        ));
+        assert!(structural.requires_inspection());
     }
 }

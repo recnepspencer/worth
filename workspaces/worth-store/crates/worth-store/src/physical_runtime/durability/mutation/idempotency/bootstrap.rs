@@ -5,7 +5,8 @@ use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 
 use crate::physical_runtime::durability::checkpoint::{
-    PhysicalBindingCompactionReopenFailure, ReopenedPhysicalBindingCompaction,
+    PhysicalBindingCompactionReopenCounters, PhysicalBindingCompactionReopenFailure,
+    ReopenedPhysicalBindingCompaction,
 };
 use crate::physical_runtime::durability::{
     grouping::reopened_membership_digest, wal::inventory::ReopenedPhysicalWalMember,
@@ -26,6 +27,7 @@ use super::runtime_owner::PhysicalMutationIdempotencyRuntimeOwner;
 use super::PhysicalNamespaceDurableCheckpointGeneration;
 
 mod checkpoint_compaction;
+mod rebuilt;
 mod retirement_gap;
 #[cfg(test)]
 #[path = "bootstrap/tests.rs"]
@@ -33,8 +35,7 @@ mod tests;
 
 pub(in crate::physical_runtime) struct RebuiltPhysicalMutationIdempotency {
     owner: Arc<PhysicalMutationIdempotencyRuntimeOwner>,
-    checkpoint:
-        crate::physical_runtime::durability::checkpoint::PhysicalBindingCompactionReopenCounters,
+    checkpoint: PhysicalBindingCompactionReopenCounters,
     wal_members_read: u64,
 }
 
@@ -50,6 +51,7 @@ pub enum PhysicalIdempotencyReopenFailure {
     LeaseIssuedAfterDurableGeneration,
     WalTailDiscontinuity,
     WalBindingConflict,
+    PendingReleaseBindingMismatch,
     GroupMemberCountMismatch,
     GroupOrdinalMismatch,
     GroupMembershipMismatch,
@@ -303,9 +305,10 @@ impl PhysicalIdempotencyRegistryRebuilder {
     }
 
     fn finish(
-        self,
+        mut self,
         _checkpoint_admission: checkpoint_compaction::CheckpointAggregateAdmission,
     ) -> PhysicalMutationIdempotencyRegistry {
+        self.registry.recovered_complete = true;
         self.registry
     }
 }
@@ -378,23 +381,4 @@ fn validate_group(
         return Err(PhysicalIdempotencyReopenFailure::GroupMembershipMismatch);
     }
     Ok(())
-}
-
-impl RebuiltPhysicalMutationIdempotency {
-    pub(in crate::physical_runtime) fn into_owner(
-        self,
-    ) -> Arc<PhysicalMutationIdempotencyRuntimeOwner> {
-        self.owner
-    }
-
-    pub(in crate::physical_runtime) const fn checkpoint_counters(
-        &self,
-    ) -> crate::physical_runtime::durability::checkpoint::PhysicalBindingCompactionReopenCounters
-    {
-        self.checkpoint
-    }
-
-    pub(in crate::physical_runtime) const fn wal_members_read(&self) -> u64 {
-        self.wal_members_read
-    }
 }

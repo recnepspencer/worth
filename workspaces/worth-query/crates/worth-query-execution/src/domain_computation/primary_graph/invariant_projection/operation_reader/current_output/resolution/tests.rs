@@ -82,7 +82,7 @@ fn index_loss_cannot_certify_own_write_output_at_the_retained_postcommit_observa
                 "the unrelated publication must have removed the retained observation's index image");
             reader.current_output::<RetainedFamily, _>(root).map(|_| ())
                 .map_err(|denial| denial.kind())
-        }).unwrap().into_parts().0;
+        }, worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap().into_parts().0;
         assert_eq!(
             answer,
             Err(WorthQueryCurrentOutputDenialKind::StaleSource),

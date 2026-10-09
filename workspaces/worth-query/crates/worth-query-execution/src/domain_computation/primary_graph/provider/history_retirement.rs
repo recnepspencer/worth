@@ -78,10 +78,9 @@ impl<Schema>
         )
     }
 
-    /// Completed evidence entries inside the idempotency window and the bytes
-    /// their tickets hold.
+    /// Exact completed idempotency evidence entries retained by this owner.
     #[doc(hidden)]
-    pub fn completed_evidence_retained_for_test(&self) -> (usize, usize) {
+    pub fn completed_evidence_retained_for_test(&self) -> usize {
         self.primary_provider.completed_evidence_retained()
     }
 }

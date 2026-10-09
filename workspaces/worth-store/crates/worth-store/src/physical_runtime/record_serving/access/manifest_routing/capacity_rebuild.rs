@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use worth_store_physical_format::{
     durable_artifact_checksum, CurrentPhysicalRecordPlacement, ManifestBlockReference,
@@ -13,6 +13,7 @@ pub(super) struct CapacityRebuild {
     pub(super) blocks: Vec<(RecordArtifactFile, Vec<u8>)>,
     pub(super) discovery: ManifestDiscoveryCounterSnapshot,
     pub(super) inserted: u64,
+    pub(super) removed: u64,
 }
 
 pub(super) struct CapacityRebuildRequest {
@@ -22,6 +23,7 @@ pub(super) struct CapacityRebuildRequest {
     pub(super) successor_capacity: u16,
     pub(super) next_block: u64,
     pub(super) updates: BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
+    pub(super) drops: BTreeSet<PersistedRecordIdentity>,
 }
 
 pub(super) fn rebuild_capacity(
@@ -36,6 +38,7 @@ pub(super) fn rebuild_capacity(
         successor_capacity,
         next_block,
         updates,
+        drops,
     } = request;
     if !super::super::super::planning::policy_units::manifest_capacity_can_branch(
         successor_capacity,
@@ -54,7 +57,9 @@ pub(super) fn rebuild_capacity(
         allocation,
         discovery: ManifestDiscoveryCounterSnapshot::default(),
         updates,
+        drops,
         inserted: 0,
+        removed: 0,
         writer,
     };
     traversal.walk(current_root)?;
@@ -66,7 +71,9 @@ struct CapacityRebuildTraversal<'context, 'media> {
     allocation: &'context worth_store_buffer_pool::OperationAllocationGrant,
     discovery: ManifestDiscoveryCounterSnapshot,
     updates: BTreeMap<PersistedRecordIdentity, CurrentPhysicalRecordPlacement>,
+    drops: BTreeSet<PersistedRecordIdentity>,
     inserted: u64,
+    removed: u64,
     writer: StreamingTreeWriter,
 }
 
@@ -87,8 +94,15 @@ impl CapacityRebuildTraversal<'_, '_> {
                         self.inserted = self.inserted.saturating_add(1);
                         self.writer.push_entry(placement)?;
                     }
-                    let selected = self.updates.remove(&existing.record()).unwrap_or(existing);
-                    self.writer.push_entry(selected)?;
+                    if self.drops.remove(&existing.record()) {
+                        self.removed = self
+                            .removed
+                            .checked_add(1)
+                            .ok_or(ManifestLookupFailure::Damaged)?;
+                    } else {
+                        let selected = self.updates.remove(&existing.record()).unwrap_or(existing);
+                        self.writer.push_entry(selected)?;
+                    }
                 }
                 Ok(())
             }
@@ -102,6 +116,9 @@ impl CapacityRebuildTraversal<'_, '_> {
     }
 
     fn finish(mut self) -> Result<CapacityRebuild, ManifestLookupFailure> {
+        if !self.drops.is_empty() {
+            return Err(ManifestLookupFailure::Damaged);
+        }
         for (_, placement) in std::mem::take(&mut self.updates) {
             self.inserted = self.inserted.saturating_add(1);
             self.writer.push_entry(placement)?;
@@ -113,6 +130,7 @@ impl CapacityRebuildTraversal<'_, '_> {
             blocks: self.writer.blocks,
             discovery: self.discovery,
             inserted: self.inserted,
+            removed: self.removed,
         })
     }
 }

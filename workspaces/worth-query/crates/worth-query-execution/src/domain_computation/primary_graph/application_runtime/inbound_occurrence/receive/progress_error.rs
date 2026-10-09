@@ -11,6 +11,19 @@ impl Denial {
             Denial::PublicationExecutionControlStopped { stage, kind } => {
                 Pending::ExecutionControlStopped { stage, kind }
             }
+            Denial::PublicationAllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            } => Pending::AllocationDenied {
+                stage,
+                kind,
+                requested_payload_bytes,
+            },
+            Denial::PublicationStagingCardinalityOverflow => Pending::StagingCardinalityOverflow,
+            Denial::PublicationInputDirectoryAllocationDenied { requested_batches } => {
+                Pending::InputDirectoryAllocationDenied { requested_batches }
+            }
             Denial::SourceRevoked => Pending::SourceRevoked,
             Denial::TerminalCleanupUnavailable => Pending::TerminalCleanupUnavailable,
             Denial::RecoveryUnavailable => Pending::RecoveryUnavailable,

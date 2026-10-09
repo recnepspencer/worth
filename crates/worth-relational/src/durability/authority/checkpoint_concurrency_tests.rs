@@ -10,10 +10,16 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     let baseline = create_entity_outcome(&runtime, "checkpoint-concurrency-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("publication-during-checkpoint-reconstruction"))
+        .push_batch(
+            batch_create("publication-during-checkpoint-reconstruction"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("publication candidate prepares");
     let port = runtime.publication_port();
     let (captured_tx, captured_rx) = sync_channel(0);

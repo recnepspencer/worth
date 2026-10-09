@@ -1,4 +1,6 @@
-use worth_store::physical_runtime::RecoveryFilesystemQualificationError;
+use worth_store::physical_runtime::{
+    PhysicalRecoveryCoordinationAdmissionError, RecoveryFilesystemQualificationError,
+};
 
 use crate::entry::{self, PhysicalRecoveryEntryBindingDrift};
 
@@ -18,7 +20,7 @@ impl PhysicalRecoveryRefusal {
             kind,
             root_protocol_denials: Vec::new(),
             root_protocol_counters: entry::PhysicalRecoveryRootProtocolCounters::default(),
-            integrity_observations: entry::PhysicalRecoveryIntegrityObservations::new(Vec::new()),
+            integrity_observations: entry::PhysicalRecoveryIntegrityObservations::default(),
             recovery_effects,
             integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace::new(),
         }
@@ -93,5 +95,6 @@ pub enum PhysicalRecoveryRefusalKind {
     CancelledBeforeExecution,
     EntryBindingDrift(PhysicalRecoveryEntryBindingDrift),
     PersistedStoreAdmission(RecoveryFilesystemQualificationError),
+    CoordinationAdmission(PhysicalRecoveryCoordinationAdmissionError),
     CoordinationUnavailable,
 }

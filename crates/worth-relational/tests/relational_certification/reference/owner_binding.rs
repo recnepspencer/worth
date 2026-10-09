@@ -35,10 +35,16 @@ fn owner_issues_transaction_context_from_exact_main_identity() {
             .expect("owner-admitted transaction context")
     };
     transaction
-        .push_batch(WorkerIntentBatch::new("owner-issued-options"))
+        .push_batch(
+            WorkerIntentBatch::new("owner-issued-options"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let result = transaction
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("owner-issued context routes through the ordinary commit authority");
     assert_eq!(result.commit.branch_id, BranchId("main".to_owned()));
     assert!(matches!(
@@ -176,14 +182,23 @@ fn unrelated_branch_progress_is_not_staled_by_main_branch_movement() {
             .expect("owner-admitted transaction context")
     };
     main_transaction
-        .push_batch(WorkerIntentBatch::new("advance-main-only"))
+        .push_batch(
+            WorkerIntentBatch::new("advance-main-only"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     main_transaction
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("main branch movement succeeds independently");
 
     let committed = storm_transaction
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("main branch movement must not stale an unrelated storm basis");
     assert_eq!(committed.commit.branch_id, BranchId("storm".to_owned()));
     assert_oracle_matches(&world, &expected);
@@ -232,10 +247,16 @@ fn source_movement_cannot_mutate_a_forked_target_reference() {
             .expect("owner-admitted transaction context")
     };
     advance
-        .push_batch(WorkerIntentBatch::new("advance-source-after-fork"))
+        .push_batch(
+            WorkerIntentBatch::new("advance-source-after-fork"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     advance
-        .commit(&world.runtime)
+        .commit(
+            &world.runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("source movement succeeds after the fork");
 
     let after = capture_reference_evidence(

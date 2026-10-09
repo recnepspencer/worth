@@ -124,16 +124,22 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
     assert_eq!(retry_work, first_work);
 
     reset_encoding_counts();
-    let WorthQueryApplicationCommitOutcome::Committed(committed) = world
-        .application
-        .compare_and_commit_application(first, first_workflow.binding())
+    let WorthQueryApplicationCommitOutcome::Committed(committed) =
+        world.application.compare_and_commit_application(
+            first,
+            first_workflow.binding(),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the first capability workflow request commits");
     };
     assert_eq!(committed.canonical_work().admission(), first_work);
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-        .application
-        .compare_and_commit_application(retry, retry_workflow.binding())
+    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+        world.application.compare_and_commit_application(
+            retry,
+            retry_workflow.binding(),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
     else {
         panic!("the unchanged retry replays the commit");
     };

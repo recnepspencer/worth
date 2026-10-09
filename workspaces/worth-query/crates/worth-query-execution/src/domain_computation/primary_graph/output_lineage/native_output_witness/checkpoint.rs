@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::Movement;
 
 #[cfg(test)]
 mod tests;
+mod work_bound;
 
 impl SealedNativeOutputWitness {
     /// The original output revisions and the decodable producer observations
@@ -31,8 +32,8 @@ impl SealedNativeOutputWitness {
                 | Fact::IndexedEntitySelection { .. } => {}
                 _ => return Ok(false),
             }
-            // The comparison reserves its worst case on this meter and is
-            // capped at that reservation.
+            // The fact owner reserves on this carried meter before reading
+            // and settles the actual probe debit on success or failure.
             match fact.source_currentness_in(relational, snapshot, admission)? {
                 Ok(movement) if movement.movement() == Movement::Unmoved => {}
                 Ok(_) | Err(_) => return Ok(false),
@@ -71,6 +72,7 @@ impl SealedNativeOutputWitness {
                 .and_then(|n| n.checked_add(name.len() as u64))
                 .ok_or_else(overflow)?;
             for aspect in layout.native_output_aspects(name) {
+                admission.charge_external_work(1)?;
                 aspect_count = aspect_count.checked_add(1).ok_or_else(overflow)?;
                 name_bytes = name_bytes
                     .checked_add(aspect.as_str().len() as u64)
@@ -91,7 +93,7 @@ impl SealedNativeOutputWitness {
         )?;
         let mut roles = Vec::with_capacity(role_count);
         let mut aspects = Vec::with_capacity(aspect_count);
-        for (role, _, name, entity) in correspondence.native_witness_roles() {
+        for (role, posture, name, entity) in correspondence.native_witness_roles() {
             prepay_catalog(layout, name, admission)?;
             let kind = layout
                 .entity_kind(name)
@@ -114,6 +116,8 @@ impl SealedNativeOutputWitness {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
                 kind,
+                posture,
+                retirement: None,
                 entity: Some(entity),
                 first_aspect,
                 end_aspect: aspects.len(),
@@ -136,13 +140,10 @@ fn prepay_catalog(
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
     admission.charge_external_work(3)?;
-    let lookup = layout.entity_kind_lookup_work(name).ok_or_else(overflow)?;
-    let scan = u64::try_from(layout.native_contract_count())
-        .ok()
-        .and_then(|count| count.checked_mul(name.len().checked_add(1)? as u64))
-        .and_then(|work| work.checked_add(lookup))
+    let lookup = layout
+        .native_output_lookup_work(name)
         .ok_or_else(overflow)?;
-    admission.charge_external_work(scan)
+    admission.charge_external_work(lookup)
 }
 
 fn checkpoint_entity_matches(

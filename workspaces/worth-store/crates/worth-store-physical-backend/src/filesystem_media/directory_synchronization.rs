@@ -73,8 +73,8 @@ impl FilesystemMediaOwner {
                 operation_role,
             ));
         }
-        let result =
-            open_directory_sync_handle(directory.directory()).and_then(|file| file.sync_all());
+        let result = open_directory_sync_handle(directory.directory())
+            .and_then(|file| super::os_synchronization::synchronize_state(&file));
         match result {
             Ok(()) if attempt.effect_observation_is_indeterminate() => {
                 attempt.indeterminate(0);
@@ -226,7 +226,9 @@ impl FilesystemMediaOwner {
                 false,
             ));
         }
-        match open_directory_sync_handle(parent).and_then(|file| file.sync_all()) {
+        match open_directory_sync_handle(parent)
+            .and_then(|file| super::os_synchronization::synchronize_state(&file))
+        {
             Ok(()) if attempt.effect_observation_is_indeterminate() => {
                 attempt.indeterminate(0);
                 RootParentPublicationSynchronizationOutcome::Failed(root_parent_failure(
@@ -304,7 +306,7 @@ impl FilesystemMediaOwner {
 }
 
 pub(super) fn synchronize_directory_handle(directory: &cap_std::fs::Dir) -> std::io::Result<()> {
-    open_directory_sync_handle(directory)?.sync_all()
+    super::os_synchronization::synchronize_state(&open_directory_sync_handle(directory)?)
 }
 
 fn open_directory_sync_handle(directory: &cap_std::fs::Dir) -> std::io::Result<std::fs::File> {

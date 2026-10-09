@@ -39,8 +39,6 @@ pub(crate) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
             max_patch_records_per_commit: 4_096,
             max_published_snapshot_handles: 8,
             max_active_snapshot_handles: 4_096,
-            max_transaction_overlay_bytes: 268_435_456,
-            max_transaction_footprint_loci: 262_144,
             max_transaction_savepoints: 4_096,
             max_prepared_candidates: 1_024,
             candidate_max_lifetime_millis: 30_000,
@@ -82,9 +80,15 @@ pub(crate) fn create_entity(
                     .expect("seed name aspect patch"),
             }),
         )),
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(runtime).expect("seed commit should succeed");
+    let outcome = txn
+        .commit(
+            runtime,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("seed commit should succeed");
     let entity = outcome
         .changed_records
         .iter()
@@ -126,10 +130,14 @@ pub(crate) fn update_entity_name(
                     .expect("update name aspect patch"),
             }),
         )),
+        worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("intervening update should succeed");
     let commit_id = outcome.outcome().commit.commit_id;
     runtime

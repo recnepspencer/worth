@@ -4,6 +4,7 @@ use worth_store::physical_runtime::{
     PhysicalSignalAspectBindingObservation, PhysicalWorkCausalRecord, PhysicalWorkSignalFamily,
     RecordAppendBatch, RecordByteLimit, RecordReadLimits,
 };
+use worth_store_physical_format::BootstrapCatalog;
 
 use super::super::{
     durable_publication, read_record, scan_journeys::collect_scan, serving_from_open,
@@ -50,22 +51,28 @@ fn ordinary_read_and_scan_select_their_exact_store_native_signal_partitions() {
         .records()
         .len();
     let limits = RecordReadLimits::new(RecordByteLimit::new(PAYLOAD.len() as u32).unwrap());
-    let (bytes, _) = read_record(
-        read_serving
-            .records()
-            .expect("read protection admission")
-            .open(record, limits)
-            .unwrap(),
-        PAYLOAD.len(),
+    let reader = read_serving.records().expect("read protection admission");
+    let protected = reader.protected_root();
+    assert_eq!(protected.runtime(), read_serving.runtime_identity());
+    let catalog = BootstrapCatalog::decode(
+        &std::fs::read(root.join("families/records/bootstrap.catalog")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        protected.root().generation().get(),
+        catalog.current_root().generation().get(),
+        "the protected read captures the selected on-media root without another root read"
     );
+    let (bytes, _) = read_record(reader.open(record, limits).unwrap(), PAYLOAD.len());
     assert_eq!(bytes, PAYLOAD);
     let after_read = read_serving.physical_work_observer().causal().records();
     assert_eq!(
         causal_partitions(&after_read[before_read..], &bindings),
-        BTreeSet::from([ARTIFACT.to_owned(), FRAME.to_owned(), ROOT.to_owned()]),
-        "ordinary locate and read must bind root, artifact, and frame dependencies"
+        BTreeSet::from([ARTIFACT.to_owned(), FRAME.to_owned()]),
+        "ordinary read executes artifact and frame work; root is already captured and protected"
     );
 
+    drop(reader);
     read_serving.close();
 
     let scan_serving = serving_from_open(&root);
@@ -99,7 +106,7 @@ fn read_binding_partitions(bindings: &[PhysicalSignalAspectBindingObservation]) 
         .map(|binding| {
             binding
                 .partition()
-                .map(|partition| partition.partition.0.clone())
+                .map(|partition| partition.path().segments()[0].clone())
                 .unwrap_or_else(|| "<unpartitioned>".to_owned())
         })
         .collect::<Vec<_>>();
@@ -118,7 +125,7 @@ fn causal_partitions(
                 .iter()
                 .find(|binding| binding.digest() == record.signal_binding())
                 .and_then(|binding| binding.partition())
-                .map(|partition| partition.partition.0.clone())
+                .map(|partition| partition.path().segments()[0].clone())
                 .expect("settled read work must identify one installed partitioned binding")
         })
         .collect()

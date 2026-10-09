@@ -4,6 +4,7 @@ use worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDem
 mod basis;
 mod disclosure;
 mod inspection;
+mod read_work;
 mod receipt;
 mod terminal_release;
 
@@ -13,6 +14,7 @@ pub use disclosure::{
     WorthQueryPublishedApplicationDisclosurePosture,
 };
 pub use inspection::WorthQueryApplicationQueryPublicationInspection;
+pub use read_work::WorthQueryPublishedApplicationReadWork;
 pub use receipt::{
     WorthQueryApplicationQueryPublicationReceipt,
     WorthQueryPublishedApplicationQueryOmissionPosture,

@@ -17,4 +17,8 @@ pub use manifest::{validate_root_manifest, RootManifestIntegrityValidation};
 pub use previous_selector::{
     validate_previous_root_selector, PreviousRootSelectorIntegrityValidation,
 };
-pub use routing_block::{validate_root_routing_block, RootRoutingBlockIntegrityValidation};
+pub use routing_block::{
+    validate_root_routing_block, validate_root_routing_block_borrowed,
+    BorrowedRootRoutingBlockIntegrityValidation, RootRoutingBlockIntegrityValidation,
+    RootRoutingCoordinateScratchDenial,
+};

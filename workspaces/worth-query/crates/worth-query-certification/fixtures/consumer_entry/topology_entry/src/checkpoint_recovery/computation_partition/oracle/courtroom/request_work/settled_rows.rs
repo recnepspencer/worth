@@ -124,7 +124,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                     })
                     .expect_source(source.observed_sources()[0].clone())
                     .idempotency(&(0x612_7000_u64 + unrelated as u64 * (measured + 1) + phase))
-                    .execute_performed::<ScaleProgram, OracleRoot>(&app);
+                    .execute_performed::<ScaleProgram, OracleRoot>(&app, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
                 assert!(matches!(edit, Ok(worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(_))), "vertex zero changes: {:?}", edit.as_ref().err());
                 drop((edit, source));
                 if phase == measured {

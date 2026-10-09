@@ -173,6 +173,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     | Denial::TerminalCleanupUnavailable
                     | Denial::PublicationInProgress
                     | Denial::PublicationRetryRequired
+                    | Denial::PublicationAllocationDenied { .. }
+                    | Denial::PublicationStagingCardinalityOverflow
+                    | Denial::PublicationInputDirectoryAllocationDenied { .. }
                     | Denial::PublicationExecutionDenied { .. }
                     | Denial::PublicationExecutionControlStopped { .. }
                     | Denial::RecoveryUnavailable
@@ -199,6 +202,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     | InstalledTransportPendingReason::ProductRecoveryRequired
                     | InstalledTransportPendingReason::TerminalProtectionUnavailable
                     | InstalledTransportPendingReason::TerminalReleaseUnavailable
+                    | InstalledTransportPendingReason::AllocationDenied { .. }
+                    | InstalledTransportPendingReason::StagingCardinalityOverflow
+                    | InstalledTransportPendingReason::InputDirectoryAllocationDenied { .. }
                     | InstalledTransportPendingReason::ExecutionDenied { .. }
                     | InstalledTransportPendingReason::ExecutionControlStopped { .. },
                 ) => report.blocked += 1,

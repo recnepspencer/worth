@@ -88,6 +88,7 @@ impl WorthQueryProviderSessionLifecycle for DecisionProvider {
     fn commit_prepared_session(
         &self,
         _session: &WorthQueryProviderSessionView<'_>,
+        _allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryProviderTerminalDescription,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -164,10 +165,18 @@ fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
         let reads = staged.read_authority();
         let requests = requests(&kinds);
         let first = reads
-            .capture_decision_read_set(requests.clone())
+            .capture_decision_read_set(
+                requests.clone(),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                None,
+            )
             .expect("all installed fact families should capture");
         let second = reads
-            .capture_decision_read_set(requests.into_iter().rev())
+            .capture_decision_read_set(
+                requests.into_iter().rev(),
+                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                None,
+            )
             .expect("discovery order must not affect capture");
         assert_eq!(first.identity(), second.identity());
         assert_eq!(first.fact_count(), kinds.len());
@@ -199,7 +208,11 @@ fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh(
         let reads = staged.read_authority();
         for changed_index in 0..kinds.len() {
             let unchanged = reads
-                .capture_decision_read_set(requests(&kinds))
+                .capture_decision_read_set(
+                    requests(&kinds),
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
+                )
                 .expect("complete decision facts should capture");
             {
                 let mut versions = versions.lock().unwrap();
@@ -220,7 +233,11 @@ fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh(
             assert_eq!(fresh.counters().false_conflicts(), 0);
 
             let changed = reads
-                .capture_decision_read_set(requests(&kinds))
+                .capture_decision_read_set(
+                    requests(&kinds),
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
+                )
                 .expect("complete decision facts should recapture");
             versions
                 .lock()

@@ -241,9 +241,15 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
                 ])),
             },
         ))),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime).expect("entity create succeeds");
+    let outcome = txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("entity create succeeds");
     let alpha = changed_entities(&outcome)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -292,16 +298,23 @@ fn create_entity_with_aspect_fields(
     fields: AspectFieldPatch,
 ) -> crate::facade::identity::EntityId {
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(WorkerIntentBatch::new(format!("batch-{client_key}")).push(
-        MutationIntent::Create(CreateIntent::Entity(
-            crate::transactions::data::EntitySpec {
+    txn.push_batch(
+        WorkerIntentBatch::new(format!("batch-{client_key}")).push(MutationIntent::Create(
+            CreateIntent::Entity(crate::transactions::data::EntitySpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw(client_key),
                 fields,
-            },
+            }),
         )),
-    ))
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(&txn.commit(runtime).expect("entity create succeeds"))[0]
+    changed_entities(
+        &txn.commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("entity create succeeds"),
+    )[0]
 }

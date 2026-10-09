@@ -12,7 +12,7 @@ use crate::domain_computation::execution_runtime::source_invalidation::{
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
 use super::super::RecordedSettlementIdentity;
-use super::admission::IndexAdmission;
+use super::admission::{IndexAdmission, RetainedIndexAdmission};
 use super::logical_marking::{
     AppliedNativeMarking, LogicalMarkingCounts, NativeMarkingPrecision, NativeMarkingReport,
 };
@@ -137,6 +137,7 @@ pub(super) fn mark(
             Ok((applied.report, selected, hint_allowance))
         });
     let marking_bytes = meter.charged_bytes();
+    let index_bytes = meter.charged_index_bytes();
     let kept = match attempt.and_then(|kept| context.bytes(marking_bytes).map(|()| kept)) {
         Ok(kept) => kept,
         Err(stop) if meter::degrades_delivery(&stop) => {
@@ -146,7 +147,7 @@ pub(super) fn mark(
         }
         Err(stop) => return Err(stop),
     };
-    match retention::admit_version(&mut state, marking_bytes, resources, context) {
+    match retention::admit_version(&mut state, index_bytes, resources, context) {
         Ok(()) => {}
         Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
             drop((state, kept));
@@ -291,11 +292,11 @@ fn apply(
             if existing.dirty_ordinals.contains(&posting.ordinal) {
                 continue;
             }
-            meter.bytes(
+            meter.index_bytes(
                 index_capacity::arc_bytes::<SettlementMarks>()
                     .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
             )?;
-            meter.ordered_edit::<usize, ()>(existing.dirty_ordinals.len())?;
+            meter.index_edit::<usize, ()>(existing.dirty_ordinals.len())?;
             let mut row = (**existing).clone();
             row.dirty_ordinals.insert(posting.ordinal);
             counts.marked_fact_ordinals = counts
@@ -306,7 +307,7 @@ fn apply(
                 .dirty_ordinal_count
                 .checked_add(1)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            meter.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
+            meter.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
                 state.settlements.len(),
             )?;
             state
@@ -331,7 +332,7 @@ fn apply(
 pub(super) fn propagate(
     state: &mut MarkState,
     mut waiting: OrdSet<Arc<RecordedSettlementIdentity>>,
-    admission: &mut impl IndexAdmission,
+    admission: &mut impl RetainedIndexAdmission,
     counts: &mut LogicalMarkingCounts,
 ) -> Result<OrdSet<Arc<RecordedSettlementIdentity>>, CompanionPreflightStop> {
     let mut visited = OrdSet::new();
@@ -372,11 +373,11 @@ pub(super) fn propagate(
             };
             admission.ordered_read(existing.pending_upstream.len())?;
             if !existing.pending_upstream.contains(&upstream) {
-                admission.bytes(
+                admission.index_bytes(
                     index_capacity::arc_bytes::<SettlementMarks>()
                         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
                 )?;
-                admission.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(
+                admission.index_edit::<Arc<RecordedSettlementIdentity>, ()>(
                     existing.pending_upstream.len(),
                 )?;
                 let mut row = (**existing).clone();
@@ -385,7 +386,7 @@ pub(super) fn propagate(
                     .pending_edge_count
                     .checked_add(1)
                     .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-                admission.ordered_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
+                admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
                     state.settlements.len(),
                 )?;
                 state.settlements.insert(Arc::clone(&target), Arc::new(row));

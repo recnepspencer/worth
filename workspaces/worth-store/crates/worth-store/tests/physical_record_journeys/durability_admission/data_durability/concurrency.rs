@@ -218,8 +218,8 @@ fn assert_disjoint_member_targets(
 fn dispatch_label(outcome: &PhysicalDataDispatchOutcome) -> String {
     match outcome {
         PhysicalDataDispatchOutcome::Dispatched(_) => "dispatched".into(),
-        PhysicalDataDispatchOutcome::RetryableAfterCleanup(retry) => {
-            format!("retryable-after-cleanup:{:?}", retry.pressure())
+        PhysicalDataDispatchOutcome::Suspended(retry) => {
+            format!("suspended:{:?}", retry.cause())
         }
         PhysicalDataDispatchOutcome::NotStarted { cause, .. } => {
             format!("not-started:{cause:?}")

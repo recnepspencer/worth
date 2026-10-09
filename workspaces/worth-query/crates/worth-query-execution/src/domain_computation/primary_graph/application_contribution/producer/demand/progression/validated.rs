@@ -285,10 +285,15 @@ where
                 selected_execution_finish.relinquish();
                 return Err(denial.into_denial());
             }
-            Err(super::super::super::execution::ProducerExecutionStop::LiveOutputNotReused) => {
+            Err(super::super::super::execution::ProducerExecutionStop::LiveOutputNotReused {
+                producer,
+                reason,
+            }) => {
                 selected_execution_finish.relinquish();
                 return Err(
-                    super::super::super::execution::ProducerExecutionStop::live_output_not_reused(),
+                    super::super::super::execution::ProducerExecutionStop::live_output_not_reused(
+                        producer, reason,
+                    ),
                 );
             }
             Err(super::super::super::execution::ProducerExecutionStop::ExecutionStopped(

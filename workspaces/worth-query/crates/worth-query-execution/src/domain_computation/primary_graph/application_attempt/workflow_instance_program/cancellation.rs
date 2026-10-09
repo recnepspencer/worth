@@ -2,6 +2,7 @@
 //! rollback: every effect the instance performed remains, and the outcome
 //! reports each one. A cancellation prepared before a step settles goes stale,
 //! and a step admitted before the cancellation commits goes stale in turn.
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 mod close;
 mod publication;
@@ -128,24 +129,20 @@ where
             },
             None => self.close_live_workflow_instance(installed, &layout, &instance, &identity)?,
         };
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(facts);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
         let mut demand = PlatformEffectDemand::default();
         for effect in &effects {
             demand.observe(effect)?;
         }
         let reservation = admit_platform_effects(&self, demand)?;
-        let validator_work_admission = reservation.materialize(&effects)?;
+        reservation.materialize(&effects)?;
         Ok(PreparedWorkflowInstanceCancellation {
             program_revision: *installed.program_revision(),
             instance,
@@ -160,7 +157,6 @@ where
                 emission_retained_bytes_ceiling: 0,
                 conditional_definition: None,
                 effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-                validator_work_admission,
                 output_correspondence: Default::default(),
                 retain_output_demand_observation: false,
                 retain_client_observation: false,

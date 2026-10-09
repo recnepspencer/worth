@@ -80,11 +80,11 @@ impl PhysicalCheckpointCaptureOwner {
     ) -> Result<PhysicalDirtyGenerationCaptureStep, PhysicalCheckpointCaptureFailureKind> {
         let allocation = self
             .frames
-            .checkpoint_capture_allocation(self.checkpoint_policy.memory_limit().get())
-            .map_err(|_denial| PhysicalCheckpointCaptureFailureKind::ResidencyUnavailable)?;
+            .checkpoint_capture_window(&session, self.checkpoint_policy.memory_limit().get())
+            .map_err(PhysicalCheckpointCaptureFailureKind::ResidencyAdmission)?;
         self.frames
             .capture_checkpoint_slice(session, allocation)
-            .map_err(|_denial| PhysicalCheckpointCaptureFailureKind::ResidencyUnavailable)
+            .map_err(PhysicalCheckpointCaptureFailureKind::ResidencyAdmission)
     }
 }
 

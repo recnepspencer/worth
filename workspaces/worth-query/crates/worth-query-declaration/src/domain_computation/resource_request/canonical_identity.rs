@@ -6,10 +6,33 @@ pub(super) fn canonical_resource_request_identity(
     request: &WorthQueryExecutionResourceRequest,
 ) -> String {
     let mut hasher = Sha256::new();
-    hash(&mut hasher, "worth-query-resource-request-v1");
+    let atomic = request.boundary() == super::WorthQueryExecutionBoundary::Atomic;
+    let hash = |hasher: &mut Sha256, value: &str| {
+        if atomic {
+            hasher.update((value.len() as u64).to_le_bytes());
+            hasher.update(value.as_bytes());
+        } else {
+            hash(hasher, value);
+        }
+    };
+    hash(
+        &mut hasher,
+        if atomic {
+            "worth-query-resource-request-v2"
+        } else {
+            "worth-query-resource-request-v1"
+        },
+    );
+    if atomic {
+        hash(&mut hasher, request.boundary().as_str());
+        hash(&mut hasher, &request.scale().iter().count().to_string());
+    }
     for (axis, value) in request.scale().iter() {
         hash(&mut hasher, axis.as_str());
         hash(&mut hasher, &value.to_string());
+    }
+    if atomic {
+        hash(&mut hasher, &request.limits().iter().count().to_string());
     }
     for (dimension, value) in request.limits().iter() {
         hash(&mut hasher, dimension.as_str());

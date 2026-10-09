@@ -6,6 +6,7 @@ pub struct RecoveryPlanningCounters {
     redo_targets: u64,
     redo_apply: u64,
     redo_skip_page_lsn: u64,
+    redo_skip_historical_drop: u64,
     redo_skip_operation: u64,
     freshness_retained: u64,
     freshness_expired: u64,
@@ -37,6 +38,7 @@ impl RecoveryPlanningCounters {
             redo_targets: redo.targets(),
             redo_apply: redo.apply(),
             redo_skip_page_lsn: redo.skip_page_lsn(),
+            redo_skip_historical_drop: redo.skip_historical_drop(),
             redo_skip_operation: redo.skip_operation(),
             freshness_retained,
             freshness_expired,
@@ -69,6 +71,9 @@ impl RecoveryPlanningCounters {
     }
     pub const fn redo_skip_page_lsn(self) -> u64 {
         self.redo_skip_page_lsn
+    }
+    pub const fn redo_skip_historical_drop(self) -> u64 {
+        self.redo_skip_historical_drop
     }
     pub const fn redo_skip_operation(self) -> u64 {
         self.redo_skip_operation

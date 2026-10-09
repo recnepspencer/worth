@@ -1,0 +1,11 @@
+error[E0505]: cannot move out of `coordination` because it is borrowed
+ --> tests/ui/source_read_allocation_prevents_coordination_disposal.rs:5:5
+  |
+3 | fn dispose_during_source_read(mut coordination: PhysicalRecoveryCoordination) {
+  |                               ---------------- binding `coordination` declared here
+4 |     let mut reads = coordination.begin_source_read_allocation().unwrap();
+  |                     ------------ borrow of `coordination` occurs here
+5 |     coordination.shutdown_is_quiescent();
+  |     ^^^^^^^^^^^^ move out of `coordination` occurs here
+6 |     reads.reserve_total(1).unwrap();
+  |     ----- borrow later used here

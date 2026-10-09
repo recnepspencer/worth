@@ -30,6 +30,15 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingR
     UnknownCompletion,
     ConcurrentContinuation,
     PublicationRetryRequired,
+    AllocationDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    StagingCardinalityOverflow,
+    InputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     ExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,

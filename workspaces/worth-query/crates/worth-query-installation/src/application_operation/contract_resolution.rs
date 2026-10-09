@@ -124,19 +124,6 @@ pub(super) fn operation_projection_work_budget(
     })
 }
 
-pub(super) fn operation_decision_fact_budget(
-    members: &[ApplicationSchemaMember],
-    operation: &str,
-) -> Option<usize> {
-    members.iter().find_map(|member| match member {
-        ApplicationSchemaMember::OperationDecisionFactBudget {
-            operation: installed,
-            maximum_fact_count,
-        } if installed == operation => Some(*maximum_fact_count),
-        _ => None,
-    })
-}
-
 pub(super) fn operation_decision_reads_from_members(
     members: &[ApplicationSchemaMember],
     operation: &str,

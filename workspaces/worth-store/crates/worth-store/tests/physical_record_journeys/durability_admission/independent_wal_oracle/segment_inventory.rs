@@ -9,11 +9,11 @@ const FOOTER_BYTES: usize = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in super::super) struct IndependentWalInventory {
-    segments: Vec<(u64, u64)>,
+    pub(super) segments: Vec<(u64, u64)>,
     segment_facts: Vec<IndependentWalSegment>,
-    frame_count: u64,
-    byte_count: u64,
-    peak_segment_bytes: u64,
+    pub(super) frame_count: u64,
+    pub(super) byte_count: u64,
+    pub(super) peak_segment_bytes: u64,
     lsn_range: Option<(u64, u64)>,
 }
 
@@ -21,28 +21,12 @@ pub(in super::super) struct IndependentWalInventory {
 pub(in super::super) struct IndependentWalSegment {
     identity: (u64, u64),
     lsn_range: (u64, u64),
-    byte_count: u64,
+    pub(super) byte_count: u64,
 }
 
 impl IndependentWalInventory {
-    pub(in super::super) fn segments(&self) -> &[(u64, u64)] {
-        &self.segments
-    }
-
     pub(in super::super) fn segment_facts(&self) -> &[IndependentWalSegment] {
         &self.segment_facts
-    }
-
-    pub(in super::super) const fn frame_count(&self) -> u64 {
-        self.frame_count
-    }
-
-    pub(in super::super) const fn byte_count(&self) -> u64 {
-        self.byte_count
-    }
-
-    pub(in super::super) const fn peak_segment_bytes(&self) -> u64 {
-        self.peak_segment_bytes
     }
 
     pub(in super::super) const fn lsn_range(&self) -> Option<(u64, u64)> {
@@ -57,10 +41,6 @@ impl IndependentWalSegment {
 
     pub(in super::super) const fn lsn_range(self) -> (u64, u64) {
         self.lsn_range
-    }
-
-    pub(in super::super) const fn byte_count(self) -> u64 {
-        self.byte_count
     }
 }
 

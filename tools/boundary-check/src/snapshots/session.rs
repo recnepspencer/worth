@@ -2,8 +2,8 @@ use super::baseline::validate_committed_dag_baseline;
 use super::candidate::ConstitutionSnapshots;
 use super::committed_facade_snapshot::{load_committed_facade_exports, CommittedFacadeExports};
 use super::facade_surface_observation::{ConfiguredFacadeSurface, ObservedFacadeExports};
-use crate::cargo_graph::discover_query_audience_packages;
-use crate::config::QueryAudienceContract;
+use crate::cargo_graph::{discover_query_audience_packages, discover_snapshot_dependency_packages};
+use crate::config::{QueryAudienceContract, SnapshotDependencyPackagesConfig};
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use crate::manifest_types::Road1Package;
 use std::path::{Path, PathBuf};
@@ -38,6 +38,7 @@ impl SnapshotSession {
         mode: SnapshotMode,
         road_packages: &[Road1Package],
         query_audience: &QueryAudienceContract,
+        snapshot_packages: &[SnapshotDependencyPackagesConfig],
     ) -> Self {
         let mut preparation_diagnostics = Vec::new();
         if matches!(mode, SnapshotMode::Check) {
@@ -53,9 +54,10 @@ impl SnapshotSession {
                 None
             }
         };
-        let candidate = observe_candidate(root, road_packages, query_audience).map_err(|error| {
-            preparation_diagnostics.push(snapshot_observation_diagnostic(error));
-        });
+        let candidate = observe_candidate(root, road_packages, query_audience, snapshot_packages)
+            .map_err(|error| {
+                preparation_diagnostics.push(snapshot_observation_diagnostic(error));
+            });
         let candidate = candidate.ok();
         let observed_update_authority =
             if matches!(mode, SnapshotMode::Update) && committed_facade_authority.is_none() {
@@ -124,9 +126,11 @@ fn observe_candidate(
     root: &Path,
     road_packages: &[Road1Package],
     query_audience: &QueryAudienceContract,
+    snapshot_packages: &[SnapshotDependencyPackagesConfig],
 ) -> Result<ConstitutionSnapshots, String> {
     let mut governed_packages = road_packages.to_vec();
     governed_packages.extend(discover_query_audience_packages(root, query_audience)?);
+    let dag_only_packages = discover_snapshot_dependency_packages(root, snapshot_packages)?;
     let configured_surfaces = query_audience
         .facade_surfaces
         .iter()
@@ -138,7 +142,12 @@ fn observe_candidate(
             owner_path: surface.owner_source.as_ref().map(|path| root.join(path)),
         })
         .collect::<Vec<_>>();
-    ConstitutionSnapshots::observe(root, &governed_packages, &configured_surfaces)
+    ConstitutionSnapshots::observe(
+        root,
+        &governed_packages,
+        &dag_only_packages,
+        &configured_surfaces,
+    )
 }
 
 fn snapshot_observation_diagnostic(message: String) -> Diagnostic {

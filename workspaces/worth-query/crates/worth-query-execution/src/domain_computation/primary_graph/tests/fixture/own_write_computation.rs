@@ -26,7 +26,6 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 2)
         .operation_projection_work_budget(operation, 32)
         .operation_requires_ability(operation, ViewAccount::reference())
         .operation_read_field(operation, AccountStatus::reference())

@@ -9,7 +9,7 @@ mod work_budget;
 mod work_evidence;
 
 pub(in crate::canonicalization) use admitted_sequence::prepare_sequence_with_admission;
-pub(crate) use material::{basis_sequence_material, struct_value_material, value_material};
+pub(crate) use material::{aspect_value_material, basis_sequence_material, struct_value_material};
 
 pub use admission::{
     admit_canonical_bundle_digest_derivation, admit_canonical_bundle_digest_derivation_with_budget,
@@ -35,3 +35,8 @@ pub use evidence::{
 pub use resource_admission::CanonicalDigestAdmissionStop;
 pub use work_budget::CanonicalDigestWorkBudget;
 pub use work_evidence::CanonicalDigestWorkEvidence;
+
+pub use material::{
+    write_aspect_value_identity_material, write_struct_aspect_value_identity_material,
+    CanonicalMaterialByteCount, CanonicalMaterialLengthOverflow, CanonicalMaterialSink,
+};

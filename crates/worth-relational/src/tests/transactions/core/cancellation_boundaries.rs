@@ -122,14 +122,22 @@ fn preparation_interruptions_leave_no_candidate_or_publication_residue() {
                 )
                 .unwrap();
             transaction
-                .push_batch(batch_create("interrupted-preparation"))
+                .push_batch(
+                    batch_create("interrupted-preparation"),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .unwrap();
             let residue_before =
                 CancellationResidueSnapshot::capture(&runtime, &BranchId("main".to_owned()));
             let position_before = runtime.patch_position_reservation_counters();
             let cost_scope = RelationalMvccCostScope::capture(&runtime, vec![identity]);
 
-            let error = runtime.prepare_branch_transaction(transaction).unwrap_err();
+            let error = runtime
+                .prepare_branch_transaction(
+                    transaction,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap_err();
             let crate::facade::transactions::TransactionCommitError::Interrupted {
                 interruption: event,
                 ..
@@ -182,9 +190,17 @@ fn pre_effect_publication_interruptions_preserve_every_owner_surface() {
                 )
                 .unwrap();
             transaction
-                .push_batch(batch_create("interrupted-publication"))
+                .push_batch(
+                    batch_create("interrupted-publication"),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .unwrap();
-            let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+            let candidate = runtime
+                .prepare_branch_transaction(
+                    transaction,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
             let position_before = runtime.patch_position_reservation_counters();
             let cost_scope = RelationalMvccCostScope::capture(&runtime, vec![identity]);
 
@@ -230,9 +246,17 @@ fn performed_and_settlement_boundaries_report_both_late_interruption_reasons() {
                 )
                 .unwrap();
             transaction
-                .push_batch(batch_create("late-interruption"))
+                .push_batch(
+                    batch_create("late-interruption"),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .unwrap();
-            let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+            let candidate = runtime
+                .prepare_branch_transaction(
+                    transaction,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
             let reference_before = runtime
                 .branch_reference_state(&BranchId("main".to_owned()))
                 .unwrap();
@@ -288,9 +312,17 @@ fn cancellation_after_linearization_returns_the_performed_commit() {
         )
         .unwrap();
     transaction
-        .push_batch(batch_create("late-cancellation-write"))
+        .push_batch(
+            batch_create("late-cancellation-write"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
-    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     let before = runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();

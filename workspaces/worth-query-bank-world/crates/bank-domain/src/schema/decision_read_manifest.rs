@@ -201,10 +201,6 @@ fn install_account_operation_budgets(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
-        .operation_decision_fact_budget(CreatePersonalAccountOperation::reference(), 8)
-        .operation_decision_fact_budget(CreateBusinessAccountOperation::reference(), 8)
-        .operation_decision_fact_budget(GrantAccountAuthorizationOperation::reference(), 96)
-        .operation_decision_fact_budget(RevokeAccountAuthorizationOperation::reference(), 96)
         .operation_projection_work_budget(CreatePersonalAccountOperation::reference(), 256)
         .operation_projection_work_budget(CreateBusinessAccountOperation::reference(), 256)
         .operation_projection_work_budget(GrantAccountAuthorizationOperation::reference(), 512)
@@ -231,27 +227,6 @@ fn install_payment_operation_budgets(
             ApprovedBusinessPaymentAdvanceOperation::reference(),
             PaymentIdentityField::reference(),
         )
-        .operation_decision_fact_budget(ApplyOpeningFundingOperation::reference(), 256)
-        .operation_decision_fact_budget(DepositOperation::reference(), 256)
-        .operation_decision_fact_budget(WithdrawOperation::reference(), 256)
-        .operation_decision_fact_budget(SendMoneyOperation::reference(), 256)
-        .operation_decision_fact_budget(InitiateBusinessPaymentOperation::reference(), 256)
-        .operation_decision_fact_budget(
-            ApprovedBusinessPaymentAuthoringOperation::reference(),
-            1_024,
-        )
-        .operation_decision_fact_budget(
-            ApprovedBusinessPaymentApprovalOperation::reference(),
-            1_024,
-        )
-        .operation_decision_fact_budget(
-            ApprovedBusinessPaymentInstanceStartOperation::reference(),
-            1_024,
-        )
-        .operation_decision_fact_budget(ApprovedBusinessPaymentAdvanceOperation::reference(), 1_024)
-        .operation_decision_fact_budget(ApprovePaymentOperation::reference(), 1_024)
-        .operation_decision_fact_budget(RejectPaymentOperation::reference(), 128)
-        .operation_decision_fact_budget(ReverseJournalOperation::reference(), 256)
         .operation_projection_work_budget(ApplyOpeningFundingOperation::reference(), 4_096)
         .operation_projection_work_budget(DepositOperation::reference(), 4_096)
         .operation_projection_work_budget(WithdrawOperation::reference(), 4_096)

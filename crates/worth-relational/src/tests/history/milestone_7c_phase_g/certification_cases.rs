@@ -93,9 +93,15 @@ pub(super) fn certify_prefer_richer_merge_execution() -> MergeExecutionCertifica
                     ]),
                 }),
             )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    feature_txn.commit(&runtime).expect("feature branch seed");
+    feature_txn
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .expect("feature branch seed");
 
     let prepared = runtime
         .prepare_merge_execution(MergeExecutionRequest {

@@ -1,11 +1,12 @@
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::{ArtifactCeiling, PageAddress, ReadGrant, UnchargedRead};
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, PhysicalRuntimeAdmission, PhysicalStore,
     QualifiedRecoveryFilesystemMedia,
 };
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, DurablePhysicalRootManifest, FreeSpaceBlockReference,
-    FreeSpaceKey, PhysicalRecordFormatDeclaration, RecordAllocationClass,
+    FreeSpaceKey, PhysicalRecordFormatDeclaration,
 };
 use worth_store_physical_integrity::{
     validate_root_manifest, PhysicalArtifactScope, PhysicalByteRange, UntrustedPhysicalArtifact,
@@ -25,7 +26,7 @@ fn checksum_valid_root_bytes_cannot_relabel_their_c4_store_locator_or_offset() {
     let store_b = initialize_media(&root_b);
     assert_ne!(store_a, store_b);
     let format = PhysicalRecordFormatDeclaration::builder().admit().unwrap();
-    let key = FreeSpaceKey::new(RecordAllocationClass::InlinePage, 1).unwrap();
+    let key = FreeSpaceKey::inline(1).unwrap();
     let free = FreeSpaceBlockReference::new(1, 1, 0, 41, key, key).unwrap();
     let bytes = DurablePhysicalRootManifest::builder(1, 71, 2, 43)
         .free_space_root(Some(free))
@@ -40,7 +41,13 @@ fn checksum_valid_root_bytes_cannot_relabel_their_c4_store_locator_or_offset() {
         .admit_persisted_store()
         .unwrap();
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
-    let observed = discovery.read_root_manifest(1, 4096).unwrap();
+    let observed = discovery
+        .read(
+            ArtifactCeiling::page(format, PageAddress::RootManifest { generation: 1 }),
+            ReadGrant::ceiling_only(),
+        )
+        .observed()
+        .unwrap();
     let range = PhysicalByteRange::new(0, bytes.len() as u64).unwrap();
     let wrong_locator = PhysicalArtifactScope::root_manifest(store_a, format, 2, range).unwrap();
     assert!(matches!(

@@ -15,6 +15,10 @@ use super::world::{
 mod checkpoint_replacement;
 #[path = "revalidation/denial_matrix.rs"]
 mod denial_matrix;
+#[path = "revalidation/lasting_changes.rs"]
+mod lasting_changes;
+#[path = "revalidation/window.rs"]
+mod window;
 
 #[test]
 fn cleanup_denial_retains_the_artifact_and_exact_backend_failure() {
@@ -69,18 +73,11 @@ fn cleanup_revalidates_exact_wal_bytes_before_deletion() {
     let world = cleanup_world("cleanup-wal-substitution");
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-    let mut substituted = std::fs::read(&candidate).unwrap();
-    let candidate_bytes = substituted.len() as u64;
+    let candidate_bytes = std::fs::metadata(&candidate).unwrap().len();
     let checkpoint_bytes = current_checkpoint_bytes(&world.root);
-    *substituted.last_mut().expect("candidate WAL is nonempty") ^= 0xff;
-    std::fs::write(&candidate, substituted).unwrap();
-
-    let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("stale WAL bytes remain deferred cleanup debt")
-    };
-    let RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("substituted WAL bytes must deny cleanup")
-    };
+    window::flip_last_byte(&candidate);
+    let indeterminate = window::rejoin_denied(reopened.finish());
+    let evidence = window::deferred_cleanup(&indeterminate);
     let [RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
     else {
         panic!("one exact digest mismatch")
@@ -191,17 +188,14 @@ fn cleanup_rejects_a_distinct_valid_persisted_checkpoint_before_wal_revalidation
     let world = cleanup_world("cleanup-checkpoint-substitution");
     let candidate = world.oldest_wal();
     let reopened = reopen_with_schedule(&world.root, empty_fault_schedule());
-    let checkpoint_bytes = checkpoint_replacement::replace_with_distinct_valid_checkpoint(
-        &world.root,
-        reopened.store_identity(),
-    );
-
-    let PhysicalRecoveryOutcome::Recovered(handoff) = reopened.finish() else {
-        panic!("checkpoint substitution remains deferred cleanup debt")
-    };
-    let RecoveryCleanupPosture::Deferred(evidence) = handoff.cleanup_posture() else {
-        panic!("a different persisted checkpoint must deny cleanup")
-    };
+    let checkpoint_bytes = current_checkpoint_bytes(&world.root);
+    let (root, store) = (world.root.clone(), reopened.store_identity());
+    let outcome = window::finish_changed_before_revalidation(reopened, move || {
+        let replaced = checkpoint_replacement::replace_with_distinct_valid_checkpoint(&root, store);
+        assert_eq!(replaced, checkpoint_bytes);
+    });
+    let indeterminate = window::rejoin_denied(outcome);
+    let evidence = window::deferred_cleanup(&indeterminate);
     let [RecoveryCleanupDeferralEvidence::DeniedBeforeEffect { denial, .. }] = evidence.deferrals()
     else {
         panic!("one exact checkpoint mismatch")

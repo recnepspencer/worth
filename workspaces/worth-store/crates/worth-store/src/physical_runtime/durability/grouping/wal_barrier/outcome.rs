@@ -3,8 +3,8 @@ use worth_store_physical_backend::ArtifactTreeFailure;
 
 use super::PhysicalWalGroupBarrierDeclarationDenial;
 use crate::physical_runtime::{
-    PhysicalDurabilityGroupBasis, PhysicalExecutorCommandDenial, PhysicalSchedulerDenial,
-    PhysicalWorkPreEffectDenial, SealedPhysicalDurabilityGroupMembers,
+    PhysicalDurabilityGroupBasis, PhysicalEffectRecoveryObligation, PhysicalExecutorCommandDenial,
+    PhysicalSchedulerDenial, PhysicalWorkPreEffectDenial, SealedPhysicalDurabilityGroupMembers,
     WalDurablePhysicalMutationMembers,
 };
 
@@ -31,6 +31,7 @@ pub enum PhysicalWalGroupBarrierFailureCause {
 
 pub struct IndeterminatePhysicalWalGroupBarrier {
     appended: SealedPhysicalDurabilityGroupMembers,
+    recovery: PhysicalEffectRecoveryObligation,
 }
 
 pub enum PhysicalWalGroupBarrierOutcome {
@@ -45,8 +46,16 @@ pub enum PhysicalWalGroupBarrierOutcome {
 impl IndeterminatePhysicalWalGroupBarrier {
     pub(in crate::physical_runtime) const fn new(
         appended: SealedPhysicalDurabilityGroupMembers,
+        recovery: PhysicalEffectRecoveryObligation,
     ) -> Self {
-        Self { appended }
+        Self { appended, recovery }
+    }
+
+    /// What the barrier's settlement left in the recovery journal: a failed
+    /// flush whose recovery record could not be written either reports
+    /// `RetainedWithoutRecord`.
+    pub const fn recovery_obligation(&self) -> PhysicalEffectRecoveryObligation {
+        self.recovery
     }
 
     pub const fn basis(&self) -> PhysicalDurabilityGroupBasis {

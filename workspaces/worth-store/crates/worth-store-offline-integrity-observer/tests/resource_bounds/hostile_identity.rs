@@ -33,8 +33,11 @@ fn hard_link_alias_is_reported_twice_but_read_once() {
     assert_eq!(report.counters().checksum_calculations(), 4);
     assert_eq!(report.counters().selector_payload_decoder_entries(), 2);
     assert_eq!(report.counters().duplicate_identities(), 1);
-    assert_eq!(report.counters().bytes_read(), 654);
-    assert_eq!(report.counters().files_opened(), 20);
+    assert_eq!(report.counters().bytes_read(), 670);
+    assert_eq!(
+        report.counters().files_opened(),
+        if cfg!(windows) { 34 } else { 20 }
+    );
 }
 
 #[test]
@@ -46,7 +49,10 @@ fn hard_link_across_protocol_scopes_is_still_read_once() {
     std::fs::hard_link(&source, &root).expect("same-volume hard-link fixture must be supported");
     let report = observe_store(&bounded_request(&fixture, limits(100, 16 * 1024, 8, 0))).unwrap();
     assert_eq!(report.counters().bytes_read(), 286);
-    assert_eq!(report.counters().files_opened(), 16);
+    assert_eq!(
+        report.counters().files_opened(),
+        if cfg!(windows) { 27 } else { 16 }
+    );
     let root = report
         .artifacts()
         .iter()
@@ -103,7 +109,7 @@ fn unknown_hard_link_is_visible_as_a_physical_alias_without_reinspection() {
         [OfflineArtifactDuplicateEvidence::PhysicalAlias { first_path }]
             if &**first_path == "families/records/root-current.selector"
     ));
-    assert_eq!(report.counters().bytes_read(), 654);
+    assert_eq!(report.counters().bytes_read(), 670);
     assert_eq!(report.counters().duplicate_identities(), 1);
 }
 
@@ -129,5 +135,5 @@ fn unknown_directory_is_classified_without_being_traversed() {
         .artifacts()
         .iter()
         .all(|artifact| !artifact.relative_path().contains("hidden")));
-    assert_eq!(report.counters().bytes_read(), 654);
+    assert_eq!(report.counters().bytes_read(), 670);
 }

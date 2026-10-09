@@ -1,7 +1,5 @@
 use super::super::frontier::BlobStreamingContentFrontier;
-use super::super::receipt_construction::{
-    BlobStreamingCounterBackedPerformanceReceipt, BlobStreamingResidencyProof,
-};
+use super::super::receipt_construction::BlobStreamingCounterBackedPerformanceReceipt;
 use crate::{
     AdmittedBlobChunkSequence, BlobStreamingIngestCounterSnapshot, BlobStreamingResumeAdmission,
     BlobStreamingResumePosture,
@@ -12,7 +10,6 @@ pub struct BlobStreamingIngest {
     pub(crate) sequence: AdmittedBlobChunkSequence,
     pub(crate) frontier: BlobStreamingContentFrontier,
     pub(crate) resumability: BlobStreamingResumePosture,
-    pub(crate) residency: BlobStreamingResidencyProof,
     pub(crate) counters: BlobStreamingIngestCounterSnapshot,
     pub(crate) performance: BlobStreamingCounterBackedPerformanceReceipt,
 }
@@ -22,7 +19,6 @@ impl BlobStreamingIngest {
         sequence: AdmittedBlobChunkSequence,
         frontier: BlobStreamingContentFrontier,
         resumability: BlobStreamingResumePosture,
-        residency: BlobStreamingResidencyProof,
         counters: BlobStreamingIngestCounterSnapshot,
         performance: BlobStreamingCounterBackedPerformanceReceipt,
     ) -> Self {
@@ -30,7 +26,6 @@ impl BlobStreamingIngest {
             sequence,
             frontier,
             resumability,
-            residency,
             counters,
             performance,
         }
@@ -46,10 +41,6 @@ impl BlobStreamingIngest {
 
     pub const fn resumability(&self) -> &BlobStreamingResumePosture {
         &self.resumability
-    }
-
-    pub const fn residency(&self) -> BlobStreamingResidencyProof {
-        self.residency
     }
 
     pub const fn counters(&self) -> BlobStreamingIngestCounterSnapshot {

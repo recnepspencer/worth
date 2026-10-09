@@ -193,6 +193,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         stage.retain(
             suspended_generation,
             |row| RecordedOutput {
+                native_prior_checkpoint: None,
                 computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
                 performed_origin: Some(Arc::clone(&origin)),
                 consumed_outputs: Arc::clone(&consumed),
@@ -276,6 +277,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         stage.retain(
             alias_generation,
             |row| RecordedOutput {
+                native_prior_checkpoint: None,
                 computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
                 performed_origin: Some(Arc::clone(&origin)),
                 consumed_outputs: Arc::clone(&consumed),

@@ -193,10 +193,14 @@ fn create_entity(runtime: &RelationalRuntime, kind: KindId, key: &str) -> Entity
                     fields: Default::default(),
                 },
             ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("entity stages");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("entity publishes")
         .changed_records
         .iter()
@@ -210,19 +214,25 @@ fn create_entity(runtime: &RelationalRuntime, kind: KindId, key: &str) -> Entity
 fn create_relation(runtime: &RelationalRuntime, source: EntityId, target: EntityId) -> RelationId {
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     transaction
-        .push_batch(WorkerIntentBatch::new("edge").push(MutationIntent::Create(
-            CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(4),
-                client_key: ClientKey::raw("edge"),
-                source: EntityReference::Existing(source),
-                target: EntityReference::Existing(target),
-                fields: Default::default(),
-            }),
-        )))
+        .push_batch(
+            WorkerIntentBatch::new("edge").push(MutationIntent::Create(CreateIntent::Relation(
+                RelationSpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(4),
+                    client_key: ClientKey::raw("edge"),
+                    source: EntityReference::Existing(source),
+                    target: EntityReference::Existing(target),
+                    fields: Default::default(),
+                },
+            ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("relation stages");
     transaction
-        .commit(runtime)
+        .commit(
+            runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("relation publishes")
         .changed_records
         .iter()

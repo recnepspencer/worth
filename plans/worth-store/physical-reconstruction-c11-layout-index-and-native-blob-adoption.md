@@ -1,5 +1,11 @@
 # C.11: Layout, Index, And Native Blob Adoption
 
+> **Scope cut (2026-10-06).** C.11 does not close before C.13. The
+> [fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md) takes the
+> C.11 items Part II Milestones 1 to 3 need, including the Phase 8 cleanup that
+> C.13 owns. Every other item in this spec is deferred, and the fast track's
+> "Deferred Work" table names its owner and return point.
+
 ## Goal And Decision
 
 Blob bytes, chunk trees, generation publications, B-tree and LSM index nodes
@@ -42,6 +48,92 @@ consumer. All eight documents in `../../docs/coding-guidelines/` govern this des
 Historical S.7/S.8 simulations and certification harnesses establish nothing
 about the production join.
 
+## Store Format Policy: No Historical Compatibility
+
+Store has never been deployed, and its existing development data is disposable.
+C.11 therefore supports only the current Store artifact and protocol grammars;
+it has no obligation to reopen data from abandoned development builds. This
+decision governs Store and its direct writer, validator, recovery, rejoin and
+offline-observation consumers, not unrelated platform workspaces.
+
+For each artifact or protocol family, declare one supported current grammar
+with explicit typed operation and state variants. Keep stable identity and
+version tags so stale or unsupported bytes cannot be mistaken for current
+data. Change the identity/version when incompatible encoding changes require
+it; do not reinterpret old bytes or retain an old reader merely because a
+version was bumped. Historical read/write windows, dual-read or dual-write
+lanes, old-format migrations, downgrade conversions, rolling-upgrade support,
+legacy aliases and compatibility-only registries or harnesses are not C.11
+deliverables and must not survive solely to preserve development history.
+
+Wire identity belongs exclusively to the Format codec, never to a mutation
+instance or caller-selected operation. The recovery projection stores one
+`PersistedPhysicalRecoveryOperation` sum: session and reuse operations carry
+their exact binding; `RecordsDropped` alone can carry a release-head effect;
+`DerivedDirectory` alone can carry a retirement. These attachments retain their
+lawful present/absent states, and unavailable source facts remain explicit.
+The public projection exposes the complete operation, not parallel semantic
+and attachment fields. Checked construction validates identities, generations,
+digests and resource limits; an operation value does not grant recovery or
+publication authority. `Frames` and `SourceCopy` remain distinct payloads.
+
+The current-only projection codec writes one fixed identity unconditionally and
+admits only that identity before decoding its body. There is no per-instance
+format selector or version-conditioned operation dispatch. Rust construction,
+visibility and exhaustive operation matching enforce the public contract;
+the existing boundary checker additionally inspects the producer/decoder AST,
+the single supported-domain declaration and the projection module graph to
+reject a second grammar, a version selector or a domain-selection branch.
+Unsupported-version diagnostics may parse a rejected numeric identity, but
+that rejection path may not select an operation or enter a historical reader.
+Compiler-negative examples protect attachment/type construction; checker
+negative cases protect the private wire boundary. Current publication,
+checkpoint, fresh C.8 recovery, independent Store rejoin and Serving remain
+the integration acceptance, alongside malformed-current-operation refusals.
+
+This is not permission to delete live operation semantics. `Frames` and
+`SourceCopy`, classified or unavailable source facts, `NoRelease`, active and
+terminal release custody, session/frontier transitions, tier certificates and
+head retirement retain their distinct authority and lifecycle meaning in the
+current grammar. An older numeric tag still emitted by a current writer is a
+coordinated cutover target, not evidence that its operation can be deleted.
+Likewise, an older checkpoint or WAL member within a current-format journey is
+current recovery history, not historical software compatibility.
+
+A cutover updates the production writer, physical format, WAL/root publication,
+C.9 integrity admission, C.8 recovery, independent Store rejoin and independent
+offline parsers together at the affected family boundary. Remove the replaced
+production encoding/reader and its compatibility-only fixtures in that slice;
+do not leave parallel lanes or introduce a migration framework. Rebuild junk
+fixtures through the current production format. Existing canonical current
+encoding, hash and authority tests remain valuable; only promises to admit an
+abandoned format are retired. Preserve accepted evidence whose seam is unchanged.
+
+Unsupported historical identities/versions produce a typed unsupported-format
+denial before mutation, recovery promotion or Serving. Opening such a namespace
+must not silently migrate, erase or reinitialize it. Creating a fresh disposable
+namespace is an explicit development action, not a recovery fallback. Current
+format corruption, partial writes, cancellation, checkpoint replacement, lawful
+WAL pruning and fresh-process recovery still require their full existing fates,
+integrity checks, resource budgets and authority provenance. The decisive
+pruned A/B continuation journey below is unchanged.
+
+Before accepting a format cutover, independent review must see a genuine
+current-format positive publication/checkpoint/recovery/Serving journey and
+focused unsupported-version negative evidence at the affected admission
+boundaries. A missing head or altered control in the current grammar must still
+deny; a version rejection alone cannot substitute for current-format recovery
+or structural integrity evidence. There is no requirement for positive recovery
+from historical golden artifacts or coexistence with an abandoned writer.
+
+Architecture 21 and DX 7 explicitly permit this undeployed, disposable,
+current-only Store baseline while retaining identity, typed unsupported-version
+rejection and current-format recoverability. All other governing constraints
+remain binding; this is not a general compatibility waiver. Future deployment
+or an actual retained-data commitment requires
+a new explicit compatibility decision; speculative upgrade machinery is not
+prebuilt here.
+
 ## Decisions Made In Place Of Open Questions
 
 The spec-designer process asks the user where the sources leave a choice open.
@@ -52,9 +144,9 @@ rationale. A reviewer who disagrees changes the decision here before implementat
 | --- | --- | --- |
 | D1 | This document is `physical-reconstruction-c11-layout-index-and-native-blob-adoption.md`; the roadmap's spec list is corrected to this name. | The requested name states the native-blob priority; the roadmap listed a shorter placeholder name before the spec existed. |
 | D2 | Blob chunk bytes, chunk-tree nodes and generation publications are stored as C.5 extent-backed physical records (`RecordArtifactFile::Extent`/`ExtentManifest`, `PhysicalExtentRecordAuthority`), not a new media file family. | Extents already run through append, WAL, group commit, root publication, `ExtentChunk` integrity, `rewrite_selected_extent_record`, retirement, recovery and offline walk. A packed blob-segment family would be exactly the parallel path C.11 exists to remove. The file-per-extent cost is not accepted; it is repaired in the extent platform itself (D16), so blobs, LSM runs and every large row share the fix. |
-| D3 | Chunk identity is SHA-256 over the stored chunk frame; the current 64-bit FNV-1a `ChunkTreeRoot` fold in `worth-store-blob-chunks::chunk_integrity` is demoted to comparison evidence and denied as native authority. | The roadmap requires content-addressed chunk trees; a 64-bit non-cryptographic fold is neither collision-resistant nor content addressing. `sha2` is already a dependency of `worth-store` and `worth-store-blob-chunks`. |
-| D4 | Chunking is fixed-size in C.11 with an admitted `BlobChunkSize` of 64 KiB to 256 KiB (default 256 KiB); content-defined chunking is a Part II customization. | S.7 leaves the rule open. Fixed size makes every chunk one extent record with a bounded frame, bounded resident window, and exact counters. Larger sizes exceed the extent payload limit that the durability doc states for `rewrite_selected_extent_record`. |
-| D5 | The chunk tree is a real durable tree: leaf nodes list ordered chunk digests plus record identities, interior nodes list child-node digests plus record identities, and the generation root is the SHA-256 of the root node frame. | A flat manifest for a blob above memory does not fit one record and cannot be verified with a bounded window. A tree gives bounded verification, byte-range seeking and localized corruption. |
+| D3 | `StoredChunkDigest` is SHA-256 over a versioned canonical stored-content subframe (chunk rule and bytes), excluding session, object, ordinal, placement and RecordId. Every newly written prepublication chunk or tree-node C.5 record also carries a separately authenticated occurrence claim: declared session, kind, ordinal or level/index, length and canonical digest; the selected C.5 route binds it to record identity. The current 64-bit FNV-1a `ChunkTreeRoot` fold in `worth-store-blob-chunks::chunk_integrity` is comparison evidence only. | Content identity remains stable across occurrences for Phase 4 dedupe, while claims make both chunk and partial-tree custody decidable after WAL truncation. A 64-bit non-cryptographic fold cannot be native content authority. |
+| D4 | Chunking is fixed-size in C.11 with an admitted `BlobChunkSize` of 64 KiB to 256 KiB (default 256 KiB); content-defined chunking is a Part II customization. | S.7 leaves the rule open. Fixed size gives bounded frames and exact counters. A 256 KiB chunk plus its frame overhead exceeds the ordinary 256 KiB record-preserving rewrite ceiling, so movement uses the bounded C.10 SourceCopy lane, not `rewrite_selected_extent_record`. |
+| D5 | The chunk tree is a real durable tree: leaf nodes list ordered chunk digests plus record identities, interior nodes list child-node digests plus record identities, and the generation root is the SHA-256 of the root node frame. `ChunkTreeRoot` is Store-local physical-layout identity; `LogicalContentDigest` is portable plaintext identity. | A flat manifest for a blob above memory does not fit one record and cannot be verified with a bounded window. Record identities legitimately change after cross-Store import, so its physical tree root is not a portable equality claim. |
 | D6 | The blob catalog (object identity to published generation) is a derived B-tree index over the authoritative generation-publication records; it is rebuildable and never authority. | This keeps blob identity in WAL-replayable publication records, and makes the first index adoption load-bearing for the blob path instead of a separate demo. |
 | D7 | Dedupe scope in C.11 is `SameStoreSameKeyScope` (new; built over `worth_store_security::StoreKeyScope`) only; cross-scope reuse stays a typed denial through the existing `ScopeMismatchCase` law, with no executable branch. | S.7 leaves the first index scope open; tenant and key policy are Part II inputs the Store may enforce but not decide. |
 | D8 | `worth-store-blob-chunks` drops its `worth-store` dependency, normal and dev, and every Store-importing file is cut over as enumerated in [Cycle removal](#cycle-removal-blob-chunks-to-worth-store); `worth-store` then depends on `worth-store-blob-chunks`, `worth-store-layout-indexes` and `worth-store-lsm-authority` as downward mechanism crates. | This is the C.10 precedent for `worth-store-physical-isolation`. `cargo tree -i worth-store -e normal` shows the single edge `worth-store-blob-chunks -> worth-store`; `worth-store-layout-indexes` reaches the Store only through it and `worth-store-lsm-authority` not at all, so removing that one edge is sufficient. The dev edge must go too: a dev cycle compiles a second copy of `worth-store-blob-chunks` whose types do not unify with the Store's. Decision Lock 15 keeps the mechanism crates Signal-agnostic; live owners are Store parts. |
@@ -67,6 +159,7 @@ rationale. A reviewer who disagrees changes the decision here before implementat
 | D15 | `worth-store-layout-indexes::maintenance::operational_repair` (raw `std::fs` rename and canonicalize) is deleted with its tests, including `LayoutOperationalRepairOwner`, `DerivedIndexRepairReceipt` and `DerivedIndexRepairExecutionDenial`; `worth-store-operations::workflow::repair` keeps its pure plan, lowering and classification law, and its derived-index execution arm returns an operations-owned typed denial (new variant) naming the Store rebuild owner. | `worth-store-operations` does not depend on `worth-store`, so it cannot call `layouts().rebuild()`; keeping a filesystem executor beside the Store rebuild owner is a parallel authority lane. Operator-authorized repair of authoritative bytes is S.10; derived-index rebuild is the Store's (Phase 4). |
 | D16 | Extent storage becomes packed, range-allocated **extent arenas**, and this ships as Phase 1, before the first blob. An arena is a large file (admitted `ExtentArenaCapacity`, 64 MiB to 4 GiB, default 1 GiB) holding many aligned extent data and manifest frames. An extent's private placement becomes (arena, offset, length, extent generation). Free space becomes range truth with reuse, published with the root. See [Extent arenas](#extent-arenas). | Today every record at or above the extent threshold (which must be below one page, 16 KiB by default) gets its own data file plus its own manifest file, and free space is a bump allocator (`next_extent`, `first_unallocated`) that never reuses anything. A 4 GiB blob would be about 32 000 files, and so would 16 000 ordinary 20 KiB rows. That is a platform scaling defect, not a blob detail, so it is fixed where it lives. The model is the one used by serious storage engines (copy-on-write range allocation over large files, as in shadow-paging, LMDB's free list and BlueStore's allocator): the file count scales with bytes, not objects; writes are large and aligned; and because no allocation may overwrite a range routed by any protected root, torn writes need no double-write or full-page-image scheme. C.5 already separates stable `PhysicalRecordId` from private placement, so no public identity changes. |
 | D17 | The on-disk format version is bumped for arenas; a store in the per-file extent layout is refused at open with a typed format-version denial. No migration or dual-read path exists. | No production store exists in the old layout, and AGENTS.md forbids compatibility surfaces and parallel lanes. |
+| D18 | Every C.11 Store artifact/protocol family is current-format-only under the policy above. Abandoned development formats and compatibility-only production, API and test paths are removed; current writers and all affected consumers cut over together. | Store is undeployed and existing data is disposable. A version tag prevents reinterpretation; it does not create a historical-data support promise. |
 
 ## Current Boundary And Required Cutovers
 
@@ -81,7 +174,7 @@ The code provides real mechanisms with specific integration gaps:
 | `worth-store-layout-indexes` reads B-tree pages through `InMemoryPhysicalFormatModel`; `BaselineBTreeExecutionWitness::lookup_counters()` returns constants (`page_touches: 2`, `bytes_read: 8_192`); `LayoutReadRuntime` and degraded scan take `&mut InMemoryPhysicalFormatModel`; `maintenance/operational_repair.rs` renames files with `std::fs`; `read_plan_completion()` is not a Store root lease. | Access execution takes a Store-owned protected page port derived from `records()`; counters come from executed `RecordReadSession` observations; repair goes through `PhysicalRecordSubmission`. The in-memory model stays a format-owner test model, never a runtime. |
 | `worth-store-lsm-authority` opens `WalArtifactInventory` and verifies persisted ranges with `std::fs::File::open`; records carry `persisted_path: PathBuf`; nothing writes membership bytes. | Membership records are persisted through the Store WAL payload producer and re-read through the Store's WAL member port. Path fields are replaced by `PhysicalWalMemberIdentity`. |
 | `ServingPhysicalRuntime::physical_allocations().admit_blob()` grants a `BlobPhysicalAllocation` memory charge (default scope 256 MiB); `PhysicalCapability::Blob` and `Layout` report `Absent`; no `blob()` or `layout()` accessor exists. | Keep the allocation as the only temporary-byte budget for blob work. Add fallible `blobs()` and `layouts()` capability accessors on `ServingPhysicalRuntime` that acquire protection and allocation through the existing owners. |
-| C.10 scheduler vocabulary has `BackgroundPressureKind::{BlobIngestPressure, BlobMigrationPressure, CompactionRewrite, RepairScan}` and `BackgroundDebtKind::BlobContention` with no Store producer; `RetainedBackgroundHeads` retains only checkpoint and reclamation heads. | Add ingest, blob reclaim, index rebuild and LSM compaction producers to `instance/scheduler_admission/`. Extend the retained-head set rather than adding a second dispatcher. |
+| C.10 scheduler vocabulary has `BackgroundPressureKind::{BlobIngestPressure, BlobMigrationPressure, CompactionRewrite, RepairScan}` and `BackgroundDebtKind::BlobContention` with no Store producer; `RetainedBackgroundHeads` retains only checkpoint and reclamation heads. | Add ingest, blob reclaim, index rebuild and LSM compaction producers to `instance/scheduler_admission/`. Extend the retained-head set for retry-owned compaction, while synchronous per-frame ingest and reclaim release their dispatch attempts on denial. |
 | `PhysicalRecordSubmission` supports append and record-preserving rewrite (`rewrite_selected_inline_segment`, `rewrite_selected_inline_pages`, `rewrite_selected_extent_record`, capped by `MAXIMUM_EXTENT_REWRITE_BYTES` = 256 KiB); every rewrite preserves every record. `retire_displaced_segment()` retires a generation displaced by rewrite, and `PhysicalCurrentRootOwner` holds exactly one `displaced` slot, so one displaced generation may be outstanding at a time. | Add one record-dropping publication, `drop_reclaimed_records`, whose WAL payload names each dropped record and whose published root unroutes them; dropped extents become displaced and flow into the existing retirement path. The displaced slot becomes a bounded queue (`DisplacedArtifactQueue`, new) with the same claim/complete protocol, because one reclaim batch displaces many extents. No blob-specific deleter. |
 | `PhysicalIntegrityArtifactFamily` and `worth-store-physical-integrity::artifact` cover page, extent, WAL, checkpoint, root and free-space families; C.9 reserved additive index/blob siblings. | Add `BlobChunkFrame`, `BlobTreeNode`, `BlobGenerationPublication`, `BlobResumeSession`, `BTreeNode`, `LsmRun` declarations, validators, and offline observer families. |
 | `worth-store-contracts::DurableArtifactFamilyId` already names `BlobChunk`, `BlobManifest`, `BlobStream`, `ChunkTreeRoot`, `DedupeIndex`, `ReachabilityEdge`, `RetentionHold`, `ReclaimReceipt`; `worth-store-layout-indexes::artifact_family` has static inventory rows and a crate-private declaration registry. | The Store-owned artifact-family registry is a live instance constructed in `instance/parts.rs`; it consumes the mechanism crate's declaration law and binds each admitted family to its real format, validator, access operations, rebuild basis and retention mechanics. Static rows without an executable owner are removed. |
@@ -117,11 +210,19 @@ Phase 2. Fifteen files import `worth_store::`:
 | --- | --- | --- |
 | `src/streaming/allocation.rs` | `BlobPhysicalAllocation`, allocation scope | M to `worth-store/.../blob/allocation.rs` |
 | `src/streaming/read/{admission,denial,counters}.rs` | `stability::{StablePhysicalReadReceipt, PhysicalReadExecutionDenial, StablePhysicalReadExecutionCounters}` | M to `blob/read_admission.rs`, split by responsibility if it passes 400 lines |
-| `src/placement/movement/types/read_hold.rs` | `StablePhysicalReadReceipt` | M to `blob/placement/read_hold.rs` |
+| `src/placement/movement/types/read_hold.rs` | `StablePhysicalReadReceipt` | D in Phase 2 with the obsolete mechanism-owned execution/read-hold lane. Phase 6 introduces the real Store-owned hold under `blob/placement/` when movement executes through the runtime. |
 | `src/streaming/ingest/orchestration/bounded_ingest.rs` | `BlobPhysicalAllocation` | M to `blob/ingest/session.rs`; the pure frame-sequence and frontier law it calls stays in the mechanism crate |
 | `src/streaming/read/orchestration/verify_bounded.rs` | `BlobPhysicalAllocation` | M to `blob/read/verify.rs`; digest-comparison law stays |
 | `src/streaming/read/{tests,test_support,pressure_tests}.rs`, `src/streaming/ingest/ingest_tests.rs`, `src/placement/movement/test_support.rs`, `src/test_support/allocation.rs` | certification-only receipts and allocation scopes | Cases that exercise the Store join move to `worth-store/tests/physical_blob_journeys/`; cases that test pure mechanism law are rewritten against mechanism-owned inputs; none keeps a Store-minted certification receipt |
-| `src/compile_fail/{placement_movement,construction_boundaries}.rs` (Store-type cases only) | `StablePhysicalReadReceipt`, `RecoveryPhysicalAllocation`, `BlobPhysicalAllocation`, `ServingPhysicalRuntime` | M to `worth-store/tests/physical_runtime_authority/` under the existing `physical_runtime_authority_ui` target |
+| `src/compile_fail/construction_boundaries.rs` (Store ingest-type cases only) | `RecoveryPhysicalAllocation`, `BlobPhysicalAllocation`, `ServingPhysicalRuntime` | M to `worth-store/tests/physical_runtime_authority/` under the existing `physical_runtime_authority_ui` target, with a valid ingest counterpart and intended allocation/lifetime failures. |
+| `src/compile_fail/placement_movement.rs` (Store-type cases only) | `StablePhysicalReadReceipt` as a substitute for movement execution or a movement read hold | D in Phase 2 with the obsolete target types and execution adapters; retain pure planning-law tests. Phase 6 must prove these non-substitution boundaries against its actual Store-owned movement and hold types in `physical_runtime_authority_ui`. |
+
+Movement planning remains a downward mechanism in Phase 2, not a public
+execution shell. A completed lower read plan plus a migration interlock may
+support planning, but cannot execute or publish movement. Tests against removed
+execution types do not migrate as missing-type or nonexistent-method failures:
+those would prove no live authority boundary. The Phase 6 Store join owns their
+replacement compiler evidence; this disposition does not remove that obligation.
 
 `cargo tree -i worth-store -e normal` shows that this is the only edge:
 `worth-store-layout-indexes` reaches the Store only through
@@ -204,6 +305,7 @@ runtime access APIs.
 ### World and scale axes
 
 - Blob axis: one blob of at least 4 x the admitted Blob allocation window
+  and strictly larger than the full `W + 5 MiB` ingest residency ceiling
   (default window 64 MiB against the 256 MiB scope; the heavy lane uses a 4 GiB
   blob against a 64 MiB window) generated from a deterministic seeded pattern
   with repeated 256 KiB regions for dedupe. Sparse or zero-filled sources are
@@ -221,16 +323,21 @@ runtime access APIs.
 
 Ingest the blob with a window smaller than the blob; kill the writer after
 the frontier passes half the chunks; resume from the durable resume-session
-record in a fresh process; finish and publish; ingest the same bytes again and
-prove dedupe reuses chunk records within scope; build the blob catalog and
-dedupe index; corrupt one chunk frame and one B-tree leaf on media; scrub;
-rebuild the leaf from authority; stream the byte range that crosses the
-corrupted chunk and receive a localized typed denial, not zeros; present a
-release proof for the first generation while the reader session still holds
-it; prove reclaim is deferred; release the reader; reclaim; crash between the
-drop publication and retirement; reopen fresh; prove the dropped chunks are
-neither served nor counted as orphans, and the deduplicated generation still
-streams byte-exact.
+record in a fresh process; finish and publish; build the blob catalog and
+dedupe index from the authoritative publication and tree. Ingest the same
+bytes again and prove that live dedupe lookup reuses chunk records within
+scope. Add a third generation with one unique probe chunk; corrupt that
+unique chunk frame and one B-tree leaf on media; scrub; rebuild only the
+derived leaf from intact publication authority. A range crossing the probe
+chunk gets a localized typed denial, not zeros, while both identical
+deduplicated generations remain byte-exact; a raw outer-CRC failure cannot
+fabricate an observed inner digest. Present a release proof for the first
+generation while the reader session still holds it; prove reclaim is
+deferred; release the reader; reclaim; crash between drop publication and
+retirement; reopen fresh; prove dropped records are neither served nor
+counted as orphans, and the surviving deduplicated generation still streams
+byte-exact. Corrupting a shared chunk instead must deny both generations,
+never be described as healed by a derived-index rebuild.
 
 ## Required Test-Case Matrix
 
@@ -241,10 +348,10 @@ streams byte-exact.
 | No allocation over a protected range | Allocation owner | An adversarial allocation request that best-fits into a range routed by a held root is refused; the injected defect of ignoring protection is caught by the offline overlap check. |
 | Stale bytes in a reused range | Frame validation | A reader routed to a reused range sees only the new extent's frame; a forged route to the old identity or generation is rejected by frame identity, not accepted as data. |
 | Arena evacuation | Compaction producer + rewrite + retirement | A sparse arena's live extents move with stable record ids and exact bytes; the empty arena file is deleted through retirement; space amplification stays within the admitted bound. |
-| Bounded ingest above window | Store blob owner + executor + media | Peak resident bytes stay under window + 2 node frames + 1 publication frame across the whole ingest; every chunk is one durable extent record; counters equal observed backend writes. |
-| Whole-object substitution | Store blob owner | A frame at or above the declared total, a `Vec<u8>` full blob, and a window at or above the object are typed denials before any effect. |
+| Bounded ingest above window | Store blob owner + executor + media | Peak charged resident bytes stay under the single ingest ceiling defined below, including source window, pending C.5 frame/redo, node frames, publication frame and scheduler head; every newly written chunk is one durable extent record; counters equal observed backend writes. |
+| Whole-object substitution | Store blob owner | A declaration or window at or above the object is denied before declaration effects. A whole-object frame or full-blob `Vec<u8>` supplied after `begin_ingest` is denied before any chunk effect; the already published declaration remains identifiable retained unfinished work, never misreported as `ProvenNoEffect`. |
 | Interrupted ingest and resume | Writer process + WAL + recovery | Resume continues from the last durable frontier record; readmission re-verifies the last chunk digest; a forged token, changed rule or changed declared total is denied; no chunk is written twice. |
-| Abandoned ingest residue | Recovery + reclaim | An ingest with no resume within its declared session limit is classified abandoned by its own session records; its chunks are reclaimed with no external proof; published generations are untouched. |
+| Abandoned ingest residue | Recovery + reclaim | A completed durable checkpoint crossing the declaration's maximum checkpoint sequence, or explicit durable abort, establishes abandonment only when no publication or protected hold wins. Phase 3 then reclaims records proven exclusive to that failed operation without external semantic proof; shared and published records remain untouched. |
 | Generation publication | Publication owner + WAL + root | `BlobGenerationPublished` exists only after the root advances; a crash before that yields resume or abandon, never a partial generation; the catalog index entry is derived from the publication record. |
 | Streaming range read | Protected read session + blob owner | Any byte range returns exact bytes reading only the chunks the range touches plus the node path; read amplification is at most one chunk per side; the session holds root protection for its life. |
 | Dedupe honesty | Store dedupe owner | Same bytes in scope reuse chunk records with a byte comparison on the first hit; the same bytes in another key scope are denied for reuse; a forced digest collision with unequal bytes yields `DigestCollisionDenied` and quarantines the digest basis. |
@@ -257,7 +364,7 @@ streams byte-exact.
 | Reclaim with live reader | Reclaim + protection + retirement | Reclaim of a generation held by a reader is deferred with a typed reason; after release the drop publication is durable, retirement deletes the extents, the retained-byte charge falls, and a second reclaim proves no effect. |
 | Reclaim without proof | Reclaim | A published generation with no admitted release proof cannot be reclaimed regardless of reachability, absence of references, or age. |
 | Tier movement | Placement + rewrite | Moving a chunk between placements yields a stable read, typed retry or typed denial; no read observes a half-moved chunk. |
-| Export and import | Blob owner + streaming | Export streams chunks with a manifest under the window; import re-ingests through the ordinary path and yields a new generation whose root equals the export root. |
+| Export and import | Blob owner + streaming | Export streams chunks with a manifest under the window; import re-ingests through the ordinary path and yields a new generation with byte-exact content and the same portable `LogicalContentDigest`. The importing Store publishes its own physical `ChunkTreeRoot`; equality with the export Store's root is not required. |
 | Fresh-process reopen | C.8 recovery | Every case above reopens fresh with the same lookups, digests, counters and orphan sets as the observer computed offline. |
 
 ### Crash-seam matrix
@@ -267,11 +374,11 @@ offline. The required fate is exact.
 
 | Seam | Durable at kill | Required fate |
 | --- | --- | --- |
-| Arena range written, root not published | Arena bytes | Range is free in the published free map; nothing routes it; no residue scan runs; the next allocation may reuse it. |
+| Managed arena append data settled, root not published | The append WAL member and barrier are durable before the arena frames are written | Kill after data settlement and before root publication. The pre-reopen offline walk may classify the unrooted arena file `Unknown`, never `Intact` or a published route. C.8 fresh-process redo publishes the exact record and route once; the range is not free or reusable, and the post-redo offline walk finds no competing route/free claim. No residue scan substitutes for the WAL authority. |
 | Range release in WAL, releasing root not published | WAL retirement intent | The range stays routed-or-held until the root publishes; redo completes the release exactly once. |
-| Evacuation copies durable, root not published | Destination ranges | Source arena stays current; destination ranges are free by construction. |
+| Evacuation copies durable, root not published | Copy intent and destination ranges, but no final copy publication | Source arena stays current and destination ranges are unrouted in the published root. Fresh-process recovery restores the exact private destination claim, preventing ordinary reuse until durable cancellation or publication resolves the intent. |
 | Arena empty in every root, file deletion partial | Retirement intent | C.10 retirement completion; a missing arena file is a completed deletion, not corruption. |
-| Chunk record appended, frontier record not | Extent record | Chunk is resume-verified or abandoned residue; never orphan candidate for external proof. |
+| Session declaration published, chunk record appended, frontier record not | Declared session plus authenticated chunk occurrence claim in a C.5 record | Phase 2 retains identifiable unfinished-operation custody; Phase 3 resume verifies and reuses the exact selected occurrence or independently reclaims abandoned residue. A valid chunk digest without a matching occurrence claim is not session authority. |
 | Frontier record durable, next chunk partial | WAL frontier | Resume from frontier; partial extent is failed-op residue reclaimed independently. |
 | All chunks durable, tree nodes partial | Chunks + some nodes | Resume rebuilds the missing nodes from chunk records; no re-ingest. |
 | Tree root durable, publication WAL not | Nodes | Session resumable; no generation visible. |
@@ -281,6 +388,14 @@ offline. The required fate is exact.
 | Rebuild partially published | Some index pages | Rebuild candidate is discarded; the previous derived generation or `Absent` posture is reported; no mixed index. |
 | Memtable WAL durable, run not sealed | WAL entries | Memtable replays from WAL; unsealed run extent is failed-op residue. |
 | Compaction output durable, membership not | Run extents | Old membership stays current; output runs are failed-op residue. |
+
+The managed append seam follows the installed WAL-first progression:
+`append_managed_wal` → `synchronize_managed_wal` → `settle_managed_data`
+→ root publication. Arena bytes written by that path cannot have the
+"free and immediately reusable" fate after a crash without contradicting
+the durable WAL. The distinct evacuation-copy seam above tests durable
+destination bytes before the final copy publication: its source stays current
+and the unpublished destination cannot become a routed record.
 
 ## Architecture And Authority Lock
 
@@ -324,15 +439,25 @@ only blob records.
   no reader lease or recovery obligation references a root that routes it.
   This is the C.10 retirement protocol with "release range" in place of
   "delete file".
-- **Crash law.** A range written but never published is free by construction
-  in the published free map, so recovery needs no residue scan for it. A
-  reader follows routes only from a published root, and frame identity plus
-  generation plus checksum reject stale bytes. Torn writes can only affect
-  unpublished ranges, so no double-write buffer or full-page image is needed.
+- **Crash law.** Publication absence alone never proves a range reusable.
+  A durable append WAL member or evacuation-copy intent holds its range until
+  recovery publishes or durably cancels that exact effect, even when the
+  published free map has not yet incorporated it. Only unpublished bytes
+  without a live WAL or recovery claim may remain free; recovery derives
+  claims from durable authority, never a residue scan. Readers follow only
+  published routes, and frame identity, generation and checksum reject stale
+  bytes. Torn writes can affect only unpublished ranges, so no double-write
+  buffer or full-page image is needed.
 - **Fragmentation and evacuation.** An arena whose live ratio falls below its
   admitted evacuation threshold is evacuated by the `CompactionRewrite`
-  producer through `rewrite_selected_extent_record`, which moves live extents
-  to other arenas. Once empty in every protected root, the arena file is
+  producer through `PhysicalRecordSubmission::prepare_arena_evacuation`.
+  `advance_extent_copy` copies and verifies bounded frames under a durable
+  source-copy intent and source-root protection;
+  `prepare_completed_extent_copy` hands the completed destination to the
+  ordinary WAL/root publication owner. This preserves stable record identity
+  and exact payload bytes without the non-streaming
+  `rewrite_selected_extent_record` payload ceiling. Once empty in every
+  protected root, the arena file is
   retired as a whole through the existing retirement owner. That is the only
   case in which an extent retirement deletes a file. Space amplification is
   bounded by the evacuation threshold plus one filling arena per writer lane.
@@ -348,37 +473,101 @@ only blob records.
 
 All blob families are C.5 extent-backed physical records with a
 `worth-store-physical-format::blob_record` frame prefix (new): a kind byte, a
-format version, a length, the payload and a SHA-256 over the frame.
+format version, a length, the payload and authenticated frame integrity.
+The C.5 outer frame and root route remain the physical record authority; a
+blob digest alone cannot establish selected-record custody.
 
-- `BlobChunkFrame` (authoritative): the stored chunk bytes for one
-  `BlobChunkOrdinal` under one admitted `BlobChunkSize`. Identity is its
-  SHA-256 (`StoredChunkDigest`). Record identity binds the digest to one
-  `PersistedRecordIdentity`.
+- `BlobChunkFrame` (authoritative): one versioned canonical content subframe
+  with admitted rule and stored bytes. Its SHA-256 is `StoredChunkDigest` and
+  excludes Store, session, object, ordinal, placement and RecordId. A distinct
+  occurrence envelope in each newly written C.5 record binds Store scope,
+  declared session ID, ordinal, length and canonical digest under the outer
+  frame integrity. Its selected route supplies `PersistedRecordIdentity`
+  without a self-referential hash. Phase 4 reuse adds an authoritative tree or
+  frontier edge to an existing selected record; it does not rewrite the
+  original occurrence envelope. A missing or mismatched claim is corruption,
+  even when the inner digest and outer C.5 checksum are valid.
 - `BlobTreeNode` (authoritative): leaf nodes carry up to 4096 ordered
   (digest, record identity, byte length) entries; interior nodes carry up to
   4096 (child digest, record identity, covered bytes) entries. A node's
-  identity is the SHA-256 of its frame. A 4 GiB blob at 256 KiB chunks is
-  16 384 chunks, four leaves and one root.
+  canonical identity is the SHA-256 of its content frame. Each newly written
+  node's separate occurrence envelope binds the declared session, node kind,
+  level/index, length and canonical digest under C.5 outer integrity and
+  selected routing. Partially built nodes therefore remain attributable to
+  the unfinished session after WAL pruning; an unclaimed node is not safe
+  residue. A 4 GiB blob at 256 KiB chunks is 16 384 chunks, four leaves and
+  one root.
 - `BlobGenerationPublication` (authoritative): `BlobObjectId`,
   `BlobGeneration`, root node record identity and digest, total bytes,
   `LogicalContentDigest` (SHA-256 of plaintext), chunking rule version,
-  dedupe scope, and the resume-session identity it closes. Its WAL payload is
-  `store.physical.blob-generation.v1` (new).
-- `BlobResumeSession` (authoritative for its own fate): declaration, admitted
-  rule, declared total, frontier ordinal, last durable chunk record identity
-  and digest, session limit. WAL payload `store.physical.blob-resume.v1`
-  (new). Terminal states are `Published`, `Abandoned`, `Reclaimed`.
-- `BlobExportManifest` (authoritative for one export): root digest, chunk
-  count and export custody identity. Not a backup artifact.
+  dedupe scope, and the declared session identity it closes.
+- `BlobResumeSession` (authoritative for its own fate): Phase 2 installs a
+  minimal `Declared` record, root-published before the first chunk effect.
+  It binds a Store-issued fresh 128-bit attempt ID (checked against selected
+  sessions before publication, never caller- or S.7-deterministically
+  minted), object ID, Store/key scope, admitted rule, declared total,
+  memory/resource limit, declaration digest and maximum durable checkpoint
+  sequence. The Store admits that limit from its selected checkpoint sequence
+  plus a bounded caller-requested horizon; the caller cannot assert an
+  absolute sequence or a wall-clock deadline. Phase 3 adds versioned frontier
+  ordinal, last durable chunk identity/digest, explicit abort and terminal
+  `Published`, `Abandoned`, `Reclaimed` transitions. A durable checkpoint
+  crossing the declared sequence, or a durable explicit abort, may establish
+  abandonment only if no publication and no protected hold wins under the
+  same root owner; process-local time and wall-clock jumps never do. With no
+  advancing checkpoint or abort, unfinished bytes remain retained.
+  For this append-only terminal transition, a protected hold means the
+  Store-owned same-session ingest/resume/publication claim: an inspecting or
+  live claimant defeats a competing abandonment attempt. Terminal admission
+  captures its claim and selected-root protection under the root owner,
+  authenticates the declaration and absence of a selected publication or
+  terminal, and retains exclusivity through C.5 root resolution. Uncertain
+  effects require C.8 reconciliation before another session operation may
+  proceed. A generic C.10 snapshot lease protects the selected bytes, not a
+  right to resume or publish the unfinished session; it need not veto the
+  append-only `Abandoned` record. That record leaves all routes and bytes
+  retained. Every C.10 reader/recovery pin and admitted semantic hold remains
+  binding at subsequent drop/reclaim and physical retirement; terminal status
+  alone never authorizes deletion.
+- `BlobExportManifest` (authoritative for one export): Store-local physical
+  root digest, portable `LogicalContentDigest`, chunk count and export
+  custody identity. Import verifies the portable digest and bytes, then
+  constructs its own physical tree. Not a backup artifact.
+
+Phase 2 extends the current `PersistedPhysicalRecoveryProjection` grammar with
+one bounded typed blob semantic member: `None`, `SessionDeclared` or
+`GenerationPublished`, with non-`None` members bound to exact C.5 record
+identities, payload digest and root candidate. All newly encoded ordinary
+recovery projections use that current grammar, with `None` for non-blob
+operations; historical projection formats are rejected, not translated.
+The current physical-target variants retain both `Frames` and `SourceCopy`
+semantics. The producer, C.8 replay, C.9
+validator and independent offline observer recognize the coordinated format
+cutover. The semantic descriptor is a nested member of the existing C.8
+canonical redo, not a second WAL lane, and remains within 1 KiB; the entire
+redo may carry separately bounded physical frame bytes and is not claimed to
+fit 1 KiB. C.8 replays declaration before chunk admission and publication
+only after all claimed records. Phase 3 adds versioned
+`store.physical.blob-resume.v1` frontier/terminal semantics to the same
+envelope, preserving current SourceCopy semantics without historical readers.
+After checkpoint WAL
+pruning, selected declaration, claims and publication records still suffice
+for independent custody classification of chunks and partial tree nodes;
+unselected arena bytes are not authority.
 
 Derived blob structures: blob catalog (`BlobObjectId` to publication record
 identity), dedupe index (`StoredChunkDigest` and scope to chunk record
 identity), reachability edge set (generation to chunk and node record
 identities, plus resume, export, read-plan and quarantine holds), and orphan
 classification. Each is a B-tree family over inline pages with a rebuild
-basis of "bounded scan of `BlobGenerationPublication` and `BlobResumeSession`
-records". Corruption of any derived family is `DerivedProjectionCorruption`
-and rebuilds; corruption of an authoritative family is localized and reported.
+basis over the full authoritative closure: selected generation publications,
+session declarations/frontiers and occurrence claims, their tree nodes and
+chunk edges, selected export manifests, and C.10 read/recovery protection
+plus quarantine hold authorities. The catalog needs publications; dedupe and
+reachability additionally traverse verified trees and selected claims. No
+report, JSON row or derived index supplies missing authority. Corruption of
+any derived family is `DerivedProjectionCorruption` and rebuilds from this
+closure; corruption of an authoritative family is localized and reported.
 
 ### Index families
 
@@ -396,8 +585,9 @@ and rebuilds; corruption of an authoritative family is localized and reported.
   `store.physical.lsm-membership.v1` (new) through the Store WAL; replacement
   is a root-changing publication.
 - Derived index families rebuild only from a declared physical authority:
-  routed records of the indexed family, or for the blob families the
-  publication records. `DerivedIndexRebuildSourceInput::{CertificationRows,
+  routed records of the indexed family, or for the blob families the selected
+  publication/session records, occurrence claims, verified tree edges and
+  admitted hold authorities named above. `DerivedIndexRebuildSourceInput::{CertificationRows,
   DiagnosticReport, JsonProjection}` become typed denials at the Store boundary.
 
 ### Artifact-family registry
@@ -420,20 +610,35 @@ Store owner executes in C.11 are not registered.
 Ingest is a `BlobIngestSession` (new, Store-owned) holding a
 `BlobPhysicalAllocation`, root protection through `records()`, a
 `PhysicalRecordSubmission`, and a scheduler reservation under
-`BlobIngestPressure`. Each source frame is at most the window; the session
-digests the frame, consults the dedupe index within scope, appends a
-`BlobChunkFrame` record (or binds a reused record after byte comparison),
-appends leaf entries, and periodically publishes a frontier record. Finishing
-seals leaves and interior nodes as records, then publishes the generation
-through the sole publication owner as a root-changing member. Memory ceiling:
-one window, the open leaf node, one interior node under construction, and one
-frame buffer.
+`BlobIngestPressure`. `begin_ingest` first durably publishes its minimal
+`BlobResumeSession::Declared` record through the C.5 WAL/root owner; it
+cannot return an effect-bearing session or append the first chunk before that
+publication. Phase 2 installs the actual bounded ingest-pressure producer,
+retained head and foreground-preservation admission, not just its vocabulary.
+Its admitted I/O shape is the Store's real buffered-file write, fsync,
+directory-sync and root-publication sequence; it does not label synchronous
+file effects as an imaginary async-I/O worker.
+Each source frame is at most the window and may cross fixed chunk boundaries;
+the session incrementally hashes and splits it into canonical chunks. For
+each new chunk it appends a C.5 record with an authenticated occurrence claim;
+Phase 4 may instead bind a previously selected, byte-compared record through
+the tree edge in the same scope. Phase 3 periodically publishes frontier
+records. Finishing seals leaves and interior nodes as records, then publishes
+the single blob generation through the sole publication owner. Memory
+accounting includes the source frame, pending frame/redo bytes, node frames,
+writeback and scheduler head; no full-object batch or copied blob-sized WAL
+payload is admitted.
 
-Resume opens the session from the last durable `BlobResumeSession` record,
-re-reads and re-digests the last durable chunk, and continues. A session that
-misses its declared limit is abandoned by the Store, which then reclaims its
-records independently because they belong only to a failed physical
-operation.
+Phase 2 can classify an interrupted prepublication session as retained
+unfinished work but does not offer a resume or reclaim API. Phase 3 first
+reconciles pending C.8 WAL effects, scans selected occurrence claims beyond
+the frontier, re-reads and re-digests the last durable chunk, then reuses the
+exact selected record or denies a conflict; it never appends one ordinal
+twice. A durable checkpoint crossing the declaration's limit or explicit
+durable abort establishes `Abandoned` under the same publication owner;
+only then may the Store independently reclaim records proven exclusive to
+that failed operation. Shared deduped records and published or protected
+generations are never eligible through this rule.
 
 ### Read and verification
 
@@ -441,8 +646,12 @@ operation.
 index, walks the tree nodes with protected reads, and yields chunks in order
 for the requested byte range. It holds a `BlobPhysicalAllocation` of one
 window and the root protection of its `RecordReadSession`. Verification is
-per chunk against the leaf digest; a mismatch is `BlobChunkCorruption` with
-ordinal, record identity, and both digests, reported to C.9 disposition.
+per chunk against the leaf digest; a readable inner mismatch is
+`BlobChunkCorruption` with ordinal, record identity, expected and observed
+digests, reported to C.9 disposition. If the outer C.5 frame fails integrity,
+the inner observed digest is unavailable rather than fabricated; data-record
+damage localizes to its dependent ranges, while root/routing/manifest damage
+retains global serving revocation.
 Whole-object verification is a streaming pass over the same session with the
 same window.
 
@@ -450,7 +659,8 @@ same window.
 
 Dedupe is a derived index consulted during ingest; the first reuse of a digest
 performs a byte comparison under a bounded window. Reachability traversal is
-a bounded walk of publication records, resume records and holds that yields
+a bounded walk of publication and session records, authoritative tree nodes
+and holds (never the derived dedupe index as liveness truth) that yields
 per-record `Reachable`, `HeldOnly`, `FailedOperationResidue`,
 `DerivedResidue`, or `Unreferenced`. Only the last three classes are orphan
 candidates, and only the first two of those are Store-reclaimable without
@@ -458,9 +668,21 @@ proof. `Unreferenced` records of a published generation are never reclaimed
 without an `AdmittedBlobReleaseProof`.
 
 Reclaim executes as: eligibility (reader and recovery pins through C.10
-retention; proof admission), one `drop_reclaimed_records` publication naming
-each dropped record under `store.physical.blob-reclaim.v1` (new), then
-retirement of the displaced extents through the existing retirement owner.
+retention; proof admission), a sorted extent-backed `DropSetManifest`
+containing at most 1024 dropped record identities with count and digest,
+then one `drop_reclaimed_records` publication whose bounded
+`store.physical.blob-reclaim.v1` semantic WAL descriptor names that
+manifest and proof/source basis, then retirement of the displaced extents
+through the existing retirement owner. The descriptor stays within 1 KiB;
+the manifest is C.5-routed, retained and charged until the drop and C.8
+recovery frontier make it safe to retire. Recovery independently validates
+the manifest before un-routing any record.
+The manifest carries a Store-issued reclaim-attempt ID and the admitted
+proof/source digest. If its drop descriptor is not durable, it remains
+selected failed-operation residue with exact custody; recovery does not
+infer a drop from the manifest alone. A later bounded owner publication
+retires that residue after the pending WAL fate is reconciled. If the
+descriptor is durable but the root is not, C.8 replays the exact drop.
 Effects are exact: dropped record identities, displaced generations, bytes
 released, and dedupe entries removed. Reclaim never deletes a file directly.
 
@@ -482,65 +704,111 @@ nodes.
 
 ### Scheduler service and interference
 
-New producers in `instance/scheduler_admission/`: `blob_ingest.rs`
-(`BlobIngestPressure`), `blob_reclaim.rs` (existing reclamation head),
-`index_rebuild.rs` (`RepairScan` class as the rebuild lane),
-`lsm_compaction.rs` (`CompactionRewrite`). `RetainedBackgroundHeads` gains
-ingest and compaction heads. Every producer lowers an exact effect footprint
-(record ranges, extents, index pages, root) through the C.10 algebra and is
-subject to the same foreground floor and owed-background-turn bound.
+Producers in `instance/scheduler_admission/`: `blob_ingest.rs`
+(`IngestPressure`), `blob_reclaim.rs` (`BlobReclaimPressure`),
+`rebuild.rs` (`RepairScan` class as the rebuild lane), and
+`compaction.rs` (`CompactionRewrite`). `RetainedBackgroundHeads` gains a
+compaction head. Checkpoint, reclamation, and compaction retain heads only while
+a producer owns a retryable quantum. Blob ingest and reclaim are synchronous
+one-frame attempts: a denied attempt releases its dispatch head because no
+retry owner remains. Admission precedes each producer frame write, but a
+managed mutation may already have durably attempted its C.10 WAL prelude;
+scheduler denial then remains `Indeterminate` until C.8 reconciliation, not
+`ProvenNoEffect`. The denied frame performs no data effect. Every producer
+lowers an exact effect footprint (record ranges, extents, index pages, root)
+through the C.10 algebra and is subject to
+the same foreground floor and owed-background-turn bound.
 
 ### Lifecycle and outcome topology
 
 Every session (ingest, read, rebuild, reclaim, compaction) carries the
-lifecycle of the runtime part that owns it: cancellation before its first
-effect is `ProvenNoEffect`; after an effect it settles to an exact fate;
-close revokes protection and allocation; shutdown drains through the C.3
-sealed lifecycle. Outcomes are typed: `Published`, `Resumable`, `Abandoned`,
-`Denied(kind)`, `Deferred(reason)`, `Indeterminate(stage)`.
+lifecycle of the runtime part that owns it: cancellation before any admitted
+effect attempt is `ProvenNoEffect`. Once a WAL write or later effect has
+been attempted, even a sync failure cannot prove absence; uncertain
+durability is typed `Indeterminate` until exact C.8 reconciliation, while
+known durable effects follow their pending/redo fate. No failure claims
+`ProvenNoEffect` merely because the root has not published. Close
+revokes protection and allocation; shutdown drains through the C.3 sealed
+lifecycle. `begin_ingest` returns an effect-bearing session only after the
+declaration root is selected, but a mid-declaration failure returns a typed
+pending/indeterminate identity that fresh-process recovery settles. Phase 2
+therefore identifies retained unfinished work even before the first chunk.
+Outcomes are typed: `Published`, `RetainedUnfinished` (Phase 2),
+`Resumable`/`Abandoned` (Phase 3), `Denied(kind)`,
+`Deferred(reason)`, `Indeterminate(stage)`.
 
 ## Public DX Target
 
 ```rust
+use worth_proof::AdmittedBlobReleaseProof;
 use worth_store::physical_runtime::{
-    BlobChunkSize, BlobIngestDeclaration, BlobIngestOutcome, BlobObjectId,
-    BlobReadRange, BlobReclaimRequest, BlobStreamingWindow, IndexFamily,
-    PhysicalKeyRange, ServingPhysicalRuntime,
+    AdmittedBlobScope, BlobCheckpointLimit, BlobChunkSize,
+    BlobIngestDeclaration, BlobIngestOutcome, BlobReadRange, BlobReclaimReceipt,
+    BlobReclaimRequest, BlobResumeToken, BlobStreamingWindow, IndexFamily,
+    PhysicalBlobDenial, PhysicalKeyRange, PhysicalLayoutDenial,
+    PublishedBlobGeneration, ServingPhysicalRuntime,
 };
 
-fn ingest_and_read(store: &ServingPhysicalRuntime, source: impl BlobFrameSource)
-    -> Result<(), PhysicalBlobDenial> {
-    let blobs = store.blobs()?;                       // protection + allocation admitted here
-    let window = BlobStreamingWindow::bounded(64 << 20)?;
+trait BlobFrameSource {
+    fn declared_bytes(&self) -> u64;
+    fn next_frame(&mut self, max_bytes: u64) -> Result<Option<&[u8]>, PhysicalBlobDenial>;
+    fn seek(&mut self, byte_offset: u64) -> Result<(), PhysicalBlobDenial>;
+}
+trait BlobByteSink {
+    fn write(&mut self, bytes: &[u8]) -> Result<(), PhysicalBlobDenial>;
+}
+
+// Phase 2 API illustration only: a 4 MiB source fits this 1 MiB window,
+// but certification uses >6 MiB so full materialization exceeds W + 5 MiB.
+fn ingest_and_read(
+    store: &ServingPhysicalRuntime,
+    scope: AdmittedBlobScope,
+    limit: BlobCheckpointLimit,
+    source: &mut impl BlobFrameSource,
+    sink: &mut impl BlobByteSink,
+) -> Result<(), PhysicalBlobDenial> {
+    let blobs = store.blobs()?;
+    let window = BlobStreamingWindow::bounded(1 << 20)?;
+    let object = blobs.issue_object_id()?; // opaque physical ID, not semantic identity
     let declaration = BlobIngestDeclaration::new(
-        BlobObjectId::fresh(), BlobChunkSize::KIB_256, source.declared_bytes())?;
+        object, BlobChunkSize::from_bytes(256 << 10)?,
+        source.declared_bytes(), scope, limit,
+    )?;
     let mut ingest = blobs.begin_ingest(declaration, window)?;
-    while let Some(frame) = source.next_frame(window)? {     // frame <= window, never whole object
-        ingest.push_frame(frame)?;                            // one chunk record per full chunk
+    // begin_ingest has already root-published the durable session declaration.
+    while let Some(frame) = source.next_frame(window.bytes())? {
+        ingest.push_frame(frame)?; // arbitrary source frames split across chunk boundaries
     }
     let published = match ingest.finish()? {
         BlobIngestOutcome::Published(generation) => generation,
-        BlobIngestOutcome::Resumable(token) => return Err(PhysicalBlobDenial::Interrupted(token)),
+        BlobIngestOutcome::RetainedUnfinished(session) =>
+            return Err(PhysicalBlobDenial::RetainedUnfinished(session)),
     };
 
-    let mut read = blobs.read(published.generation(), BlobReadRange::bytes(1 << 30, 3 << 20)?, window)?;
-    while let Some(chunk) = read.next_chunk()? {              // protected, verified, bounded
-        consume(chunk.bytes());
+    let mut read = blobs.read(
+        object, published.generation(), BlobReadRange::bytes(1 << 20, 1 << 20)?, window,
+    )?;
+    while let Some(chunk) = read.next_chunk()? {
+        sink.write(chunk.bytes())?;
     }
-    let receipt = read.finish();                              // exact chunk/byte/node counters
-    assert_eq!(receipt.chunks_read(), 12);                    // 3 MiB at a chunk-aligned offset / 256 KiB
+    let receipt = read.finish();
+    assert_eq!(receipt.chunks_read(), 4);
     Ok(())
 }
 
-fn resume(store: &ServingPhysicalRuntime, token: BlobResumeToken, source: impl BlobFrameSource)
+// Phase 3: this API does not exist in the Phase 2 MVP.
+fn resume(store: &ServingPhysicalRuntime, token: BlobResumeToken, source: &mut impl BlobFrameSource)
     -> Result<PublishedBlobGeneration, PhysicalBlobDenial> {
     let blobs = store.blobs()?;
-    let mut ingest = blobs.resume_ingest(token, BlobStreamingWindow::bounded(64 << 20)?)?;
+    let mut ingest = blobs.resume_ingest(token, BlobStreamingWindow::bounded(1 << 20)?)?;
     source.seek(ingest.frontier().bytes())?;
-    while let Some(frame) = source.next_frame(ingest.window())? { ingest.push_frame(frame)?; }
+    while let Some(frame) = source.next_frame(ingest.window().bytes())? {
+        ingest.push_frame(frame)?;
+    }
     ingest.finish()?.published().ok_or(PhysicalBlobDenial::StillResumable)
 }
 
+// Phase 6: published-generation release still requires an admitted proof.
 fn reclaim(store: &ServingPhysicalRuntime, proof: AdmittedBlobReleaseProof)
     -> Result<BlobReclaimReceipt, PhysicalBlobDenial> {
     store.blobs()?.reclaim(BlobReclaimRequest::released(proof))?.wait()
@@ -627,6 +895,17 @@ worth-store/src/physical_runtime/
   recovery_freshness/binding/
     blob_generation_obligation.rs               N redo obligation for publication payloads
     blob_reclaim_obligation.rs                  N redo obligation for drop payloads
+  recovery_construction/
+    port.rs, handoff.rs                          E sole Store construction and one-shot custody handoff; pending claim exclusive of checkpoint NoRelease/release
+    selected_rejoin/pending_wal_release.rs       N Store-owned same-media C.9 WAL/control/source/post-redo-root rejoin
+    selected_rejoin/release_heads/               N independent selected-head roster and per-object predecessor rejoin (Phase 6)
+  durability/publication/current_root_owner/release_capacity/
+    heads.rs, checkpoint_heads.rs                N Store-owned selected per-object head ledger, pre-effect capacity and checkpoint fold (Phase 6)
+  record_serving/planning/rebased_root/
+    release_heads.rs                            N V3-admitted copy-on-write head-tree projection inside the one result-root publication (Phase 6)
+  record_serving/publication/director/
+    release_head_preparation.rs                 N pre-WAL descriptor identity and head-tree effect reservation (Phase 6)
+  record_serving/admission/recovered_custody.rs  E Serving revalidates pending claim's selected-media fingerprint
   stability/byte_guard/                         E guard from blob chunk and index page views
 
 worth-store/tests/
@@ -640,6 +919,11 @@ worth-store-physical-format/src/
   manifest/physical_free_space_membership_block/, binary_format/free_space_policy.rs  E free-range runs
   integrity_declarations/families/extent_*.rs   E extent frames declared inside arenas
   blob_record/                                  N chunk_frame.rs, tree_node.rs, generation.rs, resume_session.rs, export_manifest.rs
+  manifest/durable_root/release_head_reference.rs  N versioned root anchor for the authoritative head tree (Phase 6)
+  manifest/release_head_routing/                 N bounded keyed head entries and copy-on-write tree blocks (Phase 6)
+  recovery_projection/release_head_effect.rs   N exact C.9 metadata-effect envelope; one V3 descriptor data record remains (Phase 6)
+  recovery_projection/release_head_retirement.rs N distinct owner-proof-backed terminal-head retirement, never a synthetic V3 (Phase 6)
+  checkpoint/release_certificate/heads.rs       N current accumulator head-tree commitment; unsupported formats and insufficient current custody deny (Phase 6)
   btree_node/                                   N slotted.rs, separator.rs, sibling.rs
   lsm_run/                                      N header.rs, entries.rs, membership.rs
   integrity_declarations/families/              E blob_*, btree_node, lsm_run declarations
@@ -650,13 +934,20 @@ worth-store-physical-integrity/src/artifact/
   extent_arena/                                 N arena frame validator (Phase 1)
   free_space/                                   E free-range run validation
   blob_chunk/, blob_tree_node/, blob_generation/, btree_node/, lsm_run/  N validators and validated views
+  release_custody_head/                         N head-tree block and selected commitment validation (Phase 6)
 
 worth-store-offline-integrity-observer/src/integrity_observation/families/
   extent_arena/                                 N overlap, routed-but-free and unaccounted-byte checks
   blob/, index/                                 N independent offline families
+  release_custody_heads/                        N selected roster versus rooted head observation (Phase 6)
 
 worth-store-recovery-physics/src/redo_replay/    E blob/index payload kinds in record.rs and plan/admission.rs typed arms
+worth-store-recovery-physics/src/redo_replay/release_head_effect/  N C.9 source/result/node/free-space transition admission (Phase 6)
+worth-store-recovery-physics/src/source_precedence/pending_wal_release_custody.rs  N private C.8 pending-WAL release proof, distinct from tag-7 custody
+worth-store-recovery-physics/src/source_precedence/release_custody/heads/  N selected head-tree membership and pending V3 metadata-transition proof (Phase 6)
 worth-store-recovery-runtime/src/               E blob/index reconciliation and orphan fate
+  orchestration/planning/completion/blob_reclaim/selected_release_gate/pending_wal.rs  N C.8 admitted-redo/fate join before handoff
+  orchestration/{planning,publication,reopen,handoff}.rs  E carry the pending claim across completed publication and fresh reopen
 
 worth-store-blob-chunks/
   Cargo.toml, src/lib.rs                        E worth-store dependency removed; README corrected
@@ -702,21 +993,56 @@ crates; none of them imports `worth-store`; `worth-store-recovery-runtime`,
 `worth-store-offline-verifier` and `worth-store-test-support` keep importing
 `worth-store` from above. The boundary-check snapshot is the proof.
 
+The compatibility-only owners have no successor authority lane: remove
+`worth-store-compatibility/`,
+`worth-store-layout-indexes/src/evolution/migration/`, its
+`src/observation/evolution.rs` leaf, and
+`worth-store-test-support/src/harness/layout_evolution/`, together with their
+obsolete dependencies, exports and registration. Close callers of
+compatibility-only artifact-family declarations before deleting those rows;
+retain the current artifact-family inventory and format-owned identity checks.
+Current format mechanisms remain in the existing physical-format, integrity,
+recovery and Store owners above, not in a replacement compatibility crate.
+
+The recovery-projection cutover refines the existing Format owner: its
+`recovery_projection/operation.rs` owns the operation sum and checked attachment
+construction, `recovery_projection/codec/operation.rs` owns operation tags,
+and `recovery_projection/codec/domain.rs` owns current identity admission.
+The root projection owns bounded common state and the stable public facade
+remains `worth-store-physical-format::lib`. Remove `codec/version_semantics.rs`
+and all version-specific ordinary lanes. The compiler-shaped constraint belongs
+at `tools/boundary-check/src/source_rules/analysis/store_current_projection.rs`,
+with named wire-boundary checks beneath it; no compatibility crate, alternate
+producer facade or generic migration framework replaces the removed paths.
+
 ## Cost Contracts
+
+The single Phase 2 ingest residency ceiling is `W + 5 MiB`, where `W` is
+the admitted source window (at most 64 MiB). The 5 MiB allowance includes
+one encoded chunk frame (at most 1 MiB), one pending canonical-redo copy
+(at most 1 MiB), one writeback buffer (at most 1 MiB), two encoded tree
+nodes (at most 512 KiB each), one publication frame (at most 64 KiB), one
+retained scheduler head (at most 64 KiB), and remaining bounded digest and
+bookkeeping scratch. The format codecs and producer enforce each component
+maximum before effect; the allocation and process-level high-water probe
+charge simultaneously live buffers, including a caller-supplied source
+frame. No full-blob `Vec`, batch, or uncharged frame clone is permitted.
+If a later format exceeds a component maximum, its phase must revise the
+contract and proof before admitting it.
 
 | Path | Ordinary cost | Ceiling and scale axis |
 | --- | --- | --- |
-| Blob ingest | One chunk record write per chunk, one leaf write per 4096 chunks, one WAL frontier per admitted interval (default every 64 chunks), one root publication | Resident bytes <= window + 2 node frames + 1 frame buffer; arena files = ceil(bytes / arena capacity) + 1, independent of chunk count |
+| Blob ingest | One durable declaration before the first chunk; one C.5 chunk-record append/root progression per newly written chunk; one leaf write per 4096 chunks; one blob-generation publication. Phase 3 adds one frontier transition per admitted interval (default every 64 chunks). | Peak charged resident bytes <= `W + 5 MiB` by the component accounting above; arena files = ceil(bytes / arena capacity) + 1, independent of chunk count. "One blob-generation publication" never means one physical-root update for the entire ingest. |
 | Extent allocation | Best-fit lookup in the published free map, or append to the filling arena | O(log free runs); no media read; free runs per arena bounded by the evacuation threshold |
 | Blob range read | Node path (height <= 3 for 2^36 chunks) plus chunks touched | Read amplification <= 1 chunk per side; resident <= window |
 | Dedupe hit | 1 B-tree probe plus 1 bounded byte comparison on first reuse | No whole-object comparison; comparison window = chunk size |
-| Publication | 1 WAL payload + root member | Payload bytes <= 1 KiB |
-| Catalog/dedupe rebuild | Bounded scan of publication and resume records | Pages touched = records / entries per page; resident <= rebuild allocation |
-| B-tree point | Height page touches | Height <= 4 for 2^32 entries at fanout >= 256 |
+| Publication | 1 typed semantic WAL member + root member, with physical frame bytes separately bounded | Semantic descriptor <= 1 KiB; do not apply this cap to the whole canonical redo |
+| Catalog/dedupe rebuild | Bounded traversal of selected publications, sessions, occurrence claims, verified tree edges and admitted holds | Record/node visits and pages touched measured from the full authority closure; resident <= rebuild allocation |
+| B-tree point | Height page touches | Height <= 4 for 2^32 entries **only when** the admitted layout achieves fanout >= 256 (for example, a 64 KiB page with the registered DedupeIndex key64/value56 shape). The default 16 KiB page has lower DedupeIndex fanout and may require height 5 at that scale; no 2^32-entry empirical run is claimed. |
 | B-tree range | Height + leaves spanned | Budgeted by caller; envelope violation is denial |
 | LSM point | Memtable probe + 1 probe per run in membership | Runs per level bounded by compaction policy |
 | Reclaim | 1 drop publication per batch + retirement per displaced extent | Batch <= 1024 records; retained bytes fall by dropped bytes after retirement |
-| Reachability | One pass over publication and resume records plus holds | Resident <= verification allocation; never loads chunk bytes |
+| Reachability | One bounded pass over selected publication/session records, occurrence claims, authoritative tree nodes and admitted holds | Resident <= verification allocation; never loads chunk bytes merely to infer liveness |
 
 Every ceiling is an assertion in the matrix, measured from real observations,
 never from planned envelopes alone.
@@ -739,7 +1065,10 @@ length, generation) placement in root routing, published free-range truth,
 copy-on-write best-fit allocation fenced by C.10 protection, range release
 through the existing retirement protocol, recovery redo for release, the
 offline overlap and accounting walk, and arena evacuation through
-`rewrite_selected_extent_record` with whole-arena retirement. The C.10 extent
+`prepare_arena_evacuation`, `advance_extent_copy`, and
+`prepare_completed_extent_copy` with ordinary WAL/root publication and
+whole-arena retirement. Evacuation must remain bounded for extents larger
+than the non-streaming selected-record rewrite ceiling. The C.10 extent
 rewrite, retirement, reopen-recharge and crash tests keep passing unchanged
 in intent, with their file-existence assertions rewritten as range and
 route assertions.
@@ -755,40 +1084,60 @@ range fails the offline overlap check.
 ### Phase 2: Dependency inversion and the first native blob — the working MVP
 
 Invert the crate direction (D8), install `blob_record` frames, the
-`BlobChunkFrame`/`BlobTreeNode`/`BlobGenerationPublication` families with
-their C.9 declarations and validators, the Store `BlobIngestSession` over
-`PhysicalRecordSubmission`, the generation publication payload, and the
-`BlobReadSession` over protected reads. No registry, dedupe, resume,
-reclaim or index yet; the catalog lookup for this phase is a bounded scan of
-publication records admitted as the `Rebuild` lane shape, and it is replaced
-in Phase 4. `CapabilityAvailability::Present` (D12) lands here together with
-`blobs()`, so the capability status and the accessor become real in the same
-change; `layouts()` and Layout `Present` land together in Phase 4.
+`BlobResumeSession::Declared`/`BlobChunkFrame`/`BlobTreeNode`/
+`BlobGenerationPublication` families with their C.9 declarations and
+validators, and the current typed recovery transition without historical read
+admission.
+The Store-issued session declaration is root-published before any chunk;
+each new chunk has its distinct authenticated occurrence claim. Install the
+real `BlobIngestPressure` producer and bounded retained head together with
+the Store `BlobIngestSession` over `PhysicalRecordSubmission`, generation
+publication through the existing C.8 owner, and `BlobReadSession` over
+protected reads. No registry, dedupe, resume, reclaim or index yet; the
+catalog lookup for this phase is a bounded scan of publication records
+admitted as the `Rebuild` lane shape, replaced in Phase 4.
+`CapabilityAvailability::Present` (D12) lands here together with
+`blobs()`, so status and accessor become real in the same change;
+`layouts()` and Layout `Present` land together in Phase 4.
 
-Closeout gate: a blob of 4 x the window ingests through the production path
-with measured resident bytes under the ceiling, publishes exactly once,
+Closeout gate: a blob of at least 4 x the window and strictly larger than
+`W + 5 MiB` ingests through the production path with measured resident bytes
+under the ceiling; the injected whole-object materialization breaches the
+same measured bound. It publishes exactly once,
 survives a fresh-process reopen, and streams a range byte-exact with
 counters equal to observed I/O; the whole-object substitutions are typed or
 compile-time denials; the three cycle-removal proofs hold (no `cargo tree` path, no `worth_store::` import in
 `worth-store-blob-chunks`, boundary-check
 DAG snapshot) and every file in the cycle-removal table has its disposition;
-the offline observer walks the new families without runtime APIs. Proof obligation:
-the controlled defect of hiding a full materialization fails the residency
-predicate.
+the offline observer walks the new families without runtime APIs. Kill after
+declaration publication and after a claimed chunk but before generation,
+then require fresh C.8 reopen plus independent observer to identify retained
+unfinished custody without an invented orphan or published blob. Kill after
+generation WAL durability but before root publication and require exact
+once-only redo; current Frames and SourceCopy operations remain valid, while
+unsupported historical projection versions deny before promotion or effects.
+Proof obligation: hiding a full materialization fails the residency
+predicate, while omitting an occurrence claim despite valid C.5 checksum and
+inner SHA fails offline custody validation.
 
 ### Phase 3: Interrupted ingest, resume, and independent residue reclaim
 
-Add `BlobResumeSession` records and payload, frontier publication, resume
-readmission, session limits, abandonment, and the Store-independent reclaim
-of failed-operation residue through `drop_reclaimed_records` plus existing
-retirement. This phase installs the record-dropping publication because
+Extend Phase 2's durable `BlobResumeSession` declaration with versioned
+frontier and terminal records, resume readmission, checkpoint-sequence
+expiry arbitration, explicit abort and Store-independent reclaim of
+failed-operation residue through `drop_reclaimed_records` plus existing
+retirement. This phase installs record-dropping publication because
 abandoned residue is the first legitimate consumer; published generations
-are never eligible here.
+and shared deduped chunks are never eligible here.
 
-Closeout gate: the writer process is killed at the first four crash seams;
-each reopens to the exact required fate; resumed ingest writes no chunk
-twice; abandoned residue is reclaimed with retained bytes falling and no
-external proof; forged or mismatched tokens are denied.
+Closeout gate: kill distinct writer processes after a selected declaration
+and claimed chunk before frontier, after frontier before the next complete
+chunk, after all chunks with only partial tree nodes, and after the tree root
+before generation publication. Each fresh reopen has the exact declared,
+claimed, frontier or partial-tree fate from the blob seam rows; resumed ingest
+reuses selected records and writes no ordinal twice. Abandoned exclusive
+residue is reclaimed with retained bytes falling and no external proof;
+forged or mismatched tokens are denied.
 
 ### Phase 4: Artifact-family registry and the first derived index
 
@@ -829,11 +1178,401 @@ classification, reader/recovery-pin deferral, batched drop publications,
 placement movement as rewrite, and the reclaim and ingest scheduler
 producers' interference evidence.
 
+Checkpoint release custody is positive, never inferred from a missing drop
+record or a digest alone. The versioned tag-7 stream carries bounded
+released-drop Batch/Accumulator custody after a proven drop, or a distinct
+`NoRelease` marker bound to the selected checkpoint and source root. Store may
+mint the first zero-predecessor marker only from its trusted fresh-genesis
+zero-release ledger; a successor names the exact prior selected marker and
+its payload digest. The current C.7/C.10 namespace has one durable
+`checkpoint.current` and an exact WAL suffix: publication atomically replaces
+that checkpoint, and candidate files are residue, not retained predecessors.
+C.8 validates the selected current marker. Its prior fields are Store-attested
+custody from the exact previously selected ledger, not independently replayed
+history; a future governed retained-checkpoint role would additionally require
+C.8 to validate any selected predecessor it retains. Reopen without either valid custody form remains
+unavailable, including old unmarked checkpoints. C.8 validates the selected
+certificate, root and typed route/WAL evidence, while Store independently
+rejoins the same selected media before issuing a one-shot Serving seal. Ordinary
+reopen whose retained WAL suffix has no released-drop member is the clean case:
+Store itself verifies the selected certificate against the loaded root and
+source and installs that custody without C.8. Any retained released-drop
+member keeps custody unavailable until the C.8 handoff.
+
+A released-drop WAL member may become durable after a selected checkpoint and
+before the next checkpoint. Its `NoRelease` marker, if present, attests only
+that checkpoint's source root; a selected Batch/Accumulator instead supplies
+the certified Store-wide cumulative starting point. Neither form alone
+authorizes a post-checkpoint released root. Distinct released objects can
+produce multiple V3 WAL batches before a successor checkpoint, so C.8's
+private-field pending-WAL claim must carry the complete ordered sequence,
+not only its tip. For each batch C.8 joins the exact unique C.9-admitted
+`RecordsDropped` member and honestly classified C.9 operation fate
+(`Indeterminate` before root materialization, or a genuinely completed fate),
+V3 descriptor, reservation, manifest, authenticated source closure, and exact
+published root and free-space topology. It proves the source/result chain
+through every intervening canonical non-release publication; no descriptor
+alone authenticates a missing historical link. V3 predecessor and cumulative
+fields are per released object, whereas Batch/Accumulator cumulative evidence
+and pending-batch order are Store-wide; an unrelated object's descriptor need
+not name the global tip. A first drop must name its publication in the drop
+set; a successor may instead drop the next payload only after its exact
+predecessor is authenticated against the selected per-object chain. Store's
+same-media rejoin also resolves that predecessor's exact selected descriptor
+and manifest, compares their released-object source basis to the successor,
+and checks nonterminal cumulative progression; a different object's valid
+Batch is not a substitute. When a pending or historical V3's per-object
+predecessor is a checkpoint-source head, that head's Store-attested custody
+settles the object's closure records absent at the checkpoint source root;
+absence at a later source root is settled only by that key's exact retained
+post-checkpoint drops in the verified ordered root history, and a closure
+record removed by another key's edge, or absent under neither form, denies.
+Neither C.8 nor Store enumerates pre-checkpoint lifetime drops. A selected
+TierEpoch+NoRelease checkpoint has two distinct certificates, not an invalid
+extra tag: C.8 and Store bind the exact tier intent/completion, tier-anchored
+root/free header, NoRelease source marker, and complete WAL inventory before
+Serving. Store independently rereads the selected checkpoint
+and its source, every required pre-redo source, the final root/free/routes,
+complete retained WAL and unique member fates, and all routed controls before
+folding the ordered batches into its release ledger and issuing a one-shot
+Serving seal. The pending claim remains distinct from the selected checkpoint
+certificate: it neither rewrites nor synthesizes tag-7. The next checkpoint
+must fold genuine Batch/Accumulator custody from the selected base and every
+pending batch. A stale checkpoint-only claim, missing or reordered batch,
+substituted control frame, altered WAL member, mismatched fate, or wrong
+post-redo topology must deny Serving. If a fresh C.8 sees a prior V3 result
+already selected, it may treat the old WAL group as historically consumed only
+after proving the exact old member/target/digest/coordinate and complete
+source-to-result route and free-space transition; this does not change that
+member's C.9 fate or pretend to execute its drop again.
+
+#### Per-object custody across checkpoint replacement
+
+The Store-wide accumulator tip is not a per-object predecessor. An unfinished
+A release, then B's release and successor checkpoint, must still permit A's
+lawful next release after A's old WAL and checkpoint are pruned. The governing
+representation is a versioned, copy-on-write `ReleaseCustodyHead` tree bound by
+one fixed reference in the selected root manifest. It has one keyed entry per
+released object/generation that may still continue. Its canonical leaf entry
+names the latest V3 descriptor,
+manifest and reservation identities and frame digests, the released-object
+source basis, exact predecessor, per-object cumulative progress and
+terminality. Neither the descriptor nor head entry contains the digest of the
+resulting head tree/root or its containing checkpoint, which would make
+publication circular. The root's head-tree reference authenticates the
+bounded, ordered leaves; a fixed root field alone never substitutes for the
+per-object entries. Old selected V3 controls are evidence to rejoin, but a
+control without current head-tree membership is not release authority.
+
+Every completed V3 drop replaces only its own head-tree entry in the same
+WAL-backed root publication as the drop result; unselected copy-on-write
+blocks are residue.
+The first head requires the exact first-drop publication in the drop set. A
+replacement requires the authenticated prior head for the same key, a
+nonterminal predecessor, identical source basis and exact next-payload
+cumulative advance. A different object's head or global Batch tip cannot
+authorize it. Store constructs this transition from its selected release
+ledger and admitted V3 proof, never from routed descriptor bytes. The V3 WAL
+member still owns exactly one descriptor data record; its versioned metadata
+effect also commits the exact keyed head-tree transition, source reference,
+copy-on-write node identities/addresses, resulting reference and allocation
+effects. C.9 validates this metadata effect with the same member and root:
+an extra, missing, substituted or wrong-generation node, wrong descriptor
+identity, unrelated-key change or unexpected free-space effect denies. C.8
+redo reproduces that exact transition, not an allocation chosen from the
+replay-time free map. C.7 may not improvise a head mutation merely because
+WAL became durable. The dependency is source root, admitted descriptor and
+controls, head entry, new tree reference, result root, then checkpoint;
+descriptor identity comes from the admitted WAL binding. Before any effect,
+Store reserves worst-case copy-on-write path/split blocks, node storage,
+replacement or retirement work, checkpoint-roster work and C.8/Store
+recovery-resident charge. Exhaustion is a typed pre-effect denial; a completed
+drop may not become uncheckpointable.
+
+The next versioned tag-7 Accumulator binds, alongside the existing ordered
+Batch and Store-wide cumulative ratchet, the complete **checkpoint-source**
+head roster:
+unique canonical object/generation order, count, and domain-separated digest
+of each keyed entry and the exact root-referenced tree identity/checksum. It carries the
+prior selected roster count/digest as Store-attested custody. Current Batches
+fold in order per object; the final selected tree entry for each updated key
+must match its latest Batch, and intermediate entries need not remain selected. Store
+proves unchanged heads carry byte-exactly when it constructs the successor
+checkpoint from its selected ledger. C.8 cannot replay that carryforward from
+a superseded checkpoint that no longer exists. The roster scales with
+selected release state rather than the
+64-record, 64-KiB certificate section: the accumulator commits a bounded,
+streamed rooted roster, not one tag-7 certificate per historical object.
+The checkpoint-source root's head-tree reference, authenticated tree walk and
+accumulator must enumerate the same heads; duplicate keys, unreferenced or
+extra selected nodes, omitted entries, unknown versions and noncanonical
+order deny. A block outside the selected tree is residue, not a head. An
+entry without selected-checkpoint tree membership is not independently
+authoritative.
+
+C.8 validates the current checkpoint's roster commitment, exact selected
+head-tree blocks and routed descriptor/manifest/reservation controls, current
+Batch-to-head updates, root/free/WAL
+topology and still-retained genuine C.9 fates. Store separately rereads the
+same selected bytes and rederives the per-object map before its one-shot
+Serving handoff. A carried head after old WAL pruning is current
+Store-attested checkpoint custody, not a claim that C.8 replayed a deleted
+historical Batch or C.9 result. As with the existing NoRelease prior ratchet,
+a self-consistent rewrite of the whole trusted namespace is outside this
+integrity boundary; a digest by itself never grants release authority. Fresh
+pending V3 groups remain independently joined from exact WAL/source/result
+and head-transition evidence until selected into the next checkpoint. They
+advance the checkpoint-source roster to an **effective post-WAL roster**;
+neither C.8 nor Store compares that effective roster with the old accumulator
+as if it were still the checkpoint source. The Serving seal binds its final
+root and effective roster, and the next checkpoint commits that roster. A
+current-format NoRelease marker provides the zero-release source for the first
+admitted release and its head-bearing successor checkpoint. NoRelease and
+released custody are typed states of the current certificate grammar, not a
+historical V1-to-V3 compatibility journey. A current released checkpoint missing
+its required heads remains unavailable; selected controls cannot supply the
+missing custody. Historical certificate formats deny without migration or
+legacy fallback.
+
+Terminal heads stay as tombstones until Store consumes owner-issued exclusion
+of the exact object's publication, reader/recovery holds and retry/idempotency
+claims, plus durable non-reissue of its identity. A checkpoint alone proves
+none of those exclusions. Retirement is a separately typed, WAL-admitted
+head-tree/root transition included in the next roster ratchet, not silent
+omission or a false repeated V3 drop. Ordinary root publications preserve the
+head-tree reference unless they consume an explicitly admitted head update
+or retirement. A replaced head and
+its older descriptor/manifest/reservation chain may be physically retired
+only after the successor head is checkpoint-attested, no protected reader,
+recovery pin or retry requires the older controls, and no Batch in the
+**currently selected** checkpoint or pending WAL claim still needs them for
+its ordered fold, per-object identity or source/result rejoin. Checkpoint
+replacement or explicit discharge must remove those dependencies before
+retirement. The current head and its exact control closure remain retained.
+The pre-effect charge covers that
+whole retained closure, WAL/root publication, checkpoint and C.8/Store
+recovery work, not just head count. An explicit admitted head-population bound
+`H` is derived from these charged budgets; a first release for a new distinct
+key at `H + 1` defers before WAL or root effects. This bounds current selected
+custody, not the number of releases over the Store's lifetime.
+
+The decisive process courtroom starts with genuine A partial drop and
+checkpoint, then B drop and checkpoint; the production retention owner prunes
+A's old WAL and superseded checkpoint. A fresh process must admit A's
+successor, complete C.8 and independent Store rejoin, seal Serving, checkpoint
+again and reopen with exact A/B per-object and Store-wide cumulative values.
+The same world must deny a substituted unchanged entry, missing or duplicate
+entry, wrong key, wrong A predecessor/progress/terminality, B-tip substitution,
+an extra selected tree node or roster omission before any new effect.
+The selected checkpoint-source roster must stay valid while a genuine
+postcheckpoint V3 changes only the effective WAL-derived roster; a stale seal
+or post-seal head mutation must deny. A current release checkpoint missing its
+required heads must remain unavailable even with routed controls, while current
+NoRelease advances through a genuine first release into a head-bearing
+checkpoint. Unsupported historical versions deny before effects. Terminal-head
+retirement without the owner-issued hold/retry/non-reissue exclusion must deny.
+Kill at V3 WAL durability, head-tree node materialization, result root
+publication, checkpoint file
+replacement and namespace sync: no candidate head may be adopted and no
+completed drop may lose its continuation. Run at admitted `H` and `H + 1`,
+measuring charged resident bytes and pre-effect capacity denial; mutating the
+roster-membership check or C.9 head-effect validation must turn this red.
+
 Closeout gate: reclaim of a held generation defers with a typed reason and
 completes after release with exact effects; reclaim without proof is denied
 regardless of references or age; a second reclaim is proven no effect; tier
 movement never exposes a half-moved chunk; the crash seams for drop and
-retirement reopen to their required fates.
+retirement reopen to their required fates. The existing
+`physical_runtime_authority_ui` target must compile a valid Store movement
+journey and reject `StablePhysicalReadReceipt` alone as movement-execution or
+movement-read-hold authority, using the real types introduced by this phase.
+
+#### Phase 6 execution boundaries
+
+Phase 6 remains one required contract, but implementation proceeds through the
+six dependency-ordered submilestones below. These are delivery and review
+boundaries, not independently deployable weaker modes. All requirements above
+remain mandatory; none moves to Phase 7, Phase 8 or a successor. A checkpoint
+commit can preserve unfinished work, including failing tests, but grants no
+runtime authority and is not a submilestone or Phase 6 PASS.
+
+The integration checkpoint is one real journey: genuine A partial drop,
+checkpoint, B drop, checkpoint, lawful production pruning of A's old WAL and
+superseded checkpoint, fresh process, lawful A successor, C.8 recovery and
+independent Store rejoin, Serving, checkpoint and reopen with exact A/B and
+Store-wide progress. First make ordinary publication and the first real drop
+work under their declared budgets. Expand that same journey; do not build
+parallel proof machinery while its prerequisite is red. Preserve accepted
+evidence unless an edited seam invalidates it.
+
+#### Architecture-law enforcement at every submilestone
+
+The governing [architectural laws](../../docs/coding-guidelines/arch_laws.md),
+[performance laws](../../docs/coding-guidelines/perf_laws.md),
+[composition laws](../../docs/coding-guidelines/composition_laws.md) and
+[domain structure laws](../../docs/coding-guidelines/domain_structure_laws.md)
+are implementation constraints, not a final documentation exercise. The
+following obligations identify their concrete Phase 6 enforcement boundaries.
+
+| Laws | Required owner behavior | Evidence that must distinguish a violation |
+| --- | --- | --- |
+| Architecture 1, 3, 4, 16 | Store consumes admitted semantic release proof and lowers exact selected-source, head, control, allocation and root effects before execution. C.7 publishes; C.9 validates exact redo; C.8 reconstructs; Store independently rejoins before its one-shot Serving transition. Observation, routed bytes, digests and generic completion grant no authority. | Public compiler boundaries reject forged/skipped progression; no-proof, wrong-object and stale-source twins deny before new effects; exact WAL/media observation distinguishes admitted from performed work. |
+| Architecture 5, 7, 14, 22 | Root preparation and every failure translation preserve the typed underlying cause, responsible boundary, proven/maybe-started effect posture, retained authority and recovery disposition. Cancellation never erases durable work. | Inject preparation, resource, WAL, root and namespace failures; assert exact cause and fate, selected artifacts and recovery result, not merely `is_err()`. A published generation with pending indexing must remain a typed partial outcome, not fixture success or rollback. |
+| Architecture 9, 11, 19, 22; performance allocation and memory laws | Recovery, rejoin, Serving handoff and each drop derive one worst-case memory envelope from their admitted bounds (WAL bytes, checkpoint size, head population `H`, roster size) and admit it once before any effect; exceeding the budget is a typed denial before effects. Allocations inside an admitted operation need no individual reservation, and no per-allocation reservation plumbing is added. Retained custody keeps one charge that is carried across C.8, Store rejoin, Serving, mutation and disposal. | A memory-counting test allocator over the production journeys checks that measured peak stays within the envelope; an undersized budget denies before effects and disposal releases the retained charge. Reconcile `canonical_store_metadata_envelope` against actual retained metadata rather than raising its budget to conceal overhead. |
+| Architecture 8, 10, 17, 18 | Selected checkpoint custody, pending-WAL claims, checkpoint-source roster, effective post-WAL roster and per-object predecessor are distinct owner facts. Ordinary visibility still comes from selected C.5 routes, never a retained catalog cell or the global release tip. | Pruned A/B continuation, post-checkpoint updates, unchanged-entry and stale-seal twins; ordinary surviving-object reads and independent offline observation. No old checkpoint, heap ledger or writer state crosses the fresh-process boundary. |
+| Architecture 21; DX 7 | Durable head, root, metadata effect and checkpoint families declare current-only supported grammars and typed states under the explicitly permitted undeployed Store policy. Keep identity/version checks, never reinterpret old bytes, and reject historical formats without migration. | Current NoRelease advances through a genuine first release; missing current heads and unsupported versions deny; C.9/C.8 and independent Store/observer consumers admit the same current grammar and reject incompatible or altered metadata before promotion. |
+| Architecture 6, 13, 15, 23 | Effects remain in the existing Store work/scheduler/executor/publication path. Physical reachability cannot issue semantic liveness, holds or non-reissue proof. Admission and recovery guarantees cannot be traded for throughput or easier review. | Real held-reader, retirement, movement and interference journeys; compile-fail movement substitutes; media observations expose executor bypass or half-publication. |
+| Composition 1-9, 13-15; domain structure 1-3, 7-11, 17 | Keep proof decisions, execution, replay, diagnostic translation and independent rejoin in their existing semantic owners. Facades export contracts only. Orchestration names proof-building steps; line-count extraction cannot substitute for responsibility boundaries. | Bounded independent structural review, dependency/visibility checks, scoped 400-line guard and judgment of function advisories. New growth enters the destination tree below without phase-named buckets or a second authority lane. |
+
+Resource admission is one envelope per operation, not per-allocation plumbing.
+Each submilestone sizes the envelope for the paths it introduces or changes
+and proves it with the counting allocator. Existing per-allocation funding
+code is frozen: no new additions, and it may be removed where the envelope
+covers it. The retained closure and checkpoint/recovery envelope are
+prerequisites of the first admitted drop.
+
+#### 6.1: Bounded ordinary publication and diagnostic foundation
+
+Consume the existing protected selected-root reader and Maintenance admission;
+make strict native blob publication and derived-index completion work in the
+existing 32 MiB operation profile. Retirement admission must bound the actual
+closure and all coexisting storage before construction, enforce that bound
+while collecting/copying it, and retain the grant for the funded lifetime.
+Do not reserve the entire global maximum independently for nested tiny
+closures, remove a required reservation, or enlarge the profile to pass.
+
+First acceptance feedback comes from the strict publication setup of
+`release_reopen::shared_reuse_custody::source_first_reuse_continues_only_with_fresh_c8_custody`
+in the existing Recovery Runtime `production_entry` target, plus focused
+retirement-admission and root-preparation failure tests. Setup must not swallow
+`PublishedIndexPending`. A too-small profile must report the responsible typed
+denial before that newly admitted work's effects while preserving any earlier
+durable partial publication. Passing setup enables 6.2; it does not certify the
+rest of the recovered journey or Phase 6.
+
+#### 6.2: Atomic one-object release and surviving ordinary visibility
+
+Consume admitted release proof, current per-object source/head and live reader/
+recovery protection. Establish one WAL-backed drop/head/control/root transition
+with pre-effect capacity for its replacement, retirement, checkpoint roster
+and C.8/Store recovery closure. Checkpointability is an admission invariant,
+not a check performed after completing the drop.
+
+If a released publication invalidates a derived directory's immutable
+watermark, publish a new lawful directory binding in the same atomic
+transition, retaining surviving family roots and their actual truth status.
+Its metadata effect must be versioned and validated/replayed by C.9/C.8;
+never keep an invalid old binding, reinterpret prior metadata bytes, or make
+ordinary catalog reads fall back to a broad authoritative scan. Retained
+derived cells cannot resurrect an unrouted publication.
+
+Acceptance is a genuine partial drop followed by checkpoint and ordinary reads
+of surviving shared content. Include source-first and destination-first reuse,
+held-reader deferral followed by exact completion, no-proof denial, repeat
+proven-no-effect, exact drop/head/free-space effects and this transition's
+failure/crash fates. Only this accepted production boundary may support 6.3.
+
+#### 6.3: Independent recovered custody and multi-object continuation
+
+Consume the real checkpoint, exact retained WAL/member fates and selected
+head/control closure. C.8 and Store independently derive their respective
+facts from the same media; the Store-issued one-shot seal binds final root and
+effective post-WAL roster before Serving. Keep selected checkpoint certificates
+distinct from pending claims and checkpoint-source rosters distinct from
+effective rosters. Carry continuously owned recovery/rejoin residency into
+Serving and any admitted growth; handoff cannot release a grant while funded
+state remains live.
+
+Decompose `selected_release_gate/pending_wal.rs::admit` by semantic proof steps:
+ordered member/fate selection, authenticated media/source/result joins,
+reservation and head-transition validation, exact replay admission, live
+aggregate cost admission, then private claim construction. These steps carry
+named owner facts; downstream code may not reselect raw evidence or construct
+the final claim without the preceding proofs. This is not arbitrary file
+fragmentation or a new generic proof framework.
+
+Acceptance completes the decisive pruned A/B process journey above and the
+same-world hostile variants already required by Phase 6. Include genuine
+post-checkpoint head change without invalidating the old checkpoint-source
+roster, stale/post-mutation seal denial, current NoRelease progression,
+missing-current-head refusal and unsupported historical-version denial.
+A passing unsealed-open denial is negative evidence only;
+it never replaces positive fresh-process recovered continuation.
+
+#### 6.4: Lawful custody retirement and admitted population
+
+Consume checkpoint-attested successor custody plus owner-issued exact
+publication/hold/retry/non-reissue exclusion. Use the separately typed
+WAL-admitted head retirement and roster ratchet; retain current controls and
+every older control still needed by selected checkpoint or pending folds.
+No checkpoint age, missing route or terminal flag alone permits deletion.
+
+Acceptance proves denial with each material dependency still live, exact
+retirement after lawful exclusion, continued reopen after production pruning,
+and populations at admitted H and H+1. Measure the whole live retained closure
+and transient work; H+1 denies before WAL/root effects. These measurements
+complete, not introduce, the pre-effect capacity contract used by 6.2/6.3.
+
+#### 6.5: Genuine tier movement and scheduled interference
+
+Consume real movement execution/read-hold authority through C.10 rewrite,
+protection, scheduler and executor contracts. Preserve TierEpoch+NoRelease's
+distinct certificates and their recovery binding; release proof does not
+implicitly authorize movement.
+
+Acceptance observes real chunk movement without half-moved visibility,
+protected old-reader survival, exact interference with reclaim and foreground
+ingest, and fresh recovery of interrupted movement. The existing authority UI
+target accepts the real Store movement path and rejects a
+`StablePhysicalReadReceipt` as either required movement authority.
+
+#### 6.6: Integrated Phase 6 closure
+
+Integrate the accepted paths at V3 WAL durability, head-node materialization,
+result-root publication, checkpoint replacement and namespace synchronization.
+Each earlier effect-bearing submilestone already owns its relevant interrupted
+fate; this campaign must not be the first consideration of crash or cleanup.
+Use the independent observer for persisted identity, topology and progress,
+not writer-returned truth. Complete all remaining Phase 6 requirements above,
+including mutation-sensitive roster membership and C.9 head-effect checks.
+
+Before Phase 6 PASS, run focused owners and affected production/UI journeys,
+formatting, the scoped dirty Rust line-cap guard, function advisories with
+causal-scope judgment, and the mandated boundary and generated-context checks:
+
+```text
+cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+```
+
+Revise the existing durability, recovery and integrity guides named in this
+specification against the actual facades, compatibility and operator recovery
+behavior. Independent `qa-loop`, `qa-tests` and `code-quality-qa` clearance at
+bounded slice gates remains mandatory; final phase certification uses the
+selected independent reviewer arrangement. Missing review or required evidence
+is an unmet gate, never primary-agent self-certification.
+
+#### Execution ownership and stopping rules
+
+Keep one integration owner and one coordinated Cargo lane. Assign narrowly
+owned production changes, independent fixture/test analysis and independent
+review; stabilize shared contracts before concurrent edits. Workers may not
+edit shared contracts concurrently or run contending Cargo builds. Review the
+bounded delta once, then only corrections and invalidated seams; do not repeat
+whole-dirty-tree certification, generate evidence registries or test tests.
+
+Before each slice, identify its first real failing boundary, verified facts,
+remaining hypotheses, owner interfaces and concrete acceptance commands. A
+failure that invalidates those facts triggers a boundary/plan correction before
+more edits. More than a day on the same unresolved slice warrants a focused
+rebaseline of that seam and dependencies, not parallel patch accumulation;
+elapsed time is neither proof nor permission to weaken the contract. Preserve
+settled design and accepted evidence unless concrete invalidating evidence
+requires reopening them.
+
+If three consecutive slices are the same kind of fix (for example funding,
+scratch accounting or proof plumbing for one seam), stop and propose a
+structural fix to that seam before landing another.
 
 ### Phase 7: LSM strategy, compaction, and export/import
 
@@ -844,8 +1583,8 @@ bounded export/import.
 Closeout gate: LSM point/range equal the model across memtable and runs;
 compaction publishes membership only after runs are durable and retires
 stale runs through retirement; the two LSM crash seams reopen correctly;
-export streams under the window and import produces a generation with the
-same root.
+export streams under the window and import reproduces the portable logical
+digest and bytes while publishing its own Store-local physical tree root.
 
 ### Phase 8: Full matrix, heavy lane, cutover and successor handoff
 
@@ -853,7 +1592,9 @@ Run the decisive interleaving and the 4 GiB heavy lane; confirm
 `InstalledCapabilityStatus` reports every constructed family truthfully
 (Blob became `Present` in Phase 2 and Layout in Phase 4, with the accessor
 that made them real); remove dead placement-observation
-sessions, fake harness receipts and static inventory rows; revise the
+sessions, fake harness receipts, compatibility-only owners and static inventory
+rows; confirm no historical read/write or migration lane remains under the
+Store format policy; revise the
 documentation deliverables; update the roadmap's C.11 entry with the current
 contract and the C.12/C.13 handoff.
 
@@ -872,9 +1613,9 @@ docs compile their examples.
 | Offline observer families | After format frames are frozen | Phase 2 closeout |
 | Dependency inversion of `worth-store-blob-chunks` | Immediately | Phase 2 closeout; boundary-check snapshot |
 | Mechanism-crate cleanup (baseline tree, InMemory runtime, fs repair) | After Phase 2 | Phase 4 closeout |
-| Recovery-physics payload kinds | After payload versions are frozen | Phase 3 (resume, reclaim), Phase 7 (LSM) |
+| Recovery-physics payload kinds | After current payload grammars are frozen | Phase 2 (declaration and generation), Phase 3 (frontier, terminal and reclaim), Phase 7 (LSM); each cutover replaces rather than retains an abandoned grammar |
 | Writer binary and heavy generator | Immediately | First use in Phase 2 |
-| Scheduler producers | After Phase 2 | Phase 3 (ingest head), Phase 6, Phase 7 |
+| Scheduler producers | Before their effects | Phase 2 (`BlobIngestPressure` and bounded ingest head), Phase 6, Phase 7 |
 
 ## QA Considerations And Verification
 
@@ -884,7 +1625,11 @@ mechanism crate, fixture, harness or in-memory model can produce a blob or
 index byte. Lifecycle review must cover cancellation before and after the
 first effect, resume across processes, close during an open read, and
 shutdown with an active ingest. Persistence review must cover every crash seam
-and the version fields of each new frame and payload. Performance review must
+and the version fields of each new frame and payload. Review must distinguish
+current-format recovery history from abandoned software formats, confirm all
+affected producers and independent consumers use the current grammar, and reject
+historical versions before effects without a migration or fallback lane.
+Performance review must
 compare measured residency and counters to the ceilings at the heavy scale.
 Security review must confirm dedupe scope enforcement and that release proofs
 cannot be forged from physical observations. Tests and evidence: owner-local
@@ -907,13 +1652,24 @@ Implementation revises these against real APIs, compiling every example:
   allocation consumers; record-read chunk versus blob chunk vocabulary.
 - `physical-durability-and-checkpoints.md`: extent arenas, free-range truth,
   range release and arena evacuation; record-dropping publication, blob and
-  LSM payloads, retained-storage effects of reclaim.
+  LSM payloads, retained-storage effects of reclaim. For the Store operator,
+  explain the selected per-object head roster, checkpoint replacement and
+  pruning rule, pre-effect capacity denial and terminal-head retirement;
+  current-only supported formats, unsupported-version denial and explicit
+  creation of fresh disposable development namespaces, never automatic reset.
 - The C.5 record-path spec and `bounded-physical-record-access.md`: extent
   placement is an arena range; per-extent files are gone.
 - `physical-recovery-and-reopen.md`: blob generation, resume, drop and
-  membership redo; residue fates.
+  membership redo; residue fates. For recovery implementers, distinguish
+  current checkpoint-attested heads from independently replayed pending WAL,
+  and state why selected controls or the global tip cannot replace a missing
+  per-object head. Distinguish current crash/pruning recovery from unsupported
+  historical-format migration; there is no migration or downgrade procedure.
 - `physical-integrity-and-offline-verification.md`: new families, derived
-  rebuild disposition, offline blob/index walk.
+  rebuild disposition, offline blob/index walk. For offline operators, name
+  the head-tree block/roster family, unselected-node residue and mismatch
+  findings, and the limit
+  of whole-namespace self-consistent rewrite detection.
 - READMEs of `worth-store-blob-chunks`, `worth-store-layout-indexes`,
   `worth-store-lsm-authority`: downward mechanism posture; corrected claims.
 - This roadmap's C.11 entry: current contract links and the exact C.12/C.13
@@ -931,7 +1687,7 @@ Explicit non-goals, each deferred with its owner:
 | Successor | Adds | Must not force a redesign of |
 | --- | --- | --- |
 | C.12 formal rebinding | Models of ingest/publish/resume/reclaim and index publish/rebuild transitions against the executable owners | Runtime authority; modeled verdicts grant nothing |
-| C.13 integration | Joined workload with blobs, indexes, rewrite and reclaim under one scheduler; sealed platform handoff to S.10 | Facade placement, registry ownership, lifecycle composition |
+| C.13 integration | Facade integration and crash-and-reopen journey; sealed handoff to Runtime Integration Milestone 1 (the joined workload moves to S.12) | Facade placement, registry ownership, lifecycle composition |
 | S.10 backup/repair | Backup holds as reachability edges, capsule and replication artifacts, authorized repair of authoritative chunk corruption | Reclaim proof protocol, drop publication, retirement law |
 | Part II semantics | Release-proof issuers, tenant/key scope policy, cross-scope dedupe, content-defined chunking, Query pushdown, semantic traversal | Physical scopes, chunk identity, family registry, branch-agnostic sessions |
 | Runtime-integration Milestone 12 | Chunk-backed range and streaming providers over `blobs()` | Constant-memory read contract, counters |

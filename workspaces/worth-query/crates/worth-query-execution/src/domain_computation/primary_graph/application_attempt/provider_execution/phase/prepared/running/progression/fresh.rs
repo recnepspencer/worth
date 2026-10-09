@@ -1,6 +1,5 @@
 use crate::domain_computation::primary_graph as graph;
 use crate::domain_computation::provider_session as session;
-use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as ReadKind;
 use crate::domain_computation::{
     WorthQueryDecisionFactRequest, WorthQueryDecisionReadSetFreshnessOutcome,
     WorthQueryFreshDecisionReadSet, WorthQuerySessionBoundReadsAndEffects,
@@ -48,6 +47,7 @@ pub(super) enum WorthQueryProviderReadSetProgression<'run> {
 pub(super) struct WorthQueryFreshProviderAttempt<'run> {
     staged: WorthQuerySessionBoundReadsAndEffects<'run>,
     read_set: WorthQueryFreshDecisionReadSet,
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 }
 
 impl<'run> WorthQueryFreshProviderAttempt<'run> {
@@ -55,11 +55,19 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
         self,
         steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         provider: &std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
         Progression,
     > {
-        super::invariant::progress_invariant_candidate(self.staged, self.read_set, steps, provider)
+        super::invariant::progress_invariant_candidate(
+            self.staged,
+            self.read_set,
+            &self.request,
+            steps,
+            provider,
+            allocation_policy,
+        )
     }
 }
 
@@ -74,6 +82,7 @@ pub(super) fn compare_provider_read_set<'run, Schema, Operation, Input, Scope>(
         Input,
         Scope,
     >,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderReadSetProgression<'run>
 where
     Schema: ApplicationSchema,
@@ -83,20 +92,34 @@ where
         let _ = staged.abort();
         return WorthQueryProviderReadSetProgression::Terminal(outcome);
     }
-    let receipt = match staged.read_authority().capture_decision_read_set(requests) {
+    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
+        authority.admission().publication_request(),
+        allocation_policy,
+    );
+    let receipt = match staged.read_authority().capture_decision_read_set(
+        requests,
+        allocation_control.policy(),
+        Some(authority.admission().publication_request()),
+    ) {
         Ok(receipt) => receipt,
         Err(failure) => {
             let _ = staged.abort();
-            return WorthQueryProviderReadSetProgression::Terminal(decision_read_set_denied(
-                failure,
+            return WorthQueryProviderReadSetProgression::Terminal(Progression::Denied(
+                WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
             ));
         }
     };
-    match staged.read_authority().compare_decision_read_set(receipt) {
+    match authority.provider().compare_application_read_set(
+        &staged.read_authority(), receipt,
+        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
+            allocation_control.policy(), Some(authority.admission().publication_request()),
+        ),
+    ) {
         Ok(WorthQueryDecisionReadSetFreshnessOutcome::Fresh(read_set)) => {
             WorthQueryProviderReadSetProgression::Fresh(WorthQueryFreshProviderAttempt {
                 staged,
                 read_set,
+                request: authority.admission().publication_request().clone(),
             })
         }
         Ok(WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale)) => {
@@ -104,29 +127,8 @@ where
         }
         Err(failure) => {
             let _ = staged.abort();
-            WorthQueryProviderReadSetProgression::Terminal(decision_read_set_denied(failure))
+            WorthQueryProviderReadSetProgression::Terminal(Progression::Denied(WorthQueryApplicationCommitDenial::decision_read_set_denied(failure)))
         }
-    }
-}
-
-fn decision_read_set_denied(
-    failure: crate::domain_computation::WorthQueryDecisionReadSetFailure,
-) -> Progression {
-    match failure.kind() {
-        ReadKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => Progression::Denied(
-            WorthQueryApplicationCommitDenial::active_snapshot_capacity_exhausted(
-                DenialStage::DecisionReadSet,
-                maximum_active_snapshots,
-            ),
-        ),
-        ReadKind::RetentionCapacityExhausted => Progression::Denied(
-            WorthQueryApplicationCommitDenial::retention_capacity_exhausted(
-                DenialStage::DecisionReadSet,
-            ),
-        ),
-        _ => progression_denied(DenialStage::DecisionReadSet),
     }
 }
 
@@ -247,9 +249,6 @@ where
         Ok(Err(IdempotencyDenial::Unavailable)) => {
             Some(progression_denied(DenialStage::Idempotency))
         }
-        Ok(Err(IdempotencyDenial::WindowExpired)) => Some(Progression::Denied(
-            WorthQueryApplicationCommitDenial::idempotency_window_expired(),
-        )),
         Ok(Err(IdempotencyDenial::CommittedReceiptNotRetained { commit })) => {
             Some(Progression::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),

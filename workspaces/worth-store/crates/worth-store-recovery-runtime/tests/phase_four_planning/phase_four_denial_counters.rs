@@ -39,7 +39,7 @@ fn page_failures_retain_distinct_exact_phase_four_read_counters() {
     let invalid_counters = invalid.evidence().planning_counters.unwrap();
     let page_counters = invalid_page.evidence().planning_counters.unwrap();
     assert_eq!(invalid_counters.page_extent_reads(), 2);
-    assert_eq!(invalid_counters.page_extent_bytes(), 208);
+    assert_eq!(invalid_counters.page_extent_bytes(), 248);
     assert_eq!(
         invalid_counters.freshness_retained() + invalid_counters.freshness_expired(),
         3
@@ -132,13 +132,13 @@ fn staging_denial_retains_every_completed_planning_stage_counter() {
             RecoveryPlanCostDenial::StagingBytes,
         ))
     );
-    let limit = blocked.evidence().limit.unwrap();
+    let limit = blocked.cause().limit().unwrap();
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::StagingBytes
     );
-    assert_eq!(limit.observed, 3_276_800);
-    assert_eq!(limit.admitted, 3_276_799);
+    assert_eq!(limit.observed(), 3_276_800);
+    assert_eq!(limit.admitted(), 3_276_799);
     let counters = blocked.evidence().planning_counters.unwrap();
     assert_eq!(counters.page_extent_reads(), 7);
     assert_eq!(counters.page_extent_bytes(), 17_328);
@@ -172,12 +172,12 @@ fn late_binding_limit_retains_sampled_freshness_without_media_reads() {
             StoreRecoveryBindingSampleDenial::OperationBindingLimit,
         ))
     );
-    let limit = blocked.evidence().limit.unwrap();
+    let limit = blocked.cause().limit().unwrap();
     assert_eq!(
-        limit.dimension,
+        limit.dimension(),
         PhysicalRecoveryLimitDimension::OperationBindings
     );
-    assert_eq!((limit.observed, limit.admitted), (3, 2));
+    assert_eq!((limit.observed(), limit.admitted()), (3, 2));
     let counters = blocked.evidence().planning_counters.unwrap();
     assert_eq!(
         counters.freshness_retained() + counters.freshness_expired(),
@@ -210,10 +210,10 @@ fn redo_byte_limit_reports_the_exact_non_unit_crossing_without_media_reads() {
             StoreRecoveryBindingSampleDenial::RedoByteLimit,
         ))
     );
-    let limit = blocked.evidence().limit.unwrap();
-    assert_eq!(limit.dimension, PhysicalRecoveryLimitDimension::RedoBytes);
-    assert_eq!(limit.admitted, 1);
-    assert!(limit.observed > limit.admitted + 1);
+    let limit = blocked.cause().limit().unwrap();
+    assert_eq!(limit.dimension(), PhysicalRecoveryLimitDimension::RedoBytes);
+    assert_eq!(limit.admitted(), 1);
+    assert!(limit.observed() > limit.admitted() + 1);
     let counters = blocked.evidence().planning_counters.unwrap();
     assert_eq!(counters.page_extent_reads(), 0);
     assert_eq!(blocked.recovery_effects(), 0);
@@ -238,8 +238,16 @@ fn redo_admission_denial_retains_sampled_freshness_and_reconciled_fates() {
     assert_eq!(
         blocked.evidence().planning_denial,
         Some(PhysicalRecoveryPlanningDenial::Redo(
-            PhysicalRedoPlanningDenial::TargetLimit,
+            PhysicalRedoPlanningDenial::TargetLimit {
+                observed: 2,
+                admitted: 1,
+            },
         ))
+    );
+    let limit = blocked.cause().limit().expect("the exhausted limit");
+    assert_eq!(
+        (limit.dimension(), limit.observed(), limit.admitted()),
+        (PhysicalRecoveryLimitDimension::RedoTargets, 2, 1)
     );
     let counters = blocked.evidence().planning_counters.unwrap();
     assert_eq!(counters.page_extent_reads(), 0);

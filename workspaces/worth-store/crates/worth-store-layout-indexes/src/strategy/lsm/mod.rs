@@ -40,7 +40,7 @@ pub use execution::{
 };
 pub(crate) use invariants::declare_lsm_invariant_suite;
 pub use invariants::{LsmInvariantSuite, LsmLookupDisposition};
-pub use lookup_runtime::{lsm_lookup_runtime, LsmLookupAdmissionDenied, LsmLookupRuntime};
+pub use lookup_runtime::{lsm_lookup_runtime, LsmLookupRuntime};
 pub use memtable_wal::LsmMemtableWalLaw;
 pub use operation_case::{
     LsmExecutionDisposition, LsmExecutionOperation, LsmExecutionOwnerCaseDeclaration,

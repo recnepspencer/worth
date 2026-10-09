@@ -39,7 +39,7 @@ fn durability_policy_installs_the_exact_dependency_signal_families() {
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
     assert_eq!(
-        policy_binding.partition().unwrap().partition.0,
+        policy_binding.partition().unwrap().path().segments()[0],
         format!("physical-durability-policy/{policy_digest}")
     );
     assert_eq!(serving.media_counters(), before);

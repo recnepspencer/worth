@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
+use super::posture::{BridgeExecutionBasisPosture, BridgeExecutionPosture};
 use crate::input::envelope::BridgeAuthoritativeSourceProfile;
 use crate::snapshot::MaterializedTruthViewObservation;
 use crate::source::AdmittedBridgeAsyncRequestIdentity;
-use worth_signal::facade::ResourceManagedQueueBinding;
 
 use super::reservation::BridgeExecutionBasisReservation;
 use super::{
@@ -25,10 +25,8 @@ pub struct BridgeBoundExecutionBasis {
     pub(super) identity: BridgeExecutionBasisIdentity,
     pub(super) bridge_runtime_key: u64,
     pub(super) managed_intent: BridgeManagedExecutionIntent,
-    pub(super) step_contract: BridgeManagedExecutionStepContract,
+    pub(super) posture: BridgeExecutionBasisPosture,
     pub(super) request: AdmittedBridgeAsyncRequestIdentity,
-    pub(super) managed_queue: ResourceManagedQueueBinding,
-    pub(super) managed_queue_occupancy_width: u64,
     pub(super) observation: Option<MaterializedTruthViewObservation>,
     pub(super) authoritative_source_profile: Option<BridgeAuthoritativeSourceProfile>,
     pub(super) reservation: Option<BridgeExecutionBasisReservation>,
@@ -39,9 +37,8 @@ pub struct BridgeBoundExecutionBasis {
 pub(super) struct BridgeBoundExecutionBasisParts {
     pub bridge_runtime_key: u64,
     pub managed_intent: BridgeManagedExecutionIntent,
-    pub step_contract: BridgeManagedExecutionStepContract,
+    pub posture: BridgeExecutionBasisPosture,
     pub request: AdmittedBridgeAsyncRequestIdentity,
-    pub managed_queue: ResourceManagedQueueBinding,
     pub observation: MaterializedTruthViewObservation,
     pub authoritative_source_profile: Option<BridgeAuthoritativeSourceProfile>,
     pub reservation: BridgeExecutionBasisReservation,
@@ -62,15 +59,25 @@ impl std::fmt::Debug for BridgeBoundExecutionBasis {
 
 impl BridgeBoundExecutionBasis {
     pub(super) fn new(parts: BridgeBoundExecutionBasisParts) -> Self {
-        let canonical_basis = format!(
+        let canonical_basis = match &parts.posture {
+            BridgeExecutionBasisPosture::Atomic => format!(
+                "bridge-atomic-execution-basis-v1|runtime={}|intent={}|request={}|truth-view={}|snapshot-token={}",
+                parts.bridge_runtime_key,
+                parts.managed_intent.identity().as_str(),
+                parts.request.digest(),
+                parts.observation.planned().digest(),
+                parts.observation.snapshot_token().token_value(),
+            ),
+            BridgeExecutionBasisPosture::Managed(managed) => format!(
             "bridge-execution-basis|runtime={bridge_runtime_key}|managed-intent={}|step-contract={}|request={}|truth-view={}|snapshot-token={}",
             parts.managed_intent.identity().as_str(),
-            parts.step_contract.identity(),
+            managed.step_contract.identity(),
             parts.request.digest(),
             parts.observation.planned().digest(),
             parts.observation.snapshot_token().token_value(),
             bridge_runtime_key = parts.bridge_runtime_key,
-        );
+            ),
+        };
         let digest = Sha256::digest(canonical_basis.as_bytes());
         Self {
             identity: BridgeExecutionBasisIdentity(Arc::from(format!(
@@ -78,10 +85,8 @@ impl BridgeBoundExecutionBasis {
             ))),
             bridge_runtime_key: parts.bridge_runtime_key,
             managed_intent: parts.managed_intent,
-            step_contract: parts.step_contract,
+            posture: parts.posture,
             request: parts.request,
-            managed_queue: parts.managed_queue,
-            managed_queue_occupancy_width: 0,
             observation: Some(parts.observation),
             authoritative_source_profile: parts.authoritative_source_profile,
             reservation: Some(parts.reservation),
@@ -102,8 +107,15 @@ impl BridgeBoundExecutionBasis {
         &self.managed_intent
     }
 
-    pub fn step_contract(&self) -> &BridgeManagedExecutionStepContract {
-        &self.step_contract
+    pub fn execution_posture(&self) -> BridgeExecutionPosture {
+        match self.posture {
+            BridgeExecutionBasisPosture::Atomic => BridgeExecutionPosture::Atomic,
+            BridgeExecutionBasisPosture::Managed(_) => BridgeExecutionPosture::Managed,
+        }
+    }
+
+    pub fn step_contract(&self) -> Option<&BridgeManagedExecutionStepContract> {
+        self.posture.managed().map(|managed| &managed.step_contract)
     }
 
     pub fn request(&self) -> &AdmittedBridgeAsyncRequestIdentity {

@@ -2,6 +2,7 @@ use worth_store::physical_runtime::{PhysicalMutationOutcome, PhysicalRetirementD
 
 use super::reopen::open_interference;
 use super::{append, checkpoint, initialize, placement, segment_files};
+use crate::retirement_charge_oracle::{assert_one_page_released_net_of_wal, wal_bytes};
 
 const PAGE_BYTES: u64 = 16 * 1024;
 
@@ -38,8 +39,10 @@ fn reopen_with_pending_retirement_charges_the_displaced_page_once() {
 
     let serving = open_interference(&root);
     assert_eq!(serving.certification_charged_growth_bytes(), pending);
+    let wal_before = wal_bytes(&root);
     serving.retire_displaced_segment().unwrap();
     let released = serving.certification_charged_growth_bytes();
+    assert_one_page_released_net_of_wal(&root, wal_before, pending, released, PAGE_BYTES);
     serving.close();
     let settled = open_interference(&root);
     assert_eq!(
@@ -59,7 +62,6 @@ fn reopen_with_pending_retirement_charges_the_displaced_page_once() {
         pending_again, pending,
         "reopen alone must not move the charge"
     );
-    assert_eq!(pending - released, PAGE_BYTES);
     // Completion leaves only publication and WAL bytes; nothing is resurrected.
     assert!(settled_charge.abs_diff(released) < PAGE_BYTES);
 }

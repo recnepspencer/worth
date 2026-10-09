@@ -22,23 +22,19 @@ pub enum EffectExecutionDenialKind {
     TransactionRetentionOwnerUnavailable,
     TransactionRetentionIdentityExhausted,
     TransactionRetentionInvariantViolation,
+    TransactionAllocationDenied {
+        kind: worth_execution::ExecutionAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
+    TransactionStagingCardinalityOverflow,
+    TransactionInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
     TransactionSavepointIdentityExhausted,
     TransactionMaterializationAuthorityRequired,
     TransactionMaterializationModeMismatch,
-    TransactionOverlayBudgetExceeded {
-        maximum_bytes: u64,
-        required_bytes: u64,
-    },
-    TransactionFootprintBudgetExceeded {
-        maximum_loci: usize,
-        required_loci: usize,
-    },
     TransactionSavepointBudgetExceeded {
         maximum_savepoints: usize,
-    },
-    TransactionSavepointFootprintBudgetExceeded {
-        maximum_loci: usize,
-        required_loci: usize,
     },
     PreparedRootBudgetExceeded {
         maximum_bytes: u64,
@@ -91,6 +87,13 @@ impl EffectExecutionDenialKind {
             Self::TransactionRetentionInvariantViolation => {
                 "transaction_retention_invariant_violation"
             }
+            Self::TransactionAllocationDenied { .. } => "transaction_allocation_denied",
+            Self::TransactionStagingCardinalityOverflow => {
+                "transaction_staging_cardinality_overflow"
+            }
+            Self::TransactionInputDirectoryAllocationDenied { .. } => {
+                "transaction_input_directory_allocation_denied"
+            }
             Self::TransactionSavepointIdentityExhausted => {
                 "transaction_savepoint_identity_exhausted"
             }
@@ -100,15 +103,8 @@ impl EffectExecutionDenialKind {
             Self::TransactionMaterializationModeMismatch => {
                 "transaction_materialization_mode_mismatch"
             }
-            Self::TransactionOverlayBudgetExceeded { .. } => "transaction_overlay_budget_exceeded",
-            Self::TransactionFootprintBudgetExceeded { .. } => {
-                "transaction_footprint_budget_exceeded"
-            }
             Self::TransactionSavepointBudgetExceeded { .. } => {
                 "transaction_savepoint_budget_exceeded"
-            }
-            Self::TransactionSavepointFootprintBudgetExceeded { .. } => {
-                "transaction_savepoint_footprint_budget_exceeded"
             }
             Self::PreparedRootBudgetExceeded { .. } => "prepared_root_budget_exceeded",
             Self::RelationalExactBasisStale => "relational_exact_basis_stale",

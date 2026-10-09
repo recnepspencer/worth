@@ -19,10 +19,16 @@ fn truth_sequence_overflow_is_rejected_before_publication_effects() {
         .with_ledger_mut(|ledger| ledger.set_sequence(u64::MAX, u64::MAX));
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("overflow-denial"))
+        .push_batch(
+            batch_create("overflow-denial"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime)
+        .commit(
+            &runtime,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect_err("sequence overflow must be a typed publication denial");
 
     match &error {

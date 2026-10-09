@@ -1,6 +1,42 @@
 use super::*;
 
 impl PoolInner {
+    /// Selects and reserves one capture window atomically with every live pool
+    /// allocation. A minimum-window shortage uses the ordinary native denial.
+    pub(super) fn reserve_dirty_capture_window(
+        self: &Arc<Self>,
+        maximum: u64,
+        basis_bytes: u64,
+    ) -> Result<u64, PhysicalResidencyDenial> {
+        let mut state = self.lock();
+        if !state.accepting {
+            return Err(Self::deny(&mut state, PhysicalResidencyDenial::PoolClosed));
+        }
+        let scope = PhysicalOperationAllocationScope::Maintenance;
+        let available = [
+            self.limits
+                .usable_bytes(scope, self.limits.scope_bytes(scope))
+                .saturating_sub(state.accounting.operation_scope_bytes(scope)),
+            self.limits
+                .usable_bytes(scope, self.limits.operation_bytes())
+                .saturating_sub(state.accounting.active_operation_bytes()),
+            self.limits
+                .usable_bytes(scope, self.limits.total_bytes())
+                .saturating_sub(self.current_admitted_bytes(&state)),
+        ]
+        .into_iter()
+        .min()
+        .expect("capture has three native limits");
+        // Whole entries keep the native reservation equal to the actual slice
+        // storage. A shortage requests one entry through native admission.
+        let bytes = (maximum.min(available) / basis_bytes * basis_bytes).max(basis_bytes);
+        self.admit_scope_bytes(&mut state, scope, bytes)?;
+        self.admit_operation_bytes(&mut state, scope, bytes)?;
+        self.admit_total_bytes(&mut state, scope, bytes)?;
+        state.accounting.admit_operation(scope, bytes);
+        Ok(bytes)
+    }
+
     pub(in crate::physical_residency) fn begin_speculative_admission(
         self: &Arc<Self>,
         kind: crate::PhysicalSpeculativeWorkKind,
@@ -20,7 +56,7 @@ impl PoolInner {
         self.lock().accounting.record_speculative_denial(kind);
     }
 
-    pub(super) fn reserve_operation(
+    pub(in crate::physical_residency) fn reserve_operation(
         self: &Arc<Self>,
         scope: PhysicalOperationAllocationScope,
         bytes: std::num::NonZeroU64,
@@ -44,11 +80,18 @@ impl PoolInner {
         requested: u64,
     ) -> Result<u64, PhysicalResidencyDenial> {
         let scope_current = state.accounting.operation_scope_bytes(scope);
-        let scope_limit = self
+        let native_scope_limit = self
             .limits
             .usable_bytes(scope, self.limits.scope_bytes(scope));
-        let scope_next = scope_current.saturating_add(requested);
-        if scope_next > scope_limit {
+        let scope_limit = if scope == PhysicalOperationAllocationScope::Recovery {
+            native_scope_limit.min(state.recovery_operation_bytes_ceiling)
+        } else {
+            native_scope_limit
+        };
+        let Some(scope_next) = scope_current
+            .checked_add(requested)
+            .filter(|next| *next <= scope_limit)
+        else {
             return Err(self.pressure(
                 state,
                 PhysicalResidencyPressureDemand {
@@ -59,7 +102,7 @@ impl PoolInner {
                     limit: scope_limit,
                 },
             ));
-        }
+        };
         Ok(scope_next)
     }
 
@@ -73,8 +116,10 @@ impl PoolInner {
         let operation_limit = self
             .limits
             .usable_bytes(scope, self.limits.operation_bytes());
-        let operation_next = operation_current.saturating_add(requested);
-        if operation_next > operation_limit {
+        let Some(operation_next) = operation_current
+            .checked_add(requested)
+            .filter(|next| *next <= operation_limit)
+        else {
             return Err(self.pressure(
                 state,
                 PhysicalResidencyPressureDemand {
@@ -85,7 +130,7 @@ impl PoolInner {
                     limit: operation_limit,
                 },
             ));
-        }
+        };
         Ok(operation_next)
     }
 
@@ -97,8 +142,11 @@ impl PoolInner {
     ) -> Result<(), PhysicalResidencyDenial> {
         let total_current = self.current_admitted_bytes(state);
         let total_limit = self.limits.usable_bytes(scope, self.limits.total_bytes());
-        let total_next = total_current.saturating_add(requested);
-        if total_next > total_limit {
+        if total_current
+            .checked_add(requested)
+            .filter(|next| *next <= total_limit)
+            .is_none()
+        {
             return Err(self.pressure(
                 state,
                 PhysicalResidencyPressureDemand {

@@ -30,7 +30,7 @@ fn public_read_pressure_retains_exact_pre_effect_basis() {
     let second_record = member.record_id(1).unwrap();
     assert!(!seeded.close().residency().requires_inspection());
 
-    let policy = one_page_operation_policy(format);
+    let policy = one_page_foreground_read_policy(format);
     let serving = success(open_record_store!(media(&root), |durability| {
         PhysicalRecordOpen::new(format, access, durability).with_residency_policy(policy)
     },));
@@ -94,17 +94,24 @@ fn public_read_pressure_retains_exact_pre_effect_basis() {
     assert!(!serving.close().residency().requires_inspection());
 }
 
-fn one_page_operation_policy(
+fn one_page_foreground_read_policy(
     format: AdmittedPhysicalRecordFormat,
 ) -> AdmittedPhysicalRecordResidencyPolicy {
     use PhysicalOperationAllocationScope as Scope;
     use PhysicalSpeculativeWorkKind as Kind;
 
     let page = u64::from(format.declaration().page_size().bytes());
-    let metadata = 16 * 1024;
+    // Reopen authenticates C11 routing/free-space metadata before the read
+    // experiment. Its bounded Recovery scratch is separate from the one-page
+    // ForegroundRead scope whose contention this test exercises.
+    let metadata = page * 16;
     let resident = page * 4;
+    // The reopened WAL roster needs 71,704 bytes in this two-record world;
+    // usable Recovery bytes exclude the policy's progress headroom. Six pages
+    // admit that bootstrap work without changing the one-page read contention.
+    let recovery = page * 6;
     let mut builder = PhysicalRecordResidencyPolicy::builder()
-        .total_bytes(nonzero(metadata + resident + page + page))
+        .total_bytes(nonzero(metadata + resident + recovery + page))
         .resident_bytes(nonzero(resident))
         .metadata_bytes(nonzero(metadata))
         .frame_entries(nonzero_count(4))
@@ -112,7 +119,7 @@ fn one_page_operation_policy(
         .pin_leases(nonzero_count(4))
         .dirty_frames(nonzero_count(2))
         .dirty_replacement_bytes(nonzero(page))
-        .operation_bytes(nonzero(page));
+        .operation_bytes(nonzero(recovery));
     for scope in [
         Scope::ForegroundRead,
         Scope::ForegroundWrite,
@@ -122,7 +129,14 @@ fn one_page_operation_policy(
         Scope::Verification,
         Scope::Blob,
     ] {
-        builder = builder.scope_bytes(scope, nonzero(page));
+        builder = builder.scope_bytes(
+            scope,
+            nonzero(if scope == Scope::Recovery {
+                recovery
+            } else {
+                page
+            }),
+        );
     }
     for kind in [Kind::ReadAhead, Kind::Prefetch, Kind::WriteBehind] {
         builder = builder.speculative_frames(kind, nonzero_count(2));

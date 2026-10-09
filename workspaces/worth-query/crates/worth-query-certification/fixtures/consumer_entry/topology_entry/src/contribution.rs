@@ -3,7 +3,7 @@ use super::{
     PositivePlanarTurn, TopologyContribution, TopologySchemaBinding,
 };
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 use worth_query_decl::facade::application_schema::{
@@ -22,6 +22,7 @@ pub struct TopologyConfiguration {
     pub invariant_calls: Arc<AtomicUsize>,
     pub invariant_probe: Arc<AtomicUsize>,
     pub producer_authorization_denials: Arc<AtomicUsize>,
+    pub producer_domain_denial: Arc<AtomicBool>,
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -35,6 +36,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         contracts.producer::<InitialPlanarProducer<Schema>>()?;
         #[cfg(test)]
         super::checkpoint_recovery::required_chain::contracts(contracts)?;
+        #[cfg(test)]
+        super::checkpoint_recovery::mixed_retirement::contracts(contracts)?;
         contracts.producer::<super::PlanarFinalOutputProducer<Schema>>()?;
         contracts.producer::<super::PlanarFinalPreserveProducer<Schema>>()?;
         contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
@@ -62,9 +65,10 @@ impl TopologyContribution {
         configuration: TopologyConfiguration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        let provider = super::InitialPlanarProvider::new(Arc::clone(
-            &configuration.producer_authorization_denials,
-        ));
+        let provider = super::InitialPlanarProvider::new(
+            Arc::clone(&configuration.producer_authorization_denials),
+            Arc::clone(&configuration.producer_domain_denial),
+        );
         Self::configure_topology_with_provider(configuration, setup, provider)
     }
 
@@ -121,6 +125,11 @@ impl TopologyContribution {
         setup.conditional::<super::PlanarFinalOutputReadiness<Schema>>(())?;
         setup.conditional::<super::PlanarFinalPreserveReadiness<Schema>>(())?;
         setup.conditional::<super::AlternatePlanarReadiness<Schema>>(())?;
-        setup.handler::<super::VertexReplacementBinding<Schema>, _>(super::VertexReplacementHandler)
+        setup.handler::<super::VertexReplacementBinding<Schema>, _>(
+            super::VertexReplacementHandler,
+        )?;
+        #[cfg(test)]
+        super::checkpoint_recovery::mixed_retirement::configure(setup)?;
+        Ok(())
     }
 }

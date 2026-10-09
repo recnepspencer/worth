@@ -41,6 +41,7 @@ where
             idempotency,
             false,
             super::ApplicationCommitCausality::undo(handoff),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
@@ -71,6 +72,7 @@ where
             idempotency,
             false,
             super::ApplicationCommitCausality::redo(handoff),
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 }

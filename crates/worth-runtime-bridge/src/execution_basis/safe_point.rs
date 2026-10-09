@@ -98,6 +98,7 @@ impl BridgeExecutionSafePointObservation {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BridgeExecutionSafePointFailureKind {
+    AtomicExecutionUnsupported,
     SignalRuntimeThreadAffinityViolation,
     SignalObservationDenied,
     SignalRequestMismatch,
@@ -130,8 +131,14 @@ impl BridgeBoundExecutionBasis {
     pub fn observe_safe_point(
         &self,
     ) -> Result<BridgeExecutionSafePointObservation, BridgeExecutionSafePointFailure> {
+        let managed = self.posture.managed().ok_or_else(|| {
+            BridgeExecutionSafePointFailure::new(
+                BridgeExecutionSafePointFailureKind::AtomicExecutionUnsupported,
+                "atomic execution has no managed safe-point contract",
+            )
+        })?;
         let report = with_async_request_signal_runtime(self.bridge_runtime_key, |runtime| {
-            runtime.observe_resource_safe_point(&self.managed_queue)
+            runtime.observe_resource_safe_point(&managed.queue)
         })
         .map_err(|error| {
             BridgeExecutionSafePointFailure::new(
@@ -173,7 +180,7 @@ impl BridgeBoundExecutionBasis {
         Ok(BridgeExecutionSafePointObservation {
             basis_identity: self.identity.clone(),
             intent_identity: self.managed_intent.identity().clone(),
-            step_contract_identity: self.step_contract.identity_proof().clone(),
+            step_contract_identity: managed.step_contract.identity_proof().clone(),
             observation_ordinal: report.ordinal().get(),
             lifecycle_ordinal: report.lifecycle_ordinal().get(),
             signal_state,

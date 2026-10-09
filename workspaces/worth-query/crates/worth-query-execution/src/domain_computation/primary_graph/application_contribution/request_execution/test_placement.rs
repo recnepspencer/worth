@@ -66,7 +66,7 @@ pub(in crate::domain_computation::primary_graph) fn test_authority() -> &'static
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: test_execution_workers(),
-            charged_memory_bytes: 1 << 40,
+            charged_memory_bytes: Some(1 << 40),
         })
         .expect("a test process constructs one authority, here")
     })

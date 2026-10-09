@@ -108,7 +108,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         direction: observed.direction,
         native_revision: observed.native_revision,
         comparison_work_limit: observed.comparison_work_limit,
-        endpoints: Vec::new(),
+        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&(Vec::new()), worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
     };
     super::super::super::fixture::publish_relational_mutation(
         &world,

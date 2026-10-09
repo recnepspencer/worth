@@ -6,7 +6,14 @@ use super::super::canonical_membership::ExpectedCanonicalRecord;
 use super::super::canonical_membership_placement::RecordIdentity;
 
 const REDO_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
-const PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v3";
+const CURRENT_PROJECTION_DOMAIN: &[u8] = b"store.physical.recovery-projection.v16";
+
+#[path = "record_binding/operation.rs"]
+mod operation;
+use operation::inspect_operation;
+#[path = "record_binding/projection_wire.rs"]
+mod projection_wire;
+use projection_wire::{classified_route_metadata, Cursor};
 
 pub(crate) fn require_bound_records(
     files: &[(String, Vec<u8>)],
@@ -137,31 +144,53 @@ fn projection_contains_record(
     expected_record: RecordIdentity,
 ) -> Result<bool, String> {
     let mut cursor = Cursor::new(projection);
-    if cursor.field()? != PROJECTION_DOMAIN || cursor.u64()? == 0 || cursor.field()?.is_empty() {
+    if cursor.field()? != CURRENT_PROJECTION_DOMAIN {
+        return Ok(false);
+    }
+    let source_root = cursor.u64()?;
+    if source_root == 0 || cursor.field()?.is_empty() {
         return Ok(false);
     }
     let mut identity_present = false;
-    for _ in 0..cursor.u64()? {
+    let identity_count = cursor.u64()?;
+    for _ in 0..identity_count {
         let record = cursor.record()?;
         identity_present |= record == expected_record;
     }
-    let frame_count = cursor.u64()?;
-    if frame_count == 0 {
-        return Ok(false);
-    }
-    for _ in 0..frame_count {
-        cursor.field()?;
-    }
+    let source_copy = match cursor.byte()? {
+        0 => {
+            let frame_count = cursor.u64()?;
+            if frame_count == 0 {
+                return Ok(false);
+            }
+            for _ in 0..frame_count {
+                cursor.field()?;
+            }
+            false
+        }
+        1 => {
+            if cursor.field()?.is_empty() || cursor.u64()? == 0 {
+                return Ok(false);
+            }
+            cursor.take(32)?;
+            true
+        }
+        _ => return Ok(false),
+    };
     let placement_count = cursor.u64()?;
     if placement_count == 0 {
         return Ok(false);
     }
     let mut placement_present = false;
+    let mut blob_placement_matches = false;
+    let mut copy_placement_matches = false;
     for _ in 0..placement_count {
         let mut placement = Cursor::new(cursor.field()?);
         let kind = placement.byte()?;
         let record = placement.raw_record()?;
         placement_present |= record == expected_record;
+        blob_placement_matches |= kind == 2 && record == expected_record;
+        copy_placement_matches |= kind == 2 && record == expected_record;
         match kind {
             1 => {
                 placement.u64()?;
@@ -174,113 +203,63 @@ fn projection_contains_record(
                 placement.u64()?;
             }
             2 => {
-                placement.u64()?;
-                placement.u64()?;
-                placement.u64()?;
+                let extent = placement.u64()?;
+                let generation = placement.u64()?;
+                let payload_bytes = placement.u64()?;
+                let arena = placement.u64()?;
+                let offset = placement.u64()?;
+                let length = placement.u64()?;
+                if extent == 0
+                    || generation == 0
+                    || payload_bytes == 0
+                    || arena == 0
+                    || length == 0
+                    || offset.checked_add(length).is_none()
+                {
+                    return Ok(false);
+                }
             }
             _ => return Ok(false),
+        }
+        if !classified_route_metadata(placement.take(7)?) {
+            return Ok(false);
         }
         if !placement.is_empty() {
             return Ok(false);
         }
     }
-    for _ in 0..cursor.u64()? {
+    let segment_update_count = cursor.u64()?;
+    for _ in 0..segment_update_count {
         cursor.field()?;
     }
-    for _ in 0..cursor.u64()? {
+    let manifest_count = cursor.u64()?;
+    for _ in 0..manifest_count {
         cursor.field()?;
     }
-    Ok(identity_present && placement_present && cursor.is_empty())
+    let blob_binding = inspect_operation(&mut cursor)?;
+    if source_copy && blob_binding.is_some() {
+        return Ok(false);
+    }
+    let copy_shape_valid = !source_copy
+        || (identity_count == 1
+            && placement_count == 1
+            && copy_placement_matches
+            && segment_update_count == 0
+            && manifest_count == 0);
+    let blob_binding_valid = blob_binding.is_none_or(|(bound, candidate_root)| {
+        identity_count == 1
+            && placement_count == 1
+            && bound == expected_record
+            && blob_placement_matches
+            && source_root.checked_add(1) == Some(candidate_root)
+    });
+    Ok(identity_present
+        && placement_present
+        && copy_shape_valid
+        && blob_binding_valid
+        && cursor.is_empty())
 }
 
-struct Cursor<'bytes> {
-    bytes: &'bytes [u8],
-    offset: usize,
-}
-
-impl<'bytes> Cursor<'bytes> {
-    const fn new(bytes: &'bytes [u8]) -> Self {
-        Self { bytes, offset: 0 }
-    }
-
-    fn field(&mut self) -> Result<&'bytes [u8], String> {
-        let length = usize::try_from(self.u64()?).map_err(|_| "field length overflowed")?;
-        let end = self
-            .offset
-            .checked_add(length)
-            .ok_or("field length overflowed")?;
-        let value = self
-            .bytes
-            .get(self.offset..end)
-            .ok_or("field is truncated")?;
-        self.offset = end;
-        Ok(value)
-    }
-
-    fn record(&mut self) -> Result<RecordIdentity, String> {
-        let bytes = self.field()?;
-        Self::decode_record(bytes)
-    }
-
-    fn raw_record(&mut self) -> Result<RecordIdentity, String> {
-        Self::decode_record(self.take(24)?)
-    }
-
-    fn decode_record(bytes: &[u8]) -> Result<RecordIdentity, String> {
-        if bytes.len() != 24 {
-            return Err("record identity field has the wrong width".to_owned());
-        }
-        Ok(RecordIdentity {
-            allocation_epoch: bytes[..16]
-                .try_into()
-                .map_err(|_| "record epoch is truncated")?,
-            ordinal: u64::from_le_bytes(
-                bytes[16..24]
-                    .try_into()
-                    .map_err(|_| "record ordinal is truncated")?,
-            ),
-        })
-    }
-
-    fn u16(&mut self) -> Result<u16, String> {
-        let bytes = self.take(2)?;
-        Ok(u16::from_le_bytes(
-            bytes.try_into().map_err(|_| "u16 is truncated")?,
-        ))
-    }
-
-    fn u32(&mut self) -> Result<u32, String> {
-        let bytes = self.take(4)?;
-        Ok(u32::from_le_bytes(
-            bytes.try_into().map_err(|_| "u32 is truncated")?,
-        ))
-    }
-
-    fn u64(&mut self) -> Result<u64, String> {
-        let bytes = self.take(8)?;
-        Ok(u64::from_le_bytes(
-            bytes.try_into().map_err(|_| "u64 is truncated")?,
-        ))
-    }
-
-    fn byte(&mut self) -> Result<u8, String> {
-        Ok(*self.take(1)?.first().ok_or("byte is truncated")?)
-    }
-
-    fn take(&mut self, length: usize) -> Result<&'bytes [u8], String> {
-        let end = self
-            .offset
-            .checked_add(length)
-            .ok_or("cursor offset overflowed")?;
-        let value = self
-            .bytes
-            .get(self.offset..end)
-            .ok_or("cursor is truncated")?;
-        self.offset = end;
-        Ok(value)
-    }
-
-    const fn is_empty(&self) -> bool {
-        self.offset == self.bytes.len()
-    }
-}
+#[cfg(test)]
+#[path = "record_binding/tests.rs"]
+mod tests;

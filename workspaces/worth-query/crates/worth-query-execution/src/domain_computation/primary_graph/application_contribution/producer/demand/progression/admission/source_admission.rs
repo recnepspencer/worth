@@ -1,6 +1,7 @@
 //! Source selection and registry admission share one request meter.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedOutputAdmission;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -61,7 +62,7 @@ where
         )?;
         // Selection spends this request's meter on success and failure; it
         // cannot mint a fresh allowance during refresh.
-        let (selected, entry) = match selected_product {
+        let (mut selected, entry) = match selected_product {
             Some(selected) => self.select_output_producer_with_remaining_on_selected::<Family>(
                 selection_source.unwrap_or(&observed_source),
                 profile_kind,
@@ -77,7 +78,7 @@ where
             ),
         }?;
         if selected_product.is_some() {
-            source_selection.admit_selected_producer(&selected.identity, registry_admission)?;
+            source_selection.admit_selected_producer::<Family>(&selected, registry_admission)?;
         }
         // Selection already returned the exact immutable entry from its sole
         // matching iterator. Retain that entry for this demand's Interest.
@@ -107,7 +108,9 @@ where
             )?;
         }
         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+            std::any::TypeId::of::<Family>(),
             selected.identity.clone(),
+            selected.applicability,
             source_epoch.clone(),
         );
         let product_occurrence =
@@ -175,7 +178,7 @@ where
             if newly_adopted {
                 self.record_restored_output(source_scope, &readmitted, registry_admission)?;
             }
-            let observed_source = observed_source.install(&interest)?;
+            let observed_source = observed_source.install(&interest, installed_entry.clone())?;
             #[cfg(feature="test-query-execution-observer")]
         crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission();
             return Ok(WorthQueryAdmittedOutputDemand {
@@ -188,6 +191,10 @@ where
                 resources: Some(resources),
                 resources_validated: true,
                 producer_contacts_in_this_demand: 0,
+                checkpoint_readmission_work_units: readmitted.preparation_work_units,
+                checkpoint_readmission_work_bound: readmitted.preparation_work_bound,
+                checkpoint_readmission_charged_preparation_bytes: readmitted
+                    .charged_preparation_bytes,
                 settled: false,
                 admission_kind,
                 retained_program_basis,
@@ -233,12 +240,18 @@ where
             )?,
             None => self.output_demands.admit(
                 key,
-                Some(observed_source.selected_product_commit().ok_or_else(|| {
-                    denial(
-                        WorthQueryOutputDemandDenialKind::ForeignSource,
-                        Family::IDENTITY,
-                    )
-                })?),
+                Some(SelectedOutputAdmission::new(
+                    observed_source.selected_product_commit().ok_or_else(|| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::ForeignSource,
+                            Family::IDENTITY,
+                        )
+                    })?,
+                    selected
+                        .exact_retained_output
+                        .then_some(selected.retained_idempotency_key)
+                        .flatten(),
+                )),
                 source_scope,
                 product_occurrence,
                 admission_kind,
@@ -247,7 +260,9 @@ where
                 registry_admission,
             )?,
         };
-        let observed_source = observed_source.install(&interest)?;
+        // Rejoin the posture of the authenticated accepted row.
+        selected.applicability = interest.key().applicability();
+        let observed_source = observed_source.install(&interest, installed_entry.clone())?;
         #[cfg(feature="test-query-execution-observer")]
         crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission();
         let resources_validated = !selected.exact_retained_output;
@@ -261,6 +276,9 @@ where
             resources: Some(resources),
             resources_validated,
             producer_contacts_in_this_demand: 0,
+            checkpoint_readmission_work_units: 0,
+            checkpoint_readmission_work_bound: 0,
+            checkpoint_readmission_charged_preparation_bytes: 0,
             settled: false,
             admission_kind,
             retained_program_basis,

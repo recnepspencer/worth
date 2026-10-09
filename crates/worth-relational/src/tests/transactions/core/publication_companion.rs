@@ -181,10 +181,16 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
-        .push_batch(batch_create("companion-direct"))
+        .push_batch(
+            batch_create("companion-direct"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate stages");
     let candidate = runtime
-        .prepare_branch_transaction(transaction)
+        .prepare_branch_transaction(
+            transaction,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("candidate prepares");
     let RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -229,10 +235,16 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
     drop(registration);
     let mut later = test_owner_begin_transaction_for_main(&runtime);
     later
-        .push_batch(batch_create("companion-after-client-drop"))
+        .push_batch(
+            batch_create("companion-after-client-drop"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("later candidate stages");
     let later = runtime
-        .prepare_branch_transaction(later)
+        .prepare_branch_transaction(
+            later,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("later candidate prepares");
     assert!(matches!(
         runtime.publication_port().compare_and_publish(later),

@@ -50,7 +50,7 @@ fn scan_records(
     let mut digest = Sha256::new();
     let mut offset = basis.records_offset();
     let mut records = 0_u64;
-    while offset < basis.footer_offset() {
+    while offset < basis.binding_end_offset() {
         let prefix = read_prefix(tree, basis.artifact(), offset)?;
         let prefix_range = physical_range(offset, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES as u64)
             .map_err(checkpoint_failure)?;
@@ -59,7 +59,7 @@ fn scan_records(
         let end = offset.checked_add(frame_bytes).ok_or_else(|| {
             checkpoint_failure(PhysicalBindingCompactionReopenFailure::CounterOverflow)
         })?;
-        if end > basis.footer_offset() {
+        if end > basis.binding_end_offset() {
             return Err(checkpoint_failure(
                 PhysicalBindingCompactionReopenFailure::ArtifactLayoutMismatch,
             ));

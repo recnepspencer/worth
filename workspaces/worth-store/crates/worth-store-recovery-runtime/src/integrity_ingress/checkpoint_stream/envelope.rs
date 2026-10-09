@@ -2,8 +2,10 @@ use worth_store::physical_runtime::ObservedRecoveryArtifact;
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, CheckpointStreamFooter,
     CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
+    CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES, CHECKPOINT_CERTIFIED_SCHEMA,
     CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
-    CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
+    CHECKPOINT_STREAM_HEADER_RECORD_BYTES, MAX_CHECKPOINT_CERTIFICATE_BYTES,
+    MAX_CHECKPOINT_CERTIFICATE_RECORDS,
 };
 use worth_store_physical_integrity::{
     validate_checkpoint_footer_envelope, validate_checkpoint_stream_header,
@@ -65,14 +67,20 @@ impl<'media> CheckpointEnvelopeAdmission<'media> {
         let header = bind_header(observed, header_scope, header_range, validated, trace)?;
         let identity = header.checkpoint_identity();
 
+        let certified = bytes[8] == CHECKPOINT_CERTIFIED_SCHEMA;
+        let footer_bytes = if certified {
+            CHECKPOINT_CERTIFIED_FOOTER_RECORD_BYTES
+        } else {
+            CHECKPOINT_STREAM_FOOTER_RECORD_BYTES
+        };
         let minimum = CHECKPOINT_STREAM_HEADER_RECORD_BYTES
             + CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES
-            + CHECKPOINT_STREAM_FOOTER_RECORD_BYTES;
+            + footer_bytes;
         if bytes.len() < minimum {
             let footer_range = physical_range(
                 CHECKPOINT_STREAM_HEADER_RECORD_BYTES
                     + CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES,
-                CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
+                footer_bytes,
             )?;
             let scope = PhysicalArtifactScope::checkpoint_footer(identity, footer_range);
             return Err(record_recovery_rejection(
@@ -81,8 +89,8 @@ impl<'media> CheckpointEnvelopeAdmission<'media> {
                 trace,
             ));
         }
-        let footer_offset = bytes.len() - CHECKPOINT_STREAM_FOOTER_RECORD_BYTES;
-        let footer_range = physical_range(footer_offset, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES)?;
+        let footer_offset = bytes.len() - footer_bytes;
+        let footer_range = physical_range(footer_offset, footer_bytes)?;
         let footer_scope = PhysicalArtifactScope::checkpoint_footer(identity, footer_range);
         let validation = validate_checkpoint_footer_envelope(
             bounded(bytes, footer_range, footer_scope, trace)?,
@@ -98,6 +106,16 @@ impl<'media> CheckpointEnvelopeAdmission<'media> {
         };
         trace.record(RecoveryIntegrityIngressObservation::admitted(footer_scope));
         let footer = envelope.routing_projection().footer();
+        if bytes[footer_offset + 8] != bytes[8]
+            || footer.certificate_record_count() > MAX_CHECKPOINT_CERTIFICATE_RECORDS
+            || footer.certificate_record_bytes() > MAX_CHECKPOINT_CERTIFICATE_BYTES
+        {
+            return Err(record_recovery_rejection(
+                footer_scope,
+                RecoveryIntegrityIngressRejection::ScopeMismatch,
+                trace,
+            ));
+        }
         // A valid footer CRC admits its bytes, not its counts. Bound retained
         // evidence against this observed body before any count-sized allocation.
         if !counts_fit_observed_body(footer, footer_offset as u64) {
@@ -133,10 +151,13 @@ fn counts_fit_observed_body(footer: CheckpointStreamFooter, footer_offset: u64) 
     else {
         return false;
     };
-    let Some(binding_bytes) = compaction_offset
+    let Some(body_bytes) = compaction_offset
         .checked_add(CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES as u64)
         .and_then(|offset| footer_offset.checked_sub(offset))
     else {
+        return false;
+    };
+    let Some(binding_bytes) = body_bytes.checked_sub(footer.certificate_record_bytes()) else {
         return false;
     };
     // Prefix + nonempty payload + CRC, independent of the footer's claimed bytes.
@@ -144,6 +165,9 @@ fn counts_fit_observed_body(footer: CheckpointStreamFooter, footer_offset: u64) 
     compaction_offset == footer.binding_compaction_header_offset()
         && binding_bytes == footer.binding_record_bytes()
         && footer.binding_record_count() <= binding_bytes / minimum_binding_bytes
+        && footer.certificate_record_count()
+            <= footer.certificate_record_bytes()
+                / (worth_store_physical_format::CHECKPOINT_CERTIFICATE_PREFIX_BYTES as u64 + 5)
 }
 
 fn enforce_record_limits(

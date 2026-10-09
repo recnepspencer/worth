@@ -56,9 +56,17 @@ where
                 )
                 .expect("the selected product basis admits the fault transaction");
             transaction
-                .push_batch(batch)
+                .push_batch(
+                    batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("the approval update stays within resource budgets");
-            runtime.prepare_branch_transaction(transaction).map(|_| ())
+            runtime
+                .prepare_branch_transaction(
+                    transaction,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map(|_| ())
         });
         drop(application_basis);
         candidate
@@ -103,9 +111,17 @@ where
                 )
                 .expect("the selected product basis admits the fault transaction");
             transaction
-                .push_batch(batch)
+                .push_batch(
+                    batch,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
                 .expect("the approval link deletion stays within resource budgets");
-            runtime.prepare_branch_transaction(transaction).map(|_| ())
+            runtime
+                .prepare_branch_transaction(
+                    transaction,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map(|_| ())
         });
         drop(application_basis);
         candidate

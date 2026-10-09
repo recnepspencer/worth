@@ -84,6 +84,15 @@ impl PhysicalWalRuntimeOwner {
             state.segment_count = state.segment_count.saturating_sub(1);
             state.reclaimed_segments = state.reclaimed_segments.saturating_add(1);
             state.reclaimed_bytes = state.reclaimed_bytes.saturating_add(byte_count);
+            super::super::copy_obligation::prune_reclaimed(
+                &mut state.copy_obligations,
+                identity.segment().get(),
+                identity.generation().get(),
+            );
+            state.retained_maintenance.retain(|entry| {
+                let interval = entry.interval();
+                (interval.0, interval.1) != (identity.segment().get(), identity.generation().get())
+            });
         }
         self.release_sealed_publication(identity.segment().get(), identity.generation().get());
         true

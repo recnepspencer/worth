@@ -123,6 +123,13 @@ impl PhysicalIntegrityObservationCounters {
         counters
     }
 
+    /// One descriptive rejection synthesized from a caller-held exact scope,
+    /// such as a selected parent-edge mismatch after intact inner framing.
+    /// This does not grant access to bytes or authorize a repair.
+    pub fn for_rejection(rejection: PhysicalIntegrityRejection, byte_count: u64) -> Self {
+        Self::one_rejected(rejection.scope().artifact_family(), byte_count, rejection)
+    }
+
     pub const fn family(self) -> PhysicalIntegrityArtifactFamily {
         self.family
     }

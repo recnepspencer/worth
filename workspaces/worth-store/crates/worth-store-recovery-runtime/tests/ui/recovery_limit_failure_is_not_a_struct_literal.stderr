@@ -1,0 +1,11 @@
+error[E0451]: fields `dimension`, `observed` and `admitted` of struct `PhysicalRecoveryLimitFailure` are private
+ --> tests/ui/recovery_limit_failure_is_not_a_struct_literal.rs:7:9
+  |
+6 |     let _ = PhysicalRecoveryLimitFailure {
+  |             ---------------------------- in this type
+7 |         dimension: PhysicalRecoveryLimitDimension::ManifestEntries,
+  |         ^^^^^^^^^ private field
+8 |         observed: 2,
+  |         ^^^^^^^^ private field
+9 |         admitted: 1,
+  |         ^^^^^^^^ private field

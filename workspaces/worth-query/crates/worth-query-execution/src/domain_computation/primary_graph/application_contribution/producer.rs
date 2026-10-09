@@ -43,13 +43,13 @@ pub(in crate::domain_computation::primary_graph) use scheduling::{
     WorthQueryInstalledOutputProducerRoutes,
 };
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryProducerLifecyclePosture {
     Initial,
     Preserve,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryProducerApplicability {
     profile_kind: &'static str,
     lifecycle: WorthQueryProducerLifecyclePosture,
@@ -209,6 +209,16 @@ where
         source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
         source_identity: &[u8; 32],
     ) -> <Binding::Operation as ApplicationMutationBinding<Schema>>::IdempotencyKey;
+
+    /// Optional domain-owned words for a rejected producer decision. This is
+    /// diagnostic text, never an authority or a machine-readable domain value.
+    /// Static text bounds retained diagnostic storage; no Debug text is parsed.
+    fn domain_denial_reason(
+        &self,
+        _denial: &<Binding::Operation as ApplicationMutationBinding<Schema>>::Denial,
+    ) -> Option<&'static str> {
+        None
+    }
 
     fn demand_resources(
         &self,

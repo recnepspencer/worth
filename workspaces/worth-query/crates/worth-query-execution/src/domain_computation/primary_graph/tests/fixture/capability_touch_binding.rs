@@ -37,7 +37,7 @@ worth_query_declaration::worth_query_mutation_binding!(
     field AccountStatus::reference(),
     value touch_scope,
     candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0,
-    resources retained_representation_bytes 64, validator_work 8
+    resources retained_representation_bytes 64
 );
 
 fn touch_scope(input: &CapabilityTouchInput) -> String {

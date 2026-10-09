@@ -23,7 +23,6 @@ pub enum WorthQueryApplicationOperationInstallationDenialKind {
     OperationMeaningChanged,
     MissingAbilityPolicy,
     MissingProgram,
-    MissingDecisionFactBudget,
     MissingProjectionWorkBudget,
     ConflictingAuthorizationContract,
     InvalidMutationPreconditionContract,

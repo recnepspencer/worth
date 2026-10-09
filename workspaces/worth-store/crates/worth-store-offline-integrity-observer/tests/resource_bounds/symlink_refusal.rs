@@ -28,7 +28,7 @@ fn symlinked_artifact_is_refused_without_reading_its_target() {
     let counters = report.counters();
     assert_eq!(counters.symlinks_refused(), 1);
     assert_eq!(counters.bytes_read(), 286);
-    assert_eq!(counters.files_opened(), 11);
+    assert_eq!(counters.files_opened(), if cfg!(windows) { 20 } else { 11 });
     assert_eq!(counters.root_manifest_payload_decoder_entries(), 0);
     assert_eq!(counters.exhausted_bounds(), 1);
 }

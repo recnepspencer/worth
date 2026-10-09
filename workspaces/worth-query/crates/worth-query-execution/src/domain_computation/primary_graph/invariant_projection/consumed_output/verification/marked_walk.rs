@@ -47,6 +47,11 @@ impl ConsumedOutputEvidence {
                     continue;
                 }
                 ConsumedOutputCurrentness::PendingEqualSuccessor => {
+                    if let Some(changed) =
+                        Self::compare_own(evidence, direct, runtime, snapshot, admission)?
+                    {
+                        return Ok(changed);
+                    }
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
                 }
                 ConsumedOutputCurrentness::FullVerificationRequired => {
@@ -67,6 +72,11 @@ impl ConsumedOutputEvidence {
                     marked.push(Arc::clone(evidence.identity));
                 }
                 SourceSettlementCurrentness::PendingUpstream(_) => {
+                    if let Some(changed) =
+                        Self::compare_own(evidence, direct, runtime, snapshot, admission)?
+                    {
+                        return Ok(changed);
+                    }
                     return Err(ConsumedOutputVerificationStop::PendingUpstream);
                 }
                 // As for a foreign selection above.
