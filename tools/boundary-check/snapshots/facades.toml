@@ -223,6 +223,7 @@ exports = [
     "WorthQueryApplicationQueryBatchResourceDenial",
     "WorthQueryApplicationQueryRequest",
     "WorthQueryApplicationReadObservation",
+    "WorthQueryApplicationRecoveryRequestDenial",
     "WorthQueryApplicationRequest",
     "WorthQueryApplicationRequestExt",
     "WorthQueryApplicationRequestMutationDenial",
@@ -336,6 +337,9 @@ package = "worth-query-host::primary_graph"
 exports = [
     "CandidateWriter",
     "DecisionReader",
+    "DerivedIndexDiscardDenial",
+    "DerivedIndexDiscardOutcome",
+    "DerivedIndexDiscardRequest",
     "ExternalEffectCausalLink",
     "ExternalEffectClassification",
     "ExternalEffectCorrelationIdentity",

@@ -40,6 +40,7 @@ impl DerivedIndexDiscardOutcome {
     }
 }
 
+/// Refusal to discard generations for an index absent from this installation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DerivedIndexDiscardDenial {
     IndexNotInstalled { index_id: DerivedIndexId },

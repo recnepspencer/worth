@@ -57,6 +57,8 @@ mod producer_invariant_publication;
 #[path = "application_attempt/program_fixture.rs"]
 mod program_fixture;
 pub(in crate::domain_computation::primary_graph) use program_fixture::admitted_operation;
+#[path = "application_attempt/native_preparation.rs"]
+mod native_preparation;
 #[path = "application_attempt/program_lane.rs"]
 mod program_lane;
 #[path = "application_attempt/program_occurrence_gate.rs"]

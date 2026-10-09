@@ -99,11 +99,7 @@ where
                             lease.observation().reference_generation().get(),
                             &mut admission,
                         )
-                        .map_err(|_| {
-                            native_priors::capture_denial(
-                                "checkpoint native output heads cannot be selected",
-                            )
-                        })?;
+                        .map_err(|denial| denial.into_capture_denial())?;
                     for (identity, source, _) in &mut accepted {
                         policy.check_live()?;
                         let Some(source) = source else {

@@ -103,6 +103,8 @@ pub(super) fn commit(
                 .expect("verified output retains its cumulative admission"),
         )
         .map_err(native_output_witness_stop)?;
+    #[cfg(test)]
+    provider.fault_port.candidate_ready_for_native_preparation();
     let mut candidate = provider
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))

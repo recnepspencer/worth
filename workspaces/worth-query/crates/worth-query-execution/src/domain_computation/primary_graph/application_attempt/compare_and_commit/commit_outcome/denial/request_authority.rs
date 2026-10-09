@@ -31,6 +31,24 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_provider_session_failure(
+        mut self,
+        failure: crate::domain_computation::WorthQueryProviderSessionFailure,
+    ) -> Self {
+        self.cause = Some(DenialCause::ProviderSession(failure));
+        self
+    }
+
+    /// Complete native diagnostics for a refusal proven to precede publication.
+    pub fn native_preparation_error(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        match &self.cause {
+            Some(DenialCause::ProviderSession(failure)) => failure.native_preparation_error(),
+            _ => None,
+        }
+    }
+
     /// The request was refused authorization at `stage`. The refusal is the
     /// request's own, so whoever shares the attempt's subject is not refused.
     pub(in crate::domain_computation::primary_graph::application_attempt) fn request_authority_denied(

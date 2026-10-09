@@ -8,6 +8,10 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 mod checkpoint_priors;
 mod publication_heads;
 pub(in crate::domain_computation::primary_graph) use checkpoint_priors::NativePriorCheckpointOutput;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use checkpoint_priors::{
+    CheckpointPriorSelectionDenial, CheckpointPriorStructure,
+};
 use publication_heads::PublicationHeads;
 
 impl WorthQueryApplicationOutputLineage {
@@ -76,11 +80,13 @@ impl WorthQueryApplicationOutputLineage {
             let mut seen = BTreeSet::new();
             let mut ancestry_depth = 0usize;
             loop {
-                let (heads, work) = self.family_partition_heads_budgeted(
-                    &source,
-                    coordinate,
-                    maximum_selection_work.saturating_sub(selection_work),
-                )?;
+                let (heads, work) = self
+                    .family_partition_heads_budgeted(
+                        &source,
+                        coordinate,
+                        maximum_selection_work.saturating_sub(selection_work),
+                    )
+                    .map_err(|_| ())?;
                 selection_work = selection_work.checked_add(work).ok_or(())?;
                 for (partition, publication) in heads {
                     if !seen.insert(partition) {

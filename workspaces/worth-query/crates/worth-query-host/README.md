@@ -73,6 +73,27 @@ reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
 admission or a selected World between executions.
 
+An ordinary no-source mutation that returns `ProductUnpublished` retains actual
+owner effects without a published product successor. Keep its recovery handle
+and the original intent, idempotency key and preconditions. A freshly authenticated
+request can call `recover_unpublished_in_program(&recovery, &program)`; the current
+selected program must still own that action. Recovery reuses the retained owner
+effects rather than preparing a candidate or invoking its handler. Source-bound
+and workflow recovery require their own owners and are not accepted by this entrance.
+Keep a `Performed` recovery outcome even when its receipt read, publication or
+cleanup reports a failure: the publication already took effect. A fresh
+`resolve_idempotency_in_program(&program)` request reads the original keyed outcome
+without executing a mutation. Both entrances preserve typed authorization,
+interruption, identity and owner failures.
+
+A native candidate-preparation refusal before product publication is a typed
+`Denied` outcome, with its original native error available through
+`native_preparation_error()` on the application denial. That error retains its
+context and commit log; diagnostic `Debug` does not dump the log. Native
+cancellation and deadline refusal remain `Cancelled` and `TimedOut`. Deferred,
+performed-but-unsettled and uncertain publication outcomes retain their existing
+recovery obligations; preparation classification does not turn them into denials.
+
 Ordinary graph demands use `WorthQueryOutputDemandControls::default()` and inherit
 the installed host policy. Configure that policy once with
 `WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` and

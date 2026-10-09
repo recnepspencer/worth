@@ -39,7 +39,9 @@ use super::schema::{
 
 #[path = "retention_entry/candidate_tracking.rs"]
 mod candidate_tracking;
-pub use candidate_tracking::{candidate_count, reset_candidate_count};
+pub use candidate_tracking::{
+    candidate_count, decision_count, reset_candidate_count, reset_decision_count,
+};
 #[path = "retention_entry/reviewed_write.rs"]
 mod reviewed_write;
 pub use reviewed_write::{
@@ -306,6 +308,7 @@ impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetReten
         WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         SetRetentionDenial,
     > {
+        candidate_tracking::record_decision(input.retention_days);
         let document = match reader
             .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
         {

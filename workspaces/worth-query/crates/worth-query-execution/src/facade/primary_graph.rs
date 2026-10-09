@@ -15,6 +15,7 @@ pub use crate::domain_computation::primary_graph::query_read_kernel_entries_on_t
 pub use crate::domain_computation::primary_graph::required_ready_custody_bytes_for_test;
 
 pub use worth_relational::facade::{
+    indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
     publication::RecordStructuralChange,
 };
