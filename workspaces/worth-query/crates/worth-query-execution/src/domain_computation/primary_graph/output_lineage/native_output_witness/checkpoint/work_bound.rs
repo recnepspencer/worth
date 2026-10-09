@@ -45,16 +45,9 @@ impl SealedNativeOutputWitness {
             source_work = add(source_work, work)?;
         }
         let fact_count = u64::try_from(facts.len()).map_err(|_| work_overflow())?;
-        let entity_scan = multiply(
-            fact_count,
-            1 + (size_of::<EntityId>() * 2 + size_of::<KindId>() * 2) as u64,
-        )?;
-        // Every aspect scan visits ALL facts, including contradictory duplicates.
-        let aspect_scan_base = add(
-            1 + (size_of::<EntityId>() * 2 + size_of::<Option<u64>>() * 2 + 2) as u64,
-            longest_aspect,
-        )?;
-        let mut bound = add(5, source_work)?;
+        let entity_lookup = super::fact_index::lookup_work_bound(fact_count, longest_aspect)?;
+        let index = super::fact_index::preparation_work_bound(fact_count, longest_aspect)?;
+        let mut bound = add(add(5, source_work)?, index)?;
         for (role, _, name, _) in correspondence.native_witness_roles() {
             admission.charge_external_work(16)?;
             super::prepay_catalog(layout, name, admission)?;
@@ -70,22 +63,23 @@ impl SealedNativeOutputWitness {
                 })
                 .ok_or_else(work_overflow)?;
             // First counting visit + copy visit + currentness visit; two catalog
-            // passes; owned names; complete entity-kind fact scan.
+            // passes; owned names; indexed original entity-kind lookup.
             bound = add(
                 bound,
                 add(
                     add(add(3, names)?, multiply(2, add(3, lookup)?)?)?,
-                    entity_scan,
+                    entity_lookup,
                 )?,
             )?;
             for aspect in layout.native_output_aspects(name) {
                 admission.charge_external_work(8)?;
                 let bytes = u64::try_from(aspect.as_str().len()).map_err(|_| work_overflow())?;
                 // Counting + copy + currentness visits, UTF-8 name ownership and
-                // currentness lookup, plus the complete original revision scan.
+                // currentness lookup, plus the original indexed revision lookup.
                 let visits_and_names = add(3, multiply(2, bytes)?)?;
-                let scan = multiply(fact_count, add(aspect_scan_base, bytes)?)?;
-                bound = add(bound, add(visits_and_names, scan)?)?;
+                let aspect_lookup =
+                    super::fact_index::lookup_work_bound(fact_count, longest_aspect.max(bytes))?;
+                bound = add(bound, add(visits_and_names, aspect_lookup)?)?;
             }
         }
         Ok(bound)

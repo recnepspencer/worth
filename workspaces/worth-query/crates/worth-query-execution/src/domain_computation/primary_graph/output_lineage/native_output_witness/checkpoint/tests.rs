@@ -1,6 +1,7 @@
 //! Recovered output expectations survive a change outside the source field.
 
 use super::*;
+mod indexed_reconstruction;
 mod mixed_retirement;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,

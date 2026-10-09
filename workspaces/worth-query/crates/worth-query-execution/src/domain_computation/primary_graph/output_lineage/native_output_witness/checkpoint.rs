@@ -2,6 +2,7 @@
 
 use super::*;
 
+mod fact_index;
 #[cfg(test)]
 mod tests;
 mod work_bound;
@@ -124,6 +125,9 @@ impl SealedNativeOutputWitness {
             name_bytes.checked_add(visits).ok_or_else(overflow)?,
             admission,
         )?;
+        let Some(facts) = fact_index::CheckpointFactIndex::prepare(facts, admission)? else {
+            return Ok(None);
+        };
         let mut roles = Vec::with_capacity(role_count);
         let mut aspects = Vec::with_capacity(aspect_count);
         for (role, posture, name, entity) in correspondence.native_witness_roles() {
@@ -131,13 +135,12 @@ impl SealedNativeOutputWitness {
             let kind = layout
                 .entity_kind(name)
                 .expect("validated checkpoint output kind");
-            if !checkpoint_entity_matches(facts, entity, kind, admission)? {
+            if !facts.entity_matches(entity, kind, admission)? {
                 return Ok(None);
             }
             let first_aspect = aspects.len();
             for aspect in layout.native_output_aspects(name) {
-                let Some(revision) = checkpoint_aspect_revision(facts, entity, aspect, admission)?
-                else {
+                let Some(revision) = facts.aspect_revision(entity, aspect, admission)? else {
                     return Ok(None);
                 };
                 aspects.push(AspectProbe {
@@ -177,66 +180,4 @@ fn prepay_catalog(
         .native_output_lookup_work(name)
         .ok_or_else(overflow)?;
     admission.charge_external_work(lookup)
-}
-
-fn checkpoint_entity_matches(
-    facts: &[Fact],
-    entity: EntityId,
-    expected: KindId,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, CompanionPreflightStop> {
-    let mut found = false;
-    for fact in facts {
-        admission.charge_external_work(1)?;
-        if let Fact::Entity { entity_id, kind } = fact {
-            admission.charge_external_work((size_of::<EntityId>() * 2) as u64)?;
-            if *entity_id == entity {
-                admission.charge_external_work((size_of::<KindId>() * 2) as u64)?;
-                if *kind != expected {
-                    return Ok(false);
-                }
-                found = true;
-            }
-        }
-    }
-    Ok(found)
-}
-
-fn checkpoint_aspect_revision(
-    facts: &[Fact],
-    entity: EntityId,
-    expected: &AspectKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<Option<Option<u64>>, CompanionPreflightStop> {
-    let mut found = None;
-    for fact in facts {
-        admission.charge_external_work(1)?;
-        let Fact::SourceAspectRevision {
-            entity_id,
-            aspect,
-            native_revision,
-        } = fact
-        else {
-            continue;
-        };
-        admission.charge_external_work((size_of::<EntityId>() * 2) as u64)?;
-        if *entity_id != entity {
-            continue;
-        }
-        let comparison = aspect
-            .as_str()
-            .len()
-            .checked_add(expected.as_str().len())
-            .and_then(|n| n.checked_add(1))
-            .ok_or_else(overflow)?;
-        admission.charge_external_work(comparison as u64)?;
-        if aspect == expected {
-            admission.charge_external_work((size_of::<Option<u64>>() * 2 + 1) as u64)?;
-            if found.is_some_and(|revision| revision != *native_revision) {
-                return Ok(None);
-            }
-            found = Some(*native_revision);
-        }
-    }
-    Ok(found)
 }
