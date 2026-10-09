@@ -1,3 +1,5 @@
+mod unavailable;
+pub use unavailable::WorthQueryApplicationProgramOutputUnavailable;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };

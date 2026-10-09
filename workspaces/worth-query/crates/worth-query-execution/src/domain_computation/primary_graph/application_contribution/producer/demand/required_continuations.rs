@@ -20,6 +20,7 @@ mod held;
 mod prepared;
 mod progress;
 mod promotion;
+mod unavailable;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::registry::InstalledProducerProvider,
     application_output_demand::{

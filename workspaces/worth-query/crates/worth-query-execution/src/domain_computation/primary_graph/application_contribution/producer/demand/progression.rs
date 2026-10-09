@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) use required_wave::{
 pub(super) mod resources;
 mod selected_program;
 mod source_recovery;
+mod unavailable;
 mod validated;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

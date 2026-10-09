@@ -144,6 +144,7 @@ mod obligations;
 mod prerequisite_claims;
 mod prerequisite_work;
 mod progression;
+mod unavailable;
 pub(in crate::domain_computation::primary_graph) use progression::{
     PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
 };

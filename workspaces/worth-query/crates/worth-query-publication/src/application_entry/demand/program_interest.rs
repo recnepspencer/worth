@@ -100,18 +100,17 @@ where
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)
     }
 
-    pub(in crate::application_entry) fn advance(
-        &mut self,
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    fn disclose(
+        &self,
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
-        WorthQueryApplicationProgramDemandProgress<Schema, Program, Demand>,
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDemandSource<
+            SourceQuery<Schema, Demand>,
+            SourceValue<Schema, Demand>,
+        >,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        if !std::ptr::eq(application.runtime(), request.application) {
-            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
-        }
-        let disclosure = if let Some(observation) = &self.source_observation {
+        Ok(if let Some(observation) = &self.source_observation {
             request
                 .at(
                     &crate::application_entry::WorthQueryApplicationReadObservation::new(
@@ -124,7 +123,47 @@ where
             request.query(self.demand.source_intent()).execute()
         }
         .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
-        .into_output_demand_source();
+        .into_output_demand_source())
+    }
+
+    pub(in crate::application_entry) fn finish_unavailable<Root>(
+        &mut self, application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        prepared: &worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
+    ) -> Result<worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial, WorthQueryApplicationOutputDemandDenial>
+    where Root: worth_query_declaration::facade::application_program::ApplicationOutputGraphShape<Schema, Dependents = worth_query_declaration::facade::application_program::ApplicationOutputLeaf>
+            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        <<Root as worth_query_declaration::facade::application_program::ApplicationOutputGraphShape<Schema>>::RootConnection as worth_query_declaration::facade::application_program::ApplicationConnectionShape<Schema>>::Binding:
+    worth_query_execution::facade::primary_graph::WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>{
+        if !std::ptr::eq(application.runtime(), request.application) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        let disclosure = self.disclose(request)?;
+        application
+            .finish_unavailable_program_output::<Root>(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &mut self.admitted,
+                prepared,
+                request.principal,
+                request.scope,
+                request.branch,
+                disclosure,
+            )
+            .map_err(map_progress_denial)
+    }
+
+    pub(in crate::application_entry) fn advance(
+        &mut self,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        WorthQueryApplicationProgramDemandProgress<Schema, Program, Demand>,
+        WorthQueryApplicationOutputDemandDenial,
+    > {
+        if !std::ptr::eq(application.runtime(), request.application) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        let disclosure = self.disclose(request)?;
         match application
             .advance_program_output(
                 &worth_query_execution::publication_boundary::program_publication_access(),

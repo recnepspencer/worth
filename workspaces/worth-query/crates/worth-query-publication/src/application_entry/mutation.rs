@@ -41,7 +41,9 @@ pub use performed::{
     WorthQueryRequiredOutputStartFailure, WorthQueryStartedRequiredOutputs,
     WorthQueryUnpublishedRequiredApplicationMutation,
 };
-pub use performed_outputs::WorthQueryApplicationProgramOutputHandle;
+pub use performed_outputs::{
+    WorthQueryApplicationProgramOutputHandle, WorthQueryApplicationProgramOutputUnavailable,
+};
 pub use performed_source::{
     WorthQueryBlockedProgramSource, WorthQueryProgramSourceRecoveryProgress,
 };
