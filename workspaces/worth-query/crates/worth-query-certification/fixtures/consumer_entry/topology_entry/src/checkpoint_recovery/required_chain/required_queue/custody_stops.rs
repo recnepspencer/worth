@@ -43,6 +43,34 @@ macro_rules! chain {
     }};
 }
 
+/// Settles within eight advances. Every stop on the way offers a retry: any
+/// other stop fails here, and so does a demand that defers on every advance.
+macro_rules! settled_within_eight_advances {
+    ($demand:expr, $request:expr, $what:expr) => {{
+        let mut stops = Vec::new();
+        (0..8)
+            .find_map(|_| match $demand.advance(&$request) {
+                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => Some(settled),
+                Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
+                Err(stop) => {
+                    assert!(
+                        matches!(
+                            &stop,
+                            WorthQueryApplicationOutputDemandDenial::Demand(denial)
+                                if denial.recovery_posture()
+                                    == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+                        ),
+                        "{}: a stop before settlement offers a retry: {stop:?}",
+                        $what
+                    );
+                    stops.push(format!("{stop:?}"));
+                    None
+                }
+            })
+            .unwrap_or_else(|| panic!("{} settles within eight advances: {stops:?}", $what))
+    }};
+}
+
 #[test]
 fn a_lone_caller_whose_chain_outgrows_its_budget_stops_without_retry() {
     let _guard = checkpoint_recovery_test_guard();
@@ -80,7 +108,16 @@ fn lone_terminal(budget: usize) -> Attempt {
                         && denial.recovery_posture()
                             == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable =>
                 {
-                    return Attempt::Below("upstream publication offers retry before terminal stop")
+                    return Attempt::Above("upstream publication offers retry")
+                }
+                // Refused before the refresh's source query: an earlier stop
+                // than the one this test is about.
+                Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                    if denial.kind()
+                        == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+                        && query_entries() == entries =>
+                {
+                    return Attempt::Below("refused before the refresh's source query")
                 }
                 _ => (),
             }
@@ -111,9 +148,17 @@ fn lone_terminal(budget: usize) -> Attempt {
     // Nor are the rows it reads: demands that fit refresh them and settle.
     drop(c);
     let mut a = start_root!(application, request);
-    settle!(a, request);
+    drop(settled_within_eight_advances!(
+        a,
+        request,
+        "the root demand"
+    ));
     let mut b = start_consumer!(application, request, "anchor-b");
-    settle!(b, request);
+    drop(settled_within_eight_advances!(
+        b,
+        request,
+        "the middle demand"
+    ));
     drop((a, b));
     Attempt::Hit
 }
@@ -171,34 +216,6 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
     settled_in_one_advance!(c, request, "the last consumer");
     settled_in_one_advance!(a, request, "the open root demand");
     drop((a, b, c));
-}
-
-/// Settles within eight advances. Every stop on the way offers a retry: any
-/// other stop fails here, and so does a demand that defers on every advance.
-macro_rules! settled_within_eight_advances {
-    ($demand:expr, $request:expr, $what:expr) => {{
-        let mut stops = Vec::new();
-        (0..8)
-            .find_map(|_| match $demand.advance(&$request) {
-                Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => Some(settled),
-                Ok(WorthQueryApplicationOutputDemandProgress::Pending) => None,
-                Err(stop) => {
-                    assert!(
-                        matches!(
-                            &stop,
-                            WorthQueryApplicationOutputDemandDenial::Demand(denial)
-                                if denial.recovery_posture()
-                                    == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
-                        ),
-                        "{}: a stop before settlement offers a retry: {stop:?}",
-                        $what
-                    );
-                    stops.push(format!("{stop:?}"));
-                    None
-                }
-            })
-            .unwrap_or_else(|| panic!("{} settles within eight advances: {stops:?}", $what))
-    }};
 }
 
 #[test]

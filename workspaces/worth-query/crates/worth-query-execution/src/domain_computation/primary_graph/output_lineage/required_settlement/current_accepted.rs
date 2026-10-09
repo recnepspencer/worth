@@ -173,9 +173,10 @@ impl AcceptedCurrentCandidate {
         let (Some(facts), Some(witness)) = (facts, self.selected.native_output_witness()) else {
             return Ok(true);
         };
-        let Some(count) = self.selected.completed_handler_fact_count() else {
-            return Ok(true);
-        };
+        let count = self
+            .selected
+            .completed_handler_fact_count()
+            .unwrap_or(facts.len());
         let Some(handler_facts) = facts.get(..count) else {
             return Ok(true);
         };

@@ -1,10 +1,8 @@
 //! A hundred cycles certify queued pressure, then reopening and retry.
 use super::*;
 use support::capacity_region::{settle as setup_settle, start as setup_start, Attempt};
-pub(super) fn run(rows_per_demand: usize, tight: bool) -> Attempt {
+pub(super) fn run(custody_budget: usize, tight: bool) -> Attempt {
     let retained_positions = 8;
-    let row = primary_graph::required_ready_custody_bytes_for_test();
-    let custody_budget = 4 * rows_per_demand * row;
     let (application, invalidation) =
         limited_application(custody_budget, 128 * 1024 * 1024, retained_positions);
     let (scope, principal) = authenticate(&application);
@@ -96,7 +94,7 @@ pub(super) fn run(rows_per_demand: usize, tight: bool) -> Attempt {
     let closed_custody = application.required_custody_bytes_for_test();
     assert!(
         closed_custody <= settled_custody,
-        "{rows_per_demand} rows per demand: closing the chain holds no more than it settled with"
+        "{custody_budget} bytes: closing the chain holds no more than it settled with"
     );
     let mut b = request
         .demand(ChainDemand("anchor-b".to_owned()))
@@ -122,12 +120,23 @@ pub(super) fn run(rows_per_demand: usize, tight: bool) -> Attempt {
             application.required_custody_bytes_for_test() < closed_custody,
             "the stop holds less than the advance began with"
         );
+        // The subject is a retry that settles at once. A budget whose retry
+        // stops again is tighter than the subject.
+        match b.advance(&request) {
+            Ok(WorthQueryApplicationOutputDemandProgress::Settled(_)) => (),
+            Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
+                if denial.kind() == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded =>
+            {
+                return Attempt::Below("the reopened middle's retry stops again")
+            }
+            other => panic!("the retry settles in one advance: {:?}", other.err()),
+        }
     }
     settled_in_one_advance!(b, request, "the reopened middle consumer");
     drop(b);
     assert!(
         application.required_custody_bytes_for_test() <= settled_custody,
-        "{rows_per_demand} rows per demand: the unrelated caller retains no refreshed chain row"
+        "{custody_budget} bytes: the unrelated caller retains no refreshed chain row"
     );
     let closed_ready_custody = application.required_custody_bytes_for_test();
     assert!(
@@ -164,7 +173,7 @@ pub(super) fn run(rows_per_demand: usize, tight: bool) -> Attempt {
     );
     assert!(
         application.required_custody_bytes_for_test() <= settled_custody,
-        "{rows_per_demand} rows per demand: custody returns within the settled chain's"
+        "{custody_budget} bytes: custody returns within the settled chain's"
     );
     Attempt::Hit
 }

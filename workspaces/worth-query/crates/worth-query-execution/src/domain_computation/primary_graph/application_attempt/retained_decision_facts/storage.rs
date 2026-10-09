@@ -70,6 +70,26 @@ impl<T> RetainedFactStore<T> {
         }
         result
     }
+    /// Merge only an already retained key, returning absent values to their owner.
+    pub(in crate::domain_computation::primary_graph) fn merge_existing(
+        &mut self,
+        key: AdmittedFactKey,
+        value: T,
+        policy: super::StorageControl<'_, '_>,
+        duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
+    ) -> Result<Option<T>, StoreDenial> {
+        if let Some(denial) = &self.failure {
+            return Err(denial.clone());
+        }
+        policy.check_live()?;
+        let result = self
+            .resolve_existing(&key, value, duplicate, policy)
+            .map(|absent| absent.map(|(value, _)| value));
+        if let Err(denial) = &result {
+            self.failure = Some(denial.clone());
+        }
+        result
+    }
     fn insert_inner(
         &mut self,
         key: AdmittedFactKey,

@@ -95,10 +95,12 @@ impl<Schema, Operation, Input, Scope, Phase>
                 self.admission.operation(),
             )
         })?;
-        // `facts` keeps the decision facts in key order, ahead of the source
-        // facts.
+        // All decision reads, including dependent query and indexed-selection
+        // facts, precede producer-source facts whose equality the prepared input proves.
         self.admission.record_completed_handler_facts(
-            CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
+            CompletedHandlerFactBoundary::from_completed_read(
+                self.facts.len() + self.source_facts.handler_len(),
+            ),
             retained,
         );
         let operation = self.admission.operation();

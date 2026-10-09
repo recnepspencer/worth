@@ -10,7 +10,6 @@ pub(in crate::checkpoint_recovery) enum Attempt {
 pub(in crate::checkpoint_recovery) enum Goal {
     Hit,
     LowerEdge,
-    UpperEdge,
 }
 
 #[derive(Debug)]
@@ -68,7 +67,6 @@ pub(in crate::checkpoint_recovery) fn search(
                 }
                 match goal {
                     Goal::LowerEdge => ample = knob - 1,
-                    Goal::UpperEdge => floor = knob + 1,
                     Goal::Hit => unreachable!(),
                 }
             }

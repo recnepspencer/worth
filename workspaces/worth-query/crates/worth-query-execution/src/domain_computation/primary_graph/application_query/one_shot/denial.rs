@@ -140,10 +140,9 @@ pub(super) fn authorization_denial(
 impl WorthQueryApplicationOneShotDenial {
     /// The shared payload and its one reservation live until the last denial clone drops.
     fn retain_custody(&self, hold: worth_execution::ExecutionMemoryReservation) {
-        self.payload
-            .custody
-            .set(hold)
-            .expect("one owner stage retains denial custody");
+        // A concurrent clone may have retained custody first. Its hold remains;
+        // the rejected second hold refunds itself when this result drops.
+        let _ = self.payload.custody.set(hold);
     }
 
     pub const fn kind(&self) -> WorthQueryApplicationOneShotDenialKind {

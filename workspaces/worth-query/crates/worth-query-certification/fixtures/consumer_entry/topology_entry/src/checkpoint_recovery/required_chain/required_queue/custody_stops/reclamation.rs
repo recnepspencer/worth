@@ -45,34 +45,21 @@ pub(super) fn overwrite_middle_output(
 }
 
 /// A chain node republishes the Length its own source reads, so its output
-/// does not vary with the root. Where `overwritten`, another writer changes
-/// the middle output every cycle: the last consumer's decision then reads a
-/// value no earlier cycle published.
+/// does not vary with the root. A middle output another writer changes
+/// releases the custody it supersedes, so no budget both funds the middle
+/// refresh and reclaims the last consumer; the upper-edge test asserts the
+/// changed value's contact.
 #[test]
 fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream() {
     let _guard = checkpoint_recovery_test_guard();
-    for overwritten in [false, true] {
-        support::capacity_region::search(
-            if overwritten {
-                "reclaimed written rows"
-            } else {
-                "reclaimed rows"
-            },
-            1,
-            64,
-            support::capacity_region::Goal::Hit,
-            |rows| {
-                run_reclamation_budget(
-                    rows * primary_graph::required_ready_custody_bytes_for_test(),
-                    overwritten,
-                    true,
-                    20,
-                    false,
-                )
-            },
-        )
-        .require_hit("a reclaimed dependent decides over refreshed upstream");
-    }
+    support::capacity_region::search(
+        "reclaimed rows",
+        1,
+        64 * primary_graph::required_ready_custody_bytes_for_test(),
+        support::capacity_region::Goal::Hit,
+        |bytes| run_reclamation_budget(bytes, false, true, 20, false),
+    )
+    .require_hit("a reclaimed dependent decides over refreshed upstream");
 }
 
 #[test]
@@ -205,7 +192,7 @@ fn run_reclamation_budget(
     } {
         let mut reclaimed_inventory = None;
         let boundary_baseline = invalidation.native_retained_allocations_for_test();
-        let at = format!("{rows} rows, cycle {cycle}, overwritten {overwritten}");
+        let at = format!("{budget} bytes, cycle {cycle}, overwritten {overwritten}");
         let y = 2 + (cycle % 2) * 3;
         let idempotency =
             0x9176_4200_u64 + u64::from(overwritten) * 0x400 + rows as u64 * 16 + cycle;

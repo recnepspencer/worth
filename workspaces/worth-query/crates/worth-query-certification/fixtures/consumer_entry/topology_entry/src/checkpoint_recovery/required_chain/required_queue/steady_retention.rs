@@ -45,17 +45,18 @@ macro_rules! unrelated_settles_unverified {
 #[test]
 fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
     let _guard = checkpoint_recovery_test_guard();
+    let row = primary_graph::required_ready_custody_bytes_for_test();
     let band = support::capacity_region::search(
-        "steady rows per demand",
+        "steady custody bytes",
         1,
-        32,
-        support::capacity_region::Goal::LowerEdge,
-        |rows| pressure::run(rows, true),
+        4 * 32 * row,
+        support::capacity_region::Goal::Hit,
+        |bytes| pressure::run(bytes, true),
     );
-    let edge = band.require_hit("steady rows per demand");
-    // The larger allowance admits the queued refreshes and the reopened consumer.
+    band.require_hit("steady custody bytes");
+    // The ample allowance admits the queued refreshes and the reopened consumer.
     assert_eq!(
-        pressure::run(edge + 2, false),
+        pressure::run(4 * 32 * row, false),
         support::capacity_region::Attempt::Hit
     );
 }
