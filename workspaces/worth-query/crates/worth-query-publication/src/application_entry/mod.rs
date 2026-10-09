@@ -61,11 +61,13 @@ pub use mutation::{
     WorthQueryApplicationRetainedMutationOutcome, WorthQueryCurrentAuthorizationAssessment,
     WorthQueryDiscoveredOutputStartFailure, WorthQueryDiscoveredProgramOutputHandle,
     WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
-    WorthQueryMutationSourcePrepared, WorthQueryPerformedApplicationMutation,
-    WorthQueryPerformedDiscoveredApplicationMutation, WorthQueryPerformedMutationExecutionDenial,
-    WorthQueryPreparedProgramMutation, WorthQueryRequiredOutputPreparationDenial,
+    WorthQueryDiscoveredRecoveryProgress, WorthQueryMutationSourcePrepared,
+    WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryPreparedProgramMutation,
+    WorthQueryRecoveredDiscoveredOutputs, WorthQueryRequiredOutputPreparationDenial,
     WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
     WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
+    WorthQueryUnpublishedDiscoveredApplicationMutation,
 };
 pub use programs::{
     WorthQueryApplicationBranchSetProgramAdoptionRequest,

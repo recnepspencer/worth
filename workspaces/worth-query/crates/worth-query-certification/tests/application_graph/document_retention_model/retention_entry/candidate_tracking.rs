@@ -2,6 +2,28 @@
 enum Stage {
     Decision,
     Candidate,
+    OrdinaryDecision,
+    OrdinaryCandidate,
+}
+
+pub(crate) fn record_ordinary_decision(retention_days: u64) {
+    record(retention_days, Stage::OrdinaryDecision);
+}
+
+pub(crate) fn record_ordinary_candidate(retention_days: u64) {
+    record(retention_days, Stage::OrdinaryCandidate);
+}
+
+pub fn reset_ordinary_counts(retention_days: u64) {
+    reset(retention_days, Stage::OrdinaryDecision);
+    reset(retention_days, Stage::OrdinaryCandidate);
+}
+
+pub fn ordinary_counts(retention_days: u64) -> (usize, usize) {
+    (
+        count(retention_days, Stage::OrdinaryDecision),
+        count(retention_days, Stage::OrdinaryCandidate),
+    )
 }
 
 fn counts() -> &'static std::sync::Mutex<std::collections::BTreeMap<(u64, Stage), usize>> {

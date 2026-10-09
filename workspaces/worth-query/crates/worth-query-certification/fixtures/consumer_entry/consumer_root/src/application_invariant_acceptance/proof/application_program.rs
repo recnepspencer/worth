@@ -36,6 +36,8 @@ pub(super) fn performed_source_settles_required_output(
     discovered::recovery::newer_discovered_source_retires_recovery(foreign);
     discovered::recovery::foreign_runtime_cannot_recover_discovered_source(foreign);
     discovered::recovery::interrupted_discovery_recovers_both_consumed_roots(foreign);
+    discovered::unpublished::original_partial_recovers_discovered_outputs(foreign);
+    discovered::initial_unpublished::initial_partial_recovers_discovered_outputs(foreign);
     discovered::publication_lifecycle::unchanged_roots_join_new_publication(foreign);
     discovered::publication_lifecycle::older_publication_starts_after_newer_root_binding(foreign);
     discovered::publication_lifecycle::running_roots_follow_the_newer_publication(foreign);

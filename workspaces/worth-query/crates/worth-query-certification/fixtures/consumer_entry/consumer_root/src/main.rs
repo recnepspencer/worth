@@ -28,7 +28,7 @@ use worth_query_topology_entry::{
 worth_query_application! {
     pub ConsumerSchema {
         owner: "worth.query.certification.consumer",
-        version: (1, 0),
+        version: (1, 1),
         contributions: [TopologyContribution, ParameterContribution],
     }
 }
@@ -52,9 +52,9 @@ fn run() {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    // Eight production Topology operation fact-quota members were retired.
-    // The recovery-chain declaration is cfg(test); Parameter remains unchanged.
-    assert_eq!(declaration.erased().members().len(), 120);
+    // Seven members declare the actual no-source recovery operation. The
+    // recovery-chain declaration is cfg(test); Parameter remains unchanged.
+    assert_eq!(declaration.erased().members().len(), 127);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY
@@ -93,7 +93,7 @@ fn run() {
     assert_eq!(installed.contributions().len(), 2);
     assert!(installed
         .contributions()
-        .get("worth.query.certification.topology.v1")
+        .get("worth.query.certification.topology.v2")
         .is_some());
     assert!(installed
         .contributions()

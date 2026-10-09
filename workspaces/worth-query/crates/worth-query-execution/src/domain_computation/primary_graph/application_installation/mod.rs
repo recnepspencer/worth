@@ -25,9 +25,10 @@ pub use program::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
     WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementReceipt,
-    WorthQueryReadmittedApplicationPreview, WorthQuerySelectedProgramOwner,
-    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
-    WorthQuerySupportedProgramHandle, WorthQueryWorkflowApplicationRuntime,
+    WorthQueryReadmittedApplicationPreview, WorthQueryRecoveredProgramOutputSource,
+    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
+    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
+    WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
     WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;

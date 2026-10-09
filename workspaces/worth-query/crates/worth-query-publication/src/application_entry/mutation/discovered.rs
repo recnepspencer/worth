@@ -13,15 +13,21 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::{WorthQueryApplicationMutationOutcome, WorthQueryRequiredOutputPreparationDenial};
 
 mod outputs;
+mod recovered;
 mod recovery;
 
 mod selected;
 mod start;
+mod unpublished;
 pub use outputs::{
     WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
     WorthQueryDiscoveredProgramOutputSettlement,
 };
+pub use recovered::WorthQueryRecoveredDiscoveredOutputs;
 pub use start::WorthQueryDiscoveredOutputStartFailure;
+pub use unpublished::{
+    WorthQueryDiscoveredRecoveryProgress, WorthQueryUnpublishedDiscoveredApplicationMutation,
+};
 
 #[derive(Clone, Copy)]
 enum DiscoveredRootStartKind {
@@ -52,6 +58,10 @@ where
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
+    /// Original native partial and discovered preparation remain owned.
+    ProductUnpublished(
+        WorthQueryUnpublishedDiscoveredApplicationMutation<Schema, Intent, Program, Root>,
+    ),
     Performed(WorthQueryPerformedDiscoveredApplicationMutation<Schema, Intent, Program, Root>),
     RequiredOutputDenied {
         receipt: WorthQueryApplicationCommitReceipt,
@@ -176,6 +186,16 @@ where
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
+    let outcome = match outcome {
+        WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {
+            if let Some(pending) = source.take_unpublished() {
+                return WorthQueryApplicationDiscoveredMutationOutcome::ProductUnpublished(
+                    WorthQueryUnpublishedDiscoveredApplicationMutation::new(pending, discovery, partial));
+            }
+            WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial))
+        }
+        other => other,
+    };
     let WorthQueryApplicationMutationOutcome::Committed { receipt, result } = outcome else {
         return WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(outcome);
     };

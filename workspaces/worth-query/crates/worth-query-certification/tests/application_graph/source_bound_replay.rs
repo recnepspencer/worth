@@ -31,6 +31,8 @@ use worth_query_host::facade::{
 
 #[path = "source_bound_replay/program.rs"]
 mod program;
+#[path = "source_bound_replay/recovery.rs"]
+mod recovery;
 
 #[test]
 fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocation() {

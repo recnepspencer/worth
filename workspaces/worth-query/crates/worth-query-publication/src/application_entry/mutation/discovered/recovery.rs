@@ -22,6 +22,9 @@ use crate::application_entry::{
     WorthQueryApplicationReadObservation, WorthQueryApplicationRequest,
     WorthQueryOutputDemandControls, WorthQueryRequiredOutputPreparationDenial,
 };
+mod admission;
+mod advance;
+mod promotion;
 
 type DiscoveryBinding<Schema, Root> =
     <Discovery<Schema, Root> as ApplicationQueryIntent<Schema>>::Binding;

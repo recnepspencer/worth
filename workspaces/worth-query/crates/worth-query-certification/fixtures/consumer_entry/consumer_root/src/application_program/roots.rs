@@ -14,6 +14,9 @@ use super::{
     PlanarConnection, PlanarDependentConnection, PlanarSummaryConnection,
 };
 
+mod initial;
+pub use initial::{ConsumerInitialDiscoveredProgramRoot, InitialDiscoveredPlanarRoot};
+
 pub struct SecondaryPlanarRoot;
 pub struct DiscoveredPlanarRoot;
 pub struct UndeclaredPlanarRoot;

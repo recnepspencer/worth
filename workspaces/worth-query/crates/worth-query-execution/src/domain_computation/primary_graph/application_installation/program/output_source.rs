@@ -6,7 +6,12 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramOutputsShape,
 };
 
+mod promotion;
+mod recovery;
 mod selected;
+pub use recovery::{
+    WorthQueryRecoveredProgramOutputSource, WorthQueryUnpublishedProgramOutputSource,
+};
 
 type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
@@ -21,6 +26,7 @@ type ProgramSourceCommit = Result<
     (
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome,
         Option<PreparedProgramSource>,
+        Option<WorthQueryUnpublishedProgramOutputSource>,
     ),
     crate::domain_computation::primary_graph::WorthQueryRequiredOutputSourcePreparationFailure,
 >;
@@ -102,12 +108,15 @@ where
                     crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
                 ),
                 None,
+                None,
             ));
         };
         let source_preparation = self
             .runtime
             .output_demands
             .begin_source_preparation(program.product_branch().occurrence());
+        let branch = program.product_branch();
+        let selected_program = presented.rendering().clone();
         match self
             .runtime
             .compare_and_commit_application_for_required_output_source(
@@ -146,9 +155,23 @@ where
                         descriptive,
                     ),
                     Some(prepared),
+                    None,
                 ))
             }
-            outcome => Ok((outcome, None)),
+            outcome @ crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(_) => {
+                let pending = discovery.map(|discovery| WorthQueryUnpublishedProgramOutputSource {
+                    runtime_authority: self.runtime.runtime.authority_identity().as_u64(),
+                    program: selected_program,
+                    binding: std::any::TypeId::of::<Source>(),
+                    idempotency,
+                    branch,
+                    root: root_kind,
+                    preparation: source_preparation,
+                    discovery,
+                });
+                Ok((outcome, None, pending))
+            }
+            outcome => Ok((outcome, None, None)),
         }
     }
 }

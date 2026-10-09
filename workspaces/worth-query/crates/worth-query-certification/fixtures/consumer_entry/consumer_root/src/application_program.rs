@@ -31,9 +31,10 @@ mod roots;
 mod validation_denials;
 pub(crate) use omitted_program_binding::validated_omitted_program_binding;
 pub use roots::{
-    ConsumerDiscoveredProgramRoot, ConsumerProgramRoot, ConsumerRequiredSharedRoot,
-    ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
-    DiscoveredPlanarRoot, RequiredSharedPlanarRoot, SecondaryPlanarRoot,
+    ConsumerDiscoveredProgramRoot, ConsumerInitialDiscoveredProgramRoot, ConsumerProgramRoot,
+    ConsumerRequiredSharedRoot, ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot,
+    ConsumerUndeclaredProgramRoot, DiscoveredPlanarRoot, InitialDiscoveredPlanarRoot,
+    RequiredSharedPlanarRoot, SecondaryPlanarRoot,
 };
 pub(crate) use validation_denials::{
     duplicate_feature_is_denied, missing_required_input_is_denied, undeclared_input_is_denied,
@@ -287,12 +288,18 @@ impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
         ConsumerProgramRoot,
         (
             ConsumerSecondaryProgramRoot,
-            (ConsumerDiscoveredProgramRoot, ConsumerRequiredSharedRoot),
+            (
+                ConsumerDiscoveredProgramRoot,
+                (
+                    ConsumerRequiredSharedRoot,
+                    ConsumerInitialDiscoveredProgramRoot,
+                ),
+            ),
         ),
     )>;
     type Rules = ConsumerRules;
     const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v2");
+        ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v3");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         features::consumer_feature_specs()
@@ -304,7 +311,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedInstalledRuleProgra
     type Outputs = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Outputs;
     type Rules = MissingRequiredInputRules;
     const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.certification.omitted-installed-rule.v1");
+        ApplicationProgramIdentity::new("worth.query.certification.omitted-installed-rule.v2");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         features::consumer_feature_specs()
@@ -316,7 +323,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for RequiredSourceAsActionProg
     type Outputs = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Outputs;
     type Rules = ConsumerRules;
     const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.certification.source-action-overlap.v1");
+        ApplicationProgramIdentity::new("worth.query.certification.source-action-overlap.v2");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut specs = features::consumer_feature_specs();

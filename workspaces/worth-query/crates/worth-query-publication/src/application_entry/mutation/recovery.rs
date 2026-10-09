@@ -1,9 +1,8 @@
-//! Fresh request admission for an ordinary, no-source unpublished application.
+//! Fresh request admission for an ordinary unpublished application.
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
-    NoApplicationMutationSource,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_execution::facade::application_installation::{
@@ -61,8 +60,6 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
-    Intent::Binding:
-        ApplicationMutationBinding<Schema, SourceExpectation = NoApplicationMutationSource>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -74,6 +71,8 @@ where
     /// authorization. Supply the original intent, key and preconditions. The
     /// selected program must still own this action; no initial-owner fallback
     /// is used. This entrance never prepares a candidate or calls its handler.
+    /// Source-bound actions also require their original checked row or result-set
+    /// observation identity. A different source binding cannot replace it.
     ///
     /// A performed outcome remains performed even if its receipt read or
     /// subsequent publication/cleanup reports a failure. Retain that posture
@@ -157,6 +156,9 @@ where
         }
         let staged = self.stage()?;
         let identities = self.identities()?;
+        // Bind the original source identity and partition for recovery matching.
+        // The retained attempt already owns its source facts: do not consume the
+        // pending expectation into a fresh candidate or invoke the handler.
         super::authorization::prepare_selected(self, &identities, staged, &selected)
             .map_err(WorthQueryApplicationRecoveryRequestDenial::Request)
     }

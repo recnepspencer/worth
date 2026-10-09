@@ -24,8 +24,9 @@ pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub use discovered::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,
     WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
-    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryPerformedDiscoveredApplicationMutation,
-    WorthQueryStartedDiscoveredOutputs,
+    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryDiscoveredRecoveryProgress,
+    WorthQueryPerformedDiscoveredApplicationMutation, WorthQueryRecoveredDiscoveredOutputs,
+    WorthQueryStartedDiscoveredOutputs, WorthQueryUnpublishedDiscoveredApplicationMutation,
 };
 pub use execution::{
     WorthQueryApplicationProgramMigrationPreparationDenial,

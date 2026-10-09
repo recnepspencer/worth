@@ -55,6 +55,40 @@ impl WorthQueryOutputDemandRegistry {
                 "a newer source publication owns this preparation scope",
             ));
         }
+        // Prepare every fallible collection growth before retiring any prior
+        // custody or inserting this source. Recovery can return its original
+        // reservation and carrier intact on a capacity refusal.
+        let mut abandoned = Vec::new();
+        if matches!(root_kind, PreparedOutputRootKind::Discovered(_)) {
+            for (prior, _) in state
+                .source_custody
+                .iter()
+                .filter(|(prior, candidate)| {
+                    prior.ordinal() < commit.ordinal()
+                        && candidate.retired.is_none()
+                        && candidate.root_kind == root_kind
+                        && candidate.occurrence == occurrence
+                        && candidate.token_count == 0
+                        && candidate.source.as_ref().is_some_and(|retained| {
+                            retained.receipt.principal_scope().scope() == scope
+                        })
+                })
+                .filter(|(prior, _)| {
+                    !state.records.values().any(|record| {
+                        record.source_commits.contains(*prior) && record.interests != 0
+                    })
+                })
+            {
+                abandoned
+                    .try_reserve(1)
+                    .map_err(|_| source_capacity_denial())?;
+                abandoned.push(prior.clone());
+            }
+        }
+        state
+            .source_custody
+            .try_reserve(1)
+            .map_err(|_| source_capacity_denial())?;
         for (prior, candidate) in &mut state.source_custody {
             if direct_root
                 && prior.ordinal() < commit.ordinal()
@@ -73,26 +107,6 @@ impl WorthQueryOutputDemandRegistry {
             }
         }
         if matches!(root_kind, PreparedOutputRootKind::Discovered(_)) {
-            let abandoned = state
-                .source_custody
-                .iter()
-                .filter(|(prior, candidate)| {
-                    prior.ordinal() < commit.ordinal()
-                        && candidate.retired.is_none()
-                        && candidate.root_kind == root_kind
-                        && candidate.occurrence == occurrence
-                        && candidate.token_count == 0
-                        && candidate.source.as_ref().is_some_and(|retained| {
-                            retained.receipt.principal_scope().scope() == scope
-                        })
-                })
-                .filter(|(prior, _)| {
-                    !state.records.values().any(|record| {
-                        record.source_commits.contains(*prior) && record.interests != 0
-                    })
-                })
-                .map(|(prior, _)| prior.clone())
-                .collect::<Vec<_>>();
             for prior in abandoned {
                 if let Some(candidate) = state.source_custody.get_mut(&prior) {
                     candidate.retire(denial(
@@ -178,4 +192,11 @@ impl WorthQueryOutputDemandRegistry {
         custody.token_count += 1;
         Ok((discovery, observation))
     }
+}
+
+fn source_capacity_denial() -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded,
+        "performed source custody storage cannot be allocated",
+    )
 }

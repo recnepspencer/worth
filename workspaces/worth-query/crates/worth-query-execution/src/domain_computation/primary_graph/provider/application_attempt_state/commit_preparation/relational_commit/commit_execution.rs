@@ -260,6 +260,11 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
+    pub(in crate::domain_computation::primary_graph::provider) fn take_recovered_output_source(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{
+        crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource::take_original(&self.product_publication)
+    }
     pub(super) fn take_source_fact_admission(&mut self) -> Option<crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission>{
         self.source_fact_admission.take()
     }

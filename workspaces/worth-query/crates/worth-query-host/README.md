@@ -73,18 +73,33 @@ reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
 admission or a selected World between executions.
 
-An ordinary no-source mutation that returns `ProductUnpublished` retains actual
+An ordinary mutation that returns `ProductUnpublished` retains actual
 owner effects without a published product successor. Keep its recovery handle
 and the original intent, idempotency key and preconditions. A freshly authenticated
 request can call `recover_unpublished_in_program(&recovery, &program)`; the current
 selected program must still own that action. Recovery reuses the retained owner
-effects rather than preparing a candidate or invoking its handler. Source-bound
-and workflow recovery require their own owners and are not accepted by this entrance.
+effects rather than preparing a candidate or invoking its handler. A source-bound
+request must also supply its original checked row or result-set observation;
+a different source binding cannot replace it. The retained attempt
+owns the original source facts. Workflow and required/discovered output-source
+recovery still require their own owners and are not accepted by this entrance.
 Keep a `Performed` recovery outcome even when its receipt read, publication or
 cleanup reports a failure: the publication already took effect. A fresh
 `resolve_idempotency_in_program(&program)` request reads the original keyed outcome
 without executing a mutation. Both entrances preserve typed authorization,
 interruption, identity and owner failures.
+
+Discovered output sources have a separate move-only partial owner. A genuine
+`execute_performed_discovered` publication failure returns `ProductUnpublished`
+with its original preparation and typed discovery. Keep that owner and the exact
+original request, including its source observation when required. A fresh request
+can call `recover_unpublished_discovered_in_program`; after native performance,
+`promote_recovered_discovered_outputs` reads the exact original key and transfers
+the original performed carrier into an output handle once. Refused promotion
+returns the owner. Successful promotion also returns the raw performed recovery
+and all prior cleanup failures: starting outputs does not discharge those
+independent obligations. No original handler or candidate is executed again.
+Required fixed-root and workflow recovery remain outside this entrance.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through

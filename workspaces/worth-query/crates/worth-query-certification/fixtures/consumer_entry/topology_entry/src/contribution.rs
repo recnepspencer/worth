@@ -83,6 +83,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(
             super::PlanarSourceAdjustmentHandler,
         )?;
+        setup.handler::<super::PlanarInitialAdjustmentBinding<Schema>, _>(
+            super::PlanarInitialAdjustmentHandler,
+        )?;
         setup.producer::<InitialPlanarProducer<Schema>>(super::InitialPlanarProvider::new(
             configuration.producer_authorization_denials,
             configuration.producer_domain_denial,
