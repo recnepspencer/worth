@@ -184,18 +184,18 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         1
     ),
     boundary!(
-        "scratch-session execution entry",
+        "scoped scratch-session execution entry",
         "logic/planner/execution/mod.rs",
         "../../../../../logic/planner/execution/mod.rs",
-        "execute_evaluation_session_with_policy",
+        "execute_evaluation_session_in_scope",
         1
     ),
     boundary!(
-        "shared plan and session stage-slice executor",
+        "prepared plan stage-slice executor",
         "logic/planner/execution/mod.rs",
         "../../../../../logic/planner/execution/mod.rs",
         "execute_plan_stage_slices_with_policy",
-        4
+        3
     ),
     boundary!(
         "stage preparation call",
@@ -226,11 +226,18 @@ pub(super) const PLANNER_AND_EXECUTOR_BOUNDARIES: &[ExactBoundarySymbol] = &[
         1
     ),
     boundary!(
-        "checked map lowering owner",
+        "checked map lowering call and import",
         "logic/planner/precompute/read_preparation.rs",
         "../../../../../logic/planner/precompute/read_preparation.rs",
         "lower_checked_map",
         2
+    ),
+    boundary!(
+        "checked map lowering owner",
+        "logic/planner/precompute/read_preparation/map_declaration.rs",
+        "../../../../../logic/planner/precompute/read_preparation/map_declaration.rs",
+        "lower_checked_map",
+        1
     ),
     boundary!(
         "checked map publication reconciliation",

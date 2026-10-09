@@ -44,13 +44,9 @@ impl FinancialFrontierLocalityCertificationRun {
 
 pub(in crate::tests::domains::fintech) fn certify_ordinary_locality_run(
     seed: u64,
+    cases: Vec<FinancialLocalityCaseEvidence>,
 ) -> Result<FinancialFrontierLocalityCertificationRun, SignalError> {
-    let completions = certify_locality_completions(
-        seed,
-        LocalityLane::OrdinaryChangeGate,
-        ordinary_locality_cases(),
-    )?;
-    seal_run(seed, LocalityLane::OrdinaryChangeGate, completions)
+    seal_cases(seed, LocalityLane::OrdinaryChangeGate, cases)
 }
 
 pub(in crate::tests::domains::fintech) fn certify_scheduled_locality_run(
@@ -81,6 +77,14 @@ fn seal_run(
     cases.extend(dense.into_cases());
     cases.extend(churn.into_cases());
     cases.extend(restore.into_cases());
+    seal_cases(seed, lane, cases)
+}
+
+fn seal_cases(
+    seed: u64,
+    lane: LocalityLane,
+    cases: Vec<FinancialLocalityCaseEvidence>,
+) -> Result<FinancialFrontierLocalityCertificationRun, SignalError> {
     require_complete_scenario_set(lane, &cases)?;
     require_unique_case_identities(&cases)?;
     let report_identity = FinancialCanonicalReportIdentity::from_cases(
@@ -134,28 +138,6 @@ fn require_complete_scenario_set(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::domains::fintech::certification::invalidation::TraversalStrategyDecision;
-
-    #[test]
-    fn ordinary_run_seals_all_six_scenario_families() {
-        let run = certify_ordinary_locality_run(41).unwrap();
-        assert_eq!(run.lane(), LocalityLane::OrdinaryChangeGate);
-        assert_ne!(run.report_identity().digest_bytes(), &[0; 32]);
-        assert_eq!(run.slopes().len(), 3);
-        assert!(run.cases().iter().all(|case| {
-            let measurement = case.measurement();
-            measurement.seed() == 41
-                && !measurement.elapsed().is_zero()
-                && measurement.peak_batch_memory_items() > 0
-        }));
-        for scenario in FinancialLocalityScenario::ALL {
-            assert!(run.cases().iter().any(|case| case.scenario() == scenario));
-        }
-        assert_eq!(
-            run.strategy().decision(),
-            TraversalStrategyDecision::CurrentStrategyCertified
-        );
-    }
 
     #[test]
     #[ignore = "scheduled 10^3/10^4/10^5 scale courtroom"]
@@ -164,3 +146,7 @@ mod tests {
         assert_eq!(run.lane(), LocalityLane::Scheduled);
     }
 }
+
+#[cfg(test)]
+#[path = "locality_run/ordinary.rs"]
+mod ordinary;

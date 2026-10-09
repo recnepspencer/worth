@@ -12,9 +12,7 @@ pub(in crate::logic::planner) fn record_stage_precompute_telemetry(
     reports: &[worth_foundational::ExecutionReport],
 ) {
     let count = count as u64;
-    let parallel = reports
-        .iter()
-        .any(|report| report.physical().active_workers_high_watermark() > 1);
+    let parallel = crate::logic::planner::stage_recording::execution_resolved_parallel(reports);
     graph.with_telemetry(|telemetry| {
         telemetry.execution.execution_snapshots_built += 1;
         telemetry.execution.execution_snapshot_nanos += snapshot_nanos;

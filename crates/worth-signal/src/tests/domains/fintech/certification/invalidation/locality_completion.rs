@@ -34,6 +34,10 @@ pub(in crate::tests::domains::fintech) struct BranchRestoreLocalityReplayComplet
 }
 
 impl BranchRestoreLocalityReplayCompletion {
+    pub(super) fn cases(&self) -> &[FinancialLocalityCaseEvidence] {
+        &self.cases
+    }
+
     pub(super) fn into_cases(self) -> Vec<FinancialLocalityCaseEvidence> {
         self.cases
     }
@@ -94,9 +98,25 @@ pub(super) fn certify_locality_completions(
             FinancialLocalityScenario::PortfolioDependencyChurn,
         )?,
     };
+    let restore = certify_restore_family(seed, lane, &cases)?;
+    Ok(FinancialLocalityCompletions {
+        sparse,
+        partitioned,
+        convergent,
+        dense,
+        churn,
+        restore,
+    })
+}
+
+pub(super) fn certify_restore_family(
+    seed: u64,
+    lane: LocalityLane,
+    cases: &[LocalityCaseContract],
+) -> Result<BranchRestoreLocalityReplayCompletion, SignalError> {
     let restore_cases = family_contracts(
         lane,
-        &cases,
+        cases,
         FinancialLocalityScenario::BranchRestoreLocalityReplay,
     )?;
     let mut restore_evidence = Vec::new();
@@ -140,20 +160,13 @@ pub(super) fn certify_locality_completions(
             )?);
         }
     }
-    Ok(FinancialLocalityCompletions {
-        sparse,
-        partitioned,
-        convergent,
-        dense,
-        churn,
-        restore: BranchRestoreLocalityReplayCompletion {
-            cases: restore_evidence,
-            _lifecycle: restore_lifecycle,
-        },
+    Ok(BranchRestoreLocalityReplayCompletion {
+        cases: restore_evidence,
+        _lifecycle: restore_lifecycle,
     })
 }
 
-fn certify_family(
+pub(super) fn certify_family(
     seed: u64,
     lane: LocalityLane,
     cases: &[LocalityCaseContract],
@@ -161,12 +174,24 @@ fn certify_family(
 ) -> Result<Vec<FinancialLocalityCaseEvidence>, SignalError> {
     let mut evidence = Vec::new();
     for case in family_contracts(lane, cases, scenario)? {
-        for case_seed in declared_case_seeds(seed, case.scale) {
-            let definition = FinancialWorldDefinition::locality_case(case_seed, case);
-            let trace_count = definition.locality().unwrap().action_traces().len();
-            for trace_index in 0..trace_count {
-                report_scheduled_case(lane, case, case_seed, trace_index);
-                evidence.push(verify_locality_case(
+        evidence.extend(certify_contract(seed, case)?);
+    }
+    Ok(evidence)
+}
+
+pub(super) fn certify_contract(
+    seed: u64,
+    case: LocalityCaseContract,
+) -> Result<Vec<FinancialLocalityCaseEvidence>, SignalError> {
+    let lane = case.lane;
+    let scenario = case.scenario();
+    let mut evidence = Vec::new();
+    for case_seed in declared_case_seeds(seed, case.scale) {
+        let definition = FinancialWorldDefinition::locality_case(case_seed, case);
+        let trace_count = definition.locality().unwrap().action_traces().len();
+        for trace_index in 0..trace_count {
+            report_scheduled_case(lane, case, case_seed, trace_index);
+            evidence.push(verify_locality_case(
                     FinancialWorldDefinition::locality_case(case_seed, case),
                     trace_index,
                     DiagnosticsTier::Operational,
@@ -178,7 +203,6 @@ fn certify_family(
                         case.scale
                     );
                 })?);
-            }
         }
     }
     Ok(evidence)

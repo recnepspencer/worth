@@ -1,9 +1,9 @@
 use super::source_corpus::{
-    CHECKPOINT_IMAGE_SOURCE, HOT_SEMANTIC_FINALIZE_SOURCE, HOT_SERIAL_BATCH_SOURCE,
-    HOT_STAGE_SOURCE, MERGE_EXECUTE_SOURCE, MERGE_RUNTIME_ARTIFACT_PROJECTION_SOURCE,
-    MERGE_RUNTIME_EXECUTION_APPLICATION_SOURCE, PATCH_BUFFER_SOURCE, PLANNER_MODEL_SOURCE,
-    PROOF_SOURCE, RUNTIME_SNAPSHOTTING_SOURCE, SEMANTIC_SOURCE, SNAPSHOT_RESTORE_SOURCE,
-    WORKSPACE_SOURCE,
+    CHECKPOINT_IMAGE_SOURCE, HOT_PRECOMPUTE_SOURCE, HOT_SEMANTIC_FINALIZE_SOURCE,
+    HOT_SERIAL_BATCH_SOURCE, HOT_STAGE_SOURCE, MERGE_EXECUTE_SOURCE,
+    MERGE_RUNTIME_ARTIFACT_PROJECTION_SOURCE, MERGE_RUNTIME_EXECUTION_APPLICATION_SOURCE,
+    PATCH_BUFFER_SOURCE, PLANNER_MODEL_SOURCE, PROOF_SOURCE, RUNTIME_SNAPSHOTTING_SOURCE,
+    SEMANTIC_SOURCE, SNAPSHOT_RESTORE_SOURCE, WORKSPACE_SOURCE,
 };
 
 #[test]
@@ -286,4 +286,24 @@ fn checkpoint_authority_image_fields_are_sealed_behind_methods() {
                 .contains("pub(crate) fn clear_dependency_handles_for_adoption("),
         "checkpoint authority image mutation should be mediated through crate-scoped methods"
     );
+}
+
+#[test]
+fn reported_stage_outcomes_never_read_the_physical_high_water_mark() {
+    // A shared authority's high-water mark moves with other leases, so it is
+    // evidence only; the resolved posture alone decides what a stage reports.
+    for (name, source) in [
+        ("semantic_finalize", HOT_SEMANTIC_FINALIZE_SOURCE),
+        ("stage", HOT_STAGE_SOURCE),
+        ("precompute", HOT_PRECOMPUTE_SOURCE),
+    ] {
+        assert!(
+            !source.contains("active_workers_high_watermark"),
+            "{name} should decide parallel outcomes from the resolved posture"
+        );
+        assert!(
+            source.contains("execution_resolved_parallel("),
+            "{name} should share the planner's one parallel predicate"
+        );
+    }
 }

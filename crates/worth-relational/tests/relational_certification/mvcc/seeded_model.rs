@@ -83,26 +83,73 @@ struct TraceFailure {
 }
 
 #[test]
-fn generated_standard_sequences_are_replayable_and_shrinkable() {
+fn generated_standard_sequences_cover_all_deltas_and_probes() {
     let mut covered_deltas = std::collections::BTreeSet::new();
     let mut covered_probes = std::collections::BTreeSet::new();
     for sequence in 0..8_u64 {
-        let seed = 0x9171_1200_u64.wrapping_add(sequence.wrapping_mul(0x9e37_79b9));
-        let trace = generate_trace(seed);
+        let trace = generate_trace(standard_sequence_seed(sequence));
         covered_deltas.extend(trace.scenarios.iter().map(|scenario| scenario.delta));
         covered_probes.extend(trace.scenarios.iter().map(|scenario| scenario.probe));
-        if let Err(failure) = replay_trace(&trace) {
-            let (shrunk, shrunk_failure) =
-                seeded_trace_shrinking::shrink_failing_trace(trace.clone(), failure.clone());
-            panic!(
-                "generated production model failed\noriginal={trace:#?}\n\
-                 original_failure={failure:#?}\nshrunk={shrunk:#?}\n\
-                 shrunk_failure={shrunk_failure:#?}"
-            );
-        }
     }
     assert_eq!(covered_deltas, DeltaId::ALL.into_iter().collect());
     assert_eq!(covered_probes.len(), 4);
+}
+
+fn standard_sequence_seed(sequence: u64) -> u64 {
+    0x9171_1200_u64.wrapping_add(sequence.wrapping_mul(0x9e37_79b9))
+}
+
+fn assert_standard_sequence_replayable_and_shrinkable(sequence: u64) {
+    let trace = generate_trace(standard_sequence_seed(sequence));
+    if let Err(failure) = replay_trace(&trace) {
+        let (shrunk, shrunk_failure) =
+            seeded_trace_shrinking::shrink_failing_trace(trace.clone(), failure.clone());
+        panic!(
+            "generated production model failed\noriginal={trace:#?}\n\
+             original_failure={failure:#?}\nshrunk={shrunk:#?}\n\
+             shrunk_failure={shrunk_failure:#?}"
+        );
+    }
+}
+
+#[test]
+fn generated_standard_seed_91711200_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(0);
+}
+
+#[test]
+fn generated_standard_seed_12fa88bb9_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(1);
+}
+
+#[test]
+fn generated_standard_seed_1cde00572_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(2);
+}
+
+#[test]
+fn generated_standard_seed_26c177f2b_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(3);
+}
+
+#[test]
+fn generated_standard_seed_30a4ef8e4_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(4);
+}
+
+#[test]
+fn generated_standard_seed_3a886729d_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(5);
+}
+
+#[test]
+fn generated_standard_seed_446bdec56_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(6);
+}
+
+#[test]
+fn generated_standard_seed_4e4f5660f_is_replayable_and_shrinkable() {
+    assert_standard_sequence_replayable_and_shrinkable(7);
 }
 
 fn generate_trace(seed: u64) -> ProductionModelTrace {

@@ -129,13 +129,6 @@ const OPERATIONAL_BOUNDARIES: &[ExactBoundarySymbol] = &[
         2
     ),
     boundary!(
-        "leased output commit preparation seam",
-        "data/graph/runtime/effect/output_commit.rs",
-        "../../../../data/graph/runtime/effect/output_commit.rs",
-        "prepare_output_commit_packet_with_execution",
-        2
-    ),
-    boundary!(
         "ordinal-bound produced delta owner",
         "data/graph/runtime/effect/output_commit/produced_delta.rs",
         "../../../../data/graph/runtime/effect/output_commit/produced_delta.rs",
@@ -301,7 +294,7 @@ fn exact_token_occurrences(source: &str, symbol: &str) -> usize {
 
 #[test]
 fn phase_1_inventory_freezes_current_operational_cutover_boundaries() {
-    assert_eq!(OPERATIONAL_BOUNDARIES.len(), 26);
+    assert_eq!(OPERATIONAL_BOUNDARIES.len(), 25);
     assert_exact_inventory(OPERATIONAL_BOUNDARIES);
 }
 
@@ -319,7 +312,7 @@ fn phase_1_inventory_freezes_counter_topology_and_export_authorities() {
 
 #[test]
 fn phase_1_inventory_freezes_planner_readiness_and_executor_seams() {
-    assert_eq!(PLANNER_AND_EXECUTOR_BOUNDARIES.len(), 43);
+    assert_eq!(PLANNER_AND_EXECUTOR_BOUNDARIES.len(), 44);
     assert_exact_inventory(PLANNER_AND_EXECUTOR_BOUNDARIES);
 }
 

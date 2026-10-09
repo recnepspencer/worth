@@ -55,8 +55,12 @@ impl SignalGraph {
                 InvalidationPerformedCounter::TopologyRevisionRevalidations,
                 1,
             );
+            self.debug_assert_bidirectional_consistency_at(
+                node,
+                &analysis.current_sources,
+                &analysis.desired_sources,
+            );
         }
-        self.debug_assert_bidirectional_consistency();
         Ok(analysis.report)
     }
 
@@ -90,6 +94,8 @@ impl SignalGraph {
             .collect::<Vec<_>>();
         let mut reports = vec![DependencyReconciliationReport::default(); reconciliations.len()];
         let mut subscriber_ops = Vec::<SubscriberBatchOp>::new();
+        #[cfg(debug_assertions)]
+        let mut touched = self.topology_debug_asserts_enabled().then(Vec::new);
 
         for (index, reconciliation) in reconciliations.iter().enumerate() {
             let (node, desired) = reconciliation;
@@ -117,10 +123,23 @@ impl SignalGraph {
                 InvalidationPerformedCounter::TopologyRevisionRevalidations,
                 1,
             );
+            #[cfg(debug_assertions)]
+            if let Some(touched) = &mut touched {
+                touched.push((*node, analysis.current_sources, analysis.desired_sources));
+            }
         }
 
         self.apply_subscriber_batch_ops(&subscriber_ops)?;
-        self.debug_assert_bidirectional_consistency();
+        #[cfg(debug_assertions)]
+        if let Some(touched) = touched {
+            for (node, former_sources, desired_sources) in touched {
+                self.debug_assert_bidirectional_consistency_at(
+                    node,
+                    &former_sources,
+                    &desired_sources,
+                );
+            }
+        }
         Ok(reports)
     }
 

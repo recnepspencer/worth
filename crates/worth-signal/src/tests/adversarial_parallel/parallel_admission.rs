@@ -74,7 +74,14 @@ fn many_thin_stages_use_one_worker_with_bounded_physical_memory_growth() {
 }
 
 #[test]
-fn wide_checked_epoch_records_the_workers_that_actually_ran() {
+fn wide_checked_epoch_reports_resolved_parallel_admission_and_bounded_workers() {
+    if crate::tests::leased_execution::support::private_authority_process::run_with_private_authority(
+        "tests::adversarial_parallel::parallel_admission::wide_checked_epoch_reports_resolved_parallel_admission_and_bounded_workers",
+    ) {
+        return;
+    }
+    let rendezvous =
+        crate::tests::leased_execution::support::task_rendezvous::TaskRendezvous::default();
     let mut graph = SignalGraph::new();
     graph.set_runtime_policy(aggressive_parallel_runtime_policy());
     let nodes = (0..16)
@@ -87,6 +94,7 @@ fn wide_checked_epoch_records_the_workers_that_actually_ran() {
             EvaluationRequestMode::Default,
             &(),
             &|ctx| {
+                rendezvous.meet();
                 for _ in 0..4096 {
                     ctx.work().checkpoint(1).map_err(|_| {
                         crate::facade::SignalError::invalid_input("test kernel stopped")
@@ -104,16 +112,23 @@ fn wide_checked_epoch_records_the_workers_that_actually_ran() {
         .map(|execution| execution.physical().active_workers_high_watermark())
         .max()
         .unwrap();
-    assert!(
-        workers > 1,
-        "wide checked kernels must exercise the shared parallel backend"
+    let resolved_parallel = report.execution.iter().any(|execution| {
+        execution.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
+    });
+    // A private process authority has four workers; sixteen tasks exceed the installed one-task thresholds.
+    assert!(resolved_parallel);
+    rendezvous.assert_if_parallel(resolved_parallel);
+    assert!(workers >= 1 && workers <= lease.policy().budget().max_workers().get());
+    assert_eq!(
+        report
+            .stages
+            .iter()
+            .any(|stage| stage.outcome == StageExecutionOutcome::CompletedParallel),
+        resolved_parallel
     );
-    assert!(workers <= 4);
-    assert!(report
-        .stages
-        .iter()
-        .any(|stage| stage.outcome == StageExecutionOutcome::CompletedParallel));
-    assert!(graph.telemetry().execution.parallel_stage_dispatch_count > 0);
+    if resolved_parallel {
+        assert!(graph.telemetry().execution.parallel_stage_dispatch_count > 0);
+    }
 }
 
 #[test]

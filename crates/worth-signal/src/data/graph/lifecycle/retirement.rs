@@ -14,6 +14,11 @@ impl SignalGraph {
             graph.replace_reverse_subscriptions_for_consumer(id, &[])?;
             graph.release_pending_causes(id)?;
             graph.retire_node_slot(id)?;
+            #[cfg(debug_assertions)]
+            {
+                graph.debug_assert_bidirectional_consistency_for_nodes(&scratch.node_buffer_a);
+                graph.debug_assert_bidirectional_consistency_for_nodes(&scratch.node_buffer_b);
+            }
             Ok(())
         })
     }

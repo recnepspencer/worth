@@ -38,6 +38,8 @@ const GRAPH_BATCH_OWNER: &str =
     include_str!("../../../../../logic/planner/precompute/graph_batch.rs");
 const READ_PREPARATION_OWNER: &str =
     include_str!("../../../../../logic/planner/precompute/read_preparation.rs");
+const MAP_DECLARATION_OWNER: &str =
+    include_str!("../../../../../logic/planner/precompute/read_preparation/map_declaration.rs");
 const CONCURRENT_APPLY_OWNER: &str =
     include_str!("../../../../../logic/planner/apply/stage/concurrent.rs");
 const CONCURRENT_PACKET_OWNER: &str =
@@ -102,7 +104,7 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
         &[
             "merge",
             "prepare_direct_output_causes",
-            "prepare_direct_output_causes_with_execution",
+            "prepare_direct_output_causes_from_work",
             "prepare_direct_output_causes_with_overlay",
             "prepare_stable_output_resolution",
             "prepare_consumer_cause_set_from",
@@ -162,9 +164,7 @@ fn phase_1_inventory_rejects_unlisted_authority_and_execution_functions() {
             "report",
             "apply_effect",
             "prepare_output_commit_packet",
-            "prepare_output_commit_packet_with_execution",
             "prepare_output_commit_packet_with_probe",
-            "prepare_output_commit_packet_with_probe_and_execution",
             "publish_output_commit_packet",
         ],
     );
@@ -184,7 +184,6 @@ fn phase_1_inventory_rejects_unlisted_planner_entry_functions() {
             "build_evaluation_plan_with_policy_resolver",
             "build_evaluation_plan_with_policy_resolver_and_work",
             "build_evaluation_cursor_with_work",
-            "build_evaluation_session_with_policy_resolver",
             "build_evaluation_session_with_policy_resolver_and_work",
         ],
     );
@@ -195,7 +194,6 @@ fn phase_1_inventory_rejects_unlisted_planner_entry_functions() {
             "execute_prepared_plan_in_scope",
             "execute_prepared_plan_with_policy",
             "execute_prepared_plan_with_policy_and_temporal_lowering",
-            "execute_evaluation_session_with_policy",
             "execute_evaluation_session_in_scope",
             "execute_plan_stage_slices_with_policy",
         ],
@@ -241,10 +239,13 @@ fn phase_1_inventory_rejects_unlisted_precompute_and_parallel_functions() {
         &[
             "prepare_epoch",
             "prepare_legacy_epoch",
-            "lower_checked_map",
             "reconcile_prepared_values",
-            "additional_charged_bytes",
+            "allocate_legacy_values",
         ],
+    );
+    assert_owner_functions(
+        MAP_DECLARATION_OWNER,
+        &["lower_checked_map", "additional_charged_bytes"],
     );
     assert_owner_functions(
         CONCURRENT_APPLY_OWNER,

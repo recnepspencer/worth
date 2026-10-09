@@ -12,6 +12,8 @@ mod preflight;
 mod test_edits;
 
 #[cfg(test)]
+mod consistency_tests;
+#[cfg(test)]
 mod preflight_tests;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

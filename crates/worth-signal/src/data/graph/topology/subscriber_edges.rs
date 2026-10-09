@@ -8,6 +8,9 @@ use crate::data::proof::{
 use super::super::signal_graph::SignalGraph;
 use super::mutation::SubscriberBatchOp;
 
+#[cfg(debug_assertions)]
+mod repair_check_scope;
+
 impl SignalGraph {
     pub(super) fn add_subscriber_edge(
         &mut self,
@@ -80,7 +83,7 @@ impl SignalGraph {
             self.set_subscribers_sorted(node, &subscribers)?;
         }
 
-        self.debug_assert_bidirectional_consistency();
+        self.debug_assert_rebuilt_subscriber_index();
         Ok(())
     }
 
@@ -89,8 +92,17 @@ impl SignalGraph {
         sources: &[NodeId],
     ) -> Result<(), SignalError> {
         let plan = self.build_subscriber_membership_repair_plan(sources)?;
+        #[cfg(debug_assertions)]
+        let touched = if self.topology_debug_asserts_enabled() {
+            Some(self.subscriber_repair_check_scope(sources, &plan)?)
+        } else {
+            None
+        };
         self.apply_subscriber_reconciliation_plan(plan)?;
-        self.debug_assert_bidirectional_consistency();
+        #[cfg(debug_assertions)]
+        if let Some(touched) = touched {
+            self.debug_assert_bidirectional_consistency_for_nodes(&touched);
+        }
         Ok(())
     }
 

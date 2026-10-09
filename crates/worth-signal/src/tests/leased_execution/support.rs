@@ -10,6 +10,9 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
+pub(crate) mod private_authority_process;
+pub(crate) mod task_rendezvous;
+
 pub(crate) fn authority() -> &'static ExecutionAuthority {
     shared_authority().as_ref()
 }

@@ -79,23 +79,7 @@ impl SparsePatchBuffer {
         &mut self,
         graph: &mut SignalGraph,
     ) -> Result<(), SignalError> {
-        self.patches.sort_by_key(|(index, _)| *index);
-        for (index, patch) in std::mem::take(&mut self.patches) {
-            let node = graph
-                .live_node_id_at(index)
-                .ok_or_else(|| SignalError::internal("rollback encountered stale patch node"))?;
-            let current_sources = graph.dependency_sources_of(node)?;
-            graph.reconcile_subscriber_sets(
-                node,
-                &current_sources,
-                &patch.original_dependency_sources,
-            )?;
-            graph.replace_entry_from_checkpoint_image(node, patch.original)?;
-            graph.restore_branch_mutation_node_image(node, patch.original_branch_mutation);
-        }
-        self.index_by_node.clear();
-
-        Ok(())
+        std::mem::take(self).rollback_from_packet(graph)
     }
 
     pub(super) fn collect_dependency_sources_for_rollback(
@@ -123,6 +107,8 @@ impl SparsePatchBuffer {
         mut self,
         graph: &mut SignalGraph,
     ) -> Result<(), SignalError> {
+        #[cfg(debug_assertions)]
+        let mut touched = graph.topology_debug_asserts_enabled().then(Vec::new);
         self.patches.sort_by_key(|(index, _)| *index);
         for (index, patch) in self.patches {
             let node = graph
@@ -136,6 +122,21 @@ impl SparsePatchBuffer {
             )?;
             graph.replace_entry_from_checkpoint_image(node, patch.original)?;
             graph.restore_branch_mutation_node_image(node, patch.original_branch_mutation);
+            #[cfg(debug_assertions)]
+            if let Some(touched) = &mut touched {
+                touched.push((node, current_sources, patch.original_dependency_sources));
+            }
+        }
+
+        #[cfg(debug_assertions)]
+        if let Some(touched) = touched {
+            for (node, former_sources, desired_sources) in touched {
+                graph.debug_assert_bidirectional_consistency_at(
+                    node,
+                    &former_sources,
+                    &desired_sources,
+                );
+            }
         }
 
         Ok(())
@@ -239,3 +240,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(all(test, debug_assertions))]
+mod topology_check_tests;

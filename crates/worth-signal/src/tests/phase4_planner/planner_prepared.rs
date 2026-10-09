@@ -160,7 +160,12 @@ fn parallel_executor_threshold_keeps_narrow_stage_serial() {
 }
 
 #[test]
-fn checked_wide_epoch_preserves_serial_results_and_reports_actual_placement() {
+fn checked_wide_epoch_preserves_serial_results_and_reports_resolved_placement() {
+    if crate::tests::leased_execution::support::private_authority_process::run_with_private_authority(
+        "tests::phase4_planner::planner_prepared::checked_wide_epoch_preserves_serial_results_and_reports_resolved_placement",
+    ) {
+        return;
+    }
     let serial_lease = authority().request_lease(request(1, 10_000_000)).unwrap();
     let parallel_lease = authority().request_lease(request(4, 10_000_000)).unwrap();
     let mut serial_graph = SignalGraph::new();
@@ -191,8 +196,14 @@ fn checked_wide_epoch_preserves_serial_results_and_reports_actual_placement() {
     let serial_report = serial_graph
         .execute_prepared_plan_checked(&plan, &(), &evaluator, &serial_lease)
         .unwrap();
+    let rendezvous =
+        crate::tests::leased_execution::support::task_rendezvous::TaskRendezvous::default();
+    let parallel_evaluator = |ctx: &mut CheckedEvaluationContext<'_, '_, '_, '_, ()>| {
+        rendezvous.meet();
+        evaluator(ctx)
+    };
     let parallel_report = parallel_graph
-        .execute_prepared_plan_checked(&parallel_plan, &(), &evaluator, &parallel_lease)
+        .execute_prepared_plan_checked(&parallel_plan, &(), &parallel_evaluator, &parallel_lease)
         .unwrap();
 
     for (serial_node, parallel_node) in serial_nodes.iter().zip(parallel_nodes.iter()) {
@@ -203,15 +214,31 @@ fn checked_wide_epoch_preserves_serial_results_and_reports_actual_placement() {
     }
     assert_eq!(serial_report.task_count, parallel_report.task_count);
     assert_eq!(serial_report.tasks_executed, parallel_report.tasks_executed);
-    let physically_parallel = parallel_report
-        .execution
-        .iter()
-        .any(|execution| execution.physical().active_workers_high_watermark() > 1);
+    let resolved_parallel = parallel_report.execution.iter().any(|execution| {
+        execution.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
+    });
+    // A private process authority has four workers; twelve tasks exceed Balanced/full-apply thresholds four/eight.
+    assert!(resolved_parallel);
+    if resolved_parallel {
+        assert!(
+            parallel_graph
+                .telemetry()
+                .execution
+                .parallel_stage_dispatch_count
+                > 0
+        );
+    }
+    rendezvous.assert_if_parallel(resolved_parallel);
     assert_eq!(
         parallel_report
             .stages
             .iter()
             .any(|stage| stage.outcome == StageExecutionOutcome::CompletedParallel),
-        physically_parallel
+        resolved_parallel
     );
+    let admitted_workers = parallel_lease.policy().budget().max_workers().get();
+    assert!(parallel_report.execution.iter().all(|execution| {
+        let workers = execution.physical().active_workers_high_watermark();
+        workers >= 1 && workers <= admitted_workers
+    }));
 }

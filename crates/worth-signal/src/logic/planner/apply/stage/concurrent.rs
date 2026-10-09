@@ -215,7 +215,9 @@ pub(super) fn run_grouped_concurrent_apply_pass(
             )));
         }
     };
-    let apply_parallel = execution.physical().active_workers_high_watermark() > 1;
+    let apply_parallel = crate::logic::planner::stage_recording::execution_resolved_parallel(
+        std::slice::from_ref(&execution),
+    );
     if apply_parallel {
         stage_record.outcome = crate::logic::planner::StageExecutionOutcome::CompletedParallel;
         stage_record.parallel_kind =
